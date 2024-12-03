@@ -33,7 +33,7 @@ impl DefinitionKey {
     pub(crate) const RANGE_DEFINITION_ID: Range<usize> =
         Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + DefinitionID::LENGTH;
 
-    pub fn new(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         Self { bytes: ByteArray::copy(&bytes) }
     }
@@ -131,7 +131,7 @@ impl<'de> Deserialize<'de> for DefinitionKey {
         impl<'de> Visitor<'de> for DefinitionKeyVisitor {
             type Value = DefinitionKey;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("`DefinitionKey`")
             }
 

@@ -56,12 +56,9 @@ impl Plays {
         annotation: PlaysAnnotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
-            PlaysAnnotation::Cardinality(cardinality) => type_manager.set_plays_annotation_cardinality(
-                snapshot,
-                thing_manager,
-                (*self).into_owned(),
-                cardinality,
-            )?,
+            PlaysAnnotation::Cardinality(cardinality) => {
+                type_manager.set_plays_annotation_cardinality(snapshot, thing_manager, *self, cardinality)?
+            }
         }
         Ok(())
     }
@@ -77,7 +74,7 @@ impl Plays {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match plays_annotation {
             PlaysAnnotation::Cardinality(_) => {
-                type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, (*self).into_owned())?
+                type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, *self)?
             }
         }
         Ok(())
@@ -88,15 +85,11 @@ impl Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_capability_abstract_constraint(snapshot, (*self).into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, *self)
     }
 
     pub fn get_default_cardinality() -> AnnotationCardinality {
         Self::DEFAULT_CARDINALITY
-    }
-
-    pub(crate) fn into_owned(self) -> Plays {
-        Plays { player: ObjectType::new(self.player.vertex()), role: self.role.into_owned() }
     }
 }
 
@@ -152,7 +145,7 @@ impl Capability for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<PlaysAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_plays_annotations_declared(snapshot, (*self).into_owned())
+        type_manager.get_plays_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'a>(
@@ -160,7 +153,7 @@ impl Capability for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'a TypeManager,
     ) -> Result<MaybeOwns<'a, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
-        type_manager.get_plays_constraints(snapshot, self.into_owned())
+        type_manager.get_plays_constraints(snapshot, self)
     }
 
     fn get_cardinality_constraints(
@@ -168,7 +161,7 @@ impl Capability for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_plays_cardinality_constraints(snapshot, (*self).into_owned())
+        type_manager.get_plays_cardinality_constraints(snapshot, *self)
     }
 
     fn get_cardinality(
@@ -176,7 +169,7 @@ impl Capability for Plays {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        type_manager.get_capability_cardinality(snapshot, (*self).into_owned())
+        type_manager.get_capability_cardinality(snapshot, *self)
     }
 }
 

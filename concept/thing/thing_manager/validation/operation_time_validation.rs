@@ -104,7 +104,7 @@ impl OperationTimeValidation {
         {
             Err(DataValidation::create_data_validation_owns_abstractness_error(
                 &abstract_constraint,
-                owner.into_owned_object(),
+                owner.into_object(),
                 snapshot,
                 thing_manager.type_manager(),
             ))
@@ -261,7 +261,7 @@ impl OperationTimeValidation {
                     snapshot,
                     thing_manager.type_manager(),
                     &distinct_constraint,
-                    owner.into_owned_object(),
+                    owner.into_object(),
                     attribute,
                     count,
                 )?;
@@ -349,7 +349,7 @@ impl OperationTimeValidation {
                 snapshot,
                 thing_manager.type_manager(),
                 &constraint,
-                owner.into_owned_object(),
+                owner.into_object(),
                 attribute_type,
                 value.as_reference(),
             )?;
@@ -373,7 +373,7 @@ impl OperationTimeValidation {
                 snapshot,
                 thing_manager.type_manager(),
                 &constraint,
-                owner.into_owned_object(),
+                owner.into_object(),
                 attribute_type,
                 value.as_reference(),
             )?;
@@ -397,7 +397,7 @@ impl OperationTimeValidation {
                 snapshot,
                 thing_manager.type_manager(),
                 &constraint,
-                owner.into_owned_object(),
+                owner.into_object(),
                 attribute_type,
                 value.as_reference(),
             )?;
@@ -431,7 +431,7 @@ impl OperationTimeValidation {
             let attribute_and_subtypes: HashSet<AttributeType> =
                 TypeAPI::chain_types(root_attribute_type, root_attribute_subtypes.into_iter().cloned()).collect();
 
-            let owner = owner.into_owned_object();
+            let owner = owner.into_object();
 
             for checked_owner_type in owner_and_subtypes {
                 let mut objects = thing_manager.get_objects_in(snapshot, checked_owner_type);
@@ -453,7 +453,7 @@ impl OperationTimeValidation {
                                 snapshot,
                                 thing_manager.type_manager(),
                                 &constraint,
-                                owner.into_owned_object(),
+                                owner.into_object(),
                                 attribute_type,
                                 value,
                             ));

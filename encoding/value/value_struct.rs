@@ -111,8 +111,8 @@ impl<'a> StructValue<'a> {
         snapshot: &impl WritableSnapshot,
         thing_vertex_generator: &ThingVertexGenerator,
         attribute: &AttributeVertex,
-    ) -> Result<Vec<StructIndexEntry>, Arc<SnapshotIteratorError>> {
-        let mut acc: Vec<StructIndexEntry> = Vec::new();
+    ) -> Result<Vec<StructIndexEntry<'_>>, Arc<SnapshotIteratorError>> {
+        let mut acc: Vec<StructIndexEntry<'_>> = Vec::new();
         let mut path: Vec<StructFieldIDUInt> = Vec::new();
         Self::create_index_entries_recursively(
             snapshot,

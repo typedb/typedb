@@ -374,7 +374,6 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
-        let attr = attr.as_reference();
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
         actual == expected
     })

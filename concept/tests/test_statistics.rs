@@ -110,7 +110,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         let entity = entity.unwrap();
         statistics.total_entity_count += 1;
         *statistics.entity_counts.entry(entity.type_()).or_default() += 1;
-        let owner_type = entity.type_().into_owned_object_type();
+        let owner_type = entity.type_().into_object_type();
         let has_iter = entity.get_has_unordered(&snapshot, thing_manager);
         for has in has_iter {
             let (attribute, count) = has.unwrap();
@@ -126,7 +126,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         let relation = relation.unwrap();
         statistics.total_relation_count += 1;
         *statistics.relation_counts.entry(relation.type_()).or_default() += 1;
-        let owner_type = relation.type_().into_owned_object_type();
+        let owner_type = relation.type_().into_object_type();
         let has_iter = relation.get_has_unordered(&snapshot, thing_manager);
         for has in has_iter {
             let (attribute, count) = has.unwrap();
@@ -309,13 +309,13 @@ fn put_plays() {
         .unwrap();
     let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let friendship = thing_manager.create_relation(&mut snapshot, friendship_type).unwrap();
-    friendship.add_player(&mut snapshot, &thing_manager, friend_role, person.into_owned_object()).unwrap();
+    friendship.add_player(&mut snapshot, &thing_manager, friend_role, person.into_object()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     let create_commit_seq = snapshot.commit().unwrap().unwrap();
 
     let mut snapshot = storage.clone().open_snapshot_write_at(create_commit_seq);
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    friendship.add_player(&mut snapshot, &thing_manager, friend_role, person_2.into_owned_object()).unwrap();
+    friendship.add_player(&mut snapshot, &thing_manager, friend_role, person_2.into_object()).unwrap();
     thing_manager.finalise(&mut snapshot).unwrap();
     snapshot.commit().unwrap().unwrap();
 

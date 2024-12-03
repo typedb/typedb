@@ -104,7 +104,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_type_constraints(snapshot, type_manager, type_, validation_errors)?;
-        Self::validate_object_type(snapshot, type_manager, type_.into_owned_object_type(), validation_errors)?;
+        Self::validate_object_type(snapshot, type_manager, type_.into_object_type(), validation_errors)?;
 
         Ok(())
     }
@@ -116,7 +116,7 @@ impl CommitTimeValidation {
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
         Self::validate_type_constraints(snapshot, type_manager, type_, validation_errors)?;
-        Self::validate_object_type(snapshot, type_manager, type_.into_owned_object_type(), validation_errors)?;
+        Self::validate_object_type(snapshot, type_manager, type_.into_object_type(), validation_errors)?;
 
         Self::validate_relation_type_has_relates(snapshot, type_manager, type_, validation_errors)?;
         Self::validate_relation_type_role_types(snapshot, type_manager, type_, validation_errors)?;
@@ -209,7 +209,7 @@ impl CommitTimeValidation {
         // validate_capabilities_cardinalities_narrowing::<Owns>(
         //     snapshot,
         //     type_manager,
-        //     type_.clone().into_owned_object_type(),
+        //     type_.clone().into_object_type(),
         //     &HashMap::new(), // read everything from storage
         //     &HashMap::new(), // read everything from storage
         //     &HashMap::new(), // read everything from storage
@@ -221,7 +221,7 @@ impl CommitTimeValidation {
         // validate_capabilities_cardinalities_narrowing::<Plays>(
         //     snapshot,
         //     type_manager,
-        //     type_.clone().into_owned_object_type(),
+        //     type_.clone().into_object_type(),
         //     &HashMap::new(), // read everything from storage
         //     &HashMap::new(), // read everything from storage
         //     &HashMap::new(), // read everything from storage

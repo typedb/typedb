@@ -184,8 +184,8 @@ impl fmt::Display for OwnsReverseExecutor {
 
 fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok((owner, attribute)) => match attribute_owner_types.get(&Type::Attribute((*attribute).into_owned())) {
-            Some(owner_types) => Ok(owner_types.contains(&Type::from((*owner).into_owned()))),
+        Ok((owner, attribute)) => match attribute_owner_types.get(&Type::Attribute(*attribute)) {
+            Some(owner_types) => Ok(owner_types.contains(&Type::from(*owner))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -194,7 +194,7 @@ fn create_owns_filter_owner_attribute(attribute_owner_types: Arc<BTreeMap<Type, 
 
 fn create_owns_filter_attribute(owner_types: Arc<BTreeSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok((owner, _)) => Ok(owner_types.contains(&Type::from((*owner).into_owned()))),
+        Ok((owner, _)) => Ok(owner_types.contains(&Type::from(*owner))),
         Err(err) => Err(err.clone()),
     })
 }

@@ -170,9 +170,9 @@ pub(crate) fn owns_to_tuple_owner_attribute<'a>(
     result: Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
-        Ok((owner, attribute)) => Ok(Tuple::Pair(
-            [Type::from(owner.into_owned()), Type::Attribute(attribute.into_owned())].map(VariableValue::Type),
-        )),
+        Ok((owner, attribute)) => {
+            Ok(Tuple::Pair([Type::from(owner), Type::Attribute(attribute)].map(VariableValue::Type)))
+        }
         Err(err) => Err(err),
     }
 }
@@ -181,9 +181,9 @@ pub(crate) fn owns_to_tuple_attribute_owner<'a>(
     result: Result<(ObjectType, AttributeType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
-        Ok((owner, attribute)) => Ok(Tuple::Pair(
-            [Type::Attribute(attribute.into_owned()), Type::from(owner.into_owned())].map(VariableValue::Type),
-        )),
+        Ok((owner, attribute)) => {
+            Ok(Tuple::Pair([Type::Attribute(attribute), Type::from(owner)].map(VariableValue::Type)))
+        }
         Err(err) => Err(err),
     }
 }
@@ -194,9 +194,9 @@ pub(crate) fn relates_to_tuple_relation_role<'a>(
     result: Result<(RelationType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
-        Ok((relation, role)) => Ok(Tuple::Pair(
-            [Type::Relation(relation.into_owned()), Type::RoleType(role.into_owned())].map(VariableValue::Type),
-        )),
+        Ok((relation, role)) => {
+            Ok(Tuple::Pair([Type::Relation(relation), Type::RoleType(role)].map(VariableValue::Type)))
+        }
         Err(err) => Err(err),
     }
 }
@@ -205,9 +205,9 @@ pub(crate) fn relates_to_tuple_role_relation<'a>(
     result: Result<(RelationType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
-        Ok((relation, role)) => Ok(Tuple::Pair(
-            [Type::RoleType(role.into_owned()), Type::Relation(relation.into_owned())].map(VariableValue::Type),
-        )),
+        Ok((relation, role)) => {
+            Ok(Tuple::Pair([Type::RoleType(role), Type::Relation(relation)].map(VariableValue::Type)))
+        }
         Err(err) => Err(err),
     }
 }
@@ -218,9 +218,7 @@ pub(crate) fn plays_to_tuple_player_role<'a>(
     result: Result<(ObjectType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
-        Ok((player, role)) => Ok(Tuple::Pair(
-            [Type::from(player.into_owned()), Type::RoleType(role.into_owned())].map(VariableValue::Type),
-        )),
+        Ok((player, role)) => Ok(Tuple::Pair([Type::from(player), Type::RoleType(role)].map(VariableValue::Type))),
         Err(err) => Err(err),
     }
 }
@@ -229,9 +227,7 @@ pub(crate) fn plays_to_tuple_role_player<'a>(
     result: Result<(ObjectType, RoleType), Box<ConceptReadError>>,
 ) -> TupleResult<'a> {
     match result {
-        Ok((player, role)) => Ok(Tuple::Pair(
-            [Type::RoleType(role.into_owned()), Type::from(player.into_owned())].map(VariableValue::Type),
-        )),
+        Ok((player, role)) => Ok(Tuple::Pair([Type::RoleType(role), Type::from(player)].map(VariableValue::Type))),
         Err(err) => Err(err),
     }
 }

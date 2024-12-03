@@ -56,10 +56,6 @@ impl Entity {
         bytes.increment().unwrap();
         Entity::new(ObjectVertex::new(&bytes))
     }
-
-    pub fn into_owned(self) -> Entity {
-        self
-    }
 }
 
 impl ConceptAPI for Entity {}
@@ -67,7 +63,6 @@ impl ConceptAPI for Entity {}
 impl ThingAPI for Entity {
     type Vertex = ObjectVertex;
     type TypeAPI = EntityType;
-    type Owned = Entity;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
     fn new(vertex: ObjectVertex) -> Self {
@@ -77,10 +72,6 @@ impl ThingAPI for Entity {
 
     fn vertex(&self) -> Self::Vertex {
         self.vertex
-    }
-
-    fn into_owned(self) -> Self::Owned {
-        Entity::new(self.vertex)
     }
 
     fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
@@ -118,8 +109,8 @@ impl ThingAPI for Entity {
             }
         }
 
-        for r in self.get_relations_roles(snapshot, thing_manager).map_ok(|(relation, role, _count)| (relation, role)) {
-            let (relation, role) = r?;
+        for relates in self.get_relations_roles(snapshot, thing_manager) {
+            let (relation, role, _count) = relates?;
             thing_manager.unset_links(snapshot, relation, self, role)?;
         }
 
@@ -137,8 +128,8 @@ impl ObjectAPI for Entity {
         self.type_()
     }
 
-    fn into_owned_object(self) -> Object {
-        Object::Entity(self.into_owned())
+    fn into_object(self) -> Object {
+        Object::Entity(self)
     }
 }
 

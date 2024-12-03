@@ -105,10 +105,8 @@ macro_rules! type_or_subtype_without_declared_capability_instances_existence_val
 
                 let subtypes = current_object_type.get_subtypes(snapshot, type_manager)?;
                 for subtype in subtypes.into_iter() {
-                    let subtype_capabilities = TypeReader::get_capabilities_declared::<$capability_type>(
-                        snapshot,
-                        subtype.clone().into_owned(),
-                    )?;
+                    let subtype_capabilities =
+                        TypeReader::get_capabilities_declared::<$capability_type>(snapshot, *subtype)?;
                     if !subtype_capabilities.iter().map(|capability| capability.interface()).contains(&interface_type) {
                         object_types.push_front(subtype.clone());
                     }
@@ -2767,7 +2765,7 @@ impl OperationTimeValidation {
         match T::KIND {
             Kind::Entity => {
                 let entity_type = EntityType::new(type_.vertex());
-                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type.into_owned());
+                let mut iterator = thing_manager.get_entities_in(snapshot, entity_type);
                 match iterator.next() {
                     None => Ok(false),
                     Some(result) => result.map(|_| true),
@@ -2775,7 +2773,7 @@ impl OperationTimeValidation {
             }
             Kind::Attribute => {
                 let attribute_type = AttributeType::new(type_.vertex());
-                let mut iterator = thing_manager.get_attributes_in(snapshot, attribute_type.into_owned())?;
+                let mut iterator = thing_manager.get_attributes_in(snapshot, attribute_type)?;
                 match iterator.next() {
                     None => Ok(false),
                     Some(result) => result.map(|_| true),
@@ -2783,7 +2781,7 @@ impl OperationTimeValidation {
             }
             Kind::Relation => {
                 let relation_type = RelationType::new(type_.vertex());
-                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
+                let mut iterator = thing_manager.get_relations_in(snapshot, relation_type);
                 match iterator.next() {
                     None => Ok(false),
                     Some(result) => result.map(|_| true),
@@ -2805,9 +2803,9 @@ impl OperationTimeValidation {
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
-        let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type.into_owned());
+        let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type);
         while let Some(instance) = owner_iterator.next().transpose()? {
-            let mut iterator = instance.get_has_type_unordered(snapshot, thing_manager, attribute_type.into_owned());
+            let mut iterator = instance.get_has_type_unordered(snapshot, thing_manager, attribute_type);
 
             if iterator.next().is_some() {
                 has_instances = true;
@@ -2826,9 +2824,9 @@ impl OperationTimeValidation {
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
-        let mut player_iterator = thing_manager.get_objects_in(snapshot, player_type.into_owned());
+        let mut player_iterator = thing_manager.get_objects_in(snapshot, player_type);
         while let Some(instance) = player_iterator.next().transpose()? {
-            let mut iterator = instance.get_relations_by_role(snapshot, thing_manager, role_type.into_owned());
+            let mut iterator = instance.get_relations_by_role(snapshot, thing_manager, role_type);
 
             if iterator.next().transpose()?.is_some() {
                 has_instances = true;
@@ -2847,9 +2845,9 @@ impl OperationTimeValidation {
     ) -> Result<bool, Box<ConceptReadError>> {
         let mut has_instances = false;
 
-        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type.into_owned());
+        let mut relation_iterator = thing_manager.get_relations_in(snapshot, relation_type);
         while let Some(instance) = relation_iterator.next().transpose()? {
-            let mut iterator = instance.get_players_role_type(snapshot, thing_manager, role_type.into_owned());
+            let mut iterator = instance.get_players_role_type(snapshot, thing_manager, role_type);
 
             if iterator.next().transpose()?.is_some() {
                 has_instances = true;
@@ -3172,7 +3170,7 @@ impl OperationTimeValidation {
         let mut unique_values = HashMap::new();
 
         for object_type in object_types {
-            let mut object_iterator = thing_manager.get_objects_in(snapshot, (*object_type).into_owned());
+            let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type);
             while let Some(object) = object_iterator
                 .next()
                 .transpose()
@@ -3421,7 +3419,7 @@ impl OperationTimeValidation {
         );
 
         for object_type in object_types {
-            let mut object_iterator = thing_manager.get_objects_in(snapshot, (*object_type).into_owned());
+            let mut object_iterator = thing_manager.get_objects_in(snapshot, *object_type);
             while let Some(object) = object_iterator
                 .next()
                 .transpose()
@@ -3533,7 +3531,7 @@ impl OperationTimeValidation {
         );
 
         for relation_type in relation_types {
-            let mut relation_iterator = thing_manager.get_relations_in(snapshot, (*relation_type).into_owned());
+            let mut relation_iterator = thing_manager.get_relations_in(snapshot, *relation_type);
             while let Some(relation) = relation_iterator
                 .next()
                 .transpose()

@@ -172,7 +172,6 @@ async fn object_get_has_list(
             .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
             .into_iter()
-            .map(|attr| attr.into_owned())
             .collect()
     });
     context.attribute_lists.insert(attribute_var.name, attributes);
@@ -200,7 +199,6 @@ async fn object_get_has_list_is(
             .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
             .into_iter()
-            .map(|attr| attr.into_owned())
             .collect_vec()
     });
     let attributes = attribute_vars

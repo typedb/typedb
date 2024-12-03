@@ -247,9 +247,9 @@ fn attribute_cleanup_on_concurrent_detach() {
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(String::from(name_bob_value))))
             .unwrap();
 
-        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.as_reference()]).unwrap();
+        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.clone()]).unwrap();
         alice.set_has_unordered(&mut snapshot, &thing_manager, &name_alice).unwrap();
-        bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.as_reference()]).unwrap();
+        bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age]).unwrap();
         bob.set_has_unordered(&mut snapshot, &thing_manager, &name_bob).unwrap();
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());

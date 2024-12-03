@@ -357,7 +357,7 @@ impl ObjectCache {
         Snapshot: ReadableSnapshot,
         T: KindAPI + ObjectTypeAPI + PlayerAPI,
     {
-        let object_type = type_.into_owned_object_type();
+        let object_type = type_.into_object_type();
         let owns_declared = TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type).unwrap();
         let owns = TypeReader::get_capabilities::<Owns>(snapshot, object_type, false).unwrap();
         let owns_with_specialised = TypeReader::get_capabilities::<Owns>(snapshot, object_type, true).unwrap();

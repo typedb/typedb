@@ -223,7 +223,7 @@ pub trait KindAPI: TypeAPI {
 }
 
 pub trait ObjectTypeAPI: TypeAPI + OwnerAPI + ThingTypeAPI {
-    fn into_owned_object_type(self) -> ObjectType;
+    fn into_object_type(self) -> ObjectType;
 }
 
 pub trait ThingTypeAPI: TypeAPI {

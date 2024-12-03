@@ -259,7 +259,7 @@ impl ThingManager {
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(range);
 
         Ok(AttributeIterator::new(
-            self.get_instances_in(snapshot, attribute_type.into_owned()),
+            self.get_instances_in(snapshot, attribute_type),
             has_reverse_iterator_buffer,
             has_reverse_iterator_storage,
             self.type_manager().get_independent_attribute_types(snapshot)?,
@@ -918,7 +918,7 @@ impl ThingManager {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
         let players = snapshot
             .get_mapped(key.into_storage_key().as_reference(), |bytes| {
-                decode_role_players(bytes).map(|vertex| Object::new(vertex).into_owned()).collect()
+                decode_role_players(bytes).map(|vertex| Object::new(vertex)).collect()
             })
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
@@ -996,15 +996,15 @@ impl ThingManager {
         snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
     }
 
-    pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<Box<ConceptWriteError>>> {
+    pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         self.validate(snapshot)?;
 
-        self.cleanup_relations(snapshot).map_err(|err| vec![err])?;
-        self.cleanup_attributes(snapshot).map_err(|err| vec![err])?;
+        self.cleanup_relations(snapshot).map_err(|err| vec![*err])?;
+        self.cleanup_attributes(snapshot).map_err(|err| vec![*err])?;
 
         match self.create_commit_locks(snapshot) {
             Ok(_) => Ok(()),
-            Err(error) => Err(vec![Box::new(ConceptWriteError::ConceptRead { source: error })]),
+            Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),
         }
     }
 
@@ -1013,17 +1013,17 @@ impl ThingManager {
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
             if ThingEdgeHas::is_has(&key) {
                 let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
-                let object = Object::new(has.from()).into_owned();
-                let attribute = Attribute::new(has.to()).into_owned();
+                let object = Object::new(has.from());
+                let attribute = Attribute::new(has.to());
                 let attribute_type = attribute.type_();
 
                 self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
             } else if ThingEdgeLinks::is_links(&key) {
                 let role_player = ThingEdgeLinks::new(Bytes::Reference(key.bytes()));
-                let relation = Relation::new(role_player.relation()).into_owned();
-                let player = Object::new(role_player.player()).into_owned();
-                let role_type = RoleType::build_from_type_id(role_player.role_id()).into_owned();
+                let relation = Relation::new(role_player.relation());
+                let player = Object::new(role_player.player());
+                let role_type = RoleType::build_from_type_id(role_player.role_id());
 
                 self.add_exclusive_lock_for_plays_cardinality_constraint(snapshot, &player, role_type)?;
                 self.add_exclusive_lock_for_relates_cardinality_constraint(snapshot, &relation, role_type)?;
@@ -1208,7 +1208,7 @@ impl ThingManager {
                         let bytes = Bytes::reference(key.bytes());
                         if <AnnotationCascade as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
                             let decoded = TypeVertexProperty::decode(bytes);
-                            RelationType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
+                            RelationType::from_vertex(decoded.type_vertex()).ok()
                         } else {
                             None
                         }
@@ -1288,7 +1288,7 @@ impl ThingManager {
                     let bytes = Bytes::reference(key.bytes());
                     if <AnnotationIndependent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
                         let decoded = TypeVertexProperty::decode(bytes);
-                        AttributeType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
+                        AttributeType::from_vertex(decoded.type_vertex()).ok()
                     } else {
                         None
                     }
@@ -1317,7 +1317,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn validate(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<Box<ConceptWriteError>>> {
+    fn validate(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
         let mut errors = Vec::new();
 
         let mut modified_objects_attribute_types = HashMap::new();
@@ -1356,10 +1356,7 @@ impl ThingManager {
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(errors
-                .into_iter()
-                .map(|typedb_source| Box::new(ConceptWriteError::DataValidation { typedb_source }))
-                .collect())
+            Err(errors.into_iter().map(|typedb_source| ConceptWriteError::DataValidation { typedb_source }).collect())
         }
     }
 
@@ -1387,7 +1384,7 @@ impl ThingManager {
                 Write::Put { .. } => unreachable!("Encountered a Put for an entity"),
             })
         {
-            let object = Object::new(ObjectVertex::new(key.bytes())).into_owned();
+            let object = Object::new(ObjectVertex::new(key.bytes()));
             match &object {
                 Object::Entity(_) => {}
                 Object::Relation(relation) => {
@@ -1424,7 +1421,7 @@ impl ThingManager {
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
             if self.object_exists(snapshot, owner)? {
-                let updated_attribute_types = out_object_attribute_types.entry(owner.into_owned()).or_default();
+                let updated_attribute_types = out_object_attribute_types.entry(owner).or_default();
                 updated_attribute_types.insert(attribute.type_());
             }
         }
@@ -1448,12 +1445,12 @@ impl ThingManager {
             let role_type = RoleType::build_from_type_id(edge.role_id());
 
             if self.object_exists(snapshot, relation)? {
-                let updated_role_types = out_relation_role_types.entry(relation.into_owned()).or_default();
+                let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.insert(role_type);
             }
 
             if self.object_exists(snapshot, player)? {
-                let updated_role_types = out_object_role_types.entry(player.into_owned()).or_default();
+                let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
             }
         }
@@ -1754,7 +1751,7 @@ impl ThingManager {
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let has_reverse = ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex());
+        let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
         if count == 0 {
             snapshot.delete(has.into_storage_key().into_owned_array());
@@ -1772,9 +1769,9 @@ impl ThingManager {
 
     pub(crate) fn unset_has(&self, snapshot: &mut impl WritableSnapshot, owner: impl ObjectAPI, attribute: &Attribute) {
         let owner_status = owner.get_status(snapshot, self);
-        let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
+        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
         let has_reverse =
-            ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
+            ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
         match owner_status {
             ConceptStatus::Inserted => {
                 let count = 1;
@@ -1992,14 +1989,11 @@ impl ThingManager {
         self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)
     }
 
-    ///
-    /// TODO:
-    /// Call index regenerations when cardinality changes in schema
-    /// (create role type, set cardinality annotation, unset cardinality annotation, ...)
-    ///
-
-    /// Clean up all parts of a relation index to do with a specific role player
-    /// after the player has been deleted.
+    // TODO:
+    // * Call index regenerations when cardinality changes in schema
+    //   (create role type, set cardinality annotation, unset cardinality annotation, ...)
+    // * Clean up all parts of a relation index to do with a specific role player
+    //   after the player has been deleted.
     pub(crate) fn relation_index_player_deleted(
         &self,
         snapshot: &mut impl WritableSnapshot,
@@ -2013,7 +2007,7 @@ impl ThingManager {
         for rp in players {
             let (rp_player, rp_role_type) = rp?;
             debug_assert!(!(rp_player == Object::new(player.vertex()) && role_type == rp_role_type));
-            let index = ThingEdgeRolePlayerIndex::build(
+            let index = ThingEdgeRolePlayerIndex::new(
                 player.vertex(),
                 rp_player.vertex(),
                 relation.vertex(),
@@ -2021,7 +2015,7 @@ impl ThingManager {
                 rp_role_type.vertex().type_id_(),
             );
             snapshot.delete(index.into_storage_key().into_owned_array());
-            let index_reverse = ThingEdgeRolePlayerIndex::build(
+            let index_reverse = ThingEdgeRolePlayerIndex::new(
                 rp_player.vertex(),
                 player.vertex(),
                 relation.vertex(),
@@ -2054,7 +2048,7 @@ impl ThingManager {
             if is_same_rp {
                 let repetitions = count_for_player - 1;
                 if repetitions > 0 {
-                    let index = ThingEdgeRolePlayerIndex::build(
+                    let index = ThingEdgeRolePlayerIndex::new(
                         player.vertex(),
                         player.vertex(),
                         relation.vertex(),
@@ -2068,7 +2062,7 @@ impl ThingManager {
                 }
             } else {
                 let rp_repetitions = rp_count;
-                let index = ThingEdgeRolePlayerIndex::build(
+                let index = ThingEdgeRolePlayerIndex::new(
                     player.vertex(),
                     rp_player.vertex(),
                     relation.vertex(),
@@ -2078,7 +2072,7 @@ impl ThingManager {
                 snapshot
                     .put_val(index.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
                 let player_repetitions = count_for_player;
-                let index_reverse = ThingEdgeRolePlayerIndex::build(
+                let index_reverse = ThingEdgeRolePlayerIndex::new(
                     rp_player.vertex(),
                     player.vertex(),
                     relation.vertex(),

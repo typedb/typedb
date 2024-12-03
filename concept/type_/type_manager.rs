@@ -722,7 +722,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(entity_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_owned_object_type(), false)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -735,7 +735,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(entity_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_owned_object_type(), true)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, entity_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -748,7 +748,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns(relation_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_owned_object_type(), false)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -761,7 +761,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_owns_with_specialised(relation_type)))
         } else {
-            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_owned_object_type(), true)?;
+            let owns = TypeReader::get_capabilities::<Owns>(snapshot, relation_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(owns))
         }
     }
@@ -805,7 +805,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(entity_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_owned_object_type(), false)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -818,7 +818,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(entity_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_owned_object_type(), true)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, entity_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -844,7 +844,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays(relation_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_owned_object_type(), false)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_object_type(), false)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -857,7 +857,7 @@ impl TypeManager {
         if let Some(cache) = &self.type_cache {
             Ok(MaybeOwns::Borrowed(cache.get_plays_with_specialised(relation_type)))
         } else {
-            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_owned_object_type(), true)?;
+            let plays = TypeReader::get_capabilities::<Plays>(snapshot, relation_type.into_object_type(), true)?;
             Ok(MaybeOwns::Owned(plays))
         }
     }
@@ -942,10 +942,10 @@ impl TypeManager {
     }
 
     get_type_capability_constraints_methods! {
-        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_owned_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
-        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_owned_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
-        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_owned_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
-        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_owned_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_entity_type_owned_attribute_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_relation_type_owned_attribute_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Owns = get_type_capability_constraints | get_owned_attribute_type_constraints;
+        fn get_entity_type_played_role_type_constraints(EntityType => |type_| { type_.into_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
+        fn get_relation_type_played_role_type_constraints(RelationType => |type_| { type_.into_object_type() }) -> Plays = get_type_capability_constraints | get_played_role_type_constraints;
         fn get_relation_type_related_role_type_constraints(RelationType => |type_| { type_ }) -> Relates = get_type_capability_constraints | get_relation_type_related_role_type_constraints;
     }
 
@@ -1263,7 +1263,7 @@ impl TypeManager {
         relation_type: RelationType,
         ordering: Ordering,
     ) -> Result<RoleType, Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_new_role_name_uniqueness(snapshot, self, relation_type.into_owned(), label)
+        OperationTimeValidation::validate_new_role_name_uniqueness(snapshot, self, relation_type, label)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         // Capabilities can have default values for annotations (e.g. @card(1..X)),
@@ -1312,7 +1312,7 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                relates.into_owned(),
+                relates,
                 get_relates_default_constraints(relates, ordering, false),
             )
             .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
@@ -1379,7 +1379,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, entity_type)?;
 
-        self.delete_object_type_capabilities_unchecked(snapshot, entity_type.into_owned_object_type())?;
+        self.delete_object_type_capabilities_unchecked(snapshot, entity_type.into_object_type())?;
         self.delete_type(snapshot, entity_type)
     }
 
@@ -1395,7 +1395,7 @@ impl TypeManager {
         for relates in declared_relates.iter() {
             self.delete_role_type(snapshot, thing_manager, relates.role())?;
         }
-        self.delete_object_type_capabilities_unchecked(snapshot, relation_type.into_owned_object_type())?;
+        self.delete_object_type_capabilities_unchecked(snapshot, relation_type.into_object_type())?;
         self.delete_type(snapshot, relation_type)
     }
 
@@ -1819,8 +1819,8 @@ impl TypeManager {
         subtype: T,
         supertype: T,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let object_subtype = subtype.into_owned_object_type();
-        let object_supertype = supertype.into_owned_object_type();
+        let object_subtype = subtype.into_object_type();
+        let object_supertype = supertype.into_object_type();
 
         OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
@@ -1867,7 +1867,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: ObjectType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let object_subtype = subtype.into_owned_object_type();
+        let object_subtype = subtype.into_object_type();
 
         OperationTimeValidation::validate_lost_owns_do_not_cause_lost_instances_while_changing_supertype(
             snapshot,
@@ -1915,7 +1915,7 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: EntityType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_owned_object_type())
+        self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_object_type())
     }
 
     pub(crate) fn set_relation_type_supertype(
@@ -1998,7 +1998,7 @@ impl TypeManager {
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_owned_object_type())
+        self.unset_object_type_supertype(snapshot, thing_manager, subtype.into_object_type())
     }
 
     pub(crate) fn set_owns(
@@ -2034,7 +2034,7 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                owns.into_owned(),
+                owns,
                 get_owns_default_constraints(owns, ordering),
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2097,7 +2097,7 @@ impl TypeManager {
                 snapshot,
                 self,
                 thing_manager,
-                plays.into_owned(),
+                plays,
                 get_plays_default_constraints(plays),
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2190,7 +2190,7 @@ impl TypeManager {
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        for relates in self.get_role_type_relates(snapshot, role_type.into_owned())?.into_iter() {
+        for relates in self.get_role_type_relates(snapshot, role_type)?.into_iter() {
             OperationTimeValidation::validate_relates_distinct_constraint_ordering(
                 snapshot,
                 self,

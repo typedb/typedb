@@ -57,7 +57,7 @@ pub trait ValueEncodable: Clone {
 
     fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH>;
 
-    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<INLINE_LENGTH>;
+    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'_, INLINE_LENGTH>;
 
     fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH>;
 }

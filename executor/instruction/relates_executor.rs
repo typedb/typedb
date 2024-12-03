@@ -61,9 +61,8 @@ pub(super) type RelatesFilterMapFn = FilterMapFn<(RelationType, RoleType)>;
 
 pub(super) type RelatesVariableValueExtractor = for<'a> fn(&'a (RelationType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_RELATION: RelatesVariableValueExtractor =
-    |(relation, _)| VariableValue::Type(Type::Relation((*relation).into_owned()));
-pub(super) const EXTRACT_ROLE: RelatesVariableValueExtractor =
-    |(_, role)| VariableValue::Type(Type::RoleType((*role).into_owned()));
+    |(relation, _)| VariableValue::Type(Type::Relation(*relation));
+pub(super) const EXTRACT_ROLE: RelatesVariableValueExtractor = |(_, role)| VariableValue::Type(Type::RoleType(*role));
 
 impl RelatesExecutor {
     pub(crate) fn new(
@@ -198,8 +197,8 @@ fn create_relates_filter_relation_role_type(
     relation_role_types: Arc<BTreeMap<Type, Vec<Type>>>,
 ) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok((relation, role)) => match relation_role_types.get(&Type::from((*relation).into_owned())) {
-            Some(role_types) => Ok(role_types.contains(&Type::RoleType((*role).into_owned()))),
+        Ok((relation, role)) => match relation_role_types.get(&Type::from(*relation)) {
+            Some(role_types) => Ok(role_types.contains(&Type::RoleType(*role))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -208,7 +207,7 @@ fn create_relates_filter_relation_role_type(
 
 fn create_relates_filter_role_type(role_types: Arc<BTreeSet<Type>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok((_, role)) => Ok(role_types.contains(&Type::RoleType((*role).into_owned()))),
+        Ok((_, role)) => Ok(role_types.contains(&Type::RoleType(*role))),
         Err(err) => Err(err.clone()),
     })
 }

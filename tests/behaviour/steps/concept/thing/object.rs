@@ -185,7 +185,7 @@ async fn object_get_instance_with_value(
         let mut owners = key.get_owners_by_type(tx.snapshot.as_ref(), &tx.thing_manager, object_type);
         let owner = owners.next().transpose().unwrap().map(|(owner, count)| {
             assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
-            owner.into_owned()
+            owner
         });
         assert_matches!(owners.next(), None, "multiple objects found with key {:?}", key);
         owner

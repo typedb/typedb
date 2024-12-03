@@ -145,14 +145,10 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Bobby".to_string())))
         .unwrap();
 
-    membership_1
-        .add_player(&mut snapshot, &thing_manager, membership_member_type, person_1.into_owned_object())
-        .unwrap();
-    membership_1.add_player(&mut snapshot, &thing_manager, membership_group_type, group_1.into_owned_object()).unwrap();
-    membership_2
-        .add_player(&mut snapshot, &thing_manager, membership_member_type, person_3.into_owned_object())
-        .unwrap();
-    membership_2.add_player(&mut snapshot, &thing_manager, membership_group_type, group_2.into_owned_object()).unwrap();
+    membership_1.add_player(&mut snapshot, &thing_manager, membership_member_type, person_1.into_object()).unwrap();
+    membership_1.add_player(&mut snapshot, &thing_manager, membership_group_type, group_1.into_object()).unwrap();
+    membership_2.add_player(&mut snapshot, &thing_manager, membership_member_type, person_3.into_object()).unwrap();
+    membership_2.add_player(&mut snapshot, &thing_manager, membership_group_type, group_2.into_object()).unwrap();
 
     person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
     person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_2).unwrap();

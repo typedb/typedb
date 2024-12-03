@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
 use bytes::Bytes;

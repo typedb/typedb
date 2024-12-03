@@ -83,8 +83,8 @@ impl Type {
 
     pub fn as_object_type(&self) -> ObjectType {
         match self {
-            Type::Entity(entity) => (*entity).into_owned_object_type(),
-            Type::Relation(relation) => (*relation).into_owned_object_type(),
+            Type::Entity(entity) => (*entity).into_object_type(),
+            Type::Relation(relation) => (*relation).into_object_type(),
             Type::Attribute(_) => panic!("Attribute Type is not an object type"),
             Type::RoleType(_) => panic!("Role Type is not an Object type"),
         }
@@ -92,28 +92,28 @@ impl Type {
 
     pub fn as_entity_type(&self) -> EntityType {
         match self {
-            Type::Entity(entity) => (*entity).into_owned(),
+            Type::Entity(entity) => *entity,
             _ => panic!("Type is not an Relation type."),
         }
     }
 
     pub fn as_relation_type(&self) -> RelationType {
         match self {
-            Type::Relation(relation) => (*relation).into_owned(),
+            Type::Relation(relation) => *relation,
             _ => panic!("Type is not an Relation type."),
         }
     }
 
     pub fn as_attribute_type(&self) -> AttributeType {
         match self {
-            Type::Attribute(attribute) => (*attribute).into_owned(),
+            Type::Attribute(attribute) => *attribute,
             _ => panic!("Type is not an Attribute type."),
         }
     }
 
     pub fn as_role_type(&self) -> RoleType {
         match self {
-            Type::RoleType(role) => (*role).into_owned(),
+            Type::RoleType(role) => *role,
             _ => panic!("Type is not an Role type."),
         }
     }

@@ -134,7 +134,6 @@ impl DataValidation {
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         constraint.validate_cardinality(count).map_err(|typedb_source| {
-            let player = player.into_owned();
             Box::new(DataValidationError::PlaysConstraintViolated {
                 player_iid: HexBytesFormatter::owned(Vec::from(player.iid())),
                 player_type: player.type_().get_label(snapshot, type_manager).unwrap().to_owned(),
@@ -154,7 +153,6 @@ impl DataValidation {
         count: u64,
     ) -> Result<(), Box<DataValidationError>> {
         constraint.validate_cardinality(count).map_err(|typedb_source| {
-            let relation = relation.into_owned();
             Box::new(DataValidationError::RelatesConstraintViolated {
                 relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
                 relation_type: relation.type_().get_label(snapshot, type_manager).unwrap().to_owned(),

@@ -49,7 +49,7 @@ impl Owns {
     }
 
     pub fn attribute(&self) -> AttributeType {
-        self.attribute.into_owned()
+        self.attribute
     }
 
     pub fn is_key(
@@ -57,7 +57,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
-        type_manager.get_is_key(snapshot, (*self).into_owned())
+        type_manager.get_is_key(snapshot, *self)
     }
 
     pub fn get_constraint_abstract(
@@ -65,7 +65,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_capability_abstract_constraint(snapshot, (*self).into_owned())
+        type_manager.get_capability_abstract_constraint(snapshot, *self)
     }
 
     pub fn get_constraints_distinct(
@@ -73,7 +73,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_owns_distinct_constraints(snapshot, (*self).into_owned())
+        type_manager.get_owns_distinct_constraints(snapshot, *self)
     }
 
     pub fn is_distinct(
@@ -89,7 +89,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_unique_constraint(snapshot, (*self).into_owned())
+        type_manager.get_unique_constraint(snapshot, *self)
     }
 
     pub fn get_constraints_regex(
@@ -97,7 +97,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_owns_regex_constraints(snapshot, (*self).into_owned())
+        type_manager.get_owns_regex_constraints(snapshot, *self)
     }
 
     pub fn get_constraints_range(
@@ -105,7 +105,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_owns_range_constraints(snapshot, (*self).into_owned())
+        type_manager.get_owns_range_constraints(snapshot, *self)
     }
 
     pub fn get_constraints_values(
@@ -113,7 +113,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_owns_values_constraints(snapshot, (*self).into_owned())
+        type_manager.get_owns_values_constraints(snapshot, *self)
     }
 
     pub fn set_annotation(
@@ -124,29 +124,20 @@ impl Owns {
         annotation: OwnsAnnotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
-            OwnsAnnotation::Distinct(_) => {
-                type_manager.set_owns_annotation_distinct(snapshot, thing_manager, (*self).into_owned())?
+            OwnsAnnotation::Distinct(_) => type_manager.set_owns_annotation_distinct(snapshot, thing_manager, *self)?,
+            OwnsAnnotation::Key(_) => type_manager.set_owns_annotation_key(snapshot, thing_manager, *self)?,
+            OwnsAnnotation::Cardinality(cardinality) => {
+                type_manager.set_owns_annotation_cardinality(snapshot, thing_manager, *self, cardinality)?
             }
-            OwnsAnnotation::Key(_) => {
-                type_manager.set_owns_annotation_key(snapshot, thing_manager, (*self).into_owned())?
-            }
-            OwnsAnnotation::Cardinality(cardinality) => type_manager.set_owns_annotation_cardinality(
-                snapshot,
-                thing_manager,
-                (*self).into_owned(),
-                cardinality,
-            )?,
-            OwnsAnnotation::Unique(_) => {
-                type_manager.set_owns_annotation_unique(snapshot, thing_manager, (*self).into_owned())?
-            }
+            OwnsAnnotation::Unique(_) => type_manager.set_owns_annotation_unique(snapshot, thing_manager, *self)?,
             OwnsAnnotation::Regex(regex) => {
-                type_manager.set_owns_annotation_regex(snapshot, thing_manager, (*self).into_owned(), regex)?
+                type_manager.set_owns_annotation_regex(snapshot, thing_manager, *self, regex)?
             }
             OwnsAnnotation::Range(range) => {
-                type_manager.set_owns_annotation_range(snapshot, thing_manager, (*self).into_owned(), range)?
+                type_manager.set_owns_annotation_range(snapshot, thing_manager, *self, range)?
             }
             OwnsAnnotation::Values(values) => {
-                type_manager.set_owns_annotation_values(snapshot, thing_manager, (*self).into_owned(), values)?
+                type_manager.set_owns_annotation_values(snapshot, thing_manager, *self, values)?
             }
         }
         Ok(())
@@ -162,19 +153,15 @@ impl Owns {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match owns_annotation {
-            OwnsAnnotation::Distinct(_) => {
-                type_manager.unset_owns_annotation_distinct(snapshot, (*self).into_owned())?
-            }
-            OwnsAnnotation::Key(_) => {
-                type_manager.unset_owns_annotation_key(snapshot, thing_manager, (*self).into_owned())?
-            }
+            OwnsAnnotation::Distinct(_) => type_manager.unset_owns_annotation_distinct(snapshot, *self)?,
+            OwnsAnnotation::Key(_) => type_manager.unset_owns_annotation_key(snapshot, thing_manager, *self)?,
             OwnsAnnotation::Cardinality(_) => {
-                type_manager.unset_owns_annotation_cardinality(snapshot, thing_manager, (*self).into_owned())?
+                type_manager.unset_owns_annotation_cardinality(snapshot, thing_manager, *self)?
             }
-            OwnsAnnotation::Unique(_) => type_manager.unset_owns_annotation_unique(snapshot, (*self).into_owned())?,
-            OwnsAnnotation::Regex(_) => type_manager.unset_owns_annotation_regex(snapshot, (*self).into_owned())?,
-            OwnsAnnotation::Range(_) => type_manager.unset_owns_annotation_range(snapshot, (*self).into_owned())?,
-            OwnsAnnotation::Values(_) => type_manager.unset_owns_annotation_values(snapshot, (*self).into_owned())?,
+            OwnsAnnotation::Unique(_) => type_manager.unset_owns_annotation_unique(snapshot, *self)?,
+            OwnsAnnotation::Regex(_) => type_manager.unset_owns_annotation_regex(snapshot, *self)?,
+            OwnsAnnotation::Range(_) => type_manager.unset_owns_annotation_range(snapshot, *self)?,
+            OwnsAnnotation::Values(_) => type_manager.unset_owns_annotation_values(snapshot, *self)?,
         }
         Ok(())
     }
@@ -184,7 +171,7 @@ impl Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Ordering, Box<ConceptReadError>> {
-        type_manager.get_owns_ordering(snapshot, (*self).into_owned())
+        type_manager.get_owns_ordering(snapshot, *self)
     }
 
     pub fn set_ordering(
@@ -194,11 +181,7 @@ impl Owns {
         thing_manager: &ThingManager,
         ordering: Ordering,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_owns_ordering(snapshot, thing_manager, (*self).into_owned(), ordering)
-    }
-
-    pub(crate) fn into_owned(self) -> Owns {
-        self
+        type_manager.set_owns_ordering(snapshot, thing_manager, *self, ordering)
     }
 
     pub fn get_default_cardinality(ordering: Ordering) -> AnnotationCardinality {
@@ -268,7 +251,7 @@ impl Capability for Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'this TypeManager,
     ) -> Result<MaybeOwns<'this, HashSet<OwnsAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_owns_annotations_declared(snapshot, (*self).into_owned())
+        type_manager.get_owns_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'a>(
@@ -284,7 +267,7 @@ impl Capability for Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_owns_cardinality_constraints(snapshot, (*self).into_owned())
+        type_manager.get_owns_cardinality_constraints(snapshot, *self)
     }
 
     fn get_cardinality(
@@ -292,7 +275,7 @@ impl Capability for Owns {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        type_manager.get_capability_cardinality(snapshot, (*self).into_owned().into_owned())
+        type_manager.get_capability_cardinality(snapshot, *self)
     }
 }
 

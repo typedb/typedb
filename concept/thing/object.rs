@@ -75,7 +75,6 @@ impl Object {
 impl ThingAPI for Object {
     type TypeAPI = ObjectType;
     type Vertex = ObjectVertex;
-    type Owned = Object;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexRelation);
 
     fn new(object_vertex: Self::Vertex) -> Self {
@@ -90,13 +89,6 @@ impl ThingAPI for Object {
         match self {
             Object::Entity(entity) => entity.vertex(),
             Object::Relation(relation) => relation.vertex(),
-        }
-    }
-
-    fn into_owned(self) -> Self::Owned {
-        match self {
-            Object::Entity(entity) => Object::Entity(entity.into_owned()),
-            Object::Relation(relation) => Object::Relation(relation.into_owned()),
         }
     }
 
@@ -147,7 +139,7 @@ impl ThingAPI for Object {
 pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
     fn type_(&self) -> impl ObjectTypeAPI;
 
-    fn into_owned_object(self) -> Object;
+    fn into_object(self) -> Object;
 
     fn has_attribute_with_value(
         self,
@@ -413,8 +405,8 @@ impl ObjectAPI for Object {
         self.type_()
     }
 
-    fn into_owned_object(self) -> Object {
-        self.into_owned()
+    fn into_object(self) -> Object {
+        self
     }
 }
 

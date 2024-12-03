@@ -62,10 +62,9 @@ pub(super) type OwnsFilterFn = FilterFn<(ObjectType, AttributeType)>;
 pub(super) type OwnsFilterMapFn = FilterMapFn<(ObjectType, AttributeType)>;
 
 pub(super) type OwnsVariableValueExtractor = for<'a> fn(&'a (ObjectType, AttributeType)) -> VariableValue<'a>;
-pub(super) const EXTRACT_OWNER: OwnsVariableValueExtractor =
-    |(owner, _)| VariableValue::Type(Type::from((*owner).into_owned()));
+pub(super) const EXTRACT_OWNER: OwnsVariableValueExtractor = |(owner, _)| VariableValue::Type(Type::from(*owner));
 pub(super) const EXTRACT_ATTRIBUTE: OwnsVariableValueExtractor =
-    |(_, attribute)| VariableValue::Type(Type::Attribute((*attribute).into_owned()));
+    |(_, attribute)| VariableValue::Type(Type::Attribute(*attribute));
 
 impl OwnsExecutor {
     pub(crate) fn new(
@@ -179,8 +178,8 @@ impl OwnsExecutor {
         owner: Type,
     ) -> Result<BTreeSet<(ObjectType, AttributeType)>, Box<ConceptReadError>> {
         let object_type = match owner {
-            Type::Entity(entity) => entity.into_owned_object_type(),
-            Type::Relation(relation) => relation.into_owned_object_type(),
+            Type::Entity(entity) => entity.into_object_type(),
+            Type::Relation(relation) => relation.into_object_type(),
             _ => unreachable!("owner types must be relation or entity types"),
         };
 
@@ -200,8 +199,8 @@ impl fmt::Display for OwnsExecutor {
 
 fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok((owner, attribute)) => match owner_attribute_types.get(&Type::from((*owner).into_owned())) {
-            Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute((*attribute).into_owned()))),
+        Ok((owner, attribute)) => match owner_attribute_types.get(&Type::from(*owner)) {
+            Some(attribute_types) => Ok(attribute_types.contains(&Type::Attribute(*attribute))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -210,7 +209,7 @@ fn create_owns_filter_owner_attribute(owner_attribute_types: Arc<BTreeMap<Type, 
 
 fn create_owns_filter_attribute(attribute_types: Arc<BTreeSet<Type>>) -> Arc<OwnsFilterFn> {
     Arc::new(move |result| match result {
-        Ok((_, attribute)) => Ok(attribute_types.contains(&Type::Attribute((*attribute).into_owned()))),
+        Ok((_, attribute)) => Ok(attribute_types.contains(&Type::Attribute(*attribute))),
         Err(err) => Err(err.clone()),
     })
 }

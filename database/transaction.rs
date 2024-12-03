@@ -156,7 +156,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             let error = errs.into_iter().next().unwrap();
-            DataCommitError::ConceptWriteErrorsFirst { typedb_source: error }
+            DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }
         })?;
         drop(self.type_manager);
         snapshot.commit().map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
@@ -283,7 +283,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
-            ConceptWriteErrorsFirst { typedb_source: errs.into_iter().next().unwrap() }
+            ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
         })?;
         drop(self.thing_manager);
 

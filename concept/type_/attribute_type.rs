@@ -109,7 +109,7 @@ impl TypeAPI for AttributeType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.delete_attribute_type(snapshot, thing_manager, self.into_owned())
+        type_manager.delete_attribute_type(snapshot, thing_manager, self)
     }
 
     fn get_label<'m>(
@@ -117,7 +117,7 @@ impl TypeAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_label(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_label(snapshot, *self)
     }
 
     fn get_label_arc(
@@ -125,7 +125,7 @@ impl TypeAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_label_arc(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_label_arc(snapshot, *self)
     }
 
     fn get_supertype(
@@ -133,7 +133,7 @@ impl TypeAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<AttributeType>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_supertype(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_supertype(snapshot, *self)
     }
 
     fn get_supertypes_transitive<'m>(
@@ -141,7 +141,7 @@ impl TypeAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_supertypes(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_supertypes(snapshot, *self)
     }
 
     fn get_subtypes<'m>(
@@ -149,7 +149,7 @@ impl TypeAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_subtypes(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_subtypes(snapshot, *self)
     }
 
     fn get_subtypes_transitive<'m>(
@@ -157,7 +157,7 @@ impl TypeAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_subtypes_transitive(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_subtypes_transitive(snapshot, *self)
     }
 }
 
@@ -170,7 +170,7 @@ impl KindAPI for AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_annotations_declared(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'m>(
@@ -192,7 +192,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_value_type_declared(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_value_type_declared(snapshot, *self)
     }
 
     pub fn get_value_type(
@@ -200,7 +200,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<(ValueType, AttributeType)>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_value_type(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_value_type(snapshot, *self)
     }
 
     pub fn get_value_type_without_source(
@@ -219,7 +219,7 @@ impl AttributeType {
         thing_manager: &ThingManager,
         value_type: ValueType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_value_type(snapshot, thing_manager, (*self).into_owned(), value_type)
+        type_manager.set_value_type(snapshot, thing_manager, *self, value_type)
     }
 
     pub fn unset_value_type(
@@ -228,7 +228,7 @@ impl AttributeType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_value_type(snapshot, thing_manager, (*self).into_owned())
+        type_manager.unset_value_type(snapshot, thing_manager, *self)
     }
 
     pub fn get_value_type_annotations_declared(
@@ -250,7 +250,7 @@ impl AttributeType {
         type_manager: &TypeManager,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_label(snapshot, (*self).into_owned(), label)
+        type_manager.set_label(snapshot, *self, label)
     }
 
     pub fn set_supertype(
@@ -260,7 +260,7 @@ impl AttributeType {
         thing_manager: &ThingManager,
         supertype: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_attribute_type_supertype(snapshot, thing_manager, (*self).into_owned(), supertype)
+        type_manager.set_attribute_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
     pub fn unset_supertype(
@@ -269,7 +269,7 @@ impl AttributeType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_attribute_type_supertype(snapshot, thing_manager, (*self).into_owned())
+        type_manager.unset_attribute_type_supertype(snapshot, thing_manager, *self)
     }
 
     pub fn get_constraint_abstract(
@@ -277,7 +277,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_type_abstract_constraint(snapshot, (*self).into_owned())
+        type_manager.get_type_abstract_constraint(snapshot, *self)
     }
 
     pub fn get_constraints_independent(
@@ -285,7 +285,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_independent_constraints(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_independent_constraints(snapshot, *self)
     }
 
     pub fn is_independent(
@@ -301,7 +301,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_regex_constraints(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_regex_constraints(snapshot, *self)
     }
 
     pub fn get_constraints_range(
@@ -309,7 +309,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_range_constraints(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_range_constraints(snapshot, *self)
     }
 
     pub fn get_constraints_values(
@@ -317,7 +317,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_values_constraints(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_values_constraints(snapshot, *self)
     }
 
     pub fn set_annotation(
@@ -329,19 +329,19 @@ impl AttributeType {
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, (*self).into_owned())?
+                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, *self)?
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_annotation_independent(snapshot, thing_manager, (*self).into_owned())?
+                type_manager.set_annotation_independent(snapshot, thing_manager, *self)?
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.set_annotation_regex(snapshot, thing_manager, (*self).into_owned(), regex)?
+                type_manager.set_annotation_regex(snapshot, thing_manager, *self, regex)?
             }
             AttributeTypeAnnotation::Range(range) => {
-                type_manager.set_annotation_range(snapshot, thing_manager, (*self).into_owned(), range)?
+                type_manager.set_annotation_range(snapshot, thing_manager, *self, range)?
             }
             AttributeTypeAnnotation::Values(values) => {
-                type_manager.set_annotation_values(snapshot, thing_manager, (*self).into_owned(), values)?
+                type_manager.set_annotation_values(snapshot, thing_manager, *self, values)?
             }
         };
         Ok(())
@@ -357,22 +357,14 @@ impl AttributeType {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match attribute_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.unset_attribute_type_annotation_abstract(snapshot, (*self).into_owned())?
+                type_manager.unset_attribute_type_annotation_abstract(snapshot, *self)?
             }
-            AttributeTypeAnnotation::Independent(_) => {
-                type_manager.unset_annotation_independent(snapshot, (*self).into_owned())?
-            }
-            AttributeTypeAnnotation::Regex(_) => type_manager.unset_annotation_regex(snapshot, (*self).into_owned())?,
-            AttributeTypeAnnotation::Range(_) => type_manager.unset_annotation_range(snapshot, (*self).into_owned())?,
-            AttributeTypeAnnotation::Values(_) => {
-                type_manager.unset_annotation_values(snapshot, (*self).into_owned())?
-            }
+            AttributeTypeAnnotation::Independent(_) => type_manager.unset_annotation_independent(snapshot, *self)?,
+            AttributeTypeAnnotation::Regex(_) => type_manager.unset_annotation_regex(snapshot, *self)?,
+            AttributeTypeAnnotation::Range(_) => type_manager.unset_annotation_range(snapshot, *self)?,
+            AttributeTypeAnnotation::Values(_) => type_manager.unset_annotation_values(snapshot, *self)?,
         }
         Ok(())
-    }
-
-    pub fn into_owned(self) -> AttributeType {
-        AttributeType { vertex: self.vertex }
     }
 }
 
@@ -389,7 +381,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_owns(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_owns(snapshot, *self)
     }
 
     pub fn get_owner_types<'m>(
@@ -397,7 +389,7 @@ impl AttributeType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType, Owns>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_owner_types(snapshot, (*self).into_owned())
+        type_manager.get_attribute_type_owner_types(snapshot, *self)
     }
 
     pub fn get_constraints_for_owner<'m>(
@@ -407,16 +399,12 @@ impl AttributeType {
         owner_type: ObjectType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
         match owner_type {
-            ObjectType::Entity(entity_type) => type_manager.get_entity_type_owned_attribute_type_constraints(
-                snapshot,
-                entity_type,
-                (*self).into_owned(),
-            ),
-            ObjectType::Relation(relation_type) => type_manager.get_relation_type_owned_attribute_type_constraints(
-                snapshot,
-                relation_type,
-                (*self).into_owned(),
-            ),
+            ObjectType::Entity(entity_type) => {
+                type_manager.get_entity_type_owned_attribute_type_constraints(snapshot, entity_type, *self)
+            }
+            ObjectType::Relation(relation_type) => {
+                type_manager.get_relation_type_owned_attribute_type_constraints(snapshot, relation_type, *self)
+            }
         }
     }
 }

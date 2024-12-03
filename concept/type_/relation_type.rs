@@ -104,7 +104,7 @@ impl TypeAPI for RelationType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.delete_relation_type(snapshot, thing_manager, self.into_owned())
+        type_manager.delete_relation_type(snapshot, thing_manager, self)
     }
 
     fn get_label<'m>(
@@ -112,7 +112,7 @@ impl TypeAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_label(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_label(snapshot, *self)
     }
 
     fn get_label_arc(
@@ -120,7 +120,7 @@ impl TypeAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_label_arc(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_label_arc(snapshot, *self)
     }
 
     fn get_supertype(
@@ -128,7 +128,7 @@ impl TypeAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<RelationType>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_supertype(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_supertype(snapshot, *self)
     }
 
     fn get_supertypes_transitive<'m>(
@@ -136,7 +136,7 @@ impl TypeAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RelationType>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_supertypes(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_supertypes(snapshot, *self)
     }
 
     fn get_subtypes<'m>(
@@ -144,7 +144,7 @@ impl TypeAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RelationType>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_subtypes(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_subtypes(snapshot, *self)
     }
 
     fn get_subtypes_transitive<'m>(
@@ -152,7 +152,7 @@ impl TypeAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RelationType>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_subtypes_transitive(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_subtypes_transitive(snapshot, *self)
     }
 }
 
@@ -165,7 +165,7 @@ impl KindAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RelationTypeAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_annotations_declared(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'m>(
@@ -182,8 +182,8 @@ impl ThingTypeAPI for RelationType {
 }
 
 impl ObjectTypeAPI for RelationType {
-    fn into_owned_object_type(self) -> ObjectType {
-        ObjectType::Relation(self.into_owned())
+    fn into_object_type(self) -> ObjectType {
+        ObjectType::Relation(self)
     }
 }
 
@@ -194,7 +194,7 @@ impl RelationType {
         type_manager: &TypeManager,
         label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_relation_type_label(snapshot, (*self).into_owned(), label)
+        type_manager.set_relation_type_label(snapshot, *self, label)
     }
 
     pub fn set_supertype(
@@ -204,7 +204,7 @@ impl RelationType {
         thing_manager: &ThingManager,
         supertype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_relation_type_supertype(snapshot, thing_manager, (*self).into_owned(), supertype)
+        type_manager.set_relation_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
     pub fn unset_supertype(
@@ -213,7 +213,7 @@ impl RelationType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_relation_type_supertype(snapshot, thing_manager, (*self).into_owned())
+        type_manager.unset_relation_type_supertype(snapshot, thing_manager, *self)
     }
 
     pub fn set_annotation(
@@ -225,10 +225,10 @@ impl RelationType {
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.set_relation_type_annotation_abstract(snapshot, thing_manager, (*self).into_owned())?
+                type_manager.set_relation_type_annotation_abstract(snapshot, thing_manager, *self)?
             }
             RelationTypeAnnotation::Cascade(_) => {
-                type_manager.set_annotation_cascade(snapshot, thing_manager, (*self).into_owned())?
+                type_manager.set_annotation_cascade(snapshot, thing_manager, *self)?
             }
         };
         Ok(())
@@ -244,11 +244,9 @@ impl RelationType {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match relation_type_annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.unset_relation_type_annotation_abstract(snapshot, (*self).into_owned())?
+                type_manager.unset_relation_type_annotation_abstract(snapshot, *self)?
             }
-            RelationTypeAnnotation::Cascade(_) => {
-                type_manager.unset_annotation_cascade(snapshot, (*self).into_owned())?
-            }
+            RelationTypeAnnotation::Cascade(_) => type_manager.unset_annotation_cascade(snapshot, *self)?,
         }
         Ok(())
     }
@@ -258,7 +256,7 @@ impl RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<TypeConstraint<RelationType>>, Box<ConceptReadError>> {
-        type_manager.get_type_abstract_constraint(snapshot, (*self).into_owned())
+        type_manager.get_type_abstract_constraint(snapshot, *self)
     }
 
     pub fn create_relates(
@@ -270,9 +268,8 @@ impl RelationType {
         ordering: Ordering,
     ) -> Result<Relates, Box<ConceptWriteError>> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
-        let role_type =
-            type_manager.create_role_type(snapshot, thing_manager, &label, (*self).into_owned(), ordering)?;
-        Ok(Relates::new((*self).into_owned(), role_type))
+        let role_type = type_manager.create_role_type(snapshot, thing_manager, &label, *self, ordering)?;
+        Ok(Relates::new(*self, role_type))
     }
 
     pub(crate) fn get_relates_root<'m>(
@@ -280,7 +277,7 @@ impl RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_relates_root(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_relates_root(snapshot, *self)
     }
 
     pub fn get_relates_declared<'m>(
@@ -288,7 +285,7 @@ impl RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_relates_declared(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_relates_declared(snapshot, *self)
     }
 
     pub fn get_relates<'m>(
@@ -296,7 +293,7 @@ impl RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_relates(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_relates(snapshot, *self)
     }
 
     pub fn get_relates_with_specialised<'m>(
@@ -304,7 +301,7 @@ impl RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_relates_with_specialised(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_relates_with_specialised(snapshot, *self)
     }
 
     pub fn get_related_role_types_declared(
@@ -329,7 +326,7 @@ impl RelationType {
         type_manager: &'m TypeManager,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_related_role_type_constraints(snapshot, (*self).into_owned(), role_type)
+        type_manager.get_relation_type_related_role_type_constraints(snapshot, *self, role_type)
     }
 
     pub(crate) fn get_related_role_type_constraint_abstract(
@@ -338,7 +335,7 @@ impl RelationType {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_type_relates_abstract_constraint(snapshot, (*self).into_owned(), role_type)
+        type_manager.get_type_relates_abstract_constraint(snapshot, *self, role_type)
     }
 
     pub(crate) fn get_related_role_type_constraints_cardinality(
@@ -347,7 +344,7 @@ impl RelationType {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_type_relates_cardinality_constraints(snapshot, (*self).into_owned(), role_type)
+        type_manager.get_type_relates_cardinality_constraints(snapshot, *self, role_type)
     }
 
     fn is_related_role_type_bounded_to_one(
@@ -369,7 +366,7 @@ impl RelationType {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_type_relates_distinct_constraints(snapshot, (*self).into_owned(), role_type)
+        type_manager.get_type_relates_distinct_constraints(snapshot, *self, role_type)
     }
 
     pub(crate) fn is_related_role_type_abstract(
@@ -462,10 +459,6 @@ impl RelationType {
         pub fn get_relates_role_with_specialised() -> Relates = RoleType | get_relates_role;
         pub fn get_relates_role_name_with_specialised() -> Relates = &str | get_relates_role_name;
     }
-
-    pub fn into_owned(self) -> RelationType {
-        self
-    }
 }
 
 impl fmt::Display for RelationType {
@@ -493,8 +486,8 @@ impl OwnerAPI for RelationType {
         attribute_type: AttributeType,
         ordering: Ordering,
     ) -> Result<Owns, Box<ConceptWriteError>> {
-        type_manager.set_owns(snapshot, thing_manager, (*self).into_owned_object_type(), attribute_type, ordering)?;
-        Ok(Owns::new(ObjectType::Relation((*self).into_owned()), attribute_type))
+        type_manager.set_owns(snapshot, thing_manager, (*self).into_object_type(), attribute_type, ordering)?;
+        Ok(Owns::new(ObjectType::Relation(*self), attribute_type))
     }
 
     fn unset_owns(
@@ -504,7 +497,7 @@ impl OwnerAPI for RelationType {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_owns(snapshot, thing_manager, (*self).into_owned_object_type(), attribute_type)?;
+        type_manager.unset_owns(snapshot, thing_manager, (*self).into_object_type(), attribute_type)?;
         Ok(())
     }
 
@@ -513,7 +506,7 @@ impl OwnerAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_owns_declared(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_owns_declared(snapshot, *self)
     }
 
     fn get_owns<'m>(
@@ -521,7 +514,7 @@ impl OwnerAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_owns(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_owns(snapshot, *self)
     }
 
     fn get_owns_with_specialised<'m>(
@@ -529,7 +522,7 @@ impl OwnerAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_owns_with_specialised(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_owns_with_specialised(snapshot, *self)
     }
 
     fn get_owned_attribute_type_constraints<'m>(
@@ -538,7 +531,7 @@ impl OwnerAPI for RelationType {
         type_manager: &'m TypeManager,
         attribute_type: AttributeType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_owned_attribute_type_constraints(snapshot, (*self).into_owned(), attribute_type)
+        type_manager.get_relation_type_owned_attribute_type_constraints(snapshot, *self, attribute_type)
     }
 
     fn get_owned_attribute_type_constraint_abstract(
@@ -547,7 +540,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_abstract_constraint(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_abstract_constraint(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_cardinality(
@@ -556,7 +549,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_cardinality_constraints(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_cardinality_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_distinct(
@@ -565,7 +558,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_distinct_constraints(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_distinct_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn is_owned_attribute_type_distinct(
@@ -583,7 +576,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_regex_constraints(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_regex_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_range(
@@ -592,7 +585,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_range_constraints(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_range_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_values(
@@ -601,7 +594,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_values_constraints(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_values_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraint_unique(
@@ -610,7 +603,7 @@ impl OwnerAPI for RelationType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_unique_constraint(snapshot, (*self).into_owned_object_type(), attribute_type)
+        type_manager.get_type_owns_unique_constraint(snapshot, (*self).into_object_type(), attribute_type)
     }
 }
 
@@ -622,7 +615,7 @@ impl PlayerAPI for RelationType {
         thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> Result<Plays, Box<ConceptWriteError>> {
-        type_manager.set_plays(snapshot, thing_manager, (*self).into_owned_object_type(), role_type)
+        type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
     }
 
     fn unset_plays(
@@ -632,7 +625,7 @@ impl PlayerAPI for RelationType {
         thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_plays(snapshot, thing_manager, (*self).into_owned_object_type(), role_type)
+        type_manager.unset_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
     }
 
     fn get_plays_declared<'m>(
@@ -640,7 +633,7 @@ impl PlayerAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_plays_declared(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_plays_declared(snapshot, *self)
     }
 
     fn get_plays<'m>(
@@ -648,7 +641,7 @@ impl PlayerAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_plays(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_plays(snapshot, *self)
     }
 
     fn get_plays_with_specialised<'m>(
@@ -656,7 +649,7 @@ impl PlayerAPI for RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_plays_with_specialised(snapshot, (*self).into_owned())
+        type_manager.get_relation_type_plays_with_specialised(snapshot, *self)
     }
 
     fn get_played_role_type_constraints<'m>(
@@ -665,7 +658,7 @@ impl PlayerAPI for RelationType {
         type_manager: &'m TypeManager,
         role_type: RoleType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_played_role_type_constraints(snapshot, (*self).into_owned(), role_type)
+        type_manager.get_relation_type_played_role_type_constraints(snapshot, *self, role_type)
     }
 
     fn get_played_role_type_constraint_abstract(
@@ -674,7 +667,7 @@ impl PlayerAPI for RelationType {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_type_plays_abstract_constraint(snapshot, (*self).into_owned_object_type(), role_type)
+        type_manager.get_type_plays_abstract_constraint(snapshot, (*self).into_object_type(), role_type)
     }
 
     fn get_played_role_type_constraints_cardinality(
@@ -683,7 +676,7 @@ impl PlayerAPI for RelationType {
         type_manager: &TypeManager,
         role_type: RoleType,
     ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_type_plays_cardinality_constraints(snapshot, (*self).into_owned_object_type(), role_type)
+        type_manager.get_type_plays_cardinality_constraints(snapshot, (*self).into_object_type(), role_type)
     }
 }
 

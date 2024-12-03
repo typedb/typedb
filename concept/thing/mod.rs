@@ -32,15 +32,12 @@ pub mod thing_manager;
 pub trait ThingAPI: Sized + Clone {
     type TypeAPI: TypeAPI;
     type Vertex: ThingVertex;
-    type Owned: ThingAPI;
 
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix);
 
     fn new(vertex: Self::Vertex) -> Self;
 
     fn vertex(&self) -> Self::Vertex;
-
-    fn into_owned(self) -> Self::Owned;
 
     fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE>;
 

@@ -335,7 +335,7 @@ impl<'de> Deserialize<'de> for ValueType {
         impl<'de> Visitor<'de> for ValueTypeVisitor {
             type Value = ValueType;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("`ValueType`")
             }
 

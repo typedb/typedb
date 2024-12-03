@@ -102,7 +102,7 @@ impl TypeAPI for RoleType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.delete_role_type(snapshot, thing_manager, self.into_owned())
+        type_manager.delete_role_type(snapshot, thing_manager, self)
     }
 
     fn get_label<'m>(
@@ -110,7 +110,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
-        type_manager.get_role_type_label(snapshot, (*self).into_owned())
+        type_manager.get_role_type_label(snapshot, *self)
     }
 
     fn get_label_arc(
@@ -118,7 +118,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Arc<Label>, Box<ConceptReadError>> {
-        type_manager.get_role_type_label_arc(snapshot, (*self).into_owned())
+        type_manager.get_role_type_label_arc(snapshot, *self)
     }
 
     fn get_supertype(
@@ -126,7 +126,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<RoleType>, Box<ConceptReadError>> {
-        type_manager.get_role_type_supertype(snapshot, (*self).into_owned())
+        type_manager.get_role_type_supertype(snapshot, *self)
     }
 
     fn get_supertypes_transitive<'m>(
@@ -134,7 +134,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RoleType>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_supertypes(snapshot, (*self).into_owned())
+        type_manager.get_role_type_supertypes(snapshot, *self)
     }
 
     fn get_subtypes<'m>(
@@ -142,7 +142,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RoleType>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_subtypes(snapshot, (*self).into_owned())
+        type_manager.get_role_type_subtypes(snapshot, *self)
     }
 
     fn get_subtypes_transitive<'m>(
@@ -150,7 +150,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RoleType>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_subtypes_transitive(snapshot, (*self).into_owned())
+        type_manager.get_role_type_subtypes_transitive(snapshot, *self)
     }
 }
 
@@ -163,7 +163,7 @@ impl KindAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<RoleTypeAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_annotations_declared(snapshot, (*self).into_owned())
+        type_manager.get_role_type_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'m>(
@@ -182,7 +182,7 @@ impl RoleType {
         type_manager: &TypeManager,
         name: &str,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_role_type_name(snapshot, (*self).into_owned(), name)
+        type_manager.set_role_type_name(snapshot, *self, name)
     }
 
     pub fn get_ordering(
@@ -190,7 +190,7 @@ impl RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Ordering, Box<ConceptReadError>> {
-        type_manager.get_role_type_ordering(snapshot, (*self).into_owned())
+        type_manager.get_role_type_ordering(snapshot, *self)
     }
 
     pub fn set_ordering(
@@ -200,11 +200,7 @@ impl RoleType {
         thing_manager: &ThingManager,
         ordering: Ordering,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_role_ordering(snapshot, thing_manager, (*self).into_owned(), ordering)
-    }
-
-    pub fn into_owned(self) -> RoleType {
-        self
+        type_manager.set_role_ordering(snapshot, thing_manager, *self, ordering)
     }
 }
 
@@ -215,7 +211,7 @@ impl RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Relates, Box<ConceptReadError>> {
-        type_manager.get_role_type_relates_root(snapshot, (*self).into_owned())
+        type_manager.get_role_type_relates_root(snapshot, *self)
     }
 
     pub fn get_relates<'m>(
@@ -223,7 +219,7 @@ impl RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_relates(snapshot, (*self).into_owned())
+        type_manager.get_role_type_relates(snapshot, *self)
     }
 
     pub fn get_relation_types<'m>(
@@ -231,7 +227,7 @@ impl RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<RelationType, Relates>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_relation_types(snapshot, (*self).into_owned())
+        type_manager.get_role_type_relation_types(snapshot, *self)
     }
 
     pub fn get_constraints_for_relation<'m>(
@@ -240,7 +236,7 @@ impl RoleType {
         type_manager: &'m TypeManager,
         relation_type: RelationType,
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Relates>>>, Box<ConceptReadError>> {
-        type_manager.get_relation_type_related_role_type_constraints(snapshot, relation_type, (*self).into_owned())
+        type_manager.get_relation_type_related_role_type_constraints(snapshot, relation_type, *self)
     }
 }
 
@@ -251,7 +247,7 @@ impl RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_plays(snapshot, (*self).into_owned())
+        type_manager.get_role_type_plays(snapshot, *self)
     }
 
     pub fn get_player_types<'m>(
@@ -259,7 +255,7 @@ impl RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashMap<ObjectType, Plays>>, Box<ConceptReadError>> {
-        type_manager.get_role_type_player_types(snapshot, (*self).into_owned())
+        type_manager.get_role_type_player_types(snapshot, *self)
     }
 
     pub fn get_constraints_for_player<'m>(
@@ -270,13 +266,11 @@ impl RoleType {
     ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
         match player_type {
             ObjectType::Entity(entity_type) => {
-                type_manager.get_entity_type_played_role_type_constraints(snapshot, entity_type, (*self).into_owned())
+                type_manager.get_entity_type_played_role_type_constraints(snapshot, entity_type, *self)
             }
-            ObjectType::Relation(relation_type) => type_manager.get_relation_type_played_role_type_constraints(
-                snapshot,
-                relation_type,
-                (*self).into_owned(),
-            ),
+            ObjectType::Relation(relation_type) => {
+                type_manager.get_relation_type_played_role_type_constraints(snapshot, relation_type, *self)
+            }
         }
     }
 }

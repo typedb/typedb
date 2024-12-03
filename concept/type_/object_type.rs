@@ -45,15 +45,6 @@ pub enum ObjectType {
     Relation(RelationType),
 }
 
-impl ObjectType {
-    pub fn into_owned(self) -> ObjectType {
-        match self {
-            Self::Entity(entity_type) => ObjectType::Entity(entity_type.into_owned()),
-            Self::Relation(relation_type) => ObjectType::Relation(relation_type.into_owned()),
-        }
-    }
-}
-
 impl TypeVertexEncoding for ObjectType {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         match vertex.prefix() {
@@ -268,7 +259,7 @@ impl TypeAPI for ObjectType {
         type_manager: &TypeManager,
     ) -> Result<Option<ObjectType>, Box<ConceptReadError>> {
         Ok(with_object_type!(self, |object| {
-            object.get_supertype(snapshot, type_manager)?.map(|type_| type_.into_owned_object_type())
+            object.get_supertype(snapshot, type_manager)?.map(|type_| type_.into_object_type())
         }))
     }
 
@@ -281,7 +272,7 @@ impl TypeAPI for ObjectType {
             object
                 .get_supertypes_transitive(snapshot, type_manager)?
                 .iter()
-                .map(|type_| (*type_).into_owned_object_type())
+                .map(|type_| (*type_).into_object_type())
                 .collect_vec()
         })))
     }
@@ -292,7 +283,7 @@ impl TypeAPI for ObjectType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<ObjectType>>, Box<ConceptReadError>> {
         Ok(MaybeOwns::Owned(with_object_type!(self, |object| {
-            object.get_subtypes(snapshot, type_manager)?.iter().map(|type_| (*type_).into_owned_object_type()).collect()
+            object.get_subtypes(snapshot, type_manager)?.iter().map(|type_| (*type_).into_object_type()).collect()
         })))
     }
 
@@ -305,7 +296,7 @@ impl TypeAPI for ObjectType {
             object
                 .get_subtypes_transitive(snapshot, type_manager)?
                 .iter()
-                .map(|type_| (*type_).into_owned_object_type())
+                .map(|type_| (*type_).into_object_type())
                 .collect_vec()
         })))
     }
@@ -316,8 +307,8 @@ impl ThingTypeAPI for ObjectType {
 }
 
 impl ObjectTypeAPI for ObjectType {
-    fn into_owned_object_type(self) -> ObjectType {
-        self.into_owned()
+    fn into_object_type(self) -> ObjectType {
+        self
     }
 }
 

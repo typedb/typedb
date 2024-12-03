@@ -102,7 +102,6 @@ impl ConceptAPI for Attribute {}
 impl ThingAPI for Attribute {
     type Vertex = AttributeVertex;
     type TypeAPI = AttributeType;
-    type Owned = Attribute;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
 
     fn new(vertex: Self::Vertex) -> Self {
@@ -111,10 +110,6 @@ impl ThingAPI for Attribute {
 
     fn vertex(&self) -> Self::Vertex {
         self.vertex
-    }
-
-    fn into_owned(self) -> Self::Owned {
-        Attribute::new(self.vertex)
     }
 
     fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {

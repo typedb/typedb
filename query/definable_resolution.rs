@@ -76,7 +76,7 @@ pub(crate) fn type_to_object_type(type_: &Type) -> Result<ObjectType, ()> {
         Type::Relation(relation_type) => ObjectType::Relation(*relation_type),
         _ => return Err(()),
     }
-    .into_owned_object_type())
+    .into_object_type())
 }
 
 pub(crate) fn get_struct_field_value_type_optionality(

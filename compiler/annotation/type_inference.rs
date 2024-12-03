@@ -325,7 +325,7 @@ pub mod tests {
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
             let variable_registry = &entry_context.variable_registry;
             let previous_stage_variable_annotations = &BTreeMap::new();
-            let empty_schema_functions = HashMap::<DefinitionKey<'static>, AnnotatedFunctionSignature>::new();
+            let empty_schema_functions = HashMap::<DefinitionKey, AnnotatedFunctionSignature>::new();
             let preamble_functions = vec![f_annotations];
             let function_annotations =
                 AnnotatedFunctionSignaturesImpl::new(&empty_schema_functions, &preamble_functions);

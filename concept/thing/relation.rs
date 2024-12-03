@@ -313,7 +313,6 @@ impl ConceptAPI for Relation {}
 impl ThingAPI for Relation {
     type Vertex = ObjectVertex;
     type TypeAPI = RelationType;
-    type Owned = Relation;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn new(vertex: Self::Vertex) -> Self {
@@ -327,10 +326,6 @@ impl ThingAPI for Relation {
 
     fn vertex(&self) -> Self::Vertex {
         self.vertex
-    }
-
-    fn into_owned(self) -> Self::Owned {
-        Relation::new(self.vertex)
     }
 
     fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
@@ -357,7 +352,7 @@ impl ThingAPI for Relation {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(key, _value)| key.into_owned()) {
+        for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(key, _value)| key) {
             thing_manager.unset_has(snapshot, self, &attr?);
         }
 
@@ -368,18 +363,15 @@ impl ThingAPI for Relation {
             }
         }
 
-        for relation_role in self
-            .get_relations_roles(snapshot, thing_manager)
-            .map_ok(|(relation, role, _count)| (relation.into_owned(), role.into_owned()))
-        {
-            let (relation, role) =
+        for relation_role in self.get_relations_roles(snapshot, thing_manager) {
+            let (relation, role, _count) =
                 relation_role.map_err(|error| Box::new(ConceptWriteError::ConceptRead { source: error }))?;
             thing_manager.unset_links(snapshot, relation, self, role)?;
         }
 
         let players = self
             .get_players(snapshot, thing_manager)
-            .map_ok(|(roleplayer, _count)| (roleplayer.role_type, roleplayer.player.into_owned()));
+            .map_ok(|(roleplayer, _count)| (roleplayer.role_type, roleplayer.player));
         for role_player in players {
             let (role, player) =
                 role_player.map_err(|error| Box::new(ConceptWriteError::ConceptRead { source: error }))?;
@@ -408,8 +400,8 @@ impl ObjectAPI for Relation {
         self.type_()
     }
 
-    fn into_owned_object(self) -> Object {
-        Object::Relation(self.into_owned())
+    fn into_object(self) -> Object {
+        Object::Relation(self)
     }
 }
 
@@ -432,10 +424,6 @@ impl RolePlayer {
 
     pub fn role_type(self) -> RoleType {
         self.role_type
-    }
-
-    pub fn into_owned(self) -> RolePlayer {
-        RolePlayer { player: self.player.into_owned(), role_type: self.role_type }
     }
 }
 

@@ -182,8 +182,8 @@ impl fmt::Display for RelatesReverseExecutor {
 
 fn create_relates_filter_relation_role(role_relation_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok((relation, role)) => match role_relation_types.get(&Type::RoleType((*role).into_owned())) {
-            Some(relation_types) => Ok(relation_types.contains(&Type::from((*relation).into_owned()))),
+        Ok((relation, role)) => match role_relation_types.get(&Type::RoleType(*role)) {
+            Some(relation_types) => Ok(relation_types.contains(&Type::from(*relation))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -192,7 +192,7 @@ fn create_relates_filter_relation_role(role_relation_types: Arc<BTreeMap<Type, V
 
 fn create_relates_filter_role(relation_types: Arc<BTreeSet<Type>>) -> Arc<RelatesFilterFn> {
     Arc::new(move |result| match result {
-        Ok((relation, _)) => Ok(relation_types.contains(&Type::from((*relation).into_owned()))),
+        Ok((relation, _)) => Ok(relation_types.contains(&Type::from(*relation))),
         Err(err) => Err(err.clone()),
     })
 }

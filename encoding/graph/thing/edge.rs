@@ -54,7 +54,7 @@ impl ThingEdgeHas {
         Self { owner: from, attribute: to }
     }
 
-    pub fn decode(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let owner = ObjectVertex::new(&bytes[Self::range_from()]);
         let len = bytes.len();
@@ -179,7 +179,7 @@ impl ThingEdgeHasReverse {
         Self { attribute: from, owner: to }
     }
 
-    pub fn decode(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let attribute_len = AttributeVertex::RANGE_TYPE_ID.end
             + AttributeID::value_type_encoding_length(ValueTypeCategory::from_bytes([
@@ -372,7 +372,7 @@ impl ThingEdgeLinks {
         PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_FROM_TO: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + ObjectVertex::LENGTH;
 
-    pub fn new(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])) {
             Self::PREFIX => {
@@ -602,7 +602,7 @@ impl ThingEdgeRolePlayerIndex {
         Self { player_from, player_to, relation, role_id_from, role_id_to }
     }
 
-    pub fn decode(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let player_from = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
         let player_to = ObjectVertex::new(&bytes[Self::RANGE_TO]);

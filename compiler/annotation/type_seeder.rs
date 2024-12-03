@@ -974,7 +974,7 @@ impl BinaryConstraint for Isa<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute((*subtype).into_owned()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -983,7 +983,7 @@ impl BinaryConstraint for Isa<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity((*subtype).into_owned()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -992,7 +992,7 @@ impl BinaryConstraint for Isa<Variable> {
                     relation
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation((*subtype).into_owned()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1016,7 +1016,7 @@ impl BinaryConstraint for Isa<Variable> {
                     attribute
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute((*subtype).into_owned()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1025,7 +1025,7 @@ impl BinaryConstraint for Isa<Variable> {
                     entity
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity((*subtype).into_owned()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1034,7 +1034,7 @@ impl BinaryConstraint for Isa<Variable> {
                     relation
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation((*subtype).into_owned()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });

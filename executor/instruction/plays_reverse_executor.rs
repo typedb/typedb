@@ -184,8 +184,8 @@ impl fmt::Display for PlaysReverseExecutor {
 
 fn create_plays_filter_player_role(role_player_types: Arc<BTreeMap<Type, Vec<Type>>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok((player, role)) => match role_player_types.get(&Type::RoleType((*role).into_owned())) {
-            Some(player_types) => Ok(player_types.contains(&Type::from((*player).into_owned()))),
+        Ok((player, role)) => match role_player_types.get(&Type::RoleType(*role)) {
+            Some(player_types) => Ok(player_types.contains(&Type::from(*player))),
             None => Ok(false),
         },
         Err(err) => Err(err.clone()),
@@ -194,7 +194,7 @@ fn create_plays_filter_player_role(role_player_types: Arc<BTreeMap<Type, Vec<Typ
 
 fn create_plays_filter_role(player_types: Arc<BTreeSet<Type>>) -> Arc<PlaysFilterFn> {
     Arc::new(move |result| match result {
-        Ok((player, _)) => Ok(player_types.contains(&Type::from((*player).into_owned()))),
+        Ok((player, _)) => Ok(player_types.contains(&Type::from(*player))),
         Err(err) => Err(err.clone()),
     })
 }
