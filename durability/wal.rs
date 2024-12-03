@@ -551,7 +551,7 @@ impl FsyncThread {
             vec.push(Some(sender));
         } else {
             vec.push(None);
-            sender.send(()).unwrap_or_log();
+            sender.send(()).unwrap();
         }
         recv
     }
@@ -587,7 +587,7 @@ impl FsyncThread {
             context.files.write().unwrap().sync_all();
             while let Some(sender_opt) = vec.pop() {
                 if let Some(sender) = sender_opt {
-                    sender.send(()).unwrap_or_log(); // TODO
+                    sender.send(()).unwrap();
                 }
             }
         }

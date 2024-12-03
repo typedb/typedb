@@ -36,9 +36,10 @@ pub mod snapshot {
 
 pub mod storage {
     pub const TIMELINE_WINDOW_SIZE: usize = 100;
-    pub const WAL_SYNC_INTERVAL_MICROSECONDS: u64 = 1_000;
+    pub const WAL_SYNC_INTERVAL_MICROSECONDS: u64 = 1000;
     pub const WATERMARK_WAIT_INTERVAL_MICROSECONDS: u64 = 50;
-    
+    pub const WAIT_FOR_SYNC: bool = true;
+
     pub const ROCKSDB_CACHE_SIZE_MB: u64 = 1000;
 }
 
