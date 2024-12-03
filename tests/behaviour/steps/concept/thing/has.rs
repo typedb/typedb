@@ -15,7 +15,6 @@ use concept::{
     type_::{attribute_type::AttributeType, OwnerAPI},
 };
 use itertools::Itertools;
-use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -27,45 +26,45 @@ use crate::{
 
 pub(super) fn object_set_has_impl(
     context: &mut Context,
-    object: &Object<'static>,
-    attribute: &Attribute<'static>,
+    object: &Object,
+    attribute: &Attribute,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_unordered(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
-        attribute.as_reference()
+        attribute,
     ))
 }
 
 pub(super) fn object_set_has_ordered_impl(
     context: &mut Context,
-    object: &Object<'static>,
-    attribute_type: AttributeType<'static>,
-    attributes: Vec<Attribute<'static>>,
+    object: &Object,
+    attribute_type: AttributeType,
+    attributes: Vec<Attribute>,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.set_has_ordered(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         attribute_type,
-        attributes
+        attributes,
     ))
 }
 
 fn object_unset_has_impl(
     context: &mut Context,
-    object: &Object<'static>,
-    key: &Attribute<'static>,
+    object: &Object,
+    key: &Attribute,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| object.unset_has_unordered(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
-        key.as_reference()
+        key,
     ))
 }
 
 fn object_unset_has_ordered_impl(
     context: &mut Context,
-    object: &Object<'static>,
+    object: &Object,
     attribute_type_label: params::Label,
 ) -> Result<(), Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| {
@@ -172,7 +171,6 @@ async fn object_get_has_list(
             .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
             .into_iter()
-            .map(|attr| attr.into_owned())
             .collect()
     });
     context.attribute_lists.insert(attribute_var.name, attributes);
@@ -200,7 +198,6 @@ async fn object_get_has_list_is(
             .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
             .unwrap()
             .into_iter()
-            .map(|attr| attr.into_owned())
             .collect_vec()
     });
     let attributes = attribute_vars
@@ -224,9 +221,9 @@ async fn object_get_has_is_empty(
     let actuals = with_read_tx!(context, |tx| {
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (attribute, _count) = res.unwrap();
-                attribute.into_owned()
+                attribute
             })
             .collect::<Vec<_>>()
     });
@@ -249,9 +246,9 @@ async fn object_get_has(
     let actuals = with_read_tx!(context, |tx| {
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (attribute, _count) = res.unwrap();
-                attribute.into_owned()
+                attribute
             })
             .collect::<Vec<_>>()
     });
@@ -279,9 +276,9 @@ async fn object_get_has_type(
             .unwrap();
         object
             .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
-            .map_static(|res| {
+            .map(|res| {
                 let (attribute, _count) = res.unwrap();
-                attribute.into_owned()
+                attribute
             })
             .collect::<Vec<_>>()
     });
@@ -314,11 +311,11 @@ async fn object_get_has_with_annotations(
             .flat_map(|attribute_type| {
                 object
                     .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
-                    .map_static(|res| {
+                    .map(|res| {
                         let (attribute, _count) = res.unwrap();
-                        attribute.into_owned()
+                        attribute
                     })
-                    .collect::<Vec<_>>()
+                    .collect_vec()
             })
             .collect_vec()
     });

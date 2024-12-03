@@ -23,17 +23,13 @@ use ir::pattern::{
     Vertex,
 };
 use itertools::Itertools;
-use lending_iterator::{
-    adaptors::{Chain, Flatten, Map, RepeatEach, TryFilter, Zip},
-    AsHkt, AsLendingIterator, LendingIterator, Once,
-};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions, TupleResult},
-        BinaryIterateMode, Checker, FilterFn, VariableModes, TYPES_EMPTY,
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions},
+        BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -45,55 +41,45 @@ pub(crate) struct IsaExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     instance_type_to_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    checker: Checker<(AsHkt![Thing<'_>], Type)>,
+    checker: Checker<(Thing, Type)>,
 }
 
-type MultipleTypeIsaObjectIterator = Flatten<
-    AsLendingIterator<vec::IntoIter<ThingWithTypes<MapToThing<InstanceIterator<AsHkt![Object<'_>]>, ObjectEraseFn>>>>,
->;
-type MultipleTypeIsaAttributeIterator = Flatten<
-    AsLendingIterator<
-        vec::IntoIter<
-            ThingWithTypes<MapToThing<AttributeIterator<InstanceIterator<AsHkt![Attribute<'_>]>>, AttributeEraseFn>>,
-        >,
-    >,
+type MultipleTypeIsaObjectIterator =
+    iter::Flatten<vec::IntoIter<ThingWithTypes<iter::Map<InstanceIterator<Object>, ObjectEraseFn>>>>;
+type MultipleTypeIsaAttributeIterator = iter::Flatten<
+    vec::IntoIter<ThingWithTypes<iter::Map<AttributeIterator<InstanceIterator<Attribute>>, AttributeEraseFn>>>,
 >;
 
-pub(super) type MultipleTypeIsaIterator = Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
+pub(super) type MultipleTypeIsaIterator = iter::Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
 
-pub(super) type IsaTupleIterator<I> = Map<
-    TryFilter<I, Box<IsaFilterFn>, (AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
-    IsaToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
+pub(super) type IsaTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IsaFilterMapFn>>, IsaToTupleFn>;
 
-type RezipThingTypeFn = for<'a, 'b> fn(
-    (&'a Result<Thing<'b>, Box<ConceptReadError>>, Type),
-) -> Result<(Thing<'a>, Type), Box<ConceptReadError>>;
+type RezipThingTypeFn =
+    for<'a, 'b> fn((&'a Result<Thing, Box<ConceptReadError>>, Type)) -> Result<(Thing, Type), Box<ConceptReadError>>;
 
-type ThingWithTypes<I> = Map<
-    Zip<RepeatEach<I>, AsLendingIterator<iter::Cycle<vec::IntoIter<Type>>>>,
-    RezipThingTypeFn,
-    Result<(AsHkt![Thing<'_>], Type), Box<ConceptReadError>>,
+type ThingWithTypes<I> = iter::FlatMap<
+    iter::Zip<I, iter::Repeat<Vec<Type>>>,
+    Vec<Result<(Thing, Type), Box<ConceptReadError>>>,
+    fn((Result<Thing, Box<ConceptReadError>>, Vec<Type>)) -> Vec<Result<(Thing, Type), Box<ConceptReadError>>>,
 >;
 
 pub(super) type IsaUnboundedSortedThing = IsaTupleIterator<MultipleTypeIsaIterator>;
 
 pub(super) type IsaBoundedSortedType =
-    IsaTupleIterator<ThingWithTypes<Once<Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>>>;
+    IsaTupleIterator<ThingWithTypes<iter::Once<Result<Thing, Box<ConceptReadError>>>>>;
 
-pub(super) type MapToThing<I, F> = Map<I, F, Result<AsHkt![Thing<'_>], Box<ConceptReadError>>>;
 pub(super) type ObjectEraseFn =
-    for<'a> fn(Result<Object<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
+    for<'a> fn(Result<Object, Box<ConceptReadError>>) -> Result<Thing, Box<ConceptReadError>>;
 pub(super) type AttributeEraseFn =
-    for<'a> fn(Result<Attribute<'a>, Box<ConceptReadError>>) -> Result<Thing<'a>, Box<ConceptReadError>>;
+    for<'a> fn(Result<Attribute, Box<ConceptReadError>>) -> Result<Thing, Box<ConceptReadError>>;
 
-pub(super) type IsaFilterFn = FilterFn<(AsHkt![Thing<'_>], Type)>;
+pub(super) type IsaFilterFn = FilterFn<(Thing, Type)>;
+pub(super) type IsaFilterMapFn = FilterMapFn<(Thing, Type)>;
 
-type IsaVariableValueExtractor = for<'a, 'b> fn(&'a (Thing<'b>, Type)) -> VariableValue<'a>;
+type IsaVariableValueExtractor = for<'a, 'b> fn(&'a (Thing, Type)) -> VariableValue<'a>;
 
-pub(super) const EXTRACT_THING: IsaVariableValueExtractor = |(thing, _)| VariableValue::Thing(thing.as_reference());
-pub(super) const EXTRACT_TYPE: IsaVariableValueExtractor = |(_, type_)| VariableValue::Type(type_.clone());
+pub(super) const EXTRACT_THING: IsaVariableValueExtractor = |(thing, _)| VariableValue::Thing(thing.clone());
+pub(super) const EXTRACT_TYPE: IsaVariableValueExtractor = |&(_, type_)| VariableValue::Type(type_);
 
 impl IsaExecutor {
     pub(crate) fn new(
@@ -113,7 +99,7 @@ impl IsaExecutor {
             _ => TuplePositions::Pair([type_, thing]),
         };
 
-        let checker = Checker::<(Thing<'_>, Type)>::new(
+        let checker = Checker::<(Thing, Type)>::new(
             checks,
             [(thing, EXTRACT_THING), (type_, EXTRACT_TYPE)]
                 .into_iter()
@@ -136,7 +122,12 @@ impl IsaExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let filter_for_row: Box<IsaFilterFn> = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row);
+        let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
+            Ok(true) | Err(_) => Some(item),
+            Ok(false) => None,
+        });
+
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
         match self.iterate_mode {
@@ -153,9 +144,8 @@ impl IsaExecutor {
                     self.isa.isa_kind(),
                     instances_range,
                 )?;
-                let as_tuples: IsaUnboundedSortedThing = thing_iter
-                    .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
-                    .map(isa_to_tuple_thing_type);
+                let as_tuples: IsaUnboundedSortedThing =
+                    thing_iter.filter_map(filter_for_row).map(isa_to_tuple_thing_type);
                 Ok(TupleIterator::IsaUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -173,8 +163,8 @@ impl IsaExecutor {
                 };
                 let type_ = thing.type_();
                 let supertypes = self.instance_type_to_types.get(&type_).cloned().unwrap_or(TYPES_EMPTY);
-                let as_tuples: IsaBoundedSortedType = with_types(lending_iterator::once(Ok(thing)), supertypes)
-                    .try_filter::<_, IsaFilterFn, (Thing<'_>, Type), _>(filter_for_row)
+                let as_tuples: IsaBoundedSortedType = with_types(iter::once(Ok(thing)), supertypes)
+                    .filter_map(filter_for_row)
                     .map(isa_to_tuple_type_thing);
                 Ok(TupleIterator::IsaBounded(SortedTupleIterator::new(
                     as_tuples,
@@ -192,15 +182,13 @@ impl fmt::Display for IsaExecutor {
     }
 }
 
-fn with_types<I: for<'a> LendingIterator<Item<'a> = Result<Thing<'a>, Box<ConceptReadError>>>>(
+fn with_types<I: Iterator<Item = Result<Thing, Box<ConceptReadError>>>>(
     iter: I,
     types: Vec<Type>,
 ) -> ThingWithTypes<I> {
-    iter.repeat_each(types.len()).zip(AsLendingIterator::new(types.into_iter().cycle())).map(|(thing_res, ty)| {
-        match thing_res {
-            Ok(thing) => Ok((thing.as_reference(), ty)),
-            Err(err) => Err(err.clone()),
-        }
+    iter.zip(iter::repeat(types)).flat_map(|(thing_res, types)| match thing_res {
+        Ok(thing) => types.into_iter().map(|ty| Ok((thing.clone(), ty))).collect(),
+        Err(err) => vec![Err(err.clone())],
     })
 }
 
@@ -220,7 +208,7 @@ pub(super) fn instances_of_all_types_chained(
     let object_iters: Vec<_> = object_types
         .into_iter()
         .map(|(type_, types)| {
-            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
+            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![*type_] };
             Ok::<_, Box<_>>(with_types(
                 thing_manager
                     .get_objects_in(snapshot, type_.as_object_type())
@@ -230,7 +218,7 @@ pub(super) fn instances_of_all_types_chained(
         })
         .try_collect()?;
     // Since the object types are sorted, and instance ordering follows matches type ordering, we have instance-sorting here
-    let object_iter: MultipleTypeIsaObjectIterator = AsLendingIterator::new(object_iters).flatten();
+    let object_iter: MultipleTypeIsaObjectIterator = object_iters.into_iter().flatten();
 
     let type_manager = thing_manager.type_manager();
     let attribute_iters: Vec<_> = attribute_types
@@ -240,7 +228,7 @@ pub(super) fn instances_of_all_types_chained(
             type_.as_attribute_type().get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some())
         })
         .map(|(type_, types)| {
-            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![type_.clone()] };
+            let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![*type_] };
             Ok::<_, Box<_>>(with_types(
                 thing_manager
                     .get_attributes_in_range(snapshot, type_.as_attribute_type(), &instance_values_range)?
@@ -249,7 +237,7 @@ pub(super) fn instances_of_all_types_chained(
             ))
         })
         .try_collect()?;
-    let attribute_iter: MultipleTypeIsaAttributeIterator = AsLendingIterator::new(attribute_iters).flatten();
+    let attribute_iter: MultipleTypeIsaAttributeIterator = attribute_iters.into_iter().flatten();
 
     let thing_iter: MultipleTypeIsaIterator = object_iter.chain(attribute_iter);
     Ok(thing_iter)

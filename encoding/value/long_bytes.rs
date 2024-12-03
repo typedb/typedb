@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct LongBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }

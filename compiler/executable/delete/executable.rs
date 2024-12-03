@@ -56,11 +56,11 @@ pub fn compile(
                         if let Some(input) = input_variables.get(&input) {
                             TypeSource::InputVariable(*input)
                         } else if let Some(type_) = named_role_types.get(&input) {
-                            TypeSource::Constant(type_.clone())
+                            TypeSource::Constant(*type_)
                         } else {
                             let annotations = type_annotations.vertex_annotations_of(role_type).unwrap();
                             if annotations.len() == 1 {
-                                TypeSource::Constant(annotations.iter().next().unwrap().clone())
+                                TypeSource::Constant(*annotations.iter().next().unwrap())
                             } else {
                                 return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
                                     variable: input,

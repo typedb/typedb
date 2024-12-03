@@ -22,7 +22,7 @@ This file should comprise a set of low-level tests relating to MVCC.
    After cleanup is run, if we iterate directly on the storage layer, we should be able to confirm the keys are actually not present anymore (Rocks may defer the disk delete till compaction, but to us they are "gone").
 
  */
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
@@ -61,8 +61,7 @@ fn test_reading_snapshots() {
     let storage_path = create_tmp_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
-    let key_1: &StorageKey<'_, 48> =
-        &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
+    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));
 
     let mut snapshot_write_0 = storage.clone().open_snapshot_write();
     snapshot_write_0.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_0));
@@ -140,8 +139,7 @@ fn test_open_snapshot_write_at() {
     let storage_path = create_tmp_dir();
     let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
 
-    let key_1: &StorageKey<'_, 48> =
-        &StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
+    let key_1: &StorageKey<'_, 48> = &StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));
 
     let watermark_init = storage.snapshot_watermark();
 

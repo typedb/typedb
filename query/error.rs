@@ -11,7 +11,7 @@ use compiler::{
 use error::typedb_error;
 use executor::pipeline::{pipeline::PipelineError, PipelineExecutionError};
 use function::FunctionError;
-use ir::{pipeline::FunctionRepresentationError, RepresentationError};
+use ir::RepresentationError;
 
 use crate::{define::DefineError, redefine::RedefineError, undefine::UndefineError};
 

@@ -44,25 +44,25 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
-pub struct AttributeType<'a> {
-    vertex: TypeVertex<'a>,
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+pub struct AttributeType {
+    vertex: TypeVertex,
 }
 
-impl<'a> AttributeType<'a> {}
+impl AttributeType {}
 
-impl Hkt for AttributeType<'static> {
-    type HktSelf<'a> = AttributeType<'a>;
+impl Hkt for AttributeType {
+    type HktSelf<'a> = AttributeType;
 }
 
-impl<'a> ConceptAPI<'a> for AttributeType<'a> {}
+impl ConceptAPI for AttributeType {}
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for AttributeType<'a> {
+impl PrefixedTypeVertexEncoding for AttributeType {
     const PREFIX: Prefix = VertexAttributeType;
 }
 
-impl<'a> TypeVertexEncoding<'a> for AttributeType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+impl TypeVertexEncoding for AttributeType {
+    fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexAttributeType);
         if vertex.prefix() != Prefix::VertexAttributeType {
             Err(UnexpectedPrefix { expected_prefix: Prefix::VertexAttributeType, actual_prefix: vertex.prefix() })
@@ -71,29 +71,27 @@ impl<'a> TypeVertexEncoding<'a> for AttributeType<'a> {
         }
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
+    fn vertex(&self) -> TypeVertex {
+        self.vertex
     }
 
-    fn into_vertex(self) -> TypeVertex<'a> {
+    fn into_vertex(self) -> TypeVertex {
         self.vertex
     }
 }
 
-impl<'a> primitive::prefix::Prefix for AttributeType<'a> {
+impl primitive::prefix::Prefix for AttributeType {
     fn starts_with(&self, other: &Self) -> bool {
         self.vertex().starts_with(&other.vertex())
     }
 
     fn into_starts_with(self, other: Self) -> bool {
-        self.vertex().as_reference().into_starts_with(other.vertex().as_reference())
+        self.vertex().into_starts_with(other.vertex())
     }
 }
 
-impl<'a> TypeAPI<'a> for AttributeType<'a> {
-    type SelfStatic = AttributeType<'static>;
-
-    fn new(vertex: TypeVertex<'a>) -> AttributeType<'a> {
+impl TypeAPI for AttributeType {
+    fn new(vertex: TypeVertex) -> AttributeType {
         Self::from_vertex(vertex).unwrap()
     }
 
@@ -111,59 +109,59 @@ impl<'a> TypeAPI<'a> for AttributeType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.delete_attribute_type(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.delete_attribute_type(snapshot, thing_manager, self)
     }
 
     fn get_label<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_label(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_label(snapshot, *self)
     }
 
     fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_label_arc(snapshot, self.clone().into_owned())
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_label_arc(snapshot, *self)
     }
 
     fn get_supertype(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<AttributeType<'static>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_supertype(snapshot, self.clone().into_owned())
+    ) -> Result<Option<AttributeType>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_supertype(snapshot, *self)
     }
 
     fn get_supertypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_supertypes(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_supertypes(snapshot, *self)
     }
 
     fn get_subtypes<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_subtypes(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_subtypes(snapshot, *self)
     }
 
     fn get_subtypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_subtypes_transitive(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_subtypes_transitive(snapshot, *self)
     }
 }
 
-impl<'a> KindAPI<'a> for AttributeType<'a> {
+impl KindAPI for AttributeType {
     type AnnotationType = AttributeTypeAnnotation;
     const KIND: Kind = Kind::Attribute;
 
@@ -172,40 +170,37 @@ impl<'a> KindAPI<'a> for AttributeType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<AttributeTypeAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_annotations_declared(snapshot, self.clone().into_owned())
+        type_manager.get_attribute_type_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType<'static>>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_attribute_type_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType>>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_constraints(snapshot, self)
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for AttributeType<'a> {
-    type InstanceType<'b> = Attribute<'b>;
+impl ThingTypeAPI for AttributeType {
+    type InstanceType = Attribute;
 }
 
-impl<'a> AttributeType<'a> {
+impl AttributeType {
     pub fn get_value_type_declared(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Option<ValueType>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_value_type_declared(snapshot, self.clone().into_owned())
+        type_manager.get_attribute_type_value_type_declared(snapshot, *self)
     }
 
     pub fn get_value_type(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<(ValueType, AttributeType<'static>)>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_value_type(snapshot, self.clone().into_owned())
+    ) -> Result<Option<(ValueType, AttributeType)>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_value_type(snapshot, *self)
     }
 
     pub fn get_value_type_without_source(
@@ -224,7 +219,7 @@ impl<'a> AttributeType<'a> {
         thing_manager: &ThingManager,
         value_type: ValueType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_value_type(snapshot, thing_manager, self.clone().into_owned(), value_type)
+        type_manager.set_value_type(snapshot, thing_manager, *self, value_type)
     }
 
     pub fn unset_value_type(
@@ -233,7 +228,7 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_value_type(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.unset_value_type(snapshot, thing_manager, *self)
     }
 
     pub fn get_value_type_annotations_declared(
@@ -253,9 +248,9 @@ impl<'a> AttributeType<'a> {
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_label(snapshot, self.clone().into_owned(), label)
+        type_manager.set_label(snapshot, *self, label)
     }
 
     pub fn set_supertype(
@@ -263,9 +258,9 @@ impl<'a> AttributeType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        supertype: AttributeType<'static>,
+        supertype: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_attribute_type_supertype(snapshot, thing_manager, self.clone().into_owned(), supertype)
+        type_manager.set_attribute_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
     pub fn unset_supertype(
@@ -274,23 +269,23 @@ impl<'a> AttributeType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_attribute_type_supertype(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.unset_attribute_type_supertype(snapshot, thing_manager, *self)
     }
 
     pub fn get_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<TypeConstraint<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_abstract_constraint(snapshot, self.clone().into_owned())
+    ) -> Result<Option<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_type_abstract_constraint(snapshot, *self)
     }
 
     pub fn get_constraints_independent(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_independent_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_independent_constraints(snapshot, *self)
     }
 
     pub fn is_independent(
@@ -305,24 +300,24 @@ impl<'a> AttributeType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_regex_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_regex_constraints(snapshot, *self)
     }
 
     pub fn get_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_range_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_range_constraints(snapshot, *self)
     }
 
     pub fn get_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<HashSet<TypeConstraint<AttributeType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_values_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<HashSet<TypeConstraint<AttributeType>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_values_constraints(snapshot, *self)
     }
 
     pub fn set_annotation(
@@ -333,22 +328,20 @@ impl<'a> AttributeType<'a> {
         annotation: AttributeTypeAnnotation,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
-            AttributeTypeAnnotation::Abstract(_) => type_manager.set_attribute_type_annotation_abstract(
-                snapshot,
-                thing_manager,
-                self.clone().into_owned(),
-            )?,
+            AttributeTypeAnnotation::Abstract(_) => {
+                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, *self)?
+            }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_annotation_independent(snapshot, thing_manager, self.clone().into_owned())?
+                type_manager.set_annotation_independent(snapshot, thing_manager, *self)?
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.set_annotation_regex(snapshot, thing_manager, self.clone().into_owned(), regex)?
+                type_manager.set_annotation_regex(snapshot, thing_manager, *self, regex)?
             }
             AttributeTypeAnnotation::Range(range) => {
-                type_manager.set_annotation_range(snapshot, thing_manager, self.clone().into_owned(), range)?
+                type_manager.set_annotation_range(snapshot, thing_manager, *self, range)?
             }
             AttributeTypeAnnotation::Values(values) => {
-                type_manager.set_annotation_values(snapshot, thing_manager, self.clone().into_owned(), values)?
+                type_manager.set_annotation_values(snapshot, thing_manager, *self, values)?
             }
         };
         Ok(())
@@ -364,70 +357,54 @@ impl<'a> AttributeType<'a> {
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match attribute_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.unset_attribute_type_annotation_abstract(snapshot, self.clone().into_owned())?
+                type_manager.unset_attribute_type_annotation_abstract(snapshot, *self)?
             }
-            AttributeTypeAnnotation::Independent(_) => {
-                type_manager.unset_annotation_independent(snapshot, self.clone().into_owned())?
-            }
-            AttributeTypeAnnotation::Regex(_) => {
-                type_manager.unset_annotation_regex(snapshot, self.clone().into_owned())?
-            }
-            AttributeTypeAnnotation::Range(_) => {
-                type_manager.unset_annotation_range(snapshot, self.clone().into_owned())?
-            }
-            AttributeTypeAnnotation::Values(_) => {
-                type_manager.unset_annotation_values(snapshot, self.clone().into_owned())?
-            }
+            AttributeTypeAnnotation::Independent(_) => type_manager.unset_annotation_independent(snapshot, *self)?,
+            AttributeTypeAnnotation::Regex(_) => type_manager.unset_annotation_regex(snapshot, *self)?,
+            AttributeTypeAnnotation::Range(_) => type_manager.unset_annotation_range(snapshot, *self)?,
+            AttributeTypeAnnotation::Values(_) => type_manager.unset_annotation_values(snapshot, *self)?,
         }
         Ok(())
     }
-
-    pub fn into_owned(self) -> AttributeType<'static> {
-        AttributeType { vertex: self.vertex.into_owned() }
-    }
 }
 
-impl<'a> fmt::Display for AttributeType<'a> {
+impl fmt::Display for AttributeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[AttributeType:{}]", self.vertex.type_id_())
     }
 }
 
 // --- Owned API ---
-impl<'a> AttributeType<'a> {
+impl AttributeType {
     pub fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_owns(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_owns(snapshot, *self)
     }
 
     pub fn get_owner_types<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashMap<ObjectType<'static>, Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_attribute_type_owner_types(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashMap<ObjectType, Owns>>, Box<ConceptReadError>> {
+        type_manager.get_attribute_type_owner_types(snapshot, *self)
     }
 
     pub fn get_constraints_for_owner<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        owner_type: ObjectType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>> {
+        owner_type: ObjectType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
         match owner_type {
-            ObjectType::Entity(entity_type) => type_manager.get_entity_type_owned_attribute_type_constraints(
-                snapshot,
-                entity_type,
-                self.clone().into_owned(),
-            ),
-            ObjectType::Relation(relation_type) => type_manager.get_relation_type_owned_attribute_type_constraints(
-                snapshot,
-                relation_type,
-                self.clone().into_owned(),
-            ),
+            ObjectType::Entity(entity_type) => {
+                type_manager.get_entity_type_owned_attribute_type_constraints(snapshot, entity_type, *self)
+            }
+            ObjectType::Relation(relation_type) => {
+                type_manager.get_relation_type_owned_attribute_type_constraints(snapshot, relation_type, *self)
+            }
         }
     }
 }

@@ -6,10 +6,10 @@
 
 use std::{fmt, mem, ops::Range};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::HexBytesFormatter, Bytes};
+use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_value::{StorageKey, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyArray},
     keyspace::KeyspaceSet,
 };
 
@@ -23,58 +23,53 @@ use crate::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd, Hash)]
-pub struct ObjectVertex<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub struct ObjectVertex {
+    prefix: Prefix,
+    type_id: TypeID,
+    object_id: ObjectID,
 }
 
-impl<'a> ObjectVertex<'a> {
+impl ObjectVertex {
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
 
     pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH);
-        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexEntity.prefix_id().bytes());
-        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        array[Self::range_object_id()].copy_from_slice(&object_id.bytes());
-        ObjectVertex { bytes: Bytes::Array(array) }
+        Self { prefix: Prefix::VertexEntity, type_id, object_id }
     }
 
     pub fn build_relation(type_id: TypeID, object_id: ObjectID) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH);
-        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::VertexRelation.prefix_id().bytes());
-        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
-        array[Self::range_object_id()].copy_from_slice(&object_id.bytes());
-        ObjectVertex { bytes: Bytes::Array(array) }
+        Self { prefix: Prefix::VertexRelation, type_id, object_id }
     }
 
-    pub fn try_from_bytes(bytes: &'a [u8]) -> Option<Self> {
+    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
         if bytes.len() != Self::LENGTH {
             return None;
         }
-        let prefix = &bytes[..1];
-        if prefix != Prefix::VertexEntity.prefix_id().bytes() && prefix != Prefix::VertexRelation.prefix_id().bytes() {
+        let prefix = bytes[0];
+        if prefix != Prefix::VertexEntity.prefix_id().byte && prefix != Prefix::VertexRelation.prefix_id().byte {
             return None;
         }
+
         // all byte patterns beyond the prefix are valid for object vertices
-        Some(Self::new(Bytes::reference(bytes)))
+        Some(Self::new(bytes))
     }
 
-    pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
+    pub fn is_entity_vertex(storage_key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
-            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexEntity.prefix_id().bytes
+            && storage_key.bytes()[Self::INDEX_PREFIX] == Prefix::VertexEntity.prefix_id().byte
     }
 
-    pub fn is_relation_vertex(storage_key: StorageKeyReference<'_>) -> bool {
+    pub fn is_relation_vertex(storage_key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
-            && storage_key.bytes()[Self::RANGE_PREFIX] == Prefix::VertexRelation.prefix_id().bytes
+            && storage_key.bytes()[Self::INDEX_PREFIX] == Prefix::VertexRelation.prefix_id().byte
     }
 
     pub(crate) fn build_prefix_from_type_vertex(
-        type_vertex: TypeVertex<'_>,
+        type_vertex: TypeVertex,
     ) -> StorageKey<'static, { THING_VERTEX_LENGTH_PREFIX_TYPE }> {
         let prefix = match type_vertex.prefix() {
             Prefix::VertexEntityType => Prefix::VertexEntity,
@@ -85,81 +80,76 @@ impl<'a> ObjectVertex<'a> {
     }
 
     pub fn object_id(&self) -> ObjectID {
-        ObjectID::new(self.bytes[Self::range_object_id()].try_into().unwrap())
+        self.object_id
     }
 
-    pub(crate) fn length(&self) -> usize {
-        self.bytes.length()
-    }
-
-    pub fn as_reference<'this: 'a>(&'this self) -> ObjectVertex<'this> {
-        Self::new(Bytes::Reference(self.bytes.as_reference()))
+    pub(crate) fn len(&self) -> usize {
+        Self::LENGTH
     }
 
     const fn range_object_id() -> Range<usize> {
         Self::RANGE_TYPE_ID.end..Self::RANGE_TYPE_ID.end + ObjectID::LENGTH
     }
+}
 
-    pub fn into_owned(self) -> ObjectVertex<'static> {
-        ObjectVertex { bytes: self.bytes.into_owned() }
+impl AsBytes<BUFFER_KEY_INLINE> for ObjectVertex {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
+        let mut bytes = [0; BUFFER_KEY_INLINE];
+        bytes[0] = self.prefix.prefix_id().byte;
+        bytes[Self::RANGE_TYPE_ID].copy_from_slice(&self.type_id.to_bytes());
+        bytes[Self::range_object_id()].copy_from_slice(&self.object_id.to_bytes());
+        Bytes::Array(ByteArray::inline(bytes, Self::LENGTH))
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
-    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
-        self.bytes
-    }
-}
-
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {
+impl Keyable<BUFFER_KEY_INLINE> for ObjectVertex {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
+impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertex {}
 
-impl<'a> Typed<'a, BUFFER_KEY_INLINE> for ObjectVertex<'a> {}
+impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {}
 
-impl<'a> ThingVertex<'a> for ObjectVertex<'a> {
-    fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> ObjectVertex<'a> {
-        debug_assert_eq!(bytes.length(), Self::LENGTH);
-        ObjectVertex { bytes }
+impl ThingVertex for ObjectVertex {
+    fn new(bytes: &[u8]) -> ObjectVertex {
+        debug_assert_eq!(bytes.len(), Self::LENGTH);
+        let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] });
+        let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
+        let object_id = ObjectID::decode(bytes[Self::range_object_id()].try_into().unwrap());
+        Self { prefix, type_id, object_id }
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ObjectID {
-    bytes: [u8; ObjectID::LENGTH],
+    value: u64,
 }
 
 impl ObjectID {
     const LENGTH: usize = 8;
 
-    fn new(bytes: [u8; ObjectID::LENGTH]) -> Self {
-        ObjectID { bytes }
-    }
-
-    pub fn build(id: u64) -> Self {
+    pub fn new(id: u64) -> Self {
         debug_assert_eq!(mem::size_of_val(&id), Self::LENGTH);
-        ObjectID { bytes: id.to_be_bytes() }
+        ObjectID { value: id }
     }
 
-    fn bytes(&self) -> [u8; ObjectID::LENGTH] {
-        self.bytes
+    fn decode(bytes: [u8; ObjectID::LENGTH]) -> Self {
+        ObjectID { value: u64::from_be_bytes(bytes) }
+    }
+
+    fn to_bytes(self) -> [u8; ObjectID::LENGTH] {
+        self.value.to_be_bytes()
     }
 
     pub fn as_u64(&self) -> u64 {
-        u64::from_be_bytes(self.bytes)
+        self.value
     }
 }
 
 impl fmt::Display for ObjectID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{:?}", &HexBytesFormatter::borrowed(&self.bytes()))
+        write!(f, "{:?}", &HexBytesFormatter::borrowed(&self.to_bytes()))
     }
 }

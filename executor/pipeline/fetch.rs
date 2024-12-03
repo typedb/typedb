@@ -200,16 +200,16 @@ fn execute_single_attribute(
     thing_manager: Arc<ThingManager>,
     row: MaybeOwnedRow<'_>,
     position: &VariablePosition,
-    attribute_type: &AttributeType<'static>,
+    attribute_type: &AttributeType,
 ) -> Result<DocumentNode, FetchExecutionError> {
     let variable_value = row.get(*position).as_reference();
     match variable_value {
         VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Thing(Thing::Entity(entity)) => {
-            execute_attribute_single(entity, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::Leaf)
+            execute_attribute_single(entity, *attribute_type, snapshot, thing_manager).map(DocumentNode::Leaf)
         }
         VariableValue::Thing(Thing::Relation(relation)) => {
-            execute_attribute_single(relation, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::Leaf)
+            execute_attribute_single(relation, *attribute_type, snapshot, thing_manager).map(DocumentNode::Leaf)
         }
         VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
         VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
@@ -407,16 +407,16 @@ fn execute_list_attributes_as_list(
     thing_manager: Arc<ThingManager>,
     row: MaybeOwnedRow<'_>,
     position: &VariablePosition,
-    attribute_type: &AttributeType<'static>,
+    attribute_type: &AttributeType,
 ) -> Result<DocumentNode, FetchExecutionError> {
     let variable_value = row.get(*position).as_reference();
     match variable_value {
         VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
         VariableValue::Thing(Thing::Entity(entity)) => {
-            execute_attributes_list(entity, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::List)
+            execute_attributes_list(entity, *attribute_type, snapshot, thing_manager).map(DocumentNode::List)
         }
         VariableValue::Thing(Thing::Relation(relation)) => {
-            execute_attributes_list(relation, attribute_type.clone(), snapshot, thing_manager).map(DocumentNode::List)
+            execute_attributes_list(relation, *attribute_type, snapshot, thing_manager).map(DocumentNode::List)
         }
         VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
         VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
@@ -434,12 +434,8 @@ fn execute_object_attributes(
     let concept = row.get(variable_position);
     match concept {
         VariableValue::Empty => Ok(DocumentNode::Leaf(DocumentLeaf::Empty)),
-        VariableValue::Thing(Thing::Entity(entity)) => {
-            execute_attributes_all(entity.as_reference(), snapshot, thing_manager)
-        }
-        VariableValue::Thing(Thing::Relation(relation)) => {
-            execute_attributes_all(relation.as_reference(), snapshot, thing_manager)
-        }
+        &VariableValue::Thing(Thing::Entity(entity)) => execute_attributes_all(entity, snapshot, thing_manager),
+        &VariableValue::Thing(Thing::Relation(relation)) => execute_attributes_all(relation, snapshot, thing_manager),
         VariableValue::Thing(Thing::Attribute(_)) => Err(FetchExecutionError::FetchAttributesOfAttribute {}),
         VariableValue::Type(_) => Err(FetchExecutionError::FetchAttributesOfType {}),
         VariableValue::Value(_) => Err(FetchExecutionError::FetchAttributesOfValue {}),
@@ -447,20 +443,20 @@ fn execute_object_attributes(
     }
 }
 
-fn execute_attributes_all<'a>(
-    object: impl ObjectAPI<'a>,
+fn execute_attributes_all(
+    object: impl ObjectAPI,
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentNode, FetchExecutionError> {
-    let mut iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
-    let mut map: HashMap<Arc<Label<'static>>, DocumentNode> = HashMap::new();
-    while let Some(result) = iter.next() {
+    let iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
+    let mut map: HashMap<Arc<Label>, DocumentNode> = HashMap::new();
+    for result in iter {
         let (attribute, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
         let attribute_type = attribute.type_();
         let label = attribute_type
             .get_label_arc(snapshot.as_ref(), thing_manager.type_manager())
             .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
-        let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.into_owned()))));
+        let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.clone()))));
 
         let is_bounded_to_one = object
             .type_()
@@ -478,49 +474,49 @@ fn execute_attributes_all<'a>(
     Ok(DocumentNode::Map(DocumentMap::GeneratedKeys(map)))
 }
 
-fn execute_attribute_single<'a>(
-    object: impl ObjectAPI<'a>,
-    attribute_type: AttributeType<'static>,
+fn execute_attribute_single(
+    object: impl ObjectAPI,
+    attribute_type: AttributeType,
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentLeaf, FetchExecutionError> {
-    let mut iter = prepare_attribute_type_has_iterator(object, attribute_type.clone(), &snapshot, &thing_manager)?;
+    let iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
 
-    while let Some(result) = iter.next() {
+    for result in iter {
         let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
         let attribute = has.attribute();
         let suitable = attribute
             .type_()
-            .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type.clone())
+            .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
             .map_err(|source| FetchExecutionError::ConceptRead { source })?;
         if suitable {
             debug_assert!(count <= 1);
-            return Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(has.attribute().into_owned()))));
+            return Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(has.attribute().clone()))));
         }
     }
     Ok(DocumentLeaf::Empty)
 }
 
-fn execute_attributes_list<'a>(
-    object: impl ObjectAPI<'a>,
-    attribute_type: AttributeType<'static>,
+fn execute_attributes_list(
+    object: impl ObjectAPI,
+    attribute_type: AttributeType,
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentList, FetchExecutionError> {
     let mut list = DocumentList::new();
-    let mut iter = prepare_attribute_type_has_iterator(object, attribute_type.clone(), &snapshot, &thing_manager)?;
+    let iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
 
-    while let Some(result) = iter.next() {
+    for result in iter {
         let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
         let attribute = has.attribute();
         let suitable = attribute
             .type_()
-            .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type.clone())
+            .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
             .map_err(|source| FetchExecutionError::ConceptRead { source })?;
         if suitable {
             for _ in 0..count {
                 list.list.push(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(
-                    has.attribute().into_owned(),
+                    has.attribute().clone(),
                 )))));
             }
         }
@@ -528,16 +524,16 @@ fn execute_attributes_list<'a>(
     Ok(list)
 }
 
-fn prepare_attribute_type_has_iterator<'a>(
-    object: impl ObjectAPI<'a>,
-    attribute_type: AttributeType<'static>,
+fn prepare_attribute_type_has_iterator(
+    object: impl ObjectAPI,
+    attribute_type: AttributeType,
     snapshot: &Arc<impl ReadableSnapshot>,
     thing_manager: &Arc<ThingManager>,
 ) -> Result<HasIterator, FetchExecutionError> {
     let subtypes = attribute_type
         .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
         .map_err(|source| FetchExecutionError::ConceptRead { source })?;
-    let attribute_types = TypeAPI::chain_types(attribute_type.clone(), subtypes.into_iter().cloned());
+    let attribute_types = TypeAPI::chain_types(attribute_type, subtypes.into_iter().cloned());
 
     object
         .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_types)

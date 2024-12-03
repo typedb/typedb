@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter::zip, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use compiler::annotation::function::{annotate_stored_functions, AnnotatedFunction, AnnotatedSchemaFunctions};
 use concept::type_::type_manager::TypeManager;
@@ -20,7 +20,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct FunctionCache {
-    parsed_functions: HashMap<DefinitionKey<'static>, SchemaFunction>,
+    parsed_functions: HashMap<DefinitionKey, SchemaFunction>,
     annotated_functions: Arc<AnnotatedSchemaFunctions>,
     index: HashMapFunctionSignatureIndex,
 }
@@ -53,7 +53,7 @@ impl FunctionCache {
         let annotated_functions = annotate_stored_functions(&mut functions_ir, snapshot, type_manager)
             .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { typedb_source: source })?;
 
-        let mut parsed_functions =
+        let parsed_functions =
             schema_functions.into_iter().map(|parsed| (parsed.function_id.clone(), parsed)).collect();
         Ok(FunctionCache {
             index: function_index,
@@ -62,14 +62,14 @@ impl FunctionCache {
         })
     }
 
-    pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey<'static>> {
+    pub(crate) fn get_function_key(&self, name: &str) -> Option<DefinitionKey> {
         self.index
             .get_function_signature(name)
             .unwrap()
             .map(|signature| signature.function_id().as_definition_key().unwrap().clone())
     }
 
-    pub(crate) fn get_function(&self, definition_key: DefinitionKey<'static>) -> Option<&SchemaFunction> {
+    pub(crate) fn get_function(&self, definition_key: DefinitionKey) -> Option<&SchemaFunction> {
         self.parsed_functions.get(&definition_key)
     }
 
@@ -77,7 +77,7 @@ impl FunctionCache {
         self.annotated_functions.clone()
     }
 
-    pub(crate) fn get_annotated_function(&self, definition_key: DefinitionKey<'static>) -> Option<&AnnotatedFunction> {
+    pub(crate) fn get_annotated_function(&self, definition_key: DefinitionKey) -> Option<&AnnotatedFunction> {
         self.annotated_functions.get(&definition_key)
     }
 }

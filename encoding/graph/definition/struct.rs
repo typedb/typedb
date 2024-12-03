@@ -9,7 +9,7 @@ use std::{
     fmt,
 };
 
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use resource::constants::{encoding::StructFieldIDUInt, snapshot::BUFFER_VALUE_INLINE};
 use serde::{Deserialize, Serialize};
 
@@ -89,8 +89,8 @@ impl StructDefinition {
 }
 
 impl DefinitionValueEncoding for StructDefinition {
-    fn from_bytes(value: ByteReference<'_>) -> Self {
-        bincode::deserialize(value.bytes()).unwrap()
+    fn from_bytes(value: &[u8]) -> Self {
+        bincode::deserialize(value).unwrap()
     }
 
     fn into_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {

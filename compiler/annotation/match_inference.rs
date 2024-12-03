@@ -172,7 +172,7 @@ pub(crate) struct TypeInferenceGraph<'this> {
     pub(crate) nested_optionals: Vec<TypeInferenceGraph<'this>>,
 }
 
-impl<'this> TypeInferenceGraph<'this> {
+impl TypeInferenceGraph<'_> {
     fn prune_constraints_from_vertices(&mut self) {
         for edge in &mut self.edges {
             edge.prune_self_from_vertices(&self.vertices)
@@ -341,7 +341,7 @@ pub(crate) struct NestedTypeInferenceGraphDisjunction<'this> {
     pub(crate) shared_vertex_annotations: VertexAnnotations,
 }
 
-impl<'this> NestedTypeInferenceGraphDisjunction<'this> {
+impl NestedTypeInferenceGraphDisjunction<'_> {
     fn prune_self_from_vertices(&mut self, parent_vertices: &VertexAnnotations) {
         for nested_graph in &mut self.disjunction {
             for (vertex, vertex_types) in &mut nested_graph.vertices {

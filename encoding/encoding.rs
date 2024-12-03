@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
-use std::ops::Range;
-
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use storage::{
     key_value::StorageKey,
     keyspace::{KeyspaceId, KeyspaceSet},
@@ -58,29 +57,23 @@ impl KeyspaceSet for EncodingKeyspace {
     }
 }
 
-pub trait AsBytes<'a, const INLINE_SIZE: usize> {
-    fn bytes(&'a self) -> ByteReference<'a>;
-
-    fn into_bytes(self) -> Bytes<'a, INLINE_SIZE>;
+pub trait AsBytes<const INLINE_SIZE: usize> {
+    fn to_bytes(self) -> Bytes<'static, INLINE_SIZE>;
 }
 
-pub trait Keyable<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> + Sized {
+pub trait Keyable<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Sized {
     fn keyspace(&self) -> EncodingKeyspace;
 
-    fn as_storage_key(&'a self) -> StorageKey<'a, INLINE_SIZE> {
-        StorageKey::new_ref(self.keyspace(), self.bytes())
-    }
-
-    fn into_storage_key(self) -> StorageKey<'a, INLINE_SIZE> {
-        StorageKey::new(self.keyspace(), self.into_bytes())
+    fn into_storage_key(self) -> StorageKey<'static, INLINE_SIZE> {
+        StorageKey::new(self.keyspace(), self.to_bytes())
     }
 }
 
-pub trait Prefixed<'a, const INLINE_SIZE: usize>: AsBytes<'a, INLINE_SIZE> {
-    const RANGE_PREFIX: Range<usize> = 0..PrefixID::LENGTH;
+pub trait Prefixed<const INLINE_SIZE: usize>: AsBytes<INLINE_SIZE> + Clone {
+    const INDEX_PREFIX: usize = 0;
 
-    fn prefix(&'a self) -> Prefix {
-        let bytes = &self.bytes().bytes()[Self::RANGE_PREFIX].try_into().unwrap();
-        Prefix::from_prefix_id(PrefixID::new(*bytes))
+    fn prefix(&self) -> Prefix {
+        let byte = self.clone().to_bytes()[Self::INDEX_PREFIX];
+        Prefix::from_prefix_id(PrefixID::new(byte))
     }
 }

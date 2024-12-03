@@ -15,9 +15,9 @@ use crate::{Thing, Type};
 pub enum VariableValue<'a> {
     Empty,
     Type(Type),
-    Thing(Thing<'a>),
+    Thing(Thing),
     Value(Value<'a>),
-    ThingList(Arc<[Thing<'static>]>),
+    ThingList(Arc<[Thing]>),
     ValueList(Arc<[Value<'static>]>),
 }
 
@@ -29,7 +29,7 @@ impl<'a> VariableValue<'a> {
         }
     }
 
-    pub fn as_thing(&self) -> &Thing<'a> {
+    pub fn as_thing(&self) -> &Thing {
         match self {
             VariableValue::Thing(thing) => thing,
             _ => panic!("VariableValue is not a Thing: {self:?}"),
@@ -47,7 +47,7 @@ impl<'a> VariableValue<'a> {
     pub fn to_owned(&self) -> VariableValue<'static> {
         match self {
             VariableValue::Empty => VariableValue::Empty,
-            VariableValue::Type(type_) => VariableValue::Type(type_.clone()),
+            &VariableValue::Type(type_) => VariableValue::Type(type_),
             VariableValue::Thing(thing) => VariableValue::Thing(thing.to_owned()),
             VariableValue::Value(value) => VariableValue::Value(value.clone().into_owned()),
             VariableValue::ThingList(list) => VariableValue::ThingList(list.clone()),
@@ -58,8 +58,8 @@ impl<'a> VariableValue<'a> {
     pub fn as_reference(&self) -> VariableValue<'_> {
         match self {
             VariableValue::Empty => VariableValue::Empty,
-            VariableValue::Type(type_) => VariableValue::Type(type_.clone()),
-            VariableValue::Thing(thing) => VariableValue::Thing(thing.as_reference()),
+            &VariableValue::Type(type_) => VariableValue::Type(type_),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing.clone()),
             VariableValue::Value(value) => VariableValue::Value(value.as_reference()),
             VariableValue::ThingList(list) => VariableValue::ThingList(list.clone()),
             VariableValue::ValueList(list) => VariableValue::ValueList(list.clone()),
@@ -70,7 +70,7 @@ impl<'a> VariableValue<'a> {
         match self {
             VariableValue::Empty => VariableValue::Empty,
             VariableValue::Type(type_) => VariableValue::Type(type_),
-            VariableValue::Thing(thing) => VariableValue::Thing(thing.into_owned()),
+            VariableValue::Thing(thing) => VariableValue::Thing(thing),
             VariableValue::Value(value) => VariableValue::Value(value.into_owned()),
             VariableValue::ThingList(list) => VariableValue::ThingList(list),
             VariableValue::ValueList(list) => VariableValue::ValueList(list),
@@ -138,17 +138,17 @@ impl fmt::Display for VariableValue<'_> {
     }
 }
 
-impl<'a> VariableValue<'a> {
+impl VariableValue<'_> {
     pub const EMPTY: VariableValue<'static> = VariableValue::Empty;
 }
 
 pub enum FunctionValue<'a> {
-    Thing(Thing<'a>),
-    ThingOptional(Option<Thing<'a>>),
+    Thing(Thing),
+    ThingOptional(Option<Thing>),
     Value(Value<'a>),
     ValueOptional(Option<Value<'a>>),
-    ThingList(Vec<Thing<'a>>),
-    ThingListOptional(Option<Vec<Thing<'a>>>),
+    ThingList(Vec<Thing>),
+    ThingListOptional(Option<Vec<Thing>>),
     ValueList(Vec<Value<'a>>),
     ValueListOptional(Option<Vec<Value<'a>>>),
 }

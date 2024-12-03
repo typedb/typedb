@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{
-        Argument, FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
+        FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
     type_::NamedType,
     TypeRef, TypeRefAny,
@@ -24,7 +24,6 @@ use crate::{
     translation::{
         pipeline::{translate_pipeline_stages, TranslatedStage},
         reduce::build_reducer,
-        tokens::checked_identifier,
         TranslationContext,
     },
 };

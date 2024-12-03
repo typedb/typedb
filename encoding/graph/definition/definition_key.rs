@@ -6,7 +6,7 @@
 
 use std::{fmt, ops::Range};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
 use serde::{
     de::{Error, Visitor},
@@ -20,76 +20,68 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct DefinitionKey<'a> {
-    bytes: Bytes<'a, { BUFFER_KEY_INLINE }>,
+pub struct DefinitionKey {
+    bytes: ByteArray<BUFFER_KEY_INLINE>,
 }
 
-impl<'a> DefinitionKey<'a> {
+impl DefinitionKey {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + DefinitionID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     pub(crate) const RANGE_DEFINITION_ID: Range<usize> =
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + DefinitionID::LENGTH;
+        Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + DefinitionID::LENGTH;
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        Self { bytes }
+        Self { bytes: ByteArray::copy(&bytes) }
     }
 
     pub fn definition_id(&self) -> DefinitionID {
-        DefinitionID::new(self.bytes().bytes()[Self::RANGE_DEFINITION_ID].try_into().unwrap())
+        DefinitionID::new(self.bytes[Self::RANGE_DEFINITION_ID].try_into().unwrap())
     }
 
     pub fn build(prefix: Prefix, definition_id: DefinitionID) -> Self {
         let mut array = ByteArray::zeros(Self::LENGTH);
-        array[Self::RANGE_PREFIX].copy_from_slice(&prefix.prefix_id().bytes());
+        array[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
         array[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
-        Self { bytes: Bytes::Array(array) }
+        Self { bytes: array }
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { DefinitionKey::LENGTH_PREFIX }> {
         StorageKey::new(
             DefinitionKey::KEYSPACE,
             // TODO: Can we use a static const byte reference
-            Bytes::Array(ByteArray::inline(prefix.prefix_id().bytes(), DefinitionKey::LENGTH_PREFIX)),
+            Bytes::Array(ByteArray::inline(prefix.prefix_id().to_bytes(), DefinitionKey::LENGTH_PREFIX)),
         )
     }
 
-    pub fn as_reference<'this: 'a>(&'this self) -> DefinitionKey<'this> {
-        Self::new(Bytes::Reference(self.bytes.as_reference()))
-    }
-
-    pub fn into_owned(self) -> DefinitionKey<'static> {
-        DefinitionKey { bytes: self.bytes.into_owned() }
+    pub fn bytes(&self) -> &[u8] {
+        &self.bytes
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
-    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
-        self.bytes
+impl AsBytes<BUFFER_KEY_INLINE> for DefinitionKey {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
+        Bytes::Array(self.bytes)
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {
+impl Keyable<BUFFER_KEY_INLINE> for DefinitionKey {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for DefinitionKey<'a> {}
+impl Prefixed<BUFFER_KEY_INLINE> for DefinitionKey {}
 
-impl<'a> fmt::Display for DefinitionKey<'a> {
+impl fmt::Display for DefinitionKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // we'll just arbitrarily write it out as an u64 in Big Endian
-        debug_assert!(self.bytes.length() < (u64::BITS / 8) as usize);
+        debug_assert!(self.bytes.len() < (u64::BITS / 8) as usize);
         let mut bytes = [0u8; (u64::BITS / 8) as usize];
-        bytes[0..self.bytes.length()].copy_from_slice(&self.bytes);
+        bytes[0..self.bytes.len()].copy_from_slice(&self.bytes);
         let as_u64 = u64::from_be_bytes(bytes);
         write!(f, "{}", as_u64)
     }
@@ -121,7 +113,7 @@ impl DefinitionID {
     }
 }
 
-impl<'a> Serialize for DefinitionKey<'a> {
+impl Serialize for DefinitionKey {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: Serializer,
@@ -130,16 +122,16 @@ impl<'a> Serialize for DefinitionKey<'a> {
     }
 }
 
-impl<'de> Deserialize<'de> for DefinitionKey<'de> {
+impl<'de> Deserialize<'de> for DefinitionKey {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         pub struct DefinitionKeyVisitor;
-        impl<'de> Visitor<'de> for DefinitionKeyVisitor {
-            type Value = DefinitionKey<'static>;
+        impl Visitor<'_> for DefinitionKeyVisitor {
+            type Value = DefinitionKey;
 
-            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
                 formatter.write_str("`DefinitionKey`")
             }
 
@@ -147,7 +139,7 @@ impl<'de> Deserialize<'de> for DefinitionKey<'de> {
             where
                 E: Error,
             {
-                Ok(DefinitionKey { bytes: Bytes::Array(ByteArray::copy(v)) })
+                Ok(DefinitionKey { bytes: ByteArray::copy(v) })
             }
         }
 

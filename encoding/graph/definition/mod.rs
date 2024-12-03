@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use bytes::{byte_reference::ByteReference, Bytes};
+use bytes::Bytes;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 
 pub mod definition_key;
@@ -13,7 +13,7 @@ pub mod function;
 pub mod r#struct;
 
 pub trait DefinitionValueEncoding {
-    fn from_bytes(value: ByteReference<'_>) -> Self;
+    fn from_bytes(value: &[u8]) -> Self;
 
     fn into_bytes(self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
 }

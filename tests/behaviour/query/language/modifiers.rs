@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(unexpected_cfgs, reason = "features defined in Bazel targets aren't currently communicated to Cargo")]
+
 use steps::Context;
 
 #[tokio::test]

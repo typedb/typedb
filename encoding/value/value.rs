@@ -15,26 +15,23 @@ use std::{
 use bytes::byte_array::ByteArray;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime};
 
-use crate::{
-    value::{
-        boolean_bytes::BooleanBytes,
-        date_bytes::DateBytes,
-        date_time_bytes::DateTimeBytes,
-        date_time_tz_bytes::DateTimeTZBytes,
-        decimal_bytes::DecimalBytes,
-        decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
-        double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes,
-        duration_value::Duration,
-        long_bytes::LongBytes,
-        string_bytes::StringBytes,
-        struct_bytes::StructBytes,
-        timezone::TimeZone,
-        value_struct::StructValue,
-        value_type::{ValueType, ValueTypeCategory},
-        ValueEncodable,
-    },
-    AsBytes,
+use crate::value::{
+    boolean_bytes::BooleanBytes,
+    date_bytes::DateBytes,
+    date_time_bytes::DateTimeBytes,
+    date_time_tz_bytes::DateTimeTZBytes,
+    decimal_bytes::DecimalBytes,
+    decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
+    double_bytes::DoubleBytes,
+    duration_bytes::DurationBytes,
+    duration_value::Duration,
+    long_bytes::LongBytes,
+    string_bytes::StringBytes,
+    struct_bytes::StructBytes,
+    timezone::TimeZone,
+    value_struct::StructValue,
+    value_type::{ValueType, ValueTypeCategory},
+    ValueEncodable,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -52,9 +49,9 @@ pub enum Value<'a> {
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
-impl<'a> Eq for Value<'a> {}
+impl Eq for Value<'_> {}
 
-impl<'a> PartialOrd for Value<'a> {
+impl PartialOrd for Value<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
             (Self::Boolean(self_bool), Self::Boolean(other_bool)) => self_bool.partial_cmp(other_bool),
@@ -74,7 +71,7 @@ impl<'a> PartialOrd for Value<'a> {
     }
 }
 
-impl<'a> Hash for Value<'a> {
+impl Hash for Value<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Boolean(value) => Hash::hash(value, state),
@@ -320,7 +317,7 @@ impl<'a> Value<'a> {
     }
 }
 
-impl<'a> ValueEncodable for Value<'a> {
+impl ValueEncodable for Value<'_> {
     fn value_type(&self) -> ValueType {
         match self {
             Value::Boolean(_) => ValueType::Boolean,
@@ -332,7 +329,7 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTimeTZ(_) => ValueType::DateTimeTZ,
             Value::Duration(_) => ValueType::Duration,
             Value::String(_) => ValueType::String,
-            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone().into_owned()),
+            Value::Struct(struct_value) => ValueType::Struct(struct_value.definition_key().clone()),
         }
     }
 
@@ -392,14 +389,14 @@ impl<'a> ValueEncodable for Value<'a> {
         }
     }
 
-    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<'_, INLINE_LENGTH> {
+    fn encode_string<const INLINE_LENGTH: usize>(&self) -> StringBytes<INLINE_LENGTH> {
         match self {
             Value::String(str) => StringBytes::build_ref(str),
             _ => panic!("Cannot encode non-String as StringBytes"),
         }
     }
 
-    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'static, INLINE_LENGTH> {
+    fn encode_struct<const INLINE_LENGTH: usize>(&self) -> StructBytes<'_, INLINE_LENGTH> {
         match self {
             Value::Struct(struct_) => StructBytes::build(struct_),
             _ => panic!("Cannot encode non-Struct as StructBytes"),
@@ -416,13 +413,13 @@ impl<'a> ValueEncodable for Value<'a> {
             Value::DateTime(_) => ByteArray::copy(&self.encode_date_time().bytes()),
             Value::DateTimeTZ(_) => ByteArray::copy(&self.encode_date_time_tz().bytes()),
             Value::Duration(_) => ByteArray::copy(&self.encode_duration().bytes()),
-            Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes().bytes()),
-            Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes().bytes()),
+            Value::String(_) => ByteArray::copy(self.encode_string::<INLINE_LENGTH>().bytes()),
+            Value::Struct(_) => ByteArray::copy(self.encode_struct::<INLINE_LENGTH>().bytes()),
         }
     }
 }
 
-impl<'a> fmt::Display for Value<'a> {
+impl fmt::Display for Value<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Boolean(bool) => write!(f, "{bool}"),

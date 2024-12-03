@@ -18,7 +18,7 @@ use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};
 use storage::snapshot::ReadableSnapshot;
 
 pub(crate) fn encode_thing_concept(
-    thing: &Thing<'_>,
+    thing: &Thing,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -49,13 +49,13 @@ pub(crate) fn encode_thing_concept(
 }
 
 pub(crate) fn encode_entity(
-    entity: &Entity<'_>,
+    entity: &Entity,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     include_thing_types: bool,
 ) -> Result<typedb_protocol::Entity, Box<ConceptReadError>> {
     Ok(typedb_protocol::Entity {
-        iid: Vec::from(entity.iid().bytes()),
+        iid: Vec::from(entity.iid()),
         entity_type: if include_thing_types {
             Some(encode_entity_type(&entity.type_(), snapshot, type_manager)?)
         } else {
@@ -65,13 +65,13 @@ pub(crate) fn encode_entity(
 }
 
 pub(crate) fn encode_relation(
-    relation: &Relation<'_>,
+    relation: &Relation,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     include_thing_types: bool,
 ) -> Result<typedb_protocol::Relation, Box<ConceptReadError>> {
     Ok(typedb_protocol::Relation {
-        iid: Vec::from(relation.iid().bytes()),
+        iid: Vec::from(relation.iid()),
         relation_type: if include_thing_types {
             Some(encode_relation_type(&relation.type_(), snapshot, type_manager)?)
         } else {
@@ -81,14 +81,14 @@ pub(crate) fn encode_relation(
 }
 
 pub(crate) fn encode_attribute(
-    attribute: &Attribute<'_>,
+    attribute: &Attribute,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_thing_types: bool,
 ) -> Result<typedb_protocol::Attribute, Box<ConceptReadError>> {
     Ok(typedb_protocol::Attribute {
-        iid: Vec::from(attribute.iid().bytes()),
+        iid: Vec::from(attribute.iid()),
         value: Some(encode_value(attribute.get_value(snapshot, thing_manager)?)),
         attribute_type: if include_thing_types {
             Some(encode_attribute_type(&attribute.type_(), snapshot, type_manager)?)
@@ -120,7 +120,7 @@ pub(crate) fn encode_type_concept(
 }
 
 pub(crate) fn encode_entity_type(
-    entity: &EntityType<'_>,
+    entity: &EntityType,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::EntityType, Box<ConceptReadError>> {
@@ -130,7 +130,7 @@ pub(crate) fn encode_entity_type(
 }
 
 pub(crate) fn encode_relation_type(
-    relation: &RelationType<'_>,
+    relation: &RelationType,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RelationType, Box<ConceptReadError>> {
@@ -140,7 +140,7 @@ pub(crate) fn encode_relation_type(
 }
 
 pub(crate) fn encode_attribute_type(
-    attribute: &AttributeType<'_>,
+    attribute: &AttributeType,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::AttributeType, Box<ConceptReadError>> {
@@ -156,7 +156,7 @@ pub(crate) fn encode_attribute_type(
 }
 
 pub(crate) fn encode_role_type(
-    role: &RoleType<'_>,
+    role: &RoleType,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
 ) -> Result<typedb_protocol::RoleType, Box<ConceptReadError>> {

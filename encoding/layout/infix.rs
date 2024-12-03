@@ -21,7 +21,7 @@ impl InfixID {
     }
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Infix {
     // Schema properties
     PropertyLabel,

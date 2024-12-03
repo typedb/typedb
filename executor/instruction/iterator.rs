@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, iter::Iterator};
+use std::{cmp::Ordering, iter};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -13,7 +13,6 @@ use compiler::{
 };
 use concept::error::ConceptReadError;
 use itertools::zip_eq;
-use lending_iterator::{adaptors::Inspect, LendingIterator, Peekable};
 
 use crate::{
     instruction::{
@@ -189,8 +188,8 @@ pub(crate) trait TupleIteratorAPI {
     fn positions(&self) -> &TuplePositions;
 }
 
-pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> {
-    iterator: Peekable<Inspect<Iterator, Box<dyn FnMut(&TupleResult<'_>)>>>,
+pub(crate) struct SortedTupleIterator<It: Iterator<Item = TupleResult<'static>>> {
+    iterator: iter::Peekable<iter::Inspect<It, Box<dyn FnMut(&TupleResult<'_>)>>>,
     positions: TuplePositions,
     tuple_length: usize,
     first_unbound: TupleIndex,
@@ -198,8 +197,8 @@ pub(crate) struct SortedTupleIterator<Iterator: for<'a> LendingIterator<Item<'a>
     last_enumerated_or_counted: Option<TupleIndex>,
 }
 
-impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleIterator<Iterator> {
-    pub(crate) fn new(iterator: Iterator, tuple_positions: TuplePositions, variable_modes: &VariableModes) -> Self {
+impl<It: Iterator<Item = TupleResult<'static>>> SortedTupleIterator<It> {
+    pub(crate) fn new(iterator: It, tuple_positions: TuplePositions, variable_modes: &VariableModes) -> Self {
         // assumption: items in tuple are ordered as:
         //      (sort?), inputs, outputs, counted, checked
         #[cfg(debug_assertions)]
@@ -249,7 +248,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
         });
 
         Self {
-            iterator: Peekable::new(iterator),
+            iterator: iterator.peekable(),
             tuple_length: tuple_positions.len(),
             positions: tuple_positions,
             first_unbound,
@@ -327,8 +326,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
     ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         // TODO: this should use seek if index == self.first_unbound()
         loop {
-            let peek = self.peek();
-            match peek {
+            match self.peek() {
                 None => return Ok(None),
                 Some(Ok(tuple)) => {
                     let value = &tuple.values()[index as usize];
@@ -372,7 +370,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> SortedTupleI
     }
 }
 
-impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIteratorAPI for SortedTupleIterator<Iterator> {
+impl<It: Iterator<Item = TupleResult<'static>>> TupleIteratorAPI for SortedTupleIterator<It> {
     fn write_values(&mut self, row: &mut Row<'_>) {
         debug_assert!(self.peek().is_some() && self.peek().unwrap().is_ok());
         // note: can't use self.peek() since it will cause mut and immutable reference to self
@@ -407,7 +405,7 @@ impl<Iterator: for<'a> LendingIterator<Item<'a> = TupleResult<'a>>> TupleIterato
         } else if self.any_enumerated() {
             self.count_until_enumerated_changes()
         } else if self.all_counted() {
-            Ok(self.iterator.count_as_ref())
+            Ok(self.iterator.by_ref().count())
         } else {
             debug_assert!(self.all_checked());
             let mut count = 1;

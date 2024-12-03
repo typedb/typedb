@@ -15,10 +15,7 @@ use executor::pipeline::{
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
-use function::{
-    function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex},
-    FunctionError,
-};
+use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},

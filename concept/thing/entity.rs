@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{vertex_object::ObjectVertex, ThingVertex},
@@ -16,7 +16,9 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, Keyable, Prefixed,
 };
-use lending_iterator::{higher_order::Hkt, LendingIterator};
+use itertools::Itertools;
+use lending_iterator::higher_order::Hkt;
+use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -28,69 +30,52 @@ use crate::{
         HKInstance, ThingAPI,
     },
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+    ConceptAPI, ConceptStatus,
 };
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
-pub struct Entity<'a> {
-    vertex: ObjectVertex<'a>,
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
+pub struct Entity {
+    vertex: ObjectVertex,
 }
 
-impl<'a> Entity<'a> {
-    pub fn type_(&self) -> EntityType<'static> {
+impl Entity {
+    pub fn type_(&self) -> EntityType {
         EntityType::build_from_type_id(self.vertex.type_id_())
     }
 
     pub fn get_indexed_players<'m>(
-        &'m self,
+        self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
     ) -> IndexedPlayersIterator {
-        thing_manager.get_indexed_players(snapshot, Object::Entity(self.as_reference()))
+        thing_manager.get_indexed_players(snapshot, Object::Entity(self))
     }
 
-    pub fn next_possible(&self) -> Entity<'static> {
-        let mut bytes = ByteArray::from(self.vertex.bytes());
+    pub fn next_possible(&self) -> Entity {
+        let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
-        Entity::new(ObjectVertex::new(Bytes::Array(bytes)))
-    }
-
-    pub fn as_reference(&self) -> Entity<'_> {
-        Entity { vertex: self.vertex.as_reference() }
-    }
-
-    pub fn into_owned(self) -> Entity<'static> {
-        Entity { vertex: self.vertex.into_owned() }
+        Entity::new(ObjectVertex::new(&bytes))
     }
 }
 
-impl<'a> ConceptAPI<'a> for Entity<'a> {}
+impl ConceptAPI for Entity {}
 
-impl<'a> ThingAPI<'a> for Entity<'a> {
-    type Vertex<'b> = ObjectVertex<'b>;
-    type TypeAPI<'b> = EntityType<'b>;
-    type Owned = Entity<'static>;
+impl ThingAPI for Entity {
+    type Vertex = ObjectVertex;
+    type TypeAPI = EntityType;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexEntity, Prefix::VertexEntity);
 
-    fn new(vertex: ObjectVertex<'a>) -> Self {
+    fn new(vertex: ObjectVertex) -> Self {
         debug_assert_eq!(vertex.prefix(), Prefix::VertexEntity);
         Entity { vertex }
     }
 
-    fn vertex(&self) -> Self::Vertex<'_> {
-        self.vertex.as_reference()
-    }
-
-    fn into_vertex(self) -> Self::Vertex<'a> {
+    fn vertex(&self) -> Self::Vertex {
         self.vertex
     }
 
-    fn into_owned(self) -> Self::Owned {
-        Entity::new(self.vertex.into_owned())
-    }
-
-    fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.to_bytes()
     }
 
     fn set_required(
@@ -99,13 +84,13 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptReadError>> {
         if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
-            thing_manager.lock_existing_object(snapshot, self.as_reference());
+            thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
     }
 
     fn delete(
@@ -113,55 +98,48 @@ impl<'a> ThingAPI<'a> for Entity<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for attr in self
-            .get_has_unordered(snapshot, thing_manager)
-            .map_static(|res| res.map(|(k, _)| k.into_owned()))
-            .try_collect::<Vec<_>, _>()?
-        {
-            thing_manager.unset_has(snapshot, &self, attr);
+        for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(attr, _count)| attr) {
+            thing_manager.unset_has(snapshot, self, &attr?);
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
             let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.unset_has_ordered(snapshot, &self, owns.attribute());
+                thing_manager.unset_has_ordered(snapshot, self, owns.attribute());
             }
         }
 
-        for (relation, role) in self
-            .get_relations_roles(snapshot, thing_manager)
-            .map_static(|res| res.map(|(relation, role, _count)| (relation.into_owned(), role.into_owned())))
-            .try_collect::<Vec<_>, _>()?
-        {
-            thing_manager.unset_links(snapshot, relation, self.as_reference(), role)?;
+        for relates in self.get_relations_roles(snapshot, thing_manager) {
+            let (relation, role, _count) = relates?;
+            thing_manager.unset_links(snapshot, relation, self, role)?;
         }
 
         thing_manager.delete_entity(snapshot, self);
         Ok(())
     }
 
-    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+    fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexEntity
     }
 }
 
-impl<'a> ObjectAPI<'a> for Entity<'a> {
-    fn type_(&self) -> impl ObjectTypeAPI<'static> {
+impl ObjectAPI for Entity {
+    fn type_(&self) -> impl ObjectTypeAPI {
         self.type_()
     }
 
-    fn into_owned_object(self) -> Object<'static> {
-        Object::Entity(self.into_owned())
+    fn into_object(self) -> Object {
+        Object::Entity(self)
     }
 }
 
-impl HKInstance for Entity<'static> {}
+impl HKInstance for Entity {}
 
-impl Hkt for Entity<'static> {
-    type HktSelf<'a> = Entity<'a>;
+impl Hkt for Entity {
+    type HktSelf<'a> = Entity;
 }
 
-impl<'a> fmt::Display for Entity<'a> {
+impl fmt::Display for Entity {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[Entity:{}:{}]", self.type_().vertex().type_id_(), self.vertex.object_id())
     }

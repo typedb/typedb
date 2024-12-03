@@ -13,7 +13,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::increment, Bytes};
+use bytes::{byte_array::ByteArray, util::increment, Bytes};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
@@ -240,8 +240,8 @@ impl WriteBuffer {
         &mut self.writes
     }
 
-    pub fn get_write(&self, key: ByteReference<'_>) -> Option<&Write> {
-        self.writes.get(key.bytes())
+    pub fn get_write(&self, key: &[u8]) -> Option<&Write> {
+        self.writes.get(key)
     }
 
     pub fn clear(&mut self) {
@@ -318,7 +318,7 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -394,7 +394,7 @@ impl<'de> Deserialize<'de> for WriteBuffer {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

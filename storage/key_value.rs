@@ -6,7 +6,7 @@
 
 use std::{borrow::Borrow, cmp::Ordering};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 use serde::{Deserialize, Serialize};
@@ -27,7 +27,7 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         }
     }
 
-    pub fn new_ref<KS: KeyspaceSet>(keyspace: KS, bytes: ByteReference<'bytes>) -> Self {
+    pub fn new_ref<KS: KeyspaceSet>(keyspace: KS, bytes: &'bytes [u8]) -> Self {
         StorageKey::Reference(StorageKeyReference::new(keyspace, bytes))
     }
 
@@ -67,7 +67,7 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
         match self {
             StorageKey::Array(array) => StorageKeyReference::from(array),
             StorageKey::Reference(reference) => {
-                StorageKeyReference::new_raw(reference.keyspace_id(), reference.byte_ref())
+                StorageKeyReference::new_raw(reference.keyspace_id(), reference.bytes())
             }
         }
     }
@@ -86,28 +86,28 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
     }
 }
 
-impl<'bytes, const SZ: usize> PartialEq<Self> for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> PartialEq<Self> for StorageKey<'_, SZ> {
     fn eq(&self, other: &Self) -> bool {
         self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
     }
 }
 
-impl<'bytes, const SZ: usize> Eq for StorageKey<'bytes, SZ> {}
+impl<const SZ: usize> Eq for StorageKey<'_, SZ> {}
 
-impl<'bytes, const SZ: usize> PartialOrd<Self> for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> PartialOrd<Self> for StorageKey<'_, SZ> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<'bytes, const SZ: usize> Ord for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> Ord for StorageKey<'_, SZ> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.bytes().cmp(other.bytes())
     }
 }
 
-impl<'bytes, const SZ: usize> Prefix for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> Prefix for StorageKey<'_, SZ> {
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
@@ -137,7 +137,7 @@ impl<const SZ: usize> StorageKeyArray<SZ> {
         Self { keyspace_id, byte_array: array }
     }
 
-    pub(crate) fn keyspace_id(&self) -> KeyspaceId {
+    pub fn keyspace_id(&self) -> KeyspaceId {
         self.keyspace_id
     }
 
@@ -217,15 +217,15 @@ impl<const SZ: usize, KS: KeyspaceSet> From<(KS, &[u8])> for StorageKeyArray<SZ>
 #[derive(Debug, Clone, Copy)]
 pub struct StorageKeyReference<'bytes> {
     keyspace_id: KeyspaceId,
-    reference: ByteReference<'bytes>,
+    reference: &'bytes [u8],
 }
 
 impl<'bytes> StorageKeyReference<'bytes> {
-    pub fn new<KS: KeyspaceSet>(keyspace: KS, reference: ByteReference<'bytes>) -> StorageKeyReference<'bytes> {
+    pub fn new<KS: KeyspaceSet>(keyspace: KS, reference: &'bytes [u8]) -> StorageKeyReference<'bytes> {
         Self::new_raw(keyspace.id(), reference)
     }
 
-    pub(crate) const fn new_raw(keyspace_id: KeyspaceId, reference: ByteReference<'bytes>) -> Self {
+    pub(crate) const fn new_raw(keyspace_id: KeyspaceId, reference: &'bytes [u8]) -> Self {
         Self { keyspace_id, reference }
     }
 
@@ -234,18 +234,14 @@ impl<'bytes> StorageKeyReference<'bytes> {
     }
 
     pub fn length(&self) -> usize {
-        self.reference.length()
+        self.reference.len()
     }
 
     pub fn bytes(&self) -> &[u8] {
-        self.reference.bytes()
-    }
-
-    pub fn byte_ref(&self) -> ByteReference<'bytes> {
         self.reference
     }
 
-    pub(crate) fn into_byte_ref(self) -> ByteReference<'bytes> {
+    pub(crate) fn into_byte_ref(self) -> &'bytes [u8] {
         self.reference
     }
 }
@@ -256,26 +252,26 @@ impl Hkt for StorageKeyReference<'static> {
 
 impl<'bytes, const SZ: usize> From<&'bytes StorageKeyArray<SZ>> for StorageKeyReference<'bytes> {
     fn from(array_ref: &'bytes StorageKeyArray<SZ>) -> Self {
-        StorageKeyReference::new_raw(array_ref.keyspace_id, array_ref.byte_array().as_ref())
+        StorageKeyReference::new_raw(array_ref.keyspace_id, array_ref.byte_array())
     }
 }
 
-impl<'bytes> PartialEq<Self> for StorageKeyReference<'bytes> {
+impl PartialEq<Self> for StorageKeyReference<'_> {
     fn eq(&self, other: &Self) -> bool {
         (self.keyspace_id(), self.bytes()) == (other.keyspace_id(), other.bytes())
     }
 }
 
-impl<'bytes> Eq for StorageKeyReference<'bytes> {}
+impl Eq for StorageKeyReference<'_> {}
 
-impl<'bytes> PartialOrd<Self> for StorageKeyReference<'bytes> {
+impl PartialOrd<Self> for StorageKeyReference<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<'bytes> Ord for StorageKeyReference<'bytes> {
+impl Ord for StorageKeyReference<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.keyspace_id(), self.bytes()).cmp(&(other.keyspace_id(), other.bytes()))
     }

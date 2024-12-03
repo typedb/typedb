@@ -374,7 +374,6 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
-        let attr = attr.as_reference();
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
         actual == expected
     })
@@ -504,11 +503,11 @@ fn apply_query_template(mut template: &str, answer: &HashMap<String, VariableVal
     buf
 }
 
-fn iid_of(thing: &Thing<'_>) -> Vec<u8> {
+fn iid_of(thing: &Thing) -> Vec<u8> {
     match thing {
-        Thing::Entity(entity) => entity.vertex().bytes().bytes().to_owned(),
-        Thing::Relation(relation) => relation.vertex().bytes().bytes().to_owned(),
-        Thing::Attribute(attribute) => attribute.vertex().bytes().bytes().to_owned(),
+        Thing::Entity(entity) => entity.vertex().to_bytes().into(),
+        Thing::Relation(relation) => relation.vertex().to_bytes().into(),
+        Thing::Attribute(attribute) => attribute.vertex().to_bytes().into(),
     }
 }
 

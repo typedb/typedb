@@ -20,7 +20,7 @@ use encoding::{
         Typed,
     },
     value::{string_bytes::StringBytes, struct_bytes::StructBytes},
-    AsBytes, EncodingKeyspace,
+    EncodingKeyspace,
 };
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
@@ -32,39 +32,36 @@ fn generate_string_attribute_vertex() {
     let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
 
     let thing_vertex_generator = ThingVertexGenerator::new();
 
     // 1: vertex for short string that is stored inline
     {
         let short_string = "Hello";
-        let short_string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
+        let short_string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(short_string);
         let vertex = thing_vertex_generator
             .create_attribute_string(type_id, short_string_bytes.as_reference(), &mut snapshot)
             .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(vertex_id.is_inline());
-        assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.length());
+        assert_eq!(vertex_id.get_inline_length() as usize, short_string_bytes.len());
         assert_eq!(vertex_id.get_inline_id_value().bytes(), short_string_bytes.bytes());
     }
 
     // 2: vertex for long string that does not exist beforehand with default hasher
     {
         let string = "Hello world, this is a long attribute string to be encoded.";
-        let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
+        let string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator
             .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
             .unwrap();
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
-        assert_eq!(
-            vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
-        );
+        assert_eq!(vertex_id.get_hash_prefix(), string_bytes.bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]);
         assert_eq!(
             vertex_id.get_hash_hash(),
-            seahash::hash(string_bytes.bytes().bytes()).to_be_bytes()[0..StringAttributeID::HASHED_HASH_LENGTH]
+            seahash::hash(string_bytes.bytes()).to_be_bytes()[0..StringAttributeID::HASHED_HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
     }
@@ -75,22 +72,19 @@ fn generate_string_attribute_vertex() {
 
     {
         let string = "Hello world, this is a long attribute string to be encoded with a constant hash.";
-        let string_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
+        let string_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string);
         let vertex = thing_vertex_generator
             .create_attribute_string(type_id, string_bytes.as_reference(), &mut snapshot)
             .unwrap();
 
         let vertex_id = vertex.attribute_id().unwrap_string();
         assert!(!vertex_id.is_inline());
-        assert_eq!(
-            vertex_id.get_hash_prefix(),
-            string_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
-        );
+        assert_eq!(vertex_id.get_hash_prefix(), string_bytes.bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]);
         assert_eq!(vertex_id.get_hash_hash(), CONSTANT_HASH.to_be_bytes()[0..StringAttributeID::HASHED_HASH_LENGTH]);
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
         {
             let string_collide = "Hello world, this is using the same prefix and will collide.";
-            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let string_collide_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
             let collide_vertex = thing_vertex_generator
                 .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
                 .unwrap();
@@ -99,7 +93,7 @@ fn generate_string_attribute_vertex() {
             assert!(!collide_id.is_inline());
             assert_eq!(
                 collide_id.get_hash_prefix(),
-                string_collide_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
+                string_collide_bytes.bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
             );
             assert_eq!(
                 collide_id.get_hash_hash(),
@@ -109,7 +103,7 @@ fn generate_string_attribute_vertex() {
         }
         {
             let string_collide = "Hello world, this is using the same prefix and will collide AGAIN!.";
-            let string_collide_bytes: StringBytes<'_, BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
+            let string_collide_bytes: StringBytes<BUFFER_KEY_INLINE> = StringBytes::build_ref(string_collide);
             let collide_vertex = thing_vertex_generator
                 .create_attribute_string(type_id, string_collide_bytes.as_reference(), &mut snapshot)
                 .unwrap();
@@ -118,7 +112,7 @@ fn generate_string_attribute_vertex() {
             assert!(!collide_id.is_inline());
             assert_eq!(
                 collide_id.get_hash_prefix(),
-                string_collide_bytes.bytes().bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
+                string_collide_bytes.bytes()[0..StringAttributeID::HASHED_PREFIX_LENGTH]
             );
             assert_eq!(
                 collide_id.get_hash_hash(),
@@ -134,7 +128,7 @@ fn generate_struct_attribute_vertex() {
     let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
 
     let thing_vertex_generator = ThingVertexGenerator::new();
 
@@ -149,7 +143,7 @@ fn generate_struct_attribute_vertex() {
         let vertex_id = vertex.attribute_id().unwrap_struct();
         assert_eq!(
             vertex_id.get_hash_hash(),
-            seahash::hash(struct_bytes.bytes().bytes()).to_be_bytes()[0..StructAttributeID::HASH_LENGTH]
+            seahash::hash(struct_bytes.bytes()).to_be_bytes()[0..StructAttributeID::HASH_LENGTH]
         );
         assert_eq!(vertex_id.get_hash_disambiguator(), 0u8);
     }
@@ -200,7 +194,7 @@ fn generate_struct_attribute_vertex() {
 fn next_entity_and_relation_ids_are_determined_from_storage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
     {
         let wal = WAL::create(&storage_path).unwrap();
         let storage = Arc::new(

@@ -6,7 +6,7 @@
 
 use std::{path::Path, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -92,7 +92,7 @@ fn g0_update_conflicts_fail() {
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.clone().open_snapshot_write();
 
-    let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
+    let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));
 
     snapshot_1.get_required(key_1.clone()).unwrap();
 

@@ -45,25 +45,25 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct EntityType<'a> {
-    vertex: TypeVertex<'a>,
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct EntityType {
+    vertex: TypeVertex,
 }
 
-impl Hkt for EntityType<'static> {
-    type HktSelf<'a> = EntityType<'static>;
+impl Hkt for EntityType {
+    type HktSelf<'a> = EntityType;
 }
 
-impl<'a> EntityType<'a> {}
+impl EntityType {}
 
-impl<'a> ConceptAPI<'a> for EntityType<'a> {}
+impl ConceptAPI for EntityType {}
 
-impl<'a> PrefixedTypeVertexEncoding<'a> for EntityType<'a> {
+impl PrefixedTypeVertexEncoding for EntityType {
     const PREFIX: Prefix = VertexEntityType;
 }
 
-impl<'a> TypeVertexEncoding<'a> for EntityType<'a> {
-    fn from_vertex(vertex: TypeVertex<'a>) -> Result<Self, EncodingError> {
+impl TypeVertexEncoding for EntityType {
+    fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError> {
         debug_assert!(Self::PREFIX == VertexEntityType);
         if vertex.prefix() != Prefix::VertexEntityType {
             Err(UnexpectedPrefix { expected_prefix: Prefix::VertexEntityType, actual_prefix: vertex.prefix() })
@@ -72,18 +72,17 @@ impl<'a> TypeVertexEncoding<'a> for EntityType<'a> {
         }
     }
 
-    fn vertex(&self) -> TypeVertex<'_> {
-        self.vertex.as_reference()
+    fn vertex(&self) -> TypeVertex {
+        self.vertex
     }
 
-    fn into_vertex(self) -> TypeVertex<'a> {
+    fn into_vertex(self) -> TypeVertex {
         self.vertex
     }
 }
 
-impl<'a> TypeAPI<'a> for EntityType<'a> {
-    type SelfStatic = EntityType<'static>;
-    fn new(vertex: TypeVertex<'a>) -> EntityType<'a> {
+impl TypeAPI for EntityType {
+    fn new(vertex: TypeVertex) -> EntityType {
         Self::from_vertex(vertex).unwrap()
     }
 
@@ -101,65 +100,65 @@ impl<'a> TypeAPI<'a> for EntityType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.delete_entity_type(snapshot, thing_manager, self.into_owned())
+        type_manager.delete_entity_type(snapshot, thing_manager, self)
     }
 
     fn get_label<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Label<'static>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_label(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, Label>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_label(snapshot, *self)
     }
 
     fn get_label_arc(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<Label<'static>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_label_arc(snapshot, self.clone().into_owned())
+    ) -> Result<Arc<Label>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_label_arc(snapshot, *self)
     }
 
     fn get_supertype(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<EntityType<'static>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_supertype(snapshot, self.clone().into_owned())
+    ) -> Result<Option<EntityType>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_supertype(snapshot, *self)
     }
 
     fn get_supertypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<EntityType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_supertypes(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, Vec<EntityType>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_supertypes(snapshot, *self)
     }
 
     fn get_subtypes<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<EntityType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_subtypes(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<EntityType>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_subtypes(snapshot, *self)
     }
 
     fn get_subtypes_transitive<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, Vec<EntityType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_subtypes_transitive(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, Vec<EntityType>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_subtypes_transitive(snapshot, *self)
     }
 }
 
-impl<'a> ObjectTypeAPI<'a> for EntityType<'a> {
-    fn into_owned_object_type(self) -> ObjectType<'static> {
-        ObjectType::Entity(self.into_owned())
+impl ObjectTypeAPI for EntityType {
+    fn into_object_type(self) -> ObjectType {
+        ObjectType::Entity(self)
     }
 }
 
-impl<'a> KindAPI<'a> for EntityType<'a> {
+impl KindAPI for EntityType {
     type AnnotationType = EntityTypeAnnotation;
     const KIND: Kind = Kind::Entity;
 
@@ -168,33 +167,30 @@ impl<'a> KindAPI<'a> for EntityType<'a> {
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<EntityTypeAnnotation>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_annotations_declared(snapshot, self.clone().into_owned())
+        type_manager.get_entity_type_annotations_declared(snapshot, *self)
     }
 
     fn get_constraints<'m>(
-        &self,
+        self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<EntityType<'static>>>>, Box<ConceptReadError>>
-    where
-        'a: 'static,
-    {
-        type_manager.get_entity_type_constraints(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<EntityType>>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_constraints(snapshot, self)
     }
 }
 
-impl<'a> ThingTypeAPI<'a> for EntityType<'a> {
-    type InstanceType<'b> = Entity<'b>;
+impl ThingTypeAPI for EntityType {
+    type InstanceType = Entity;
 }
 
-impl<'a> EntityType<'a> {
+impl EntityType {
     pub fn set_label(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
-        label: &Label<'_>,
+        label: &Label,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_label(snapshot, self.clone().into_owned(), label)
+        type_manager.set_label(snapshot, *self, label)
     }
 
     pub fn set_supertype(
@@ -202,9 +198,9 @@ impl<'a> EntityType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        supertype: EntityType<'static>,
+        supertype: EntityType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_entity_type_supertype(snapshot, thing_manager, self.clone().into_owned(), supertype)
+        type_manager.set_entity_type_supertype(snapshot, thing_manager, *self, supertype)
     }
 
     pub fn unset_supertype(
@@ -213,7 +209,7 @@ impl<'a> EntityType<'a> {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_entity_type_supertype(snapshot, thing_manager, self.clone().into_owned())
+        type_manager.unset_entity_type_supertype(snapshot, thing_manager, *self)
     }
 
     pub fn set_annotation(
@@ -225,7 +221,7 @@ impl<'a> EntityType<'a> {
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
-                type_manager.set_entity_type_annotation_abstract(snapshot, thing_manager, self.clone().into_owned())?
+                type_manager.set_entity_type_annotation_abstract(snapshot, thing_manager, *self)?
             }
         };
         Ok(())
@@ -240,9 +236,7 @@ impl<'a> EntityType<'a> {
         let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
             .map_err(|source| ConceptWriteError::Annotation { source })?;
         match entity_annotation {
-            EntityTypeAnnotation::Abstract(_) => {
-                type_manager.unset_entity_type_annotation_abstract(snapshot, self.clone().into_owned())?
-            }
+            EntityTypeAnnotation::Abstract(_) => type_manager.unset_entity_type_annotation_abstract(snapshot, *self)?,
         }
 
         Ok(())
@@ -252,32 +246,22 @@ impl<'a> EntityType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Option<TypeConstraint<EntityType<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_abstract_constraint(snapshot, self.clone().into_owned())
-    }
-
-    pub fn into_owned(self) -> EntityType<'static> {
-        EntityType { vertex: self.vertex.into_owned() }
+    ) -> Result<Option<TypeConstraint<EntityType>>, Box<ConceptReadError>> {
+        type_manager.get_type_abstract_constraint(snapshot, *self)
     }
 }
 
-impl<'a> OwnerAPI<'a> for EntityType<'a> {
+impl OwnerAPI for EntityType {
     fn set_owns(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
         ordering: Ordering,
-    ) -> Result<Owns<'static>, Box<ConceptWriteError>> {
-        type_manager.set_owns(
-            snapshot,
-            thing_manager,
-            self.clone().into_owned_object_type(),
-            attribute_type.clone(),
-            ordering,
-        )?;
-        Ok(Owns::new(ObjectType::Entity(self.clone().into_owned()), attribute_type))
+    ) -> Result<Owns, Box<ConceptWriteError>> {
+        type_manager.set_owns(snapshot, thing_manager, (*self).into_object_type(), attribute_type, ordering)?;
+        Ok(Owns::new(ObjectType::Entity(*self), attribute_type))
     }
 
     fn unset_owns(
@@ -285,9 +269,9 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        attribute_type: AttributeType<'static>,
+        attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_owns(snapshot, thing_manager, self.clone().into_owned_object_type(), attribute_type)?;
+        type_manager.unset_owns(snapshot, thing_manager, (*self).into_object_type(), attribute_type)?;
         Ok(())
     }
 
@@ -295,116 +279,108 @@ impl<'a> OwnerAPI<'a> for EntityType<'a> {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_owns_declared(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_owns_declared(snapshot, *self)
     }
 
     fn get_owns<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_owns(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_owns(snapshot, *self)
     }
 
     fn get_owns_with_specialised<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_owns_with_specialised(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_owns_with_specialised(snapshot, *self)
     }
 
     fn get_owned_attribute_type_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns<'static>>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_owned_attribute_type_constraints(
-            snapshot,
-            self.clone().into_owned(),
-            attribute_type,
-        )
+        attribute_type: AttributeType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Owns>>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_owned_attribute_type_constraints(snapshot, *self, attribute_type)
     }
 
     fn get_owned_attribute_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_abstract_constraint(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        attribute_type: AttributeType,
+    ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_abstract_constraint(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_cardinality_constraints(
-            snapshot,
-            self.clone().into_owned_object_type(),
-            attribute_type,
-        )
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_cardinality_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_distinct(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_distinct_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_distinct_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_regex(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_regex_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_regex_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_range_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_range_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraints_values(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_values_constraints(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        attribute_type: AttributeType,
+    ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_values_constraints(snapshot, (*self).into_object_type(), attribute_type)
     }
 
     fn get_owned_attribute_type_constraint_unique(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        attribute_type: AttributeType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Owns<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_owns_unique_constraint(snapshot, self.clone().into_owned_object_type(), attribute_type)
+        attribute_type: AttributeType,
+    ) -> Result<Option<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        type_manager.get_type_owns_unique_constraint(snapshot, (*self).into_object_type(), attribute_type)
     }
 }
 
-impl<'a> PlayerAPI<'a> for EntityType<'a> {
+impl PlayerAPI for EntityType {
     fn set_plays(
         &self,
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Plays<'static>, Box<ConceptWriteError>> {
-        type_manager.set_plays(snapshot, thing_manager, self.clone().into_owned_object_type(), role_type.clone())
+        role_type: RoleType,
+    ) -> Result<Plays, Box<ConceptWriteError>> {
+        type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
     }
 
     fn unset_plays(
@@ -412,64 +388,64 @@ impl<'a> PlayerAPI<'a> for EntityType<'a> {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
-        role_type: RoleType<'static>,
+        role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.unset_plays(snapshot, thing_manager, self.clone().into_owned_object_type(), role_type)
+        type_manager.unset_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
     }
 
     fn get_plays_declared<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_plays_declared(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_plays_declared(snapshot, *self)
     }
 
     fn get_plays<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_plays(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_plays(snapshot, *self)
     }
 
     fn get_plays_with_specialised<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-    ) -> Result<MaybeOwns<'m, HashSet<Plays<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_plays_with_specialised(snapshot, self.clone().into_owned())
+    ) -> Result<MaybeOwns<'m, HashSet<Plays>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_plays_with_specialised(snapshot, *self)
     }
 
     fn get_played_role_type_constraints<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays<'static>>>>, Box<ConceptReadError>> {
-        type_manager.get_entity_type_played_role_type_constraints(snapshot, self.clone().into_owned(), role_type)
+        role_type: RoleType,
+    ) -> Result<MaybeOwns<'m, HashSet<CapabilityConstraint<Plays>>>, Box<ConceptReadError>> {
+        type_manager.get_entity_type_played_role_type_constraints(snapshot, *self, role_type)
     }
 
     fn get_played_role_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<Option<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_plays_abstract_constraint(snapshot, self.clone().into_owned_object_type(), role_type)
+        role_type: RoleType,
+    ) -> Result<Option<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
+        type_manager.get_type_plays_abstract_constraint(snapshot, (*self).into_object_type(), role_type)
     }
 
     fn get_played_role_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-        role_type: RoleType<'static>,
-    ) -> Result<HashSet<CapabilityConstraint<Plays<'static>>>, Box<ConceptReadError>> {
-        type_manager.get_type_plays_cardinality_constraints(snapshot, self.clone().into_owned_object_type(), role_type)
+        role_type: RoleType,
+    ) -> Result<HashSet<CapabilityConstraint<Plays>>, Box<ConceptReadError>> {
+        type_manager.get_type_plays_cardinality_constraints(snapshot, (*self).into_object_type(), role_type)
     }
 }
 
-impl<'a> fmt::Display for EntityType<'a> {
+impl fmt::Display for EntityType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[EntityType:{}]", self.vertex.type_id_())
     }
@@ -508,7 +484,7 @@ impl From<EntityTypeAnnotation> for Annotation {
 }
 
 // TODO: can we inline this into the macro invocation?
-fn storage_key_to_entity_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> EntityType<'_> {
+fn storage_key_to_entity_type(storage_key: StorageKey<'_, BUFFER_KEY_INLINE>) -> EntityType {
     EntityType::read_from(storage_key.into_bytes())
 }
 

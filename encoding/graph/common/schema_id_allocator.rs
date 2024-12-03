@@ -32,8 +32,8 @@ use crate::{
     Keyable,
 };
 
-pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex<'static>>;
-pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey<'static>>;
+pub type TypeVertexAllocator = SchemaIDAllocator<TypeVertex>;
+pub type DefinitionKeyAllocator = SchemaIDAllocator<DefinitionKey>;
 
 pub trait SchemaID: Sized {
     const MIN_ID: u64;
@@ -51,7 +51,7 @@ pub struct SchemaIDAllocator<T: SchemaID> {
     phantom: PhantomData<T>,
 }
 
-impl<'a, T: SchemaID + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
+impl<T: SchemaID + Keyable<BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
     pub fn new(prefix: Prefix) -> Self {
         Self { last_allocated_type_id: AtomicU64::new(0), prefix, phantom: PhantomData }
     }
@@ -103,17 +103,17 @@ impl<'a, T: SchemaID + Keyable<'a, BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
     }
 }
 
-impl SchemaID for TypeVertex<'static> {
+impl SchemaID for TypeVertex {
     const MIN_ID: u64 = TypeIDUInt::MIN as u64;
     const MAX_ID: u64 = TypeIDUInt::MAX as u64;
 
-    fn object_from_id(prefix: Prefix, id: u64) -> TypeVertex<'static> {
+    fn object_from_id(prefix: Prefix, id: u64) -> TypeVertex {
         debug_assert!((Self::MIN_ID..=Self::MAX_ID).contains(&id));
-        TypeVertex::build(prefix.prefix_id(), TypeID::build(id as TypeIDUInt))
+        TypeVertex::new(prefix.prefix_id(), TypeID::new(id as TypeIDUInt))
     }
 
     fn id_from_key(key: StorageKey<'_, BUFFER_KEY_INLINE>) -> u64 {
-        TypeVertex::new(Bytes::reference(key.bytes())).type_id_().as_u16() as u64
+        TypeVertex::decode(Bytes::reference(key.bytes())).type_id_().as_u16() as u64
     }
 
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError {
@@ -128,7 +128,7 @@ impl SchemaID for TypeVertex<'static> {
     }
 }
 
-impl SchemaID for DefinitionKey<'static> {
+impl SchemaID for DefinitionKey {
     const MIN_ID: u64 = DefinitionIDUInt::MIN as u64;
     const MAX_ID: u64 = DefinitionIDUInt::MAX as u64;
 

@@ -25,7 +25,7 @@ fn vertex_generation<D>(
     thing_vertex_generator: Arc<ThingVertexGenerator>,
     type_id: TypeID,
     write_snapshot: &mut WriteSnapshot<D>,
-) -> ObjectVertex<'static> {
+) -> ObjectVertex {
     thing_vertex_generator.create_entity(type_id, write_snapshot)
 }
 
@@ -45,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());
 
     let mut snapshot = storage.clone().open_snapshot_write();

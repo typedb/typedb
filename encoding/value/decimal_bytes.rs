@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DecimalBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }
@@ -26,10 +26,11 @@ impl DecimalBytes {
         Self { bytes }
     }
 
-    pub fn build(fixed: Decimal) -> Self {
+    pub fn build(decimal: Decimal) -> Self {
         let mut bytes = [0; Self::ENCODED_LENGTH];
-        bytes[..Self::INTEGER_LENGTH].copy_from_slice(&encode_i64(fixed.integer_part()));
-        bytes[Self::INTEGER_LENGTH..][..Self::FRACTIONAL_LENGTH].copy_from_slice(&encode_u64(fixed.fractional_part()));
+        bytes[..Self::INTEGER_LENGTH].copy_from_slice(&encode_i64(decimal.integer_part()));
+        bytes[Self::INTEGER_LENGTH..][..Self::FRACTIONAL_LENGTH]
+            .copy_from_slice(&encode_u64(decimal.fractional_part()));
         Self { bytes }
     }
 

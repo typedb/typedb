@@ -75,8 +75,8 @@ fn write_entity_attributes(
         let name = thing_manager
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string)))
             .unwrap();
-        person.set_has_unordered(&mut snapshot, &thing_manager, age).unwrap();
-        person.set_has_unordered(&mut snapshot, &thing_manager, name).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &age).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &name).unwrap();
     }
 
     snapshot.commit().unwrap();
@@ -136,14 +136,14 @@ pub struct FlamegraphProfiler<'a> {
     active_profiler: Option<ProfilerGuard<'a>>,
 }
 
-impl<'a> FlamegraphProfiler<'a> {
+impl FlamegraphProfiler<'_> {
     #[allow(dead_code)]
     pub fn new(frequency: c_int) -> Self {
         Self { frequency, active_profiler: None }
     }
 }
 
-impl<'a> Profiler for FlamegraphProfiler<'a> {
+impl Profiler for FlamegraphProfiler<'_> {
     fn start_profiling(&mut self, _benchmark_id: &str, _benchmark_dir: &Path) {
         self.active_profiler = Some(ProfilerGuard::new(self.frequency).unwrap());
     }

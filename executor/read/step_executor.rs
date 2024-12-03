@@ -77,7 +77,7 @@ impl StepExecutors {
         }
     }
 
-    pub(crate) fn unwrap_reshape(&self) -> &Vec<VariablePosition> {
+    pub(crate) fn unwrap_reshape(&self) -> &[VariablePosition] {
         match self {
             StepExecutors::ReshapeForReturn(return_positions) => return_positions,
             _ => panic!("bad unwrap"),
@@ -252,7 +252,7 @@ pub(super) fn create_executors_for_pipeline_stages(
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
     query_profile: &QueryProfile,
-    executable_stages: &Vec<ExecutableStage>,
+    executable_stages: &[ExecutableStage],
     at_index: usize,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let mut previous_stage_steps = if at_index > 0 {

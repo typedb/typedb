@@ -18,7 +18,7 @@ use std::{
 };
 
 use ::error::typedb_error;
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
@@ -272,7 +272,7 @@ impl<Durability> MVCCStorage<Durability> {
                 _ => None,
             });
             for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key.as_ref());
+                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
                     debug_assert!(self
                         .get::<0>(wrapped, snapshot.open_sequence_number())
@@ -350,7 +350,7 @@ impl<Durability> MVCCStorage<Durability> {
         mapper: Mapper,
     ) -> Result<Option<V>, MVCCReadError>
     where
-        Mapper: Fn(ByteReference<'_>) -> V,
+        Mapper: Fn(&[u8]) -> V,
     {
         let key = key.into();
         let mut iterator = self.iterate_range(

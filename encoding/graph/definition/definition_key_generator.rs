@@ -35,9 +35,9 @@ impl DefinitionKeyGenerator {
     pub fn create_struct<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-    ) -> Result<DefinitionKey<'static>, EncodingError> {
+    ) -> Result<DefinitionKey, EncodingError> {
         let definition_key = self.next_struct.allocate(snapshot)?;
-        snapshot.put(definition_key.as_storage_key().into_owned_array());
+        snapshot.put(definition_key.clone().into_storage_key().into_owned_array());
         Ok(definition_key)
     }
 
@@ -48,9 +48,9 @@ impl DefinitionKeyGenerator {
     pub fn create_function<Snapshot: WritableSnapshot>(
         &self,
         snapshot: &mut Snapshot,
-    ) -> Result<DefinitionKey<'static>, EncodingError> {
+    ) -> Result<DefinitionKey, EncodingError> {
         let definition_key = self.next_function.allocate(snapshot)?;
-        snapshot.put(definition_key.as_storage_key().into_owned_array());
+        snapshot.put(definition_key.clone().into_storage_key().into_owned_array());
         Ok(definition_key)
     }
 }

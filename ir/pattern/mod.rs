@@ -54,7 +54,7 @@ impl IrID for Variable {}
 #[derive(Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Vertex<ID> {
     Variable(ID),
-    Label(Label<'static>),
+    Label(Label),
     Parameter(ParameterID),
 }
 
@@ -75,7 +75,7 @@ impl<ID: IrID> Vertex<ID> {
         }
     }
 
-    pub fn as_label(&self) -> Option<&Label<'static>> {
+    pub fn as_label(&self) -> Option<&Label> {
         if let Self::Label(v) = self {
             Some(v)
         } else {

@@ -332,46 +332,46 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct TypeConstraint<T: KindAPI<'static>> {
+pub struct TypeConstraint<T: KindAPI> {
     description: ConstraintDescription,
     source: T,
 }
 
-impl<T: KindAPI<'static>> TypeConstraint<T> {
+impl<T: KindAPI> TypeConstraint<T> {
     pub(crate) fn new(description: ConstraintDescription, source: T) -> Self {
         Self { description, source }
     }
 }
 
-impl<T: KindAPI<'static>> Constraint<T> for TypeConstraint<T> {
+impl<T: KindAPI> Constraint<T> for TypeConstraint<T> {
     fn description(&self) -> ConstraintDescription {
         self.description.clone()
     }
 
     fn source(&self) -> T {
-        self.source.clone()
+        self.source
     }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct CapabilityConstraint<CAP: Capability<'static>> {
+pub struct CapabilityConstraint<CAP: Capability> {
     description: ConstraintDescription,
     source: CAP,
 }
 
-impl<CAP: Capability<'static>> CapabilityConstraint<CAP> {
+impl<CAP: Capability> CapabilityConstraint<CAP> {
     pub(crate) fn new(description: ConstraintDescription, source: CAP) -> Self {
         Self { description, source }
     }
 }
 
-impl<CAP: Capability<'static>> Constraint<CAP> for CapabilityConstraint<CAP> {
+impl<CAP: Capability> Constraint<CAP> for CapabilityConstraint<CAP> {
     fn description(&self) -> ConstraintDescription {
         self.description.clone()
     }
 
     fn source(&self) -> CAP {
-        self.source.clone()
+        self.source
     }
 }
 
@@ -422,7 +422,7 @@ pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
     filter_by_constraint_category!(constraints.into_iter(), Cardinality).collect()
 }
 
-pub(crate) fn get_cardinality_constraint<'a, CAP: Capability<'static>>(
+pub(crate) fn get_cardinality_constraint<'a, CAP: Capability>(
     capability: CAP,
     constraints: impl IntoIterator<Item = &'a CapabilityConstraint<CAP>>,
 ) -> Option<CapabilityConstraint<CAP>> {
@@ -512,13 +512,13 @@ pub(crate) fn get_checked_constraints<C: Constraint<T>, T: Hash + Eq>(
     filter_out_unchecked_constraints!(constraints.into_iter()).collect()
 }
 
-pub(crate) fn get_owns_default_constraints<CAP: Capability<'static>>(
+pub(crate) fn get_owns_default_constraints<CAP: Capability>(
     source: CAP,
     ordering: Ordering,
 ) -> HashSet<CapabilityConstraint<CAP>> {
     let mut constraints = HashSet::from([CapabilityConstraint::new(
         ConstraintDescription::Cardinality(Owns::get_default_cardinality(ordering)),
-        source.clone(),
+        source,
     )]);
 
     if let Some(default_distinct) = Owns::get_default_distinct(ordering) {
@@ -528,16 +528,14 @@ pub(crate) fn get_owns_default_constraints<CAP: Capability<'static>>(
     constraints
 }
 
-pub(crate) fn get_plays_default_constraints<CAP: Capability<'static>>(
-    source: CAP,
-) -> HashSet<CapabilityConstraint<CAP>> {
+pub(crate) fn get_plays_default_constraints<CAP: Capability>(source: CAP) -> HashSet<CapabilityConstraint<CAP>> {
     HashSet::from([CapabilityConstraint::new(
         ConstraintDescription::Cardinality(Plays::get_default_cardinality()),
-        source.clone(),
+        source,
     )])
 }
 
-pub(crate) fn get_relates_default_constraints<CAP: Capability<'static>>(
+pub(crate) fn get_relates_default_constraints<CAP: Capability>(
     source: CAP,
     role_ordering: Ordering,
     is_specialising: bool,
@@ -547,7 +545,7 @@ pub(crate) fn get_relates_default_constraints<CAP: Capability<'static>>(
     } else {
         HashSet::from([CapabilityConstraint::new(
             ConstraintDescription::Cardinality(Relates::get_default_cardinality_for_non_specialising(role_ordering)),
-            source.clone(),
+            source,
         )])
     };
 
@@ -558,7 +556,7 @@ pub(crate) fn get_relates_default_constraints<CAP: Capability<'static>>(
     constraints
 }
 
-pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI<'static>>(
+pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI>(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     constraints: impl IntoIterator<Item = &'a TypeConstraint<T>>,
@@ -567,9 +565,9 @@ pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI<'static>>(
         .into_iter()
         .map(|constraint| constraint.source())
         .sorted_by(|lhs, rhs| {
-            if lhs.is_subtype_transitive_of(snapshot, type_manager, rhs.clone()).unwrap_or(false) {
+            if lhs.is_subtype_transitive_of(snapshot, type_manager, *rhs).unwrap_or(false) {
                 std::cmp::Ordering::Less
-            } else if lhs.is_supertype_transitive_of(snapshot, type_manager, rhs.clone()).unwrap_or(false) {
+            } else if lhs.is_supertype_transitive_of(snapshot, type_manager, *rhs).unwrap_or(false) {
                 std::cmp::Ordering::Greater
             } else {
                 std::cmp::Ordering::Equal

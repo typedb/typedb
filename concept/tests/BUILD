@@ -31,6 +31,7 @@ test_deps = [
     "//encoding/tests:test_utils_encoding",
     "//util/test:test_utils",
 
+    "@crates//:itertools",
     "@crates//:rand",
     "@crates//:tracing",
 ]

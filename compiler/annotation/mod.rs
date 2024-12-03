@@ -143,7 +143,7 @@ pub mod tests {
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
     };
 
-    impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
+    impl PartialEq<Self> for TypeInferenceEdge<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.constraint == other.constraint
                 && self.right == other.right
@@ -153,9 +153,9 @@ pub mod tests {
         }
     }
 
-    impl<'this> Eq for TypeInferenceEdge<'this> {}
+    impl Eq for TypeInferenceEdge<'_> {}
 
-    impl<'this> PartialEq<Self> for TypeInferenceGraph<'this> {
+    impl PartialEq<Self> for TypeInferenceGraph<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.vertices == other.vertices
                 && self.edges == other.edges
@@ -163,15 +163,15 @@ pub mod tests {
         }
     }
 
-    impl<'this> Eq for TypeInferenceGraph<'this> {}
+    impl Eq for TypeInferenceGraph<'_> {}
 
-    impl<'this> PartialEq<Self> for NestedTypeInferenceGraphDisjunction<'this> {
+    impl PartialEq<Self> for NestedTypeInferenceGraphDisjunction<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.disjunction == other.disjunction
         }
     }
 
-    impl<'this> Eq for NestedTypeInferenceGraphDisjunction<'this> {}
+    impl Eq for NestedTypeInferenceGraphDisjunction<'_> {}
 
     pub(crate) fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();
@@ -214,17 +214,17 @@ pub mod tests {
             snapshot::{CommittableSnapshot, WritableSnapshot},
         };
 
-        pub(crate) const LABEL_ANIMAL: Label<'_> = Label::new_static("animal");
-        pub(crate) const LABEL_CAT: Label<'_> = Label::new_static("cat");
-        pub(crate) const LABEL_DOG: Label<'_> = Label::new_static("dog");
+        pub(crate) const LABEL_ANIMAL: Label = Label::new_static("animal");
+        pub(crate) const LABEL_CAT: Label = Label::new_static("cat");
+        pub(crate) const LABEL_DOG: Label = Label::new_static("dog");
 
-        pub(crate) const LABEL_NAME: Label<'_> = Label::new_static("name");
-        pub(crate) const LABEL_CATNAME: Label<'_> = Label::new_static("cat-name");
-        pub(crate) const LABEL_DOGNAME: Label<'_> = Label::new_static("dog-name");
+        pub(crate) const LABEL_NAME: Label = Label::new_static("name");
+        pub(crate) const LABEL_CATNAME: Label = Label::new_static("cat-name");
+        pub(crate) const LABEL_DOGNAME: Label = Label::new_static("dog-name");
 
-        pub(crate) const LABEL_FEARS: Label<'_> = Label::new_static("fears");
-        pub(crate) const LABEL_HAS_FEAR: Label<'_> = Label::new_static_scoped("has-fear", "fears", "fears:has-fear");
-        pub(crate) const LABEL_IS_FEARED: Label<'_> = Label::new_static_scoped("is-feared", "fears", "fears:is-feared");
+        pub(crate) const LABEL_FEARS: Label = Label::new_static("fears");
+        pub(crate) const LABEL_HAS_FEAR: Label = Label::new_static_scoped("has-fear", "fears", "fears:has-fear");
+        pub(crate) const LABEL_IS_FEARED: Label = Label::new_static_scoped("is-feared", "fears", "fears:is-feared");
 
         pub(crate) fn setup_types<Snapshot: WritableSnapshot + CommittableSnapshot<WALClient>>(
             snapshot_: Snapshot,
@@ -250,8 +250,8 @@ pub mod tests {
                 AttributeTypeAnnotation::Abstract(AnnotationAbstract),
             )
             .unwrap();
-            catname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
-            dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
+            catname.set_supertype(&mut snapshot, type_manager, thing_manager, name).unwrap();
+            dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name).unwrap();
 
             name.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
             catname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
@@ -261,8 +261,8 @@ pub mod tests {
             let animal = type_manager.create_entity_type(&mut snapshot, &LABEL_ANIMAL).unwrap();
             let cat = type_manager.create_entity_type(&mut snapshot, &LABEL_CAT).unwrap();
             let dog = type_manager.create_entity_type(&mut snapshot, &LABEL_DOG).unwrap();
-            cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
-            dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
+            cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal).unwrap();
+            dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal).unwrap();
             animal
                 .set_annotation(
                     &mut snapshot,
@@ -273,9 +273,9 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
-            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
-            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            animal.set_owns(&mut snapshot, type_manager, thing_manager, name, Ordering::Unordered).unwrap();
+            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname, Ordering::Unordered).unwrap();
+            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname, Ordering::Unordered).unwrap();
 
             // Relations
             let fears = type_manager.create_relation_type(&mut snapshot, &LABEL_FEARS).unwrap();
@@ -299,8 +299,8 @@ pub mod tests {
                 )
                 .unwrap()
                 .role();
-            cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear.clone()).unwrap();
-            dog.set_plays(&mut snapshot, type_manager, thing_manager, is_feared.clone()).unwrap();
+            cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear).unwrap();
+            dog.set_plays(&mut snapshot, type_manager, thing_manager, is_feared).unwrap();
 
             snapshot.commit().unwrap();
 

@@ -271,10 +271,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 
     fn local_variables<'a>(
-        &'a self,
+        &self,
         context: &'a BlockContext,
         conjunction_scope_id: ScopeId,
-    ) -> impl Iterator<Item = Variable> + '_ {
+    ) -> impl Iterator<Item = Variable> + 'a {
         context.get_variable_scopes().filter(move |&(_, scope)| scope == conjunction_scope_id).map(|(var, _)| var)
     }
 
@@ -555,7 +555,7 @@ trait UnaryConstraint {
 pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label<'static>,
+    label_value: &encoding::value::label::Label,
 ) -> Result<Option<TypeAnnotation>, Box<ConceptReadError>> {
     if let Some(t) = type_manager.get_attribute_type(snapshot, label_value)?.map(TypeAnnotation::Attribute) {
         Ok(Some(t))
@@ -573,7 +573,7 @@ pub(crate) fn get_type_annotation_from_label<Snapshot: ReadableSnapshot>(
 pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnapshot>(
     snapshot: &Snapshot,
     type_manager: &TypeManager,
-    label_value: &encoding::value::label::Label<'static>,
+    label_value: &encoding::value::label::Label,
 ) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
     let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
         .map_err(|source| TypeInferenceError::ConceptRead { source })?;
@@ -585,25 +585,25 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::Entity(t.clone()))
+            .map(|t| TypeAnnotation::Entity(*t))
             .collect(),
         TypeAnnotation::Relation(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::Relation(t.clone()))
+            .map(|t| TypeAnnotation::Relation(*t))
             .collect(),
         TypeAnnotation::Attribute(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::Attribute(t.clone()))
+            .map(|t| TypeAnnotation::Attribute(*t))
             .collect(),
         TypeAnnotation::RoleType(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
             .map_err(|source| TypeInferenceError::ConceptRead { source })?
             .iter()
-            .map(|t| TypeAnnotation::RoleType(t.clone()))
+            .map(|t| TypeAnnotation::RoleType(*t))
             .collect(),
     };
     types.insert(type_);
@@ -622,25 +622,25 @@ impl UnaryConstraint for Kind<Variable> {
                 .get_entity_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::Entity(t.clone()))
+                .map(|t| TypeAnnotation::Entity(*t))
                 .collect(),
             typeql::token::Kind::Relation => type_manager
                 .get_relation_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::Relation(t.clone()))
+                .map(|t| TypeAnnotation::Relation(*t))
                 .collect(),
             typeql::token::Kind::Attribute => type_manager
                 .get_attribute_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::Attribute(t.clone()))
+                .map(|t| TypeAnnotation::Attribute(*t))
                 .collect(),
             typeql::token::Kind::Role => type_manager
                 .get_role_types(seeder.snapshot)
                 .map_err(|source| TypeInferenceError::ConceptRead { source })?
                 .iter()
-                .map(|t| TypeAnnotation::RoleType(t.clone()))
+                .map(|t| TypeAnnotation::RoleType(*t))
                 .collect(),
         };
         graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
@@ -676,12 +676,12 @@ impl UnaryConstraint for RoleName<Variable> {
             .map_err(|source| TypeInferenceError::ConceptRead { source })?;
         if let Some(role_types) = role_types_opt {
             let mut annotations = BTreeSet::new();
-            for role_type in &role_types {
-                annotations.insert(TypeAnnotation::RoleType(role_type.clone()));
+            for role_type in &*role_types {
+                annotations.insert(TypeAnnotation::RoleType(*role_type));
                 let subtypes = role_type
                     .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
                     .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-                annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(subtype.clone())));
+                annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(*subtype)));
             }
             graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
             Ok(())
@@ -752,11 +752,11 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                 .iter()
                 .map(|(var, index)| (index, var))
                 .sorted()
-                .map(|(_, var)| var.clone())
+                .map(|(_, var)| *var)
                 .collect();
             for (arg_var, arg_annotations) in zip(args_by_position, &annotated_function_signature.arguments) {
                 if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
-                    graph_vertices.add_or_intersect(&Vertex::Variable(arg_var.clone()), Cow::Borrowed(&types));
+                    graph_vertices.add_or_intersect(&Vertex::Variable(arg_var), Cow::Borrowed(types));
                 }
             }
         }
@@ -800,7 +800,7 @@ trait BinaryConstraint {
                     || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !right_annotations.is_empty() {
-                left_to_right.insert(left_type.clone(), right_annotations);
+                left_to_right.insert(*left_type, right_annotations);
             }
         }
         Ok(left_to_right)
@@ -828,7 +828,7 @@ trait BinaryConstraint {
                     || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !left_annotations.is_empty() {
-                right_to_left.insert(right_type.clone(), left_annotations);
+                right_to_left.insert(*right_type, left_annotations);
             }
         }
         Ok(right_to_left)
@@ -866,8 +866,8 @@ impl BinaryConstraint for Has<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let owner = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => return Ok(()), // It can't be another type => Do nothing and let type-inference clean it up
         };
         collector.extend(
@@ -889,7 +889,7 @@ impl BinaryConstraint for Has<Variable> {
         };
         collector.extend(
             (attribute.get_owner_types(seeder.snapshot, seeder.type_manager)?.iter())
-                .map(|(owner, _)| TypeAnnotation::from(owner.clone())),
+                .map(|(owner, _)| TypeAnnotation::from(*owner)),
         );
         Ok(())
     }
@@ -911,8 +911,8 @@ impl BinaryConstraint for Owns<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let owner = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -943,8 +943,8 @@ impl BinaryConstraint for Owns<Variable> {
             .get_owner_types(seeder.snapshot, seeder.type_manager)?
             .iter()
             .map(|(owner, _)| match owner {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
             .for_each(|type_| {
                 collector.insert(type_);
@@ -974,7 +974,7 @@ impl BinaryConstraint for Isa<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -983,7 +983,7 @@ impl BinaryConstraint for Isa<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -992,7 +992,7 @@ impl BinaryConstraint for Isa<Variable> {
                     relation
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1000,7 +1000,7 @@ impl BinaryConstraint for Isa<Variable> {
                 TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
-        collector.insert(left_type.clone());
+        collector.insert(*left_type);
         Ok(())
     }
 
@@ -1016,7 +1016,7 @@ impl BinaryConstraint for Isa<Variable> {
                     attribute
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1025,7 +1025,7 @@ impl BinaryConstraint for Isa<Variable> {
                     entity
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1034,7 +1034,7 @@ impl BinaryConstraint for Isa<Variable> {
                     relation
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone().into_owned()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1042,7 +1042,7 @@ impl BinaryConstraint for Isa<Variable> {
                 TypeAnnotation::RoleType(_) => unreachable!("Cannot get instances of role types."),
             }
         }
-        collector.insert(right_type.clone());
+        collector.insert(*right_type);
         Ok(())
     }
 }
@@ -1068,7 +1068,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|supertype| TypeAnnotation::Attribute(supertype.clone()))
+                        .map(|supertype| TypeAnnotation::Attribute(*supertype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1077,7 +1077,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|supertype| TypeAnnotation::Entity(supertype.clone()))
+                        .map(|supertype| TypeAnnotation::Entity(*supertype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1086,7 +1086,7 @@ impl BinaryConstraint for Sub<Variable> {
                     relation
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1095,13 +1095,13 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_supertypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|supertype| TypeAnnotation::RoleType(supertype.clone()))
+                        .map(|supertype| TypeAnnotation::RoleType(*supertype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
                 }
             }
-            collector.insert(left_type.clone());
+            collector.insert(*left_type);
         } else {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
@@ -1141,7 +1141,7 @@ impl BinaryConstraint for Sub<Variable> {
                     attribute
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1150,7 +1150,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1159,7 +1159,7 @@ impl BinaryConstraint for Sub<Variable> {
                     relation
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1168,20 +1168,20 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::RoleType(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
                 }
             }
-            collector.insert(right_type.clone());
+            collector.insert(*right_type);
         } else {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Attribute(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Attribute(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1190,7 +1190,7 @@ impl BinaryConstraint for Sub<Variable> {
                     entity
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Entity(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Entity(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1199,7 +1199,7 @@ impl BinaryConstraint for Sub<Variable> {
                     relation
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::Relation(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::Relation(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1208,7 +1208,7 @@ impl BinaryConstraint for Sub<Variable> {
                     role_type
                         .get_subtypes(seeder.snapshot, seeder.type_manager)?
                         .iter()
-                        .map(|subtype| TypeAnnotation::RoleType(subtype.clone()))
+                        .map(|subtype| TypeAnnotation::RoleType(*subtype))
                         .for_each(|subtype| {
                             collector.insert(subtype);
                         });
@@ -1234,7 +1234,7 @@ impl BinaryConstraint for Is<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        collector.insert(left_type.clone());
+        collector.insert(*left_type);
         Ok(())
     }
 
@@ -1244,7 +1244,7 @@ impl BinaryConstraint for Is<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        collector.insert(right_type.clone());
+        collector.insert(*right_type);
         Ok(())
     }
 }
@@ -1289,7 +1289,7 @@ impl BinaryConstraint for Comparison<Variable> {
                         .get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
                     {
                         if comparable_types.contains(&subvaluetype.category()) {
-                            right_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type().clone()));
+                            right_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type()));
                         }
                     }
                 }
@@ -1299,7 +1299,7 @@ impl BinaryConstraint for Comparison<Variable> {
                     || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !right_annotations.is_empty() {
-                left_to_right.insert(left_type.clone(), right_annotations);
+                left_to_right.insert(*left_type, right_annotations);
             }
         }
         Ok(left_to_right)
@@ -1335,7 +1335,7 @@ impl BinaryConstraint for Comparison<Variable> {
                         .get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
                     {
                         if comparable_types.contains(&subvaluetype.category()) {
-                            left_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type().clone()));
+                            left_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type()));
                         }
                     }
                 }
@@ -1345,7 +1345,7 @@ impl BinaryConstraint for Comparison<Variable> {
                     || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !left_annotations.is_empty() {
-                right_to_left.insert(right_type.clone(), left_annotations);
+                right_to_left.insert(*right_type, left_annotations);
             }
         }
         Ok(right_to_left)
@@ -1378,7 +1378,7 @@ struct RelationRoleEdge<'graph> {
     links: &'graph Links<Variable>,
 }
 
-impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
+impl BinaryConstraint for PlayerRoleEdge<'_> {
     fn left(&self) -> &Vertex<Variable> {
         self.links.player()
     }
@@ -1394,8 +1394,8 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let player = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1426,8 +1426,8 @@ impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
             .get_player_types(seeder.snapshot, seeder.type_manager)?
             .keys()
             .map(|player| match player {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
             .for_each(|type_| {
                 collector.insert(type_);
@@ -1452,8 +1452,8 @@ impl BinaryConstraint for Plays<Variable> {
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
         let player = match left_type {
-            TypeAnnotation::Entity(entity) => ObjectType::Entity(entity.clone()),
-            TypeAnnotation::Relation(relation) => ObjectType::Relation(relation.clone()),
+            TypeAnnotation::Entity(entity) => ObjectType::Entity(*entity),
+            TypeAnnotation::Relation(relation) => ObjectType::Relation(*relation),
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
@@ -1484,8 +1484,8 @@ impl BinaryConstraint for Plays<Variable> {
             .get_player_types(seeder.snapshot, seeder.type_manager)?
             .keys()
             .map(|player| match player {
-                ObjectType::Entity(entity) => TypeAnnotation::Entity(entity.clone()),
-                ObjectType::Relation(relation) => TypeAnnotation::Relation(relation.clone()),
+                ObjectType::Entity(entity) => TypeAnnotation::Entity(*entity),
+                ObjectType::Relation(relation) => TypeAnnotation::Relation(*relation),
             })
             .for_each(|type_| {
                 collector.insert(type_);
@@ -1494,7 +1494,7 @@ impl BinaryConstraint for Plays<Variable> {
     }
 }
 
-impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
+impl BinaryConstraint for RelationRoleEdge<'_> {
     fn left(&self) -> &Vertex<Variable> {
         self.links.relation()
     }
@@ -1540,7 +1540,7 @@ impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
         role_type
             .get_relation_types(seeder.snapshot, seeder.type_manager)?
             .keys()
-            .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
+            .map(|relation_type| TypeAnnotation::Relation(*relation_type))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1594,7 +1594,7 @@ impl BinaryConstraint for Relates<Variable> {
         role_type
             .get_relation_types(seeder.snapshot, seeder.type_manager)?
             .keys()
-            .map(|relation_type| TypeAnnotation::Relation(relation_type.clone()))
+            .map(|relation_type| TypeAnnotation::Relation(*relation_type))
             .for_each(|type_| {
                 collector.insert(type_);
             });
@@ -1667,32 +1667,22 @@ pub mod tests {
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
-                (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
-                (var_name_type.into(), BTreeSet::from([type_name.clone()])),
-                (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
-                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
+                (var_animal_type.into(), BTreeSet::from([type_cat])),
+                (var_name_type.into(), BTreeSet::from([type_name])),
+                (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
+                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
             ]),
             edges: vec![
-                expected_edge(
-                    &constraints[0],
-                    var_animal.into(),
-                    var_animal_type.into(),
-                    vec![(type_cat.clone(), type_cat.clone())],
-                ),
+                expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), vec![(type_cat, type_cat)]),
                 expected_edge(
                     &constraints[2],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
+                    vec![(type_catname, type_name), (type_dogname, type_name)],
                 ),
-                expected_edge(
-                    &constraints[4],
-                    var_animal.into(),
-                    var_name.into(),
-                    vec![(type_cat.clone(), type_catname.clone())],
-                ),
+                expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
             ],
             nested_disjunctions: vec![],
             nested_negations: vec![],
@@ -1739,14 +1729,14 @@ pub mod tests {
         let mut expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
             edges: vec![expected_edge(
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: vec![],
             nested_negations: vec![],
@@ -1764,7 +1754,7 @@ pub mod tests {
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         if expected_graph != graph {
             // We need this because of non-determinism
-            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears.clone());
+            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
             assert_eq!(expected_graph, graph)
         }
     }
@@ -1774,7 +1764,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let (_, (type_name, type_catname, type_dogname), _) =
+        let (_, (_type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let label_owner = Label::build("owner");
@@ -1783,15 +1773,13 @@ pub mod tests {
             let type_owner = type_manager.create_entity_type(&mut snapshot, &label_owner).unwrap();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();
             type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
-            type_owner
-                .set_owns(&mut snapshot, &type_manager, &thing_manager, type_age.clone(), Ordering::Unordered)
-                .unwrap();
+            type_owner.set_owns(&mut snapshot, &type_manager, &thing_manager, type_age, Ordering::Unordered).unwrap();
             type_owner
                 .set_owns(
                     &mut snapshot,
                     &type_manager,
                     &thing_manager,
-                    type_catname.as_attribute_type().clone(),
+                    type_catname.as_attribute_type(),
                     Ordering::Unordered,
                 )
                 .unwrap();
@@ -1800,7 +1788,7 @@ pub mod tests {
                     &mut snapshot,
                     &type_manager,
                     &thing_manager,
-                    type_dogname.as_attribute_type().clone(),
+                    type_dogname.as_attribute_type(),
                     Ordering::Unordered,
                 )
                 .unwrap();
@@ -1828,9 +1816,9 @@ pub mod tests {
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();
 
-            let types_x = BTreeSet::from([type_owner.clone()]);
-            let types_a = BTreeSet::from([type_age.clone(), type_catname.clone(), type_dogname.clone()]);
-            let types_b = BTreeSet::from([type_age.clone(), type_catname.clone(), type_dogname.clone()]);
+            let types_x = BTreeSet::from([type_owner]);
+            let types_a = BTreeSet::from([type_age, type_catname, type_dogname]);
+            let types_b = BTreeSet::from([type_age, type_catname, type_dogname]);
             let constraints = conjunction.constraints();
             let expected_graph = TypeInferenceGraph {
                 conjunction,
@@ -1845,38 +1833,30 @@ pub mod tests {
                         &constraints[0],
                         var_x.into(),
                         Vertex::Label(label_owner),
-                        vec![(type_owner.clone(), type_owner.clone())],
+                        vec![(type_owner, type_owner)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_x.into(),
                         var_a.into(),
-                        vec![
-                            (type_owner.clone(), type_age.clone()),
-                            (type_owner.clone(), type_catname.clone()),
-                            (type_owner.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_x.into(),
                         var_b.into(),
-                        vec![
-                            (type_owner.clone(), type_age.clone()),
-                            (type_owner.clone(), type_catname.clone()),
-                            (type_owner.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_owner, type_age), (type_owner, type_catname), (type_owner, type_dogname)],
                     ),
                     expected_edge(
                         &constraints[3],
                         var_a.into(),
                         var_b.into(),
                         vec![
-                            (type_age.clone(), type_age.clone()),
-                            (type_catname.clone(), type_catname.clone()),
-                            (type_catname.clone(), type_dogname.clone()),
-                            (type_dogname.clone(), type_catname.clone()),
-                            (type_dogname.clone(), type_dogname.clone()),
+                            (type_age, type_age),
+                            (type_catname, type_catname),
+                            (type_catname, type_dogname),
+                            (type_dogname, type_catname),
+                            (type_dogname, type_dogname),
                         ],
                     ),
                 ],

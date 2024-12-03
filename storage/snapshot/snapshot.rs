@@ -6,7 +6,7 @@
 
 use std::{any::type_name, error::Error, fmt, iter::empty, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
@@ -32,7 +32,7 @@ macro_rules! get_mapped_method {
         fn $method_name<T>(
             &self,
             key: StorageKeyReference<'_>,
-            mut mapper: impl FnMut(ByteReference<'_>) -> T,
+            mut mapper: impl FnMut(&[u8]) -> T,
         ) -> Result<Option<T>, SnapshotGetError> {
             let value = self.$get_func::<BUFFER_VALUE_INLINE>(key)?;
             Ok(value.map(|bytes| mapper(bytes.as_ref())))
@@ -361,7 +361,7 @@ impl<D> ReadableSnapshot for WriteSnapshot<D> {
     }
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
-        self.operations().writes_in(key.keyspace_id()).get_write(key.byte_ref())
+        self.operations().writes_in(key.keyspace_id()).get_write(key.bytes())
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {
@@ -510,7 +510,7 @@ impl<D> ReadableSnapshot for SchemaSnapshot<D> {
     }
 
     fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
-        self.operations().writes_in(key.keyspace_id()).get_write(key.byte_ref())
+        self.operations().writes_in(key.keyspace_id()).get_write(key.bytes())
     }
 
     fn iterate_writes(&self) -> impl Iterator<Item = (StorageKeyArray<BUFFER_KEY_INLINE>, Write)> + '_ {

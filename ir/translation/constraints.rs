@@ -5,7 +5,7 @@
  */
 
 use answer::variable::Variable;
-use bytes::byte_array::{ByteArray, ByteArrayInline};
+use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
 use itertools::Itertools;
 use typeql::{
@@ -138,7 +138,7 @@ fn add_type_statement(
                     let &Vertex::Variable(var) = &type_ else {
                         return Err(Box::new(RepresentationError::LabelWithLabel { declaration: label.clone() }));
                     };
-                    let as_label = register_type_label(constraints, &label)?;
+                    let as_label = register_type_label(constraints, label)?;
                     constraints.add_label(var, as_label)?;
                 }
                 typeql::statement::type_::LabelConstraint::Scoped(scoped_label) => {
@@ -147,7 +147,7 @@ fn add_type_statement(
                             declaration: scoped_label.clone(),
                         }));
                     };
-                    let as_label = register_type_scoped_label(constraints, &scoped_label)?;
+                    let as_label = register_type_scoped_label(constraints, scoped_label)?;
                     constraints.add_label(var, as_label)?;
                 }
             },
@@ -213,7 +213,7 @@ fn register_typeql_type(
     type_: &typeql::TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, &label)?)),
+        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
@@ -252,7 +252,7 @@ fn register_typeql_role_type(
 fn register_type_scoped_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     scoped_label: &ScopedLabel,
-) -> Result<Label<'static>, Box<RepresentationError>> {
+) -> Result<Label, Box<RepresentationError>> {
     let checked_scope = checked_identifier(&scoped_label.scope.ident)?;
     let checked_name = checked_identifier(&scoped_label.name.ident)?;
     Ok(Label::build_scoped(checked_name, checked_scope))
@@ -261,7 +261,7 @@ fn register_type_scoped_label(
 fn register_type_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
-) -> Result<Label<'static>, Box<RepresentationError>> {
+) -> Result<Label, Box<RepresentationError>> {
     Ok(Label::build(checked_identifier(&label.ident)?))
 }
 
@@ -395,7 +395,7 @@ fn parse_iid(mut iid: &str) -> ByteArray<THING_VERTEX_MAX_LENGTH> {
         bytes[i] = (from_hex(hi) << 4) + from_hex(lo);
     }
     let len = iid.as_bytes().len() / 2;
-    ByteArray::Inline(ByteArrayInline::new(bytes, len))
+    ByteArray::inline(bytes, len)
 }
 
 fn add_typeql_iid(

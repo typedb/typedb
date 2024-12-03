@@ -14,7 +14,7 @@ use crate::executable::function::ExecutableFunction;
 #[derive(Clone)]
 pub struct ExecutableFunctionRegistry {
     // Keep this abstraction in case we introduce function plan caching.
-    schema_functions: Arc<HashMap<DefinitionKey<'static>, ExecutableFunction>>,
+    schema_functions: Arc<HashMap<DefinitionKey, ExecutableFunction>>,
     preamble_functions: HashMap<usize, ExecutableFunction>,
 }
 
@@ -26,7 +26,7 @@ impl fmt::Debug for ExecutableFunctionRegistry {
 
 impl ExecutableFunctionRegistry {
     pub(crate) fn new(
-        schema_functions: Arc<HashMap<DefinitionKey<'static>, ExecutableFunction>>,
+        schema_functions: Arc<HashMap<DefinitionKey, ExecutableFunction>>,
         preamble_functions: HashMap<usize, ExecutableFunction>,
     ) -> Self {
         Self { schema_functions, preamble_functions }

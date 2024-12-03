@@ -12,49 +12,47 @@ use lending_iterator::higher_order::Hkt;
 use crate::thing::{attribute::Attribute, object::Object, ThingAPI};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub enum Has<'a> {
-    Edge(ThingEdgeHas<'a>),
-    EdgeReverse(ThingEdgeHasReverse<'a>),
+pub enum Has {
+    Edge(ThingEdgeHas),
+    EdgeReverse(ThingEdgeHasReverse),
 }
 
-impl<'a> Has<'a> {
-    pub(crate) fn new_from_edge(edge: ThingEdgeHas<'a>) -> Self {
+impl<'a> Has {
+    pub(crate) fn new_from_edge(edge: ThingEdgeHas) -> Self {
         Self::Edge(edge)
     }
 
-    pub(crate) fn new_from_edge_reverse(edge: ThingEdgeHasReverse<'a>) -> Self {
+    pub(crate) fn new_from_edge_reverse(edge: ThingEdgeHasReverse) -> Self {
         Self::EdgeReverse(edge)
     }
 
-    pub fn owner(&'a self) -> Object<'a> {
+    pub fn owner(&'a self) -> Object {
         match self {
             Has::Edge(edge) => Object::new(edge.from()),
             Has::EdgeReverse(edge_reverse) => Object::new(edge_reverse.to()),
         }
     }
 
-    pub fn attribute(&'a self) -> Attribute<'a> {
+    pub fn attribute(&'a self) -> Attribute {
         match self {
             Has::Edge(edge) => Attribute::new(edge.to()),
             Has::EdgeReverse(edge_reverse) => Attribute::new(edge_reverse.from()),
         }
     }
 
-    pub fn into_owner_attribute(self) -> (Object<'a>, Attribute<'a>) {
+    pub fn into_owner_attribute(self) -> (Object, Attribute) {
         match self {
-            Has::Edge(edge) => (Object::new(edge.clone().into_from()), Attribute::new(edge.clone().into_to())),
-            Has::EdgeReverse(edge_reverse) => {
-                (Object::new(edge_reverse.clone().into_to()), Attribute::new(edge_reverse.into_from()))
-            }
+            Has::Edge(edge) => (Object::new(edge.from()), Attribute::new(edge.to())),
+            Has::EdgeReverse(edge_reverse) => (Object::new(edge_reverse.to()), Attribute::new(edge_reverse.from())),
         }
     }
 }
 
-impl Hkt for Has<'static> {
-    type HktSelf<'a> = Has<'a>;
+impl Hkt for Has {
+    type HktSelf<'a> = Has;
 }
 
-impl<'a> fmt::Display for Has<'a> {
+impl fmt::Display for Has {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} has {}", self.owner(), self.attribute())
     }
