@@ -64,6 +64,15 @@ rust_test(
 )
 
 rust_test(
+    name = "test_writes",
+    crate_root = "writes.rs",
+    srcs = ["writes.rs"],
+    deps = deps + [
+        "//query:query",
+    ],
+)
+
+rust_test(
     name = "test_execute_expression",
     crate_root = "execute_expression.rs",
     srcs = ["execute_expression.rs"],
