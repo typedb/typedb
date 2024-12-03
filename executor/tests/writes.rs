@@ -7,8 +7,6 @@
 use std::{
     collections::{BTreeMap, HashMap},
     sync::Arc,
-    thread,
-    time::Duration,
     vec,
 };
 
@@ -23,7 +21,6 @@ use concept::{
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::{
-    graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value::Value, value_type::ValueType},
 };
 use executor::{
@@ -38,13 +35,11 @@ use executor::{
     write::WriteError,
     ExecutionInterrupt,
 };
-use function::function_manager::FunctionManager;
 use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::TranslationContext,
 };
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
-use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -177,8 +172,6 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         &EmptyAnnotatedFunctionSignatures,
     )
     .unwrap();
-
-    let variable_registry = Arc::new(translation_context.variable_registry);
 
     let insert_plan = compiler::executable::insert::executable::compile(
         block.conjunction().constraints(),
@@ -553,72 +546,4 @@ fn delete_has() {
     let snapshot = storage.clone().open_snapshot_read();
     assert_eq!(0, p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager).count());
     snapshot.close_resources()
-}
-
-#[test]
-fn lots_of_inserts() {
-    let schema = typeql::parse_query(
-        r#"
-    define
-      entity ITEM,
-        owns I_ID,
-        owns I_IM_ID,
-        owns I_NAME,
-        owns I_PRICE,
-        owns I_DATA;
-
-      attribute I_ID, value long;
-      attribute I_IM_ID, value long;
-      attribute I_NAME, value string;
-      attribute I_PRICE, value double;
-      attribute I_DATA, value string;
-    "#,
-    )
-    .unwrap()
-    .into_schema();
-    let (_tmp_dir, mut storage) = create_core_storage();
-    setup_concept_storage(&mut storage);
-
-    let qm = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    let schema_number = {
-        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let mut snapshot = storage.clone().open_snapshot_schema();
-        qm.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, schema).unwrap();
-        snapshot.commit().unwrap().unwrap()
-    };
-    let (type_manager, thing_manager) = load_managers(storage.clone(), Some(schema_number));
-    let function_manager = FunctionManager::new(type_manager.definition_key_generator().clone(), None);
-
-    let p = 2512537;
-    let q = 2515411;
-    let mut at = p;
-
-    for _ in 0..2000 {
-        let mut snapshot = storage.clone().open_snapshot_write();
-        let i_id = (at + p) % q;
-        let i_im_id = (i_id + p) % q;
-        let i_name = (i_im_id + p) % q;
-        let i_price = (i_name + p) % q;
-        let i_data = (i_price + p) % q;
-        at = (i_price + p) % q;
-
-        let insert = format!(
-            r#"
-            insert
-            $item isa ITEM,
-            has I_ID {i_id}, has I_IM_ID {i_im_id}, has I_NAME "{i_name}",
-            has I_PRICE {i_price}, has I_DATA "{i_data}";
-        "#
-        );
-        let insert_parsed = typeql::parse_query(insert.as_str()).unwrap().into_pipeline();
-        let pipeline = qm
-            .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), &function_manager, &insert_parsed)
-            .unwrap();
-        let (mut iterator, ctx) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-        iterator.collect_owned().unwrap();
-        snapshot = Arc::into_inner(ctx.snapshot).unwrap();
-        snapshot.commit().unwrap();
-    }
-    println!("Done");
 }

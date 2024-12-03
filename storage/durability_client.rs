@@ -13,6 +13,7 @@ use std::{
 use durability::{wal::WAL, DurabilityRecordType, DurabilityService, DurabilityServiceError, RawRecord};
 use error::typedb_error;
 use itertools::Itertools;
+use resource::constants::storage::WAIT_FOR_SYNC;
 
 use crate::sequence_number::SequenceNumber;
 
@@ -141,7 +142,6 @@ impl WALClient {
 
 impl DurabilityClient for WALClient {
     fn request_sync(&self) -> mpsc::Receiver<()> {
-        let WAIT_FOR_SYNC = true;
         self.wal.request_sync(WAIT_FOR_SYNC)
     }
 
