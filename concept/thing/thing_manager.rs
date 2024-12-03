@@ -51,7 +51,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{AsHkt};
+use lending_iterator::{AsHkt, LendingIterator};
 use primitive::either::Either;
 use resource::constants::{
     encoding::StructFieldIDUInt,
@@ -664,10 +664,9 @@ impl ThingManager {
                             }
                             Bound::Excluded(start) => {
                                 // increment and treat as included
-                                let mut bytes: [u8; TypeVertex::LENGTH] =
-                                    start.vertex().bytes().bytes().try_into().unwrap();
+                                let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().to_bytes().as_ref().try_into().unwrap();
                                 increment(&mut bytes).unwrap();
-                                let start_type = TypeVertex::new(Bytes::Array(ByteArray::copy(&bytes)));
+                                let start_type = TypeVertex::decode(Bytes::Reference(&bytes));
                                 RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
                                     vertex, start_type,
                                 ))
@@ -680,7 +679,7 @@ impl ThingManager {
                     Either::Second(prefix) => {
                         // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
                         RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
                                 .resize_to(),
                         )
                     }
@@ -699,7 +698,7 @@ impl ThingManager {
                         let storage_key = vertex.into_storage_key();
                         let mut byte_array = storage_key.into_owned_array().into_byte_array();
                         byte_array.increment().unwrap();
-                        let next_attribute = AttributeVertex::new(Bytes::Array(byte_array));
+                        let next_attribute = AttributeVertex::decode(&byte_array);
                         match owner_types_range_hint.start_bound() {
                             Bound::Included(start) => {
                                 let start_type = start.vertex();
@@ -710,10 +709,9 @@ impl ThingManager {
                             }
                             Bound::Excluded(start) => {
                                 // increment and treat as included
-                                let mut bytes: [u8; TypeVertex::LENGTH] =
-                                    start.vertex().bytes().bytes().try_into().unwrap();
+                                let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().to_bytes().as_ref().try_into().unwrap();
                                 increment(&mut bytes).unwrap();
-                                let start_type = TypeVertex::new(Bytes::Array(ByteArray::copy(&bytes)));
+                                let start_type = TypeVertex::decode(Bytes::Reference(&bytes));
                                 RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
                                     next_attribute,
                                     start_type,
@@ -728,8 +726,8 @@ impl ThingManager {
                         // since this is not a complete vertex, and only a prefix, we shouldn't make assumptions about incrementing
                         // to get to value + 1 in sort order
                         RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
-                                .resize_to(),
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
+                                .resize_to()
                         )
                     }
                 }
@@ -765,7 +763,7 @@ impl ThingManager {
                         }
                     },
                     Either::Second(prefix) => RangeEnd::EndPrefixInclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
                             .resize_to(),
                     ),
                 }
@@ -781,7 +779,7 @@ impl ThingManager {
                         RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
                     }
                     Either::Second(prefix) => RangeEnd::EndPrefixExclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.as_reference().byte_ref())
+                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
                             .resize_to(),
                     ),
                 }
@@ -915,9 +913,9 @@ impl ThingManager {
     pub(crate) fn get_owners(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute: Attribute<'_>,
+        attribute: &Attribute,
     ) -> AttributeOwnerIterator {
-        let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.into_vertex());
+        let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.vertex());
         AttributeOwnerIterator::new(
             snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
         )
@@ -938,8 +936,8 @@ impl ThingManager {
     pub fn get_has_reverse_by_attribute_and_owner_type_range<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
-        attribute: Attribute<'_>,
-        owner_type_range: &'a impl RangeBounds<ObjectType<'a>>,
+        attribute: &Attribute,
+        owner_type_range: &'a impl RangeBounds<ObjectType>,
     ) -> HasReverseIterator {
         let range_start = match owner_type_range.start_bound() {
             Bound::Included(owner_start) => RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(

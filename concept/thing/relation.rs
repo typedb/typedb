@@ -354,7 +354,7 @@ impl ThingAPI for Relation {
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self.get_has_unordered(snapshot, thing_manager)
             .map_ok(|(has, _value)| has.attribute()) {
-            thing_manager.unset_has(snapshot, self, attr?);
+            thing_manager.unset_has(snapshot, self, &attr?);
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {

@@ -23,8 +23,6 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
-use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{kmerge::KMergeBy, AsHkt, LendingIterator, Peekable};
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -55,8 +53,8 @@ pub(crate) struct LinksReverseExecutor {
     tuple_positions: TuplePositions,
 
     player_relation_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-    player_type_range: Bounds<ObjectType<'static>>,
-    relation_type_range: Bounds<RelationType<'static>>,
+    player_type_range: Bounds<ObjectType>,
+    relation_type_range: Bounds<RelationType>,
 
     filter_fn: Arc<LinksFilterFn>,
     player_cache: Option<Vec<Object>>,
@@ -187,7 +185,7 @@ impl LinksReverseExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let filtered = thing_manager.get_links_reverse_by_player_and_relation_type_range(
                         snapshot,
-                        player,
+                        *player,
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.relation_type_range,
                     );

@@ -20,6 +20,7 @@ use concept::{
 };
 use encoding::value::value::Value;
 use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
+use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
@@ -42,8 +43,8 @@ pub(crate) struct HasReverseExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    attribute_owner_types_range: BTreeMap<AttributeType<'static>, Bounds<ObjectType<'static>>>,
-    owner_type_range: Bounds<ObjectType<'static>>,
+    attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>>,
+    owner_type_range: Bounds<ObjectType>,
     filter_fn: Arc<HasFilterFn>,
     attribute_cache: OnceLock<Vec<Attribute>>,
     checker: Checker<(Has, u64)>,
@@ -79,7 +80,7 @@ impl HasReverseExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let attribute_owner_types_range: BTreeMap<AttributeType<'static>, Bounds<ObjectType<'static>>> =
+        let attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>> =
             attribute_owner_types
                 .iter()
                 .map(|(type_, owner_types)| {
@@ -182,7 +183,7 @@ impl HasReverseExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                         snapshot,
-                        attribute,
+                        &attribute,
                         &self.owner_type_range,
                     );
                     let as_tuples: HasReverseUnboundedSortedOwnerSingle =
@@ -198,7 +199,7 @@ impl HasReverseExecutor {
                     let iterators = attributes.map(|attribute| {
                         thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
-                            attribute,
+                            &attribute,
                             &self.owner_type_range,
                         )
                     });
@@ -218,10 +219,10 @@ impl HasReverseExecutor {
             BinaryIterateMode::BoundFrom => {
                 let attribute = self.has.attribute().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > attribute.as_usize());
-                let attribute = row.get(attribute);
+                let variable_value = row.get(attribute);
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                     snapshot,
-                    attribute.as_thing().as_attribute(),
+                    variable_value.as_thing().as_attribute(),
                     &self.owner_type_range,
                 );
                 let as_tuples: HasReverseBoundedSortedOwner =

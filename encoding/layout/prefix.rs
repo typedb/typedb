@@ -61,7 +61,7 @@ macro_rules! make_prefix_enum {
 
 impl Prefix {
     pub fn max_object_type_prefix() -> Prefix {
-        if Prefix::VertexEntityType.prefix_id() < Prefix::VertexRelationType.prefix_id() {
+        if Prefix::VertexEntityType.prefix_id().byte < Prefix::VertexRelationType.prefix_id().byte {
             Prefix::VertexEntityType
         } else {
             Prefix::VertexRelationType
@@ -69,7 +69,7 @@ impl Prefix {
     }
 
     pub fn min_object_type_prefix() -> Prefix {
-        if Prefix::VertexEntityType.prefix_id() < Prefix::VertexRelationType.prefix_id() {
+        if Prefix::VertexEntityType.prefix_id().byte < Prefix::VertexRelationType.prefix_id().byte {
             Prefix::VertexRelationType
         } else {
             Prefix::VertexRelationType

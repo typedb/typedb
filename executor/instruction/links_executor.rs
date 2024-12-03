@@ -9,6 +9,7 @@ use std::{
     fmt, iter,
     sync::Arc,
 };
+use std::ops::Bound;
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
@@ -21,7 +22,6 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
-use typeql::statement::thing::RolePlayer;
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -48,8 +48,8 @@ pub(crate) struct LinksExecutor {
     tuple_positions: TuplePositions,
 
     relation_player_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-    relation_type_range: Bounds<RelationType<'static>>,
-    player_type_range: Bounds<ObjectType<'static>>,
+    relation_type_range: Bounds<RelationType>,
+    player_type_range: Bounds<ObjectType>,
 
     filter_fn: Arc<LinksFilterFn>,
     relation_cache: Option<Vec<Relation>>,
@@ -193,7 +193,7 @@ impl LinksExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager.get_links_by_relation_and_player_type_range(
                         snapshot,
-                        relation,
+                        *relation,
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.player_type_range,
                     );

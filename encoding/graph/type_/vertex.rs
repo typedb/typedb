@@ -88,12 +88,11 @@ pub struct TypeID {
 pub type TypeIDUInt = u16;
 
 impl TypeID {
-    pub const MIN: Self = Self::build(0);
-    pub const MAX: Self = Self::build(TypeIDUInt::MAX);
+    pub const MIN: Self = Self::new(TypeIDUInt::MIN);
+    pub const MAX: Self = Self::new(TypeIDUInt::MAX);
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
-    pub fn new(id: TypeIDUInt) -> Self {
-        debug_assert_eq!(std::mem::size_of_val(&id), Self::LENGTH);
+    pub const fn new(id: TypeIDUInt) -> Self {
         Self { value: id }
     }
 

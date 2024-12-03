@@ -37,8 +37,8 @@ impl KeyspaceRangeIterator {
         // read_opts.set_prefix_same_as_start(true);
 
         let start_prefix = match range.start() {
-            RangeStart::Inclusive(bytes) => Bytes::Reference(bytes.as_reference()),
-            RangeStart::ExcludeFirstWithPrefix(bytes) => Bytes::Reference(bytes.as_reference()),
+            RangeStart::Inclusive(bytes) => Bytes::Reference(bytes.as_ref()),
+            RangeStart::ExcludeFirstWithPrefix(bytes) => Bytes::Reference(bytes.as_ref()),
             RangeStart::ExcludePrefix(bytes) => {
                 let mut cloned = bytes.to_array();
                 cloned.increment().unwrap();

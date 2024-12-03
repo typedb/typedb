@@ -55,7 +55,7 @@ pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + 
     fn write_prefix_type(bytes: &mut [u8], prefix: Prefix, type_id: TypeID) -> usize {
         debug_assert!(bytes.len() >= THING_VERTEX_LENGTH_PREFIX_TYPE);
         bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
-        bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
         THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 }

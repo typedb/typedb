@@ -68,7 +68,7 @@ impl ObjectVertex {
             && storage_key.bytes()[Self::INDEX_PREFIX] == Prefix::VertexRelation.prefix_id().byte
     }
 
-    pub(crate) fn write_prefix_from_type_vertex(bytes: &mut [u8], type_vertex: TypeVertex<'_>) -> usize {
+    pub(crate) fn write_prefix_from_type_vertex(bytes: &mut [u8], type_vertex: TypeVertex) -> usize {
         Self::write_prefix_type(bytes, Self::prefix_for_type(type_vertex.prefix()), type_vertex.type_id_())
     }
 

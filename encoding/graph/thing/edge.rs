@@ -74,7 +74,7 @@ impl ThingEdgeHas {
         type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
-        bytes[Self::INDEX_PREFIX] = &Self::PREFIX.prefix_id().byte;
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         ObjectVertex::write_prefix_type(
             &mut bytes[Self::range_from_type()],
             ObjectVertex::prefix_for_type(type_prefix),
@@ -260,7 +260,7 @@ impl ThingEdgeHasReverse {
     }
 
     pub fn prefix_from_attribute_to_type_parts(
-        from: AttributeVertex<'_>,
+        from: AttributeVertex,
         to_type_prefix: Prefix,
         to_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }> {
@@ -280,12 +280,12 @@ impl ThingEdgeHasReverse {
 
     pub fn prefix_from_attribute_to_type_range(
         from: AttributeVertex,
-        range_start: RangeStart<TypeVertex>>,
+        range_start: RangeStart<TypeVertex>,
         range_end: RangeEnd<TypeVertex>,
     ) -> KeyRange<StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM_TO_TYPE }>> {
         KeyRange::new_fixed_width(
-            range_start.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex)),
-            range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, vertex)),
+            range_start.map(|vertex| Self::prefix_from_attribute_to_type(from, *vertex)),
+            range_end.map(|vertex| Self::prefix_from_attribute_to_type(from, *vertex)),
         )
     }
     // end TODO
@@ -453,13 +453,13 @@ impl ThingEdgeLinks {
     }
 
     pub fn prefix_from_relation_player_type_parts(
-        relation: ObjectVertex<'_>,
+        relation: ObjectVertex,
         player_type_prefix: Prefix,
         player_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
-        bytes[Self::RANGE_FROM].copy_from_slice(relation.to_bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(relation.to_bytes().as_ref());
         ObjectVertex::write_prefix_type(
             &mut bytes[Self::range_to_type()],
             ObjectVertex::prefix_for_type(player_type_prefix),
@@ -508,7 +508,7 @@ impl ThingEdgeLinks {
     ) -> StorageKey<'static, { ThingEdgeLinks::LENGTH_PREFIX_FROM_TO_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TO_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX_REVERSE.prefix_id().byte;
-        bytes[Self::RANGE_FROM].copy_from_slice(player.bytes().bytes());
+        bytes[Self::RANGE_FROM].copy_from_slice(player.to_bytes().as_ref());
         ObjectVertex::write_prefix_type(
             &mut bytes[Self::range_to_type()],
             ObjectVertex::prefix_for_type(Prefix::VertexRelationType),

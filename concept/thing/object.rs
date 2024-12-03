@@ -169,7 +169,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         self.get_has_types_range_unordered(
             snapshot,
             thing_manager,
-            &(Bound::<AttributeType<'b>>::Unbounded, Bound::Unbounded),
+            &(Bound::<AttributeType>::Unbounded, Bound::Unbounded),
         )
     }
 
@@ -195,9 +195,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-        attribute_types_defining_range: impl Iterator<Item = AttributeType>,
+        attribute_type_range: &impl RangeBounds<AttributeType>,
     ) -> HasIterator {
-        thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
+        thing_manager.get_has_from_thing_unordered(snapshot, &self, attribute_type_range)
     }
 
     fn set_has_unordered(

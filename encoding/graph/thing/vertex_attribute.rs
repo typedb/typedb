@@ -86,7 +86,7 @@ impl AttributeVertex {
         );
         bytes.truncate(Self::RANGE_TYPE_ID.end + id_length);
         if is_complete {
-            Either::First(Self::new(Bytes::Array(bytes)))
+            Either::First(Self::new(type_id, AttributeID::new(bytes.as_ref())))
         } else {
             Either::Second(StorageKey::new(Self::KEYSPACE, Bytes::Array(bytes)))
         }

@@ -44,8 +44,8 @@ pub(crate) struct HasExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    owner_type_range: Bounds<ObjectType<'static>>,
-    attribute_type_range: Bounds<AttributeType<'static>>,
+    owner_type_range: Bounds<ObjectType>,
+    attribute_type_range: Bounds<AttributeType>,
     filter_fn: Arc<HasFilterFn>,
     owner_cache: Option<Vec<Object>>,
     checker: Checker<(Has, u64)>,
@@ -199,15 +199,15 @@ impl HasExecutor {
                     // TODO: we could create a reusable space for these temporarily held iterators
                     //       so we don't have allocate again before the merging iterator
                     let owners = self.owner_cache.as_ref().unwrap().iter();
-                    let iterators = owners
+                    let iterators: Vec<_> = owners
                         .map(|object| {
                             object.get_has_types_range_unordered(
                                 snapshot,
                                 thing_manager,
                                 &self.attribute_type_range,
-                            )))
+                            )
                         })
-                        .try_collect::<_, Vec<_>, _>()?;
+                        .collect();
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasIterator, HasOrderingFn> =
