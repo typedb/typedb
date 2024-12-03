@@ -93,7 +93,7 @@ impl<'a> Attribute {
     pub fn next_possible(&self) -> Attribute {
         let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
-        Attribute::new(AttributeVertex::new(&bytes))
+        Attribute::new(AttributeVertex::decode(&bytes))
     }
 }
 
@@ -307,7 +307,7 @@ where
             None => Ok(false),
             Some(Err(err)) => Err(Box::new(ConceptReadError::SnapshotIterate { source: err.clone() })),
             Some(Ok((bytes, _))) => {
-                let edge = ThingEdgeHasReverse::new(Bytes::Reference(bytes.bytes()));
+                let edge = ThingEdgeHasReverse::decode(Bytes::Reference(bytes.bytes()));
                 let edge_from = edge.from();
                 match edge_from.cmp(&attribute_vertex) {
                     Ordering::Less => {
@@ -345,7 +345,7 @@ fn storage_key_to_owner<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Object, u64) {
-    let edge = ThingEdgeHasReverse::new(storage_key.into_bytes());
+    let edge = ThingEdgeHasReverse::decode(storage_key.into_bytes());
     (Object::new(edge.to()), decode_value_u64(&value))
 }
 

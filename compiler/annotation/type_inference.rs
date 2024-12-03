@@ -106,12 +106,12 @@ pub mod tests {
     #[test]
     fn test_translation() {
         let (var_relation, var_role_type, var_player) = (0..3).map(Variable::new).collect_tuple().unwrap();
-        let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::build(0)));
-        let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(1)));
-        let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(0)));
-        let type_role_1 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(1)));
-        let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::build(0)));
-        let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
+        let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::new(0)));
+        let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::new(1)));
+        let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::new(0)));
+        let type_role_1 = Type::RoleType(RoleType::build_from_type_id(TypeID::new(1)));
+        let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::new(0)));
+        let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::new(2)));
 
         let mut translation_context = TranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();

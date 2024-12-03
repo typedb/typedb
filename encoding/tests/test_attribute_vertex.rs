@@ -32,7 +32,7 @@ fn generate_string_attribute_vertex() {
     let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
 
     let thing_vertex_generator = ThingVertexGenerator::new();
 
@@ -128,7 +128,7 @@ fn generate_struct_attribute_vertex() {
     let (_tmp_dir, storage) = create_core_storage();
 
     let mut snapshot = storage.clone().open_snapshot_write();
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
 
     let thing_vertex_generator = ThingVertexGenerator::new();
 
@@ -194,7 +194,7 @@ fn generate_struct_attribute_vertex() {
 fn next_entity_and_relation_ids_are_determined_from_storage() {
     init_logging();
     let storage_path = create_tmp_dir();
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
     {
         let wal = WAL::create(&storage_path).unwrap();
         let storage = Arc::new(

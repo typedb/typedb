@@ -35,17 +35,17 @@ impl TypeVertex {
     pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+    pub(crate) fn new(prefix: PrefixID, type_id: TypeID) -> Self {
+        let prefix = (prefix.byte as u32) << 16;
+        let type_id = type_id.value as u32;
+        Self { value: prefix + type_id }
+    }
+
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         let mut be_bytes = [0; 4];
         be_bytes[1..].copy_from_slice(&bytes);
         Self { value: u32::from_be_bytes(be_bytes) }
-    }
-
-    pub(crate) fn build(prefix: PrefixID, type_id: TypeID) -> Self {
-        let prefix = (prefix.byte as u32) << 16;
-        let type_id = type_id.value as u32;
-        Self { value: prefix + type_id }
     }
 }
 
@@ -90,13 +90,13 @@ pub type TypeIDUInt = u16;
 impl TypeID {
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
-    pub fn new(bytes: [u8; TypeID::LENGTH]) -> TypeID {
-        TypeID { value: TypeIDUInt::from_be_bytes(bytes) }
-    }
-
-    pub fn build(id: TypeIDUInt) -> Self {
+    pub fn new(id: TypeIDUInt) -> Self {
         debug_assert_eq!(std::mem::size_of_val(&id), Self::LENGTH);
         Self { value: id }
+    }
+
+    pub fn decode(bytes: [u8; TypeID::LENGTH]) -> TypeID {
+        TypeID { value: TypeIDUInt::from_be_bytes(bytes) }
     }
 
     pub fn as_u16(&self) -> u16 {
@@ -127,7 +127,7 @@ pub trait TypeVertexEncoding: Sized {
     fn from_vertex(vertex: TypeVertex) -> Result<Self, EncodingError>;
 
     fn from_bytes(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Result<Self, EncodingError> {
-        Self::from_vertex(TypeVertex::new(bytes))
+        Self::from_vertex(TypeVertex::decode(bytes))
     }
 
     fn vertex(&self) -> TypeVertex;
@@ -139,7 +139,7 @@ pub trait PrefixedTypeVertexEncoding: TypeVertexEncoding {
     const PREFIX: Prefix;
 
     fn build_from_type_id(type_id: TypeID) -> Self {
-        Self::from_vertex(TypeVertex::build(Self::PREFIX.prefix_id(), type_id)).unwrap()
+        Self::from_vertex(TypeVertex::new(Self::PREFIX.prefix_id(), type_id)).unwrap()
     }
 
     fn prefix_for_kind() -> StorageKey<'static, { TypeVertex::LENGTH_PREFIX }> {
@@ -151,6 +151,6 @@ pub trait PrefixedTypeVertexEncoding: TypeVertexEncoding {
     }
 
     fn is_decodable_from(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
-        bytes.length() == TypeVertex::LENGTH && TypeVertex::new(bytes).prefix() == Self::PREFIX
+        bytes.length() == TypeVertex::LENGTH && TypeVertex::decode(bytes).prefix() == Self::PREFIX
     }
 }

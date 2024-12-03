@@ -45,7 +45,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         MVCCStorage::<WALClient>::create::<EncodingKeyspace>("storage", &storage_path, WALClient::new(wal)).unwrap(),
     );
 
-    let type_id = TypeID::build(0);
+    let type_id = TypeID::new(0);
     let vertex_generator = Arc::new(ThingVertexGenerator::new());
 
     let mut snapshot = storage.clone().open_snapshot_write();

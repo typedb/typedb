@@ -21,7 +21,7 @@ use crate::{
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct DefinitionKey {
-    bytes: Bytes<'static, BUFFER_KEY_INLINE>,
+    bytes: ByteArray<BUFFER_KEY_INLINE>,
 }
 
 impl DefinitionKey {
@@ -35,7 +35,7 @@ impl DefinitionKey {
 
     pub fn new(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
-        Self { bytes: Bytes::copy(&bytes) }
+        Self { bytes: ByteArray::copy(&bytes) }
     }
 
     pub fn definition_id(&self) -> DefinitionID {
@@ -46,7 +46,7 @@ impl DefinitionKey {
         let mut array = ByteArray::zeros(Self::LENGTH);
         array[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
         array[Self::RANGE_DEFINITION_ID].copy_from_slice(&definition_id.bytes());
-        Self { bytes: Bytes::Array(array) }
+        Self { bytes: array }
     }
 
     pub fn build_prefix(prefix: Prefix) -> StorageKey<'static, { DefinitionKey::LENGTH_PREFIX }> {
@@ -64,7 +64,7 @@ impl DefinitionKey {
 
 impl AsBytes<BUFFER_KEY_INLINE> for DefinitionKey {
     fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
-        self.bytes
+        Bytes::Array(self.bytes)
     }
 }
 
@@ -79,9 +79,9 @@ impl Prefixed<BUFFER_KEY_INLINE> for DefinitionKey {}
 impl fmt::Display for DefinitionKey {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         // we'll just arbitrarily write it out as an u64 in Big Endian
-        debug_assert!(self.bytes.length() < (u64::BITS / 8) as usize);
+        debug_assert!(self.bytes.len() < (u64::BITS / 8) as usize);
         let mut bytes = [0u8; (u64::BITS / 8) as usize];
-        bytes[0..self.bytes.length()].copy_from_slice(&self.bytes);
+        bytes[0..self.bytes.len()].copy_from_slice(&self.bytes);
         let as_u64 = u64::from_be_bytes(bytes);
         write!(f, "{}", as_u64)
     }
@@ -139,7 +139,7 @@ impl<'de> Deserialize<'de> for DefinitionKey {
             where
                 E: Error,
             {
-                Ok(DefinitionKey { bytes: Bytes::Array(ByteArray::copy(v)) })
+                Ok(DefinitionKey { bytes: ByteArray::copy(v) })
             }
         }
 

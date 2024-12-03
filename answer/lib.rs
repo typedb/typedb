@@ -123,22 +123,22 @@ impl Type {
             Type::Entity(entity) => {
                 let mut bytes = ByteArray::from(&*entity.vertex().to_bytes());
                 bytes.increment().unwrap();
-                Self::Entity(EntityType::new(TypeVertex::new(Bytes::Array(bytes))))
+                Self::Entity(EntityType::new(TypeVertex::decode(Bytes::Array(bytes))))
             }
             Type::Relation(relation) => {
                 let mut bytes = ByteArray::from(&*relation.vertex().to_bytes());
                 bytes.increment().unwrap();
-                Self::Relation(RelationType::new(TypeVertex::new(Bytes::Array(bytes))))
+                Self::Relation(RelationType::new(TypeVertex::decode(Bytes::Array(bytes))))
             }
             Type::Attribute(attribute) => {
                 let mut bytes = ByteArray::from(&*attribute.vertex().to_bytes());
                 bytes.increment().unwrap();
-                Self::Attribute(AttributeType::new(TypeVertex::new(Bytes::Array(bytes))))
+                Self::Attribute(AttributeType::new(TypeVertex::decode(Bytes::Array(bytes))))
             }
             Type::RoleType(role) => {
                 let mut bytes = ByteArray::from(&*role.vertex().to_bytes());
                 bytes.increment().unwrap();
-                Self::RoleType(RoleType::new(TypeVertex::new(Bytes::Array(bytes))))
+                Self::RoleType(RoleType::new(TypeVertex::decode(Bytes::Array(bytes))))
             }
         }
     }

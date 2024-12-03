@@ -51,15 +51,15 @@ impl AttributeVertex {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
     pub const MAX_LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ValueEncodingLength::LONG_LENGTH;
 
-    pub fn new(bytes: &[u8]) -> Self {
-        debug_assert!(bytes[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte);
-        debug_assert!(bytes.len() > THING_VERTEX_LENGTH_PREFIX_TYPE);
-        let type_id = TypeID::new(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
-        let attribute_id = AttributeID::new(&bytes[Self::RANGE_TYPE_ID.end..]);
+    pub fn new(type_id: TypeID, attribute_id: AttributeID) -> Self {
         Self { type_id, attribute_id }
     }
 
-    pub fn build(type_id: TypeID, attribute_id: AttributeID) -> Self {
+    pub fn decode(bytes: &[u8]) -> Self {
+        debug_assert!(bytes[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte);
+        debug_assert!(bytes.len() > THING_VERTEX_LENGTH_PREFIX_TYPE);
+        let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
+        let attribute_id = AttributeID::new(&bytes[Self::RANGE_TYPE_ID.end..]);
         Self { type_id, attribute_id }
     }
 
@@ -67,7 +67,7 @@ impl AttributeVertex {
         if !Self::is_attribute_bytes(bytes) {
             return None;
         }
-        Some(Self::new(bytes))
+        Some(Self::decode(bytes))
     }
 
     pub fn build_prefix_for_value(
@@ -136,7 +136,7 @@ impl Typed<BUFFER_KEY_INLINE> for AttributeVertex {}
 
 impl ThingVertex for AttributeVertex {
     fn new(bytes: &[u8]) -> Self {
-        AttributeVertex::new(bytes)
+        AttributeVertex::decode(bytes)
     }
 }
 

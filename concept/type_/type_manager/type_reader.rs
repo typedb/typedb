@@ -186,7 +186,7 @@ impl TypeReader {
                 RangeStart::Inclusive(EntityType::prefix_for_kind()),
                 EntityType::PREFIX.fixed_width_keys(),
             ))
-            .collect_cloned_vec(|key, _| EntityType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .collect_cloned_vec(|key, _| EntityType::new(TypeVertex::decode(Bytes::copy(key.bytes()))))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
@@ -198,7 +198,7 @@ impl TypeReader {
                 RangeStart::Inclusive(RelationType::prefix_for_kind()),
                 RelationType::PREFIX.fixed_width_keys(),
             ))
-            .collect_cloned_vec(|key, _| RelationType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .collect_cloned_vec(|key, _| RelationType::new(TypeVertex::decode(Bytes::copy(key.bytes()))))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
@@ -207,7 +207,7 @@ impl TypeReader {
     ) -> Result<Vec<AttributeType>, Box<ConceptReadError>> {
         snapshot
             .iterate_range(KeyRange::new_within(RangeStart::Inclusive(AttributeType::prefix_for_kind()), false))
-            .collect_cloned_vec(|key, _| AttributeType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .collect_cloned_vec(|key, _| AttributeType::new(TypeVertex::decode(Bytes::copy(key.bytes()))))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
@@ -217,7 +217,7 @@ impl TypeReader {
                 RangeStart::Inclusive(RoleType::prefix_for_kind()),
                 RoleType::PREFIX.fixed_width_keys(),
             ))
-            .collect_cloned_vec(|key, _| RoleType::new(TypeVertex::new(Bytes::copy(key.bytes()))))
+            .collect_cloned_vec(|key, _| RoleType::new(TypeVertex::decode(Bytes::copy(key.bytes()))))
             .map_err(|error| Box::new(ConceptReadError::SnapshotIterate { source: error }))
     }
 
@@ -519,14 +519,14 @@ impl TypeReader {
         snapshot
             .iterate_range(KeyRange::new_variable_width(
                 RangeStart::Inclusive(
-                    TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
+                    TypeVertexProperty::new(type_.vertex(), Infix::ANNOTATION_MIN).into_storage_key(),
                 ),
                 RangeEnd::EndPrefixInclusive(
-                    TypeVertexProperty::build(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
+                    TypeVertexProperty::new(type_.vertex(), Infix::ANNOTATION_MAX).into_storage_key(),
                 ),
             ))
             .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeVertexProperty::new(Bytes::Reference(key.bytes()));
+                let annotation_key = TypeVertexProperty::decode(Bytes::Reference(key.bytes()));
                 let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationAbstract => Annotation::Abstract(AnnotationAbstract),
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
@@ -606,13 +606,13 @@ impl TypeReader {
         let type_edge = capability.to_canonical_type_edge();
         snapshot
             .iterate_range(KeyRange::new_variable_width(
-                RangeStart::Inclusive(TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MIN).into_storage_key()),
+                RangeStart::Inclusive(TypeEdgeProperty::new(type_edge, Infix::ANNOTATION_MIN).into_storage_key()),
                 RangeEnd::EndPrefixInclusive(
-                    TypeEdgeProperty::build(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
+                    TypeEdgeProperty::new(type_edge, Infix::ANNOTATION_MAX).into_storage_key(),
                 ),
             ))
             .collect_cloned_hashset(|key, value| {
-                let annotation_key = TypeEdgeProperty::new(Bytes::Reference(key.bytes()));
+                let annotation_key = TypeEdgeProperty::decode(Bytes::Reference(key.bytes()));
                 let annotation = match annotation_key.infix() {
                     Infix::PropertyAnnotationDistinct => Annotation::Distinct(AnnotationDistinct),
                     Infix::PropertyAnnotationIndependent => Annotation::Independent(AnnotationIndependent),

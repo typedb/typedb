@@ -109,11 +109,11 @@ impl SchemaID for TypeVertex {
 
     fn object_from_id(prefix: Prefix, id: u64) -> TypeVertex {
         debug_assert!((Self::MIN_ID..=Self::MAX_ID).contains(&id));
-        TypeVertex::build(prefix.prefix_id(), TypeID::build(id as TypeIDUInt))
+        TypeVertex::new(prefix.prefix_id(), TypeID::new(id as TypeIDUInt))
     }
 
     fn id_from_key(key: StorageKey<'_, BUFFER_KEY_INLINE>) -> u64 {
-        TypeVertex::new(Bytes::reference(key.bytes())).type_id_().as_u16() as u64
+        TypeVertex::decode(Bytes::reference(key.bytes())).type_id_().as_u16() as u64
     }
 
     fn ids_exhausted_error(prefix: Prefix) -> EncodingError {

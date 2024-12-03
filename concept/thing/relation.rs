@@ -496,7 +496,7 @@ fn storage_key_to_indexed_players<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (RolePlayer, RolePlayer, Relation, u64) {
-    let edge = ThingEdgeRolePlayerIndex::new(Bytes::reference(storage_key.bytes()));
+    let edge = ThingEdgeRolePlayerIndex::decode(Bytes::reference(storage_key.bytes()));
     let from_role_player =
         RolePlayer { player: Object::new(edge.from()), role_type: RoleType::build_from_type_id(edge.from_role_id()) };
     let to_role_player =

@@ -116,8 +116,8 @@ impl ThingVertex for ObjectVertex {
     fn new(bytes: &[u8]) -> ObjectVertex {
         debug_assert_eq!(bytes.len(), Self::LENGTH);
         let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] });
-        let type_id = TypeID::new(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
-        let object_id = ObjectID::new(bytes[Self::range_object_id()].try_into().unwrap());
+        let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
+        let object_id = ObjectID::decode(bytes[Self::range_object_id()].try_into().unwrap());
         Self { prefix, type_id, object_id }
     }
 }
@@ -130,13 +130,13 @@ pub struct ObjectID {
 impl ObjectID {
     const LENGTH: usize = 8;
 
-    fn new(bytes: [u8; ObjectID::LENGTH]) -> Self {
-        ObjectID { value: u64::from_be_bytes(bytes) }
-    }
-
-    pub fn build(id: u64) -> Self {
+    pub fn new(id: u64) -> Self {
         debug_assert_eq!(mem::size_of_val(&id), Self::LENGTH);
         ObjectID { value: id }
+    }
+
+    fn decode(bytes: [u8; ObjectID::LENGTH]) -> Self {
+        ObjectID { value: u64::from_be_bytes(bytes) }
     }
 
     fn to_bytes(self) -> [u8; ObjectID::LENGTH] {

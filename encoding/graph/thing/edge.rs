@@ -50,16 +50,16 @@ impl ThingEdgeHas {
     pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
-    pub fn new(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(from: ObjectVertex, to: AttributeVertex) -> Self {
+        Self { owner: from, attribute: to }
+    }
+
+    pub fn decode(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let owner = ObjectVertex::new(&bytes[Self::range_from()]);
         let len = bytes.len();
-        let attribute = AttributeVertex::new(&bytes[Self::range_from().end..len]);
+        let attribute = AttributeVertex::decode(&bytes[Self::range_from().end..len]);
         Self { owner, attribute }
-    }
-
-    pub fn build(from: ObjectVertex, to: AttributeVertex) -> Self {
-        Self { owner: from, attribute: to }
     }
 
     pub fn prefix_from_type(type_: TypeVertex) -> StorageKey<'static, { ThingEdgeHas::LENGTH_PREFIX_FROM_TYPE }> {
@@ -175,7 +175,11 @@ impl ThingEdgeHasReverse {
         + AttributeID::max_length()
         + THING_VERTEX_LENGTH_PREFIX_TYPE;
 
-    pub fn new(bytes: Bytes<BUFFER_KEY_INLINE>) -> ThingEdgeHasReverse {
+    pub fn new(from: AttributeVertex, to: ObjectVertex) -> Self {
+        Self { attribute: from, owner: to }
+    }
+
+    pub fn decode(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
         let attribute_len = AttributeVertex::RANGE_TYPE_ID.end
             + AttributeID::value_type_encoding_length(ValueTypeCategory::from_bytes([
@@ -183,13 +187,9 @@ impl ThingEdgeHasReverse {
             ]));
         debug_assert_eq!(bytes.len() - attribute_len, 1 + ObjectVertex::LENGTH);
         let len = bytes.len();
-        let attribute = AttributeVertex::new(&bytes[1..attribute_len + 1]);
+        let attribute = AttributeVertex::decode(&bytes[1..attribute_len + 1]);
         let owner = ObjectVertex::new(&bytes[attribute_len + 1..len]);
         Self { owner, attribute }
-    }
-
-    pub fn build(from: AttributeVertex, to: ObjectVertex) -> Self {
-        Self { attribute: from, owner: to }
     }
 
     pub fn prefix_from_prefix(
@@ -266,7 +266,7 @@ impl ThingEdgeHasReverse {
 
     pub fn is_has_reverse(key: StorageKeyReference<'_>) -> bool {
         if !key.bytes().is_empty() && key.bytes()[Self::INDEX_PREFIX] == Self::PREFIX.prefix_id().byte {
-            let edge = ThingEdgeHasReverse::new(Bytes::Reference(key.bytes()));
+            let edge = ThingEdgeHasReverse::decode(Bytes::Reference(key.bytes()));
             edge.keyspace().id() == key.keyspace_id()
         } else {
             false
@@ -378,13 +378,13 @@ impl ThingEdgeLinks {
             Self::PREFIX => {
                 let relation = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
                 let player = ObjectVertex::new(&bytes[Self::RANGE_TO]);
-                let role_id = TypeID::new(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
+                let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
                 Self { relation, player, role_id, is_reverse: false }
             }
             Self::PREFIX_REVERSE => {
                 let player = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
                 let relation = ObjectVertex::new(&bytes[Self::RANGE_TO]);
-                let role_id = TypeID::new(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
+                let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
                 Self { relation, player, role_id, is_reverse: true }
             }
             _ => panic!(),
@@ -592,23 +592,23 @@ impl ThingEdgeRolePlayerIndex {
     const LENGTH: usize = PrefixID::LENGTH + 3 * ObjectVertex::LENGTH + 2 * TypeID::LENGTH;
     pub const LENGTH_PREFIX_FROM: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
 
-    pub fn new(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
-        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let player_from = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-        let player_to = ObjectVertex::new(&bytes[Self::RANGE_TO]);
-        let relation = ObjectVertex::new(&bytes[Self::RANGE_RELATION]);
-        let role_id_from = TypeID::new(bytes[Self::RANGE_FROM_ROLE_TYPE_ID].try_into().unwrap());
-        let role_id_to = TypeID::new(bytes[Self::RANGE_TO_ROLE_TYPE_ID].try_into().unwrap());
-        Self { player_from, player_to, relation, role_id_from, role_id_to }
-    }
-
-    pub fn build(
+    pub fn new(
         player_from: ObjectVertex,
         player_to: ObjectVertex,
         relation: ObjectVertex,
         role_id_from: TypeID,
         role_id_to: TypeID,
     ) -> Self {
+        Self { player_from, player_to, relation, role_id_from, role_id_to }
+    }
+
+    pub fn decode(bytes: Bytes<BUFFER_KEY_INLINE>) -> Self {
+        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
+        let player_from = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
+        let player_to = ObjectVertex::new(&bytes[Self::RANGE_TO]);
+        let relation = ObjectVertex::new(&bytes[Self::RANGE_RELATION]);
+        let role_id_from = TypeID::decode(bytes[Self::RANGE_FROM_ROLE_TYPE_ID].try_into().unwrap());
+        let role_id_to = TypeID::decode(bytes[Self::RANGE_TO_ROLE_TYPE_ID].try_into().unwrap());
         Self { player_from, player_to, relation, role_id_from, role_id_to }
     }
 

@@ -37,27 +37,27 @@ impl TypeVertexProperty {
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
-        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-
-        let type_ = TypeVertex::new(bytes.clone().into_range(Self::range_type_vertex()));
-        let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
-        let suffix =
-            (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
-        Self { type_, infix, suffix }
-    }
-
-    pub fn build(type_: TypeVertex, infix: Infix) -> Self {
+    pub fn new(type_: TypeVertex, infix: Infix) -> Self {
         Self { type_, infix, suffix: None }
     }
 
-    fn build_suffixed<const INLINE_BYTES: usize>(
+    fn new_suffixed<const INLINE_BYTES: usize>(
         vertex: TypeVertex,
         infix: Infix,
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
         Self { type_: vertex, infix, suffix: Some(ByteArray::copy(&suffix)) }
+    }
+
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
+        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
+
+        let type_ = TypeVertex::decode(bytes.clone().into_range(Self::range_type_vertex()));
+        let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
+        let suffix =
+            (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
+        Self { type_, infix, suffix }
     }
 
     pub fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
@@ -123,14 +123,14 @@ pub trait TypeVertexPropertyEncoding {
     fn from_value_bytes(value: &[u8]) -> Self;
 
     fn build_key(vertex: impl TypeVertexEncoding) -> TypeVertexProperty {
-        TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
+        TypeVertexProperty::new(vertex.into_vertex(), Self::INFIX)
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
 
     fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
-            && TypeVertexProperty::new(key_bytes).infix() == Self::INFIX
+            && TypeVertexProperty::decode(key_bytes).infix() == Self::INFIX
     }
 }
 
@@ -149,18 +149,18 @@ impl TypeEdgeProperty {
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+    pub fn new(edge: TypeEdge, infix: Infix) -> Self {
+        Self { edge, infix, suffix: None }
+    }
+
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let edge = TypeEdge::new(bytes.clone().into_range(Self::range_type_edge()));
+        let edge = TypeEdge::decode(bytes.clone().into_range(Self::range_type_edge()));
         let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
         let suffix =
             (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
         Self { edge, infix, suffix }
-    }
-
-    pub fn build(edge: TypeEdge, infix: Infix) -> Self {
-        Self { edge, infix, suffix: None }
     }
 
     fn build_suffixed<const INLINE_BYTES: usize>(
@@ -234,13 +234,13 @@ pub trait TypeEdgePropertyEncoding: Sized {
     fn from_value_bytes(value: &[u8]) -> Self;
 
     fn build_key(edge: impl TypeEdgeEncoding) -> TypeEdgeProperty {
-        TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
+        TypeEdgeProperty::new(edge.to_canonical_type_edge(), Self::INFIX)
     }
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
 
     fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
-            && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
+            && TypeEdgeProperty::decode(key_bytes).infix() == Self::INFIX
     }
 }

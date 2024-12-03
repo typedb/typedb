@@ -205,10 +205,10 @@ impl Statistics {
                 self.update_relations(type_, delta);
                 total_delta += delta;
             } else if AttributeVertex::is_attribute_vertex(&key) {
-                let type_ = Attribute::new(AttributeVertex::new(key.bytes())).type_();
+                let type_ = Attribute::new(AttributeVertex::decode(key.bytes())).type_();
                 self.update_attributes(type_, delta);
             } else if ThingEdgeHas::is_has(&key) {
-                let edge = ThingEdgeHas::new(Bytes::Reference(key.bytes()));
+                let edge = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
                 total_delta += delta;
             } else if ThingEdgeLinks::is_links(&key) {
@@ -222,7 +222,7 @@ impl Statistics {
                 );
                 total_delta += delta;
             } else if ThingEdgeRolePlayerIndex::is_index(&key) {
-                let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key.bytes()));
+                let edge = ThingEdgeRolePlayerIndex::decode(Bytes::Reference(key.bytes()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                 // note: don't update total count based on index
             } else if EntityType::is_decodable_from_key(&key) {
@@ -476,36 +476,36 @@ impl SerialisableType {
 
     pub(crate) fn into_entity_type(self) -> EntityType {
         match self {
-            Self::Entity(id) => EntityType::build_from_type_id(TypeID::build(id)),
+            Self::Entity(id) => EntityType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_relation_type(self) -> RelationType {
         match self {
-            Self::Relation(id) => RelationType::build_from_type_id(TypeID::build(id)),
+            Self::Relation(id) => RelationType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_object_type(self) -> ObjectType {
         match self {
-            Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::build(id))),
-            Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::build(id))),
+            Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::new(id))),
+            Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::new(id))),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_attribute_type(self) -> AttributeType {
         match self {
-            Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::build(id)),
+            Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
     pub(crate) fn into_role_type(self) -> RoleType {
         match self {
-            Self::Role(id) => RoleType::build_from_type_id(TypeID::build(id)),
+            Self::Role(id) => RoleType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }

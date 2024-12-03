@@ -25,7 +25,7 @@ pub fn build_object_vertex_property_has_order(
 ) -> ObjectVertexProperty {
     debug_assert_eq!(attribute_type.prefix(), Prefix::VertexAttributeType);
     let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&attribute_type.type_id_().to_bytes()));
-    ObjectVertexProperty::build_suffixed(object_vertex, Infix::PropertyHasOrder, suffix)
+    ObjectVertexProperty::new_suffixed(object_vertex, Infix::PropertyHasOrder, suffix)
 }
 
 pub fn build_object_vertex_property_links_order(
@@ -34,7 +34,7 @@ pub fn build_object_vertex_property_links_order(
 ) -> ObjectVertexProperty {
     debug_assert_eq!(role_type.prefix(), Prefix::VertexRoleType);
     let suffix: Bytes<'_, BUFFER_KEY_INLINE> = Bytes::Array(ByteArray::copy(&role_type.type_id_().to_bytes()));
-    ObjectVertexProperty::build_suffixed(object_vertex, Infix::PropertyLinksOrder, suffix)
+    ObjectVertexProperty::new_suffixed(object_vertex, Infix::PropertyLinksOrder, suffix)
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
@@ -53,11 +53,11 @@ impl ObjectVertexProperty {
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
     const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
 
-    fn build(object: ObjectVertex, infix: Infix) -> Self {
+    fn new(object: ObjectVertex, infix: Infix) -> Self {
         Self { object, infix, suffix: None }
     }
 
-    fn build_suffixed<const INLINE_BYTES: usize>(
+    fn new_suffixed<const INLINE_BYTES: usize>(
         object: ObjectVertex,
         infix: Infix,
         suffix: Bytes<'_, INLINE_BYTES>,

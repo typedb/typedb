@@ -190,9 +190,9 @@ impl<'a> StructIndexEntry<'a> {
 
     pub fn attribute_vertex(&self) -> AttributeVertex {
         let bytes = &self.key.key_bytes;
-        let attribute_type_id = TypeID::new(bytes[StructIndexEntry::ENCODING_TYPEID_RANGE].try_into().unwrap());
+        let attribute_type_id = TypeID::decode(bytes[StructIndexEntry::ENCODING_TYPEID_RANGE].try_into().unwrap());
         let attribute_id = AttributeID::new(&bytes[(bytes.len() - StructAttributeID::LENGTH)..bytes.len()]);
-        AttributeVertex::build(attribute_type_id, attribute_id)
+        AttributeVertex::new(attribute_type_id, attribute_id)
     }
 }
 

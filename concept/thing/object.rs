@@ -449,7 +449,7 @@ fn storage_key_has_edge_to_has_attribute<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Attribute, u64) {
-    let edge = ThingEdgeHas::new(storage_key.into_bytes());
+    let edge = ThingEdgeHas::decode(storage_key.into_bytes());
     (Attribute::new(edge.to()), decode_value_u64(&value))
 }
 
@@ -457,14 +457,14 @@ fn storage_key_has_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Has, u64) {
-    (Has::new_from_edge(ThingEdgeHas::new(storage_key.into_bytes())), decode_value_u64(&value))
+    (Has::new_from_edge(ThingEdgeHas::decode(storage_key.into_bytes())), decode_value_u64(&value))
 }
 
 fn storage_key_has_reverse_edge_to_has<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
 ) -> (Has, u64) {
-    (Has::new_from_edge_reverse(ThingEdgeHasReverse::new(storage_key.into_bytes())), decode_value_u64(&value))
+    (Has::new_from_edge_reverse(ThingEdgeHasReverse::decode(storage_key.into_bytes())), decode_value_u64(&value))
 }
 
 edge_iterator!(

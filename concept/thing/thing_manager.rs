@@ -344,7 +344,7 @@ impl ThingManager {
                         value.encode_string::<256>(),
                         snapshot,
                     ) {
-                        Ok(Some(id)) => Attribute::new(AttributeVertex::build(
+                        Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                             attribute_type.vertex().type_id_(),
                             AttributeID::String(id),
                         )),
@@ -359,7 +359,7 @@ impl ThingManager {
                     value.encode_struct::<256>(),
                     snapshot,
                 ) {
-                    Ok(Some(id)) => Attribute::new(AttributeVertex::build(
+                    Ok(Some(id)) => Attribute::new(AttributeVertex::new(
                         attribute_type.vertex().type_id_(),
                         AttributeID::Struct(id),
                     )),
@@ -503,7 +503,7 @@ impl ThingManager {
         if attribute_value_type.is_none() || attribute_value_type.as_ref().unwrap() != &value.value_type() {
             return Ok(None);
         }
-        let vertex = AttributeVertex::build(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
+        let vertex = AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
         snapshot
             .get_mapped(vertex.into_storage_key().as_reference(), |_| Attribute::new(vertex))
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
@@ -526,7 +526,7 @@ impl ThingManager {
 
         let vertex = if AttributeID::is_inlineable(value.as_reference()) {
             // don't need to do an extra lookup to get the attribute vertex - if it exists, it will have this ID
-            AttributeVertex::build(attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
+            AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
         } else {
             // non-inline attributes require an extra lookup before checking for the has edge existence
             let attribute = self.get_attribute_with_value(snapshot, attribute_type, value)?;
@@ -536,7 +536,7 @@ impl ThingManager {
             }
         };
 
-        let has = ThingEdgeHas::build(owner.vertex(), vertex);
+        let has = ThingEdgeHas::new(owner.vertex(), vertex);
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true)
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
@@ -550,7 +550,7 @@ impl ThingManager {
         owner: impl ObjectAPI,
         attribute: &Attribute,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
+        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
             .get_mapped(has.into_storage_key().as_reference(), |_value| true)
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
@@ -726,7 +726,7 @@ impl ThingManager {
         let attributes = snapshot
             .get_mapped(key.into_storage_key().as_reference(), |bytes| {
                 decode_attribute_ids(value_type.category(), bytes)
-                    .map(|id| Attribute::new(AttributeVertex::build(attribute_type.vertex().type_id_(), id)))
+                    .map(|id| Attribute::new(AttributeVertex::new(attribute_type.vertex().type_id_(), id)))
                     .collect()
             })
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
@@ -1012,7 +1012,7 @@ impl ThingManager {
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
             if ThingEdgeHas::is_has(&key) {
-                let has = ThingEdgeHas::new(Bytes::Reference(key.bytes()));
+                let has = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
                 let object = Object::new(has.from()).into_owned();
                 let attribute = Attribute::new(has.to()).into_owned();
                 let attribute_type = attribute.type_();
@@ -1207,7 +1207,7 @@ impl ThingManager {
                     Write::Put { .. } | Write::Insert { .. } => {
                         let bytes = Bytes::reference(key.bytes());
                         if <AnnotationCascade as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
-                            let decoded = TypeVertexProperty::new(bytes);
+                            let decoded = TypeVertexProperty::decode(bytes);
                             RelationType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
                         } else {
                             None
@@ -1247,7 +1247,7 @@ impl ThingManager {
             ))
             .filter(|(_, write)| matches!(write, Write::Delete))
         {
-            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array()));
+            let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let attribute = Attribute::new(edge.to());
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if attribute.get_status(snapshot, self) == ConceptStatus::Deleted {
@@ -1271,7 +1271,7 @@ impl ThingManager {
                 _ => None,
             })
         {
-            let attribute = Attribute::new(AttributeVertex::new(key.bytes()));
+            let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if !is_independent && !attribute.has_owners(snapshot, self) {
                 self.unput_attribute(snapshot, &attribute)?;
@@ -1287,7 +1287,7 @@ impl ThingManager {
                 Write::Delete => {
                     let bytes = Bytes::reference(key.bytes());
                     if <AnnotationIndependent as TypeVertexPropertyEncoding>::is_decodable_from(bytes.clone()) {
-                        let decoded = TypeVertexProperty::new(bytes);
+                        let decoded = TypeVertexProperty::decode(bytes);
                         AttributeType::from_vertex(decoded.type_vertex()).ok().map(|type_| type_.into_owned())
                     } else {
                         None
@@ -1420,7 +1420,7 @@ impl ThingManager {
             RangeStart::Inclusive(ThingEdgeHas::prefix()),
             ThingEdgeHas::FIXED_WIDTH_ENCODING,
         )) {
-            let edge = ThingEdgeHas::new(Bytes::Reference(key.byte_array()));
+            let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
             if self.object_exists(snapshot, owner)? {
@@ -1753,7 +1753,7 @@ impl ThingManager {
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        let has = ThingEdgeHas::build(owner.vertex(), attribute.vertex());
+        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
         let has_reverse = ThingEdgeHasReverse::build(attribute.vertex(), owner.vertex());
 
         if count == 0 {

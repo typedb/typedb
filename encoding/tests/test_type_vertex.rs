@@ -82,7 +82,7 @@ fn entity_type_vertexes_are_reused() {
         let mut snapshot = storage.clone().open_snapshot_write();
         for i in 0..=create_till {
             if i % 2 == 0 {
-                let vertex = MockEntityType::build_from_type_id(TypeID::build(i)).vertex;
+                let vertex = MockEntityType::build_from_type_id(TypeID::new(i)).vertex;
                 snapshot.delete(StorageKeyReference::new(vertex.keyspace(), &vertex.to_bytes()).into());
                 // TODO: replace with type api call.
             }
