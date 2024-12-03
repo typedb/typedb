@@ -13,10 +13,9 @@ use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{iterator::KeyspaceRangeIterator, KeyspaceError, KeyspaceId},
+    keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
-use crate::keyspace::IteratorPool;
 
 pub(crate) struct MVCCRangeIterator {
     storage_name: Arc<String>,

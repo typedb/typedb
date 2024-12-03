@@ -34,7 +34,8 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
+        KeyspaceSet, Keyspaces,
     },
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
@@ -43,7 +44,6 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
-use crate::keyspace::IteratorPool;
 
 pub mod durability_client;
 pub mod error;

@@ -191,9 +191,9 @@ where
 }
 
 pub struct ReadSnapshot<D> {
-    storage: Arc<MVCCStorage<D>>,
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool,
+    iterator_pool: IteratorPool, // Must be declared & dropped before storage
+    storage: Arc<MVCCStorage<D>>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for ReadSnapshot<D> {
@@ -220,7 +220,9 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
         &self,
         key: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
-        self.storage.get(self.iterator_pool(), key, self.open_sequence_number).map_err(|error| SnapshotGetError::MVCCRead { source: error })
+        self.storage
+            .get(self.iterator_pool(), key, self.open_sequence_number)
+            .map_err(|error| SnapshotGetError::MVCCRead { source: error })
     }
 
     fn get_last_existing<const INLINE_BYTES: usize>(
@@ -262,10 +264,10 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 }
 
 pub struct WriteSnapshot<D> {
-    storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool,
+    iterator_pool: IteratorPool, // Must be declared & dropped before storage
+    storage: Arc<MVCCStorage<D>>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
@@ -277,7 +279,12 @@ impl<D: fmt::Debug> fmt::Debug for WriteSnapshot<D> {
 impl<D> WriteSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        WriteSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number, iterator_pool: IteratorPool::new() }
+        WriteSnapshot {
+            storage,
+            operations: OperationsBuffer::new(),
+            open_sequence_number,
+            iterator_pool: IteratorPool::new(),
+        }
     }
 
     pub fn new_with_operations(
@@ -403,10 +410,10 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
 }
 
 pub struct SchemaSnapshot<D> {
-    storage: Arc<MVCCStorage<D>>,
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool,
+    iterator_pool: IteratorPool, // Must be declared & dropped before storage
+    storage: Arc<MVCCStorage<D>>,
 }
 
 impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
@@ -418,7 +425,12 @@ impl<D: fmt::Debug> fmt::Debug for SchemaSnapshot<D> {
 impl<D> SchemaSnapshot<D> {
     pub(crate) fn new(storage: Arc<MVCCStorage<D>>, open_sequence_number: SequenceNumber) -> Self {
         storage.isolation_manager.opened_for_read(open_sequence_number);
-        SchemaSnapshot { storage, operations: OperationsBuffer::new(), open_sequence_number, iterator_pool: IteratorPool::new() }
+        SchemaSnapshot {
+            storage,
+            operations: OperationsBuffer::new(),
+            open_sequence_number,
+            iterator_pool: IteratorPool::new(),
+        }
     }
 
     pub fn new_with_operations(

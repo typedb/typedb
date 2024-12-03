@@ -22,8 +22,10 @@ use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use encoding::{
+    graph::definition::definition_key_generator::DefinitionKeyGenerator,
+    value::{label::Label, value::Value, value_type::ValueType},
+};
 use executor::{
     pipeline::{
         delete::DeleteStageExecutor,
@@ -43,8 +45,7 @@ use ir::{
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
-use query::query_cache::QueryCache;
-use query::query_manager::QueryManager;
+use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -367,7 +368,7 @@ fn relation() {
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = storage.open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
@@ -415,7 +416,7 @@ fn relation_with_inferred_roles() {
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = storage.open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();

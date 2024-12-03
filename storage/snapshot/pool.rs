@@ -4,9 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{ops::Deref, sync::Mutex};
-use std::ops::DerefMut;
-use std::sync::Arc;
+use std::{
+    ops::{Deref, DerefMut},
+    sync::{Arc, Mutex},
+};
 
 pub trait Poolable {}
 
@@ -54,13 +55,11 @@ impl<T: Poolable> Deref for PoolRecycleGuard<T> {
     }
 }
 
-
 impl<T: Poolable> DerefMut for PoolRecycleGuard<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.item.as_mut().unwrap()
     }
 }
-
 
 impl<T: Poolable> Drop for PoolRecycleGuard<T> {
     fn drop(&mut self) {
