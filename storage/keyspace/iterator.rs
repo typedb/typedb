@@ -47,6 +47,9 @@ impl KeyspaceRangeIterator {
             }
         };
 
+        // if keyspace.name() == "OptimisedPrefix15" {
+        //     println!("Opening iterator in keyspace 'OptimisedPrefix15' for prefix length {}: {}", start_prefix.len(), start_prefix);
+        // }
         let mut iterator = raw_iterator::DBIterator::new_from(iterpool.get_iterator(keyspace), start_prefix.as_ref());
         if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
             Self::may_skip_start(&mut iterator, range.start().get_value());

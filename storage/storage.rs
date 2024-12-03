@@ -44,6 +44,7 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
+use crate::key_range::RangeStart;
 
 pub mod durability_client;
 pub mod error;
@@ -358,7 +359,7 @@ impl<Durability> MVCCStorage<Durability> {
         let key = key.into();
         let mut iterator = self.iterate_range(
             iterator_pool,
-            &KeyRange::new_within(RangeStart::Inclusive(StorageKey::<0>::Reference(key)), false),
+            &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
         );
         loop {
