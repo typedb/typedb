@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, sync::Arc};
+use std::{collections::HashMap, marker::PhantomData, ops::Bound, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
 use compiler::{
@@ -29,6 +29,7 @@ use concept::{
 use encoding::value::label::Label;
 use error::typedb_error;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -451,7 +452,8 @@ fn execute_attributes_all(
     let iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
     let mut map: HashMap<Arc<Label>, DocumentNode> = HashMap::new();
     for result in iter {
-        let (attribute, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        let (has, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        let attribute = has.attribute();
         let attribute_type = attribute.type_();
         let label = attribute_type
             .get_label_arc(snapshot.as_ref(), thing_manager.type_manager())
@@ -534,10 +536,13 @@ fn prepare_attribute_type_has_iterator(
         .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
         .map_err(|source| FetchExecutionError::ConceptRead { source })?;
     let attribute_types = TypeAPI::chain_types(attribute_type, subtypes.into_iter().cloned());
-
-    object
-        .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), attribute_types)
-        .map_err(|source| FetchExecutionError::ConceptRead { source })
+    let (min_type, max_type) = match attribute_types.into_iter().minmax() {
+        MinMaxResult::NoElements => return Ok(HasIterator::new_empty()),
+        MinMaxResult::OneElement(item) => (item, item),
+        MinMaxResult::MinMax(min, max) => (min, max),
+    };
+    let range = (Bound::Included(min_type), Bound::Included(max_type));
+    Ok(object.get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), &range))
 }
 
 fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(

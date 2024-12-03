@@ -31,7 +31,7 @@ use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     iterator::MVCCRangeIterator,
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
         iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
@@ -353,10 +353,8 @@ impl<Durability> MVCCStorage<Durability> {
         Mapper: Fn(&[u8]) -> V,
     {
         let key = key.into();
-        let mut iterator = self.iterate_range(
-            KeyRange::new_within(RangeStart::Inclusive(StorageKey::<0>::Reference(key)), false),
-            open_sequence_number,
-        );
+        let mut iterator =
+            self.iterate_range(&KeyRange::new_within(StorageKey::<0>::Reference(key), false), open_sequence_number);
         loop {
             match iterator.next().transpose()? {
                 None => return Ok(None),
@@ -368,7 +366,7 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub(crate) fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: KeyRange<StorageKey<'this, PS>>,
+        range: &KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> MVCCRangeIterator {
         MVCCRangeIterator::new(self, range, open_sequence_number)
@@ -427,7 +425,7 @@ impl<Durability> MVCCStorage<Durability> {
     ) -> KeyspaceRangeIterator {
         self.keyspaces
             .get(range.start().get_value().keyspace_id())
-            .iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
+            .iterate_range(&range.map(|k| k.as_bytes(), |fixed| fixed))
     }
 
     pub fn reset(&mut self) -> Result<(), StorageResetError>

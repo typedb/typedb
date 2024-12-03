@@ -7,6 +7,7 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt, iter,
+    ops::Bound,
     sync::Arc,
 };
 
@@ -19,17 +20,17 @@ use concept::{
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
     },
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy};
+use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions},
         BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
     },
@@ -43,7 +44,8 @@ pub(crate) struct HasExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     owner_attribute_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    attribute_types: Arc<BTreeSet<Type>>,
+    owner_type_range: Bounds<ObjectType<'static>>,
+    attribute_type_range: Bounds<AttributeType<'static>>,
     filter_fn: Arc<HasFilterFn>,
     owner_cache: Option<Vec<Object>>,
     checker: Checker<(Has, u64)>,
@@ -101,6 +103,17 @@ impl HasExecutor {
         let checker =
             Checker::<(Has, _)>::new(checks, HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]));
 
+        let (min_attribute_type, max_attribute_type) = min_max_types(&*attribute_types);
+        let attribute_type_range = (
+            Bound::Included(min_attribute_type.as_attribute_type()),
+            Bound::Included(max_attribute_type.as_attribute_type()),
+        );
+
+        let owner_type_range = (
+            Bound::Included(owner_attribute_types.first_key_value().unwrap().0.as_object_type()),
+            Bound::Included(owner_attribute_types.last_key_value().unwrap().0.as_object_type()),
+        );
+
         let owner_cache = if iterate_mode == BinaryIterateMode::UnboundInverted {
             let mut cache = Vec::new();
             for type_ in owner_attribute_types.keys() {
@@ -121,7 +134,8 @@ impl HasExecutor {
             variable_modes,
             tuple_positions: output_tuple_positions,
             owner_attribute_types,
-            attribute_types,
+            owner_type_range,
+            attribute_type_range,
             filter_fn,
             owner_cache,
             checker,
@@ -149,15 +163,12 @@ impl HasExecutor {
 
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
-                let first_from_type = self.owner_attribute_types.first_key_value().unwrap().0;
-                let last_key_from_type = self.owner_attribute_types.last_key_value().unwrap().0;
-                let key_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(first_from_type.as_object_type()),
-                    RangeEnd::EndPrefixInclusive(last_key_from_type.as_object_type()),
-                );
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
+
+                // TODO: in the HasReverse case, we look up N iterators (one per type) and link them - here we scan and post-filter
+                //        we should determine which strategy we want long-term
                 let as_tuples: HasUnboundedSortedOwner = thing_manager
-                    .get_has_from_owner_type_range_unordered(snapshot, key_range)
+                    .get_has_from_owner_type_range_unordered(snapshot, &self.owner_type_range)
                     .filter_map(filter_for_row)
                     .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasUnbounded(SortedTupleIterator::new(
@@ -174,8 +185,8 @@ impl HasExecutor {
                         snapshot,
                         thing_manager,
                         // TODO: this should be just the types owned by the one instance's type in the cache!
-                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
-                    )?;
+                        &self.attribute_type_range,
+                    );
                     let as_tuples: HasUnboundedSortedAttributeSingle = iterator
                         .filter_map(filter_for_row)
                         .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
@@ -193,8 +204,8 @@ impl HasExecutor {
                             object.get_has_types_range_unordered(
                                 snapshot,
                                 thing_manager,
-                                self.attribute_types.iter().map(|ty| ty.as_attribute_type()),
-                            )
+                                &self.attribute_type_range,
+                            )))
                         })
                         .try_collect::<_, Vec<_>, _>()?;
 
@@ -215,16 +226,12 @@ impl HasExecutor {
                 debug_assert!(row.len() > owner.as_usize());
                 // TODO: inject value ranges
                 let iterator = match row.get(owner) {
-                    VariableValue::Thing(Thing::Entity(entity)) => entity.get_has_types_range_unordered(
-                        snapshot,
-                        thing_manager,
-                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
-                    )?,
-                    VariableValue::Thing(Thing::Relation(relation)) => relation.get_has_types_range_unordered(
-                        snapshot,
-                        thing_manager,
-                        self.attribute_types.iter().map(|t| t.as_attribute_type()),
-                    )?,
+                    VariableValue::Thing(Thing::Entity(entity)) => {
+                        entity.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
+                    }
+                    VariableValue::Thing(Thing::Relation(relation)) => {
+                        relation.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
+                    }
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let as_tuples: HasBoundedSortedAttribute =

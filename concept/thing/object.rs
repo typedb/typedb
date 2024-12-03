@@ -7,6 +7,7 @@
 use std::{
     collections::{BTreeMap, HashMap},
     fmt,
+    ops::{Bound, RangeBounds},
 };
 
 use bytes::Bytes;
@@ -164,8 +165,12 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> HasAttributeIterator {
-        thing_manager.get_has_from_thing_unordered(snapshot, self)
+    ) -> HasIterator {
+        self.get_has_types_range_unordered(
+            snapshot,
+            thing_manager,
+            &(Bound::<AttributeType<'b>>::Unbounded, Bound::Unbounded),
+        )
     }
 
     fn get_has_type_unordered<'m>(
@@ -191,7 +196,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_types_defining_range: impl Iterator<Item = AttributeType>,
-    ) -> Result<HasIterator, Box<ConceptReadError>> {
+    ) -> HasIterator {
         thing_manager.get_has_from_thing_to_type_range_unordered(snapshot, self, attribute_types_defining_range)
     }
 
@@ -378,8 +383,8 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
     ) -> Result<HashMap<AttributeType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
         let mut has_iter = self.get_has_unordered(snapshot, thing_manager);
-        while let Some((attribute, count)) = has_iter.next().transpose()? {
-            let value = counts.entry(attribute.type_()).or_insert(0);
+        while let Some((has, count)) = has_iter.next().transpose()? {
+            let value = counts.entry(has.attribute().type_()).or_insert(0);
             *value += count;
         }
         Ok(counts)

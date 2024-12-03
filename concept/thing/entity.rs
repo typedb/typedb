@@ -98,8 +98,9 @@ impl ThingAPI for Entity {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(attr, _count)| attr) {
-            thing_manager.unset_has(snapshot, self, &attr?);
+        for attr in self.get_has_unordered(snapshot, thing_manager)
+            .map_ok(|(has, _count)| has.attribute()) {
+            thing_manager.unset_has(snapshot, self, attr);
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {

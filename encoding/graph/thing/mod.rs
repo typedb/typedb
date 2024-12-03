@@ -48,8 +48,14 @@ pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + 
     fn build_prefix_type(prefix: Prefix, type_id: TypeID) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
-        array[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
-        array[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
+        Self::write_prefix_type(array.as_mut(), prefix, type_id);
         StorageKey::new(Self::KEYSPACE, Bytes::Array(array))
+    }
+
+    fn write_prefix_type(bytes: &mut [u8], prefix: Prefix, type_id: TypeID) -> usize {
+        debug_assert!(bytes.len() >= THING_VERTEX_LENGTH_PREFIX_TYPE);
+        bytes[Self::INDEX_PREFIX] = prefix.prefix_id().byte;
+        bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.bytes());
+        THING_VERTEX_LENGTH_PREFIX_TYPE
     }
 }

@@ -230,7 +230,7 @@ impl LendingIterator for SnapshotRangeIterator {
         if self.ready_item_source.is_none() {
             self.find_next_state();
         }
-        match self.ready_item_source.take() {
+        let next = match self.ready_item_source.take() {
             Some(ReadyItemSource::Both) => {
                 // Skip the storage and get the buffered value because they can be different
                 let _ = self.storage_next();
@@ -239,7 +239,8 @@ impl LendingIterator for SnapshotRangeIterator {
             Some(ReadyItemSource::Storage) => self.storage_next(),
             Some(ReadyItemSource::Buffered) => self.buffered_next(),
             None => None,
-        }
+        };
+        next
     }
 }
 
