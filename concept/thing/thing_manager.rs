@@ -1470,7 +1470,7 @@ impl ThingManager {
                 ))
                 .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
             {
-                let relation = Relation::new(ObjectVertex::new(key.bytes()));
+                let relation = Relation::new(ObjectVertex::decode(key.bytes()));
                 if !relation.has_players(snapshot, self) {
                     relation.delete(snapshot, self)?;
                     any_deleted = true;
@@ -1680,7 +1680,7 @@ impl ThingManager {
                 Write::Put { .. } => unreachable!("Encountered a Put for an entity"),
             })
         {
-            let object = Object::new(ObjectVertex::new(key.bytes()));
+            let object = Object::new(ObjectVertex::decode(key.bytes()));
             match &object {
                 Object::Entity(_) => {}
                 Object::Relation(relation) => {

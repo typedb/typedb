@@ -44,7 +44,7 @@ where
             None => return None,
         };
         let item = match iter.next() {
-            Some(Ok((storage_key, _))) => Ok(T::new(T::Vertex::new(storage_key.bytes()))),
+            Some(Ok((storage_key, _))) => Ok(T::new(T::Vertex::decode(storage_key.bytes()))),
             Some(Err(err)) => Err(Box::new(SnapshotIterate { source: err })),
             None => return None,
         };

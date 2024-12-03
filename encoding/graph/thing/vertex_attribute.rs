@@ -14,6 +14,7 @@ use storage::{
     keyspace::KeyspaceSet,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
 };
+use storage::key_value::StorageKeyReference;
 use storage::keyspace::KeyspaceId;
 
 use crate::{
@@ -101,7 +102,7 @@ impl AttributeVertex {
         Self::RANGE_TYPE_ID.end + attribute_id_part.len()
     }
 
-    pub fn is_attribute_vertex(storage_key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
+    pub fn is_attribute_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         Self::is_valid_keyspace(storage_key.keyspace_id()) && Self::is_attribute_bytes(storage_key.bytes())
     }
 
@@ -176,7 +177,7 @@ impl Prefixed<BUFFER_KEY_INLINE> for AttributeVertex {}
 impl Typed<BUFFER_KEY_INLINE> for AttributeVertex {}
 
 impl ThingVertex for AttributeVertex {
-    fn new(bytes: &[u8]) -> Self {
+    fn decode(bytes: &[u8]) -> Self {
         AttributeVertex::decode(bytes)
     }
 }

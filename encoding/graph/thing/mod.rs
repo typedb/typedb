@@ -35,7 +35,7 @@ pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVe
 
 pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + Keyable<BUFFER_KEY_INLINE> {
 
-    fn new(bytes: &[u8]) -> Self;
+    fn decode(bytes: &[u8]) -> Self;
 
     fn build_prefix_prefix(prefix: Prefix, keyspace: EncodingKeyspace) -> StorageKey<'static, { PrefixID::LENGTH }> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));

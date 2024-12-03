@@ -56,7 +56,7 @@ impl ThingEdgeHas {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let owner = ObjectVertex::new(&bytes[Self::range_from()]);
+        let owner = ObjectVertex::decode(&bytes[Self::range_from()]);
         let len = bytes.len();
         let attribute = AttributeVertex::decode(&bytes[Self::range_from().end..len]);
         Self { owner, attribute }
@@ -199,7 +199,7 @@ impl ThingEdgeHasReverse {
         debug_assert_eq!(bytes.len() - attribute_len, 1 + ObjectVertex::LENGTH);
         let len = bytes.len();
         let attribute = AttributeVertex::decode(&bytes[1..attribute_len + 1]);
-        let owner = ObjectVertex::new(&bytes[attribute_len + 1..len]);
+        let owner = ObjectVertex::decode(&bytes[attribute_len + 1..len]);
         Self { owner, attribute }
     }
 
@@ -428,14 +428,14 @@ impl ThingEdgeLinks {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])) {
             Self::PREFIX => {
-                let relation = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-                let player = ObjectVertex::new(&bytes[Self::RANGE_TO]);
+                let relation = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+                let player = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
                 let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
                 Self { relation, player, role_id, is_reverse: false }
             }
             Self::PREFIX_REVERSE => {
-                let player = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-                let relation = ObjectVertex::new(&bytes[Self::RANGE_TO]);
+                let player = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+                let relation = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
                 let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
                 Self { relation, player, role_id, is_reverse: true }
             }
@@ -678,9 +678,9 @@ impl ThingEdgeLinksIndex {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let player_from = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-        let player_to = ObjectVertex::new(&bytes[Self::RANGE_TO]);
-        let relation = ObjectVertex::new(&bytes[Self::RANGE_RELATION]);
+        let player_from = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+        let player_to = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
+        let relation = ObjectVertex::decode(&bytes[Self::RANGE_RELATION]);
         let role_id_from = TypeID::decode(bytes[Self::RANGE_FROM_ROLE_TYPE_ID].try_into().unwrap());
         let role_id_to = TypeID::decode(bytes[Self::RANGE_TO_ROLE_TYPE_ID].try_into().unwrap());
         Self { player_from, player_to, relation, role_id_from, role_id_to }
