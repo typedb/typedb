@@ -6,7 +6,7 @@
 
 pub(crate) use keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceError, Keyspaces, KEYSPACE_MAXIMUM_COUNT};
 pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};
-use rocksdb::{DB, DBRawIterator};
+use rocksdb::{DBRawIterator, DB};
 
 use crate::snapshot::pool::{PoolRecycleGuard, Poolable, SinglePool};
 
@@ -21,9 +21,7 @@ pub struct IteratorPool {
 }
 impl IteratorPool {
     pub fn new() -> Self {
-        let pools_per_keyspace = std::array::from_fn(|i| {
-            SinglePool::new()
-        });
+        let pools_per_keyspace = std::array::from_fn(|i| SinglePool::new());
         Self { pools_per_keyspace }
     }
     fn get_iterator(&self, keyspace: &Keyspace) -> PoolRecycleGuard<DBRawIterator<'static>> {

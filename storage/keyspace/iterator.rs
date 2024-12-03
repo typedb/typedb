@@ -12,9 +12,8 @@ use rocksdb::DB;
 
 use crate::{
     key_range::{KeyRange, RangeEnd},
-    keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
+    keyspace::{raw_iterator, raw_iterator::DBIterator, IteratorPool, Keyspace, KeyspaceError},
 };
-use crate::keyspace::IteratorPool;
 
 pub struct KeyspaceRangeIterator {
     iterator: DBIterator,
@@ -37,9 +36,6 @@ impl KeyspaceRangeIterator {
     ) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
-
-        let read_opts = keyspace.new_read_options();
-        let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
         let mut iterator =
             raw_iterator::DBIterator::new_from(iterpool.get_iterator(keyspace), range.start().get_value());
         if range.start().is_exclusive() {

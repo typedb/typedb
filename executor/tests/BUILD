@@ -69,6 +69,7 @@ rust_test(
     srcs = ["writes.rs"],
     deps = deps + [
         "//query:query",
+        "//function:function",
     ],
 )
 
