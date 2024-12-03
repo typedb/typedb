@@ -368,7 +368,7 @@ impl Costed for IsaPlanner<'_> {
             (false, true) | (false, false) => {
                 let per_input = OPEN_ITERATOR_RELATIVE_COST;
                 // when the type is bound or unbound, we may reject multiple things until we find a matching one, depending on the selectivity of the thing
-                let per_output = ADVANCE_ITERATOR_RELATIVE_COST / thing.restriction_based_selectivity(inputs);
+                let per_output = ADVANCE_ITERATOR_RELATIVE_COST;
                 (per_input, per_output)
             }
         };
@@ -419,10 +419,10 @@ impl Costed for IsaPlanner<'_> {
         let mut scan_size = self.unrestricted_expected_size;
         if is_type_bound { scan_size /= type_size; } // account for narrowed prefix
         if is_thing_bound { scan_size /= thing_size; } // account for narrowed prefix
-        scan_size *= thing.restriction_based_selectivity(inputs); // account for restrictions (like iid)
+        scan_size *= thing.restriction_based_selectivity(inputs); // account for restrictions (like iid), which (we assume) can be used to reduce scan size
 
         let cost = match is_thing_bound {
-            true => OPEN_ITERATOR_RELATIVE_COST,
+            true => 0.0,
             false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
         };
 
@@ -524,7 +524,7 @@ impl<'a> HasPlanner<'a> {
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         // get selectivity of attribute and multiply it by the expected size based on types
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
-        let owner = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
+        let owner = &graph.elements()[&VertexId::Variable(self.owner)].as_variable().unwrap();
         let expected_size = self.unbound_typed_expected_size
             *  attribute.restriction_based_selectivity(inputs)
             * owner.restriction_based_selectivity(inputs);
@@ -543,7 +543,7 @@ impl Costed for HasPlanner<'_> {
         let owner = &graph.elements()[&owner_id].as_variable().unwrap();
 
         let attribute_id = VertexId::Variable(self.attribute);
-        let attribute = &graph.elements()[&owner_id].as_variable().unwrap();
+        let attribute = &graph.elements()[&attribute_id].as_variable().unwrap();
 
         let is_owner_bound = inputs.contains(&owner_id);
         let is_attribute_bound = inputs.contains(&attribute_id);
@@ -587,7 +587,7 @@ impl Costed for HasPlanner<'_> {
         let owner = &graph.elements()[&owner_id].as_variable().unwrap();
 
         let attribute_id = VertexId::Variable(self.attribute);
-        let attribute = &graph.elements()[&owner_id].as_variable().unwrap();
+        let attribute = &graph.elements()[&attribute_id].as_variable().unwrap();
 
         let is_owner_bound = inputs.contains(&owner_id);
         let is_attribute_bound = inputs.contains(&attribute_id);
@@ -610,7 +610,7 @@ impl Costed for HasPlanner<'_> {
 
         let cost: f64; let direction: Direction;
 
-        if scan_size_canonical >= scan_size_reverse {
+        if scan_size_canonical <= scan_size_reverse {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
             direction = Direction::Canonical;
         } else {

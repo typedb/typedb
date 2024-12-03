@@ -62,8 +62,8 @@ use crate::{
 };
 use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData};
 
-pub const BEAM_WIDTH : usize = 2;
-pub const EXTENSION_WIDTH : usize = 2;
+pub const BEAM_WIDTH : usize = 10000000;
+pub const EXTENSION_WIDTH : usize = 50;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -591,11 +591,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             }};
         }
 
-        println!("Starting greedy ordering for graph {:#?}", self.graph);
+        println!("== Greedy search input == {:#?}", self.graph);
+        println!("== Greedy search ==");
 
         while !remaining_vertices.is_empty() {
             // DEBUG
-            // println!("Choosing next plan element...");
+            println!("Choosing next plan element...");
             let (next, _cost) = remaining_vertices
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(&vertex_plan, &self.graph))
@@ -603,7 +604,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     let cost = self.calculate_marginal_cost(&vertex_plan, elem, step_sort_variable, step_start_index);
                     let _graph_element = &self.graph.elements[&elem];
                     // DEBUG
-                    // println!("  Choice {:?}, cost: {cost}", _graph_element);
+                    println!("  Choice {:?}, cost: {cost}", elem);
 
                     (elem, cost)
                 })
@@ -611,7 +612,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 .unwrap();
             let element = &self.graph.elements[&next];
             // DEBUG
-            // println!("--> Chose {:?}, cost: {_cost}", element);
+            println!("--> Chose {:?}, cost: {_cost}", next);
 
             if element.is_variable() {
                 finalize_step!();
@@ -697,7 +698,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn beam_search_plan(&self) -> CompleteCostPlan {
         // DEBUG
-        println!("Starting greedy ordering for graph {:#?}", self.graph);
+        println!("== Beam search input == {:#?}", self.graph);
+        println!("== Beam search ==");
 
         let all_patterns : HashSet<PatternVertexId> = self.graph.pattern_to_variable.keys().copied().collect();
         let search_depth : usize = all_patterns.len();
@@ -710,7 +712,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             let mut new_plans_heap: BinaryHeap<PartialCostPlan> = BinaryHeap::new();
             for plan in best_partial_plans.iter() {
                 // DEBUG
-                println!("Step {}, extending plan: {:?}", i, plan.vertex_ordering);
+                // println!("Step {}, extending plan: {:?}", i, plan.vertex_ordering);
 
                 let mut extension_heap = BinaryHeap::new();
                 for extension in plan.costed_step_extensions_iter(&self.graph) {
@@ -747,10 +749,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             best_partial_plans = new_plans_heap.into_iter().collect();
         }
         // DEBUG
-        println!("Final plan selection: {:#?}", best_partial_plans);
-        let best_plan = best_partial_plans.into_iter().min_by(
-            |a, b| a.cumulative_cost.cost.partial_cmp(&b.cumulative_cost.cost).unwrap_or(Ordering::Equal)
-        ).unwrap();
+        // println!("Final plan selection: {:#?}", best_partial_plans);
+        let best_plan = best_partial_plans.into_iter().min().unwrap();
         best_plan.into_complete_plan()
     }
 }
@@ -806,10 +806,12 @@ impl PartialCostPlan {
                     meta_data,
                     continued_join_var) = self.compute_added_cost(graph, extension);
                 let mut cost_before_added_pattern = self.cumulative_cost;
-                if continued_join_var.is_none() { cost_before_added_pattern = cost_before_added_pattern.chain(self.ongoing_step_cost); } // Complete ongoing step
+                if continued_join_var.is_none() {
+                    cost_before_added_pattern = cost_before_added_pattern.chain(self.ongoing_step_cost);  // Complete ongoing step
+                }
 
                 // DEBUG
-                println!("    Cost: {}, pattern, {:?}, added cost: {}", cost_before_added_pattern.cost, extension, added_cost.cost);
+                // println!("    Cost: {}, pattern: {:?}, added cost: {}", cost_before_added_pattern.cost, extension, added_cost.cost);
 
                 let projected_cost = cost_before_added_pattern
                         .chain(added_cost)

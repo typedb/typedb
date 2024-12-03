@@ -177,7 +177,8 @@ pub(crate) struct CombinedCost {
 }
 
 impl CombinedCost {
-    const IN_MEM_COST_SIMPLE: f64 = 0.01;
+    const MIN_IO_RATIO: f64 = 0.000000001;
+    const IN_MEM_COST_SIMPLE: f64 = 0.02;
     const IN_MEM_COST_COMPLEX: f64 = CombinedCost::IN_MEM_COST_SIMPLE * 2.0;
     pub const NOOP: Self = Self {
         cost: 0.0,
@@ -213,14 +214,14 @@ impl CombinedCost {
     pub(crate) fn chain(self, other: Self) -> Self {
         Self {
             cost: self.cost + other.cost * self.io_ratio,
-            io_ratio: self.io_ratio * other.io_ratio,
+            io_ratio: f64::max(self.io_ratio * other.io_ratio, CombinedCost::MIN_IO_RATIO),
         }
     }
 
     pub(crate) fn join(self, other: Self, join_size : f64) -> Self {
         Self {
             cost: self.cost + other.cost, // Cost is additive (both scans are performed separately)
-            io_ratio: self.io_ratio * other.io_ratio / join_size, // Probabilty of join = 1 / total_join_size
+            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, CombinedCost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
         }
     }
 
