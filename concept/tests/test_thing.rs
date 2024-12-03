@@ -312,11 +312,7 @@ fn attribute_cleanup_on_concurrent_detach() {
             .unwrap()
             .unwrap();
 
-        let mut ages: Vec<Attribute> = thing_manager
-            .get_attributes_in(&snapshot_2, age_type)
-            .unwrap()
-            .map(|result| result.unwrap().into_owned())
-            .collect();
+        let mut ages: Vec<_> = thing_manager.get_attributes_in(&snapshot_2, age_type).unwrap().try_collect().unwrap();
         let age_position = ages
             .iter()
             .position(|attr| attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_long() == age_value)
@@ -440,11 +436,9 @@ fn role_player_distinct() {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-        let entities: Vec<Entity> =
-            thing_manager.get_entities(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 4);
-        let relations: Vec<Relation> =
-            thing_manager.get_relations(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 2);
 
         let players_0 = relations[0].get_players(&snapshot, &thing_manager).count();
@@ -566,11 +560,9 @@ fn role_player_duplicates_unordered() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let entities: Vec<Entity> =
-            thing_manager.get_entities(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation> =
-            thing_manager.get_relations(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
@@ -726,11 +718,9 @@ fn role_player_duplicates_ordered_default_card() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let entities: Vec<Entity> =
-            thing_manager.get_entities(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation> =
-            thing_manager.get_relations(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
@@ -893,11 +883,9 @@ fn role_player_duplicates_ordered_small_card() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let entities: Vec<Entity> =
-            thing_manager.get_entities(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation> =
-            thing_manager.get_relations(&snapshot).map(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
@@ -992,11 +980,8 @@ fn attribute_string_write_read_delete() {
     // read them back by type
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attrs: Vec<Attribute> = thing_manager
-            .get_attributes_in(&snapshot, attr_type)
-            .unwrap()
-            .map(|result| result.unwrap().into_owned())
-            .collect();
+        let attrs: Vec<Attribute> =
+            thing_manager.get_attributes_in(&snapshot, attr_type).unwrap().map(|result| result.unwrap()).collect();
         let attr_values: Vec<String> = attrs
             .into_iter()
             .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
@@ -1089,11 +1074,8 @@ fn attribute_string_write_read_delete_with_has() {
     // read them back by type
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attrs: Vec<Attribute> = thing_manager
-            .get_attributes_in(&snapshot, attr_type)
-            .unwrap()
-            .map(|result| result.unwrap().into_owned())
-            .collect();
+        let attrs: Vec<Attribute> =
+            thing_manager.get_attributes_in(&snapshot, attr_type).unwrap().map(|result| result.unwrap()).collect();
         let attr_values: Vec<String> = attrs
             .into_iter()
             .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
@@ -1195,11 +1177,8 @@ fn attribute_struct_write_read() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
-        let attr_vec: Vec<Attribute> = thing_manager
-            .get_attributes_in(&snapshot, attr_type)
-            .unwrap()
-            .map(|result| result.unwrap().into_owned())
-            .collect();
+        let attr_vec: Vec<Attribute> =
+            thing_manager.get_attributes_in(&snapshot, attr_type).unwrap().map(|result| result.unwrap()).collect();
         let attr = attr_vec.first().unwrap().clone();
         let value_0 = attr.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
@@ -1285,7 +1264,7 @@ fn read_attribute_struct_by_field() {
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
             for res in attr_by_field_iterator {
-                attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
+                attr_by_field.push(res.as_ref().unwrap().clone());
             }
             assert_eq!(1, attr_by_field.len());
             assert_eq!(attr, attr_by_field.first().unwrap());
