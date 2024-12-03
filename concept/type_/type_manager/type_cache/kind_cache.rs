@@ -127,10 +127,7 @@ pub struct ObjectCache {
 impl EntityTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<EntityTypeCache>]> {
         let entities = snapshot
-            .iterate_range(&KeyRange::new_within(
-                EntityType::prefix_for_kind(),
-                EntityType::PREFIX.fixed_width_keys(),
-            ))
+            .iterate_range(&KeyRange::new_within(EntityType::prefix_for_kind(), EntityType::PREFIX.fixed_width_keys()))
             .collect_cloned_hashset(|key, _| EntityType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_entity_id = entities.iter().map(|e| e.vertex().type_id_().as_u16()).max().unwrap_or(0);
@@ -186,10 +183,7 @@ impl RelationTypeCache {
 impl AttributeTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<AttributeTypeCache>]> {
         let attributes = snapshot
-            .iterate_range(&KeyRange::new_within(
-                AttributeType::prefix_for_kind(),
-                TypeVertex::FIXED_WIDTH_ENCODING,
-            ))
+            .iterate_range(&KeyRange::new_within(AttributeType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_attribute_id = attributes.iter().map(|a| a.vertex().type_id_().as_u16()).max().unwrap_or(0);
@@ -215,10 +209,7 @@ impl AttributeTypeCache {
 impl RoleTypeCache {
     pub(super) fn create(snapshot: &impl ReadableSnapshot) -> Box<[Option<RoleTypeCache>]> {
         let roles = snapshot
-            .iterate_range(&KeyRange::new_within(
-                RoleType::prefix_for_kind(),
-                TypeVertex::FIXED_WIDTH_ENCODING,
-            ))
+            .iterate_range(&KeyRange::new_within(RoleType::prefix_for_kind(), TypeVertex::FIXED_WIDTH_ENCODING))
             .collect_cloned_hashset(|key, _| RoleType::read_from(Bytes::Reference(key.bytes()).into_owned()))
             .unwrap();
         let max_role_id = roles.iter().map(|r| r.vertex().type_id_().as_u16()).max().unwrap_or(0);

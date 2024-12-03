@@ -50,8 +50,8 @@ use encoding::{
     },
     AsBytes, Keyable, Prefixed,
 };
-use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{AsHkt, LendingIterator};
+use itertools::Itertools;
+use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::{
     encoding::StructFieldIDUInt,
@@ -375,7 +375,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
-        range: &impl RangeBounds<Value<'a>>,
+        range: &'a impl RangeBounds<Value<'a>>,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_attributes_in(snapshot, attribute_type);
@@ -664,7 +664,8 @@ impl ThingManager {
                             }
                             Bound::Excluded(start) => {
                                 // increment and treat as included
-                                let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().to_bytes().as_ref().try_into().unwrap();
+                                let mut bytes: [u8; TypeVertex::LENGTH] =
+                                    start.vertex().to_bytes().as_ref().try_into().unwrap();
                                 increment(&mut bytes).unwrap();
                                 let start_type = TypeVertex::decode(Bytes::Reference(&bytes));
                                 RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
@@ -679,8 +680,7 @@ impl ThingManager {
                     Either::Second(prefix) => {
                         // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
                         RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
-                                .resize_to(),
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes()).resize_to(),
                         )
                     }
                 }
@@ -709,7 +709,8 @@ impl ThingManager {
                             }
                             Bound::Excluded(start) => {
                                 // increment and treat as included
-                                let mut bytes: [u8; TypeVertex::LENGTH] = start.vertex().to_bytes().as_ref().try_into().unwrap();
+                                let mut bytes: [u8; TypeVertex::LENGTH] =
+                                    start.vertex().to_bytes().as_ref().try_into().unwrap();
                                 increment(&mut bytes).unwrap();
                                 let start_type = TypeVertex::decode(Bytes::Reference(&bytes));
                                 RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
@@ -726,8 +727,7 @@ impl ThingManager {
                         // since this is not a complete vertex, and only a prefix, we shouldn't make assumptions about incrementing
                         // to get to value + 1 in sort order
                         RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
-                                .resize_to()
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes()).resize_to(),
                         )
                     }
                 }
@@ -763,8 +763,7 @@ impl ThingManager {
                         }
                     },
                     Either::Second(prefix) => RangeEnd::EndPrefixInclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
-                            .resize_to(),
+                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes()).resize_to(),
                     ),
                 }
             }
@@ -779,8 +778,7 @@ impl ThingManager {
                         RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
                     }
                     Either::Second(prefix) => RangeEnd::EndPrefixExclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes())
-                            .resize_to(),
+                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(prefix.bytes()).resize_to(),
                     ),
                 }
             }
@@ -910,11 +908,7 @@ impl ThingManager {
         Ok(attributes)
     }
 
-    pub(crate) fn get_owners(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        attribute: &Attribute,
-    ) -> AttributeOwnerIterator {
+    pub(crate) fn get_owners(&self, snapshot: &impl ReadableSnapshot, attribute: &Attribute) -> AttributeOwnerIterator {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.vertex());
         AttributeOwnerIterator::new(
             snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
@@ -1203,11 +1197,7 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_indexed_players(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        from: Object,
-    ) -> IndexedPlayersIterator {
+    pub(crate) fn get_indexed_players(&self, snapshot: &impl ReadableSnapshot, from: Object) -> IndexedPlayersIterator {
         let prefix = ThingEdgeRolePlayerIndex::prefix_from(from.vertex());
         IndexedPlayersIterator::new(
             snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeRolePlayerIndex::FIXED_WIDTH_ENCODING)),

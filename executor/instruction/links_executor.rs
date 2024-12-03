@@ -7,9 +7,9 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt, iter,
+    ops::Bound,
     sync::Arc,
 };
-use std::ops::Bound;
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
@@ -177,7 +177,7 @@ impl LinksExecutor {
         match self.iterate_mode {
             TernaryIterateMode::Unbound => {
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-                let iterator = thing_manager.get_links_by_relation_type_range(snapshot,  &self.relation_type_range);
+                let iterator = thing_manager.get_links_by_relation_type_range(snapshot, &self.relation_type_range);
                 let as_tuples: LinksUnboundedSortedRelation =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_relation_player_role as _);
                 Ok(TupleIterator::LinksUnbounded(SortedTupleIterator::new(
@@ -235,9 +235,8 @@ impl LinksExecutor {
                 let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
                 let iterator = match row.get(relation) {
-                    &VariableValue::Thing(Thing::Relation(relation)) => {
-                        thing_manager.get_links_by_relation_and_player_type_range(snapshot, relation, &self.player_type_range,)
-                    }
+                    &VariableValue::Thing(Thing::Relation(relation)) => thing_manager
+                        .get_links_by_relation_and_player_type_range(snapshot, relation, &self.player_type_range),
                     _ => unreachable!("Links relation must be a relation."),
                 };
                 let as_tuples: LinksBoundedRelationSortedPlayer =

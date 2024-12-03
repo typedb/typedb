@@ -307,15 +307,15 @@ fn get_has_reverse_in_range() {
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(uninlinable_name)))
             .unwrap();
 
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, age_10.clone()).unwrap();
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, age_11.clone()).unwrap();
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, name_inline.clone()).unwrap();
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, name_hashed.clone()).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_inline).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_hashed).unwrap();
 
-        company_1.set_has_unordered(&mut snapshot, &thing_manager, age_10).unwrap();
-        company_1.set_has_unordered(&mut snapshot, &thing_manager, age_11).unwrap();
-        company_1.set_has_unordered(&mut snapshot, &thing_manager, name_inline).unwrap();
-        company_1.set_has_unordered(&mut snapshot, &thing_manager, name_hashed).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &name_inline).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &name_hashed).unwrap();
         thing_manager.finalise(&mut snapshot).unwrap();
     }
     snapshot.commit().unwrap();

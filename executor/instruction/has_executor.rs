@@ -201,11 +201,7 @@ impl HasExecutor {
                     let owners = self.owner_cache.as_ref().unwrap().iter();
                     let iterators: Vec<_> = owners
                         .map(|object| {
-                            object.get_has_types_range_unordered(
-                                snapshot,
-                                thing_manager,
-                                &self.attribute_type_range,
-                            )
+                            object.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
                         })
                         .collect();
 

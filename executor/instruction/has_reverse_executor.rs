@@ -80,20 +80,19 @@ impl HasReverseExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>> =
-            attribute_owner_types
-                .iter()
-                .map(|(type_, owner_types)| {
-                    let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
+        let attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>> = attribute_owner_types
+            .iter()
+            .map(|(type_, owner_types)| {
+                let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
+                (
+                    type_.as_attribute_type(),
                     (
-                        type_.as_attribute_type(),
-                        (
-                            Bound::Included(min_owner_type.as_object_type()),
-                            Bound::Included(max_owner_type.as_object_type()),
-                        ),
-                    )
-                })
-                .collect();
+                        Bound::Included(min_owner_type.as_object_type()),
+                        Bound::Included(max_owner_type.as_object_type()),
+                    ),
+                )
+            })
+            .collect();
 
         let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
         let owner_type_range =
@@ -239,10 +238,7 @@ impl HasReverseExecutor {
     fn all_has_reverse_chained(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_type_owner_range: &BTreeMap<
-            AttributeType,
-            (Bound<ObjectType>, Bound<ObjectType>),
-        >,
+        attribute_type_owner_range: &BTreeMap<AttributeType, (Bound<ObjectType>, Bound<ObjectType>)>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
     ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();

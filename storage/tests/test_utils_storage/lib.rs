@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod mock_snapshot;
-
 use std::{path::Path, sync::Arc};
 
 use durability::wal::WAL;
@@ -13,6 +11,8 @@ use storage::{
     durability_client::WALClient, keyspace::KeyspaceSet, recovery::checkpoint::Checkpoint, MVCCStorage,
     StorageOpenError,
 };
+
+pub mod mock_snapshot;
 
 #[macro_export]
 macro_rules! test_keyspace_set {

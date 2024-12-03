@@ -11,7 +11,7 @@ use lending_iterator::LendingIterator;
 use logger::result::ResultExt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };

@@ -352,8 +352,7 @@ impl ThingAPI for Relation {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for attr in self.get_has_unordered(snapshot, thing_manager)
-            .map_ok(|(has, _value)| has.attribute()) {
+        for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(has, _value)| has.attribute()) {
             thing_manager.unset_has(snapshot, self, &attr?);
         }
 
