@@ -365,7 +365,7 @@ impl<I: for<'a> LendingIterator<Item<'a>: LendingIterator>> LendingIterator for 
     type Item<'a> = <I::Item<'static> as LendingIterator>::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        while self.next_iter.as_mut().is_none_or(|iter| iter.peek().is_none()) {
+        while !self.next_iter.as_mut().is_some_and(|iter| iter.peek().is_some()) {
             let source_item = self.source_iter.next()?;
             // SAFETY: We only advance source_iter once next_iter is exhausted
             let source_item = unsafe { std::mem::transmute::<I::Item<'_>, I::Item<'static>>(source_item) };
@@ -396,7 +396,7 @@ where
     type Item<'a> = J::Item<'a>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        while self.next_iter.as_mut().is_none_or(|iter| iter.peek().is_none()) {
+        while !self.next_iter.as_mut().is_some_and(|iter| iter.peek().is_some()) {
             match self.source_iter.next() {
                 None => return None,
                 Some(source_item) => {
@@ -432,7 +432,7 @@ where
     type Item<'a> = Result<T::HktSelf<'a>, E>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        while self.next_iter.as_mut().is_none_or(|iter| iter.peek().is_none()) {
+        while !self.next_iter.as_mut().is_some_and(|iter| iter.peek().is_some()) {
             match self.source_iter.next() {
                 None => return None,
                 Some(source_item) => match (self.mapper)(source_item) {

@@ -61,7 +61,7 @@ impl MVCCRangeIterator {
         while let Some(&Ok((key, _))) = self.iterator.peek() {
             let mvcc_key = MVCCKey::wrap_slice(key);
             let is_visible = mvcc_key.is_visible_to(self.open_sequence_number)
-                && self.last_visible_key.as_ref().is_none_or(|key| key != mvcc_key.key());
+                && !self.last_visible_key.as_ref().is_some_and(|key| key == mvcc_key.key());
             if is_visible {
                 self.last_visible_key = Some(ByteArray::copy(mvcc_key.key()));
                 match mvcc_key.operation() {
