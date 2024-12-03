@@ -1046,7 +1046,7 @@ mod serialize_annotation {
                 {
                     struct FieldVisitor;
 
-                    impl<'de> Visitor<'de> for FieldVisitor {
+                    impl Visitor<'_> for FieldVisitor {
                         type Value = RangeField;
 
                         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -1227,7 +1227,7 @@ mod serialize_annotation {
                 {
                     struct FieldVisitor;
 
-                    impl<'de> Visitor<'de> for FieldVisitor {
+                    impl Visitor<'_> for FieldVisitor {
                         type Value = ValuesField;
 
                         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

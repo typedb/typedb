@@ -12,7 +12,6 @@ use concept::{
 };
 use cucumber::gherkin::Step;
 use itertools::Itertools;
-use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -32,8 +31,8 @@ async fn relation_add_player_for_role(
     player_var: params::Var,
     may_error: params::MayError,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
-    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
+    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     with_write_tx!(context, |tx| {
         if let Some(relates) = relation
             .type_()
@@ -59,9 +58,9 @@ async fn relation_set_players_for_role(
     player_vars: params::Vars,
     may_error: params::MayError,
 ) {
-    let relation = context.objects[&relation_var.name].as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects[&relation_var.name].as_ref().unwrap().object.unwrap_relation();
     let players =
-        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
+        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object).collect_vec();
     let res = with_write_tx!(context, |tx| {
         let role_type = relation
             .type_()
@@ -82,8 +81,8 @@ async fn relation_remove_player_for_role(
     role_label: params::Label,
     player_var: params::Var,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
-    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
+    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     with_write_tx!(context, |tx| {
         let role_type = relation
             .type_()
@@ -106,8 +105,8 @@ async fn relation_remove_count_players_for_role(
     role_label: params::Label,
     player_var: params::Var,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
-    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object.clone();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
+    let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     with_write_tx!(context, |tx| {
         let role_type = relation
             .type_()
@@ -129,7 +128,7 @@ async fn relation_get_players_ordered(
     relation_var: params::Var,
     role_label: params::Label,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let players = with_read_tx!(context, |tx| {
         let relates = relation.type_().get_relates_role_name(
             tx.snapshot.as_ref(),
@@ -152,7 +151,7 @@ async fn relation_get_players_ordered_is(
     player_vars: params::Vars,
     is: params::Boolean,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let actuals = with_read_tx!(context, |tx| {
         let relates = relation.type_().get_relates_role_name(
             tx.snapshot.as_ref(),
@@ -164,7 +163,7 @@ async fn relation_get_players_ordered_is(
         players.into_iter().collect_vec()
     });
     let players =
-        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object.clone()).collect_vec();
+        player_vars.names.into_iter().map(|name| context.objects[&name].as_ref().unwrap().object).collect_vec();
     check_boolean!(is, actuals == players)
 }
 
@@ -189,7 +188,7 @@ async fn relation_get_players_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     player_var: params::Var,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let players = with_read_tx!(context, |tx| {
         relation
             .get_players(tx.snapshot.as_ref(), &tx.thing_manager)
@@ -208,12 +207,10 @@ async fn relation_get_players_contains_table(
     relation_var: params::Var,
     contains_or_doesnt: params::ContainsOrDoesnt,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let players = with_read_tx!(context, |tx| {
-        let mut iter = relation.get_players(tx.snapshot.as_ref(), &tx.thing_manager);
-
         let mut vec = Vec::new();
-        while let Some(res) = iter.next() {
+        for res in relation.get_players(tx.snapshot.as_ref(), &tx.thing_manager) {
             let (rp, _count) = res.unwrap();
             vec.push((
                 rp.role_type().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().name().as_str().to_owned(),
@@ -231,7 +228,7 @@ async fn relation_get_players_contains_table(
             let [role_label, var_name] = &row[..] else {
                 panic!("Expected exactly two columns: role type and variable name, received: {row:?}")
             };
-            (role_label.to_owned(), context.objects.get(var_name.as_str()).unwrap().as_ref().unwrap().object.clone())
+            (role_label.to_owned(), context.objects.get(var_name.as_str()).unwrap().as_ref().unwrap().object)
         })
         .collect_vec();
     contains_or_doesnt.check(&expected, &players);
@@ -245,7 +242,7 @@ async fn relation_get_players_for_role_empty(
     role_label: params::Label,
     is_empty_or_not: params::IsEmptyOrNot,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let actuals = with_read_tx!(context, |tx| {
         let role_type = relation
             .type_()
@@ -271,7 +268,7 @@ async fn relation_get_players_for_role_contains(
     contains_or_doesnt: params::ContainsOrDoesnt,
     player_var: params::Var,
 ) {
-    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.clone().unwrap_relation();
+    let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let players = with_read_tx!(context, |tx| {
         let role_type = relation
             .type_()

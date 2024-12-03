@@ -11,10 +11,7 @@ use std::{
 };
 
 use compiler::{
-    annotation::{
-        function::{AnnotatedFunctionSignatures, EmptyAnnotatedFunctionSignatures},
-        match_inference::infer_types,
-    },
+    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         match_::{
             instructions::{

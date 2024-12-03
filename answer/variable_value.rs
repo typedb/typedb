@@ -138,7 +138,7 @@ impl fmt::Display for VariableValue<'_> {
     }
 }
 
-impl<'a> VariableValue<'a> {
+impl VariableValue<'_> {
     pub const EMPTY: VariableValue<'static> = VariableValue::Empty;
 }
 

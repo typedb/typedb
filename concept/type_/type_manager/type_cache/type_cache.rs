@@ -266,21 +266,21 @@ impl TypeCache {
         T::get_cache(self, type_).common_type_cache().label.clone()
     }
 
-    pub(crate) fn get_annotations_declared<'a, 'this, T, CACHE>(
-        &'this self,
+    pub(crate) fn get_annotations_declared<'a, T, CACHE>(
+        &'a self,
         type_: T,
-    ) -> &HashSet<<T as KindAPI>::AnnotationType>
+    ) -> &'a HashSet<<T as KindAPI>::AnnotationType>
     where
         T: KindAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T> + 'this,
+        CACHE: HasCommonTypeCache<T> + 'a,
     {
         &T::get_cache(self, type_).common_type_cache().annotations_declared
     }
 
-    pub(crate) fn get_constraints<'this, T, CACHE>(&'this self, type_: T) -> &HashSet<TypeConstraint<T>>
+    pub(crate) fn get_constraints<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<TypeConstraint<T>>
     where
         T: KindAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasCommonTypeCache<T> + 'this,
+        CACHE: HasCommonTypeCache<T> + 'a,
     {
         &T::get_cache(self, type_).common_type_cache().constraints
     }
@@ -293,26 +293,26 @@ impl TypeCache {
         &AttributeType::get_cache(self, attribute_type).owner_types
     }
 
-    pub(crate) fn get_owns_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns>
+    pub(crate) fn get_owns_declared<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<Owns>
     where
         T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        CACHE: HasObjectCache + 'a,
     {
         &T::get_cache(self, type_).object_cache().owns_declared
     }
 
-    pub(crate) fn get_owns<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns>
+    pub(crate) fn get_owns<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<Owns>
     where
         T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        CACHE: HasObjectCache + 'a,
     {
         &T::get_cache(self, type_).object_cache().owns
     }
 
-    pub(crate) fn get_owns_with_specialised<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Owns>
+    pub(crate) fn get_owns_with_specialised<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<Owns>
     where
         T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        CACHE: HasObjectCache + 'a,
     {
         &T::get_cache(self, type_).object_cache().owns_with_specialised
     }
@@ -387,26 +387,26 @@ impl TypeCache {
         &RoleType::get_cache(self, role_type).player_types
     }
 
-    pub(crate) fn get_plays_declared<'a, 'this, T, CACHE>(&'this self, type_: T) -> &HashSet<Plays>
+    pub(crate) fn get_plays_declared<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<Plays>
     where
         T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        CACHE: HasObjectCache + 'a,
     {
         &T::get_cache(self, type_).object_cache().plays_declared
     }
 
-    pub(crate) fn get_plays<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<Plays>
+    pub(crate) fn get_plays<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<Plays>
     where
         T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        CACHE: HasObjectCache + 'a,
     {
         &T::get_cache(self, type_).object_cache().plays
     }
 
-    pub(crate) fn get_plays_with_specialised<'a, 'this, T, CACHE>(&'this self, type_: T) -> &'this HashSet<Plays>
+    pub(crate) fn get_plays_with_specialised<'a, T, CACHE>(&'a self, type_: T) -> &'a HashSet<Plays>
     where
         T: OwnerAPI + PlayerAPI + CacheGetter<CacheType = CACHE>,
-        CACHE: HasObjectCache + 'this,
+        CACHE: HasObjectCache + 'a,
     {
         &T::get_cache(self, type_).object_cache().plays_with_specialised
     }

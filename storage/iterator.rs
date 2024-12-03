@@ -12,7 +12,7 @@ use lending_iterator::{LendingIterator, Peekable, Seekable};
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    key_value::{StorageKey, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
@@ -74,19 +74,6 @@ impl MVCCRangeIterator {
                 self.iterator.next();
             }
         }
-    }
-
-    pub(crate) fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
-        mut self,
-    ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, MVCCReadError> {
-        let mut vec = Vec::new();
-        loop {
-            match self.next().transpose()? {
-                None => break,
-                Some((key, value)) => vec.push((StorageKeyArray::from(key), ByteArray::from(value))),
-            }
-        }
-        Ok(vec)
     }
 }
 

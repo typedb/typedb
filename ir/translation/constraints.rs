@@ -138,7 +138,7 @@ fn add_type_statement(
                     let &Vertex::Variable(var) = &type_ else {
                         return Err(Box::new(RepresentationError::LabelWithLabel { declaration: label.clone() }));
                     };
-                    let as_label = register_type_label(constraints, &label)?;
+                    let as_label = register_type_label(constraints, label)?;
                     constraints.add_label(var, as_label)?;
                 }
                 typeql::statement::type_::LabelConstraint::Scoped(scoped_label) => {
@@ -147,7 +147,7 @@ fn add_type_statement(
                             declaration: scoped_label.clone(),
                         }));
                     };
-                    let as_label = register_type_scoped_label(constraints, &scoped_label)?;
+                    let as_label = register_type_scoped_label(constraints, scoped_label)?;
                     constraints.add_label(var, as_label)?;
                 }
             },
@@ -213,7 +213,7 @@ fn register_typeql_type(
     type_: &typeql::TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, &label)?)),
+        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }

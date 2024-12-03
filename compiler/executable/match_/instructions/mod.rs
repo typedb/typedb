@@ -696,7 +696,7 @@ impl<'a, T: fmt::Display> DisplayVec<'a, T> {
     }
 }
 
-impl<'a, T: fmt::Display> fmt::Display for DisplayVec<'a, T> {
+impl<T: fmt::Display> fmt::Display for DisplayVec<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for (i, element) in self.vec.iter().enumerate() {

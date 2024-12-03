@@ -24,10 +24,7 @@ use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value_type::ValueType},
 };
-use executor::{
-    pipeline::stage::{StageAPI, StageIterator},
-    ExecutionInterrupt,
-};
+use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;

@@ -918,7 +918,7 @@ impl ThingManager {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
         let players = snapshot
             .get_mapped(key.into_storage_key().as_reference(), |bytes| {
-                decode_role_players(bytes).map(|vertex| Object::new(vertex)).collect()
+                decode_role_players(bytes).map(Object::new).collect()
             })
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
@@ -1330,33 +1330,36 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| Box::new(DataValidationError::ConceptRead { source }));
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         res = self.collect_modified_has(snapshot, &mut modified_objects_attribute_types);
-        collect_errors!(errors, res, |source| Box::new(DataValidationError::ConceptRead { source }));
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         res =
             self.collect_modified_links(snapshot, &mut modified_relations_role_types, &mut modified_objects_role_types);
-        collect_errors!(errors, res, |source| Box::new(DataValidationError::ConceptRead { source }));
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
             res = CommitTimeValidation::validate_object_has(snapshot, self, object, modified_owns, &mut errors);
-            collect_errors!(errors, res, |source| Box::new(DataValidationError::ConceptRead { source }));
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         }
 
         for (object, modified_plays) in modified_objects_role_types {
             res = CommitTimeValidation::validate_object_links(snapshot, self, object, modified_plays, &mut errors);
-            collect_errors!(errors, res, |source| Box::new(DataValidationError::ConceptRead { source }));
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         }
 
         for (relation, modified_relates) in modified_relations_role_types {
             res =
                 CommitTimeValidation::validate_relation_links(snapshot, self, relation, modified_relates, &mut errors);
-            collect_errors!(errors, res, |source| Box::new(DataValidationError::ConceptRead { source }));
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
         }
 
         if errors.is_empty() {
             Ok(())
         } else {
-            Err(errors.into_iter().map(|typedb_source| ConceptWriteError::DataValidation { typedb_source }).collect())
+            Err(errors
+                .into_iter()
+                .map(|typedb_source| ConceptWriteError::DataValidation { typedb_source: Box::new(typedb_source) })
+                .collect())
         }
     }
 

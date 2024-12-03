@@ -311,7 +311,7 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
         if *stratum < current_stratum.stratum {
             let ids_by_depth = active.iter().map(|(id, sd)| (sd.depth, id)).sorted().collect::<Vec<_>>();
             debug_assert!(ids_by_depth[*depth].1 == &id);
-            let mut cycle_names =
+            let cycle_names =
                 (*depth..ids_by_depth.len()).map(|i| functions.get(ids_by_depth[i].1).unwrap().name.clone()).join(", ");
             return Err(FunctionError::StratificationViolation { cycle_names });
         } else {
@@ -321,16 +321,18 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
 
     active.insert(id.clone(), current_stratum);
     let function = functions.get(&id).unwrap();
-    for called_id in negated_function_calls(&function) {
+    for called_id in negated_function_calls(function) {
         validate_no_cycles_impl(called_id, functions, active, complete, current_stratum.add(1, 1))?;
     }
 
-    let this_stage_has_operator = function.function_body.stages.iter().any(|stage| match stage {
-        TranslatedStage::Sort(_)
-        | TranslatedStage::Offset(_)
-        | TranslatedStage::Limit(_)
-        | TranslatedStage::Reduce(_) => true,
-        _ => false,
+    let this_stage_has_operator = function.function_body.stages.iter().any(|stage| {
+        matches!(
+            stage,
+            TranslatedStage::Sort(_)
+                | TranslatedStage::Offset(_)
+                | TranslatedStage::Limit(_)
+                | TranslatedStage::Reduce(_)
+        )
     });
     let unnegated_stratum = if this_stage_has_operator { current_stratum.add(1, 1) } else { current_stratum.add(0, 1) };
     for called_id in unnegated_function_calls(function) {
@@ -345,11 +347,8 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
 fn negated_function_calls<ID: FunctionIDAPI>(function: &ir::pipeline::function::Function) -> impl Iterator<Item = ID> {
     let mut calls = Vec::new();
     for stage in &function.function_body.stages {
-        match stage {
-            TranslatedStage::Match { block, .. } => {
-                collect_negated_function_calls(block.conjunction(), &mut calls, false)
-            }
-            _ => {}
+        if let TranslatedStage::Match { block, .. } = stage {
+            collect_negated_function_calls(block.conjunction(), &mut calls, false)
         }
     }
     calls.into_iter()
@@ -357,14 +356,13 @@ fn negated_function_calls<ID: FunctionIDAPI>(function: &ir::pipeline::function::
 
 fn collect_negated_function_calls<ID: FunctionIDAPI>(conjunction: &Conjunction, calls: &mut Vec<ID>, is_negated: bool) {
     if is_negated {
-        conjunction.constraints().iter().for_each(|constraint| match constraint {
-            Constraint::FunctionCallBinding(binding) => {
+        conjunction.constraints().iter().for_each(|constraint| {
+            if let Constraint::FunctionCallBinding(binding) = constraint {
                 let id = binding.function_call().function_id();
                 if let Ok(unwrapped_id) = id.try_into() {
                     calls.push(unwrapped_id)
                 }
             }
-            _ => {}
         })
     }
 
@@ -384,23 +382,21 @@ fn unnegated_function_calls<ID: FunctionIDAPI>(
 ) -> impl Iterator<Item = ID> {
     let mut calls = Vec::new();
     for stage in &function.function_body.stages {
-        match stage {
-            TranslatedStage::Match { block, .. } => collect_unnegated_function_calls(block.conjunction(), &mut calls),
-            _ => {}
+        if let TranslatedStage::Match { block, .. } = stage {
+            collect_unnegated_function_calls(block.conjunction(), &mut calls)
         }
     }
     calls.into_iter()
 }
 
 fn collect_unnegated_function_calls<ID: FunctionIDAPI>(conjunction: &Conjunction, calls: &mut Vec<ID>) {
-    conjunction.constraints().iter().for_each(|constraint| match constraint {
-        Constraint::FunctionCallBinding(binding) => {
+    conjunction.constraints().iter().for_each(|constraint| {
+        if let Constraint::FunctionCallBinding(binding) = constraint {
             let id = binding.function_call().function_id();
             if let Ok(unwrapped_id) = id.try_into() {
                 calls.push(unwrapped_id)
             }
         }
-        _ => {}
     });
 
     for pattern in conjunction.nested_patterns() {
@@ -430,9 +426,7 @@ impl<'this, Snapshot: ReadableSnapshot> ReadThroughFunctionSignatureIndex<'this,
     }
 }
 
-impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
-    for ReadThroughFunctionSignatureIndex<'snapshot, Snapshot>
-{
+impl<Snapshot: ReadableSnapshot> FunctionSignatureIndex for ReadThroughFunctionSignatureIndex<'_, Snapshot> {
     fn get_function_signature(
         &self,
         name: &str,
@@ -515,13 +509,12 @@ pub mod tests {
 
         let ((_type_animal, type_cat, _type_dog), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let functions_to_define = vec!["
+        let functions_to_define = ["
         fun cat_names($c: animal) -> { name } :
             match
                 $c has cat-name $n;
             return { $n };
-        "
-        .to_owned()];
+        "];
         let expected_name = "cat_names";
 
         let expected_function_id = DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0));
@@ -531,10 +524,8 @@ pub mod tests {
             vec![(VariableCategory::Object, VariableOptionality::Required)],
             true,
         );
-        let parsed = functions_to_define
-            .iter()
-            .map(|f| typeql::parse_definition_function(f.as_str()).unwrap())
-            .collect::<Vec<_>>();
+        let parsed =
+            functions_to_define.iter().map(|f| typeql::parse_definition_function(f).unwrap()).collect::<Vec<_>>();
         let sequence_number = {
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
             let mut snapshot = storage.clone().open_snapshot_write();

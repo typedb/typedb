@@ -13,17 +13,13 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
-use encoding::{
-    graph::definition::definition_key::DefinitionKey,
-    value::value_type::{ValueType, ValueTypeCategory},
-};
+use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
         block::Block,
         fetch::FetchObject,
         function::Function,
-        function_signature::FunctionID,
         modifier::{Limit, Offset, Require, Select, Sort},
         reduce::{AssignedReduction, Reduce, Reducer},
         ParameterRegistry, VariableRegistry,
@@ -41,9 +37,8 @@ use crate::{
         },
         fetch::{annotate_fetch, AnnotatedFetch},
         function::{
-            annotate_preamble_functions, AnnotatedFunction, AnnotatedFunctionSignature, AnnotatedFunctionSignatures,
-            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
-            FunctionParameterAnnotation,
+            annotate_preamble_functions, AnnotatedFunctionSignatures, AnnotatedFunctionSignaturesImpl,
+            AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
         },
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
@@ -534,8 +529,7 @@ fn collect_value_types_of_function_call_assignments(
             zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
                     if value_type_annotations.contains_key(&var.as_variable().unwrap()) {
-                        let assign_variable =
-                            variable_registry.get_variable_name(var.as_variable().unwrap()).map(String::clone);
+                        let assign_variable = variable_registry.get_variable_name(var.as_variable().unwrap()).cloned();
                         return Err(AnnotationError::ExpressionCompilation {
                             source: Box::new(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
                                 assign_variable,

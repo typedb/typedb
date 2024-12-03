@@ -143,7 +143,7 @@ pub mod tests {
         NestedTypeInferenceGraphDisjunction, TypeInferenceEdge, TypeInferenceGraph,
     };
 
-    impl<'this> PartialEq<Self> for TypeInferenceEdge<'this> {
+    impl PartialEq<Self> for TypeInferenceEdge<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.constraint == other.constraint
                 && self.right == other.right
@@ -153,9 +153,9 @@ pub mod tests {
         }
     }
 
-    impl<'this> Eq for TypeInferenceEdge<'this> {}
+    impl Eq for TypeInferenceEdge<'_> {}
 
-    impl<'this> PartialEq<Self> for TypeInferenceGraph<'this> {
+    impl PartialEq<Self> for TypeInferenceGraph<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.vertices == other.vertices
                 && self.edges == other.edges
@@ -163,15 +163,15 @@ pub mod tests {
         }
     }
 
-    impl<'this> Eq for TypeInferenceGraph<'this> {}
+    impl Eq for TypeInferenceGraph<'_> {}
 
-    impl<'this> PartialEq<Self> for NestedTypeInferenceGraphDisjunction<'this> {
+    impl PartialEq<Self> for NestedTypeInferenceGraphDisjunction<'_> {
         fn eq(&self, other: &Self) -> bool {
             self.disjunction == other.disjunction
         }
     }
 
-    impl<'this> Eq for NestedTypeInferenceGraphDisjunction<'this> {}
+    impl Eq for NestedTypeInferenceGraphDisjunction<'_> {}
 
     pub(crate) fn setup_storage() -> (TempDir, Arc<MVCCStorage<WALClient>>) {
         init_logging();

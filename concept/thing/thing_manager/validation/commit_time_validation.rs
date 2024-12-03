@@ -104,7 +104,7 @@ impl CommitTimeValidation {
         thing_manager: &ThingManager,
         object: Object,
         modified_attribute_types: HashSet<AttributeType>,
-        out_errors: &mut Vec<Box<DataValidationError>>,
+        out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
             snapshot,
@@ -112,7 +112,7 @@ impl CommitTimeValidation {
             object,
             modified_attribute_types,
         );
-        collect_errors!(out_errors, cardinality_check);
+        collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
     }
 
@@ -121,11 +121,11 @@ impl CommitTimeValidation {
         thing_manager: &ThingManager,
         object: Object,
         modified_role_types: HashSet<RoleType>,
-        out_errors: &mut Vec<Box<DataValidationError>>,
+        out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check =
             Self::validate_plays_cardinality_constraint(snapshot, thing_manager, object, modified_role_types);
-        collect_errors!(out_errors, cardinality_check);
+        collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
     }
 
@@ -134,11 +134,11 @@ impl CommitTimeValidation {
         thing_manager: &ThingManager,
         relation: Relation,
         modified_role_types: HashSet<RoleType>,
-        out_errors: &mut Vec<Box<DataValidationError>>,
+        out_errors: &mut Vec<DataValidationError>,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check =
             Self::validate_relates_cardinality_constraint(snapshot, thing_manager, relation, modified_role_types);
-        collect_errors!(out_errors, cardinality_check);
+        collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
     }
 

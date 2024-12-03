@@ -24,7 +24,6 @@ use ir::{
     },
     translation::tokens::translate_value_type,
 };
-use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{Output, SingleSelector},
@@ -123,16 +122,17 @@ impl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunction
     //     Self::new(HashMap::new(), Vec::new())
     // }
 }
-impl<'a, T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSignatures
-    for AnnotatedFunctionSignaturesImpl<'a, T1, T2>
+
+impl<T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSignatures
+    for AnnotatedFunctionSignaturesImpl<'_, T1, T2>
 {
     fn get_annotated_signature(&self, function_id: &FunctionID) -> Option<&AnnotatedFunctionSignature> {
         match function_id {
             FunctionID::Schema(definition_key) => {
-                self.schema_functions.get(&definition_key).map(|getter| getter.get_annotated_signature())
+                self.schema_functions.get(definition_key).map(|getter| getter.get_annotated_signature())
             }
-            FunctionID::Preamble(index) => {
-                self.local_functions.get(index.clone()).map(|getter| getter.get_annotated_signature())
+            &FunctionID::Preamble(index) => {
+                self.local_functions.get(index).map(|getter| getter.get_annotated_signature())
             }
         }
     }
@@ -289,7 +289,7 @@ fn annotate_function_impl(
         type_manager,
         annotated_function_signatures,
         &mut context.variable_registry,
-        &parameters,
+        parameters,
         stages.clone(),
         argument_concept_variable_types,
         argument_value_variable_types.clone(),
@@ -448,7 +448,7 @@ fn annotate_arguments(
         .unwrap();
     arguments
         .iter()
-        .map(|var| {
+        .map(|&var| {
             get_function_parameter(var, first_match_annotations.vertex_annotations(), argument_value_type_annotations)
         })
         .collect()
@@ -462,7 +462,7 @@ fn annotate_return(
     match return_operation {
         AnnotatedFunctionReturn::Stream { variables } | AnnotatedFunctionReturn::Single { variables, .. } => variables
             .iter()
-            .map(|var| get_function_parameter(var, final_type_annotations, final_value_type_annotations))
+            .map(|&var| get_function_parameter(var, final_type_annotations, final_value_type_annotations))
             .collect(),
         AnnotatedFunctionReturn::ReduceReducer { instructions } => instructions
             .iter()
@@ -473,14 +473,14 @@ fn annotate_return(
 }
 
 fn get_function_parameter<V: From<Variable> + Ord>(
-    variable: &Variable,
+    variable: Variable,
     body_variable_annotations: &BTreeMap<V, Arc<BTreeSet<Type>>>,
     body_variable_value_types: &BTreeMap<Variable, ExpressionValueType>,
 ) -> FunctionParameterAnnotation {
-    if let Some(arced_types) = body_variable_annotations.get(&variable.clone().into()) {
+    if let Some(arced_types) = body_variable_annotations.get(&variable.into()) {
         let types: &BTreeSet<Type> = arced_types;
         FunctionParameterAnnotation::Concept(types.clone())
-    } else if let Some(expression_value_type) = body_variable_value_types.get(variable) {
+    } else if let Some(expression_value_type) = body_variable_value_types.get(&variable) {
         FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
     } else {
         unreachable!("Could not find annotations for a function return variable.")

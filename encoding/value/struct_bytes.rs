@@ -74,13 +74,13 @@ impl<'a, const INLINE_LENGTH: usize> StructBytes<'a, INLINE_LENGTH> {
     }
 }
 
-impl<'a, const INLINE_LENGTH: usize> AsBytes<INLINE_LENGTH> for StructBytes<'a, INLINE_LENGTH> {
+impl<const INLINE_LENGTH: usize> AsBytes<INLINE_LENGTH> for StructBytes<'_, INLINE_LENGTH> {
     fn to_bytes(self) -> Bytes<'static, INLINE_LENGTH> {
         Bytes::copy(&self.bytes)
     }
 }
 
-impl<'a, const INLINE_LENGTH: usize> fmt::Display for StructBytes<'a, INLINE_LENGTH> {
+impl<const INLINE_LENGTH: usize> fmt::Display for StructBytes<'_, INLINE_LENGTH> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "bytes(len={})={:?}", self.length(), self.bytes())
     }

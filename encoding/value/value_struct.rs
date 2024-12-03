@@ -147,7 +147,7 @@ impl<'a> StructValue<'a> {
     }
 }
 
-impl<'a> Hash for StructValue<'a> {
+impl Hash for StructValue<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Hash::hash(&self.definition_key, state);
         for (id, value) in self.fields.iter() {
@@ -158,7 +158,7 @@ impl<'a> Hash for StructValue<'a> {
 }
 
 // Prints struct with inner values, but without the right labels, since these are not available inline
-impl<'a> fmt::Display for StructValue<'a> {
+impl fmt::Display for StructValue<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{{")?;
         for (field_id, value) in self.fields.iter().sorted_by_key(|(id, _)| **id) {
@@ -295,7 +295,7 @@ impl StructIndexEntry<'static> {
     }
 }
 
-impl<'a> StructIndexEntry<'a> {
+impl StructIndexEntry<'_> {
     const STRING_FIELD_LENGTH: usize = 17;
     const STRING_FIELD_HASHID_LENGTH: usize = 9;
     const STRING_FIELD_HASHED_PREFIX_LENGTH: usize = Self::STRING_FIELD_LENGTH - Self::STRING_FIELD_HASHID_LENGTH;
@@ -336,7 +336,7 @@ impl<'a> StructIndexEntry<'a> {
     }
 }
 
-impl<'a> HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIndexEntry<'a> {
+impl HashedID<{ StructIndexEntry::STRING_FIELD_HASHID_LENGTH }> for StructIndexEntry<'_> {
     const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
     const FIXED_WIDTH_KEYS: bool = { Prefix::IndexValueToStruct.fixed_width_keys() };
 }

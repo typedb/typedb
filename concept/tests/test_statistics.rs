@@ -15,7 +15,6 @@ use concept::{
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
-use lending_iterator::LendingIterator;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,

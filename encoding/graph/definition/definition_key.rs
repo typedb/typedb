@@ -128,7 +128,7 @@ impl<'de> Deserialize<'de> for DefinitionKey {
         D: Deserializer<'de>,
     {
         pub struct DefinitionKeyVisitor;
-        impl<'de> Visitor<'de> for DefinitionKeyVisitor {
+        impl Visitor<'_> for DefinitionKeyVisitor {
             type Value = DefinitionKey;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

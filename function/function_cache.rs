@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, iter::zip, sync::Arc};
+use std::{collections::HashMap, sync::Arc};
 
 use compiler::annotation::function::{annotate_stored_functions, AnnotatedFunction, AnnotatedSchemaFunctions};
 use concept::type_::type_manager::TypeManager;
@@ -53,7 +53,7 @@ impl FunctionCache {
         let annotated_functions = annotate_stored_functions(&mut functions_ir, snapshot, type_manager)
             .map_err(|source| FunctionError::CommittedFunctionsTypeCheck { typedb_source: source })?;
 
-        let mut parsed_functions =
+        let parsed_functions =
             schema_functions.into_iter().map(|parsed| (parsed.function_id.clone(), parsed)).collect();
         Ok(FunctionCache {
             index: function_index,

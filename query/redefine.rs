@@ -781,8 +781,8 @@ fn redefine_plays(
         };
 
         let role_label = Label::build_scoped(
-            &checked_identifier(&typeql_plays.role.name.ident)?,
-            &checked_identifier(&typeql_plays.role.scope.ident)?,
+            checked_identifier(&typeql_plays.role.name.ident)?,
+            checked_identifier(&typeql_plays.role.scope.ident)?,
         );
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;

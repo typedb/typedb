@@ -209,7 +209,7 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
     statistics: &'a Statistics,
 }
 
-impl<'a> fmt::Debug for ConjunctionPlanBuilder<'a> {
+impl fmt::Debug for ConjunctionPlanBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("PlanBuilder")
             .field("shared_variables", &self.shared_variables)
@@ -676,7 +676,7 @@ pub(super) struct ConjunctionPlan<'a> {
     cost: ElementCost,
 }
 
-impl<'a> fmt::Debug for ConjunctionPlan<'a> {
+impl fmt::Debug for ConjunctionPlan<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name_of_val(self))
             .field("shared_variables", &self.shared_variables)
@@ -1223,7 +1223,7 @@ pub(super) struct DisjunctionPlan<'a> {
     _cost: ElementCost,
 }
 
-impl<'a> DisjunctionPlan<'a> {
+impl DisjunctionPlan<'_> {
     fn lower(
         &self,
         disjunction_inputs: impl IntoIterator<Item = Variable> + Clone,

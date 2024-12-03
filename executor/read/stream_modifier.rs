@@ -8,9 +8,7 @@ use std::collections::HashSet;
 
 use crate::{
     batch::FixedBatch,
-    read::{
-        nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor, step_executor::StepExecutors,
-    },
+    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
     row::MaybeOwnedRow,
 };
 

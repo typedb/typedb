@@ -11,7 +11,6 @@ use concept::{
     thing::{attribute::Attribute, ThingAPI},
     type_::TypeAPI,
 };
-use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{

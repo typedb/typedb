@@ -81,8 +81,7 @@ pub mod tests {
 
     use crate::annotation::{
         function::{
-            annotate_named_function, AnnotatedFunctionSignature, AnnotatedFunctionSignatures,
-            AnnotatedFunctionSignaturesImpl, AnnotatedPreambleFunctions, AnnotatedSchemaFunctions,
+            annotate_named_function, AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl,
             EmptyAnnotatedFunctionSignatures,
         },
         match_inference::{

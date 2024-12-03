@@ -332,7 +332,7 @@ impl<'de> Deserialize<'de> for ValueType {
     {
         struct ValueTypeVisitor;
 
-        impl<'de> Visitor<'de> for ValueTypeVisitor {
+        impl Visitor<'_> for ValueTypeVisitor {
             type Value = ValueType;
 
             fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

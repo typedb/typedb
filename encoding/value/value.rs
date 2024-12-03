@@ -49,9 +49,9 @@ pub enum Value<'a> {
 }
 
 // TODO: should we implement our own Equality, which takes into account floating point EPSILON? Otherwise, we'll transmit rounding errors throughout the language
-impl<'a> Eq for Value<'a> {}
+impl Eq for Value<'_> {}
 
-impl<'a> PartialOrd for Value<'a> {
+impl PartialOrd for Value<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
             (Self::Boolean(self_bool), Self::Boolean(other_bool)) => self_bool.partial_cmp(other_bool),
@@ -71,7 +71,7 @@ impl<'a> PartialOrd for Value<'a> {
     }
 }
 
-impl<'a> Hash for Value<'a> {
+impl Hash for Value<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Boolean(value) => Hash::hash(value, state),
@@ -317,7 +317,7 @@ impl<'a> Value<'a> {
     }
 }
 
-impl<'a> ValueEncodable for Value<'a> {
+impl ValueEncodable for Value<'_> {
     fn value_type(&self) -> ValueType {
         match self {
             Value::Boolean(_) => ValueType::Boolean,
@@ -419,7 +419,7 @@ impl<'a> ValueEncodable for Value<'a> {
     }
 }
 
-impl<'a> fmt::Display for Value<'a> {
+impl fmt::Display for Value<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Boolean(bool) => write!(f, "{bool}"),

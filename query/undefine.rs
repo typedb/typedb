@@ -53,7 +53,6 @@ use crate::{
         get_sub_status, get_type_annotation_category_status, get_value_type_status, DefinableStatus,
         DefinableStatusMode,
     },
-    redefine::RedefineError,
 };
 
 fn checked_identifier(identifier: &typeql::Identifier) -> Result<&str, UndefineError> {

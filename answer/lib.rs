@@ -40,7 +40,7 @@ pub enum Concept<'a> {
     Value(Value<'a>),
 }
 
-impl<'a> fmt::Display for Concept<'a> {
+impl fmt::Display for Concept<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Concept::Type(type_) => write!(f, "{}", type_),

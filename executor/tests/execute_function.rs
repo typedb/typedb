@@ -496,7 +496,7 @@ fn fibonacci() {
         "#;
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
-        let answer_position = positions.get("as_value").unwrap().clone();
+        let answer_position = *positions.get("as_value").unwrap();
         assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_long(), 13);
     }
 }
