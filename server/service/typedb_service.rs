@@ -178,7 +178,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             Ok(get_result) => {
                 match get_result {
                     Some((user, _)) => Ok(Response::new(users_get_res(user))),
-                    None => Err(ServiceError::UserDoesNotExist { name: get_req.name }.into_error_message().into_status()),
+                    None => Err(ServiceError::UserDoesNotExist { }.into_error_message().into_status()),
                 }
             }
             Err(user_get_error) => {
@@ -285,6 +285,6 @@ typedb_error!(
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
-        UserDoesNotExist(4, "User '{name}' does not exist.", name: String),
+        UserDoesNotExist(4, "User does not exist"),
     }
 );
