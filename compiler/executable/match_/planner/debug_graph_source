@@ -1,139 +1,21 @@
     elements: {
-        V[1]: Variable(
-            Thing(
-                ThingPlanner {
-                    variable: V[1],
-                    binding: None,
-                },
-            ),
-        ),
-        V[4]: Variable(
-            Thing(
-                ThingPlanner {
-                    variable: V[4],
-                    binding: None,
-                },
-            ),
-        ),
-        P[11]: Comparison(
-            ComparisonPlanner {
-                comparison: Comparison {
-                    lhs: V[7],
-                    rhs: Param[Value(1)],
-                    comparator: Equal,
-                },
-                lhs: Variable(
-                    V[7],
-                ),
-                rhs: Fixed,
-            },
-        ),
-        P[14]: Constraint(
-            Isa(
-                IsaPlanner {
-                    isa: Isa {
-                        kind: Subtype,
-                        thing: V[1],
-                        type_: CUSTOMER,
-                    },
-                },
-            ),
-        ),
-        V[5]: Variable(
-            Thing(
-                ThingPlanner {
-                    variable: V[5],
-                    binding: None,
-                },
-            ),
-        ),
-        V[7]: Variable(
-            Thing(
-                ThingPlanner {
-                    variable: V[7],
-                    binding: None,
-                },
-            ),
-        ),
-        V[8]: Variable(
-            Type(
-                TypePlanner {
-                    variable: V[8],
-                    binding: None,
-                },
-            ),
-        ),
-        P[6]: Constraint(
-            TypeList(
-                TypeListPlanner {
-                    constraint: RoleName(
-                        RoleName {
-                            left: V[2],
-                            name: "district",
-                        },
-                    ),
-                },
-            ),
-        ),
-        P[10]: Constraint(
-            Isa(
-                IsaPlanner {
-                    isa: Isa {
-                        kind: Subtype,
-                        thing: V[3],
-                        type_: O_ID,
-                    },
-                },
-            ),
-        ),
-        P[2]: Constraint(
-            Has(
-                HasPlanner {
-                    has: Has {
-                        owner: V[4],
-                        attribute: V[6],
-                    },
-                },
-            ),
-        ),
         P[1]: Comparison(
             ComparisonPlanner {
                 comparison: Comparison {
-                    lhs: V[6],
+                    lhs: V[3],
                     rhs: Param[Value(0)],
                     comparator: Equal,
                 },
                 lhs: Variable(
-                    V[6],
+                    V[3],
                 ),
                 rhs: Fixed,
             },
         ),
-        P[13]: Constraint(
-            Isa(
-                IsaPlanner {
-                    isa: Isa {
-                        kind: Subtype,
-                        thing: V[7],
-                        type_: O_NEW_ORDER,
-                    },
-                },
-            ),
-        ),
-        P[15]: Constraint(
-            Has(
-                HasPlanner {
-                    has: Has {
-                        owner: V[1],
-                        attribute: V[5],
-                    },
-                },
-            ),
-        ),
-        V[2]: Variable(
-            Type(
-                TypePlanner {
-                    variable: V[2],
+        V[0]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[0],
                     binding: None,
                 },
             ),
@@ -146,22 +28,22 @@
                 },
             ),
         ),
-        V[0]: Variable(
-            Thing(
-                ThingPlanner {
-                    variable: V[0],
-                    binding: None,
+        P[11]: Constraint(
+            Links(
+                LinksPlanner {
+                    links: Links {
+                        relation: V[12],
+                        player: V[7],
+                        role_type: V[8],
+                    },
                 },
             ),
         ),
-        P[0]: Constraint(
-            Isa(
-                IsaPlanner {
-                    isa: Isa {
-                        kind: Subtype,
-                        thing: V[4],
-                        type_: DISTRICT,
-                    },
+        V[1]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[1],
+                    binding: None,
                 },
             ),
         ),
@@ -170,41 +52,114 @@
                 IsaPlanner {
                     isa: Isa {
                         kind: Subtype,
-                        thing: V[6],
-                        type_: D_ID,
+                        thing: V[3],
+                        type_: I_ID,
                     },
                 },
             ),
         ),
-        P[4]: Constraint(
+        P[22]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[9],
+                        type_: S_REMOTE_CNT,
+                    },
+                },
+            ),
+        ),
+        P[23]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[12],
+                        attribute: V[10],
+                    },
+                },
+            ),
+        ),
+        P[6]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[7],
+                        attribute: V[11],
+                    },
+                },
+            ),
+        ),
+        P[14]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[6],
+                        type_: S_QUANTITY,
+                    },
+                },
+            ),
+        ),
+        P[19]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[12],
+                        attribute: V[1],
+                    },
+                },
+            ),
+        ),
+        P[8]: Constraint(
             TypeList(
                 TypeListPlanner {
                     constraint: RoleName(
                         RoleName {
-                            left: V[8],
-                            name: "customer",
+                            left: V[5],
+                            name: "item",
                         },
                     ),
                 },
             ),
         ),
-        P[8]: Constraint(
+        P[10]: Constraint(
+            TypeList(
+                TypeListPlanner {
+                    constraint: RoleName(
+                        RoleName {
+                            left: V[8],
+                            name: "warehouse",
+                        },
+                    ),
+                },
+            ),
+        ),
+        V[7]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[7],
+                    binding: None,
+                },
+            ),
+        ),
+        P[7]: Constraint(
             Isa(
                 IsaPlanner {
                     isa: Isa {
                         kind: Subtype,
-                        thing: V[0],
-                        type_: ORDER,
+                        thing: V[11],
+                        type_: W_ID,
                     },
                 },
             ),
         ),
-        P[9]: Constraint(
-            Has(
-                HasPlanner {
-                    has: Has {
-                        owner: V[0],
-                        attribute: V[3],
+        P[20]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[1],
+                        type_: S_ORDER_CNT,
                     },
                 },
             ),
@@ -217,35 +172,56 @@
                 },
             ),
         ),
+        V[12]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[12],
+                    binding: None,
+                },
+            ),
+        ),
+        V[2]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[2],
+                    binding: None,
+                },
+            ),
+        ),
+        V[11]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[11],
+                    binding: None,
+                },
+            ),
+        ),
         P[12]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[12],
+                        type_: STOCKING,
+                    },
+                },
+            ),
+        ),
+        P[15]: Constraint(
             Has(
                 HasPlanner {
                     has: Has {
-                        owner: V[0],
-                        attribute: V[7],
+                        owner: V[12],
+                        attribute: V[2],
                     },
                 },
             ),
         ),
-        P[5]: Constraint(
-            Links(
-                LinksPlanner {
-                    links: Links {
-                        relation: V[0],
-                        player: V[1],
-                        role_type: V[8],
-                    },
-                },
-            ),
-        ),
-        P[7]: Constraint(
-            Links(
-                LinksPlanner {
-                    links: Links {
-                        relation: V[0],
-                        player: V[4],
-                        role_type: V[2],
-                    },
+        V[8]: Variable(
+            Type(
+                TypePlanner {
+                    variable: V[8],
+                    binding: None,
                 },
             ),
         ),
@@ -254,8 +230,148 @@
                 IsaPlanner {
                     isa: Isa {
                         kind: Subtype,
-                        thing: V[5],
-                        type_: C_ID,
+                        thing: V[2],
+                        type_: S_DATA,
+                    },
+                },
+            ),
+        ),
+        P[24]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[10],
+                        type_: S_DIST_3,
+                    },
+                },
+            ),
+        ),
+        P[2]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[0],
+                        attribute: V[3],
+                    },
+                },
+            ),
+        ),
+        V[4]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[4],
+                    binding: None,
+                },
+            ),
+        ),
+        P[13]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[12],
+                        attribute: V[6],
+                    },
+                },
+            ),
+        ),
+        V[10]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[10],
+                    binding: None,
+                },
+            ),
+        ),
+        V[9]: Variable(
+            Thing(
+                ThingPlanner {
+                    variable: V[9],
+                    binding: None,
+                },
+            ),
+        ),
+        P[0]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[0],
+                        type_: ITEM,
+                    },
+                },
+            ),
+        ),
+        P[21]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[12],
+                        attribute: V[9],
+                    },
+                },
+            ),
+        ),
+        P[18]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[4],
+                        type_: S_YTD,
+                    },
+                },
+            ),
+        ),
+        V[5]: Variable(
+            Type(
+                TypePlanner {
+                    variable: V[5],
+                    binding: None,
+                },
+            ),
+        ),
+        P[9]: Constraint(
+            Links(
+                LinksPlanner {
+                    links: Links {
+                        relation: V[12],
+                        player: V[0],
+                        role_type: V[5],
+                    },
+                },
+            ),
+        ),
+        P[5]: Comparison(
+            ComparisonPlanner {
+                comparison: Comparison {
+                    lhs: V[11],
+                    rhs: Param[Value(1)],
+                    comparator: Equal,
+                },
+                lhs: Variable(
+                    V[11],
+                ),
+                rhs: Fixed,
+            },
+        ),
+        P[17]: Constraint(
+            Has(
+                HasPlanner {
+                    has: Has {
+                        owner: V[12],
+                        attribute: V[4],
+                    },
+                },
+            ),
+        ),
+        P[4]: Constraint(
+            Isa(
+                IsaPlanner {
+                    isa: Isa {
+                        kind: Subtype,
+                        thing: V[7],
+                        type_: WAREHOUSE,
                     },
                 },
             ),

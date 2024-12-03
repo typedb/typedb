@@ -63,16 +63,16 @@ pub fn compile(
     .finish(variable_registry);
 
     // DEBUG
-    println!("{}", plan);
-    println!("-- Variable mappings -- ");
-    for (var, pos) in plan.variable_positions() {
-        if let Some(named_var) = variable_registry.variable_names().get(var) {
-            println!("   {:?} id {:?} pos {:?}", named_var, var, pos);
-        }
-        else {
-            println!("   anon id {:?} pos {:?}", var, pos);
-        }
-    }
+    // println!("{}", plan);
+    // println!("-- Variable mappings -- ");
+    // for (var, pos) in plan.variable_positions() {
+    //     if let Some(named_var) = variable_registry.variable_names().get(var) {
+    //         println!("   {:?} id {:?} pos {:?}", named_var, var, pos);
+    //     }
+    //     else {
+    //         println!("   anon id {:?} pos {:?}", var, pos);
+    //     }
+    // }
 
     plan
 }

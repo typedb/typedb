@@ -417,9 +417,10 @@ impl Costed for IsaPlanner<'_> {
         };
 
         let mut scan_size = self.unrestricted_expected_size;
+        scan_size *= thing.restriction_based_selectivity(inputs); // account for restrictions (like iid), which (we assume) can be used to reduce scan size
+        scan_size = f64::max(scan_size, VariableVertex::OUTPUT_SIZE_MIN); // ???
         if is_type_bound { scan_size /= type_size; } // account for narrowed prefix
         if is_thing_bound { scan_size /= thing_size; } // account for narrowed prefix
-        scan_size *= thing.restriction_based_selectivity(inputs); // account for restrictions (like iid), which (we assume) can be used to reduce scan size
 
         let cost = match is_thing_bound {
             true => 0.0,

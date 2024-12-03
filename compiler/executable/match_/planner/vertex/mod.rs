@@ -220,7 +220,7 @@ impl CombinedCost {
 
     pub(crate) fn join(self, other: Self, join_size : f64) -> Self {
         Self {
-            cost: self.cost + other.cost, // Cost is additive (both scans are performed separately)
+            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix cartesian product situation in Rocks
             io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, CombinedCost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
         }
     }
