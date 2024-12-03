@@ -191,10 +191,10 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
     }
 
-    fn get_has_types_range_unordered<'m>(
+    fn get_has_types_range_unordered(
         self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
         attribute_type_range: &impl RangeBounds<AttributeType>,
     ) -> HasIterator {
         thing_manager.get_has_from_thing_unordered(snapshot, &self, attribute_type_range)
@@ -351,27 +351,27 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
     }
 
-    fn get_relations<'m>(
+    fn get_relations(
         self,
         snapshot: &impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
+        thing_manager: &ThingManager,
     ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
         thing_manager.get_relations_player(snapshot, self)
     }
 
-    fn get_relations_by_role<'m>(
+    fn get_relations_by_role(
         self,
         snapshot: &impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
+        thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> impl Iterator<Item = Result<(Relation, u64), Box<ConceptReadError>>> {
         thing_manager.get_relations_player_role(snapshot, self, role_type)
     }
 
-    fn get_relations_roles<'m>(
+    fn get_relations_roles(
         self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
     ) -> RelationRoleIterator {
         thing_manager.get_relations_roles(snapshot, self)
     }

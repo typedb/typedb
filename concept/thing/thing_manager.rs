@@ -225,9 +225,9 @@ impl ThingManager {
         })
     }
 
-    pub fn get_attributes<'this, Snapshot: ReadableSnapshot>(
-        &'this self,
-        snapshot: &'this Snapshot,
+    pub fn get_attributes<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
@@ -241,9 +241,9 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_attributes_in<'this>(
-        &'this self,
-        snapshot: &'this impl ReadableSnapshot,
+    pub fn get_attributes_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let attribute_value_type =
@@ -371,11 +371,11 @@ impl ThingManager {
         Ok(Some(attribute))
     }
 
-    pub fn get_attributes_in_range<'this>(
-        &'this self,
-        snapshot: &'this impl ReadableSnapshot,
+    pub fn get_attributes_in_range<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
-        range: &'this impl RangeBounds<Value<'this>>,
+        range: &impl RangeBounds<Value<'a>>,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
             return self.get_attributes_in(snapshot, attribute_type);
@@ -792,9 +792,9 @@ impl ThingManager {
         Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range)))
     }
 
-    pub fn get_attributes_by_struct_field<'this, Snapshot: ReadableSnapshot>(
-        &'this self,
-        snapshot: &'this Snapshot,
+    pub fn get_attributes_by_struct_field<Snapshot: ReadableSnapshot>(
+        &self,
+        snapshot: &Snapshot,
         attribute_type: AttributeType,
         path_to_field: Vec<StructFieldIDUInt>,
         value: Value<'_>,
@@ -1203,9 +1203,9 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_indexed_players<'a>(
-        &'a self,
-        snapshot: &'a impl ReadableSnapshot,
+    pub(crate) fn get_indexed_players(
+        &self,
+        snapshot: &impl ReadableSnapshot,
         from: Object,
     ) -> IndexedPlayersIterator {
         let prefix = ThingEdgeRolePlayerIndex::prefix_from(from.vertex());
