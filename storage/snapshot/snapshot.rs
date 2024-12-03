@@ -266,7 +266,7 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
 pub struct WriteSnapshot<D> {
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
-    iterator_pool: IteratorPool, // Must be declared & dropped before storage
+    iterator_pool: IteratorPool, // Pool must be declared & dropped before storage
     storage: Arc<MVCCStorage<D>>,
 }
 
