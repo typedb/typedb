@@ -112,7 +112,8 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         let owner_type = entity.type_().into_object_type();
         let has_iter = entity.get_has_unordered(&snapshot, thing_manager);
         for has in has_iter {
-            let (attribute, count) = has.unwrap();
+            let (has, count) = has.unwrap();
+            let attribute = has.attribute();
             *statistics.has_attribute_counts.entry(owner_type).or_default().entry(attribute.type_()).or_default() +=
                 count;
             *statistics.attribute_owner_counts.entry(attribute.type_()).or_default().entry(owner_type).or_default() +=
@@ -128,7 +129,8 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         let owner_type = relation.type_().into_object_type();
         let has_iter = relation.get_has_unordered(&snapshot, thing_manager);
         for has in has_iter {
-            let (attribute, count) = has.unwrap();
+            let (has, count) = has.unwrap();
+            let attribute = has.attribute();
             *statistics.has_attribute_counts.entry(owner_type).or_default().entry(attribute.type_()).or_default() +=
                 count;
             *statistics.attribute_owner_counts.entry(attribute.type_()).or_default().entry(owner_type).or_default() +=

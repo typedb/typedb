@@ -15,7 +15,7 @@ use pprof::ProfilerGuard;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     durability_client::WALClient,
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
@@ -70,7 +70,7 @@ fn populate_storage(storage: Arc<MVCCStorage<WALClient>>, keyspace: TestKeyspace
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace, &[0_u8]));
-    let iterator = snapshot.iterate_range(KeyRange::new_within(RangeStart::Inclusive(prefix), false));
+    let iterator = snapshot.iterate_range(&KeyRange::new_within(prefix, false));
     let count = iterator.collect_cloned_vec(|_, _| ((), ())).unwrap().len();
     println!("Keys confirmed to be written: {}", count);
     count

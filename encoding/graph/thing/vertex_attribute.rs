@@ -70,22 +70,26 @@ impl AttributeVertex {
         Some(Self::decode(bytes))
     }
 
-    pub fn build_prefix_for_value(
+    pub fn build_or_prefix_for_value(
         type_id: TypeID,
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
-    ) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+    ) -> Either<Self, StorageKey<'static, BUFFER_KEY_INLINE>> {
         // preallocate upper bound length and then truncate later
         let mut bytes = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE + AttributeID::max_length());
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_TYPE_ID].copy_from_slice(&type_id.to_bytes());
-        let id_length = AttributeID::write_deterministic_value_or_prefix(
+        let (id_length, is_complete) = AttributeID::write_deterministic_value_or_prefix(
             &mut bytes[Self::RANGE_TYPE_ID.end..],
             value,
             large_value_hasher,
         );
         bytes.truncate(Self::RANGE_TYPE_ID.end + id_length);
-        StorageKey::new(Self::KEYSPACE, Bytes::Array(bytes))
+        if is_complete {
+            Either::First(Self::decode(bytes.as_ref()))
+        } else {
+            Either::Second(StorageKey::new(Self::KEYSPACE, Bytes::Array(bytes)))
+        }
     }
 
     pub(crate) fn write_prefix_type_attribute_id(bytes: &mut [u8], type_id: TypeID, attribute_id_part: &[u8]) -> usize {
@@ -220,24 +224,28 @@ impl AttributeID {
         bytes: &mut [u8],
         value: Value<'_>,
         large_value_hasher: &impl Fn(&[u8]) -> u64,
-    ) -> usize {
+    ) -> (usize, bool) {
         debug_assert!(bytes.len() >= AttributeID::max_length());
         match value.value_type().category() {
-            ValueTypeCategory::Boolean => BooleanAttributeID::write(value.encode_boolean(), bytes),
-            ValueTypeCategory::Long => LongAttributeID::write(value.encode_long(), bytes),
-            ValueTypeCategory::Double => DoubleAttributeID::write(value.encode_double(), bytes),
-            ValueTypeCategory::Decimal => DecimalAttributeID::write(value.encode_decimal(), bytes),
-            ValueTypeCategory::Date => DateAttributeID::write(value.encode_date(), bytes),
-            ValueTypeCategory::DateTime => DateTimeAttributeID::write(value.encode_date_time(), bytes),
-            ValueTypeCategory::DateTimeTZ => DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes),
-            ValueTypeCategory::Duration => DurationAttributeID::write(value.encode_duration(), bytes),
-            ValueTypeCategory::String => {
-                StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes)
-            }
-            ValueTypeCategory::Struct => StructAttributeID::write_hashed_id_deterministic_prefix(
-                value.encode_struct::<64>(),
-                large_value_hasher,
-                bytes,
+            ValueTypeCategory::Boolean => (BooleanAttributeID::write(value.encode_boolean(), bytes), true),
+            ValueTypeCategory::Long => (LongAttributeID::write(value.encode_long(), bytes), true),
+            ValueTypeCategory::Double => (DoubleAttributeID::write(value.encode_double(), bytes), true),
+            ValueTypeCategory::Decimal => (DecimalAttributeID::write(value.encode_decimal(), bytes), true),
+            ValueTypeCategory::Date => (DateAttributeID::write(value.encode_date(), bytes), true),
+            ValueTypeCategory::DateTime => (DateTimeAttributeID::write(value.encode_date_time(), bytes), true),
+            ValueTypeCategory::DateTimeTZ => (DateTimeTZAttributeID::write(value.encode_date_time_tz(), bytes), true),
+            ValueTypeCategory::Duration => (DurationAttributeID::write(value.encode_duration(), bytes), true),
+            ValueTypeCategory::String => (
+                StringAttributeID::write_deterministic_prefix(value.encode_string::<64>(), large_value_hasher, bytes),
+                false,
+            ),
+            ValueTypeCategory::Struct => (
+                StructAttributeID::write_hashed_id_deterministic_prefix(
+                    value.encode_struct::<64>(),
+                    large_value_hasher,
+                    bytes,
+                ),
+                false,
             ),
         }
     }

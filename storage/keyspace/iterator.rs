@@ -11,7 +11,7 @@ use lending_iterator::{LendingIterator, Seekable};
 use rocksdb::DB;
 
 use crate::{
-    key_range::{KeyRange, RangeEnd},
+    key_range::{KeyRange, RangeEnd, RangeStart},
     keyspace::{raw_iterator, raw_iterator::DBIterator, Keyspace, KeyspaceError},
 };
 
@@ -31,16 +31,25 @@ enum ContinueCondition {
 impl KeyspaceRangeIterator {
     pub(crate) fn new<'a, const INLINE_BYTES: usize>(
         keyspace: &'a Keyspace,
-        range: KeyRange<Bytes<'a, INLINE_BYTES>>,
+        range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
     ) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
 
+        let start_prefix = match range.start() {
+            RangeStart::Inclusive(bytes) => Bytes::Reference(bytes.as_ref()),
+            RangeStart::ExcludeFirstWithPrefix(bytes) => Bytes::Reference(bytes.as_ref()),
+            RangeStart::ExcludePrefix(bytes) => {
+                let mut cloned = bytes.to_array();
+                cloned.increment().unwrap();
+                Bytes::Array(cloned)
+            }
+        };
+
         let read_opts = keyspace.new_read_options();
         let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };
-        let mut iterator =
-            raw_iterator::DBIterator::new_from(kv_storage.raw_iterator_opt(read_opts), range.start().get_value());
-        if range.start().is_exclusive() {
+        let mut iterator = DBIterator::new_from(kv_storage.raw_iterator_opt(read_opts), start_prefix.as_ref());
+        if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
             Self::may_skip_start(&mut iterator, range.start().get_value());
         }
 

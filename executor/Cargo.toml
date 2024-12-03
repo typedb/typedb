@@ -56,18 +56,23 @@ features = {}
 		version = "0.1.40"
 		default-features = false
 
+	[dependencies.primitive]
+		path = "../common/primitive"
+		features = []
+		default-features = false
+
 	[dependencies.resource]
 		path = "../resource"
 		features = []
 		default-features = false
 
-	[dependencies.logger]
-		path = "../common/logger"
+	[dependencies.concept]
+		path = "../concept"
 		features = []
 		default-features = false
 
-	[dependencies.concept]
-		path = "../concept"
+	[dependencies.logger]
+		path = "../common/logger"
 		features = []
 		default-features = false
 

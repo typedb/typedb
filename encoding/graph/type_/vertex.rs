@@ -32,7 +32,7 @@ impl TypeVertex {
     pub(crate) const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
-    pub(crate) const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
+    pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
     pub(crate) fn new(prefix: PrefixID, type_id: TypeID) -> Self {
@@ -88,10 +88,11 @@ pub struct TypeID {
 pub type TypeIDUInt = u16;
 
 impl TypeID {
+    pub const MIN: Self = Self::new(TypeIDUInt::MIN);
+    pub const MAX: Self = Self::new(TypeIDUInt::MAX);
     pub(crate) const LENGTH: usize = std::mem::size_of::<TypeIDUInt>();
 
-    pub fn new(id: TypeIDUInt) -> Self {
-        debug_assert_eq!(std::mem::size_of_val(&id), Self::LENGTH);
+    pub const fn new(id: TypeIDUInt) -> Self {
         Self { value: id }
     }
 

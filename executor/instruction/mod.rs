@@ -29,7 +29,7 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
-use itertools::Itertools;
+use itertools::{Itertools, MinMaxResult};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -851,5 +851,13 @@ fn get_vertex_value<'a>(
         CheckVertex::Parameter(parameter_id) => {
             VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
         }
+    }
+}
+
+fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
+    match types.into_iter().minmax() {
+        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
+        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
+        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     }
 }

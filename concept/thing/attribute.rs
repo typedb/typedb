@@ -47,7 +47,7 @@ pub struct Attribute {
     value: OnceLock<Arc<Value<'static>>>,
 }
 
-impl<'a> Attribute {
+impl Attribute {
     pub fn type_(&self) -> AttributeType {
         AttributeType::build_from_type_id(self.vertex.type_id_())
     }
@@ -57,10 +57,10 @@ impl<'a> Attribute {
     }
 
     pub fn get_value(
-        &'a self,
+        &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Value<'a>, Box<ConceptReadError>> {
+    ) -> Result<Value<'_>, Box<ConceptReadError>> {
         if self.value.get().is_none() {
             let value = thing_manager.get_attribute_value(snapshot, self)?;
             let _ = self.value.set(Arc::new(value));

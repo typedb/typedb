@@ -11,7 +11,7 @@ use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::StorageKey,
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
 };
@@ -74,8 +74,8 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         Snapshot: ReadableSnapshot,
     {
         let tail_byte_index = key_without_tail_byte.len();
-        let mut iter = snapshot.iterate_range(KeyRange::new_within(
-            RangeStart::Inclusive(StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte)),
+        let mut iter = snapshot.iterate_range(&KeyRange::new_within(
+            StorageKey::<BUFFER_KEY_INLINE>::new_ref(Self::KEYSPACE, key_without_tail_byte),
             Self::FIXED_WIDTH_KEYS,
         ));
         let mut next = iter.next().transpose()?;

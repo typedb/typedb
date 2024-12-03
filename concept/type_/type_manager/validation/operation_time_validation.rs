@@ -3182,9 +3182,10 @@ impl OperationTimeValidation {
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
                 let has_attribute_iterator = object.get_has_unordered(snapshot, thing_manager);
-                for attribute in has_attribute_iterator {
-                    let (attribute, count) =
-                        attribute.map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                for has_count in has_attribute_iterator {
+                    let (has, count) =
+                        has_count.map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                    let attribute = has.attribute();
                     let attribute_type = attribute.type_();
                     if !attribute_types.contains(&attribute_type) {
                         continue;

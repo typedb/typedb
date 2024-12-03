@@ -14,7 +14,7 @@ use compiler::{
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
         match_::{
-            instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
+            instructions::{CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, thing::IsaInstruction},
             planner::{
                 function_plan::ExecutableFunctionRegistry,
                 match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
@@ -27,8 +27,8 @@ use compiler::{
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, ExecutionInterrupt, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
+    profile::QueryProfile, row::MaybeOwnedRow,
 };
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
@@ -36,7 +36,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
