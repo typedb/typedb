@@ -26,7 +26,7 @@ pub enum Bytes<'bytes, const ARRAY_INLINE_SIZE: usize> {
     Reference(&'bytes [u8]),
 }
 
-impl<'bytes, const INLINE_SIZE: usize> Clone for Bytes<'bytes, INLINE_SIZE> {
+impl<const INLINE_SIZE: usize> Clone for Bytes<'_, INLINE_SIZE> {
     fn clone(&self) -> Bytes<'static, INLINE_SIZE> {
         match self {
             Bytes::Array(array) => Bytes::Array(array.clone()),
@@ -110,13 +110,13 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Bytes<'bytes, ARRAY_INLINE_SIZE> {
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> fmt::Display for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> fmt::Display for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'_, ARRAY_INLINE_SIZE> {
     type Target = [u8];
 
     fn deref(&self) -> &Self::Target {
@@ -127,39 +127,39 @@ impl<'bytes, const ARRAY_INLINE_SIZE: usize> Deref for Bytes<'bytes, ARRAY_INLIN
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialEq for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> PartialEq for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn eq(&self, other: &Self) -> bool {
         (**self).eq(&**other)
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Eq for Bytes<'bytes, ARRAY_INLINE_SIZE> {}
+impl<const ARRAY_INLINE_SIZE: usize> Eq for Bytes<'_, ARRAY_INLINE_SIZE> {}
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> PartialOrd for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> PartialOrd for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Ord for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> Ord for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn cmp(&self, other: &Self) -> Ordering {
         (**self).cmp(&**other)
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Hash for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> Hash for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         (**self).hash(state)
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Borrow<[u8]> for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> Borrow<[u8]> for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn borrow(&self) -> &[u8] {
         self
     }
 }
 
-impl<'bytes, const ARRAY_INLINE_SIZE: usize> Prefix for Bytes<'bytes, ARRAY_INLINE_SIZE> {
+impl<const ARRAY_INLINE_SIZE: usize> Prefix for Bytes<'_, ARRAY_INLINE_SIZE> {
     fn starts_with(&self, other: &Self) -> bool {
         (**self).starts_with(other)
     }

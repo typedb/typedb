@@ -271,10 +271,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     }
 
     fn local_variables<'a>(
-        &'a self,
+        &self,
         context: &'a BlockContext,
         conjunction_scope_id: ScopeId,
-    ) -> impl Iterator<Item = Variable> + '_ {
+    ) -> impl Iterator<Item = Variable> + 'a {
         context.get_variable_scopes().filter(move |&(_, scope)| scope == conjunction_scope_id).map(|(var, _)| var)
     }
 
@@ -752,11 +752,11 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                 .iter()
                 .map(|(var, index)| (index, var))
                 .sorted()
-                .map(|(_, var)| var.clone())
+                .map(|(_, var)| *var)
                 .collect();
             for (arg_var, arg_annotations) in zip(args_by_position, &annotated_function_signature.arguments) {
                 if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
-                    graph_vertices.add_or_intersect(&Vertex::Variable(arg_var.clone()), Cow::Borrowed(&types));
+                    graph_vertices.add_or_intersect(&Vertex::Variable(arg_var), Cow::Borrowed(types));
                 }
             }
         }
@@ -800,7 +800,7 @@ trait BinaryConstraint {
                     || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !right_annotations.is_empty() {
-                left_to_right.insert(left_type.clone(), right_annotations);
+                left_to_right.insert(*left_type, right_annotations);
             }
         }
         Ok(left_to_right)
@@ -828,7 +828,7 @@ trait BinaryConstraint {
                     || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !left_annotations.is_empty() {
-                right_to_left.insert(right_type.clone(), left_annotations);
+                right_to_left.insert(*right_type, left_annotations);
             }
         }
         Ok(right_to_left)
@@ -1289,7 +1289,7 @@ impl BinaryConstraint for Comparison<Variable> {
                         .get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
                     {
                         if comparable_types.contains(&subvaluetype.category()) {
-                            right_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type().clone()));
+                            right_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type()));
                         }
                     }
                 }
@@ -1299,7 +1299,7 @@ impl BinaryConstraint for Comparison<Variable> {
                     || right_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !right_annotations.is_empty() {
-                left_to_right.insert(left_type.clone(), right_annotations);
+                left_to_right.insert(*left_type, right_annotations);
             }
         }
         Ok(left_to_right)
@@ -1335,7 +1335,7 @@ impl BinaryConstraint for Comparison<Variable> {
                         .get_value_type_without_source(seeder.snapshot, seeder.type_manager)?
                     {
                         if comparable_types.contains(&subvaluetype.category()) {
-                            left_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type().clone()));
+                            left_annotations.insert(TypeAnnotation::Attribute(subattr.as_attribute_type()));
                         }
                     }
                 }
@@ -1345,7 +1345,7 @@ impl BinaryConstraint for Comparison<Variable> {
                     || left_annotations.iter().all(|t| seeder.is_not_abstract(t).unwrap())
             );
             if !left_annotations.is_empty() {
-                right_to_left.insert(right_type.clone(), left_annotations);
+                right_to_left.insert(*right_type, left_annotations);
             }
         }
         Ok(right_to_left)
@@ -1378,7 +1378,7 @@ struct RelationRoleEdge<'graph> {
     links: &'graph Links<Variable>,
 }
 
-impl<'graph> BinaryConstraint for PlayerRoleEdge<'graph> {
+impl BinaryConstraint for PlayerRoleEdge<'_> {
     fn left(&self) -> &Vertex<Variable> {
         self.links.player()
     }
@@ -1494,7 +1494,7 @@ impl BinaryConstraint for Plays<Variable> {
     }
 }
 
-impl<'graph> BinaryConstraint for RelationRoleEdge<'graph> {
+impl BinaryConstraint for RelationRoleEdge<'_> {
     fn left(&self) -> &Vertex<Variable> {
         self.links.relation()
     }
@@ -1764,7 +1764,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let (_, (type_name, type_catname, type_dogname), _) =
+        let (_, (_type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let label_owner = Label::build("owner");

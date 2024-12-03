@@ -86,28 +86,28 @@ impl<'bytes, const S: usize> StorageKey<'bytes, S> {
     }
 }
 
-impl<'bytes, const SZ: usize> PartialEq<Self> for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> PartialEq<Self> for StorageKey<'_, SZ> {
     fn eq(&self, other: &Self) -> bool {
         self.keyspace_id() == other.keyspace_id() && self.bytes() == other.bytes()
     }
 }
 
-impl<'bytes, const SZ: usize> Eq for StorageKey<'bytes, SZ> {}
+impl<const SZ: usize> Eq for StorageKey<'_, SZ> {}
 
-impl<'bytes, const SZ: usize> PartialOrd<Self> for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> PartialOrd<Self> for StorageKey<'_, SZ> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<'bytes, const SZ: usize> Ord for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> Ord for StorageKey<'_, SZ> {
     fn cmp(&self, other: &Self) -> Ordering {
         self.bytes().cmp(other.bytes())
     }
 }
 
-impl<'bytes, const SZ: usize> Prefix for StorageKey<'bytes, SZ> {
+impl<const SZ: usize> Prefix for StorageKey<'_, SZ> {
     fn starts_with(&self, other: &Self) -> bool {
         self.bytes().starts_with(other.bytes())
     }
@@ -256,22 +256,22 @@ impl<'bytes, const SZ: usize> From<&'bytes StorageKeyArray<SZ>> for StorageKeyRe
     }
 }
 
-impl<'bytes> PartialEq<Self> for StorageKeyReference<'bytes> {
+impl PartialEq<Self> for StorageKeyReference<'_> {
     fn eq(&self, other: &Self) -> bool {
         (self.keyspace_id(), self.bytes()) == (other.keyspace_id(), other.bytes())
     }
 }
 
-impl<'bytes> Eq for StorageKeyReference<'bytes> {}
+impl Eq for StorageKeyReference<'_> {}
 
-impl<'bytes> PartialOrd<Self> for StorageKeyReference<'bytes> {
+impl PartialOrd<Self> for StorageKeyReference<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         // TODO: should this take into account Keyspace ID?
         Some(self.cmp(other))
     }
 }
 
-impl<'bytes> Ord for StorageKeyReference<'bytes> {
+impl Ord for StorageKeyReference<'_> {
     fn cmp(&self, other: &Self) -> Ordering {
         (self.keyspace_id(), self.bytes()).cmp(&(other.keyspace_id(), other.bytes()))
     }

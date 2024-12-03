@@ -25,8 +25,8 @@ pub(crate) enum Tuple<'a> {
     Arbitrary(), // TODO: unknown sized tuples, for functions
 }
 
-impl<'a, 'b> PartialEq<Tuple<'b>> for Tuple<'a> {
-    fn eq(&self, other: &Tuple<'b>) -> bool {
+impl PartialEq<Tuple<'_>> for Tuple<'_> {
+    fn eq(&self, other: &Tuple<'_>) -> bool {
         match (self, other) {
             (Tuple::Single(this), Tuple::Single(that)) => this.eq(that),
             (Tuple::Pair(this), Tuple::Pair(that)) => this.eq(that),
@@ -37,8 +37,8 @@ impl<'a, 'b> PartialEq<Tuple<'b>> for Tuple<'a> {
     }
 }
 
-impl<'a, 'b> PartialOrd<Tuple<'b>> for Tuple<'a> {
-    fn partial_cmp(&self, other: &Tuple<'b>) -> Option<std::cmp::Ordering> {
+impl PartialOrd<Tuple<'_>> for Tuple<'_> {
+    fn partial_cmp(&self, other: &Tuple<'_>) -> Option<std::cmp::Ordering> {
         match (self, other) {
             (Tuple::Single(this), Tuple::Single(that)) => this.partial_cmp(that),
             (Tuple::Pair(this), Tuple::Pair(that)) => this.partial_cmp(that),

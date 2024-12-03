@@ -452,7 +452,7 @@ impl<'a> RecordIterator<'a> {
     }
 }
 
-impl<'a> Iterator for RecordIterator<'a> {
+impl Iterator for RecordIterator<'_> {
     type Item = Result<RawRecord<'static>, DurabilityServiceError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -500,7 +500,7 @@ impl<'a> FileRecordIterator<'a> {
     }
 }
 
-impl<'a> Iterator for FileRecordIterator<'a> {
+impl Iterator for FileRecordIterator<'_> {
     type Item = Result<RawRecord<'static>, DurabilityServiceError>;
 
     fn next(&mut self) -> Option<Self::Item> {
