@@ -15,6 +15,8 @@ use ir::pattern::{
     constraint::{Has, Iid, Isa, Links},
     IrID,
 };
+use ir::pattern::constraint::IndexedRelation;
+use storage::MVCCKey;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -357,4 +359,19 @@ impl<ID: IrID> fmt::Display for LinksReverseInstruction<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
     }
+}
+
+// We use a lowered form of the IndexedRelation, since it is fully symmetric otherwise
+pub struct IndexedRelationInstruction<ID> {
+    player_start: ID,
+    player_end: ID,
+    relation: ID,
+    role_type_start: ID,
+    role_type_end: ID,
+    
+    // the prefixes we will generally want to construct are [from][rel type][to type]
+    player_start_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    relation_to_player_end_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    role_type_start_types: Arc<BTreeSet<Type>>,
+    role_type_end_types: Arc<BTreeSet<Type>>,
 }

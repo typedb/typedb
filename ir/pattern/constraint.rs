@@ -31,11 +31,6 @@ use crate::{
 pub struct Constraints {
     scope: ScopeId,
     constraints: Vec<Constraint<Variable>>,
-
-    // TODO: could also store indexes into the Constraints vec? Depends how expensive Constraints are and if we delete
-    left_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
-    right_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
-    filter_constrained_index: HashMap<Variable, Vec<Constraint<Variable>>>,
 }
 
 impl Deref for Constraints {
@@ -50,9 +45,6 @@ impl Constraints {
         Self {
             scope,
             constraints: Vec::new(),
-            left_constrained_index: HashMap::new(),
-            right_constrained_index: HashMap::new(),
-            filter_constrained_index: HashMap::new(),
         }
     }
 
@@ -63,15 +55,13 @@ impl Constraints {
     pub fn constraints(&self) -> &[Constraint<Variable>] {
         &self.constraints
     }
+    
+    pub fn constraints_mut(&mut self) -> &mut Vec<Constraint<Variable>> {
+        &mut self.constraints
+    }
 
     fn add_constraint(&mut self, constraint: impl Into<Constraint<Variable>>) -> &Constraint<Variable> {
         let constraint = constraint.into();
-        // TODO: ids_foreach is only used here, and ids is unused. Do we need these methods?
-        constraint.ids_foreach(|var, side| match side {
-            ConstraintIDSide::Left => self.left_constrained_index.entry(var).or_default().push(constraint.clone()),
-            ConstraintIDSide::Right => self.right_constrained_index.entry(var).or_default().push(constraint.clone()),
-            ConstraintIDSide::Filter => self.filter_constrained_index.entry(var).or_default().push(constraint.clone()),
-        });
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
     }
@@ -459,6 +449,7 @@ pub enum Constraint<ID> {
     Isa(Isa<ID>),
     Iid(Iid<ID>),
     Links(Links<ID>),
+    IndexedRelation(IndexedRelation<ID>),
     Has(Has<ID>),
     ExpressionBinding(ExpressionBinding<ID>),
     FunctionCallBinding(FunctionCallBinding<ID>),
@@ -533,30 +524,6 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn ids_foreach<F>(&self, function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        match self {
-            Self::Is(is) => is.ids_foreach(function),
-            Self::Kind(kind) => kind.ids_foreach(function),
-            Self::Label(label) => label.ids_foreach(function),
-            Self::RoleName(role_name) => role_name.ids_foreach(function),
-            Self::Sub(sub) => sub.ids_foreach(function),
-            Self::Isa(isa) => isa.ids_foreach(function),
-            Self::Iid(iid) => iid.ids_foreach(function),
-            Self::Links(rp) => rp.ids_foreach(function),
-            Self::Has(has) => has.ids_foreach(function),
-            Self::ExpressionBinding(binding) => binding.ids_foreach(function),
-            Self::FunctionCallBinding(binding) => binding.ids_foreach(function),
-            Self::Comparison(comparison) => comparison.ids_foreach(function),
-            Self::Owns(owns) => owns.ids_foreach(function),
-            Self::Relates(relates) => relates.ids_foreach(function),
-            Self::Plays(plays) => plays.ids_foreach(function),
-            Self::Value(value) => value.ids_foreach(function),
-        }
-    }
-
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
         match self {
             Self::Is(inner) => Constraint::Is(inner.map(mapping)),
@@ -576,26 +543,6 @@ impl<ID: IrID> Constraint<ID> {
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
         }
-    }
-
-    pub fn left_id(&self) -> Option<ID> {
-        let mut id = None;
-        self.ids_foreach(|constraint_id, side| {
-            if side == ConstraintIDSide::Left {
-                id = Some(constraint_id);
-            }
-        });
-        id
-    }
-
-    pub fn right_id(&self) -> Option<ID> {
-        let mut id = None;
-        self.ids_foreach(|constraint_id, side| {
-            if side == ConstraintIDSide::Right {
-                id = Some(constraint_id);
-            }
-        });
-        id
     }
 
     pub(crate) fn as_kind(&self) -> Option<&Kind<ID>> {
@@ -647,7 +594,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_links(&self) -> Option<&Links<ID>> {
+    pub fn as_links(&self) -> Option<&Links<ID>> {
         match self {
             Constraint::Links(rp) => Some(rp),
             _ => None,
@@ -796,13 +743,6 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-pub enum ConstraintIDSide {
-    Left,
-    Right,
-    Filter,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Label<ID> {
     type_var: Vertex<ID>,
@@ -829,13 +769,6 @@ impl<ID: IrID> Label<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
         [&self.type_var, &self.type_label].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.type_var.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Label<T> {
@@ -897,13 +830,6 @@ impl<ID: IrID> RoleName<ID> {
         [&self.left].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.left.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-    }
-
     fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
         RoleName { left: self.left.map(mapping), name: self.name }
     }
@@ -959,13 +885,6 @@ impl<ID: IrID> Kind<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
         [&self.type_].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
@@ -1071,14 +990,6 @@ impl<ID: IrID> Sub<ID> {
         [&self.subtype, &self.supertype].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.subtype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.supertype.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
-    }
-
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
         Sub::new(self.kind, self.subtype.map(mapping), self.supertype.map(mapping))
     }
@@ -1135,14 +1046,6 @@ impl<ID: IrID> Is<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
         [&self.lhs, &self.rhs].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Is<T> {
@@ -1205,14 +1108,6 @@ impl<ID: IrID> Isa<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
         [&self.thing, &self.type_].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.thing.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.type_.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
@@ -1308,13 +1203,6 @@ impl<ID: IrID> Iid<ID> {
         [&self.var, &self.iid].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.var.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-    }
-
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Iid<T> {
         Iid { var: self.var.map(mapping), iid: self.iid.map(mapping) }
     }
@@ -1381,15 +1269,6 @@ impl<ID: IrID> Links<ID> {
         [&self.relation, &self.player, &self.role_type].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
-        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Filter));
-    }
-
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Links<T> {
         Links {
             relation: self.relation.map(mapping),
@@ -1428,6 +1307,68 @@ impl<ID: IrID> fmt::Display for Links<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct IndexedRelation<ID> {
+    pub(crate) player_1: Vertex<ID>,
+    pub(crate) player_2: Vertex<ID>,
+    pub(crate) relation: Vertex<ID>,
+    pub(crate) role_type_1: Vertex<ID>,
+    pub(crate) role_type_2: Vertex<ID>,
+}
+
+impl<ID: IrID> IndexedRelation<ID> {
+    pub fn new(player_1: ID, player_2: ID, relation: ID, role_type_1: ID, role_type_2: ID) -> Self {
+        Self {
+            player_1: Vertex::Variable(player_1),
+            player_2: Vertex::Variable(player_2),
+            relation: Vertex::Variable(relation),
+            role_type_1: Vertex::Variable(role_type_1),
+            role_type_2: Vertex::Variable(role_type_2),
+        }
+    }
+
+    pub fn player_1(&self) -> &Vertex<ID> {
+        &self.player_1
+    }
+
+    pub fn player_2(&self) -> &Vertex<ID> {
+        &self.player_2
+    }
+
+    pub fn relation(&self) -> &Vertex<ID> {
+        &self.relation
+    }
+    
+    pub fn role_type_1(&self) -> &Vertex<ID> {
+        &self.role_type_1
+    }
+
+    pub fn role_type_2(&self) -> &Vertex<ID> {
+        &self.role_type_1
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item=ID> {
+        [&self.relation, &self.player_1, &self.player_2, &self.role_type_1, &self.role_type_2]
+            .map(Vertex::as_variable)
+            .into_iter()
+            .flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item=&Vertex<ID>> {
+        [&self.relation, &self.player_1, &self.player_2, &self.role_type_1, &self.role_type_2].into_iter()
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IndexedRelation<T> {
+        IndexedRelation {
+            player_1: self.player_1.map(mapping),
+            player_2: self.player_2.map(mapping),
+            relation: self.relation.map(mapping),
+            role_type_1: self.role_type_1.map(mapping),
+            role_type_2: self.role_type_2.map(mapping),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Has<ID> {
     owner: Vertex<ID>,
     attribute: Vertex<ID>,
@@ -1452,14 +1393,6 @@ impl<ID: IrID> Has<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
         [&self.owner, &self.attribute].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
@@ -1517,16 +1450,6 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         self.left.as_variable().into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.ids_assigned().for_each(|id| function(id, ConstraintIDSide::Left));
-        // TODO
-        // todo!("Do we really need positions here?")
-        // self.expression().ids().for_each(|id| function(id, ConstraintIDSide::Right));
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionDefinitionError> {
@@ -1593,18 +1516,6 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub fn vertices_assigned(&self) -> impl Iterator<Item = &Vertex<ID>> + '_ {
         self.assigned.iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        for id in self.ids_assigned() {
-            function(id, ConstraintIDSide::Left)
-        }
-        for id in self.function_call.argument_ids() {
-            function(id, ConstraintIDSide::Right)
-        }
     }
 }
 
@@ -1739,14 +1650,6 @@ impl<ID: IrID> Comparison<ID> {
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
         [&self.lhs, &self.rhs].into_iter()
     }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.lhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.rhs.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
-    }
 }
 
 impl<ID: IrID> From<Comparison<ID>> for Constraint<ID> {
@@ -1800,14 +1703,6 @@ impl<ID: IrID> Owns<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
         [&self.owner, &self.attribute].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.owner.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.attribute.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
@@ -1867,14 +1762,6 @@ impl<ID: IrID> Relates<ID> {
         [&self.relation, &self.role_type].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.relation.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
-    }
-
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
         Relates::new(self.relation.map(mapping), self.role_type.map(mapping))
     }
@@ -1932,14 +1819,6 @@ impl<ID: IrID> Plays<ID> {
         [&self.player, &self.role_type].into_iter()
     }
 
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.player.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
-        self.role_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Right));
-    }
-
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
         Plays::new(self.player.map(mapping), self.role_type.map(mapping))
     }
@@ -1995,13 +1874,6 @@ impl<ID: IrID> Value<ID> {
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
         [&self.attribute_type].into_iter()
-    }
-
-    pub fn ids_foreach<F>(&self, mut function: F)
-    where
-        F: FnMut(ID, ConstraintIDSide),
-    {
-        self.attribute_type.as_variable().inspect(|&id| function(id, ConstraintIDSide::Left));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Value<T> {

@@ -49,20 +49,25 @@ pub enum ConstraintTypeAnnotations {
     LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here,
                                                      //       since they do not actually co-constrain Schema types possible.
                                                      //       in other words, they are always right to left or deal only in value types.
+    IndexedSymmetric(IndexedSymmetricAnnotations),
 }
 
 impl ConstraintTypeAnnotations {
     pub fn as_left_right(&self) -> &LeftRightAnnotations {
         match self {
             ConstraintTypeAnnotations::LeftRight(annotations) => annotations,
-            ConstraintTypeAnnotations::LeftRightFiltered(_) => panic!("Unexpected type."),
+            ConstraintTypeAnnotations::LeftRightFiltered(_) | ConstraintTypeAnnotations::IndexedSymmetric(_) => {
+                panic!("Unexpected type.")
+            },
         }
     }
 
     pub fn as_left_right_filtered(&self) -> &LeftRightFilteredAnnotations {
         match self {
             ConstraintTypeAnnotations::LeftRightFiltered(annotations) => annotations,
-            ConstraintTypeAnnotations::LeftRight(_) => panic!("Unexpected type."),
+            ConstraintTypeAnnotations::LeftRight(_) | ConstraintTypeAnnotations::IndexedSymmetric(_)=> {
+                panic!("Unexpected type.")
+            },
         }
     }
 }
@@ -160,4 +165,9 @@ impl LeftRightFilteredAnnotations {
     pub fn filters_on_left(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.filters_on_left.clone()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+struct IndexedSymmetricAnnotations {
+    
 }

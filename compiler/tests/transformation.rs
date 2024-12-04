@@ -4,6 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod apply_rp_index;
-mod eliminate_redundant_constraints;
-mod optimise;
+fn test_relation_index_transformation() {
+    
+}

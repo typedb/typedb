@@ -9,6 +9,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
+use std::cmp::max_by;
 
 use encoding::{
     error::EncodingError,
@@ -21,6 +22,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
+use resource::constants::concept::RELATION_INDEX_THRESHOLD;
 use resource::constants::encoding::StructFieldIDUInt;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use type_cache::TypeCache;
@@ -59,9 +61,6 @@ pub mod type_cache;
 pub mod type_reader;
 mod type_writer;
 pub mod validation;
-
-// TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
-pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
 #[derive(Debug)]
 pub struct TypeManager {
@@ -766,7 +765,7 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn relation_index_available(
+    pub fn relation_index_available(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
