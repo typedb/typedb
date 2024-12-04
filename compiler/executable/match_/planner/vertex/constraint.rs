@@ -22,13 +22,12 @@ use crate::{
         planner::{
             plan::{Graph, VariableVertexId, VertexId},
             vertex::{
-                instance_count, variable::VariableVertex, Costed, Direction, ElementCost, Input,
-                ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
+                instance_count, variable::VariableVertex, CombinedCost, CostMetaData, Costed, Direction, ElementCost,
+                Input, ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
             },
         },
     },
 };
-use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData};
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
@@ -89,11 +88,12 @@ impl ConstraintVertex<'_> {
 }
 
 impl Costed for ConstraintVertex<'_> {
-    fn cost(&self,
-            inputs: &[VertexId],
-            step_sort_var: Option<VariableVertexId>,
-            step_start_index: usize,
-            graph: &Graph<'_>
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        step_sort_var: Option<VariableVertexId>,
+        step_start_index: usize,
+        graph: &Graph<'_>,
     ) -> ElementCost {
         match self {
             Self::TypeList(inner) => inner.cost(inputs, step_sort_var, step_start_index, graph),
@@ -110,11 +110,7 @@ impl Costed for ConstraintVertex<'_> {
         }
     }
 
-    fn cost_and_metadata(
-        &self,
-        vertex_ordering: &[VertexId],
-        graph: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         match self {
             Self::TypeList(inner) => inner.cost_and_metadata(vertex_ordering, graph),
             Self::Iid(inner) => inner.cost_and_metadata(vertex_ordering, graph),
@@ -237,20 +233,21 @@ impl<'a> TypeListPlanner<'a> {
 }
 
 impl Costed for TypeListPlanner<'_> {
-    fn cost(&self,
-            _: &[VertexId],
-            _step_sort_var: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _step_sort_var: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(self.types.len() as f64)
     }
 
-    fn cost_and_metadata(&self,
-                         vertex_ordering: &[VertexId],
-                         graph: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::in_mem_complex_with_ratio(self.types.len() as f64), CostMetaData::Direction(Direction::Canonical))
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        (
+            CombinedCost::in_mem_complex_with_ratio(self.types.len() as f64),
+            CostMetaData::Direction(Direction::Canonical),
+        )
     }
 }
 
@@ -348,11 +345,12 @@ impl<'a> IsaPlanner<'a> {
 }
 
 impl Costed for IsaPlanner<'_> {
-    fn cost(&self,
-            inputs: &[VertexId],
-            _step_sort_var: Option<VariableVertexId>,
-            _step_start_index: usize,
-            graph: &Graph<'_>
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        _step_sort_var: Option<VariableVertexId>,
+        _step_start_index: usize,
+        graph: &Graph<'_>,
     ) -> ElementCost {
         let thing_id = VertexId::Variable(self.thing);
         let is_thing_bound = inputs.contains(&thing_id);
@@ -393,10 +391,7 @@ impl Costed for IsaPlanner<'_> {
         ElementCost { per_input, per_output, io_ratio: branching_factor }
     }
 
-    fn cost_and_metadata(&self,
-            inputs: &[VertexId],
-            graph: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         let thing_id = VertexId::Variable(self.thing);
         let thing = graph.elements()[&thing_id].as_variable().unwrap();
 
@@ -419,8 +414,12 @@ impl Costed for IsaPlanner<'_> {
         let mut scan_size = self.unrestricted_expected_size;
         scan_size *= thing.restriction_based_selectivity(inputs); // account for restrictions (like iid), which (we assume) can be used to reduce scan size
         scan_size = f64::max(scan_size, VariableVertex::OUTPUT_SIZE_MIN); // ???
-        if is_type_bound { scan_size /= type_size; } // account for narrowed prefix
-        if is_thing_bound { scan_size /= thing_size; } // account for narrowed prefix
+        if is_type_bound {
+            scan_size /= type_size;
+        } // account for narrowed prefix
+        if is_thing_bound {
+            scan_size /= thing_size;
+        } // account for narrowed prefix
 
         let cost = match is_thing_bound {
             true => 0.0,
@@ -501,7 +500,9 @@ impl<'a> HasPlanner<'a> {
     }
 
     fn unbound_direction(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> Direction {
-        if self.unbound_expected_scan_size_canonical(graph, inputs) < self.unbound_expected_scan_size_reverse(graph, inputs) {
+        if self.unbound_expected_scan_size_canonical(graph, inputs)
+            < self.unbound_expected_scan_size_reverse(graph, inputs)
+        {
             Direction::Canonical
         } else {
             Direction::Reverse
@@ -509,7 +510,10 @@ impl<'a> HasPlanner<'a> {
     }
 
     fn unbound_expected_scan_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
-        f64::min(self.unbound_expected_scan_size_canonical(graph, inputs), self.unbound_expected_scan_size_reverse(graph, inputs))
+        f64::min(
+            self.unbound_expected_scan_size_canonical(graph, inputs),
+            self.unbound_expected_scan_size_reverse(graph, inputs),
+        )
     }
 
     fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
@@ -527,18 +531,19 @@ impl<'a> HasPlanner<'a> {
         let attribute = &graph.elements()[&VertexId::Variable(self.attribute)].as_variable().unwrap();
         let owner = &graph.elements()[&VertexId::Variable(self.owner)].as_variable().unwrap();
         let expected_size = self.unbound_typed_expected_size
-            *  attribute.restriction_based_selectivity(inputs)
+            * attribute.restriction_based_selectivity(inputs)
             * owner.restriction_based_selectivity(inputs);
         f64::max(expected_size, VariableVertex::OUTPUT_SIZE_MIN)
     }
 }
 
 impl Costed for HasPlanner<'_> {
-    fn cost(&self,
-            inputs: &[VertexId],
-            _intersection: Option<VariableVertexId>,
-            _step_start_index: usize,
-            graph: &Graph<'_>
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        _intersection: Option<VariableVertexId>,
+        _step_start_index: usize,
+        graph: &Graph<'_>,
     ) -> ElementCost {
         let owner_id = VertexId::Variable(self.owner);
         let owner = &graph.elements()[&owner_id].as_variable().unwrap();
@@ -580,10 +585,7 @@ impl Costed for HasPlanner<'_> {
         ElementCost { per_input, per_output, io_ratio: branching_factor }
     }
 
-    fn cost_and_metadata(&self,
-                         inputs: &[VertexId],
-                         graph: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         let owner_id = VertexId::Variable(self.owner);
         let owner = &graph.elements()[&owner_id].as_variable().unwrap();
 
@@ -597,19 +599,28 @@ impl Costed for HasPlanner<'_> {
         let attribute_size = attribute.expected_output_size(inputs);
 
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
-        if is_owner_bound { scan_size_canonical /= owner_size; } // accounts for bound prefix
+        if is_owner_bound {
+            scan_size_canonical /= owner_size;
+        } // accounts for bound prefix
         scan_size_canonical *= owner.restriction_based_selectivity(inputs); // account for restrictions (like iid)
 
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
-        if is_attribute_bound { scan_size_reverse /= attribute_size; } // accounts for bound prefix
+        if is_attribute_bound {
+            scan_size_reverse /= attribute_size;
+        } // accounts for bound prefix
         scan_size_reverse *= attribute.restriction_based_selectivity(inputs); // account for restrictions (like ==)
 
         let mut io_ratio = self.unbound_typed_expected_size;
-        if is_owner_bound { io_ratio /= owner_size; }
-        if is_attribute_bound { io_ratio /= attribute_size; }
+        if is_owner_bound {
+            io_ratio /= owner_size;
+        }
+        if is_attribute_bound {
+            io_ratio /= attribute_size;
+        }
         io_ratio *= owner.restriction_based_selectivity(inputs) * attribute.restriction_based_selectivity(inputs);
 
-        let cost: f64; let direction: Direction;
+        let cost: f64;
+        let direction: Direction;
 
         if scan_size_canonical <= scan_size_reverse {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
@@ -717,7 +728,9 @@ impl<'a> LinksPlanner<'a> {
     }
 
     pub(crate) fn unbound_direction(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> Direction {
-        if self.unbound_expected_scan_size_canonical(graph, inputs) < self.unbound_expected_scan_size_reverse(graph, inputs) {
+        if self.unbound_expected_scan_size_canonical(graph, inputs)
+            < self.unbound_expected_scan_size_reverse(graph, inputs)
+        {
             Direction::Canonical
         } else {
             Direction::Reverse
@@ -726,7 +739,10 @@ impl<'a> LinksPlanner<'a> {
 
     fn unbound_expected_scan_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         f64::max(
-            f64::min(self.unbound_expected_scan_size_canonical(graph, inputs), self.unbound_expected_scan_size_reverse(graph, inputs)),
+            f64::min(
+                self.unbound_expected_scan_size_canonical(graph, inputs),
+                self.unbound_expected_scan_size_reverse(graph, inputs),
+            ),
             VariableVertex::OUTPUT_SIZE_MIN,
         )
     }
@@ -746,18 +762,21 @@ impl<'a> LinksPlanner<'a> {
         let player = &graph.elements()[&VertexId::Variable(self.player)].as_variable().unwrap();
         let relation = &graph.elements()[&VertexId::Variable(self.relation)].as_variable().unwrap();
         f64::max(
-            self.unbound_typed_expected_size * player.restriction_based_selectivity(inputs) * relation.restriction_based_selectivity(inputs),
+            self.unbound_typed_expected_size
+                * player.restriction_based_selectivity(inputs)
+                * relation.restriction_based_selectivity(inputs),
             VariableVertex::OUTPUT_SIZE_MIN,
         )
     }
 }
 
 impl Costed for LinksPlanner<'_> {
-    fn cost(&self,
-            inputs: &[VertexId],
-            _intersection: Option<VariableVertexId>,
-            _step_start_index: usize,
-            graph: &Graph<'_>
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        _intersection: Option<VariableVertexId>,
+        _step_start_index: usize,
+        graph: &Graph<'_>,
     ) -> ElementCost {
         let relation_id = VertexId::Variable(self.relation);
         let player_id = VertexId::Variable(self.player);
@@ -798,10 +817,7 @@ impl Costed for LinksPlanner<'_> {
         ElementCost { per_input, per_output, io_ratio: branching_factor }
     }
 
-    fn cost_and_metadata(&self,
-                         inputs: &[VertexId],
-                         graph: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         let relation_id = VertexId::Variable(self.relation);
         let relation = &graph.elements()[&relation_id].as_variable().unwrap();
 
@@ -817,23 +833,32 @@ impl Costed for LinksPlanner<'_> {
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
         if is_relation_bound {
             scan_size_canonical /= relation_size;
-            if is_player_bound { scan_size_canonical /= player_size; }
+            if is_player_bound {
+                scan_size_canonical /= player_size;
+            }
         }
         scan_size_canonical *= relation.restriction_based_selectivity(inputs); // account for restrictions (like iid)
 
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
         if is_player_bound {
             scan_size_reverse /= player_size;
-            if is_relation_bound { scan_size_reverse /= relation_size; }
+            if is_relation_bound {
+                scan_size_reverse /= relation_size;
+            }
         }
         scan_size_reverse *= player.restriction_based_selectivity(inputs); // account for restrictions (like iid)
 
         let mut io_ratio = self.unbound_typed_expected_size;
-        if is_relation_bound { io_ratio /= relation_size; }
-        if is_player_bound { io_ratio /= player_size; }
+        if is_relation_bound {
+            io_ratio /= relation_size;
+        }
+        if is_player_bound {
+            io_ratio /= player_size;
+        }
         io_ratio *= relation.restriction_based_selectivity(inputs) * player.restriction_based_selectivity(inputs);
 
-        let cost: f64; let direction: Direction;
+        let cost: f64;
+        let direction: Direction;
 
         if scan_size_canonical >= scan_size_reverse {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
@@ -878,19 +903,17 @@ impl<'a> SubPlanner<'a> {
 }
 
 impl Costed for SubPlanner<'_> {
-    fn cost(&self,
-            _: &[VertexId],
-            _intersection: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _intersection: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 
-    fn cost_and_metadata(&self,
-                         _: &[VertexId],
-                         _: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }
@@ -925,19 +948,17 @@ impl<'a> OwnsPlanner<'a> {
 }
 
 impl Costed for OwnsPlanner<'_> {
-    fn cost(&self,
-            _: &[VertexId],
-            _intersection: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _intersection: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 
-    fn cost_and_metadata(&self,
-                         _: &[VertexId],
-                         _: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }
@@ -972,19 +993,17 @@ impl<'a> RelatesPlanner<'a> {
 }
 
 impl Costed for RelatesPlanner<'_> {
-    fn cost(&self,
-            _: &[VertexId],
-            _intersection: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _intersection: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 
-    fn cost_and_metadata(&self,
-                         _: &[VertexId],
-                         _: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }
@@ -1019,19 +1038,17 @@ impl<'a> PlaysPlanner<'a> {
 }
 
 impl Costed for PlaysPlanner<'_> {
-    fn cost(&self,
-            _: &[VertexId],
-            _intersection: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _intersection: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::in_mem_complex_with_branching(1.0) // TODO branching
     }
 
-    fn cost_and_metadata(&self,
-                         _: &[VertexId],
-                         _: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }

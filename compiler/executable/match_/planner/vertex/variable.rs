@@ -14,10 +14,9 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::planner::{
         plan::{Graph, PatternVertexId, VariableVertexId, VertexId},
-        vertex::{Costed, ElementCost, Input},
+        vertex::{CombinedCost, CostMetaData, Costed, Direction, ElementCost, Input},
     },
 };
-use crate::executable::match_::planner::vertex::{CombinedCost, CostMetaData, Direction};
 
 #[derive(Clone, Debug)]
 pub(crate) enum VariableVertex {
@@ -138,11 +137,12 @@ impl VariableVertex {
 }
 
 impl Costed for VariableVertex {
-    fn cost(&self,
-            _inputs: &[VertexId],
-            _step_sort_variable: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _graph: &Graph<'_>
+    fn cost(
+        &self,
+        _inputs: &[VertexId],
+        _step_sort_variable: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _graph: &Graph<'_>,
     ) -> ElementCost {
         // match self {
         //     Self::Input(inner) => inner.cost(inputs, step_sort_variable, graph),
@@ -153,19 +153,13 @@ impl Costed for VariableVertex {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
-    fn cost_and_metadata(&self,
-                         vertex_ordering: &[VertexId],
-                         graph: &Graph<'_>
-    ) -> (CombinedCost, CostMetaData) {
-        let var_set : Vec<Variable> = vertex_ordering
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        let var_set: Vec<Variable> = vertex_ordering
             .iter()
             .map(|id| graph.elements().get(id).unwrap().as_variable().unwrap().variable())
             .collect();
-        let total_size = if var_set.contains(&self.variable()) {
-            self.expected_output_size(vertex_ordering)
-        } else {
-            1.0
-        };
+        let total_size =
+            if var_set.contains(&self.variable()) { self.expected_output_size(vertex_ordering) } else { 1.0 };
         (CombinedCost::in_mem_simple_with_ratio(total_size), CostMetaData::None)
     }
 }
@@ -188,11 +182,12 @@ impl InputPlanner {
 }
 
 impl Costed for InputPlanner {
-    fn cost(&self,
-            _: &[VertexId],
-            _step_sort_variable: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _step_sort_variable: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
@@ -241,11 +236,12 @@ impl TypePlanner {
 }
 
 impl Costed for TypePlanner {
-    fn cost(&self,
-            _: &[VertexId],
-            _step_sort_variable: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        _: &[VertexId],
+        _step_sort_variable: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
     }
@@ -401,11 +397,12 @@ fn branching_for_intersections(intersection_count: usize) -> f64 {
 }
 
 impl Costed for ThingPlanner {
-    fn cost(&self,
-            inputs: &[VertexId],
-            step_sort_variable: Option<VariableVertexId>,
-            step_start_index: usize,
-            graph: &Graph<'_>
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        step_sort_variable: Option<VariableVertexId>,
+        step_start_index: usize,
+        graph: &Graph<'_>,
     ) -> ElementCost {
         // match step_sort_variable {
         //     None => ElementCost::MEM_SIMPLE_BRANCH_1,
@@ -506,11 +503,12 @@ impl ValuePlanner {
 }
 
 impl Costed for ValuePlanner {
-    fn cost(&self,
-            inputs: &[VertexId],
-            _step_sort_variable: Option<VariableVertexId>,
-            _step_start_index: usize,
-            _: &Graph<'_>
+    fn cost(
+        &self,
+        inputs: &[VertexId],
+        _step_sort_variable: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _: &Graph<'_>,
     ) -> ElementCost {
         if inputs.is_empty() {
             ElementCost { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 }

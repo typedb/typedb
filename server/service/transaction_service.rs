@@ -678,7 +678,6 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-
         let _query_options = &query_req.options; // TODO: pass query options
         let parsed = match parse_query(&query_req.query) {
             Ok(parsed) => parsed,
