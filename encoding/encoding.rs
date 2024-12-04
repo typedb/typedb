@@ -91,8 +91,9 @@ impl KeyspaceSet for EncodingKeyspace {
     fn rocks_configuration(&self, cache: &rocksdb::Cache) -> rocksdb::Options {
         let mut options = rocksdb::Options::default();
 
-        options.enable_statistics();
-        options.set_stats_dump_period_sec(100);
+        // Enable if we wanted to check bloom filter usage, cache hits, etc.
+        // options.enable_statistics();
+        // options.set_stats_dump_period_sec(100);
 
         options.create_if_missing(true);
         options.set_max_background_jobs(10);

@@ -16,6 +16,7 @@ use itertools::Itertools;
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
 use bytes::util::MB;
+use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
 
 use super::iterator;
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
@@ -61,8 +62,7 @@ impl Keyspaces {
     pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, KeyspaceOpenError> {
         let path = storage_dir.as_ref();
 
-        let cache = rocksdb::Cache::new_lru_cache(500 * MB as usize);
-
+        let cache = rocksdb::Cache::new_lru_cache((ROCKSDB_CACHE_SIZE_MB * MB) as usize);
         let mut keyspaces = Keyspaces::new();
         for keyspace in KS::iter() {
             keyspaces
