@@ -1177,7 +1177,7 @@ impl ConjunctionPlan<'_> {
                 PlannerVertex::Constraint(constraint) => {
                     let inputs =
                         self.inputs_of_pattern(producer).map(|var| self.graph.index_to_variable[&var]).collect_vec();
-                    self.lower_constraint(match_builder, constraint, inputs, variable)
+                    self.lower_constraint(match_builder, constraint, self.metadata[&producer], inputs, variable)
                 }
                 PlannerVertex::Expression(expression) => {
                     let output = match_builder.position_mapping()[&self.graph.index_to_variable[&expression.output]];
@@ -1330,6 +1330,7 @@ impl ConjunctionPlan<'_> {
         &self,
         match_builder: &mut MatchExecutableBuilder,
         constraint: &ConstraintVertex<'_>,
+        metadata: CostMetaData,
         inputs: Vec<Variable>,
         sort_variable: Variable,
     ) {
@@ -1346,38 +1347,24 @@ impl ConjunctionPlan<'_> {
 
         macro_rules! binary {
             ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
-                let lhs = $con.$lhs();
-                let rhs = $con.$rhs();
+                let lhs_var = $con.$lhs().as_variable();
+                let rhs_var = $con.$rhs().as_variable();
 
-                let lhs_var = lhs.as_variable();
-                let rhs_var = rhs.as_variable();
+                let inputs =
+                    match (lhs_var.filter(|lhs| inputs.contains(&lhs)), rhs_var.filter(|rhs| inputs.contains(&rhs))) {
+                        (Some(lhs), Some(rhs)) => Inputs::Dual([lhs, rhs]), // useful for links
+                        (Some(var), None) | (None, Some(var)) => Inputs::Single([var]),
+                        (None, None) => Inputs::None([]),
+                    };
 
-                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
-
-                assert!(num_input_variables > 0);
-
-                assert_ne!(inputs.len(), num_input_variables);
+                let CostMetaData::Direction(direction) = metadata else {
+                    unreachable!("expected metadata for constraint")
+                };
 
                 let con = $con.clone();
-                let instruction = if lhs_var.is_some_and(|lhs| inputs.contains(&lhs)) {
-                    ConstraintInstruction::$fw($fwi::new(
-                        con,
-                        Inputs::Single([lhs_var.unwrap()]),
-                        self.type_annotations,
-                    ))
-                } else if rhs_var.is_some_and(|rhs| inputs.contains(&rhs)) {
-                    ConstraintInstruction::$bw($bwi::new(
-                        con,
-                        Inputs::Single([rhs_var.unwrap()]),
-                        self.type_annotations,
-                    ))
-                } else if Some(sort_variable) == lhs_var
-                    || (Some(sort_variable) != rhs_var
-                        && constraint.unbound_direction(&self.graph) == Direction::Canonical)
-                {
-                    ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
-                } else {
-                    ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
+                let instruction = match direction {
+                    Direction::Canonical => ConstraintInstruction::$fw($fwi::new(con, inputs, self.type_annotations)),
+                    Direction::Reverse => ConstraintInstruction::$bw($bwi::new(con, inputs, self.type_annotations)),
                 };
 
                 match_builder.push_instruction(sort_variable, instruction);
@@ -1425,51 +1412,8 @@ impl ConjunctionPlan<'_> {
             }
             ConstraintVertex::Links(planner) => {
                 let links = planner.links();
-
-                let relation = links.relation().as_variable().unwrap();
-                let player = links.player().as_variable().unwrap();
-                let _role = links.role_type().as_variable().unwrap();
-
-                assert_ne!(inputs.len(), 3);
-
-                let links = links.clone();
-                let instruction = if inputs.contains(&relation) && inputs.contains(&player) {
-                    if planner.unbound_direction(&self.graph, &[]) == Direction::Canonical {
-                        ConstraintInstruction::Links(LinksInstruction::new(
-                            links,
-                            Inputs::Dual([relation, player]),
-                            self.type_annotations,
-                        ))
-                    } else {
-                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                            links,
-                            Inputs::Dual([relation, player]),
-                            self.type_annotations,
-                        ))
-                    }
-                } else if inputs.contains(&relation) {
-                    ConstraintInstruction::Links(LinksInstruction::new(
-                        links,
-                        Inputs::Single([relation]),
-                        self.type_annotations,
-                    ))
-                } else if inputs.contains(&player) {
-                    ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                        links,
-                        Inputs::Single([player]),
-                        self.type_annotations,
-                    ))
-                } else if planner.unbound_direction(&self.graph, &[]) == Direction::Canonical {
-                    ConstraintInstruction::Links(LinksInstruction::new(links, Inputs::None([]), self.type_annotations))
-                } else {
-                    ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                        links,
-                        Inputs::None([]),
-                        self.type_annotations,
-                    ))
-                };
-
-                match_builder.push_instruction(sort_variable, instruction);
+                // binary!() works here even though links is ostensibly ternary
+                binary!(relation links player, Links(LinksInstruction), LinksReverse(LinksReverseInstruction))
             }
         }
     }
