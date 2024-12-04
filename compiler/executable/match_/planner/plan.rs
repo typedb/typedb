@@ -573,7 +573,13 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             }};
         }
 
+        // DEBUG
+        println!("== Greedy search ==");
+
         while !remaining_vertices.is_empty() {
+            // DEBUG
+            println!("Choosing next plan element...");
+
             let (next, _cost, _element_cost) = remaining_vertices
                 .iter()
                 .filter(|&&elem| self.graph.elements[&elem].is_valid(&vertex_plan, &self.graph))
@@ -581,12 +587,22 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     let element_cost =
                         self.calculate_marginal_elementcost(&vertex_plan, elem, step_sort_variable, step_start_index);
                     let cost = element_cost.total();
+
+                    // DEBUG
+                    println!(
+                        "  Choice {:?}, cost: {cost}, cumulative: {}",
+                        elem,
+                        plan_cumulative_cost.chain(element_cost).total()
+                    );
                     (elem, cost, element_cost)
                 })
                 .min_by(|(_, lhs_cost, _), (_, rhs_cost, _)| lhs_cost.total_cmp(rhs_cost))
                 .unwrap();
             let element = &self.graph.elements[&next];
             plan_cumulative_cost = plan_cumulative_cost.chain(_element_cost);
+
+            // DEBUG
+            println!("--> Chose {:?}, cost: {_cost}", next);
 
             if element.is_variable() {
                 finalize_step!();
@@ -630,6 +646,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 }
             }
         }
+        // DEBUG
+        println!("Finished greedy ordering: {:#?}", vertex_plan);
+        println!("Total cost {}", plan_cumulative_cost.total());
 
         (vertex_plan, meta_data)
     }
@@ -670,6 +689,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
+        // DEBUG
+        println!("== Beam search ==");
+
         let all_patterns: HashSet<PatternVertexId> = self.graph.pattern_to_variable.keys().copied().collect();
         let search_depth: usize = all_patterns.len();
         let mut best_partial_plans = vec![PartialCostPlan::new(
@@ -680,6 +702,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         for i in 0..search_depth {
             let mut new_plans_heap: BinaryHeap<PartialCostPlan> = BinaryHeap::new();
             for plan in best_partial_plans.iter() {
+                // DEBUG
+                println!("Step {}, extending plan: {:?}", i, plan.vertex_ordering);
+
                 let mut extension_heap = BinaryHeap::new();
                 for extension in plan.extensions_iter(&self.graph) {
                     if extension_heap.len() < EXTENSION_WIDTH {
@@ -719,18 +744,25 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan();
+        // DEBUG
+        println!("Best plan {:#?}", complete_plan);
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
+        // Input Graph
+        println!("== Planning with graph ==\n {:#?}", self.graph);
+
         // Greedy plan
         let start_greedy = Instant::now();
         let (ordering, metadata) = self.initialise_greedy_ordering(); // TODO: remove
+        println!("---> Greedy search took {:?}", start_greedy.elapsed());
 
         // Beam plan
         let start_beam = Instant::now();
         let (ordering, metadata) = self.beam_search_plan();
+        println!("---> Beam search took {:?}", start_beam.elapsed());
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
@@ -829,6 +861,12 @@ impl PartialCostPlan {
                     cost_before_extension = cost_before_extension.chain(self.ongoing_step_cost);
                     // Complete ongoing step
                 }
+
+                // DEBUG
+                println!(
+                    "    Cost: {}, pattern: {:?}, join: {:?}, added cost: {}",
+                    cost_before_extension.cost, extension, join_var, added_cost.cost
+                );
 
                 let projected_cost = cost_before_extension
                     .chain(added_cost)
