@@ -44,7 +44,6 @@ use crate::{
     sequence_number::SequenceNumber,
     snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
 };
-use crate::key_range::RangeStart;
 
 pub mod durability_client;
 pub mod error;

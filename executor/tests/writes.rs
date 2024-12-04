@@ -20,9 +20,7 @@ use concept::{
     thing::{object::ObjectAPI, relation::Relation, thing_manager::ThingManager},
     type_::{object_type::ObjectType, type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
 };
-use encoding::{
-    value::{label::Label, value::Value, value_type::ValueType},
-};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
     pipeline::{
         delete::DeleteStageExecutor,

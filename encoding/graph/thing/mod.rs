@@ -34,7 +34,6 @@ const fn max(lhs: usize, rhs: usize) -> usize {
 pub const THING_VERTEX_MAX_LENGTH: usize = max(ObjectVertex::LENGTH, AttributeVertex::MAX_LENGTH);
 
 pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + Keyable<BUFFER_KEY_INLINE> {
-
     fn decode(bytes: &[u8]) -> Self;
 
     fn build_prefix_prefix(prefix: Prefix, keyspace: EncodingKeyspace) -> StorageKey<'static, { PrefixID::LENGTH }> {
@@ -44,7 +43,11 @@ pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + 
         StorageKey::new(keyspace, Bytes::Array(array))
     }
 
-    fn build_prefix_type(prefix: Prefix, type_id: TypeID, keyspace: EncodingKeyspace) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
+    fn build_prefix_type(
+        prefix: Prefix,
+        type_id: TypeID,
+        keyspace: EncodingKeyspace,
+    ) -> StorageKey<'static, THING_VERTEX_LENGTH_PREFIX_TYPE> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(THING_VERTEX_LENGTH_PREFIX_TYPE);
         Self::write_prefix_type(array.as_mut(), prefix, type_id);

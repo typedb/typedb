@@ -19,11 +19,13 @@ impl Poolable for DBRawIterator<'static> {}
 pub struct IteratorPool {
     pools_per_keyspace: [SinglePool<DBRawIterator<'static>>; KEYSPACE_MAXIMUM_COUNT],
 }
+
 impl IteratorPool {
     pub fn new() -> Self {
-        let pools_per_keyspace = std::array::from_fn(|i| SinglePool::new());
+        let pools_per_keyspace = std::array::from_fn(|_| SinglePool::new());
         Self { pools_per_keyspace }
     }
+
     fn get_iterator(&self, keyspace: &Keyspace) -> PoolRecycleGuard<DBRawIterator<'static>> {
         self.pools_per_keyspace[keyspace.id().0 as usize].get_or_create(|| {
             let kv_storage: &'static DB = unsafe { std::mem::transmute(&keyspace.kv_storage) };

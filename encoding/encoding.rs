@@ -7,10 +7,8 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
+use bytes::{util::MB, Bytes};
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
-
-use bytes::Bytes;
-use bytes::util::MB;
 use storage::{
     key_value::StorageKey,
     keyspace::{KeyspaceId, KeyspaceSet},
@@ -52,7 +50,6 @@ pub enum EncodingKeyspace {
     /// LinksIndex prefix: [1: prefix][11: player 1][2: rel type id][3: player 2 type]
     OptimisedPrefix17,
 
-
     /// Keyspace optimised for 25 byte prefix seeks:
     /// Has Reverse prefix for Long attribute vertices: [1: prefix][21: from][3: to type]
     OptimisedPrefix25,
@@ -66,7 +63,8 @@ impl KeyspaceSet for EncodingKeyspace {
             Self::OptimisedPrefix16,
             Self::OptimisedPrefix17,
             Self::OptimisedPrefix25,
-        ].into_iter()
+        ]
+        .into_iter()
     }
 
     fn id(&self) -> KeyspaceId {
@@ -96,11 +94,11 @@ impl KeyspaceSet for EncodingKeyspace {
         // options.enable_statistics();
         // options.set_stats_dump_period_sec(100);
         // options.set_statistics_level(StatsLevel::All);
-        
+
         options.create_if_missing(true);
         options.create_missing_column_families(true);
         options.set_max_background_jobs(10);
-        options.set_target_file_size_base(64  * MB);
+        options.set_target_file_size_base(64 * MB);
         options.set_write_buffer_size(64 * MB as usize);
         options.set_max_write_buffer_size_to_maintain(0);
         options.set_max_write_buffer_number(2);

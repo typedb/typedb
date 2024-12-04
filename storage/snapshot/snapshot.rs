@@ -73,10 +73,7 @@ pub trait ReadableSnapshot {
 
     fn iterate_writes_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> BufferRangeIterator;
 
-    fn iterate_storage_range<const PS: usize>(
-        &self,
-        range: &KeyRange<StorageKey<'_, PS>>,
-    ) -> SnapshotRangeIterator;
+    fn iterate_storage_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> SnapshotRangeIterator;
 
     fn iterator_pool(&self) -> &IteratorPool;
 }
@@ -238,7 +235,8 @@ impl<D> ReadableSnapshot for ReadSnapshot<D> {
     }
 
     fn any_in_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>, buffered_only: bool) -> bool {
-        !buffered_only && self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number).next().is_some()
+        !buffered_only
+            && self.storage.iterate_range(self.iterator_pool(), range, self.open_sequence_number).next().is_some()
     }
 
     fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {

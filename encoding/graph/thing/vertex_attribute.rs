@@ -10,23 +10,20 @@ use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
-    key_value::{StorageKey, StorageKeyArray},
-    keyspace::KeyspaceSet,
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::{KeyspaceId, KeyspaceSet},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot},
 };
-use storage::key_value::StorageKeyReference;
-use storage::keyspace::KeyspaceId;
 
 use crate::{
-    AsBytes,
-    EncodingKeyspace,
     graph::{
         common::value_hasher::HashedID,
-        thing::{THING_VERTEX_LENGTH_PREFIX_TYPE, ThingVertex},
+        thing::{ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE},
         type_::vertex::TypeID,
         Typed,
     },
-    Keyable, layout::prefix::{Prefix, PrefixID}, Prefixed, value::{
+    layout::prefix::{Prefix, PrefixID},
+    value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -41,6 +38,7 @@ use crate::{
         value_type::{ValueType, ValueTypeBytes, ValueTypeCategory},
         ValueEncodable,
     },
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, Ord, PartialOrd)]
@@ -126,7 +124,6 @@ impl AttributeVertex {
         Self::is_category_short_encoding(self.value_type_category())
     }
 
-
     fn range_of_attribute_id(&self) -> Range<usize> {
         Self::RANGE_TYPE_ID.end..self.len()
     }
@@ -138,7 +135,6 @@ impl AttributeVertex {
     pub(crate) fn len(&self) -> usize {
         PrefixID::LENGTH + TypeID::LENGTH + self.attribute_id.length()
     }
-
 
     pub fn keyspace_for_is_short(is_short_encoding: bool) -> EncodingKeyspace {
         if is_short_encoding {
@@ -189,7 +185,7 @@ impl Keyable<BUFFER_KEY_INLINE> for AttributeVertex {
 }
 
 #[derive(Debug, Eq, PartialEq)]
-pub(crate) enum ValueEncodingLength {
+pub enum ValueEncodingLength {
     Short,
     Long,
 }
@@ -348,15 +344,15 @@ impl AttributeID {
     pub(crate) const fn value_type_encoded_value_length(value_type_category: ValueTypeCategory) -> ValueEncodingLength {
         match value_type_category {
             ValueTypeCategory::Boolean => BooleanAttributeID::VALUE_LENGTH_ID,
-            ValueTypeCategory::Long =>  LongAttributeID::VALUE_LENGTH_ID,
+            ValueTypeCategory::Long => LongAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Double => DoubleAttributeID::VALUE_LENGTH_ID,
-            ValueTypeCategory::Decimal =>  DecimalAttributeID::VALUE_LENGTH_ID,
+            ValueTypeCategory::Decimal => DecimalAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Date => DateAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::DateTime => DateTimeAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::DateTimeTZ => DateTimeTZAttributeID::VALUE_LENGTH_ID,
-            ValueTypeCategory::Duration =>  DurationAttributeID::VALUE_LENGTH_ID,
+            ValueTypeCategory::Duration => DurationAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::String => StringAttributeID::VALUE_LENGTH_ID,
-            ValueTypeCategory::Struct =>  StructAttributeID::VALUE_LENGTH_ID,
+            ValueTypeCategory::Struct => StructAttributeID::VALUE_LENGTH_ID,
         }
     }
 
@@ -815,11 +811,7 @@ impl StructAttributeID {
         Snapshot: ReadableSnapshot,
     {
         let keyspace = AttributeVertex::keyspace_for_category(ValueTypeCategory::Struct);
-        let attribute_prefix = AttributeVertex::build_prefix_type(
-            Prefix::VertexAttribute,
-            type_id,
-            keyspace
-        );
+        let attribute_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, type_id, keyspace);
         let existing_or_new = Self::find_existing_or_next_disambiguated_hash(
             snapshot,
             hasher,

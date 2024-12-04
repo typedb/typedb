@@ -40,7 +40,7 @@ use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 

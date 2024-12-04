@@ -11,12 +11,11 @@ use std::{
     sync::Arc,
 };
 
-use bytes::Bytes;
+use bytes::{util::MB, Bytes};
 use itertools::Itertools;
+use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
-use bytes::util::MB;
-use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
 
 use super::{iterator, IteratorPool};
 use crate::{key_range::KeyRange, write_batches::WriteBatches};

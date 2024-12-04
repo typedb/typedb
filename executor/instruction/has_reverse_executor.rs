@@ -19,7 +19,7 @@ use concept::{
     type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::value::Value;
-use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
+use itertools::{kmerge_by, Itertools, KMergeBy};
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
