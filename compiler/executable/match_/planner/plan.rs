@@ -61,8 +61,8 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 
-pub const BEAM_WIDTH: usize = 1;
-pub const EXTENSION_WIDTH: usize = 1;
+pub const BEAM_WIDTH: usize = 128;
+pub const EXTENSION_WIDTH: usize = 64;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -760,6 +760,7 @@ pub(super) struct PartialCostPlan {
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
     cumulative_cost: CombinedCost,
     remaining_patterns: HashSet<PatternVertexId>,
+    ongoing_step: Vec<VertexId>,
     ongoing_step_cost: CombinedCost,
     ongoing_step_produced_vars: HashSet<VariableVertexId>,
     ongoing_step_join_var: Option<VariableVertexId>,
@@ -780,6 +781,7 @@ impl PartialCostPlan {
             pattern_metadata: HashMap::new(),
             cumulative_cost: CombinedCost::NOOP,
             remaining_patterns,
+            ongoing_step: Vec::new(),
             ongoing_step_cost: CombinedCost::NOOP,
             ongoing_step_produced_vars: HashSet::new(),
             ongoing_step_join_var: None,
@@ -839,18 +841,21 @@ impl PartialCostPlan {
 
     fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
         let mut updated_join_var: Option<VariableVertexId> = None;
-        let planner = &graph.elements[&VertexId::Pattern(pattern)];
-        if let PlannerVertex::Constraint(constraint) = planner {
-            if let Ok(candidate_join_var) =
-                constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
-            {
-                // There are two cases where we can get the join cost:
-                if self.ongoing_step_join_var.is_none() && constraint.can_sort_on(candidate_join_var) {
-                    updated_join_var = Some(candidate_join_var);
-                } else if self.ongoing_step_join_var == Some(candidate_join_var)
-                    && constraint.can_sort_on(candidate_join_var)
+        if let Some(prev_constraint) = self.ongoing_step.last() {
+            let planner = &graph.elements[&VertexId::Pattern(pattern)];
+            if let PlannerVertex::Constraint(constraint) = planner {
+                if let Ok(candidate_join_var) =
+                    constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
                 {
-                    updated_join_var = self.ongoing_step_join_var;
+                    if self.ongoing_step_join_var.is_none()
+                        && constraint.can_sort_on(candidate_join_var)
+                        && graph.elements[prev_constraint].as_constraint().map_or(false, |c| c.can_sort_on(candidate_join_var)) {
+                        updated_join_var = Some(candidate_join_var);
+                    } else if self.ongoing_step_join_var == Some(candidate_join_var)
+                        && constraint.can_sort_on(candidate_join_var)
+                    {
+                        updated_join_var = self.ongoing_step_join_var;
+                    }
                 }
             }
         };
@@ -867,8 +872,8 @@ impl PartialCostPlan {
         let planner = &graph.elements[&VertexId::Pattern(pattern)];
         let (updated_cost, extension_metadata) = match planner {
             PlannerVertex::Constraint(constraint) => {
-                if join_var.is_some() {
-                    let total_join_size = graph.elements[&VertexId::Variable(join_var.unwrap())]
+                if let Some(join_var) = join_var {
+                    let total_join_size = graph.elements[&VertexId::Variable(join_var)]
                         .as_variable()
                         .unwrap()
                         .expected_output_size(&self.vertex_ordering);
@@ -888,8 +893,8 @@ impl PartialCostPlan {
     }
 
     fn clone_and_extend_with_continued_step(&self, extension: StepExtension, graph: &Graph<'_>) -> PartialCostPlan {
-        let mut new_vertex_ordering = self.vertex_ordering.clone();
-        new_vertex_ordering.push(VertexId::Pattern(extension.pattern_extension));
+        let mut new_ongoing_step = self.ongoing_step.clone();
+        new_ongoing_step.push(VertexId::Pattern(extension.pattern_extension));
 
         let mut new_pattern_metadata = self.pattern_metadata.clone();
         new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
@@ -906,10 +911,11 @@ impl PartialCostPlan {
         );
 
         PartialCostPlan {
-            vertex_ordering: new_vertex_ordering,
+            vertex_ordering: self.vertex_ordering.clone(),
             pattern_metadata: new_pattern_metadata,
             remaining_patterns: new_remaining_patterns,
             cumulative_cost: self.cumulative_cost,
+            ongoing_step: new_ongoing_step,
             ongoing_step_cost: extension.step_cost,
             ongoing_step_produced_vars: new_produced_vars,
             ongoing_step_join_var: extension.step_join_var,
@@ -920,6 +926,10 @@ impl PartialCostPlan {
     fn clone_and_extend_with_new_step(&self, extension: StepExtension, graph: &Graph<'_>) -> PartialCostPlan {
         // Commit previous step to plan
         let mut new_vertex_ordering = self.vertex_ordering.clone();
+        for &pattern in self.ongoing_step.iter() {
+            new_vertex_ordering.push(pattern);
+            debug_assert!(!self.vertex_ordering.contains(&pattern));
+        }
         if let Some(join_var) = self.ongoing_step_join_var {
             new_vertex_ordering.push(VertexId::Variable(join_var));
             for var in self.ongoing_step_produced_vars.clone() {
@@ -935,8 +945,8 @@ impl PartialCostPlan {
             }
         }
 
-        // Start new step
-        new_vertex_ordering.push(VertexId::Pattern(extension.pattern_extension));
+        // Start new step with plan extension
+        let new_ongoing_step = vec![VertexId::Pattern(extension.pattern_extension)];
 
         let mut new_pattern_metadata = self.pattern_metadata.clone();
         new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
@@ -957,15 +967,20 @@ impl PartialCostPlan {
             pattern_metadata: new_pattern_metadata,
             remaining_patterns: new_remaining_patterns,
             cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
+            ongoing_step: new_ongoing_step,
             ongoing_step_cost: extension.step_cost,
             ongoing_step_produced_vars: new_produced_vars,
-            ongoing_step_join_var: extension.step_join_var,
+            ongoing_step_join_var: None,
             projected_cost: extension.projected_cost,
         }
     }
 
     fn into_complete_plan(self) -> CompleteCostPlan {
         let mut final_vertex_ordering = self.vertex_ordering.clone();
+        for &pattern in self.ongoing_step.iter() {
+            final_vertex_ordering.push(pattern);
+            debug_assert!(!self.vertex_ordering.contains(&pattern));
+        }
         if let Some(join_var) = self.ongoing_step_join_var {
             final_vertex_ordering.push(VertexId::Variable(join_var));
             for var in self.ongoing_step_produced_vars.clone() {
