@@ -5,47 +5,51 @@
  */
 
 use std::{
-    any::Any,
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
+    io::Read,
     iter::once,
     ops::RangeBounds,
     sync::Arc,
 };
-use std::io::Read;
 
 use bytes::{byte_array::ByteArray, util::increment, Bytes};
-use encoding::{graph::{
-    thing::{
-        edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeLinksIndex},
-        property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
-        vertex_attribute::{AttributeID, AttributeVertex},
-        vertex_generator::ThingVertexGenerator,
-        vertex_object::ObjectVertex,
-        ThingVertex,
+use encoding::{
+    graph::{
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeLinksIndex},
+            property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
+            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_generator::ThingVertexGenerator,
+            vertex_object::ObjectVertex,
+            ThingVertex,
+        },
+        type_::{
+            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
+        },
+        Typed,
     },
-    type_::{
-        property::{TypeVertexProperty, TypeVertexPropertyEncoding},
-        vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
+    layout::{infix::Infix, prefix::Prefix},
+    value::{
+        boolean_bytes::BooleanBytes,
+        date_bytes::DateBytes,
+        date_time_bytes::DateTimeBytes,
+        date_time_tz_bytes::DateTimeTZBytes,
+        decimal_bytes::DecimalBytes,
+        double_bytes::DoubleBytes,
+        duration_bytes::DurationBytes,
+        long_bytes::LongBytes,
+        primitive_encoding::{decode_u64, encode_u64},
+        string_bytes::StringBytes,
+        struct_bytes::StructBytes,
+        value::Value,
+        value_struct::{StructIndexEntry, StructIndexEntryKey, StructValue},
+        value_type::{ValueType, ValueTypeCategory},
+        ValueEncodable,
     },
-    Typed,
-}, layout::{infix::Infix, prefix::Prefix}, value::{
-    boolean_bytes::BooleanBytes,
-    date_bytes::DateBytes,
-    date_time_bytes::DateTimeBytes,
-    date_time_tz_bytes::DateTimeTZBytes,
-    decimal_bytes::DecimalBytes,
-    double_bytes::DoubleBytes,
-    duration_bytes::DurationBytes,
-    long_bytes::LongBytes,
-    primitive_encoding::{decode_u64, encode_u64},
-    string_bytes::StringBytes,
-    struct_bytes::StructBytes,
-    value::Value,
-    value_struct::{StructIndexEntry, StructIndexEntryKey, StructValue},
-    value_type::{ValueType, ValueTypeCategory},
-    ValueEncodable,
-}, AsBytes, Keyable, Prefixed, EncodingKeyspace};
+    AsBytes, EncodingKeyspace, Keyable, Prefixed,
+};
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
@@ -131,13 +135,18 @@ impl ThingManager {
         }
 
         let prefix = <T as ThingAPI>::prefix_for_type(thing_type);
-        let storage_key_prefix = <T as ThingAPI>::Vertex::build_prefix_type(prefix, thing_type.vertex().type_id_(), keyspace);
+        let storage_key_prefix =
+            <T as ThingAPI>::Vertex::build_prefix_type(prefix, thing_type.vertex().type_id_(), keyspace);
         let snapshot_iterator =
             snapshot.iterate_range(&KeyRange::new_within(storage_key_prefix, prefix.fixed_width_keys()));
         InstanceIterator::new(snapshot_iterator)
     }
 
-    fn get_instances<T: ThingAPI>(&self, keyspace: EncodingKeyspace, snapshot: &impl ReadableSnapshot) -> InstanceIterator<T> {
+    fn get_instances<T: ThingAPI>(
+        &self,
+        keyspace: EncodingKeyspace,
+        snapshot: &impl ReadableSnapshot,
+    ) -> InstanceIterator<T> {
         let (prefix_start, prefix_end_exclusive) = T::PREFIX_RANGE_INCLUSIVE;
         let key_start = T::Vertex::build_prefix_prefix(prefix_start, keyspace);
         let key_end = T::Vertex::build_prefix_prefix(prefix_end_exclusive, keyspace);
@@ -221,11 +230,11 @@ impl ThingManager {
             Err(error) => Some(Err(error)),
         })
     }
-    
+
     pub fn get_attributes<Snapshot: ReadableSnapshot>(
         &self,
-        snapshot: &Snapshot
-    ) -> Result<impl Iterator<Item=Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
+        snapshot: &Snapshot,
+    ) -> Result<impl Iterator<Item = Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
         Ok(self.get_attributes_short(snapshot)?.chain(self.get_attributes_long(snapshot)?))
     }
 
@@ -272,13 +281,18 @@ impl ThingManager {
             return Ok(AttributeIterator::new_empty());
         };
 
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
+        let has_reverse_prefix =
+            ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
 
         Ok(AttributeIterator::new(
-            self.get_instances_in(snapshot, attribute_type, AttributeVertex::keyspace_for_category(value_type.category())),
+            self.get_instances_in(
+                snapshot,
+                attribute_type,
+                AttributeVertex::keyspace_for_category(value_type.category()),
+            ),
             has_reverse_iterator_buffer,
             has_reverse_iterator_storage,
             self.type_manager().get_independent_attribute_types(snapshot)?,
@@ -439,7 +453,8 @@ impl ThingManager {
                     AttributeVertex::PREFIX,
                     attribute_type.vertex().type_id_(),
                     AttributeVertex::keyspace_for_category(attribute_value_type.category()),
-                ).resize_to(),
+                )
+                .resize_to(),
             ),
         };
 
@@ -472,7 +487,7 @@ impl ThingManager {
                 let prefix = AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
                     attribute_type.vertex().type_id_(),
-                    AttributeVertex::keyspace_for_category(attribute_value_type.category())
+                    AttributeVertex::keyspace_for_category(attribute_value_type.category()),
                 );
                 let keyspace = prefix.keyspace_id();
                 let mut array = prefix.into_bytes().into_array();
@@ -486,8 +501,12 @@ impl ThingManager {
             attribute_value_type.category(),
             start_attribute_vertex_prefix_range.get_value().as_reference().bytes(),
         );
-        let has_reverse_end_prefix = end_attribute_vertex_prefix_range
-            .map(|end| ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), end.as_reference().bytes()));
+        let has_reverse_end_prefix = end_attribute_vertex_prefix_range.map(|end| {
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                attribute_value_type.category(),
+                end.as_reference().bytes(),
+            )
+        });
         let has_reverse_range =
             KeyRange::new_variable_width(RangeStart::Inclusive(has_reverse_start_prefix), has_reverse_end_prefix);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&has_reverse_range);
@@ -644,9 +663,10 @@ impl ThingManager {
         attribute_type: AttributeType,
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
-            return Ok(HasReverseIterator::new_empty())
+            return Ok(HasReverseIterator::new_empty());
         };
-        let prefix = ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
+        let prefix =
+            ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         Ok(HasReverseIterator::new(snapshot.iterate_range(&range)))
     }
@@ -710,7 +730,11 @@ impl ThingManager {
                     Either::Second(prefix) => {
                         // attribute vertex could not be built fully, probably due to not being an inline-valued attribute
                         RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), prefix.bytes()).resize_to(),
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                                attribute_value_type.category(),
+                                prefix.bytes(),
+                            )
+                            .resize_to(),
                         )
                     }
                 }
@@ -757,13 +781,21 @@ impl ThingManager {
                         // since this is not a complete vertex, and only a prefix, we shouldn't make assumptions about incrementing
                         // to get to value + 1 in sort order
                         RangeStart::Inclusive(
-                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), prefix.bytes()).resize_to(),
+                            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                                attribute_value_type.category(),
+                                prefix.bytes(),
+                            )
+                            .resize_to(),
                         )
                     }
                 }
             }
             Bound::Unbounded => RangeStart::Inclusive(
-                ThingEdgeHasReverse::prefix_from_attribute_type(attribute_value_type.category(), attribute_type.vertex().type_id_()).resize_to(),
+                ThingEdgeHasReverse::prefix_from_attribute_type(
+                    attribute_value_type.category(),
+                    attribute_type.vertex().type_id_(),
+                )
+                .resize_to(),
             ),
         };
 
@@ -793,7 +825,11 @@ impl ThingManager {
                         }
                     },
                     Either::Second(prefix) => RangeEnd::EndPrefixInclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), prefix.bytes()).resize_to(),
+                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                            attribute_value_type.category(),
+                            prefix.bytes(),
+                        )
+                        .resize_to(),
                     ),
                 }
             }
@@ -808,12 +844,20 @@ impl ThingManager {
                         RangeEnd::EndPrefixExclusive(ThingEdgeHasReverse::prefix_from_attribute(vertex).resize_to())
                     }
                     Either::Second(prefix) => RangeEnd::EndPrefixExclusive(
-                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), prefix.bytes()).resize_to(),
+                        ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                            attribute_value_type.category(),
+                            prefix.bytes(),
+                        )
+                        .resize_to(),
                     ),
                 }
             }
             Bound::Unbounded => RangeEnd::EndPrefixInclusive(
-                ThingEdgeHasReverse::prefix_from_attribute_type(attribute_value_type.category(), attribute_type.vertex().type_id_()).resize_to(),
+                ThingEdgeHasReverse::prefix_from_attribute_type(
+                    attribute_value_type.category(),
+                    attribute_type.vertex().type_id_(),
+                )
+                .resize_to(),
             ),
         };
         let key_range = KeyRange::new(has_range_start, has_range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
@@ -854,7 +898,10 @@ impl ThingManager {
             })
             .into_iter();
 
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(ValueTypeCategory::Struct, attribute_type.vertex().type_id_());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
+            ValueTypeCategory::Struct,
+            attribute_type.vertex().type_id_(),
+        );
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
         let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
@@ -1506,7 +1553,8 @@ impl ThingManager {
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                     let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
                     if is_cascade {
-                        let mut relations: InstanceIterator<Relation> = self.get_instances_in(snapshot, *type_, <Relation as ThingAPI>::Vertex::KEYSPACE);
+                        let mut relations: InstanceIterator<Relation> =
+                            self.get_instances_in(snapshot, *type_, <Relation as ThingAPI>::Vertex::KEYSPACE);
                         while let Some(relation) = relations.next().transpose()? {
                             if !relation.has_players(snapshot, self) {
                                 relation.delete(snapshot, self)?;
@@ -1547,16 +1595,13 @@ impl ThingManager {
                 ),
                 Prefix::VertexAttribute.fixed_width_keys(),
             ))
-            .chain(
-                snapshot
-                    .iterate_writes_range(&KeyRange::new_within(
-                        StorageKey::new(
-                            AttributeVertex::keyspace_for_is_short(false),
-                            Bytes::inline(Prefix::VertexAttribute.prefix_id().to_bytes(), 1),
-                        ),
-                        Prefix::VertexAttribute.fixed_width_keys(),
-                    ))
-            )
+            .chain(snapshot.iterate_writes_range(&KeyRange::new_within(
+                StorageKey::new(
+                    AttributeVertex::keyspace_for_is_short(false),
+                    Bytes::inline(Prefix::VertexAttribute.prefix_id().to_bytes(), 1),
+                ),
+                Prefix::VertexAttribute.fixed_width_keys(),
+            )))
             .filter_map(|(key, write)| match write {
                 Write::Put { value, .. } => Some((key, value)),
                 _ => None,
@@ -1595,7 +1640,11 @@ impl ThingManager {
                 let is_independent = type_.is_independent(snapshot, self.type_manager())?;
                 if let Some(value_type) = type_.get_value_type_without_source(snapshot, self.type_manager())? {
                     if !is_independent {
-                        let mut attributes: InstanceIterator<Attribute> = self.get_instances_in(snapshot, *type_, AttributeVertex::keyspace_for_category(value_type.category()));
+                        let mut attributes: InstanceIterator<Attribute> = self.get_instances_in(
+                            snapshot,
+                            *type_,
+                            AttributeVertex::keyspace_for_category(value_type.category()),
+                        );
                         while let Some(attribute) = attributes.next().transpose()? {
                             if !attribute.has_owners(snapshot, self) {
                                 attribute.delete(snapshot, self)?;
@@ -1667,11 +1716,15 @@ impl ThingManager {
             .iterate_writes_range(&KeyRange::new_variable_width(
                 RangeStart::Inclusive(StorageKey::new(
                     ObjectVertex::KEYSPACE,
-                    Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexEntity, ObjectVertex::KEYSPACE).bytes()),
+                    Bytes::<0>::reference(
+                        ObjectVertex::build_prefix_prefix(Prefix::VertexEntity, ObjectVertex::KEYSPACE).bytes(),
+                    ),
                 )),
                 RangeEnd::EndPrefixInclusive(StorageKey::new(
                     ObjectVertex::KEYSPACE,
-                    Bytes::<0>::reference(ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE).bytes()),
+                    Bytes::<0>::reference(
+                        ObjectVertex::build_prefix_prefix(Prefix::VertexRelation, ObjectVertex::KEYSPACE).bytes(),
+                    ),
                 )),
             ))
             .filter_map(|(key, write)| match write {

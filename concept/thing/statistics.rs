@@ -22,19 +22,19 @@ use encoding::graph::{
     Typed,
 };
 use error::typedb_error;
-use resource::constants::database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT;
+use resource::constants::{database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT, snapshot::BUFFER_KEY_INLINE};
 use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
-    key_value::StorageKeyArray,
+    key_value::{StorageKeyArray, StorageKeyReference},
+    keyspace::IteratorPool,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
-use storage::key_value::StorageKeyReference;
 
 use crate::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
@@ -386,7 +386,7 @@ impl Statistics {
 }
 
 fn write_to_delta<D>(
-    write_key: &StorageKeyArray<40>,
+    write_key: &StorageKeyArray<{ BUFFER_KEY_INLINE }>,
     write: &Write,
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,
@@ -425,7 +425,7 @@ fn write_to_delta<D>(
                 }));
 
             if check_storage {
-                if storage.get::<0>(write_key, commit_sequence_number.previous())?.is_some() {
+                if storage.get::<0>(&IteratorPool::new(), write_key, commit_sequence_number.previous())?.is_some() {
                     // exists in storage before PUT is committed
                     Ok(0)
                 } else {

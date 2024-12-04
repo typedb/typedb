@@ -157,7 +157,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let variable_registry = &translation_context.variable_registry;
@@ -171,8 +171,6 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         &EmptyAnnotatedFunctionSignatures,
     )
     .unwrap();
-
-    let variable_registry = Arc::new(translation_context.variable_registry);
 
     let insert_plan = compiler::executable::insert::executable::compile(
         block.conjunction().constraints(),
@@ -261,7 +259,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::executable::delete::executable::compile(
@@ -361,7 +359,7 @@ fn relation() {
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = storage.open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
@@ -409,7 +407,7 @@ fn relation_with_inferred_roles() {
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = storage.open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();

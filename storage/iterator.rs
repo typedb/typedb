@@ -13,7 +13,7 @@ use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
-    keyspace::{iterator::KeyspaceRangeIterator, KeyspaceError, KeyspaceId},
+    keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
 
@@ -34,12 +34,13 @@ impl MVCCRangeIterator {
     //
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
+        iterpool: &IteratorPool,
         range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
         let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
         let mapped_range = range.map(|key| key.as_bytes(), |fixed_width| fixed_width);
-        let iterator = keyspace.iterate_range(&mapped_range);
+        let iterator = keyspace.iterate_range(iterpool, &mapped_range);
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace_id: keyspace.id(),

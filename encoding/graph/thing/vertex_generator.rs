@@ -12,11 +12,10 @@ use std::sync::{
 use bytes::{byte_array::ByteArray, Bytes};
 use storage::{
     key_range::KeyRange,
-    key_value::StorageKey,
+    key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCKey, MVCCStorage,
 };
-use storage::key_value::StorageKeyReference;
 
 use super::vertex_attribute::{
     BooleanAttributeID, DateAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID,
@@ -39,7 +38,7 @@ use crate::{
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
         duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
     },
-    AsBytes, Keyable, Prefixed,
+    AsBytes, Keyable,
 };
 
 #[derive(Debug)]
@@ -105,7 +104,9 @@ impl ThingVertexGenerator {
             bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
-            if let Some(prev_bytes) = storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key())) {
+            if let Some(prev_bytes) =
+                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+            {
                 if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
                     if object_vertex.type_id_() == TypeID::new(type_id) {
@@ -120,7 +121,9 @@ impl ThingVertexGenerator {
             bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
-            if let Some(prev_bytes) = storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key())) {
+            if let Some(prev_bytes) =
+                storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key()))
+            {
                 if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
                     let object_vertex = ObjectVertex::decode(&prev_bytes);
                     if object_vertex.type_id_() == TypeID::new(type_id) {

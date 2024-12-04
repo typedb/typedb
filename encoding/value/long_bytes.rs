@@ -36,7 +36,7 @@ impl LongBytes {
 }
 
 impl InlineEncodableAttributeID for LongBytes {
-    const ENCODED_LENGTH_ID: ValueEncodingLength= ValueEncodingLength::Short;
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     const VALUE_TYPE: ValueType = ValueType::Long;
 
     fn bytes_ref(&self) -> &[u8] {

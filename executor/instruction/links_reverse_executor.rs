@@ -226,7 +226,7 @@ impl LinksReverseExecutor {
             TernaryIterateMode::BoundFrom => {
                 let player = self.links.player().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > player.as_usize());
-                let mut iterator = thing_manager.get_links_reverse_by_player_and_relation_type_range(
+                let iterator = thing_manager.get_links_reverse_by_player_and_relation_type_range(
                     snapshot,
                     row.get(player).as_thing().as_object(),
                     &self.relation_type_range,

@@ -15,8 +15,17 @@ use storage::{
         buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
 };
+use storage::keyspace::IteratorPool;
 
-pub struct MockSnapshot {}
+pub struct MockSnapshot {
+    iterator_pool: IteratorPool,
+}
+
+impl MockSnapshot {
+    pub fn new() -> Self {
+        Self { iterator_pool : IteratorPool::new() }
+    }
+}
 
 impl ReadableSnapshot for MockSnapshot {
     fn open_sequence_number(&self) -> SequenceNumber {
@@ -71,5 +80,9 @@ impl ReadableSnapshot for MockSnapshot {
         range: &KeyRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
+    }
+
+    fn iterator_pool(&self) -> &IteratorPool {
+        &self.iterator_pool
     }
 }

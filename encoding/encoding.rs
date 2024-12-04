@@ -7,9 +7,8 @@
 #![deny(elided_lifetimes_in_paths)]
 #![deny(unused_must_use)]
 
+use bytes::{util::MB, Bytes};
 use rocksdb::{BlockBasedIndexType, BlockBasedOptions, DBCompressionType, SliceTransform};
-use bytes::Bytes;
-use bytes::util::MB;
 use storage::{
     key_value::StorageKey,
     keyspace::{KeyspaceId, KeyspaceSet},
@@ -51,7 +50,6 @@ pub enum EncodingKeyspace {
     /// LinksIndex prefix: [1: prefix][11: player 1][2: rel type id][3: player 2 type]
     OptimisedPrefix17,
 
-
     /// Keyspace optimised for 25 byte prefix seeks:
     /// Has Reverse prefix for Long attribute vertices: [1: prefix][21: from][3: to type]
     OptimisedPrefix25,
@@ -65,7 +63,8 @@ impl KeyspaceSet for EncodingKeyspace {
             Self::OptimisedPrefix16,
             Self::OptimisedPrefix17,
             Self::OptimisedPrefix25,
-        ].into_iter()
+        ]
+        .into_iter()
     }
 
     fn id(&self) -> KeyspaceId {
@@ -96,8 +95,9 @@ impl KeyspaceSet for EncodingKeyspace {
         // options.set_stats_dump_period_sec(100);
 
         options.create_if_missing(true);
+        options.create_missing_column_families(true);
         options.set_max_background_jobs(10);
-        options.set_target_file_size_base(64  * MB);
+        options.set_target_file_size_base(64 * MB);
         options.set_write_buffer_size(64 * MB as usize);
         options.set_max_write_buffer_size_to_maintain(0);
         options.set_max_write_buffer_number(2);
@@ -112,20 +112,23 @@ impl KeyspaceSet for EncodingKeyspace {
             DBCompressionType::Lz4,
         ]);
 
+        // TODO: 2.x has   enable_index_compression: 1 set to 0
+
         let mut block_options = BlockBasedOptions::default();
         block_options.set_block_cache(&cache);
         block_options.set_block_restart_interval(16);
-        block_options.set_format_version(5);
+        block_options.set_index_block_restart_interval(16);
+        block_options.set_format_version(6);
         block_options.set_block_size(16 * 1024);
         block_options.set_whole_key_filtering(false);
 
-        block_options.set_cache_index_and_filter_blocks(true);
-        block_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
-        block_options.set_pin_top_level_index_and_filter(true);
-        block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
+        block_options.set_bloom_filter(10.0, false);
         block_options.set_partition_filters(true);
+        block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         block_options.set_optimize_filters_for_memory(true);
-        block_options.set_ribbon_filter(10.0);
+        block_options.set_pin_top_level_index_and_filter(true);
+        block_options.set_pin_l0_filter_and_index_blocks_in_cache(true);
+        block_options.set_cache_index_and_filter_blocks(true);
 
         match self {
             EncodingKeyspace::DefaultOptimisedPrefix11 => {

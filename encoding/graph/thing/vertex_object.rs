@@ -8,11 +8,7 @@ use std::{fmt, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
-use storage::{
-    key_value::{StorageKey, StorageKeyArray},
-    keyspace::KeyspaceSet,
-};
-use storage::key_value::StorageKeyReference;
+use storage::{key_value::StorageKeyReference, keyspace::KeyspaceSet};
 
 use crate::{
     graph::{

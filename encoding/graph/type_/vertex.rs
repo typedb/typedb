@@ -148,7 +148,8 @@ pub trait PrefixedTypeVertexEncoding: TypeVertexEncoding {
     }
 
     fn is_decodable_from_key(key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
-        key.keyspace_id() == EncodingKeyspace::DefaultOptimisedPrefix11.id() && Self::is_decodable_from(Bytes::Reference(key.bytes()))
+        key.keyspace_id() == EncodingKeyspace::DefaultOptimisedPrefix11.id()
+            && Self::is_decodable_from(Bytes::Reference(key.bytes()))
     }
 
     fn is_decodable_from(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
