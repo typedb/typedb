@@ -9,6 +9,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
+
 use resource::constants::server::DEFAULT_ADDRESS;
 
 #[derive(Debug)]
@@ -31,7 +32,7 @@ impl Config {
         Self {
             server: ServerConfig {
                 address: SocketAddr::from_str(DEFAULT_ADDRESS).unwrap(),
-                encryption: EncryptionConfig::disabled()
+                encryption: EncryptionConfig::disabled(),
             },
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
         }
@@ -44,7 +45,7 @@ impl Config {
         Self {
             server: ServerConfig {
                 address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
-                encryption: encryption_config
+                encryption: encryption_config,
             },
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
         }
@@ -54,7 +55,7 @@ impl Config {
         Self {
             server: ServerConfig {
                 address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
-                encryption: EncryptionConfig::disabled()
+                encryption: EncryptionConfig::disabled(),
             },
             storage: StorageConfig { data: data_directory.to_owned() },
         }
@@ -80,11 +81,7 @@ impl EncryptionConfig {
         Self::new(false, None, None, None)
     }
 
-    pub fn new(enabled: bool,
-        cert: Option<PathBuf>,
-        cert_key: Option<PathBuf>,
-        root_ca: Option<PathBuf>
-    ) -> Self {
+    pub fn new(enabled: bool, cert: Option<PathBuf>, cert_key: Option<PathBuf>, root_ca: Option<PathBuf>) -> Self {
         Self { enabled, cert, cert_key, root_ca }
     }
 }

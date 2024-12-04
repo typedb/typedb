@@ -10,10 +10,10 @@ pub mod util;
 
 use std::{fmt::format, sync::Arc};
 
-use database::{database_manager::DatabaseManager, Database};
+use database::{database_manager::DatabaseManager, internal_database_prefix, Database};
 use storage::durability_client::WALClient;
 use typeql;
-use database::internal_database_prefix;
+
 use crate::{repositories::SCHEMA, util::transaction_util::TransactionUtil};
 
 const SYSTEM_DB: &'static str = concat!(internal_database_prefix!(), "system");

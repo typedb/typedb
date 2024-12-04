@@ -12,10 +12,10 @@ use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
     concepts::{Credential, User},
-    repositories::user_repository,
+    repositories::{user_repository, user_repository::SystemDBError},
     util::transaction_util::TransactionUtil,
 };
-use system::repositories::user_repository::SystemDBError;
+
 use crate::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
 
 #[derive(Debug)]
@@ -33,14 +33,12 @@ impl UserManager {
     }
 
     pub fn get(&self, username: &str) -> Result<Option<(User, Credential)>, UserGetError> {
-        self.transaction_util.read_transaction(|tx|
-            user_repository::get(tx, username).map_err(|query_error| {
-                match query_error {
-                    SystemDBError::IllegalQueryInput { .. } => {UserGetError::IllegalUsername {}}
-                    SystemDBError::EmptyUpdate { .. } => { UserGetError::Unexpected {}}
-                }
+        self.transaction_util.read_transaction(|tx| {
+            user_repository::get(tx, username).map_err(|query_error| match query_error {
+                SystemDBError::IllegalQueryInput { .. } => UserGetError::IllegalUsername {},
+                SystemDBError::EmptyUpdate { .. } => UserGetError::Unexpected {},
             })
-        )
+        })
     }
 
     pub fn contains(&self, username: &str) -> Result<bool, UserGetError> {
@@ -51,19 +49,19 @@ impl UserManager {
         match self.contains(&user.name) {
             Ok(contains) => {
                 if contains {
-                    return Err(UserCreateError::UserAlreadyExist {})
+                    return Err(UserCreateError::UserAlreadyExist {});
                 }
             }
             Err(user_get_err) => {
                 return match user_get_err {
                     UserGetError::IllegalUsername { .. } => Err(UserCreateError::IllegalUsername {}),
-                    UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {})
+                    UserGetError::Unexpected { .. } => Err(UserCreateError::Unexpected {}),
                 }
             }
         }
         let create_result =
             self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
-                 user_repository::create(
+                user_repository::create(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
                     thing_mgr.clone(),
@@ -74,9 +72,9 @@ impl UserManager {
                 )
             });
         match create_result {
-            Ok(Ok(())) => { Ok(()) }
-            Ok(Err(_query_error)) => { Err( UserCreateError::IllegalUsername {}) }
-            Err(_commit_error) => { Err(UserCreateError::Unexpected {}) }
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(_query_error)) => Err(UserCreateError::IllegalUsername {}),
+            Err(_commit_error) => Err(UserCreateError::Unexpected {}),
         }
     }
 
@@ -100,26 +98,26 @@ impl UserManager {
                 )
             });
         match update_result {
-            Ok(Ok(())) => { Ok(()) }
-            Ok(Err(_query_error)) => { Err( UserUpdateError::IllegalUsername {}) }
-            Err(_commit_error) => { Err(UserUpdateError::Unexpected {}) }
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(_query_error)) => Err(UserUpdateError::IllegalUsername {}),
+            Err(_commit_error) => Err(UserUpdateError::Unexpected {}),
         }
     }
 
     pub fn delete(&self, username: &str) -> Result<(), UserDeleteError> {
         if username == DEFAULT_USER_NAME {
-            return Err(UserDeleteError::DefaultUserCannotBeDeleted {})
+            return Err(UserDeleteError::DefaultUserCannotBeDeleted {});
         }
         match self.contains(username) {
             Ok(contains) => {
                 if !contains {
-                    return Err(UserDeleteError::UserDoesNotExist {})
+                    return Err(UserDeleteError::UserDoesNotExist {});
                 }
             }
             Err(user_get_err) => {
                 return match user_get_err {
                     UserGetError::IllegalUsername { .. } => Err(UserDeleteError::IllegalUsername {}),
-                    UserGetError::Unexpected { .. } => Err(UserDeleteError::Unexpected {})
+                    UserGetError::Unexpected { .. } => Err(UserDeleteError::Unexpected {}),
                 }
             }
         }
@@ -135,9 +133,9 @@ impl UserManager {
                 )
             });
         match delete_result {
-            Ok(Ok(())) => { Ok(()) }
-            Ok(Err(_query_error)) => { Err( UserDeleteError::IllegalUsername {}) }
-            Err(_commit_error) => { Err(UserDeleteError::Unexpected {}) }
+            Ok(Ok(())) => Ok(()),
+            Ok(Err(_query_error)) => Err(UserDeleteError::IllegalUsername {}),
+            Err(_commit_error) => Err(UserDeleteError::Unexpected {}),
         }
     }
 }

@@ -7,13 +7,15 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::path::PathBuf;
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
+
+use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::ASCII_LOGO;
-use server::parameters::config::{Config, EncryptionConfig};
-use clap::Parser;
-use server::parameters::cli::CLIArgs;
+use server::parameters::{
+    cli::CLIArgs,
+    config::{Config, EncryptionConfig},
+};
 
 #[tokio::main]
 async fn main() {

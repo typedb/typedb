@@ -115,21 +115,26 @@ pub mod query_util {
     use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
     use database::transaction::TransactionRead;
     use executor::{
-        pipeline::stage::{ExecutionContext, StageIterator},
+        pipeline::{
+            stage::{ExecutionContext, StageIterator},
+            PipelineExecutionError,
+        },
         ExecutionInterrupt,
     };
     use function::function_manager::FunctionManager;
     use query::query_manager::QueryManager;
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use typeql::query::Pipeline;
-    use executor::pipeline::PipelineExecutionError;
+
     use crate::util::answer_util::collect_answer;
 
     pub fn execute_read_pipeline(
         tx: TransactionRead<WALClient>,
         pipeline: &Pipeline,
-    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>) {
-        let prepared_pipeline = tx.query_manager
+    ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>)
+    {
+        let prepared_pipeline = tx
+            .query_manager
             .prepare_read_pipeline(
                 tx.snapshot.clone(),
                 &tx.type_manager,
@@ -161,7 +166,10 @@ pub mod query_util {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         pipeline: &Pipeline,
-    ) -> (Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>, Arc<WriteSnapshot<WALClient>>) {
+    ) -> (
+        Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>,
+        Arc<WriteSnapshot<WALClient>>,
+    ) {
         let prepared_pipeline = query_manager
             .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
             .unwrap();

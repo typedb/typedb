@@ -4,26 +4,28 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
-use std::fmt::format;
+use std::{fmt::format, net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+
 use database::database_manager::DatabaseManager;
 use error::typedb_error;
+use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
 use system::concepts::{Credential, PasswordHash, User};
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status, Streaming};
-use tonic::metadata::MetadataMap;
+use tonic::{metadata::MetadataMap, Request, Response, Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{
     self,
     server_manager::all::{Req, Res},
     transaction::{Client, Server},
 };
-use user::{errors::UserCreateError, user_manager::UserManager};
+use user::{
+    errors::{UserCreateError, UserUpdateError},
+    permission_manager::PermissionManager,
+    user_manager::UserManager,
+};
 use uuid::Uuid;
-use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
-use user::errors::UserUpdateError;
-use user::permission_manager::PermissionManager;
+
 use crate::service::{
     error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
     request_parser::{users_create_req, users_update_req},
@@ -175,15 +177,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
         }
         match self.user_manager.get(get_req.name.as_str()) {
-            Ok(get_result) => {
-                match get_result {
-                    Some((user, _)) => Ok(Response::new(users_get_res(user))),
-                    None => Err(ServiceError::UserDoesNotExist { }.into_error_message().into_status()),
-                }
-            }
-            Err(user_get_error) => {
-                Err(user_get_error.into_error_message().into_status())
-            }
+            Ok(get_result) => match get_result {
+                Some((user, _)) => Ok(Response::new(users_get_res(user))),
+                None => Err(ServiceError::UserDoesNotExist {}.into_error_message().into_status()),
+            },
+            Err(user_get_error) => Err(user_get_error.into_error_message().into_status()),
         }
     }
 
@@ -204,7 +202,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
         let contains_req = request.into_inner();
-        self.user_manager.contains(contains_req.name.as_str())
+        self.user_manager
+            .contains(contains_req.name.as_str())
             .map(|contains| Response::new(users_contains_res(contains)))
             .map_err(|err| err.into_error_message().into_status())
     }
@@ -235,10 +234,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 }
                 match self.user_manager.update(username.as_str(), &user_update, &credential_update) {
                     Ok(()) => Ok(Response::new(user_update_res())),
-                    Err(user_update_err) => Err(user_update_err.into_error_message().into_status())
+                    Err(user_update_err) => Err(user_update_err.into_error_message().into_status()),
                 }
             }
-            Err(user_update_err) => Err(user_update_err.into_error_message().into_status())
+            Err(user_update_err) => Err(user_update_err.into_error_message().into_status()),
         }
     }
 
@@ -275,9 +274,11 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
 fn extract_username_field(metadata: &MetadataMap) -> String {
     metadata
-        .get(AUTHENTICATOR_USERNAME_FIELD).map(|u| u.to_str())
+        .get(AUTHENTICATOR_USERNAME_FIELD)
+        .map(|u| u.to_str())
         .expect(format!("Unable to find expected field in the metadata: {}", AUTHENTICATOR_USERNAME_FIELD).as_str())
-        .expect(format!("Unable to parse value from the {} field", AUTHENTICATOR_USERNAME_FIELD).as_str()).to_string()
+        .expect(format!("Unable to parse value from the {} field", AUTHENTICATOR_USERNAME_FIELD).as_str())
+        .to_string()
 }
 
 typedb_error!(

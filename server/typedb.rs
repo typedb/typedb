@@ -5,16 +5,18 @@
  */
 
 use std::{error::Error, fmt, fs, io, path::PathBuf, sync::Arc};
-use tonic::transport::{Certificate, Identity, ServerTlsConfig};
+
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
-use system::{
-    initialise_system_database,
-};
+use system::initialise_system_database;
+use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use user::{initialise_default_user, user_manager::UserManager};
 
-use crate::{authenticator::Authenticator, parameters::config::Config, service::typedb_service::TypeDBService};
-use crate::parameters::config::EncryptionConfig;
+use crate::{
+    authenticator::Authenticator,
+    parameters::config::{Config, EncryptionConfig},
+    service::typedb_service::TypeDBService,
+};
 
 #[derive(Debug)]
 pub struct Server {
@@ -69,9 +71,7 @@ impl Server {
             let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
             if encryption_config.root_ca.is_some() {
                 let root_ca = fs::read_to_string(encryption_config.root_ca.clone().unwrap()).unwrap();
-                tls_config = tls_config
-                    .client_ca_root(Certificate::from_pem(root_ca))
-                    .client_auth_optional(true)
+                tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true)
             }
             tonic_server = tonic_server.tls_config(tls_config).unwrap();
         }

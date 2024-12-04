@@ -52,7 +52,7 @@ impl DatabaseManager {
     pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         let name = name.as_ref();
         if Self::is_internal_database(name) {
-            return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {})
+            return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
         }
         if !typeql::common::identifier::is_valid_identifier(name) {
             return Err(DatabaseCreateError::InvalidName { name: name.to_owned() });
@@ -73,7 +73,7 @@ impl DatabaseManager {
     pub fn delete_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
         let name = name.as_ref();
         if Self::is_internal_database(name) {
-            return Err(DatabaseDeleteError::InternalDatabaseDeletionProhibited {})
+            return Err(DatabaseDeleteError::InternalDatabaseDeletionProhibited {});
         }
 
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
@@ -135,7 +135,7 @@ impl DatabaseManager {
 
     pub fn database(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
         if Self::is_internal_database(name) {
-            return None
+            return None;
         }
         self.database_unrestricted(name)
     }
@@ -145,9 +145,7 @@ impl DatabaseManager {
     }
 
     pub fn database_names(&self) -> Vec<String> {
-        self.databases.read().unwrap().keys().cloned()
-            .filter(|db| Self::is_user_database(db))
-            .collect()
+        self.databases.read().unwrap().keys().cloned().filter(|db| Self::is_user_database(db)).collect()
     }
 
     pub fn is_user_database(name: &str) -> bool {
@@ -157,5 +155,4 @@ impl DatabaseManager {
     pub fn is_internal_database(name: &str) -> bool {
         name.starts_with(internal_database_prefix!())
     }
-
 }

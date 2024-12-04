@@ -19,9 +19,7 @@ pub fn users_create_req(
             let credential = Credential::new_password(password.as_str());
             Ok((user, credential))
         }
-        _ => {
-            Err(UserCreateError::IncompleteUserDetail {})
-        }
+        _ => Err(UserCreateError::IncompleteUserDetail {}),
     }
 }
 
@@ -30,8 +28,9 @@ pub fn users_update_req(
 ) -> Result<(String, Option<User>, Option<Credential>), UserUpdateError> {
     let message = request.into_inner();
     match message.user {
-        Some(typedb_protocol::User { name: username, password }) =>
-            Ok((message.name, Some(User::new(username)), password.map(|p| Credential::new_password(p.as_str())))),
-        None => Err(UserUpdateError::UserDetailNotProvided {})
+        Some(typedb_protocol::User { name: username, password }) => {
+            Ok((message.name, Some(User::new(username)), password.map(|p| Credential::new_password(p.as_str()))))
+        }
+        None => Err(UserUpdateError::UserDetailNotProvided {}),
     }
 }

@@ -7,18 +7,19 @@
 pub const SCHEMA: &str = include_str!("schema.tql");
 
 pub mod user_repository {
-    use std::{collections::HashMap, sync::Arc};
-    use std::fmt::format;
-    use typeql::common::identifier::is_valid_identifier;
+    use std::{collections::HashMap, fmt::format, sync::Arc};
+
     use answer::variable_value::VariableValue;
     use concept::{thing::thing_manager, type_::type_manager::TypeManager};
     use database::transaction::{TransactionRead, TransactionWrite};
+    use error::typedb_error;
     use function::function_manager::FunctionManager;
+    use query::query_manager::QueryManager;
     use storage::{durability_client::WALClient, snapshot::WriteSnapshot};
     use thing_manager::ThingManager;
-    use typeql::parse_query;
+    use typeql::{common::identifier::is_valid_identifier, parse_query};
     use uuid::Uuid;
-    use query::query_manager::QueryManager;
+
     use crate::{
         concepts::{Credential, PasswordHash, User},
         util::{
@@ -26,7 +27,6 @@ pub mod user_repository {
             query_util::{execute_read_pipeline, execute_write_pipeline},
         },
     };
-    use error::typedb_error;
 
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
         let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
@@ -58,7 +58,10 @@ pub mod user_repository {
         if !rows.is_empty() {
             let row = rows.pop().expect(unexpected_error_msg);
             let hash = get_string(&tx, &row, "h");
-            Ok(Some((User::new(username.to_string()), Credential::PasswordType { password_hash: PasswordHash::new(hash) })))
+            Ok(Some((
+                User::new(username.to_string()),
+                Credential::PasswordType { password_hash: PasswordHash::new(hash) },
+            )))
         } else {
             Ok(None)
         }
@@ -94,8 +97,14 @@ pub mod user_repository {
                 .expect(unexpected_error_msg)
             }
         };
-        let (_, snapshot) =
-            execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
+        let (_, snapshot) = execute_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            query_manager,
+            &query.into_pipeline(),
+        );
         (Ok(()), snapshot)
     }
 
@@ -115,11 +124,17 @@ pub mod user_repository {
                 let query = parse_query(format!(
                     "match (user: $u, password: $p) isa user-password; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';"
                 , username = username, password_hash = hash).as_str()).expect(unexpected_error_msg);
-                let (_, snapshot) =
-                    execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
+                let (_, snapshot) = execute_write_pipeline(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    query_manager,
+                    &query.into_pipeline(),
+                );
                 (Ok(()), snapshot)
             }
-            None => (Err(SystemDBError::EmptyUpdate {}), Arc::new(snapshot))
+            None => (Err(SystemDBError::EmptyUpdate {}), Arc::new(snapshot)),
         }
     }
 
@@ -145,8 +160,14 @@ pub mod user_repository {
             .as_str(),
         )
         .expect(unexpected_error_msg);
-        let (_, snapshot) =
-            execute_write_pipeline(snapshot, type_manager, thing_manager, function_manager, query_manager, &query.into_pipeline());
+        let (_, snapshot) = execute_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            query_manager,
+            &query.into_pipeline(),
+        );
         (Ok(()), snapshot)
     }
 
