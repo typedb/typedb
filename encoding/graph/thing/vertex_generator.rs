@@ -16,6 +16,7 @@ use storage::{
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
     MVCCKey, MVCCStorage,
 };
+use storage::key_value::StorageKeyReference;
 
 use super::vertex_attribute::{
     BooleanAttributeID, DateAttributeID, DateTimeAttributeID, DateTimeTZAttributeID, DecimalAttributeID,
@@ -104,9 +105,12 @@ impl ThingVertexGenerator {
             bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
-            if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
-                if prev_vertex.prefix() == Prefix::VertexEntity && prev_vertex.type_id_() == TypeID::new(type_id) {
-                    entity_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+            if let Some(prev_bytes) = storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key())) {
+                if ObjectVertex::is_entity_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
+                    let object_vertex = ObjectVertex::decode(&prev_bytes);
+                    if object_vertex.type_id_() == TypeID::new(type_id) {
+                        entity_ids[type_id as usize].store(object_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                    }
                 }
             }
         }
@@ -116,9 +120,12 @@ impl ThingVertexGenerator {
             bytes::util::increment(&mut max_object_id).unwrap();
             let next_storage_key: StorageKey<'_, { ObjectVertex::LENGTH }> =
                 StorageKey::new_ref(ObjectVertex::KEYSPACE, &max_object_id);
-            if let Some(prev_vertex) = storage.get_prev_raw(next_storage_key.as_reference(), Self::extract_object_id) {
-                if prev_vertex.prefix() == Prefix::VertexRelation && prev_vertex.type_id_() == TypeID::new(type_id) {
-                    relation_ids[type_id as usize].store(prev_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+            if let Some(prev_bytes) = storage.get_prev_raw(next_storage_key.as_reference(), |key, _| Vec::from(key.key())) {
+                if ObjectVertex::is_relation_vertex(StorageKeyReference::new(ObjectVertex::KEYSPACE, &prev_bytes)) {
+                    let object_vertex = ObjectVertex::decode(&prev_bytes);
+                    if object_vertex.type_id_() == TypeID::new(type_id) {
+                        relation_ids[type_id as usize].store(object_vertex.object_id().as_u64() + 1, Ordering::Relaxed);
+                    }
                 }
             }
         }
@@ -135,7 +142,7 @@ impl ThingVertexGenerator {
     }
 
     fn extract_object_id(k: &MVCCKey<'_>, _: &[u8]) -> ObjectVertex {
-        ObjectVertex::new(k.key())
+        ObjectVertex::decode(k.key())
     }
 
     pub fn create_entity<Snapshot>(&self, type_id: TypeID, snapshot: &mut Snapshot) -> ObjectVertex

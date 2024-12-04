@@ -45,7 +45,7 @@ pub struct ObjectVertexProperty {
 }
 
 impl ObjectVertexProperty {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const PREFIX: Prefix = Prefix::PropertyObjectVertex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 

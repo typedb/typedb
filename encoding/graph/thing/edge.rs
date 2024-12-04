@@ -41,7 +41,7 @@ pub struct ThingEdgeHas {
 }
 
 impl ThingEdgeHas {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::OptimisedPrefix15;
     const PREFIX: Prefix = Prefix::EdgeHas;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
@@ -56,7 +56,7 @@ impl ThingEdgeHas {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let owner = ObjectVertex::new(&bytes[Self::range_from()]);
+        let owner = ObjectVertex::decode(&bytes[Self::range_from()]);
         let len = bytes.len();
         let attribute = AttributeVertex::decode(&bytes[Self::range_from().end..len]);
         Self { owner, attribute }
@@ -97,9 +97,7 @@ impl ThingEdgeHas {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::range_from()].copy_from_slice(&from.to_bytes());
-        let to_prefix = AttributeVertex::build_prefix_type(Prefix::VertexAttribute, to_type_id);
-        let to_type_range = Self::range_from().end..Self::range_from().end + to_prefix.length();
-        bytes[to_type_range].copy_from_slice(to_prefix.bytes());
+        AttributeVertex::write_prefix_type(&mut bytes[Self::range_from().end..], Prefix::VertexAttribute, to_type_id);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -174,7 +172,6 @@ pub struct ThingEdgeHasReverse {
 }
 
 impl ThingEdgeHasReverse {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
 
     const PREFIX: Prefix = Prefix::EdgeHasReverse;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
@@ -202,21 +199,35 @@ impl ThingEdgeHasReverse {
         debug_assert_eq!(bytes.len() - attribute_len, 1 + ObjectVertex::LENGTH);
         let len = bytes.len();
         let attribute = AttributeVertex::decode(&bytes[1..attribute_len + 1]);
-        let owner = ObjectVertex::new(&bytes[attribute_len + 1..len]);
+        let owner = ObjectVertex::decode(&bytes[attribute_len + 1..len]);
         Self { owner, attribute }
     }
 
-    pub fn prefix_from_prefix(
+    pub fn prefix_from_prefix_short(
         from_prefix: Prefix,
+    ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
+        Self::prefix_from_prefix(from_prefix, Self::keyspace_for_is_short(true))
+    }
+
+    pub fn prefix_from_prefix_long(
+        from_prefix: Prefix
+    ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
+        Self::prefix_from_prefix(from_prefix, Self::keyspace_for_is_short(false))
+    }
+
+    fn prefix_from_prefix(
+        from_prefix: Prefix,
+        keyspace: EncodingKeyspace
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_PREFIX }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_PREFIX);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + PrefixID::LENGTH]
             .copy_from_slice(&from_prefix.prefix_id().to_bytes());
-        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
+        StorageKey::new_owned(keyspace, bytes)
     }
 
     pub fn prefix_from_attribute_type(
+        from_type_value_type_category: ValueTypeCategory,
         from_type_id: TypeID,
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_PREFIX_FROM_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_TYPE);
@@ -225,10 +236,11 @@ impl ThingEdgeHasReverse {
         bytes[Self::INDEX_PREFIX + 1..from_prefix_end].copy_from_slice(&Prefix::VertexAttribute.prefix_id().to_bytes());
         let from_type_id_end = from_prefix_end + TypeID::LENGTH;
         bytes[from_prefix_end..from_type_id_end].copy_from_slice(&from_type_id.to_bytes());
-        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
+        StorageKey::new_owned(Self::keyspace_for_is_short(AttributeVertex::is_category_short_encoding(from_type_value_type_category)), bytes)
     }
 
     pub fn prefix_from_attribute_vertex_prefix(
+        attribute_vertex_value_type_category: ValueTypeCategory,
         attribute_vertex_prefix: &[u8],
     ) -> StorageKey<'static, { ThingEdgeHasReverse::LENGTH_BOUND_PREFIX_FROM }> {
         debug_assert!(
@@ -238,7 +250,8 @@ impl ThingEdgeHasReverse {
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + attribute_vertex_prefix.len()]
             .copy_from_slice(attribute_vertex_prefix);
-        StorageKey::new_owned(Self::KEYSPACE, bytes)
+        let is_short_attribute = AttributeVertex::is_category_short_encoding(attribute_vertex_value_type_category);
+        StorageKey::new_owned(Self::keyspace_for_is_short(is_short_attribute), bytes)
     }
 
     // TODO cleanup
@@ -249,7 +262,7 @@ impl ThingEdgeHasReverse {
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::range_from_for_vertex(from)].copy_from_slice(&from.to_bytes());
         bytes.truncate(Self::range_from_for_vertex(from).end);
-        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
+        StorageKey::new_owned(Self::keyspace_for_is_short(from.is_short_encoding()), bytes)
     }
 
     pub fn prefix_from_attribute_to_type(
@@ -275,7 +288,8 @@ impl ThingEdgeHasReverse {
             to_type_id,
         );
         bytes.truncate(range_from.end + TypeVertex::LENGTH);
-        StorageKey::new_owned(EncodingKeyspace::Data, bytes)
+        let is_from_short_encoding = from.is_short_encoding();
+        StorageKey::new_owned(Self::keyspace_for_is_short(is_from_short_encoding), bytes)
     }
 
     pub fn prefix_from_attribute_to_type_range(
@@ -297,6 +311,18 @@ impl ThingEdgeHasReverse {
         } else {
             false
         }
+    }
+
+    pub fn keyspace_for_is_short(is_short_attribute: bool) -> EncodingKeyspace {
+        if is_short_attribute {
+            EncodingKeyspace::OptimisedPrefix16
+        } else {
+            EncodingKeyspace::OptimisedPrefix25
+        }
+    }
+
+    pub fn keyspace(&self) -> EncodingKeyspace {
+        Self::keyspace_for_is_short(self.from().is_short_encoding())
     }
 
     pub fn from(self) -> AttributeVertex {
@@ -345,7 +371,7 @@ impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {}
 
 impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeHasReverse {
     fn keyspace(&self) -> EncodingKeyspace {
-        Self::KEYSPACE
+        self.keyspace()
     }
 }
 
@@ -382,7 +408,7 @@ impl Ord for ThingEdgeLinks {
 }
 
 impl ThingEdgeLinks {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::OptimisedPrefix15;
     const PREFIX: Prefix = Prefix::EdgeLinks;
     const PREFIX_REVERSE: Prefix = Prefix::EdgeLinksReverse;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
@@ -402,14 +428,14 @@ impl ThingEdgeLinks {
         debug_assert_eq!(bytes.length(), Self::LENGTH);
         match Prefix::from_prefix_id(PrefixID::new(bytes[Self::INDEX_PREFIX])) {
             Self::PREFIX => {
-                let relation = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-                let player = ObjectVertex::new(&bytes[Self::RANGE_TO]);
+                let relation = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+                let player = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
                 let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
                 Self { relation, player, role_id, is_reverse: false }
             }
             Self::PREFIX_REVERSE => {
-                let player = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-                let relation = ObjectVertex::new(&bytes[Self::RANGE_TO]);
+                let player = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+                let relation = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
                 let role_id = TypeID::decode(bytes[Self::RANGE_ROLE_ID].try_into().unwrap());
                 Self { relation, player, role_id, is_reverse: true }
             }
@@ -618,7 +644,7 @@ impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeLinks {
 /// [rp_index][from_object][to_object][relation][from_role_id][to_role_id]
 ///
 #[derive(Copy, Clone, Debug)]
-pub struct ThingEdgeRolePlayerIndex {
+pub struct ThingEdgeLinksIndex {
     player_from: ObjectVertex,
     player_to: ObjectVertex,
     relation: ObjectVertex,
@@ -626,9 +652,9 @@ pub struct ThingEdgeRolePlayerIndex {
     role_id_to: TypeID,
 }
 
-impl ThingEdgeRolePlayerIndex {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Data;
-    const PREFIX: Prefix = Prefix::EdgeRolePlayerIndex;
+impl ThingEdgeLinksIndex {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::OptimisedPrefix17;
+    const PREFIX: Prefix = Prefix::EdgeLinksIndex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const RANGE_FROM: Range<usize> = Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + ObjectVertex::LENGTH;
@@ -652,15 +678,15 @@ impl ThingEdgeRolePlayerIndex {
 
     pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
         debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
-        let player_from = ObjectVertex::new(&bytes[Self::RANGE_FROM]);
-        let player_to = ObjectVertex::new(&bytes[Self::RANGE_TO]);
-        let relation = ObjectVertex::new(&bytes[Self::RANGE_RELATION]);
+        let player_from = ObjectVertex::decode(&bytes[Self::RANGE_FROM]);
+        let player_to = ObjectVertex::decode(&bytes[Self::RANGE_TO]);
+        let relation = ObjectVertex::decode(&bytes[Self::RANGE_RELATION]);
         let role_id_from = TypeID::decode(bytes[Self::RANGE_FROM_ROLE_TYPE_ID].try_into().unwrap());
         let role_id_to = TypeID::decode(bytes[Self::RANGE_TO_ROLE_TYPE_ID].try_into().unwrap());
         Self { player_from, player_to, relation, role_id_from, role_id_to }
     }
 
-    pub fn prefix_from(from: ObjectVertex) -> StorageKey<'static, { ThingEdgeRolePlayerIndex::LENGTH_PREFIX_FROM }> {
+    pub fn prefix_from(from: ObjectVertex) -> StorageKey<'static, { ThingEdgeLinksIndex::LENGTH_PREFIX_FROM }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_FROM].copy_from_slice(&from.to_bytes());
@@ -694,7 +720,7 @@ impl ThingEdgeRolePlayerIndex {
     }
 }
 
-impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex {
+impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeLinksIndex {
     fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
         let mut bytes = ByteArray::zeros(Self::LENGTH);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
@@ -707,9 +733,9 @@ impl AsBytes<BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex {
     }
 }
 
-impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex {}
+impl Prefixed<BUFFER_KEY_INLINE> for ThingEdgeLinksIndex {}
 
-impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeRolePlayerIndex {
+impl Keyable<BUFFER_KEY_INLINE> for ThingEdgeLinksIndex {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }

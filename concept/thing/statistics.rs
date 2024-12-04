@@ -13,7 +13,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
+        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeLinksIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
         ThingVertex,
@@ -34,6 +34,7 @@ use storage::{
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
+use storage::key_value::StorageKeyReference;
 
 use crate::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
@@ -196,15 +197,15 @@ impl Statistics {
         for (key, write) in writes.operations.iterate_writes() {
             let delta =
                 write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
-            if ObjectVertex::is_entity_vertex(&key) {
-                let type_ = Entity::new(ObjectVertex::new(key.bytes())).type_();
+            if ObjectVertex::is_entity_vertex(StorageKeyReference::from(&key)) {
+                let type_ = Entity::new(ObjectVertex::decode(key.bytes())).type_();
                 self.update_entities(type_, delta);
                 total_delta += delta;
-            } else if ObjectVertex::is_relation_vertex(&key) {
-                let type_ = Relation::new(ObjectVertex::new(key.bytes())).type_();
+            } else if ObjectVertex::is_relation_vertex(StorageKeyReference::from(&key)) {
+                let type_ = Relation::new(ObjectVertex::decode(key.bytes())).type_();
                 self.update_relations(type_, delta);
                 total_delta += delta;
-            } else if AttributeVertex::is_attribute_vertex(&key) {
+            } else if AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)) {
                 let type_ = Attribute::new(AttributeVertex::decode(key.bytes())).type_();
                 self.update_attributes(type_, delta);
             } else if ThingEdgeHas::is_has(&key) {
@@ -221,8 +222,8 @@ impl Statistics {
                     delta,
                 );
                 total_delta += delta;
-            } else if ThingEdgeRolePlayerIndex::is_index(&key) {
-                let edge = ThingEdgeRolePlayerIndex::decode(Bytes::Reference(key.bytes()));
+            } else if ThingEdgeLinksIndex::is_index(&key) {
+                let edge = ThingEdgeLinksIndex::decode(Bytes::Reference(key.bytes()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                 // note: don't update total count based on index
             } else if EntityType::is_decodable_from_key(&key) {

@@ -12,6 +12,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray},
     keyspace::KeyspaceSet,
 };
+use storage::key_value::StorageKeyReference;
 
 use crate::{
     graph::{
@@ -31,6 +32,7 @@ pub struct ObjectVertex {
 }
 
 impl ObjectVertex {
+    pub const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
@@ -53,16 +55,16 @@ impl ObjectVertex {
         }
 
         // all byte patterns beyond the prefix are valid for object vertices
-        Some(Self::new(bytes))
+        Some(Self::decode(bytes))
     }
 
-    pub fn is_entity_vertex(storage_key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
+    pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
             && storage_key.bytes()[Self::INDEX_PREFIX] == Prefix::VertexEntity.prefix_id().byte
     }
 
-    pub fn is_relation_vertex(storage_key: &StorageKeyArray<BUFFER_KEY_INLINE>) -> bool {
+    pub fn is_relation_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
             && storage_key.bytes()[Self::INDEX_PREFIX] == Prefix::VertexRelation.prefix_id().byte
@@ -114,7 +116,7 @@ impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertex {}
 impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {}
 
 impl ThingVertex for ObjectVertex {
-    fn new(bytes: &[u8]) -> ObjectVertex {
+    fn decode(bytes: &[u8]) -> ObjectVertex {
         debug_assert_eq!(bytes.len(), Self::LENGTH);
         let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] });
         let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());

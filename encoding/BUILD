@@ -45,6 +45,7 @@ rust_library(
         "@crates//:tracing",
         "@crates//:seahash",
         "@crates//:serde",
+        "@crates//:rocksdb",
     ],
 )
 

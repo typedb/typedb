@@ -15,6 +15,8 @@ use bytes::Bytes;
 use itertools::Itertools;
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
+use bytes::util::MB;
+use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
 
 use super::iterator;
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
@@ -39,15 +41,11 @@ pub trait KeyspaceSet: Copy {
     fn iter() -> impl Iterator<Item = Self>;
     fn id(&self) -> KeyspaceId;
     fn name(&self) -> &'static str;
-}
-
-fn db_options() -> Options {
-    let mut options = Options::default();
-    options.create_if_missing(true);
-    options.create_missing_column_families(true);
-    // options.enable_statistics();
-    // TODO optimise per-keyspace
-    options
+    fn rocks_configuration(&self, _cache: &rocksdb::Cache) -> rocksdb::Options {
+        let mut options = Options::default();
+        options.create_if_missing(true);
+        options
+    }
 }
 
 #[derive(Debug)]
@@ -63,14 +61,15 @@ impl Keyspaces {
 
     pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, KeyspaceOpenError> {
         let path = storage_dir.as_ref();
+
+        let cache = rocksdb::Cache::new_lru_cache((ROCKSDB_CACHE_SIZE_MB * MB) as usize);
         let mut keyspaces = Keyspaces::new();
-        let options = db_options();
-        for keyspace_id in KS::iter() {
+        for keyspace in KS::iter() {
             keyspaces
-                .validate_new_keyspace(keyspace_id)
+                .validate_new_keyspace(keyspace)
                 .map_err(|error| KeyspaceOpenError::Validation { source: error })?;
-            keyspaces.keyspaces.push(Keyspace::open(path, keyspace_id, &options)?);
-            keyspaces.index[keyspace_id.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
+            keyspaces.keyspaces.push(Keyspace::open(path, keyspace, &keyspace.rocks_configuration(&cache))?);
+            keyspaces.index[keyspace.id().0 as usize] = Some(KeyspaceId(keyspaces.keyspaces.len() as u8 - 1));
         }
         Ok(keyspaces)
     }
@@ -196,26 +195,8 @@ impl Keyspace {
         Self { path, name: keyspace.name(), id: keyspace.id(), kv_storage, read_options, write_options }
     }
 
-    // TODO: we want to be able to pass new options, since Rocks can handle rebooting with new options
-    pub(crate) fn load_from_checkpoint(_path: PathBuf) {
-        todo!()
-        // Steps:
-        //  WARNING: this is intended to be DESTRUCTIVE since we may wipe anything partially written in the active directory
-        //  Locate the directory with the latest number - say 'checkpoint_n'
-        //  Delete 'active' directory.
-        //  Rename directory called 'active' to 'checkpoint_x' -- TODO: do we need to delete 'active' or will re-checkpointing to it be clever enough to delete corrupt files?
-        //  Rename 'checkpoint_x' to 'active'
-        //  open storage at 'active'
-    }
-
     pub(super) fn new_read_options(&self) -> ReadOptions {
         ReadOptions::default()
-    }
-
-    fn new_write_options(&self) -> WriteOptions {
-        let mut options = WriteOptions::default();
-        options.disable_wal(true);
-        options
     }
 
     pub(crate) fn id(&self) -> KeyspaceId {
