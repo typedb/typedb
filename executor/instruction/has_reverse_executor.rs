@@ -288,7 +288,7 @@ fn compare_has_by_owner_then_attribute(
     right: &Result<(Has, u64), Box<ConceptReadError>>,
 ) -> bool {
     if let (Ok((has_1, _)), Ok((has_2, _))) = (left, right) {
-        (has_2.owner(), has_1.attribute()) < (has_2.owner(), has_2.attribute())
+        (has_1.owner(), has_1.attribute()) < (has_2.owner(), has_2.attribute())
     } else {
         false
     }
