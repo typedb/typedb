@@ -62,18 +62,6 @@ pub fn compile(
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
     .finish(variable_registry);
 
-    // DEBUG
-    // println!("{}", plan);
-    // println!("-- Variable mappings -- ");
-    // for (var, pos) in plan.variable_positions() {
-    //     if let Some(named_var) = variable_registry.variable_names().get(var) {
-    //         println!("   {:?} id {:?} pos {:?}", named_var, var, pos);
-    //     }
-    //     else {
-    //         println!("   anon id {:?} pos {:?}", var, pos);
-    //     }
-    // }
-
     plan
 }
 
