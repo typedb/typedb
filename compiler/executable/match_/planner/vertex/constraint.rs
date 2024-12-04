@@ -815,11 +815,17 @@ impl Costed for LinksPlanner<'_> {
         let player_size = player.expected_output_size(inputs);
 
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
-        if is_relation_bound { scan_size_canonical /= relation_size; } // accounts for bound prefix
+        if is_relation_bound {
+            scan_size_canonical /= relation_size;
+            if is_player_bound { scan_size_canonical /= player_size; }
+        }
         scan_size_canonical *= relation.restriction_based_selectivity(inputs); // account for restrictions (like iid)
 
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
-        if is_player_bound { scan_size_reverse /= player_size; } // accounts for bound prefix
+        if is_player_bound {
+            scan_size_reverse /= player_size;
+            if is_relation_bound { scan_size_reverse /= relation_size; }
+        }
         scan_size_reverse *= player.restriction_based_selectivity(inputs); // account for restrictions (like iid)
 
         let mut io_ratio = self.unbound_typed_expected_size;

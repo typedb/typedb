@@ -119,7 +119,7 @@ pub(crate) struct ElementCost {
 impl ElementCost {
     const IN_MEM_COST_SIMPLE: f64 = 0.01;
     const IN_MEM_COST_COMPLEX: f64 = ElementCost::IN_MEM_COST_SIMPLE * 2.0;
-    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 0.0 };
+    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 };
     pub const MEM_SIMPLE_BRANCH_1: Self = Self {
         per_input: ElementCost::IN_MEM_COST_SIMPLE,
         per_output: ElementCost::IN_MEM_COST_SIMPLE,
@@ -167,6 +167,10 @@ impl ElementCost {
             ),
             io_ratio: self.io_ratio + other.io_ratio,
         }
+    }
+
+    pub(crate) fn total(self) -> f64 {
+        self.per_input + self.per_output * self.io_ratio
     }
 }
 

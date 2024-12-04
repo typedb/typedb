@@ -3,11 +3,11 @@ from graphviz import Digraph
 
 # Input debug structure
 
-debug_structure = ""
-with open('debug_graph_source', 'r') as file:
-    debug_structure = file.read()
+raw_graph_elements = ""
+with open('plan_graph_source', 'r') as file:
+    raw_graph_elements = file.read()
 
-def parse_debug_structure(debug_structure):
+def parse_debug_structure(raw_graph_elements):
     vertices = {}
     edges = []
 
@@ -17,7 +17,7 @@ def parse_debug_structure(debug_structure):
     isa_type_pattern = re.compile(r'type_:\s*(\w+)')
     comparator_pattern = re.compile(r'comparator:\s*(\w+)')
 
-    for block in debug_structure.split('},'):
+    for block in raw_graph_elements.split('},'):
         block_match = block_pattern.search(block)
         if block_match:
             block_id, block_type, block_body = block_match.groups()
@@ -48,11 +48,11 @@ def parse_debug_structure(debug_structure):
     return vertices, edges
 
 def generate_graph(vertices, edges):
-    dot = Digraph(format="png")
+    dot = Digraph(format="svg")  # Change format to SVG
 
     # Graph layout settings for landscape-style, larger canvas
     dot.attr(rankdir="LR")
-    dot.graph_attr.update(size="10,10", dpi="300", ratio="fill")
+    dot.graph_attr.update(ratio="2.0")
 
     # Add vertices
     for vertex_id, label in vertices.items():
@@ -66,8 +66,8 @@ def generate_graph(vertices, edges):
     return dot
 
 # Parse the debug structure and generate graph
-vertices, edges = parse_debug_structure(debug_structure)
+vertices, edges = parse_debug_structure(raw_graph_elements)
 graph = generate_graph(vertices, edges)
 
 # Save and display the graph
-graph.render("debug_graph", view=True)
+graph.render("plan_graph", view=True)

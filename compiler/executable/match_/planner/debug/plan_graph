@@ -1,5 +1,5 @@
 digraph {
-	graph [dpi=300 ratio=fill size="10,10"]
+	graph [ratio=2.0]
 	rankdir=LR
 	"P[1]" [label="Comparison Equal (1)"]
 	"V[0]" [label="Variable (0)"]
