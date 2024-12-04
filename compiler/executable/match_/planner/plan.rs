@@ -718,17 +718,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 }
 
                 for extension in extension_heap.into_iter() {
-                    let new_plan: PartialCostPlan;
-                    if !extension.is_constraint(&self.graph) {
-                        new_plan = plan.clone_and_extend_with_new_step(extension, &self.graph);
+                    let new_plan = if !extension.is_constraint(&self.graph) {
+                        plan.clone_and_extend_with_new_step(extension, &self.graph)
                     } else if extension.step_join_var.is_some()
                         && (plan.ongoing_step_join_var.is_none()
                             || plan.ongoing_step_join_var == extension.step_join_var)
                     {
-                        new_plan = plan.clone_and_extend_with_continued_step(extension, &self.graph);
+                        plan.clone_and_extend_with_continued_step(extension, &self.graph)
                     } else {
-                        new_plan = plan.clone_and_extend_with_new_step(extension, &self.graph);
-                    }
+                        plan.clone_and_extend_with_new_step(extension, &self.graph)
+                    };
 
                     if new_plans_heap.len() < BEAM_WIDTH {
                         new_plans_heap.push(new_plan);
@@ -827,17 +826,12 @@ impl PartialCostPlan {
 
         self.remaining_patterns
             .iter()
-            .filter(move |&&extension| {
-                graph.elements[&VertexId::Pattern(extension)].is_valid(&self.vertex_ordering, graph)
+            .filter({
+                let all_available_vars = all_available_vars.clone();
+                move |&&extension| graph.elements[&VertexId::Pattern(extension)].is_valid(&all_available_vars, graph)
             })
             .flat_map(move |&extension| {
                 let join_var = self.determine_joinability(graph, extension);
-
-                // // If we are adding the last constraint, then we cannot join any further
-                // if graph.elements[&VertexId::Pattern(extension)].is_constraint()
-                //     && self.remaining_patterns.iter().filter(|&&ext| graph.elements[&VertexId::Pattern(ext)].is_constraint()).exactly_one().is_ok() {
-                //     join_var = None;
-                // }
 
                 if join_var.is_none() {
                     vec![(extension, join_var)].into_iter()
@@ -858,8 +852,8 @@ impl PartialCostPlan {
 
                 let mut cost_before_extension = self.cumulative_cost;
                 if join_var.is_none() {
-                    cost_before_extension = cost_before_extension.chain(self.ongoing_step_cost);
                     // Complete ongoing step
+                    cost_before_extension = cost_before_extension.chain(self.ongoing_step_cost);
                 }
 
                 // DEBUG
