@@ -93,7 +93,6 @@ impl KeyspaceSet for EncodingKeyspace {
         // Enable if we wanted to check bloom filter usage, cache hits, etc.
         // options.enable_statistics();
         // options.set_stats_dump_period_sec(100);
-        // options.set_statistics_level(StatsLevel::All);
 
         options.create_if_missing(true);
         options.create_missing_column_families(true);

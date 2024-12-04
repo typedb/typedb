@@ -609,6 +609,7 @@ mod tests {
         write_batches::WriteBatches,
         MVCCStorage,
     };
+    use crate::keyspace::IteratorPool;
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -670,6 +671,6 @@ mod tests {
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
                 .unwrap();
-        assert_eq!(storage.get::<0>(&key_2, seq).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(storage.get::<0>(&IteratorPool::new(), &key_2, seq).unwrap().unwrap(), ByteArray::empty());
     }
 }
