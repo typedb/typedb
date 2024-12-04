@@ -623,7 +623,8 @@ impl Costed for HasPlanner<'_> {
                 scan_size_reverse /= owner_size; // accounts for bound prefix
             }
         } else {
-            scan_size_reverse *= attribute.restriction_based_selectivity(inputs); // account for restrictions (like ==)
+            // account for restrictions (like ==)
+            scan_size_reverse *= attribute.restriction_based_selectivity(inputs);
         }
         scan_size_reverse = scan_size_reverse.max(MIN_SCAN_SIZE);
 
