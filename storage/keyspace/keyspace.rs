@@ -196,7 +196,6 @@ impl Keyspace {
 
     pub(super) fn new_read_options(&self) -> ReadOptions {
         let mut options = ReadOptions::default();
-        options.set_async_io(true);
         options.set_total_order_seek(false);
         options
     }
