@@ -29,6 +29,8 @@ use crate::{
     },
 };
 
+const MIN_SCAN_SIZE: f64 = 1.0;
+
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
     TypeList(TypeListPlanner<'a>),
@@ -292,8 +294,13 @@ impl Costed for IidPlanner<'_> {
         }
     }
 
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        todo!()
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+        let cost = if vertex_ordering.contains(&VertexId::Variable(self.var)) {
+            CombinedCost::in_mem_simple_with_ratio(0.001) // TODO calculate properly, assuming the IID is originating from the DB
+        } else {
+            CombinedCost { cost: OPEN_ITERATOR_RELATIVE_COST, io_ratio: 1.0 }
+        };
+        (cost, CostMetaData::None)
     }
 }
 
@@ -600,15 +607,25 @@ impl Costed for HasPlanner<'_> {
 
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
         if is_owner_bound {
-            scan_size_canonical /= owner_size;
-        } // accounts for bound prefix
-        scan_size_canonical *= owner.restriction_based_selectivity(inputs); // account for restrictions (like iid)
+            scan_size_canonical /= owner_size; // accounts for bound prefix
+            if is_attribute_bound {
+                scan_size_canonical /= attribute_size; // accounts for bound prefix
+            }
+        } else {
+            scan_size_canonical *= owner.restriction_based_selectivity(inputs); // account for restrictions (like iid)
+        }
+        scan_size_canonical = scan_size_canonical.max(MIN_SCAN_SIZE);
 
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
         if is_attribute_bound {
-            scan_size_reverse /= attribute_size;
-        } // accounts for bound prefix
-        scan_size_reverse *= attribute.restriction_based_selectivity(inputs); // account for restrictions (like ==)
+            scan_size_reverse /= attribute_size; // accounts for bound prefix
+            if is_owner_bound {
+                scan_size_reverse /= owner_size; // accounts for bound prefix
+            }
+        } else {
+            scan_size_reverse *= attribute.restriction_based_selectivity(inputs); // account for restrictions (like ==)
+        }
+        scan_size_reverse = scan_size_reverse.max(MIN_SCAN_SIZE);
 
         let mut io_ratio = self.unbound_typed_expected_size;
         if is_owner_bound {
@@ -836,8 +853,11 @@ impl Costed for LinksPlanner<'_> {
             if is_player_bound {
                 scan_size_canonical /= player_size;
             }
+        } else {
+            scan_size_canonical *= relation.restriction_based_selectivity(inputs);
+            // account for restrictions (like iid)
         }
-        scan_size_canonical *= relation.restriction_based_selectivity(inputs); // account for restrictions (like iid)
+        scan_size_canonical = scan_size_canonical.max(MIN_SCAN_SIZE);
 
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
         if is_player_bound {
@@ -845,8 +865,10 @@ impl Costed for LinksPlanner<'_> {
             if is_relation_bound {
                 scan_size_reverse /= relation_size;
             }
+        } else {
+            scan_size_reverse *= player.restriction_based_selectivity(inputs); // account for restrictions (like iid)
         }
-        scan_size_reverse *= player.restriction_based_selectivity(inputs); // account for restrictions (like iid)
+        scan_size_reverse = scan_size_reverse.max(MIN_SCAN_SIZE);
 
         let mut io_ratio = self.unbound_typed_expected_size;
         if is_relation_bound {
@@ -860,7 +882,7 @@ impl Costed for LinksPlanner<'_> {
         let cost: f64;
         let direction: Direction;
 
-        if scan_size_canonical >= scan_size_reverse {
+        if scan_size_canonical <= scan_size_reverse {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
             direction = Direction::Canonical;
         } else {
