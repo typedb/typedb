@@ -718,7 +718,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 }
 
                 for extension in extension_heap.into_iter() {
-                    let mut new_plan: PartialCostPlan;
+                    let new_plan: PartialCostPlan;
                     if !extension.is_constraint(&self.graph) {
                         new_plan = plan.clone_and_extend_with_new_step(extension, &self.graph);
                     } else if extension.step_join_var.is_some()
@@ -1395,8 +1395,15 @@ impl ConjunctionPlan<'_> {
                         (None, None) => Inputs::None([]),
                     };
 
-                let CostMetaData::Direction(direction) = metadata else {
-                    unreachable!("expected metadata for constraint")
+                let direction = if matches!(inputs, Inputs::None([])) {
+                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                        unreachable!("expected metadata for constraint")
+                    };
+                    unbound_direction
+                } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
+                    Direction::Reverse
+                } else {
+                    Direction::Canonical
                 };
 
                 let con = $con.clone();
