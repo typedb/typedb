@@ -677,12 +677,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             self.input_variables(), // input variables start the plan
         )];
 
+        let beam_width = ((search_depth - 10) * 4).clamp(2, BEAM_WIDTH);
+        let extension_width = beam_width / 2;
+
         for i in 0..search_depth {
             let mut new_plans_heap: BinaryHeap<PartialCostPlan> = BinaryHeap::new();
             for plan in best_partial_plans.iter() {
                 let mut extension_heap = BinaryHeap::new();
                 for extension in plan.extensions_iter(&self.graph) {
-                    if extension_heap.len() < EXTENSION_WIDTH {
+                    if extension_heap.len() < extension_width {
                         extension_heap.push(extension);
                     } else if let Some(top) = extension_heap.peek() {
                         if extension < *top {
@@ -704,7 +707,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         plan.clone_and_extend_with_new_step(extension, &self.graph)
                     };
 
-                    if new_plans_heap.len() < BEAM_WIDTH {
+                    if new_plans_heap.len() < beam_width {
                         new_plans_heap.push(new_plan);
                     } else if let Some(top) = new_plans_heap.peek() {
                         if new_plan < *top {
@@ -724,8 +727,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         // Greedy plan
-        let start_greedy = Instant::now();
-        let (ordering, metadata) = self.initialise_greedy_ordering(); // TODO: remove
+        // let (ordering, metadata) = self.initialise_greedy_ordering(); // TODO: remove
 
         // Beam plan
         let (ordering, metadata) = self.beam_search_plan();
@@ -849,7 +851,10 @@ impl PartialCostPlan {
                 {
                     if self.ongoing_step_join_var.is_none()
                         && constraint.can_sort_on(candidate_join_var)
-                        && graph.elements[prev_constraint].as_constraint().map_or(false, |c| c.can_sort_on(candidate_join_var)) {
+                        && graph.elements[prev_constraint]
+                            .as_constraint()
+                            .map_or(false, |c| c.can_sort_on(candidate_join_var))
+                    {
                         updated_join_var = Some(candidate_join_var);
                     } else if self.ongoing_step_join_var == Some(candidate_join_var)
                         && constraint.can_sort_on(candidate_join_var)
