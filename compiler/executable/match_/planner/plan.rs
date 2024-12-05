@@ -677,7 +677,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             self.input_variables(), // input variables start the plan
         )];
 
-        let beam_width = ((search_depth - 10) * 4).clamp(2, BEAM_WIDTH);
+        let beam_width = ((search_depth.saturating_sub(10)) * 4).clamp(2, BEAM_WIDTH);
         let extension_width = beam_width / 2;
 
         for i in 0..search_depth {
