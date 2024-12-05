@@ -251,6 +251,18 @@ jobs:
             ghr_v0.16.2_linux_amd64/ghr -t ${REPO_GITHUB_TOKEN} -u ${CIRCLE_PROJECT_USERNAME} \
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
               -c ${CIRCLE_SHA1} -delete $(cat VERSION)
+  sync-to-typedb-benchmark:
+    executor: linux-x86_64-amazonlinux-2
+    steps:
+      - run:
+          name: "Sync this commit to TypeDB Benchmark"
+          command: |
+            git clone https://typedb-bot:$REPO_GITHUB_TOKEN@github.com/typedb/typedb-benchmark.git
+            git config user.name "TypeDB Bot"
+            git config user.email "bot@typedb.com"
+            ./tool/update-typedb-version.sh "$CIRCLE_SHA1"
+            git commit -m "Update TypeDB Core to $CIRCLE_SHA"
+            git push origin development
 
   # generic
   release-cleanup:
@@ -285,6 +297,13 @@ workflows:
           filters:
             branches:
               only: [ "3.0" ]
+
+      - sync-to-typedb-benchmark:
+          filters:
+            branches:
+              only: [ "3.0" ]
+          requires:
+            - deploy-release-linux-x86_64
 
   release:
     jobs:
