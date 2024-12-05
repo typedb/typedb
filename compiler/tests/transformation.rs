@@ -6,6 +6,7 @@
 
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use typeql::parser::Rule::STAR;
 use typeql::Pattern;
 use compiler::annotation::function::EmptyAnnotatedFunctionSignatures;
 use compiler::annotation::match_inference::infer_types;
@@ -13,7 +14,7 @@ use compiler::annotation::pipeline::annotate_preamble_and_pipeline;
 use compiler::transformation::relation_index::relation_index_transformation;
 use concept::thing::statistics::Statistics;
 use concept::thing::thing_manager::ThingManager;
-use concept::type_::{Ordering, PlayerAPI};
+use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
 use concept::type_::type_manager::TypeManager;
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use encoding::value::label::Label;
@@ -35,6 +36,7 @@ const DOG_LABEL: Label = Label::new_static("dog");
 const DOG_OWNERSHIP_LABEL: Label = Label::new_static("dog-ownership");
 const DOG_OWNERSHIP_DOG: Label = Label::new_static_scoped("dog", "dog-ownership", "dog-ownership:dog");
 const DOG_OWNERSHIP_OWNER: Label = Label::new_static_scoped("owner", "dog-ownership", "dog-ownership:owner");
+const START_TIME_LABEL: Label = Label::new_static("start-time");
 
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
@@ -49,6 +51,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let relates_owner = dog_ownership_type.create_relates(&mut snapshot, &type_manager, &thing_manager, DOG_OWNERSHIP_OWNER.name.as_str(), Ordering::Unordered).unwrap();
     person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, relates_owner.role()).unwrap();
     dog_type.set_plays(&mut snapshot, &type_manager, &thing_manager, relates_dog.role()).unwrap();
+    
+    let start_time_type = type_manager.create_attribute_type(&mut snapshot, &START_TIME_LABEL).unwrap();
+    dog_ownership_type.set_owns(&mut snapshot, &type_manager, &thing_manager, start_time_type, Ordering::Unordered).unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok());
@@ -56,7 +61,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 }
 
 #[test]
-fn test_relation_index_transformation() {
+fn test_relation_index_transformation_single() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
@@ -66,6 +71,139 @@ fn test_relation_index_transformation() {
     assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
 
     let query = "match $r links ($x, $y);";
+    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let mut context = TranslationContext::new();
+    let mut parameters = ParameterRegistry::new();
+    let translated = translate_match(
+        &mut context,
+        &mut parameters,
+        &HashMapFunctionSignatureIndex::empty(),
+        &parsed,
+    ).unwrap();
+
+    let block = translated.finish().unwrap();
+    let type_annotations = infer_types(
+        &snapshot,
+        &block,
+        &context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &EmptyAnnotatedFunctionSignatures,
+    ).unwrap();
+
+    let mut conjunction = block.into_conjunction();
+
+    println!("before transform:\n{}", &conjunction);
+    relation_index_transformation(
+        &mut conjunction,
+        &type_annotations,
+        &type_manager,
+        &snapshot
+    ).unwrap();
+
+    println!("{}", &conjunction);
+}
+
+#[test]
+fn test_relation_index_transformation_dual() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_read();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
+
+    let query = "match $r links ($x, $y); $q links ($a, $b);";
+    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let mut context = TranslationContext::new();
+    let mut parameters = ParameterRegistry::new();
+    let translated = translate_match(
+        &mut context,
+        &mut parameters,
+        &HashMapFunctionSignatureIndex::empty(),
+        &parsed,
+    ).unwrap();
+
+    let block = translated.finish().unwrap();
+    let type_annotations = infer_types(
+        &snapshot,
+        &block,
+        &context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &EmptyAnnotatedFunctionSignatures,
+    ).unwrap();
+
+    let mut conjunction = block.into_conjunction();
+
+    println!("before transform:\n{}", &conjunction);
+    relation_index_transformation(
+        &mut conjunction,
+        &type_annotations,
+        &type_manager,
+        &snapshot
+    ).unwrap();
+
+    println!("{}", &conjunction);
+}
+
+#[test]
+fn test_relation_index_transformation_not_applied_ternary() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_read();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
+
+    let query = "match $r links ($x, $y, $z);";
+    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let mut context = TranslationContext::new();
+    let mut parameters = ParameterRegistry::new();
+    let translated = translate_match(
+        &mut context,
+        &mut parameters,
+        &HashMapFunctionSignatureIndex::empty(),
+        &parsed,
+    ).unwrap();
+
+    let block = translated.finish().unwrap();
+    let type_annotations = infer_types(
+        &snapshot,
+        &block,
+        &context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &EmptyAnnotatedFunctionSignatures,
+    ).unwrap();
+
+    let mut conjunction = block.into_conjunction();
+
+    println!("before transform:\n{}", &conjunction);
+    relation_index_transformation(
+        &mut conjunction,
+        &type_annotations,
+        &type_manager,
+        &snapshot
+    ).unwrap();
+
+    println!("{}", &conjunction);
+}
+
+
+#[test]
+fn test_relation_index_transformation_not_applied_attribute() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_read();
+
+    let dog_ownership = type_manager.get_relation_type(&snapshot, &DOG_OWNERSHIP_LABEL).unwrap().unwrap();
+    assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
+
+    let query = "match $r links ($x, $y), has start-time $a; $a == 10;";
     let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
