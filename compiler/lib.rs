@@ -13,7 +13,7 @@ use ir::pattern::IrID;
 
 pub mod annotation;
 pub mod executable;
-mod transformation;
+pub mod transformation;
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {

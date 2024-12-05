@@ -25,7 +25,7 @@ use crate::transformation::StaticOptimiserError;
 /// Then
 ///   replace 1) and 2) with
 ///   3) $x indexed_relation $y via $r ($role1, $role2)
-pub(crate) fn relation_index_transformation(
+pub fn relation_index_transformation(
     conjunction: &mut Conjunction,
     type_annotations: &TypeAnnotations,
     type_manager: &TypeManager,
@@ -99,7 +99,7 @@ fn with_iid_or_constant_attribute(relation: &Vertex<Variable>, conjunction: &Con
 fn attribute_has_value(attribute: &Vertex<Variable>, conjunction: &Conjunction) -> bool {
     conjunction.constraints().iter().filter_map(|constraint| constraint.as_comparison())
         .any(|comparison| {
-            (comparison.lhs() == attribute || comparison.rhs() == attribute) 
+            (comparison.lhs() == attribute || comparison.rhs() == attribute)
                 && comparison.comparator() == Comparator::Equal
         })
 }
@@ -109,7 +109,7 @@ fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: u
     let (remove_first, remove_second) = if index_rp_1 > index_rp_2 {
         (index_rp_1, index_rp_2)
     } else {
-        (index_rp_2, index_rp_2)
+        (index_rp_2, index_rp_1)
     };
 
     let removed_1 = conjunction.constraints_mut().constraints_mut().remove(remove_first);

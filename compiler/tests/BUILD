@@ -21,6 +21,13 @@ rust_test(
     srcs =  ["transformation.rs"],
     deps = [
         "//compiler:compiler",
+        "//concept:concept",
+        "//ir:ir",
+        
+        "//concept/tests:test_utils_concept",
+        "//encoding/tests:test_utils_encoding",
+        "//util/test:test_utils",
+    
         "@typeql//rust:typeql",
     ],
 )

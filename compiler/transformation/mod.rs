@@ -10,7 +10,7 @@ use error::typedb_error;
 use ir::pattern::conjunction::Conjunction;
 use crate::annotation::pipeline::AnnotatedPipeline;
 
-mod relation_index;
+pub mod relation_index;
 mod redundant_constraints;
 mod transform;
 
