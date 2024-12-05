@@ -43,7 +43,8 @@ fn get_configuration(cli_args: CLIArgs) -> Config {
         cli_args.server_encryption_cert_key.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
         cli_args.server_encryption_root_ca.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
     );
-    Config::new_with_encryption_config(encryption_config)
+    let data_dir = cli_args.storage_data.map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
+    Config::customised(Some(encryption_config), data_dir)
 }
 
 fn print_ascii_logo() {

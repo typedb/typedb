@@ -39,23 +39,28 @@ impl Config {
     }
 
     pub fn new_with_encryption_config(encryption_config: EncryptionConfig) -> Self {
-        let typedb_dir_or_current = std::env::current_exe()
-            .map(|path| path.parent().unwrap().to_path_buf())
-            .unwrap_or(std::env::current_dir().unwrap());
+        Self::customised(Some(encryption_config), None)
+    }
+
+    pub fn new_with_data_directory(data_directory: &Path) -> Self {
+        Self::customised(None, Some(data_directory.to_path_buf()))
+    }
+
+    pub fn customised(
+        encryption_config: Option<EncryptionConfig>,
+        data_directory: Option<PathBuf>
+    ) -> Self {
+        let encryption_config = encryption_config.unwrap_or_else(|| EncryptionConfig::disabled());
+        let data_directory = data_directory.map(|dir| dir.to_path_buf()).unwrap_or_else(|| {
+            let typedb_dir_or_current = std::env::current_exe()
+                .map(|path| path.parent().unwrap().to_path_buf())
+                .unwrap_or(std::env::current_dir().unwrap());
+            typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap())
+        });
         Self {
             server: ServerConfig {
                 address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
                 encryption: encryption_config,
-            },
-            storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
-        }
-    }
-
-    pub fn new_with_data_directory(data_directory: &Path) -> Self {
-        Self {
-            server: ServerConfig {
-                address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
-                encryption: EncryptionConfig::disabled(),
             },
             storage: StorageConfig { data: data_directory.to_owned() },
         }

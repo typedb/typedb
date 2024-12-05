@@ -25,4 +25,8 @@ pub struct CLIArgs {
     /// Encryption CA in PEM format.
     #[arg(long = "server.encryption.root-ca", value_name = "FILE")]
     pub server_encryption_root_ca: Option<String>,
+
+    /// Path to the data directory
+    #[arg(long = "storage.data", value_name = "DIR")]
+    pub storage_data: Option<String>,
 }
