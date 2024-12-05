@@ -303,7 +303,7 @@ workflows:
             branches:
               only: [ "3.0" ]
           requires:
-            - deploy-release-linux-x86_64
+            - test-deploy-snapshot-linux-x86_64
 
   release:
     jobs:
