@@ -28,8 +28,9 @@ pub struct Server {
 
 impl Server {
     pub fn open(config: Config) -> Result<Self, ServerOpenError> {
-        // let storage_directory = &config.storage.data;
-        let storage_directory = &PathBuf::from("/Users/cxdorn/typedb_data");
+        use ServerOpenError::{CouldNotCreateDataDirectory, NotADirectory};
+        let storage_directory = &config.storage.data;
+
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)?;
         } else if !storage_directory.is_dir() {
