@@ -86,7 +86,7 @@ pub fn compile(
             | Constraint::Comparison(_)
             | Constraint::Sub(_)
             | Constraint::Value(_)
-            | Constraint::FunctionCallBinding(_) => {
+            | Constraint::FunctionCallBinding(_) | Constraint::IndexedRelation(_) => {
                 unreachable!()
             }
         }

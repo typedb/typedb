@@ -361,6 +361,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Iid(iid) => self.register_iid(iid),
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
+                Constraint::IndexedRelation(indexed_relation) => todo!(),
 
                 Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
                 Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),

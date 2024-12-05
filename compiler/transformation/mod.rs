@@ -18,7 +18,6 @@ pub(crate) trait ConjunctionTransformation {
     fn apply(conjunction: &mut Conjunction);
 }
 
-
 pub(crate) trait PipelineTransformation {
     fn apply(pipeline: &mut AnnotatedPipeline);
 }

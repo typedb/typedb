@@ -198,28 +198,28 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn used_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var, _| apply(var)),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var, _| apply(var)),
+            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var| apply(var)),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
+            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var| apply(var)),
             Self::Owns(type_::OwnsInstruction { owns, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(|var, _| apply(var)),
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(|var| apply(var)),
             Self::Relates(type_::RelatesInstruction { relates, .. })
             | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => {
-                relates.ids_foreach(|var, _| apply(var))
+                relates.ids_foreach(|var| apply(var))
             }
             Self::Plays(type_::PlaysInstruction { plays, .. })
             | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => {
-                plays.ids_foreach(|var, _| apply(var))
+                plays.ids_foreach(|var| apply(var))
             }
             Self::Isa(thing::IsaInstruction { isa, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var, _| apply(var)),
+            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var| apply(var)),
             Self::Has(thing::HasInstruction { has, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(|var, _| apply(var)),
+            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(|var| apply(var)),
             Self::Links(thing::LinksInstruction { links, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => {
-                links.ids_foreach(|var, _| apply(var))
+                links.ids_foreach(|var| apply(var))
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {
@@ -259,28 +259,28 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Is(IsInstruction { is, inputs, .. }) => is.ids_foreach(|var, _| {
+            Self::Is(IsInstruction { is, inputs, .. }) => is.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var, _| apply(var)),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
+            | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Owns(type_::OwnsInstruction { owns, inputs, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, inputs, .. }) => owns.ids_foreach(|var, _| {
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, inputs, .. }) => owns.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Relates(type_::RelatesInstruction { relates, inputs, .. })
             | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, inputs, .. }) => {
-                relates.ids_foreach(|var, _| {
+                relates.ids_foreach(|var| {
                     if !inputs.contains(var) {
                         apply(var)
                     }
@@ -288,27 +288,27 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             }
             Self::Plays(type_::PlaysInstruction { plays, inputs, .. })
             | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, inputs, .. }) => {
-                plays.ids_foreach(|var, _| {
+                plays.ids_foreach(|var| {
                     if !inputs.contains(var) {
                         apply(var)
                     }
                 })
             }
             Self::Isa(thing::IsaInstruction { isa, inputs, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => isa.ids_foreach(|var, _| {
+            | Self::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => isa.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Has(thing::HasInstruction { has, inputs, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var, _| {
+            | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Links(thing::LinksInstruction { links, inputs, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { links, inputs, .. }) => {
-                links.ids_foreach(|var, _| {
+                links.ids_foreach(|var| {
                     if !inputs.contains(var) {
                         apply(var)
                     }

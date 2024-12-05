@@ -4,33 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-/*
-Optimisation pass to convert simple binary relation traversal into rp-index lookups:
-
-Given:
-$r roleplayer $x (role filter: $role1)
-$r roleplayer $y (role filter: $role2)
-
-Where $r, $role1, and $role2 are NOT returned
-Then we can collapse these into:
-
-$x relation-rp-indexed $y (rel filter: $r, role-left filter: $role1, role-right filter: $role2)
- */
-
 use std::collections::HashMap;
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::{Constraint, IndexedRelation};
+use ir::pattern::constraint::{Comparator, Constraint, IndexedRelation};
 use ir::pattern::Vertex;
 use storage::snapshot::ReadableSnapshot;
 use crate::annotation::type_annotations::TypeAnnotations;
-use crate::optimisation::StaticOptimiserError;
+use crate::transformation::StaticOptimiserError;
 
 /// Precondition:
 ///   1) $r links $x (role: $role1)
 ///   2) $r links $y (role: $role2)
 /// and all types in $r have a relation index
+/// and $r does not have an attribute with an equality comparator (either constant, or an attribute/value variable)
+///     (heuristically, this will often produce worse plans since we can't find the relation by attribute value, then intersect on the relation)
+/// and there are exactly 2 query player variables in the relation $r
 ///
 /// Then
 ///   replace 1) and 2) with
@@ -51,10 +41,14 @@ pub(crate) fn relation_index_transformation(
         }
     }
 
-    while let Some(&relation) = candidates.keys().next() {
+    while let Some(relation) = candidates.keys().next() {
+        let relation = relation.clone(); // release borrow on candidates
         let (links_index, other_links_indices) = candidates.remove(&relation).unwrap();
         // we will for now only apply the optimisation when it's exactly a binary edge query involving 2 role player variables
-        if other_links_indices.len() == 1 && index_available(type_manager, snapshot, &relation, type_annotations)? {
+        if other_links_indices.len() == 1
+            && index_available(type_manager, snapshot, &relation, type_annotations)?
+            && !with_iid_or_constant_attribute(&relation, conjunction)
+        {
             let other_links_index = other_links_indices[0];
             replace_links(conjunction, links_index, other_links_index);
             
@@ -85,6 +79,29 @@ fn index_available(
         }
     }
     return Ok(true);
+}
+
+fn with_iid_or_constant_attribute(relation: &Vertex<Variable>, conjunction: &Conjunction) -> bool {
+    for constraint in conjunction.constraints() {
+        if let Some(iid_constraint) = constraint.as_iid() {
+           if relation == iid_constraint.var() {
+               return true;
+           }
+        } else if let Some(has_constraint) = constraint.as_has() {
+            if relation == has_constraint.owner() && attribute_has_value(has_constraint.attribute(), conjunction) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+fn attribute_has_value(attribute: &Vertex<Variable>, conjunction: &Conjunction) -> bool {
+    conjunction.constraints().iter().filter_map(|constraint| constraint.as_comparison())
+        .any(|comparison| {
+            (comparison.lhs() == attribute || comparison.rhs() == attribute) 
+                && comparison.comparator() == Comparator::Equal
+        })
 }
 
 fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: usize) {
