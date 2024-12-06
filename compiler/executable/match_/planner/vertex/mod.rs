@@ -373,11 +373,12 @@ impl<'a> FunctionCallPlanner<'a> {
 }
 
 impl Costed for FunctionCallPlanner<'_> {
-    fn cost(&self,
+    fn cost(
+        &self,
         _inputs: &[VertexId],
         _step_sort_variable: Option<VariableVertexId>,
         _index: usize,
-        _graph: &Graph<'_>
+        _graph: &Graph<'_>,
     ) -> ElementCost {
         self.cost
     }

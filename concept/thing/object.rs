@@ -197,7 +197,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager: &ThingManager,
         attribute_type_range: &impl RangeBounds<AttributeType>,
     ) -> HasIterator {
-        thing_manager.get_has_from_thing_unordered(snapshot, &self, attribute_type_range)
+        thing_manager.get_has_from_thing_unordered(snapshot, self, attribute_type_range)
     }
 
     fn set_has_unordered(

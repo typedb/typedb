@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering};
+use std::{borrow::Borrow, cmp::Ordering, fmt};
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
 use lending_iterator::higher_order::Hkt;
 use primitive::prefix::Prefix;
 use serde::{Deserialize, Serialize};
@@ -221,10 +221,19 @@ impl<const SZ: usize, KS: KeyspaceSet> From<(KS, &[u8])> for StorageKeyArray<SZ>
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy)]
 pub struct StorageKeyReference<'bytes> {
     keyspace_id: KeyspaceId,
     reference: &'bytes [u8],
+}
+
+impl fmt::Debug for StorageKeyReference<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct(std::any::type_name_of_val(self))
+            .field("keyspace_id", &self.keyspace_id)
+            .field("data", &HexBytesFormatter::borrowed(self.reference))
+            .finish()
+    }
 }
 
 impl<'bytes> StorageKeyReference<'bytes> {
