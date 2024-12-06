@@ -63,7 +63,7 @@ features = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.210"
+		version = "1.0.215"
 		default-features = false
 
 	[dependencies.resource]
@@ -108,7 +108,7 @@ features = {}
 
 	[dependencies.regex]
 		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
-		version = "1.10.6"
+		version = "1.11.1"
 		default-features = false
 
 	[dependencies.chrono-tz]

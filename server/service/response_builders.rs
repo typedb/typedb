@@ -270,3 +270,39 @@ pub(crate) mod transaction {
         transaction_server_res_part(req_id, transaction_res_part_res_part_stream_signal_error(error))
     }
 }
+
+pub(crate) mod user_manager {
+    use system::concepts::User;
+
+    pub(crate) fn users_all_res(users: Vec<User>) -> typedb_protocol::user_manager::all::Res {
+        let mut users_proto: Vec<typedb_protocol::User> = vec![];
+        for user in users {
+            users_proto.push(new_user(user));
+        }
+        typedb_protocol::user_manager::all::Res { users: users_proto }
+    }
+
+    pub(crate) fn users_get_res(user: User) -> typedb_protocol::user_manager::get::Res {
+        typedb_protocol::user_manager::get::Res { user: Some(new_user(user)) }
+    }
+
+    pub(crate) fn users_contains_res(contains: bool) -> typedb_protocol::user_manager::contains::Res {
+        typedb_protocol::user_manager::contains::Res { contains }
+    }
+
+    pub(crate) fn user_create_res() -> typedb_protocol::user_manager::create::Res {
+        typedb_protocol::user_manager::create::Res {}
+    }
+
+    pub(crate) fn user_update_res() -> typedb_protocol::user::update::Res {
+        typedb_protocol::user::update::Res {}
+    }
+
+    pub(crate) fn users_delete_res() -> typedb_protocol::user::delete::Res {
+        typedb_protocol::user::delete::Res {}
+    }
+
+    fn new_user(user: User) -> typedb_protocol::User {
+        typedb_protocol::User { name: user.name, password: None }
+    }
+}
