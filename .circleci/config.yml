@@ -278,31 +278,15 @@ jobs:
 workflows:
   typedb-snapshot:
     jobs:
-      - test-deploy-snapshot-linux-x86_64:
-          filters:
-            branches:
-              only: [ "3.0" ]
+      - test-deploy-snapshot-linux-x86_64
 
-      - test-deploy-snapshot-linux-arm64:
-          filters:
-            branches:
-              only: [ "3.0" ]
+      - test-deploy-snapshot-linux-arm64
 
-      - test-deploy-snapshot-mac-x86_64:
-          filters:
-            branches:
-              only: [ "3.0" ]
+      - test-deploy-snapshot-mac-x86_64
 
-      - test-deploy-snapshot-mac-arm64:
-          filters:
-            branches:
-              only: [ "3.0" ]
+      - test-deploy-snapshot-mac-arm64
 
       - sync-to-typedb-benchmark:
-          # TODO: re-enable before merging
-          # filters:
-          #   branches:
-          #     only: [ "3.0" ]
           requires:
             - test-deploy-snapshot-linux-x86_64
 
