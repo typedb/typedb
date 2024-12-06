@@ -605,11 +605,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let cost = ordering
             .iter()
             .enumerate()
-            .map(|(i, idx)| {
-                let sort_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
-                self.graph.elements[idx].cost_and_metadata(&ordering[..i], &self.graph).0
-            })
-            .fold(Cost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
+            .map(|(i, idx)| self.graph.elements[idx].cost_and_metadata(&ordering[..i], &self.graph))
+            .fold(Cost::MEM_SIMPLE_BRANCH_1, |acc, (cost, _)| acc.chain(cost));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 

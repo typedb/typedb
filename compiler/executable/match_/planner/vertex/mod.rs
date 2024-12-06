@@ -66,23 +66,6 @@ impl PlannerVertex<'_> {
         }
     }
 
-    pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
-        match self {
-            Self::Variable(_) => Box::new(iter::empty()),
-            Self::Constraint(inner) => inner.variables(),
-            Self::Is(inner) => Box::new(inner.variables()),
-            Self::Comparison(inner) => Box::new(inner.variables()),
-            Self::Expression(inner) => Box::new(inner.variables()),
-            Self::FunctionCall(inner) => Box::new(inner.variables()),
-            Self::Negation(inner) => Box::new(inner.variables()),
-            Self::Disjunction(inner) => Box::new(inner.variables()),
-        }
-    }
-
-    pub(super) fn is_variable(&self) -> bool {
-        matches!(self, Self::Variable(_))
-    }
-
     pub(super) fn is_constraint(&self) -> bool {
         matches!(self, Self::Constraint(_))
     }
@@ -159,7 +142,7 @@ pub(super) trait Costed {
 impl Costed for PlannerVertex<'_> {
     fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         match self {
-            Self::Variable(_) => unreachable!(),
+            Self::Variable(_) => (Cost::NOOP, CostMetaData::None),
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
 
             Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, graph),
