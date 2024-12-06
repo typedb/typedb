@@ -109,103 +109,41 @@ impl PlannerVertex<'_> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct ElementCost {
-    pub per_input: f64,
-    pub per_output: f64,
-    pub io_ratio: f64,
-}
-
-impl ElementCost {
-    const IN_MEM_COST_SIMPLE: f64 = 0.01;
-    const IN_MEM_COST_COMPLEX: f64 = ElementCost::IN_MEM_COST_SIMPLE * 2.0;
-
-    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 0.0 };
-    pub const NOOP: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 };
-
-    pub const MEM_SIMPLE_BRANCH_1: Self =
-        Self { per_input: ElementCost::IN_MEM_COST_SIMPLE, per_output: ElementCost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
-    pub const MEM_COMPLEX_BRANCH_1: Self = Self {
-        per_input: ElementCost::IN_MEM_COST_COMPLEX,
-        per_output: ElementCost::IN_MEM_COST_COMPLEX,
-        io_ratio: 1.0,
-    };
-
-    fn in_mem_complex_with_branching(branching_factor: f64) -> Self {
-        Self {
-            per_input: ElementCost::IN_MEM_COST_COMPLEX,
-            per_output: ElementCost::IN_MEM_COST_COMPLEX,
-            io_ratio: branching_factor,
-        }
-    }
-
-    fn in_mem_simple_with_branching(branching_factor: f64) -> Self {
-        Self {
-            per_input: ElementCost::IN_MEM_COST_SIMPLE,
-            per_output: ElementCost::IN_MEM_COST_SIMPLE,
-            io_ratio: branching_factor,
-        }
-    }
-
-    pub(crate) fn chain(self, other: Self) -> Self {
-        Self {
-            per_input: self.per_input + other.per_input * self.io_ratio,
-            per_output: self.per_output / other.io_ratio + other.per_output,
-            io_ratio: self.io_ratio * other.io_ratio,
-        }
-    }
-
-    pub(crate) fn combine_parallel(self, other: Self) -> Self {
-        fn weighted_mean((lhs_value, lhs_weight): (f64, f64), (rhs_value, rhs_weight): (f64, f64)) -> f64 {
-            (lhs_value * lhs_weight + rhs_value * rhs_weight) / (lhs_weight + rhs_weight)
-        }
-        Self {
-            per_input: self.per_input + other.per_input,
-            per_output: weighted_mean((self.per_output, self.io_ratio), (other.per_output, other.io_ratio)),
-            io_ratio: self.io_ratio + other.io_ratio,
-        }
-    }
-
-    pub(crate) fn total(self) -> f64 {
-        self.per_input + self.per_output * self.io_ratio
-    }
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct CombinedCost {
+pub(crate) struct Cost {
     pub cost: f64, // per input
     pub io_ratio: f64,
 }
 
-impl CombinedCost {
+impl Cost {
     const MIN_IO_RATIO: f64 = 0.000000001;
     const IN_MEM_COST_SIMPLE: f64 = 0.02;
-    const IN_MEM_COST_COMPLEX: f64 = CombinedCost::IN_MEM_COST_SIMPLE * 2.0;
+    const IN_MEM_COST_COMPLEX: f64 = Cost::IN_MEM_COST_SIMPLE * 2.0;
     pub const NOOP: Self = Self { cost: 0.0, io_ratio: 1.0 };
     pub const EMPTY: Self = Self { cost: 0.0, io_ratio: 0.0 };
     pub const INFINITY: Self = Self { cost: f64::INFINITY, io_ratio: 0.0 };
-    pub const MEM_SIMPLE_BRANCH_1: Self = Self { cost: CombinedCost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
-    pub const MEM_COMPLEX_BRANCH_1: Self = Self { cost: CombinedCost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
+    pub const MEM_SIMPLE_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
+    pub const MEM_COMPLEX_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
 
     fn in_mem_complex_with_ratio(io_ratio: f64) -> Self {
-        Self { cost: CombinedCost::IN_MEM_COST_COMPLEX, io_ratio }
+        Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio }
     }
 
     fn in_mem_simple_with_ratio(io_ratio: f64) -> Self {
-        Self { cost: CombinedCost::IN_MEM_COST_SIMPLE, io_ratio }
+        Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio }
     }
 
     pub(crate) fn chain(self, other: Self) -> Self {
         Self {
             cost: self.cost + other.cost * self.io_ratio,
-            io_ratio: f64::max(self.io_ratio * other.io_ratio, CombinedCost::MIN_IO_RATIO),
+            io_ratio: f64::max(self.io_ratio * other.io_ratio, Cost::MIN_IO_RATIO),
         }
     }
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
         Self {
             cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix cartesian product situation in Rocks
-            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, CombinedCost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
+            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
         }
     }
 
@@ -214,48 +152,12 @@ impl CombinedCost {
     }
 }
 
-impl From<ElementCost> for CombinedCost {
-    fn from(ElementCost { per_input, per_output, io_ratio }: ElementCost) -> Self {
-        Self { cost: per_input + io_ratio * per_output, io_ratio }
-    }
-}
-
 pub(super) trait Costed {
-    fn cost(
-        &self,
-        inputs: &[VertexId],
-        step_sort_variable: Option<VariableVertexId>,
-        step_start_index: usize,
-        graph: &Graph<'_>,
-    ) -> ElementCost;
-
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData);
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData);
 }
 
 impl Costed for PlannerVertex<'_> {
-    fn cost(
-        &self,
-        inputs: &[VertexId],
-        step_sort_variable: Option<VariableVertexId>,
-        step_start_index: usize,
-        graph: &Graph<'_>,
-    ) -> ElementCost {
-        match self {
-            Self::Variable(_) => ElementCost::NOOP,
-            Self::Constraint(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-
-            Self::Is(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-            Self::Comparison(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-
-            Self::Expression(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-            Self::FunctionCall(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-
-            Self::Negation(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-            Self::Disjunction(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
-        }
-    }
-
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         match self {
             Self::Variable(_) => unreachable!(),
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
@@ -314,8 +216,7 @@ pub(crate) struct ExpressionPlanner<'a> {
     pub expression: &'a ExecutableExpression<Variable>,
     inputs: Vec<VariableVertexId>,
     pub output: VariableVertexId,
-    cost: ElementCost,
-    combined_cost: CombinedCost,
+    cost: Cost,
 }
 
 impl<'a> ExpressionPlanner<'a> {
@@ -324,9 +225,8 @@ impl<'a> ExpressionPlanner<'a> {
         inputs: Vec<VariableVertexId>,
         output: VariableVertexId,
     ) -> Self {
-        let cost = ElementCost::MEM_COMPLEX_BRANCH_1;
-        let combined_cost = CombinedCost::MEM_COMPLEX_BRANCH_1;
-        Self { inputs, output, cost, combined_cost, expression }
+        let cost = Cost::MEM_COMPLEX_BRANCH_1;
+        Self { inputs, output, cost, expression }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
@@ -339,18 +239,8 @@ impl<'a> ExpressionPlanner<'a> {
 }
 
 impl Costed for ExpressionPlanner<'_> {
-    fn cost(
-        &self,
-        _inputs: &[VertexId],
-        _intersection: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _graph: &Graph<'_>,
-    ) -> ElementCost {
-        self.cost
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (self.combined_cost, CostMetaData::None)
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (self.cost, CostMetaData::None)
     }
 }
 
@@ -359,8 +249,7 @@ pub(crate) struct FunctionCallPlanner<'a> {
     pub call_binding: &'a FunctionCallBinding<Variable>,
     pub(super) arguments: Vec<VariableVertexId>,
     pub(super) assigned: Vec<VariableVertexId>,
-    cost: ElementCost,
-    combined_cost: CombinedCost,
+    cost: Cost,
 }
 
 impl<'a> FunctionCallPlanner<'a> {
@@ -368,10 +257,9 @@ impl<'a> FunctionCallPlanner<'a> {
         call_binding: &'a FunctionCallBinding<Variable>,
         arguments: Vec<VariableVertexId>,
         assigned: Vec<VariableVertexId>,
-        cost: ElementCost,
-        combined_cost: CombinedCost,
+        cost: Cost,
     ) -> Self {
-        Self { call_binding, arguments, assigned, cost, combined_cost }
+        Self { call_binding, arguments, assigned, cost }
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
@@ -380,18 +268,8 @@ impl<'a> FunctionCallPlanner<'a> {
 }
 
 impl Costed for FunctionCallPlanner<'_> {
-    fn cost(
-        &self,
-        _inputs: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _index: usize,
-        _graph: &Graph<'_>,
-    ) -> ElementCost {
-        self.cost
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (self.combined_cost, CostMetaData::None)
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (self.cost, CostMetaData::None)
     }
 }
 
@@ -428,12 +306,8 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: Option<VariableVertexId>, _: usize, _: &Graph<'_>) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -482,18 +356,8 @@ impl<'a> ComparisonPlanner<'a> {
 }
 
 impl Costed for ComparisonPlanner<'_> {
-    fn cost(
-        &self,
-        _: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _: &Graph<'_>,
-    ) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -523,18 +387,8 @@ impl<'a> NegationPlanner<'a> {
 }
 
 impl Costed for NegationPlanner<'_> {
-    fn cost(
-        &self,
-        _inputs: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index_: usize,
-        _: &Graph<'_>,
-    ) -> ElementCost {
-        self.plan.cost()
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (self.plan.combined_cost(), CostMetaData::None)
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (self.plan.cost(), CostMetaData::None)
     }
 }
 
@@ -569,31 +423,15 @@ impl<'a> DisjunctionPlanner<'a> {
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost(
-        &self,
-        inputs: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        graph: &Graph<'_>,
-    ) -> ElementCost {
-        let input_variables =
-            inputs.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
-        self.builder()
-            .branches()
-            .iter()
-            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
-            .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
-    }
-
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let input_variables =
             vertex_ordering.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         let cost = self
             .builder()
             .branches()
             .iter()
-            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().combined_cost())
-            .fold(CombinedCost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost));
+            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
+            .fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost));
         (cost, CostMetaData::None)
     }
 }

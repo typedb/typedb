@@ -49,8 +49,8 @@ use crate::{
                     RelatesPlanner, SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                CombinedCost, ComparisonPlanner, CostMetaData, Costed, Direction, DisjunctionPlanner, ElementCost,
-                ExpressionPlanner, FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
+                ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
+                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
             },
             DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
             NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -469,15 +469,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         // TODO: Use the real cost when we have function planning
-        let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, io_ratio: 1.0 };
-        let combined_cost = CombinedCost { cost: 1.0, io_ratio: 1.0 };
-        self.graph.push_function_call(FunctionCallPlanner::from_constraint(
-            call_binding,
-            arguments,
-            return_vars,
-            element_cost,
-            combined_cost,
-        ));
+        let cost = Cost { cost: 1.0, io_ratio: 1.0 };
+        self.graph.push_function_call(FunctionCallPlanner::from_constraint(call_binding, arguments, return_vars, cost));
     }
 
     fn register_is(&mut self, is: &'a Is<Variable>) {
@@ -614,9 +607,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .enumerate()
             .map(|(i, idx)| {
                 let sort_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
-                self.graph.elements[idx].cost(&ordering[..i], sort_variable, 0, &self.graph)
+                self.graph.elements[idx].cost_and_metadata(&ordering[..i], &self.graph).0
             })
-            .fold(ElementCost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
+            .fold(Cost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
@@ -628,20 +621,20 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 pub(super) struct CompleteCostPlan {
     vertex_ordering: Vec<VertexId>,
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
-    cumulative_cost: CombinedCost,
+    cumulative_cost: Cost,
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct PartialCostPlan {
     vertex_ordering: Vec<VertexId>,
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
-    cumulative_cost: CombinedCost,
+    cumulative_cost: Cost,
     remaining_patterns: HashSet<PatternVertexId>,
     ongoing_step: Vec<VertexId>,
-    ongoing_step_cost: CombinedCost,
+    ongoing_step_cost: Cost,
     ongoing_step_produced_vars: HashSet<VariableVertexId>,
     ongoing_step_join_var: Option<VariableVertexId>,
-    projected_cost: CombinedCost,
+    projected_cost: Cost,
 }
 
 impl PartialCostPlan {
@@ -657,13 +650,13 @@ impl PartialCostPlan {
         Self {
             vertex_ordering,
             pattern_metadata: HashMap::new(),
-            cumulative_cost: CombinedCost::NOOP,
+            cumulative_cost: Cost::NOOP,
             remaining_patterns,
             ongoing_step: Vec::new(),
-            ongoing_step_cost: CombinedCost::NOOP,
+            ongoing_step_cost: Cost::NOOP,
             ongoing_step_produced_vars: HashSet::new(),
             ongoing_step_join_var: None,
-            projected_cost: CombinedCost::INFINITY,
+            projected_cost: Cost::INFINITY,
         }
     }
 
@@ -687,7 +680,7 @@ impl PartialCostPlan {
                 }
             })
             .map(move |(extension, join_var)| {
-                let added_cost: CombinedCost;
+                let added_cost: Cost;
                 let meta_data: CostMetaData;
 
                 if join_var.is_none() {
@@ -749,7 +742,7 @@ impl PartialCostPlan {
         pattern: PatternVertexId,
         input_vars: &[VertexId],
         join_var: Option<VariableVertexId>,
-    ) -> (CombinedCost, CostMetaData) {
+    ) -> (Cost, CostMetaData) {
         let planner = &graph.elements[&VertexId::Pattern(pattern)];
         let (updated_cost, extension_metadata) = match planner {
             PlannerVertex::Constraint(constraint) => {
@@ -769,8 +762,8 @@ impl PartialCostPlan {
         (updated_cost, extension_metadata)
     }
 
-    fn heuristic_plan_completion_cost(&self, _graph: &Graph<'_>, _pattern: PatternVertexId) -> CombinedCost {
-        CombinedCost::NOOP
+    fn heuristic_plan_completion_cost(&self, _graph: &Graph<'_>, _pattern: PatternVertexId) -> Cost {
+        Cost::NOOP
     }
 
     fn clone_and_extend_with_continued_step(&self, extension: StepExtension, graph: &Graph<'_>) -> PartialCostPlan {
@@ -903,9 +896,9 @@ impl Ord for PartialCostPlan {
 pub(super) struct StepExtension {
     pattern_extension: PatternVertexId,
     pattern_metadata: CostMetaData,
-    step_cost: CombinedCost,
+    step_cost: Cost,
     step_join_var: Option<VariableVertexId>,
-    projected_cost: CombinedCost,
+    projected_cost: Cost,
 }
 
 impl StepExtension {
@@ -936,7 +929,7 @@ pub(super) struct ConjunctionPlan<'a> {
     ordering: Vec<VertexId>, //TODO: replace with the CostPlan
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
-    cost: ElementCost,
+    cost: Cost,
 }
 
 impl fmt::Debug for ConjunctionPlan<'_> {
@@ -1400,12 +1393,8 @@ impl ConjunctionPlan<'_> {
         }
     }
 
-    pub(super) fn cost(&self) -> ElementCost {
+    pub(super) fn cost(&self) -> Cost {
         self.cost
-    }
-
-    pub(super) fn combined_cost(&self) -> CombinedCost {
-        CombinedCost::from(self.cost)
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
@@ -1430,7 +1419,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
     fn plan(self, input_variables: impl Iterator<Item = Variable> + Clone) -> DisjunctionPlan<'a> {
         let branches =
             self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
-        let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
+        let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
         DisjunctionPlan { branches, _cost: cost }
     }
 }
@@ -1438,7 +1427,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlan<'a> {
     branches: Vec<ConjunctionPlan<'a>>,
-    _cost: ElementCost,
+    _cost: Cost,
 }
 
 impl DisjunctionPlan<'_> {
