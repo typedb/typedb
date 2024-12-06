@@ -106,6 +106,7 @@ fn execute_write_query(
                                            _db,
                                            _opts| {
         let snapshot = Arc::into_inner(snapshot).unwrap();
+
         let pipeline_result = query_manager.prepare_write_pipeline(
             snapshot,
             &type_manager,

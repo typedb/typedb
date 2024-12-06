@@ -7,6 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+mod authenticator;
 pub mod parameters;
 mod service;
 pub mod typedb;

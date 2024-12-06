@@ -4,55 +4,36 @@
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-package(default_visibility = ["//visibility:public",])
+package(default_visibility = ["//visibility:public"])
 
 rust_library(
-    name = "server",
+    name = "system",
+    crate_root = "lib.rs",
     srcs = glob([
         "*.rs",
-        "parameters/**/*.rs",
-        "service/*.rs",
     ]),
     deps = [
         "//answer",
-        "//common/bytes",
-        "//common/error",
         "//common/lending_iterator",
         "//common/options",
         "//compiler",
         "//concept",
         "//database",
-        "//user",
-        "//encoding",
+        "//common/error",
         "//executor",
         "//function",
-        "//ir",
         "//query",
-        "//resource",
         "//storage",
-        "//system",
-
         "@typeql//rust:typeql",
-        "@typedb_protocol//grpc/rust:typedb_protocol",
-
-        "@crates//:clap",
-        "@crates//:chrono",
-        "@crates//:chrono-tz",
-        "@crates//:itertools",
-        "@crates//:prost",
-        "@crates//:tokio",
-        "@crates//:tokio-stream",
-        "@crates//:tonic",
-        "@crates//:tonic-types",
-        "@crates//:tracing",
-        "@crates//:uuid",
         "@crates//:pwhash",
-    ]
+        "@crates//:uuid",
+    ],
+    data = ["schema.tql"]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     exclude = glob([
         "Cargo.*",
     ]),

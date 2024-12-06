@@ -112,7 +112,7 @@ features = {}
 
 	[dependencies.futures]
 		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
-		version = "0.3.30"
+		version = "0.3.31"
 		default-features = false
 
 	[dependencies.encoding]
@@ -132,7 +132,7 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.128"
+		version = "1.0.133"
 		default-features = false
 
 	[dependencies.lending_iterator]
