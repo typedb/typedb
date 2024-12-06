@@ -263,7 +263,7 @@ jobs:
             git config user.name "TypeDB Bot"
             git config user.email "bot@typedb.com"
             # ./tool/update-typedb-core-version.sh "$CIRCLE_SHA1"
-            git commit -m "Update TypeDB Core to $CIRCLE_SHA" --allow-empty
+            git commit -m "Update TypeDB Core to $CIRCLE_SHA1" --allow-empty
             git push origin development
 
   # generic
