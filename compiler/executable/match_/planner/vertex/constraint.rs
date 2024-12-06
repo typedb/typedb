@@ -550,7 +550,7 @@ impl<'a> LinksPlanner<'a> {
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
 
         let unbound_typed_expected_size = constraint_types
-            .filters_on_left()
+            .relation_to_role()
             .iter()
             .flat_map(|(relation, roles)| {
                 roles.iter().cartesian_product(player_types).flat_map(|(role, player)| {

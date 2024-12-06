@@ -460,6 +460,7 @@ pub enum Constraint<ID> {
     Value(Value<ID>),
 }
 
+
 impl<ID: IrID> Constraint<ID> {
     pub fn name(&self) -> &str {
         match self {
@@ -627,6 +628,13 @@ impl<ID: IrID> Constraint<ID> {
         match self {
             Constraint::Links(rp) => Some(rp),
             _ => None,
+        }
+    }
+
+    pub fn as_indexed_relation(&self) -> Option<&IndexedRelation<ID>> {
+        match self {
+            Constraint::IndexedRelation(indexed_relation) => Some(indexed_relation),
+            _ => None
         }
     }
 
@@ -1438,7 +1446,7 @@ impl<ID: IrID> IndexedRelation<ID> {
     }
 
     pub fn role_type_2(&self) -> &Vertex<ID> {
-        &self.role_type_1
+        &self.role_type_2
     }
 
     pub fn ids(&self) -> impl Iterator<Item=ID> {

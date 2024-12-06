@@ -257,8 +257,8 @@ impl LinksInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
-        let player_to_role_types = edge_annotations.filters_on_right();
-        let relation_to_player_types = edge_annotations.left_to_right();
+        let player_to_role_types = edge_annotations.player_to_role();
+        let relation_to_player_types = edge_annotations.relation_to_player();
         let player_types = type_annotations.vertex_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
     }
@@ -316,8 +316,8 @@ impl LinksReverseInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
             type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
-        let relation_to_role_types = edge_annotations.filters_on_left();
-        let player_to_relation_types = edge_annotations.right_to_left();
+        let relation_to_role_types = edge_annotations.relation_to_role();
+        let player_to_relation_types = edge_annotations.player_to_relation();
         let relation_types = type_annotations.vertex_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
     }

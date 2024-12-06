@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::{Comparator, Constraint, IndexedRelation};
+use ir::pattern::constraint::{Comparator, Constraint, IndexedRelation, Links};
 use ir::pattern::Vertex;
 use storage::snapshot::ReadableSnapshot;
 use crate::annotation::type_annotations::TypeAnnotations;
@@ -21,6 +21,8 @@ use crate::transformation::StaticOptimiserError;
 /// and $r does not have an attribute with an equality comparator (either constant, or an attribute/value variable)
 ///     (heuristically, this will often produce worse plans since we can't find the relation by attribute value, then intersect on the relation)
 /// and there are exactly 2 query player variables in the relation $r
+/// 
+/// TODO: we should just add the relation index when available and make it mutually exclusive to the 2 links constraints, rather than replacing them
 ///
 /// Then
 ///   replace 1) and 2) with
@@ -104,7 +106,8 @@ fn attribute_has_value(attribute: &Vertex<Variable>, conjunction: &Conjunction) 
         })
 }
 
-fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: usize) {
+// TODO: add indexed-relation and mutual exclusivity
+fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: usize, annotations: &mut TypeAnnotations) {
     debug_assert!(index_rp_1 != index_rp_2);
     let (remove_first, remove_second) = if index_rp_1 > index_rp_2 {
         (index_rp_1, index_rp_2)
@@ -131,6 +134,11 @@ fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: u
         links_2.role_type().clone().as_variable().unwrap()
     );
     conjunction.constraints_mut().constraints_mut().push(Constraint::IndexedRelation(indexed_relation));
+    add_type_annotations(&links_1, &links_2, annotations)
+}
+
+fn add_type_annotations(links_1: &Links<Variable>, links_2: &Links<Variable>, type_annotations: &mut TypeAnnotations) {
+    todo!()
 }
 
 fn index_decrement_if_removing(index: usize, removed_1: usize, removed_2: usize) -> usize {
