@@ -150,8 +150,6 @@ pub(super) struct IntersectionExecutor {
     intersection_row: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
 
-    output: Option<FixedBatch>,
-
     profile: Arc<StepProfile>,
 }
 
@@ -183,7 +181,6 @@ impl IntersectionExecutor {
             intersection_value: VariableValue::Empty,
             intersection_row: vec![VariableValue::Empty; output_width as usize],
             intersection_multiplicity: 1,
-            output: None,
             profile,
         })
     }
@@ -193,7 +190,7 @@ impl IntersectionExecutor {
         input_batch: FixedBatch,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
-        debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
+        debug_assert!(self.input.is_none() || self.input.as_mut().unwrap().peek().is_none());
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(context)?;
@@ -205,27 +202,27 @@ impl IntersectionExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        debug_assert!(self.output.is_none());
-        self.may_compute_next_batch(context)?;
-        Ok(self.output.take())
+        self.may_compute_next_batch(context)
     }
 
     fn may_compute_next_batch(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<(), ReadExecutionError> {
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let measurement = self.profile.start_measurement();
-        if self.compute_next_row(context)? {
+        let output = if self.compute_next_row(context)? {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
             batch.append(|mut row| self.write_next_row_into(&mut row));
             while !batch.is_full() && self.compute_next_row(context)? {
                 batch.append(|mut row| self.write_next_row_into(&mut row));
             }
-            self.output = Some(batch);
-        }
-        measurement.end(&self.profile, 1, self.output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
-        Ok(())
+            Some(batch)
+        } else {
+            None
+        };
+        measurement.end(&self.profile, 1, output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
+        Ok(output)
     }
 
     fn write_next_row_into(&mut self, row: &mut Row<'_>) {
