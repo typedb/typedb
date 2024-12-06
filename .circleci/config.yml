@@ -252,7 +252,8 @@ jobs:
               -r ${CIRCLE_PROJECT_REPONAME} -n "TypeDB $(cat VERSION)" -b "$(cat ./RELEASE_NOTES_LATEST.md)" \
               -c ${CIRCLE_SHA1} -delete $(cat VERSION)
   sync-to-typedb-benchmark:
-    executor: linux-x86_64-amazonlinux-2
+    machine:
+      image: ubuntu-2204:2024.11.1
     steps:
       - run:
           name: "Sync this commit to TypeDB Benchmark"
@@ -286,9 +287,7 @@ workflows:
 
       - test-deploy-snapshot-mac-arm64
 
-      - sync-to-typedb-benchmark:
-          requires:
-            - test-deploy-snapshot-linux-x86_64
+      - sync-to-typedb-benchmark
 
   release:
     jobs:
