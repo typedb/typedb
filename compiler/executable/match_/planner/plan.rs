@@ -9,8 +9,6 @@ use std::{
     cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet},
     fmt,
-    fmt::Debug,
-    time::Instant,
 };
 
 use answer::variable::Variable;
@@ -61,8 +59,7 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 
-pub const BEAM_WIDTH: usize = 128;
-pub const EXTENSION_WIDTH: usize = 64;
+pub const MAX_BEAM_WIDTH: usize = 128;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -634,20 +631,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         (vertex_plan, meta_data)
     }
 
-    fn calculate_marginal_cost(
-        &self,
-        vertex_plan: &[VertexId],
-        next: VertexId,
-        sort_variable: Option<VariableVertexId>,
-        step_start_index: usize,
-    ) -> f64 {
-        assert!(!vertex_plan.contains(&next));
-        let planner_vertex = &self.graph.elements[&next];
-        let ElementCost { per_input, per_output, io_ratio: branching_factor } =
-            planner_vertex.cost(vertex_plan, sort_variable, step_start_index, &self.graph);
-        per_input + branching_factor * per_output
-    }
-
     fn calculate_marginal_elementcost(
         &self,
         vertex_plan: &[VertexId],
@@ -677,10 +660,10 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             self.input_variables(), // input variables start the plan
         )];
 
-        let beam_width = ((search_depth.saturating_sub(10)) * 4).clamp(2, BEAM_WIDTH);
+        let beam_width = ((search_depth.saturating_sub(10)) * 4).clamp(2, MAX_BEAM_WIDTH);
         let extension_width = beam_width / 2;
 
-        for i in 0..search_depth {
+        for _ in 0..search_depth {
             let mut new_plans_heap: BinaryHeap<PartialCostPlan> = BinaryHeap::new();
             for plan in best_partial_plans.iter() {
                 let mut extension_heap = BinaryHeap::new();
@@ -727,7 +710,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         // Greedy plan
-        // let (ordering, metadata) = self.initialise_greedy_ordering(); // TODO: remove
+        // let (_, _) = self.initialise_greedy_ordering(); // TODO: use as fallback
 
         // Beam plan
         let (ordering, metadata) = self.beam_search_plan();
@@ -1707,10 +1690,6 @@ impl<'a> Graph<'a> {
         let pattern_index = self.next_pattern_id;
         self.next_pattern_id.0 += 1;
         pattern_index
-    }
-
-    pub(super) fn variable_to_pattern(&self) -> &HashMap<VariableVertexId, HashSet<PatternVertexId>> {
-        &self.variable_to_pattern
     }
 
     pub(super) fn elements(&self) -> &HashMap<VertexId, PlannerVertex<'a>> {
