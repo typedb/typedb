@@ -653,20 +653,19 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
-        let all_patterns: HashSet<PatternVertexId> = self.graph.pattern_to_variable.keys().copied().collect();
-        let search_depth: usize = all_patterns.len();
-        let mut best_partial_plans = vec![PartialCostPlan::new(
-            all_patterns,           // all patterns are remaining
-            self.input_variables(), // input variables start the plan
-        )];
+        let num_patterns = self.graph.pattern_to_variable.len();
 
-        let beam_width = ((search_depth.saturating_sub(10)) * 4).clamp(2, MAX_BEAM_WIDTH);
+        let beam_width = ((num_patterns.saturating_sub(10)) * 4).clamp(2, MAX_BEAM_WIDTH);
         let extension_width = beam_width / 2;
 
-        for _ in 0..search_depth {
-            let mut new_plans_heap: BinaryHeap<PartialCostPlan> = BinaryHeap::new();
-            for plan in best_partial_plans.iter() {
-                let mut extension_heap = BinaryHeap::new();
+        let all_patterns = self.graph.pattern_to_variable.keys().copied().collect();
+        let mut best_partial_plans = Vec::with_capacity(beam_width);
+        best_partial_plans.push(PartialCostPlan::new(all_patterns, self.input_variables()));
+
+        for _ in 0..num_patterns {
+            let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
+            for plan in best_partial_plans.drain(..) {
+                let mut extension_heap = BinaryHeap::with_capacity(extension_width);
                 for extension in plan.extensions_iter(&self.graph) {
                     if extension_heap.len() < extension_width {
                         extension_heap.push(extension);
@@ -678,7 +677,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     }
                 }
 
-                for extension in extension_heap.into_iter() {
+                for extension in extension_heap.drain() {
                     let new_plan = if !extension.is_constraint(&self.graph) {
                         plan.clone_and_extend_with_new_step(extension, &self.graph)
                     } else if extension.step_join_var.is_some()
@@ -700,8 +699,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     }
                 }
             }
-            best_partial_plans = new_plans_heap.into_iter().collect();
+            best_partial_plans = new_plans_heap.into_vec();
         }
+
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan();
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
