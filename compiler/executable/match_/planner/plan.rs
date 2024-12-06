@@ -1038,6 +1038,7 @@ impl ConjunctionPlan<'_> {
             return;
         }
 
+        let is_join = self.producers_of_var(var).nth(1).is_some();
         for producer in self.producers_of_var(var) {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
@@ -1056,7 +1057,8 @@ impl ConjunctionPlan<'_> {
                 PlannerVertex::Constraint(constraint) => {
                     let inputs =
                         self.inputs_of_pattern(producer).map(|var| self.graph.index_to_variable[&var]).collect_vec();
-                    self.lower_constraint(match_builder, constraint, self.metadata[&producer], inputs, variable)
+                    let sort_variable = is_join.then_some(variable); // otherwise use metadata
+                    self.lower_constraint(match_builder, constraint, self.metadata[&producer], inputs, sort_variable)
                 }
                 PlannerVertex::Expression(expression) => {
                     let output = match_builder.position_mapping()[&self.graph.index_to_variable[&expression.output]];
@@ -1211,7 +1213,7 @@ impl ConjunctionPlan<'_> {
         constraint: &ConstraintVertex<'_>,
         metadata: CostMetaData,
         inputs: Vec<Variable>,
-        sort_variable: Variable,
+        sort_variable: Option<Variable>,
     ) {
         if let Some(StepBuilder {
             builder:
@@ -1237,10 +1239,16 @@ impl ConjunctionPlan<'_> {
                     };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    let CostMetaData::Direction(unbound_direction) = metadata else {
-                        unreachable!("expected metadata for constraint")
-                    };
-                    unbound_direction
+                    if sort_variable == lhs_var {
+                        Direction::Canonical
+                    } else if sort_variable == rhs_var {
+                        Direction::Reverse
+                    } else {
+                        let CostMetaData::Direction(unbound_direction) = metadata else {
+                            unreachable!("expected metadata for constraint")
+                        };
+                        unbound_direction
+                    }
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
                 } else {
@@ -1251,6 +1259,10 @@ impl ConjunctionPlan<'_> {
                 let instruction = match direction {
                     Direction::Canonical => ConstraintInstruction::$fw($fwi::new(con, inputs, self.type_annotations)),
                     Direction::Reverse => ConstraintInstruction::$bw($bwi::new(con, inputs, self.type_annotations)),
+                };
+                let sort_variable = match direction {
+                    Direction::Canonical => lhs_var.or(rhs_var).unwrap(),
+                    Direction::Reverse => rhs_var.or(lhs_var).unwrap(),
                 };
 
                 match_builder.push_instruction(sort_variable, instruction);
