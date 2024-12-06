@@ -163,7 +163,7 @@ impl PlaysReverseExecutor {
                     .into_keys()
                     .map(|object_type| (object_type, role_type));
 
-                let iterator = plays.into_iter().sorted_by_key(|&(_, player)| player).map(Ok as _);
+                let iterator = plays.into_iter().sorted_by_key(|&(player, _)| player).map(Ok as _);
                 let as_tuples: PlaysReverseBoundedSortedPlayer =
                     iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _);
                 Ok(TupleIterator::PlaysReverseBounded(SortedTupleIterator::new(
