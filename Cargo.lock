@@ -567,7 +567,7 @@ dependencies = [
  "itertools 0.10.5",
  "storage",
  "test_utils",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -824,7 +824,7 @@ dependencies = [
  "storage",
  "test_utils",
  "tracing",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -954,7 +954,7 @@ dependencies = [
 name = "error"
 version = "0.0.0"
 dependencies = [
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -982,7 +982,7 @@ dependencies = [
  "test_utils_encoding",
  "tokio",
  "tracing",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -1041,7 +1041,7 @@ dependencies = [
  "storage",
  "test_utils",
  "tracing",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -1514,7 +1514,7 @@ dependencies = [
  "structural_equality",
  "test_utils",
  "test_utils_storage",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -2339,7 +2339,7 @@ dependencies = [
  "test_utils_concept",
  "test_utils_encoding",
  "tokio",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -2813,7 +2813,7 @@ dependencies = [
  "tonic-types",
  "tracing",
  "typedb-protocol",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
  "user",
  "uuid",
 ]
@@ -2967,7 +2967,7 @@ dependencies = [
  "server",
  "storage",
  "test_utils",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -3029,7 +3029,7 @@ version = "0.0.0"
 dependencies = [
  "paste",
  "serde",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=3063987ccb66dd8a2e96cd440ab76865ea886f97)",
 ]
 
 [[package]]
@@ -3144,7 +3144,7 @@ dependencies = [
  "pwhash",
  "query",
  "storage",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=7b5404c7f098dcea34bfdaaee384abfe8ecf90d1)",
  "uuid",
 ]
 
@@ -3575,6 +3575,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "typeql"
+version = "0.0.0"
+source = "git+https://github.com/typedb/typeql?rev=7b5404c7f098dcea34bfdaaee384abfe8ecf90d1#7b5404c7f098dcea34bfdaaee384abfe8ecf90d1"
+dependencies = [
+ "chrono",
+ "itertools 0.10.5",
+ "pest",
+ "pest_derive",
+ "regex",
+]
+
+[[package]]
 name = "ucd-trie"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3632,7 +3644,7 @@ dependencies = [
  "resource",
  "storage",
  "system",
- "typeql",
+ "typeql 0.0.0 (git+https://github.com/typedb/typeql?rev=7b5404c7f098dcea34bfdaaee384abfe8ecf90d1)",
 ]
 
 [[package]]
