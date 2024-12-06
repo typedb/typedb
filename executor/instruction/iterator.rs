@@ -354,7 +354,7 @@ impl<It: Iterator<Item = TupleResult<'static>>> SortedTupleIterator<It> {
     }
 
     fn all_counted(&mut self) -> bool {
-        self.last_enumerated_or_counted == Some(self.tuple_length as u16)
+        self.last_enumerated_or_counted == Some((self.tuple_length - 1) as u16)
     }
 
     fn all_checked(&mut self) -> bool {
@@ -407,7 +407,6 @@ impl<It: Iterator<Item = TupleResult<'static>>> TupleIteratorAPI for SortedTuple
         } else if self.all_counted() {
             Ok(self.iterator.by_ref().count())
         } else {
-            debug_assert!(self.all_checked());
             let mut count = 1;
             // TODO: this feels inefficient since each skip() call does a copy of the current tuple
             while self.peek().is_some() {
