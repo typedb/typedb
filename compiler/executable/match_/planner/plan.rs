@@ -1512,7 +1512,7 @@ impl ConjunctionPlan<'_> {
     }
 
     pub(super) fn combined_cost(&self) -> CombinedCost {
-        todo!()
+        CombinedCost::from(self.cost)
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {

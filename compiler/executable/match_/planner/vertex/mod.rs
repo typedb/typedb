@@ -206,10 +206,13 @@ impl CombinedCost {
     }
 
     pub(crate) fn combine_parallel(self, other: Self) -> Self {
-        fn weighted_mean((lhs_value, lhs_weight): (f64, f64), (rhs_value, rhs_weight): (f64, f64)) -> f64 {
-            (lhs_value * lhs_weight + rhs_value * rhs_weight) / (lhs_weight + rhs_weight)
-        }
         Self { cost: self.cost + other.cost, io_ratio: self.io_ratio + other.io_ratio }
+    }
+}
+
+impl From<ElementCost> for CombinedCost {
+    fn from(ElementCost { per_input, per_output, io_ratio }: ElementCost) -> Self {
+        Self { cost: per_input + io_ratio * per_output, io_ratio }
     }
 }
 
