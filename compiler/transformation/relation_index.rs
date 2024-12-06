@@ -9,9 +9,10 @@ use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
 use ir::pattern::conjunction::Conjunction;
 use ir::pattern::constraint::{Comparator, Constraint, IndexedRelation, Links};
+use ir::pattern::nested_pattern::NestedPattern;
 use ir::pattern::Vertex;
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::type_annotations::TypeAnnotations;
+use crate::annotation::type_annotations::{ConstraintTypeAnnotations, IndexedRelationAnnotations, TypeAnnotations};
 use crate::transformation::StaticOptimiserError;
 
 /// Precondition:
@@ -29,7 +30,7 @@ use crate::transformation::StaticOptimiserError;
 ///   3) $x indexed_relation $y via $r ($role1, $role2)
 pub fn relation_index_transformation(
     conjunction: &mut Conjunction,
-    type_annotations: &TypeAnnotations,
+    type_annotations: &mut TypeAnnotations,
     type_manager: &TypeManager,
     snapshot: &impl ReadableSnapshot,
 ) -> Result<(), StaticOptimiserError> {
@@ -52,7 +53,7 @@ pub fn relation_index_transformation(
             && !with_iid_or_constant_attribute(&relation, conjunction)
         {
             let other_links_index = other_links_indices[0];
-            replace_links(conjunction, links_index, other_links_index);
+            replace_links(conjunction, links_index, other_links_index, type_annotations);
             
             // update the other indexes so they remain accurate
             for (_, (index, other_indices)) in candidates.iter_mut() {
@@ -60,6 +61,22 @@ pub fn relation_index_transformation(
                 for other_index in other_indices {
                     *other_index -= index_decrement_if_removing(*other_index, links_index, other_links_index)
                 }
+            }
+        }
+    }
+
+    for nested in conjunction.nested_patterns_mut().iter_mut() {
+        match nested {
+            NestedPattern::Disjunction(disjunction) => {
+                for branch_conjunction in disjunction.conjunctions_mut() {
+                    relation_index_transformation(branch_conjunction, type_annotations, type_manager, snapshot)?;
+                }
+            }
+            NestedPattern::Negation(negation) => {
+                relation_index_transformation(negation.conjunction_mut(), type_annotations, type_manager, snapshot)?;
+            }
+            NestedPattern::Optional(optional) => {
+                relation_index_transformation(optional.conjunction_mut(), type_annotations, type_manager, snapshot)?;
             }
         }
     }
@@ -106,7 +123,7 @@ fn attribute_has_value(attribute: &Vertex<Variable>, conjunction: &Conjunction) 
         })
 }
 
-// TODO: add indexed-relation and mutual exclusivity
+// TODO: add indexed-relation with mutual exclusivity
 fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: usize, annotations: &mut TypeAnnotations) {
     debug_assert!(index_rp_1 != index_rp_2);
     let (remove_first, remove_second) = if index_rp_1 > index_rp_2 {
@@ -133,12 +150,33 @@ fn replace_links(conjunction: &mut Conjunction, index_rp_1: usize, index_rp_2: u
         links_1.role_type().clone().as_variable().unwrap(),
         links_2.role_type().clone().as_variable().unwrap()
     );
+    add_type_annotations(&links_1, &links_2, &indexed_relation, annotations);
     conjunction.constraints_mut().constraints_mut().push(Constraint::IndexedRelation(indexed_relation));
-    add_type_annotations(&links_1, &links_2, annotations)
 }
 
-fn add_type_annotations(links_1: &Links<Variable>, links_2: &Links<Variable>, type_annotations: &mut TypeAnnotations) {
-    todo!()
+fn add_type_annotations(
+    links_1: &Links<Variable>,
+    links_2: &Links<Variable>,
+    indexed_relation: &IndexedRelation<Variable>,
+    type_annotations: &mut TypeAnnotations
+) {
+    let links_1_annotations = type_annotations.constraint_annotations_of(Constraint::Links(links_1.clone())).unwrap();
+    let links_2_annotations = type_annotations.constraint_annotations_of(Constraint::Links(links_2.clone())).unwrap();
+    let indexed_annotations = IndexedRelationAnnotations::new(
+        links_1_annotations.as_links().player_to_relation(),
+        links_2_annotations.as_links().relation_to_player(),
+        links_2_annotations.as_links().player_to_relation(),
+        links_1_annotations.as_links().relation_to_player(),
+
+        links_1_annotations.as_links().player_to_role(),
+        links_2_annotations.as_links().player_to_role(),
+        links_1_annotations.as_links().relation_to_role(),
+        links_2_annotations.as_links().relation_to_role(),
+    );
+    type_annotations.constraint_annotations_mut().insert(
+        Constraint::IndexedRelation(indexed_relation.clone()),
+        ConstraintTypeAnnotations::IndexedRelation(indexed_annotations)
+    );
 }
 
 fn index_decrement_if_removing(index: usize, removed_1: usize, removed_2: usize) -> usize {

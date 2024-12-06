@@ -35,6 +35,10 @@ impl Block {
         &self.conjunction
     }
     
+    pub fn conjunction_mut(&mut self) -> &mut Conjunction {
+        &mut self.conjunction
+    }
+    
     pub fn block_context(&self) -> &BlockContext {
         &self.block_context
     }

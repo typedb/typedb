@@ -74,7 +74,7 @@ fn test_relation_index_transformation_single() {
     ).unwrap();
 
     let block = translated.finish().unwrap();
-    let type_annotations = infer_types(
+    let mut type_annotations = infer_types(
         &snapshot,
         &block,
         &context.variable_registry,
@@ -87,7 +87,7 @@ fn test_relation_index_transformation_single() {
 
     relation_index_transformation(
         &mut conjunction,
-        &type_annotations,
+        &mut type_annotations,
         &type_manager,
         &snapshot
     ).unwrap();
@@ -132,7 +132,7 @@ fn test_relation_index_transformation_dual() {
     ).unwrap();
 
     let block = translated.finish().unwrap();
-    let type_annotations = infer_types(
+    let mut type_annotations = infer_types(
         &snapshot,
         &block,
         &context.variable_registry,
@@ -145,7 +145,7 @@ fn test_relation_index_transformation_dual() {
 
     relation_index_transformation(
         &mut conjunction,
-        &type_annotations,
+        &mut type_annotations,
         &type_manager,
         &snapshot
     ).unwrap();
@@ -202,7 +202,7 @@ fn test_relation_index_transformation_not_applied_ternary() {
     ).unwrap();
 
     let block = translated.finish().unwrap();
-    let type_annotations = infer_types(
+    let mut type_annotations = infer_types(
         &snapshot,
         &block,
         &context.variable_registry,
@@ -215,7 +215,7 @@ fn test_relation_index_transformation_not_applied_ternary() {
 
     relation_index_transformation(
         &mut conjunction,
-        &type_annotations,
+        &mut type_annotations,
         &type_manager,
         &snapshot
     ).unwrap();

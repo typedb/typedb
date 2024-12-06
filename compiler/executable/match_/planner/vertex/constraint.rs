@@ -547,7 +547,7 @@ impl<'a> LinksPlanner<'a> {
         let player_types = &**type_annotations.vertex_annotations_of(player).unwrap();
 
         let constraint_types =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
 
         let unbound_typed_expected_size = constraint_types
             .relation_to_role()

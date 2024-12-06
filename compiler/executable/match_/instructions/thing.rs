@@ -256,7 +256,7 @@ pub struct LinksInstruction<ID> {
 impl LinksInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
         let player_to_role_types = edge_annotations.player_to_role();
         let relation_to_player_types = edge_annotations.relation_to_player();
         let player_types = type_annotations.vertex_annotations_of(links.player()).unwrap().clone();
@@ -315,7 +315,7 @@ pub struct LinksReverseInstruction<ID> {
 impl LinksReverseInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links().clone();
         let relation_to_role_types = edge_annotations.relation_to_role();
         let player_to_relation_types = edge_annotations.player_to_relation();
         let relation_types = type_annotations.vertex_annotations_of(links.relation()).unwrap().clone();

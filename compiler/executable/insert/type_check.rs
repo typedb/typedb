@@ -19,7 +19,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     type_annotations::{
-        ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
+        ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
     },
     TypeInferenceError,
 };
@@ -53,7 +53,7 @@ pub fn check_annotations(
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right_filtered(),
+                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_links(),
                 )?;
             }
             | Constraint::Kind(_)
@@ -125,7 +125,7 @@ fn validate_links_insertable(
     links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
-    left_right_filtered: &LeftRightFilteredAnnotations,
+    left_right_filtered: &LinksAnnotations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.

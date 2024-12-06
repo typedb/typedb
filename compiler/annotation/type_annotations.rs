@@ -37,6 +37,10 @@ impl TypeAnnotations {
     pub fn constraint_annotations(&self) -> &HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
         &self.constraints
     }
+    
+    pub fn constraint_annotations_mut(&mut self) -> &mut HashMap<Constraint<Variable>, ConstraintTypeAnnotations> {
+        &mut self.constraints
+    }
 
     pub fn constraint_annotations_of(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
         self.constraints.get(&constraint)
@@ -46,26 +50,24 @@ impl TypeAnnotations {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ConstraintTypeAnnotations {
     LeftRight(LeftRightAnnotations),
-    LeftRightFiltered(LeftRightFilteredAnnotations), // note: function calls, comparators, and value assignments are not stored here,
-                                                     //       since they do not actually co-constrain Schema types possible.
-                                                     //       in other words, they are always right to left or deal only in value types.
-    IndexedSymmetric(IndexedRelationAnnotations),
+    Links(LinksAnnotations),              
+    IndexedRelation(IndexedRelationAnnotations),
 }
 
 impl ConstraintTypeAnnotations {
     pub fn as_left_right(&self) -> &LeftRightAnnotations {
         match self {
             ConstraintTypeAnnotations::LeftRight(annotations) => annotations,
-            ConstraintTypeAnnotations::LeftRightFiltered(_) | ConstraintTypeAnnotations::IndexedSymmetric(_) => {
+            ConstraintTypeAnnotations::Links(_) | ConstraintTypeAnnotations::IndexedRelation(_) => {
                 panic!("Unexpected type.")
             },
         }
     }
 
-    pub fn as_left_right_filtered(&self) -> &LeftRightFilteredAnnotations {
+    pub fn as_links(&self) -> &LinksAnnotations {
         match self {
-            ConstraintTypeAnnotations::LeftRightFiltered(annotations) => annotations,
-            ConstraintTypeAnnotations::LeftRight(_) | ConstraintTypeAnnotations::IndexedSymmetric(_)=> {
+            ConstraintTypeAnnotations::Links(annotations) => annotations,
+            ConstraintTypeAnnotations::LeftRight(_) | ConstraintTypeAnnotations::IndexedRelation(_)=> {
                 panic!("Unexpected type.")
             },
         }
@@ -108,7 +110,7 @@ impl LeftRightAnnotations {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct LeftRightFilteredAnnotations {
+pub struct LinksAnnotations {
     // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
     pub(crate) relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
     pub(crate) relation_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the right variable
@@ -117,7 +119,7 @@ pub struct LeftRightFilteredAnnotations {
     pub(crate) player_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the left variable
 }
 
-impl LeftRightFilteredAnnotations {
+impl LinksAnnotations {
     pub(crate) fn build(
         relation_to_role: BTreeMap<Type, BTreeSet<Type>>,
         role_to_relation: BTreeMap<Type, BTreeSet<Type>>,
@@ -168,7 +170,7 @@ impl LeftRightFilteredAnnotations {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-struct IndexedRelationAnnotations {
+pub(crate) struct IndexedRelationAnnotations {
     // player 1 to relation to player 2
     player_1_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_to_player_2: Arc<BTreeMap<Type, Vec<Type>>>,
@@ -177,10 +179,10 @@ struct IndexedRelationAnnotations {
     player_2_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
     relation_to_player_1: Arc<BTreeMap<Type, Vec<Type>>>,
     
-    player_1_to_role: Arc<BTreeMap<Type, Vec<Type>>>,
-    player_2_to_role: Arc<BTreeMap<Type, Vec<Type>>>,
-    relation_to_player_1_role: Arc<BTreeMap<Type, Vec<Type>>>,
-    relation_to_player_2_role: Arc<BTreeMap<Type, Vec<Type>>>,
+    player_1_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    player_2_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    relation_to_player_1_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    relation_to_player_2_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
 }
 
 impl IndexedRelationAnnotations {
@@ -190,10 +192,10 @@ impl IndexedRelationAnnotations {
         relation_to_player_2: Arc<BTreeMap<Type, Vec<Type>>>,
         player_2_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
         relation_to_player_1: Arc<BTreeMap<Type, Vec<Type>>>,
-        player_1_to_role: Arc<BTreeMap<Type, Vec<Type>>>,
-        player_2_to_role: Arc<BTreeMap<Type, Vec<Type>>>,
-        relation_to_player_1_role: Arc<BTreeMap<Type, Vec<Type>>>,
-        relation_to_player_2_role: Arc<BTreeMap<Type, Vec<Type>>>,
+        player_1_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+        player_2_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+        relation_to_player_1_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+        relation_to_player_2_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
     ) -> Self {
         Self {
             player_1_to_relation,
