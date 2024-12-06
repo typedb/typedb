@@ -55,7 +55,6 @@ impl VariableVertex {
     pub(crate) fn set_binding(&mut self, binding_pattern: PatternVertexId) {
         match self {
             Self::Input(_) => unreachable!("attempting to assign to input variable"),
-
             Self::Type(inner) => inner.set_binding(binding_pattern),
             Self::Thing(inner) => inner.set_binding(binding_pattern),
             Self::Value(inner) => inner.set_binding(binding_pattern),
@@ -124,12 +123,6 @@ impl Costed for VariableVertex {
         _step_start_index: usize,
         _graph: &Graph<'_>,
     ) -> ElementCost {
-        // match self {
-        //     Self::Input(inner) => inner.cost(inputs, step_sort_variable, graph),
-        //     Self::Type(inner) => inner.cost(inputs, step_sort_variable, graph),
-        //     Self::Thing(inner) => inner.cost(inputs, step_sort_variable, graph),
-        //     Self::Value(inner) => inner.cost(inputs, step_sort_variable, graph),
-        // }
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
