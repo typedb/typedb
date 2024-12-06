@@ -140,7 +140,7 @@ pub mod query_util {
                 &tx.type_manager,
                 tx.thing_manager.clone(),
                 &tx.function_manager,
-                &pipeline,
+                pipeline,
             )
             .unwrap();
 

@@ -108,6 +108,7 @@ pub mod user_repository {
         (Ok(()), snapshot)
     }
 
+    // TODO: support updating user's username
     pub fn update(
         snapshot: WriteSnapshot<WALClient>,
         type_manager: &TypeManager,
@@ -115,7 +116,7 @@ pub mod user_repository {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         username: &str,
-        user: &Option<User>,
+        _user: &Option<User>,
         credential: &Option<Credential>,
     ) -> (Result<(), SystemDBError>, Arc<WriteSnapshot<WALClient>>) {
         let unexpected_error_msg = "An unexpected error occurred when attempting to update a user";
