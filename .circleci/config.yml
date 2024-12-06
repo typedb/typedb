@@ -302,6 +302,12 @@ workflows:
             branches:
               only: [ "3.0" ]
 
+      - sync-to-typedb-benchmark:
+          filters:
+            branches:
+              only: [ "3.0" ]
+          requires:
+            - test-deploy-snapshot-linux-x86_64
   release:
     jobs:
       - deploy-release-linux-x86_64:
