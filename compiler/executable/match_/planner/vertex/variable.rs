@@ -52,6 +52,15 @@ impl VariableVertex {
         }
     }
 
+    pub(crate) fn binding(&self) -> Option<PatternVertexId> {
+        match self {
+            Self::Input(_) => None,
+            Self::Type(inner) => inner.binding,
+            Self::Thing(inner) => inner.binding,
+            Self::Value(inner) => inner.binding,
+        }
+    }
+
     pub(crate) fn set_binding(&mut self, binding_pattern: PatternVertexId) {
         match self {
             Self::Input(_) => unreachable!("attempting to assign to input variable"),

@@ -51,7 +51,14 @@ pub(super) enum PlannerVertex<'a> {
 }
 
 impl PlannerVertex<'_> {
-    pub(super) fn is_valid(&self, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
+    pub(super) fn is_valid(&self, id: VertexId, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
+        for var in self.variables().filter(|&var| !vertex_plan.contains(&VertexId::Variable(var))) {
+            let variable_vertex = graph.elements()[&VertexId::Variable(var)].as_variable().unwrap();
+            if variable_vertex.binding().is_some_and(|binding| VertexId::Pattern(binding) != id) {
+                return false;
+            }
+        }
+
         match self {
             Self::Variable(_) => false,
             Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
@@ -63,6 +70,19 @@ impl PlannerVertex<'_> {
             }
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
+        }
+    }
+
+    pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
+        match self {
+            Self::Variable(_) => Box::new(iter::empty()),
+            Self::Constraint(inner) => inner.variables(),
+            Self::Is(inner) => Box::new(inner.variables()),
+            Self::Comparison(inner) => Box::new(inner.variables()),
+            Self::Expression(inner) => Box::new(inner.variables()),
+            Self::FunctionCall(inner) => Box::new(inner.variables()),
+            Self::Negation(inner) => Box::new(inner.variables()),
+            Self::Disjunction(inner) => Box::new(inner.variables()),
         }
     }
 

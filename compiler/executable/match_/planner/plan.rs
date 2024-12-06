@@ -665,7 +665,10 @@ impl PartialCostPlan {
             .iter()
             .filter({
                 let all_available_vars = all_available_vars.clone();
-                move |&&extension| graph.elements[&VertexId::Pattern(extension)].is_valid(&all_available_vars, graph)
+                move |&&extension| {
+                    let pattern_id = VertexId::Pattern(extension);
+                    graph.elements[&pattern_id].is_valid(pattern_id, &all_available_vars, graph)
+                }
             })
             .flat_map(move |&extension| {
                 let join_var = self.determine_joinability(graph, extension);
