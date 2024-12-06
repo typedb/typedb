@@ -259,6 +259,7 @@ jobs:
           name: "Sync this commit to TypeDB Benchmark"
           command: |
             git clone https://typedb-bot:$REPO_GITHUB_TOKEN@github.com/typedb/typedb-benchmark.git
+            cd typedb-benchmark
             git config user.name "TypeDB Bot"
             git config user.email "bot@typedb.com"
             ./tool/update-typedb-version.sh "$CIRCLE_SHA1"
