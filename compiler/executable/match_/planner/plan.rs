@@ -538,111 +538,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
-    fn initialise_greedy_ordering(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
-        let mut remaining_vertices: HashSet<VertexId> =
-            self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id)).collect();
-        let mut vertex_plan = Vec::with_capacity(self.graph.element_count());
-        let mut plan_cumulative_cost: ElementCost = ElementCost::NOOP;
-        let mut meta_data: HashMap<PatternVertexId, CostMetaData> = HashMap::new();
-
-        for v in self.input_variables() {
-            vertex_plan.push(VertexId::Variable(v));
-            remaining_vertices.remove(&VertexId::Variable(v));
-        }
-
-        let mut step_produced_variables: HashSet<VariableVertexId> = HashSet::new();
-        let mut step_start_index: usize = 0;
-        let mut step_sort_variable: Option<VariableVertexId> = None;
-
-        macro_rules! finalize_step {
-            () => {{
-                if let Some(var) = step_sort_variable.take().map(VertexId::Variable) {
-                    vertex_plan.push(var);
-                    remaining_vertices.remove(&var);
-                }
-                for var in step_produced_variables.drain().map(VertexId::Variable) {
-                    if !vertex_plan.contains(&var) {
-                        vertex_plan.push(var);
-                        remaining_vertices.remove(&var);
-                    }
-                }
-                step_start_index = vertex_plan.len();
-            }};
-        }
-
-        while !remaining_vertices.is_empty() {
-            let (next, _cost, _element_cost) = remaining_vertices
-                .iter()
-                .filter(|&&elem| self.graph.elements[&elem].is_valid(&vertex_plan, &self.graph))
-                .map(|&elem| {
-                    let element_cost =
-                        self.calculate_marginal_elementcost(&vertex_plan, elem, step_sort_variable, step_start_index);
-                    let cost = element_cost.total();
-                    (elem, cost, element_cost)
-                })
-                .min_by(|(_, lhs_cost, _), (_, rhs_cost, _)| lhs_cost.total_cmp(rhs_cost))
-                .unwrap();
-            let element = &self.graph.elements[&next];
-            plan_cumulative_cost = plan_cumulative_cost.chain(_element_cost);
-
-            if element.is_variable() {
-                finalize_step!();
-            } else if element.is_constraint() {
-                step_produced_variables
-                    .extend(element.variables().filter(|&var| !vertex_plan.contains(&VertexId::Variable(var))));
-
-                let constraint = element.as_constraint().unwrap();
-                match constraint.unbound_direction(&self.graph) {
-                    Direction::Canonical => {
-                        if let Some(candidate_sort_variable) = constraint.variables().next() {
-                            if step_produced_variables.contains(&candidate_sort_variable) {
-                                step_sort_variable = Some(candidate_sort_variable);
-                            }
-                        }
-                    }
-                    Direction::Reverse => {
-                        if let Some(candidate_sort_variable) = constraint.variables().nth(1) {
-                            if step_produced_variables.contains(&candidate_sort_variable) {
-                                step_sort_variable = Some(candidate_sort_variable);
-                            }
-                        }
-                    }
-                }
-
-                meta_data.insert(
-                    next.as_pattern_id().unwrap(),
-                    CostMetaData::Direction(element.as_constraint().unwrap().unbound_direction(&self.graph)),
-                );
-                vertex_plan.push(next);
-                remaining_vertices.remove(&next);
-                finalize_step!();
-            } else {
-                finalize_step!();
-                vertex_plan.push(next);
-                remaining_vertices.remove(&next);
-                for var in element.variables().map(VertexId::Variable) {
-                    if !vertex_plan.contains(&var) {
-                        vertex_plan.push(var);
-                    }
-                }
-            }
-        }
-
-        (vertex_plan, meta_data)
-    }
-
-    fn calculate_marginal_elementcost(
-        &self,
-        vertex_plan: &[VertexId],
-        next: VertexId,
-        sort_variable: Option<VariableVertexId>,
-        step_start_index: usize,
-    ) -> ElementCost {
-        assert!(!vertex_plan.contains(&next));
-        let planner_vertex = &self.graph.elements[&next];
-        planner_vertex.cost(vertex_plan, sort_variable, step_start_index, &self.graph)
-    }
-
     // New approach to planning:
     //
     // In our pattern graph, vertices are variables and patterns; edges indicate which patterns contain which variables.
@@ -709,9 +604,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
-        // Greedy plan
-        // let (_, _) = self.initialise_greedy_ordering(); // TODO: use as fallback
-
         // Beam plan
         let (ordering, metadata) = self.beam_search_plan();
 
