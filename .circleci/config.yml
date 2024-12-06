@@ -299,9 +299,10 @@ workflows:
               only: [ "3.0" ]
 
       - sync-to-typedb-benchmark:
-          filters:
-            branches:
-              only: [ "3.0" ]
+          # TODO: re-enable before merging
+          # filters:
+          #   branches:
+          #     only: [ "3.0" ]
           requires:
             - test-deploy-snapshot-linux-x86_64
 
