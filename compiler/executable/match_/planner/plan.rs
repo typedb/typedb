@@ -555,7 +555,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let all_patterns = self.graph.pattern_to_variable.keys().copied().collect();
         let mut best_partial_plans = Vec::with_capacity(beam_width);
-        best_partial_plans.push(PartialCostPlan::new(all_patterns, self.input_variables()));
+        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), all_patterns, self.input_variables()));
 
         for _ in 0..num_patterns {
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
@@ -646,10 +646,11 @@ pub(super) struct PartialCostPlan {
 
 impl PartialCostPlan {
     fn new(
+        total_plan_len: usize,
         remaining_patterns: HashSet<PatternVertexId>,
         inputs: impl Iterator<Item = VariableVertexId> + Sized,
     ) -> Self {
-        let mut vertex_ordering = Vec::new();
+        let mut vertex_ordering = Vec::with_capacity(total_plan_len);
         for v in inputs {
             vertex_ordering.push(VertexId::Variable(v));
         }
@@ -1490,10 +1491,6 @@ impl fmt::Debug for Graph<'_> {
 }
 
 impl<'a> Graph<'a> {
-    fn element_count(&self) -> usize {
-        self.variable_to_pattern.len() + self.pattern_to_variable.len()
-    }
-
     fn push_variable(&mut self, variable: Variable, vertex: VariableVertex) {
         let index = self.next_variable_index();
         self.elements.insert(VertexId::Variable(index), PlannerVertex::Variable(vertex));
