@@ -50,7 +50,7 @@ pub fn compile(
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
-    let plan = plan_conjunction(
+    plan_conjunction(
         conjunction,
         block_context,
         input_variables,
@@ -60,9 +60,7 @@ pub fn compile(
         statistics,
     )
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
-    .finish(variable_registry);
-
-    plan
+    .finish(variable_registry)
 }
 
 #[derive(Debug)]
