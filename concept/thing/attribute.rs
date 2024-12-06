@@ -9,10 +9,11 @@ use std::{
     collections::HashSet,
     fmt,
     hash::{Hash, Hasher},
+    iter,
     sync::{Arc, OnceLock},
 };
 
-use bytes::{byte_array::ByteArray, Bytes};
+use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
@@ -24,7 +25,8 @@ use encoding::{
     AsBytes, Keyable,
 };
 use iterator::State;
-use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable};
+use itertools::Itertools;
+use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::StorageKey,
@@ -36,29 +38,29 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
     type_::{attribute_type::AttributeType, ObjectTypeAPI},
-    ByteReference, ConceptAPI, ConceptStatus,
+    ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone)]
-pub struct Attribute<'a> {
-    vertex: AttributeVertex<'a>,
+pub struct Attribute {
+    vertex: AttributeVertex,
     value: OnceLock<Arc<Value<'static>>>,
 }
 
-impl<'a> Attribute<'a> {
-    pub fn type_(&self) -> AttributeType<'static> {
+impl Attribute {
+    pub fn type_(&self) -> AttributeType {
         AttributeType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    pub fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.to_bytes()
     }
 
     pub fn get_value(
-        &'a self,
+        &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-    ) -> Result<Value<'a>, Box<ConceptReadError>> {
+    ) -> Result<Value<'_>, Box<ConceptReadError>> {
         if self.value.get().is_none() {
             let value = thing_manager.get_attribute_value(snapshot, self)?;
             let _ = self.value.set(Arc::new(value));
@@ -68,9 +70,7 @@ impl<'a> Attribute<'a> {
 
     pub fn has_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
         match self.get_status(snapshot, thing_manager) {
-            ConceptStatus::Put | ConceptStatus::Persisted => {
-                thing_manager.has_owners(snapshot, self.as_reference(), false)
-            }
+            ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(snapshot, self, false),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
             }
@@ -78,59 +78,42 @@ impl<'a> Attribute<'a> {
     }
 
     pub fn get_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> AttributeOwnerIterator {
-        thing_manager.get_owners(snapshot, self.as_reference())
+        thing_manager.get_owners(snapshot, self)
     }
 
-    pub fn get_owners_by_type<'o>(
+    pub fn get_owners_by_type(
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        owner_type: impl ObjectTypeAPI<'o>,
+        owner_type: impl ObjectTypeAPI,
     ) -> AttributeOwnerIterator {
-        thing_manager.get_owners_by_type(snapshot, self.as_reference(), owner_type)
+        thing_manager.get_owners_by_type(snapshot, self, owner_type)
     }
 
-    pub fn next_possible(&self) -> Attribute<'static> {
-        let mut bytes = ByteArray::from(self.vertex.bytes());
+    pub fn next_possible(&self) -> Attribute {
+        let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
-        Attribute::new(AttributeVertex::new(Bytes::Array(bytes)))
-    }
-
-    pub fn as_reference(&self) -> Attribute<'_> {
-        Attribute { vertex: self.vertex.as_reference(), value: self.value.clone() }
-    }
-
-    pub fn into_owned(self) -> Attribute<'static> {
-        Attribute::new(self.vertex.into_owned())
+        Attribute::new(AttributeVertex::decode(&bytes))
     }
 }
 
-impl<'a> ConceptAPI<'a> for Attribute<'a> {}
+impl ConceptAPI for Attribute {}
 
-impl<'a> ThingAPI<'a> for Attribute<'a> {
-    type Vertex<'b> = AttributeVertex<'b>;
-    type TypeAPI<'b> = AttributeType<'b>;
-    type Owned = Attribute<'static>;
+impl ThingAPI for Attribute {
+    type Vertex = AttributeVertex;
+    type TypeAPI = AttributeType;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexAttribute, Prefix::VertexAttribute);
 
-    fn new(vertex: Self::Vertex<'a>) -> Self {
+    fn new(vertex: Self::Vertex) -> Self {
         Attribute { vertex, value: OnceLock::new() }
     }
 
-    fn vertex(&self) -> Self::Vertex<'_> {
-        self.vertex.as_reference()
-    }
-
-    fn into_vertex(self) -> Self::Vertex<'a> {
+    fn vertex(&self) -> Self::Vertex {
         self.vertex
     }
 
-    fn into_owned(self) -> Self::Owned {
-        Attribute::new(self.vertex.into_owned())
-    }
-
-    fn iid(&self) -> ByteReference<'_> {
-        self.vertex.bytes()
+    fn iid(&self) -> Bytes<'_, BUFFER_KEY_INLINE> {
+        self.vertex.to_bytes()
     }
 
     fn set_required(
@@ -147,11 +130,9 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
                 | ValueType::Date
                 | ValueType::DateTime
                 | ValueType::DateTimeTZ
-                | ValueType::Duration => snapshot.put(self.vertex().as_storage_key().into_owned_array()),
+                | ValueType::Duration => snapshot.put(self.vertex().into_storage_key().into_owned_array()),
                 // ValueTypes with expensive writes
-                | ValueType::String | ValueType::Struct(_) => {
-                    thing_manager.lock_existing_attribute(snapshot, self.as_reference())
-                }
+                | ValueType::String | ValueType::Struct(_) => thing_manager.lock_existing_attribute(snapshot, self),
             },
             None => panic!("Attribute instances must have a value type"),
         }
@@ -159,7 +140,7 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
     }
 
     fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().as_storage_key())
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
     }
 
     fn delete(
@@ -167,44 +148,40 @@ impl<'a> ThingAPI<'a> for Attribute<'a> {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let owners = self
-            .get_owners(snapshot, thing_manager)
-            .map_static(|res| res.map(|(key, _)| key.into_owned()))
-            .try_collect::<Vec<_>, _>()?;
-        for object in owners {
-            thing_manager.unset_has(snapshot, &object, self.as_reference());
+        for object in self.get_owners(snapshot, thing_manager).map_ok(|(key, _)| key) {
+            thing_manager.unset_has(snapshot, object?, &self);
         }
         thing_manager.delete_attribute(snapshot, self)?;
 
         Ok(())
     }
 
-    fn prefix_for_type(_type: Self::TypeAPI<'_>) -> Prefix {
+    fn prefix_for_type(_type: Self::TypeAPI) -> Prefix {
         Prefix::VertexAttribute
     }
 }
 
-impl HKInstance for Attribute<'static> {}
+impl HKInstance for Attribute {}
 
-impl Hkt for Attribute<'static> {
-    type HktSelf<'a> = Attribute<'a>;
+impl Hkt for Attribute {
+    type HktSelf<'a> = Attribute;
 }
 
-impl<'a> PartialEq<Self> for Attribute<'a> {
+impl PartialEq<Self> for Attribute {
     fn eq(&self, other: &Self) -> bool {
         self.vertex().eq(&other.vertex())
     }
 }
 
-impl<'a> Eq for Attribute<'a> {}
+impl Eq for Attribute {}
 
-impl<'a> PartialOrd<Self> for Attribute<'a> {
+impl PartialOrd<Self> for Attribute {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl<'a> Ord for Attribute<'a> {
+impl Ord for Attribute {
     fn cmp(&self, other: &Self) -> Ordering {
         self.vertex.cmp(&other.vertex())
     }
@@ -212,10 +189,10 @@ impl<'a> Ord for Attribute<'a> {
 
 pub struct AttributeIterator<AllAttributesIterator>
 where
-    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
+    AllAttributesIterator: Iterator<Item = Result<Attribute, Box<ConceptReadError>>>,
 {
-    independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
-    attributes_iterator: Option<Peekable<AllAttributesIterator>>,
+    independent_attribute_types: Arc<HashSet<AttributeType>>,
+    attributes_iterator: Option<iter::Peekable<AllAttributesIterator>>,
     has_reverse_iterator_buffer: Option<BufferRangeIterator>,
     has_reverse_iterator_storage: Option<SnapshotRangeIterator>,
     state: State<Box<ConceptReadError>>,
@@ -223,17 +200,17 @@ where
 
 impl<AllAttributesIterator> AttributeIterator<AllAttributesIterator>
 where
-    AllAttributesIterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
+    AllAttributesIterator: Iterator<Item = Result<Attribute, Box<ConceptReadError>>>,
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
         has_reverse_iterator_buffer: BufferRangeIterator,
         has_reverse_iterator_storage: SnapshotRangeIterator,
-        independent_attribute_types: Arc<HashSet<AttributeType<'static>>>,
+        independent_attribute_types: Arc<HashSet<AttributeType>>,
     ) -> Self {
         Self {
             independent_attribute_types,
-            attributes_iterator: Some(Peekable::new(attributes_iterator)),
+            attributes_iterator: Some(attributes_iterator.peekable()),
             has_reverse_iterator_buffer: Some(has_reverse_iterator_buffer),
             has_reverse_iterator_storage: Some(has_reverse_iterator_storage),
             state: State::Init,
@@ -254,7 +231,7 @@ where
         todo!()
     }
 
-    fn iter_next(&mut self) -> Option<Result<Attribute<'_>, Box<ConceptReadError>>> {
+    fn iter_next(&mut self) -> Option<Result<Attribute, Box<ConceptReadError>>> {
         match &self.state {
             State::Init | State::ItemUsed => {
                 self.find_next_state();
@@ -282,10 +259,8 @@ where
                     if independent {
                         self.state = State::ItemReady;
                     } else {
-                        match Self::has_any_writes(
-                            self.has_reverse_iterator_buffer.as_mut().unwrap(),
-                            attribute_vertex.clone(),
-                        ) {
+                        match Self::has_any_writes(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex)
+                        {
                             Ok(has_writes) => {
                                 if has_writes {
                                     self.state = State::ItemReady
@@ -319,15 +294,15 @@ where
 
     fn has_owner(
         has_reverse_iterator: &mut SnapshotRangeIterator,
-        attribute_vertex: AttributeVertex<'_>,
+        attribute_vertex: AttributeVertex,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.as_reference());
         match has_reverse_iterator.peek() {
             None => Ok(false),
             Some(Err(err)) => Err(Box::new(ConceptReadError::SnapshotIterate { source: err.clone() })),
             Some(Ok((bytes, _))) => {
-                let edge = ThingEdgeHasReverse::new(Bytes::Reference(bytes.byte_ref()));
+                let edge = ThingEdgeHasReverse::decode(Bytes::Reference(bytes.bytes()));
                 let edge_from = edge.from();
                 match edge_from.cmp(&attribute_vertex) {
                     Ordering::Less => {
@@ -342,21 +317,21 @@ where
 
     fn has_any_writes(
         has_reverse_iterator: &mut BufferRangeIterator,
-        attribute_vertex: AttributeVertex<'_>,
+        attribute_vertex: AttributeVertex,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex.as_reference());
+        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.bytes());
         Ok(has_reverse_iterator.peek().is_some())
     }
 }
 
-impl<Iterator> LendingIterator for AttributeIterator<Iterator>
+impl<I> Iterator for AttributeIterator<I>
 where
-    Iterator: for<'a> LendingIterator<Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>>,
+    I: Iterator<Item = Result<Attribute, Box<ConceptReadError>>>,
 {
-    type Item<'a> = Result<Attribute<'a>, Box<ConceptReadError>>;
+    type Item = Result<Attribute, Box<ConceptReadError>>;
 
-    fn next(&mut self) -> Option<Self::Item<'_>> {
+    fn next(&mut self) -> Option<Self::Item> {
         self.iter_next()
     }
 }
@@ -364,18 +339,18 @@ where
 fn storage_key_to_owner<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Object<'a>, u64) {
-    let edge = ThingEdgeHasReverse::new(storage_key.into_bytes());
-    (Object::new(edge.into_to()), decode_value_u64(value.as_reference()))
+) -> (Object, u64) {
+    let edge = ThingEdgeHasReverse::decode(storage_key.into_bytes());
+    (Object::new(edge.to()), decode_value_u64(&value))
 }
 
 edge_iterator!(
     AttributeOwnerIterator;
-    'a -> (Object<'a>, u64);
+    (Object, u64);
     storage_key_to_owner
 );
 
-impl<'a> fmt::Display for Attribute<'a> {
+impl fmt::Display for Attribute {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -387,7 +362,7 @@ impl<'a> fmt::Display for Attribute<'a> {
     }
 }
 
-impl<'a> Hash for Attribute<'a> {
+impl Hash for Attribute {
     fn hash<H: Hasher>(&self, state: &mut H) {
         Hash::hash(&self.vertex, state)
     }

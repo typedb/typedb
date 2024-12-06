@@ -77,6 +77,14 @@ impl PatternExecutor {
     pub(crate) fn prepare(&mut self, input_batch: FixedBatch) {
         debug_assert!(self.control_stack.is_empty());
         self.reset();
+        for executor in &mut self.executors {
+            match executor {
+                StepExecutors::Nested(inner) => inner.reset(),
+                StepExecutors::StreamModifier(inner) => inner.reset(),
+                StepExecutors::CollectingStage(inner) => inner.reset(),
+                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) | StepExecutors::Immediate(_) => {}
+            }
+        }
         self.control_stack.push(ControlInstruction::PatternStart(PatternStart { input_batch }));
     }
 
@@ -100,7 +108,6 @@ impl PatternExecutor {
         // TODO: In debug mode, this function has a frame of ~60k, causing an overflow at ~10 frames
         //  In release mode, the frame is ~10x smaller, allowing ~100 frames.
         //  We could switch to iteration & handle the stack ourselves: StackFrame { pattern_executor, return_address }
-        // debug_assert!(self.control_stack.len() > 0);
         while self.control_stack.last().is_some() {
             let Self { control_stack, executors, executable_id: _ } = self;
             // TODO: inject interrupt into Checkers that could filter out many rows without ending as well.

@@ -53,7 +53,7 @@ fn test_assembly() {
         println!("Test failed:");
         println!("Console process output:\n{:?}", console_process_output);
         println!("Server process output:\n{:?}", server_process_output);
-        assert!(false);
+        panic!();
     }
 }
 

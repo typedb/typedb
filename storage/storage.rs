@@ -18,7 +18,7 @@ use std::{
 };
 
 use ::error::typedb_error;
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use isolation_manager::IsolationConflict;
 use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
@@ -31,10 +31,11 @@ use crate::{
     error::{MVCCStorageError, MVCCStorageErrorKind},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     iterator::MVCCRangeIterator,
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
-        iterator::KeyspaceRangeIterator, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, Keyspaces,
+        iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
+        KeyspaceSet, Keyspaces,
     },
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
@@ -272,15 +273,15 @@ impl<Durability> MVCCStorage<Durability> {
                 _ => None,
             });
             for (key, value, reinsert, known_to_exist) in puts {
-                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key.as_ref());
+                let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
                     debug_assert!(self
-                        .get::<0>(wrapped, snapshot.open_sequence_number())
+                        .get::<0>(snapshot.iterator_pool(), wrapped, snapshot.open_sequence_number())
                         .is_ok_and(|opt| opt.is_some()));
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(wrapped, snapshot.open_sequence_number())?
+                        .get::<BUFFER_VALUE_INLINE>(snapshot.iterator_pool(), wrapped, snapshot.open_sequence_number())?
                         .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
@@ -337,24 +338,27 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn get<'a, const INLINE_BYTES: usize>(
         &self,
+        iterator_pool: &IteratorPool,
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
-        self.get_mapped(key, open_sequence_number, |byte_ref| ByteArray::from(byte_ref))
+        self.get_mapped(iterator_pool, key, open_sequence_number, |byte_ref| ByteArray::from(byte_ref))
     }
 
-    pub fn get_mapped<'a, Mapper, V>(
+    pub fn get_mapped<'a, 'pool, Mapper, V>(
         &self,
+        iterator_pool: &IteratorPool,
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
         mapper: Mapper,
     ) -> Result<Option<V>, MVCCReadError>
     where
-        Mapper: Fn(ByteReference<'_>) -> V,
+        Mapper: Fn(&[u8]) -> V,
     {
         let key = key.into();
         let mut iterator = self.iterate_range(
-            KeyRange::new_within(RangeStart::Inclusive(StorageKey::<0>::Reference(key)), false),
+            iterator_pool,
+            &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
         );
         loop {
@@ -368,10 +372,11 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub(crate) fn iterate_range<'this, const PS: usize>(
         &'this self,
-        range: KeyRange<StorageKey<'this, PS>>,
+        iterpool: &IteratorPool,
+        range: &KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> MVCCRangeIterator {
-        MVCCRangeIterator::new(self, range, open_sequence_number)
+        MVCCRangeIterator::new(self, iterpool, range, open_sequence_number)
     }
 
     pub fn snapshot_watermark(&self) -> SequenceNumber {
@@ -423,11 +428,12 @@ impl<Durability> MVCCStorage<Durability> {
 
     pub fn iterate_keyspace_range<'this, const PREFIX_INLINE: usize>(
         &'this self,
+        iterator_pool: &IteratorPool,
         range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
     ) -> KeyspaceRangeIterator {
         self.keyspaces
             .get(range.start().get_value().keyspace_id())
-            .iterate_range(range.map(|k| k.into_bytes(), |fixed| fixed))
+            .iterate_range(iterator_pool, &range.map(|k| k.as_bytes(), |fixed| fixed))
     }
 
     pub fn reset(&mut self) -> Result<(), StorageResetError>
@@ -603,6 +609,7 @@ mod tests {
         write_batches::WriteBatches,
         MVCCStorage,
     };
+    use crate::keyspace::IteratorPool;
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
@@ -664,6 +671,6 @@ mod tests {
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
                 .unwrap();
-        assert_eq!(storage.get::<0>(&key_2, seq).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(storage.get::<0>(&IteratorPool::new(), &key_2, seq).unwrap().unwrap(), ByteArray::empty());
     }
 }

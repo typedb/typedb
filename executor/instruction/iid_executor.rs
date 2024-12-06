@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, sync::Arc};
+use std::{collections::HashMap, fmt, iter, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{executable::match_::instructions::thing::IidInstruction, ExecutorVariable};
@@ -14,17 +14,13 @@ use concept::{
 };
 use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use ir::pattern::constraint::Iid;
-use lending_iterator::{
-    adaptors::{Map, TryFilter},
-    AsHkt, AsNarrowingIterator, LendingIterator,
-};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterFn, VariableModes,
+        Checker, FilterFn, FilterMapFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -35,29 +31,22 @@ pub(crate) struct IidExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     filter_fn: Arc<IidFilterFn>,
-    checker: Checker<AsHkt![VariableValue<'_>]>,
+    checker: Checker<VariableValue<'static>>,
 }
 
-pub(crate) type IidToTupleFn = for<'a> fn(Result<VariableValue<'a>, Box<ConceptReadError>>) -> TupleResult<'a>;
+pub(crate) type IidToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(super) type IidTupleIterator<I> = Map<
-    TryFilter<I, Box<IidFilterFn>, AsHkt![VariableValue<'_>], Box<ConceptReadError>>,
-    IidToTupleFn,
-    AsHkt![TupleResult<'_>],
->;
+pub(super) type IidTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IidFilterMapFn>>, IidToTupleFn>;
 
-pub(super) type IidFilterFn = FilterFn<AsHkt![VariableValue<'_>]>;
+pub(super) type IidFilterFn = FilterFn<VariableValue<'static>>;
+pub(super) type IidFilterMapFn = FilterMapFn<VariableValue<'static>>;
 
-pub(crate) type IidIterator = IidTupleIterator<
-    AsNarrowingIterator<
-        <Option<Result<VariableValue<'static>, Box<ConceptReadError>>> as IntoIterator>::IntoIter,
-        Result<AsHkt![VariableValue<'_>], Box<ConceptReadError>>,
-    >,
->;
+pub(crate) type IidIterator =
+    IidTupleIterator<<Option<Result<VariableValue<'static>, Box<ConceptReadError>>> as IntoIterator>::IntoIter>;
 
 type IidVariableValueExtractor = for<'a, 'b> fn(&'a VariableValue<'b>) -> VariableValue<'a>;
 
-pub(super) const EXTRACT_LHS: IidVariableValueExtractor = |lhs| lhs.as_reference();
+pub(super) const EXTRACT_IDENTITY: IidVariableValueExtractor = |lhs| lhs.as_reference();
 
 fn iid_to_tuple(res: Result<VariableValue<'_>, Box<ConceptReadError>>) -> Result<Tuple<'_>, Box<ConceptReadError>> {
     match res {
@@ -76,7 +65,7 @@ impl IidExecutor {
 
         let var = iid.var().as_variable().unwrap();
         let output_tuple_positions = TuplePositions::Single([Some(var)]);
-        let checker = Checker::<VariableValue<'_>>::new(checks, HashMap::from_iter([(var, EXTRACT_LHS)]));
+        let checker = Checker::<VariableValue<'_>>::new(checks, HashMap::from_iter([(var, EXTRACT_IDENTITY)]));
 
         let filter_fn: Arc<IidFilterFn> = Arc::new(move |res| match res {
             Ok(value) => Ok(types.contains(&value.as_thing().type_())),
@@ -93,9 +82,13 @@ impl IidExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<IidFilterFn> = Box::new(move |item| match filter(item) {
-            Ok(true) => check(item),
-            fail => fail,
+        let filter_for_row: Box<IidFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -107,26 +100,20 @@ impl IidExecutor {
         let instance = if let Some(object) = ObjectVertex::try_from_bytes(bytes) {
             let object = Object::new(object);
             thing_manager
-                .instance_exists(snapshot, object.as_reference())
-                .map(move |exists| exists.then_some(VariableValue::Thing(object.into_owned().into())))
+                .instance_exists(snapshot, &object)
+                .map(move |exists| exists.then_some(VariableValue::Thing(object.into())))
         } else if let Some(attribute) = AttributeVertex::try_from_bytes(bytes) {
             let attribute = Attribute::new(attribute);
             thing_manager
-                .instance_exists(snapshot, attribute.as_reference())
-                .map(move |exists| exists.then_some(VariableValue::Thing(attribute.into_owned().into())))
+                .instance_exists(snapshot, &attribute)
+                .map(move |exists| exists.then_some(VariableValue::Thing(attribute.clone().into())))
         } else {
             Ok(None)
         };
 
-        fn as_tuples<T>(it: T) -> Map<T, IidToTupleFn, AsHkt![TupleResult<'_>]>
-        where
-            T: for<'a> LendingIterator<Item<'a> = Result<VariableValue<'a>, Box<ConceptReadError>>>,
-        {
-            it.map::<TupleResult<'_>, IidToTupleFn>(iid_to_tuple)
-        }
-
-        let iterator = AsNarrowingIterator::new(instance.transpose());
-        let as_tuples = as_tuples(iterator.try_filter::<_, IidFilterFn, VariableValue<'_>, _>(filter_for_row));
+        let iterator = instance.transpose();
+        let as_tuples =
+            iterator.into_iter().filter_map(filter_for_row).map::<TupleResult<'_>, IidToTupleFn>(iid_to_tuple);
         Ok(TupleIterator::Iid(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
     }
 }

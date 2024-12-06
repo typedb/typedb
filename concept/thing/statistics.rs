@@ -13,7 +13,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeRolePlayerIndex},
+        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeLinksIndex},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
         ThingVertex,
@@ -22,13 +22,14 @@ use encoding::graph::{
     Typed,
 };
 use error::typedb_error;
-use resource::constants::database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT;
+use resource::constants::{database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT, snapshot::BUFFER_KEY_INLINE};
 use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
-    key_value::StorageKeyReference,
+    key_value::{StorageKeyArray, StorageKeyReference},
+    keyspace::IteratorPool,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
@@ -63,22 +64,20 @@ pub struct Statistics {
     pub total_role_count: u64,
     pub total_has_count: u64,
 
-    pub entity_counts: HashMap<EntityType<'static>, u64>,
-    pub relation_counts: HashMap<RelationType<'static>, u64>,
-    pub attribute_counts: HashMap<AttributeType<'static>, u64>,
-    pub role_counts: HashMap<RoleType<'static>, u64>,
+    pub entity_counts: HashMap<EntityType, u64>,
+    pub relation_counts: HashMap<RelationType, u64>,
+    pub attribute_counts: HashMap<AttributeType, u64>,
+    pub role_counts: HashMap<RoleType, u64>,
 
-    pub has_attribute_counts: HashMap<ObjectType<'static>, HashMap<AttributeType<'static>, u64>>,
-    pub attribute_owner_counts: HashMap<AttributeType<'static>, HashMap<ObjectType<'static>, u64>>,
-    pub role_player_counts: HashMap<ObjectType<'static>, HashMap<RoleType<'static>, u64>>,
-    pub relation_role_counts: HashMap<RelationType<'static>, HashMap<RoleType<'static>, u64>>,
-    pub relation_role_player_counts:
-        HashMap<RelationType<'static>, HashMap<RoleType<'static>, HashMap<ObjectType<'static>, u64>>>,
-    pub player_role_relation_counts:
-        HashMap<ObjectType<'static>, HashMap<RoleType<'static>, HashMap<RelationType<'static>, u64>>>,
+    pub has_attribute_counts: HashMap<ObjectType, HashMap<AttributeType, u64>>,
+    pub attribute_owner_counts: HashMap<AttributeType, HashMap<ObjectType, u64>>,
+    pub role_player_counts: HashMap<ObjectType, HashMap<RoleType, u64>>,
+    pub relation_role_counts: HashMap<RelationType, HashMap<RoleType, u64>>,
+    pub relation_role_player_counts: HashMap<RelationType, HashMap<RoleType, HashMap<ObjectType, u64>>>,
+    pub player_role_relation_counts: HashMap<ObjectType, HashMap<RoleType, HashMap<RelationType, u64>>>,
 
     // TODO: adding role types is possible, but won't help with filtering before reading storage since roles are not in the prefix
-    pub links_index_counts: HashMap<ObjectType<'static>, HashMap<ObjectType<'static>, u64>>,
+    pub links_index_counts: HashMap<ObjectType, HashMap<ObjectType, u64>>,
     // future: attribute value distributions, attribute value ownership distributions, etc.
 }
 
@@ -196,32 +195,25 @@ impl Statistics {
     ) -> Result<i64, MVCCReadError> {
         let mut total_delta = 0;
         for (key, write) in writes.operations.iterate_writes() {
-            let key_reference = StorageKeyReference::from(&key);
-            let delta = write_to_delta(
-                key_reference,
-                &write,
-                writes.open_sequence_number,
-                commit_sequence_number,
-                commits,
-                storage,
-            )?;
-            if ObjectVertex::is_entity_vertex(key_reference) {
-                let type_ = Entity::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
+            let delta =
+                write_to_delta(&key, &write, writes.open_sequence_number, commit_sequence_number, commits, storage)?;
+            if ObjectVertex::is_entity_vertex(StorageKeyReference::from(&key)) {
+                let type_ = Entity::new(ObjectVertex::decode(key.bytes())).type_();
                 self.update_entities(type_, delta);
                 total_delta += delta;
-            } else if ObjectVertex::is_relation_vertex(key_reference) {
-                let type_ = Relation::new(ObjectVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
+            } else if ObjectVertex::is_relation_vertex(StorageKeyReference::from(&key)) {
+                let type_ = Relation::new(ObjectVertex::decode(key.bytes())).type_();
                 self.update_relations(type_, delta);
                 total_delta += delta;
-            } else if AttributeVertex::is_attribute_vertex(key_reference) {
-                let type_ = Attribute::new(AttributeVertex::new(Bytes::Reference(key_reference.byte_ref()))).type_();
+            } else if AttributeVertex::is_attribute_vertex(StorageKeyReference::from(&key)) {
+                let type_ = Attribute::new(AttributeVertex::decode(key.bytes())).type_();
                 self.update_attributes(type_, delta);
-            } else if ThingEdgeHas::is_has(key_reference) {
-                let edge = ThingEdgeHas::new(Bytes::Reference(key_reference.byte_ref()));
+            } else if ThingEdgeHas::is_has(&key) {
+                let edge = ThingEdgeHas::decode(Bytes::Reference(key.bytes()));
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
                 total_delta += delta;
-            } else if ThingEdgeLinks::is_links(key_reference) {
-                let edge = ThingEdgeLinks::new(Bytes::Reference(key_reference.byte_ref()));
+            } else if ThingEdgeLinks::is_links(&key) {
+                let edge = ThingEdgeLinks::new(Bytes::Reference(key.bytes()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 self.update_role_player(
                     Object::new(edge.to()).type_(),
@@ -230,28 +222,28 @@ impl Statistics {
                     delta,
                 );
                 total_delta += delta;
-            } else if ThingEdgeRolePlayerIndex::is_index(key_reference) {
-                let edge = ThingEdgeRolePlayerIndex::new(Bytes::Reference(key_reference.byte_ref()));
+            } else if ThingEdgeLinksIndex::is_index(&key) {
+                let edge = ThingEdgeLinksIndex::decode(Bytes::Reference(key.bytes()));
                 self.update_indexed_player(Object::new(edge.from()).type_(), Object::new(edge.to()).type_(), delta);
                 // note: don't update total count based on index
-            } else if EntityType::is_decodable_from_key(key_reference) {
-                let type_ = EntityType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
+            } else if EntityType::is_decodable_from_key(&key) {
+                let type_ = EntityType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.entity_counts.remove(&type_);
                     self.clear_object_type(ObjectType::Entity(type_));
                 }
                 // note: don't update total count based on type updates
-            } else if RelationType::is_decodable_from_key(key_reference) {
-                let type_ = RelationType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
+            } else if RelationType::is_decodable_from_key(&key) {
+                let type_ = RelationType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.relation_counts.remove(&type_);
                     self.relation_role_counts.remove(&type_);
                     let as_object_type = ObjectType::Relation(type_);
-                    self.clear_object_type(as_object_type.clone());
+                    self.clear_object_type(as_object_type);
                 }
                 // note: don't update total count based on type updates
-            } else if AttributeType::is_decodable_from_key(key_reference) {
-                let type_ = AttributeType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
+            } else if AttributeType::is_decodable_from_key(&key) {
+                let type_ = AttributeType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.attribute_counts.remove(&type_);
                     self.attribute_owner_counts.remove(&type_);
@@ -261,8 +253,8 @@ impl Statistics {
                     self.has_attribute_counts.retain(|_, map| !map.is_empty());
                 }
                 // note: don't update total count based on type updates
-            } else if RoleType::is_decodable_from_key(key_reference) {
-                let type_ = RoleType::read_from(Bytes::Reference(key_reference.byte_ref()).into_owned());
+            } else if RoleType::is_decodable_from_key(&key) {
+                let type_ = RoleType::read_from(Bytes::Reference(key.bytes()).into_owned());
                 if matches!(write, Write::Delete) {
                     self.role_counts.remove(&type_);
                     for map in self.role_player_counts.values_mut() {
@@ -280,7 +272,7 @@ impl Statistics {
         Ok(total_delta)
     }
 
-    fn clear_object_type(&mut self, object_type: ObjectType<'static>) {
+    fn clear_object_type(&mut self, object_type: ObjectType) {
         self.has_attribute_counts.remove(&object_type);
         for map in self.attribute_owner_counts.values_mut() {
             map.remove(&object_type);
@@ -296,30 +288,30 @@ impl Statistics {
         self.links_index_counts.retain(|_, map| !map.is_empty());
     }
 
-    fn update_entities(&mut self, entity_type: EntityType<'static>, delta: i64) {
+    fn update_entities(&mut self, entity_type: EntityType, delta: i64) {
         let count = self.entity_counts.entry(entity_type).or_default();
         *count = count.checked_add_signed(delta).unwrap();
         self.total_entity_count = self.total_entity_count.checked_add_signed(delta).unwrap();
         self.total_thing_count = self.total_thing_count.checked_add_signed(delta).unwrap();
     }
 
-    fn update_relations(&mut self, relation_type: RelationType<'static>, delta: i64) {
+    fn update_relations(&mut self, relation_type: RelationType, delta: i64) {
         let count = self.relation_counts.entry(relation_type).or_default();
         *count = count.checked_add_signed(delta).unwrap();
         self.total_relation_count = self.total_relation_count.checked_add_signed(delta).unwrap();
         self.total_thing_count = self.total_thing_count.checked_add_signed(delta).unwrap();
     }
 
-    fn update_attributes(&mut self, attribute_type: AttributeType<'static>, delta: i64) {
+    fn update_attributes(&mut self, attribute_type: AttributeType, delta: i64) {
         let count = self.attribute_counts.entry(attribute_type).or_default();
         *count = count.checked_add_signed(delta).unwrap();
         self.total_attribute_count = self.total_attribute_count.checked_add_signed(delta).unwrap();
         self.total_thing_count = self.total_thing_count.checked_add_signed(delta).unwrap();
     }
 
-    fn update_has(&mut self, owner_type: ObjectType<'static>, attribute_type: AttributeType<'static>, delta: i64) {
+    fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
         let attribute_count =
-            self.has_attribute_counts.entry(owner_type.clone()).or_default().entry(attribute_type.clone()).or_default();
+            self.has_attribute_counts.entry(owner_type).or_default().entry(attribute_type).or_default();
         *attribute_count = attribute_count.checked_add_signed(delta).unwrap();
         let owner_count = self.attribute_owner_counts.entry(attribute_type).or_default().entry(owner_type).or_default();
         *owner_count = owner_count.checked_add_signed(delta).unwrap();
@@ -328,27 +320,26 @@ impl Statistics {
 
     fn update_role_player(
         &mut self,
-        player_type: ObjectType<'static>,
-        role_type: RoleType<'static>,
-        relation_type: RelationType<'static>,
+        player_type: ObjectType,
+        role_type: RoleType,
+        relation_type: RelationType,
         delta: i64,
     ) {
-        let role_count = self.role_counts.entry(role_type.clone()).or_default();
+        let role_count = self.role_counts.entry(role_type).or_default();
         *role_count = role_count.checked_add_signed(delta).unwrap();
         self.total_role_count = self.total_role_count.checked_add_signed(delta).unwrap();
-        let role_player_count =
-            self.role_player_counts.entry(player_type.clone()).or_default().entry(role_type.clone()).or_default();
+        let role_player_count = self.role_player_counts.entry(player_type).or_default().entry(role_type).or_default();
         *role_player_count = role_player_count.checked_add_signed(delta).unwrap();
         let relation_role_count =
-            self.relation_role_counts.entry(relation_type.clone()).or_default().entry(role_type.clone()).or_default();
+            self.relation_role_counts.entry(relation_type).or_default().entry(role_type).or_default();
         *relation_role_count = relation_role_count.checked_add_signed(delta).unwrap();
         let relation_role_player_count = self
             .relation_role_player_counts
-            .entry(relation_type.clone())
+            .entry(relation_type)
             .or_default()
-            .entry(role_type.clone())
+            .entry(role_type)
             .or_default()
-            .entry(player_type.clone())
+            .entry(player_type)
             .or_default();
         *relation_role_player_count = relation_role_player_count.checked_add_signed(delta).unwrap();
         let player_role_relation_count = self
@@ -362,14 +353,9 @@ impl Statistics {
         *player_role_relation_count = player_role_relation_count.checked_add_signed(delta).unwrap();
     }
 
-    fn update_indexed_player(
-        &mut self,
-        player_1_type: ObjectType<'static>,
-        player_2_type: ObjectType<'static>,
-        delta: i64,
-    ) {
+    fn update_indexed_player(&mut self, player_1_type: ObjectType, player_2_type: ObjectType, delta: i64) {
         let player_1_to_2_index_count =
-            self.links_index_counts.entry(player_1_type.clone()).or_default().entry(player_2_type.clone()).or_default();
+            self.links_index_counts.entry(player_1_type).or_default().entry(player_2_type).or_default();
         *player_1_to_2_index_count = player_1_to_2_index_count.checked_add_signed(delta).unwrap();
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =
@@ -400,7 +386,7 @@ impl Statistics {
 }
 
 fn write_to_delta<D>(
-    write_key: StorageKeyReference<'_>,
+    write_key: &StorageKeyArray<{ BUFFER_KEY_INLINE }>,
     write: &Write,
     open_sequence_number: SequenceNumber,
     commit_sequence_number: SequenceNumber,
@@ -413,7 +399,7 @@ fn write_to_delta<D>(
         Write::Delete => {
             if commits.range(concurrent_commit_range).any(|(_, writes)| {
                 matches!(
-                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.byte_ref()),
+                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes()),
                     Some(Write::Delete)
                 )
             }) {
@@ -435,11 +421,11 @@ fn write_to_delta<D>(
 
             let check_storage = open_sequence_number < *commits.first_key_value().unwrap().0
                 || (commits.range(concurrent_commit_range).any(|(_, writes)| {
-                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.byte_ref()).is_some()
+                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes()).is_some()
                 }));
 
             if check_storage {
-                if storage.get::<0>(write_key, commit_sequence_number.previous())?.is_some() {
+                if storage.get::<0>(&IteratorPool::new(), write_key, commit_sequence_number.previous())?.is_some() {
                     // exists in storage before PUT is committed
                     Ok(0)
                 } else {
@@ -489,45 +475,45 @@ impl SerialisableType {
         }
     }
 
-    pub(crate) fn into_entity_type(self) -> EntityType<'static> {
+    pub(crate) fn into_entity_type(self) -> EntityType {
         match self {
-            Self::Entity(id) => EntityType::build_from_type_id(TypeID::build(id)),
+            Self::Entity(id) => EntityType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
-    pub(crate) fn into_relation_type(self) -> RelationType<'static> {
+    pub(crate) fn into_relation_type(self) -> RelationType {
         match self {
-            Self::Relation(id) => RelationType::build_from_type_id(TypeID::build(id)),
+            Self::Relation(id) => RelationType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
-    pub(crate) fn into_object_type(self) -> ObjectType<'static> {
+    pub(crate) fn into_object_type(self) -> ObjectType {
         match self {
-            Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::build(id))),
-            Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::build(id))),
+            Self::Entity(id) => ObjectType::Entity(EntityType::build_from_type_id(TypeID::new(id))),
+            Self::Relation(id) => ObjectType::Relation(RelationType::build_from_type_id(TypeID::new(id))),
             _ => panic!("Incompatible conversion."),
         }
     }
 
-    pub(crate) fn into_attribute_type(self) -> AttributeType<'static> {
+    pub(crate) fn into_attribute_type(self) -> AttributeType {
         match self {
-            Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::build(id)),
+            Self::Attribute(id) => AttributeType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 
-    pub(crate) fn into_role_type(self) -> RoleType<'static> {
+    pub(crate) fn into_role_type(self) -> RoleType {
         match self {
-            Self::Role(id) => RoleType::build_from_type_id(TypeID::build(id)),
+            Self::Role(id) => RoleType::build_from_type_id(TypeID::new(id)),
             _ => panic!("Incompatible conversion."),
         }
     }
 }
 
-impl From<ObjectType<'static>> for SerialisableType {
-    fn from(object: ObjectType<'static>) -> Self {
+impl From<ObjectType> for SerialisableType {
+    fn from(object: ObjectType) -> Self {
         match object {
             ObjectType::Entity(entity) => Self::from(entity),
             ObjectType::Relation(relation) => Self::from(relation),
@@ -535,26 +521,26 @@ impl From<ObjectType<'static>> for SerialisableType {
     }
 }
 
-impl From<EntityType<'static>> for SerialisableType {
-    fn from(entity: EntityType<'static>) -> Self {
+impl From<EntityType> for SerialisableType {
+    fn from(entity: EntityType) -> Self {
         Self::Entity(entity.vertex().type_id_().as_u16())
     }
 }
 
-impl From<RelationType<'static>> for SerialisableType {
-    fn from(relation: RelationType<'static>) -> Self {
+impl From<RelationType> for SerialisableType {
+    fn from(relation: RelationType) -> Self {
         Self::Relation(relation.vertex().type_id_().as_u16())
     }
 }
 
-impl From<AttributeType<'static>> for SerialisableType {
-    fn from(attribute: AttributeType<'static>) -> Self {
+impl From<AttributeType> for SerialisableType {
+    fn from(attribute: AttributeType) -> Self {
         Self::Attribute(attribute.vertex().type_id_().as_u16())
     }
 }
 
-impl From<RoleType<'static>> for SerialisableType {
-    fn from(role_type: RoleType<'static>) -> Self {
+impl From<RoleType> for SerialisableType {
+    fn from(role_type: RoleType) -> Self {
         Self::Role(role_type.vertex().type_id_().as_u16())
     }
 }
@@ -776,23 +762,23 @@ mod serialise {
         map.iter().map(|(type_, value)| (type_.clone().into(), *value)).collect()
     }
 
-    fn into_entity_map(map: HashMap<SerialisableType, u64>) -> HashMap<EntityType<'static>, u64> {
+    fn into_entity_map(map: HashMap<SerialisableType, u64>) -> HashMap<EntityType, u64> {
         map.into_iter().map(|(type_, value)| (type_.into_entity_type(), value)).collect()
     }
 
-    fn into_relation_map(map: HashMap<SerialisableType, u64>) -> HashMap<RelationType<'static>, u64> {
+    fn into_relation_map(map: HashMap<SerialisableType, u64>) -> HashMap<RelationType, u64> {
         map.into_iter().map(|(type_, value)| (type_.into_relation_type(), value)).collect()
     }
 
-    fn into_attribute_map(map: HashMap<SerialisableType, u64>) -> HashMap<AttributeType<'static>, u64> {
+    fn into_attribute_map(map: HashMap<SerialisableType, u64>) -> HashMap<AttributeType, u64> {
         map.into_iter().map(|(type_, value)| (type_.into_attribute_type(), value)).collect()
     }
 
-    fn into_role_map(map: HashMap<SerialisableType, u64>) -> HashMap<RoleType<'static>, u64> {
+    fn into_role_map(map: HashMap<SerialisableType, u64>) -> HashMap<RoleType, u64> {
         map.into_iter().map(|(type_, value)| (type_.into_role_type(), value)).collect()
     }
 
-    fn into_object_map(map: HashMap<SerialisableType, u64>) -> HashMap<ObjectType<'static>, u64> {
+    fn into_object_map(map: HashMap<SerialisableType, u64>) -> HashMap<ObjectType, u64> {
         map.into_iter().map(|(type_, value)| (type_.into_object_type(), value)).collect()
     }
 
@@ -808,7 +794,7 @@ mod serialise {
                 {
                     struct FieldVisitor;
 
-                    impl<'de> Visitor<'de> for FieldVisitor {
+                    impl Visitor<'_> for FieldVisitor {
                         type Value = Field;
 
                         fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

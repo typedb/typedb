@@ -192,6 +192,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             Arc::get_mut(&mut tx.snapshot).unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
+            &tx.function_manager,
             typeql_schema,
         );
         may_error.check_logic(result);
@@ -374,7 +375,6 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
-        let attr = attr.as_reference();
         let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
         actual == expected
     })
@@ -504,10 +504,44 @@ fn apply_query_template(mut template: &str, answer: &HashMap<String, VariableVal
     buf
 }
 
-fn iid_of(thing: &Thing<'_>) -> Vec<u8> {
+fn iid_of(thing: &Thing) -> Vec<u8> {
     match thing {
-        Thing::Entity(entity) => entity.vertex().bytes().bytes().to_owned(),
-        Thing::Relation(relation) => relation.vertex().bytes().bytes().to_owned(),
-        Thing::Attribute(attribute) => attribute.vertex().bytes().bytes().to_owned(),
+        Thing::Entity(entity) => entity.vertex().to_bytes().into(),
+        Thing::Relation(relation) => relation.vertex().to_bytes().into(),
+        Thing::Attribute(attribute) => attribute.vertex().to_bytes().into(),
     }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"verify answer set is equivalent for query")]
+async fn verify_answer_set(context: &mut Context, step: &Step) {
+    if true {
+        eprintln!("TODO: Implement step: verify answer set is equivalent for query");
+        return;
+    }
+    let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
+    let verify_answers = execute_read_query(context, query).unwrap();
+    match (&context.query_answer.as_ref().unwrap(), verify_answers) {
+        (QueryAnswer::ConceptRows(actual), QueryAnswer::ConceptRows(expected)) => {
+            assert_eq!(
+                expected.len(), actual.len(),
+                "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
+                expected.len(), actual.len()
+            );
+            assert!(expected.iter().all(|answer| actual.contains(answer)));
+        }
+        (
+            QueryAnswer::ConceptDocuments(actual_tree, actual_params),
+            QueryAnswer::ConceptDocuments(expected_tree, expected_params),
+        ) => {
+            todo!()
+        }
+        (QueryAnswer::ConceptDocuments(_, _), QueryAnswer::ConceptRows(_)) => {
+            assert!(false, "Expected Rows found documents")
+        }
+        (QueryAnswer::ConceptRows(_), QueryAnswer::ConceptDocuments(_, _)) => {
+            assert!(false, "Expected documents, found rows")
+        }
+    }
+    let num_answers = context.query_answer.as_ref().unwrap().as_rows().len();
 }

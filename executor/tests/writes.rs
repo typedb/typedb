@@ -13,10 +13,7 @@ use std::{
 use answer::variable_value::VariableValue;
 use compiler::{
     self,
-    annotation::{
-        function::{AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
-        match_inference::infer_types,
-    },
+    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     VariablePosition,
 };
 use concept::{
@@ -40,6 +37,7 @@ use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::TranslationContext,
 };
+use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use storage::{
     durability_client::WALClient,
@@ -91,10 +89,10 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered).unwrap();
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type.clone()).unwrap();
-    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type.clone()).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type).unwrap();
+    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type).unwrap();
 
     snapshot.commit().unwrap();
 }
@@ -159,25 +157,20 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
-    let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
     let entry_annotations = infer_types(
         &snapshot,
         &block,
         variable_registry,
         &type_manager,
         previous_stage_variable_annotations,
-        annotated_schema_functions,
-        Some(annotated_preamble_functions),
+        &EmptyAnnotatedFunctionSignatures,
     )
     .unwrap();
-
-    let variable_registry = Arc::new(translation_context.variable_registry);
 
     let insert_plan = compiler::executable::insert::executable::compile(
         block.conjunction().constraints(),
@@ -248,16 +241,13 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .unwrap();
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
-        let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
-        let annotated_preamble_functions = &AnnotatedUnindexedFunctions::empty();
         infer_types(
             &snapshot,
             &block,
             variable_registry,
             &type_manager,
             previous_stage_variable_annotations,
-            annotated_schema_functions,
-            Some(annotated_preamble_functions),
+            &EmptyAnnotatedFunctionSignatures,
         )
         .unwrap()
     };
@@ -269,7 +259,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let input_row_format = input_row_var_names
         .iter()
         .enumerate()
-        .map(|(i, v)| (translation_context.get_variable(v).unwrap(), VariablePosition::new(i as u32)))
+        .map(|(i, v)| (translation_context.get_variable(*v).unwrap(), VariablePosition::new(i as u32)))
         .collect::<HashMap<_, _>>();
 
     let delete_plan = compiler::executable::delete::executable::compile(
@@ -369,7 +359,7 @@ fn relation() {
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = storage.open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
@@ -383,25 +373,19 @@ fn relation() {
         .unwrap()
         .unwrap()
         .role();
-    let relations: Vec<Relation<'_>> = thing_manager
-        .get_relations_in(&snapshot, membership_type.clone())
-        .map_static(|item| item.map(|relation| relation.clone().into_owned()))
-        .try_collect()
-        .unwrap();
+    let relations: Vec<Relation> = thing_manager.get_relations_in(&snapshot, membership_type).try_collect().unwrap();
     assert_eq!(1, relations.len());
     let role_players = relations[0]
         .get_players(&snapshot, &thing_manager)
-        .map_static(|item| {
-            item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
-        })
-        .try_collect::<Vec<_>, _>()
+        .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
+        .try_collect::<_, Vec<_>, _>()
         .unwrap();
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
-    }));
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
-    }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
     snapshot.close_resources();
 }
 
@@ -423,7 +407,7 @@ fn relation_with_inferred_roles() {
         execute_insert(snapshot, type_manager.clone(), thing_manager.clone(), query_str, &[], vec![vec![]]).unwrap();
     snapshot.commit().unwrap();
 
-    let snapshot = storage.open_snapshot_read();
+    let snapshot = storage.clone().open_snapshot_read();
     let person_type = type_manager.get_entity_type(&snapshot, &PERSON_LABEL).unwrap().unwrap();
     let group_type = type_manager.get_entity_type(&snapshot, &GROUP_LABEL).unwrap().unwrap();
     let membership_type = type_manager.get_relation_type(&snapshot, &MEMBERSHIP_LABEL).unwrap().unwrap();
@@ -437,25 +421,19 @@ fn relation_with_inferred_roles() {
         .unwrap()
         .unwrap()
         .role();
-    let relations: Vec<Relation<'_>> = thing_manager
-        .get_relations_in(&snapshot, membership_type.clone())
-        .map_static(|item| item.map(|relation| relation.clone().into_owned()))
-        .try_collect()
-        .unwrap();
+    let relations: Vec<Relation> = thing_manager.get_relations_in(&snapshot, membership_type).try_collect().unwrap();
     assert_eq!(1, relations.len());
     let role_players = relations[0]
         .get_players(&snapshot, &thing_manager)
-        .map_static(|item| {
-            item.map(|(roleplayer, _)| (roleplayer.player().into_owned(), roleplayer.role_type().into_owned()))
-        })
-        .try_collect::<Vec<_>, _>()
+        .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
+        .try_collect::<_, Vec<_>, _>()
         .unwrap();
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(person_type.clone()), member_role.clone())
-    }));
-    assert!(role_players.iter().any(|(player, role)| {
-        (player.type_().clone(), role.clone()) == (ObjectType::Entity(group_type.clone()), group_role.clone())
-    }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(person_type), member_role) }));
+    assert!(role_players
+        .iter()
+        .any(|(player, role)| { (player.type_(), *role) == (ObjectType::Entity(group_type), group_role) }));
     snapshot.close_resources();
 }
 
@@ -494,16 +472,16 @@ fn test_has_with_input_rows() {
     let age_of_p10 = p10
         .as_thing()
         .as_object()
-        .get_has_type_unordered(&snapshot, &thing_manager, age_type.clone())
-        .map_static(|result| result.unwrap().0.clone().into_owned())
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type)
+        .map(|result| result.unwrap().0.clone())
         .collect::<Vec<_>>();
-    assert_eq!(a10.as_thing().as_attribute(), age_of_p10[0]);
+    assert_eq!(a10.as_thing().as_attribute(), &age_of_p10[0]);
     let owner_of_a10 = a10
         .as_thing()
         .as_attribute()
         .get_owners(&snapshot, &thing_manager)
-        .map_static(|result| result.unwrap().0.clone().into_owned())
-        .collect::<Vec<_>>();
+        .map(|result| result.unwrap().0)
+        .collect_vec();
     assert_eq!(p10.as_thing().as_object(), owner_of_a10[0]);
     snapshot.close_resources();
 }

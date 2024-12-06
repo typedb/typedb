@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DateBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }
@@ -43,7 +43,7 @@ impl DateBytes {
 }
 
 impl InlineEncodableAttributeID for DateBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     const VALUE_TYPE: ValueType = ValueType::Date;
 
     fn bytes_ref(&self) -> &[u8] {

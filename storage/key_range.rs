@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::Bound, fmt::Debug};
+use std::fmt::Debug;
 
 use primitive::prefix::Prefix;
 
@@ -17,6 +17,10 @@ pub struct KeyRange<T: Prefix> {
 }
 
 impl<T: Prefix> KeyRange<T> {
+    pub fn new(start: RangeStart<T>, end: RangeEnd<T>, fixed_width_keys: bool) -> Self {
+        Self { start, end, fixed_width_keys }
+    }
+
     pub fn new_variable_width(start: RangeStart<T>, end: RangeEnd<T>) -> Self {
         Self { start, end, fixed_width_keys: false }
     }
@@ -29,8 +33,8 @@ impl<T: Prefix> KeyRange<T> {
         Self { start, end: RangeEnd::Unbounded, fixed_width_keys: false }
     }
 
-    pub fn new_within(prefix_inclusive: RangeStart<T>, fixed_width_keys: bool) -> Self {
-        Self { start: prefix_inclusive, end: RangeEnd::WithinStartAsPrefix, fixed_width_keys }
+    pub fn new_within(prefix: T, fixed_width_keys: bool) -> Self {
+        Self { start: RangeStart::Inclusive(prefix), end: RangeEnd::WithinStartAsPrefix, fixed_width_keys }
     }
 
     pub fn start(&self) -> &RangeStart<T> {
@@ -49,15 +53,14 @@ impl<T: Prefix> KeyRange<T> {
         (self.start, self.end, self.fixed_width_keys)
     }
 
-    pub fn map<V: Prefix>(
-        self,
-        prefix_mapper: impl Fn(T) -> V,
+    pub fn map<'a, V: Prefix>(
+        &'a self,
+        prefix_mapper: impl Fn(&'a T) -> V,
         fixed_width_mapper: impl Fn(bool) -> bool,
     ) -> KeyRange<V> {
-        let (start, end, fixed_width) = self.into_raw();
-        let start = start.map(&prefix_mapper);
-        let end = end.map(&prefix_mapper);
-        let fixed_width = fixed_width_mapper(fixed_width);
+        let start = (&self.start).map(&prefix_mapper);
+        let end = (&self.end).map(&prefix_mapper);
+        let fixed_width = fixed_width_mapper(self.fixed_width_keys);
         match fixed_width {
             true => KeyRange::new_fixed_width(start, end),
             false => KeyRange::new_variable_width(start, end),
@@ -71,36 +74,34 @@ where
     T: Ord + Debug,
 {
     Inclusive(T),
-    Exclusive(T),
+    ExcludeFirstWithPrefix(T),
+    ExcludePrefix(T),
 }
 
 impl<T> RangeStart<T>
 where
     T: Ord + Debug,
 {
-    pub(crate) fn is_exclusive(&self) -> bool {
-        matches!(self, Self::Exclusive(_))
-    }
-
-    pub fn map<U: Ord + Debug>(self, mapper: impl FnOnce(T) -> U) -> RangeStart<U> {
+    pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeStart<U> {
         match self {
             Self::Inclusive(end) => RangeStart::Inclusive(mapper(end)),
-            Self::Exclusive(end) => RangeStart::Exclusive(mapper(end)),
+            Self::ExcludeFirstWithPrefix(end) => RangeStart::ExcludeFirstWithPrefix(mapper(end)),
+            Self::ExcludePrefix(end) => RangeStart::ExcludePrefix(mapper(end)),
         }
     }
 
     pub fn get_value(&self) -> &T {
         match self {
-            Self::Inclusive(value) | Self::Exclusive(value) => value,
+            Self::Inclusive(value) | Self::ExcludeFirstWithPrefix(value) | Self::ExcludePrefix(value) => value,
         }
     }
-
-    pub fn as_bound(&self) -> Bound<&T> {
-        match self {
-            RangeStart::Inclusive(start) => Bound::Included(start),
-            RangeStart::Exclusive(start) => Bound::Excluded(start),
-        }
-    }
+    //
+    // pub fn as_bound(&self) -> Bound<&T> {
+    //     match self {
+    //         RangeStart::Inclusive(start) => Bound::Included(start),
+    //         RangeStart::Exclusive(start) => Bound::Excluded(start),
+    //     }
+    // }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -108,7 +109,9 @@ pub enum RangeEnd<T>
 where
     T: Ord + Debug,
 {
+    // WARNING: only to be used with RangeStart::Inclusive
     WithinStartAsPrefix,
+
     EndPrefixInclusive(T),
     EndPrefixExclusive(T),
     Unbounded,
@@ -118,7 +121,7 @@ impl<T> RangeEnd<T>
 where
     T: Ord + Debug,
 {
-    pub fn map<U: Ord + Debug>(self, mapper: impl FnOnce(T) -> U) -> RangeEnd<U> {
+    pub fn map<'a: 'b, 'b, U: Ord + Debug + 'b>(&'a self, mapper: impl FnOnce(&'a T) -> U) -> RangeEnd<U> {
         match self {
             RangeEnd::WithinStartAsPrefix => RangeEnd::WithinStartAsPrefix,
             RangeEnd::EndPrefixInclusive(end) => RangeEnd::EndPrefixInclusive(mapper(end)),

@@ -148,10 +148,9 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                     SchemaCommitError::ConceptWriteErrorsFirst { typedb_source } => {
                         may_error.check_concept_write_without_read_errors::<()>(&Err(typedb_source));
                     }
-
+                    SchemaCommitError::FunctionError { .. } => {}
                     SchemaCommitError::TypeCacheUpdateError { .. }
                     | SchemaCommitError::StatisticsError { .. }
-                    | SchemaCommitError::FunctionError { .. }
                     | SchemaCommitError::SnapshotError { .. } => {
                         panic!("Unexpected schema commit error: {:?}", error);
                     }

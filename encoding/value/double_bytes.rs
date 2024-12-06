@@ -12,7 +12,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DoubleBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }
@@ -49,7 +49,7 @@ impl DoubleBytes {
 }
 
 impl InlineEncodableAttributeID for DoubleBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     const VALUE_TYPE: ValueType = ValueType::Double;
 
     fn bytes_ref(&self) -> &[u8] {

@@ -12,7 +12,7 @@ use crate::type_::{
     KindAPI,
 };
 
-pub(crate) trait HasCommonTypeCache<T: KindAPI<'static>> {
+pub(crate) trait HasCommonTypeCache<T: KindAPI> {
     fn common_type_cache(&self) -> &CommonTypeCache<T>;
 }
 
@@ -27,9 +27,9 @@ pub(crate) trait CacheGetter {
 
 macro_rules! impl_cache_getter {
     ($cache_type: ty, $inner_type: ident, $member_name: ident) => {
-        impl<'a> CacheGetter for $inner_type<'a> {
+        impl CacheGetter for $inner_type {
             type CacheType = $cache_type;
-            fn get_cache<'cache>(type_cache: &'cache TypeCache, type_: $inner_type<'a>) -> &'cache Self::CacheType {
+            fn get_cache(type_cache: &TypeCache, type_: $inner_type) -> &Self::CacheType {
                 use ::encoding::graph::Typed;
                 use encoding::graph::type_::vertex::TypeVertexEncoding;
                 let as_u16 = type_.vertex().type_id_().as_u16();

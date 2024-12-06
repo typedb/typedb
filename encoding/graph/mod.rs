@@ -13,10 +13,10 @@ pub mod definition;
 pub mod thing;
 pub mod type_;
 
-pub trait Typed<'a, const INLINE_SIZE: usize>: Prefixed<'a, INLINE_SIZE> {
-    const RANGE_TYPE_ID: Range<usize> = Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeID::LENGTH;
+pub trait Typed<const INLINE_SIZE: usize>: Prefixed<INLINE_SIZE> {
+    const RANGE_TYPE_ID: Range<usize> = Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + TypeID::LENGTH;
 
-    fn type_id_(&'a self) -> TypeID {
-        TypeID::new(self.bytes().bytes()[Self::RANGE_TYPE_ID].try_into().unwrap())
+    fn type_id_(&self) -> TypeID {
+        TypeID::decode(self.clone().to_bytes()[Self::RANGE_TYPE_ID].try_into().unwrap())
     }
 }

@@ -113,7 +113,7 @@ pub(crate) enum TypeListConstraint<'a> {
     Value(&'a Value<Variable>),
 }
 
-impl<'a> TypeListConstraint<'a> {
+impl TypeListConstraint<'_> {
     pub(crate) fn var(self) -> Variable {
         match self {
             TypeListConstraint::Label(label) => label.type_(),
@@ -133,7 +133,7 @@ pub(crate) struct TypeListPlanner<'a> {
     types: Arc<BTreeSet<Type>>,
 }
 
-impl<'a> fmt::Debug for TypeListPlanner<'a> {
+impl fmt::Debug for TypeListPlanner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("TypeListPlanner").field("constraint", &self.constraint).finish()
     }
@@ -222,7 +222,7 @@ pub(crate) struct IidPlanner<'a> {
     var: VariableVertexId,
 }
 
-impl<'a> fmt::Debug for IidPlanner<'a> {
+impl fmt::Debug for IidPlanner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("IidPlanner").field("iid", self.iid).finish()
     }
@@ -266,7 +266,7 @@ pub(crate) struct IsaPlanner<'a> {
     unrestricted_expected_size: f64,
 }
 
-impl<'a> fmt::Debug for IsaPlanner<'a> {
+impl fmt::Debug for IsaPlanner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("IsaPlanner").field("isa", self.isa).finish()
     }
@@ -357,7 +357,7 @@ pub(crate) struct HasPlanner<'a> {
     unbound_typed_expected_size_reverse: f64,
 }
 
-impl<'a> fmt::Debug for HasPlanner<'a> {
+impl fmt::Debug for HasPlanner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("HasPlanner").field("has", &self.has).finish()
     }
@@ -498,7 +498,7 @@ pub(crate) struct LinksPlanner<'a> {
     unbound_typed_expected_size_reverse: f64,
 }
 
-impl<'a> fmt::Debug for LinksPlanner<'a> {
+impl fmt::Debug for LinksPlanner<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LinksPlanner").field("links", &self.links).finish()
     }

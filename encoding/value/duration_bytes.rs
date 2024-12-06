@@ -13,7 +13,7 @@ use crate::{
     },
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DurationBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }
@@ -50,7 +50,7 @@ impl DurationBytes {
 }
 
 impl InlineEncodableAttributeID for DurationBytes {
-    const ENCODED_LENGTH: usize = ValueEncodingLength::Long.length();
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Long;
     const VALUE_TYPE: ValueType = ValueType::Duration;
 
     fn bytes_ref(&self) -> &[u8] {

@@ -63,7 +63,7 @@ pub(crate) fn compile_function(
     function: AnnotatedFunction,
     is_tabled: FunctionTablingType,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_ } = function;
+    let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_, .. } = function;
     let (argument_positions, executable_stages) = compile_pipeline_stages(
         statistics,
         &variable_registry,
@@ -167,7 +167,7 @@ pub fn determine_tabling_requirements_impl(
     }
 }
 
-fn all_calls_in_pipeline(stages: &Vec<AnnotatedStage>) -> HashSet<FunctionID> {
+fn all_calls_in_pipeline(stages: &[AnnotatedStage]) -> HashSet<FunctionID> {
     let match_stage_conjunctions = stages.iter().filter_map(|stage| match stage {
         AnnotatedStage::Match { block, .. } => Some(block.conjunction()),
         _ => None,

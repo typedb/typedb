@@ -477,13 +477,7 @@ impl CheckVertex<ExecutorVariable> {
             Vertex::Variable(var) => Self::Variable(var),
             Vertex::Parameter(param) => Self::Parameter(param),
             Vertex::Label(label) => Self::Type(
-                type_annotations
-                    .vertex_annotations_of(&Vertex::Label(label))
-                    .unwrap()
-                    .iter()
-                    .exactly_one()
-                    .unwrap()
-                    .clone(),
+                *type_annotations.vertex_annotations_of(&Vertex::Label(label)).unwrap().iter().exactly_one().unwrap(),
             ),
         }
     }
@@ -702,7 +696,7 @@ impl<'a, T: fmt::Display> DisplayVec<'a, T> {
     }
 }
 
-impl<'a, T: fmt::Display> fmt::Display for DisplayVec<'a, T> {
+impl<T: fmt::Display> fmt::Display for DisplayVec<'_, T> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "[")?;
         for (i, element) in self.vec.iter().enumerate() {

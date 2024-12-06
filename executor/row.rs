@@ -76,7 +76,7 @@ impl<'a> Row<'a> {
     }
 }
 
-impl<'a> fmt::Display for Row<'a> {
+impl fmt::Display for Row<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} x [  ", self.multiplicity)?;
         for value in &*self.row {
@@ -142,7 +142,7 @@ impl<'a> MaybeOwnedRow<'a> {
     }
 }
 
-impl<'a> Deref for MaybeOwnedRow<'a> {
+impl Deref for MaybeOwnedRow<'_> {
     type Target = [VariableValue<'static>];
 
     fn deref(&self) -> &Self::Target {
@@ -167,7 +167,7 @@ impl<'a, 'b: 'a> IntoIterator for &'a MaybeOwnedRow<'b> {
     }
 }
 
-impl<'a> fmt::Display for MaybeOwnedRow<'a> {
+impl fmt::Display for MaybeOwnedRow<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{} x [  ", self.multiplicity)?;
         for value in &*self.row {

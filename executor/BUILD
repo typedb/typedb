@@ -21,6 +21,7 @@ rust_library(
         "//common/error",
         "//common/lending_iterator",
         "//common/logger",
+        "//common/primitive",
         "//compiler",
         "//concept",
         "//encoding",

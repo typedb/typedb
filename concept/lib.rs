@@ -7,14 +7,12 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use bytes::byte_reference::ByteReference;
-
 pub mod error;
 pub mod iterator;
 pub mod thing;
 pub mod type_;
 
-pub trait ConceptAPI<'a>: Eq + PartialEq {}
+pub trait ConceptAPI: Eq + PartialEq + 'static {}
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum ConceptStatus {

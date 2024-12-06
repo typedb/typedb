@@ -4,10 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{iter::zip, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    iter::zip,
+    sync::Arc,
+};
 
 use bytes::{byte_array::ByteArray, Bytes};
-use compiler::annotation::function::{annotate_functions, IndexedAnnotatedFunctions};
+use compiler::annotation::function::{annotate_stored_functions, AnnotatedSchemaFunctions};
 use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
@@ -15,22 +19,28 @@ use encoding::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator,
             function::FunctionDefinition,
         },
-        type_::index::{NameToFunctionDefinitionIndex, NameToStructDefinitionIndex},
+        type_::index::NameToFunctionDefinitionIndex,
     },
-    AsBytes, Keyable,
+    Keyable,
 };
 use ir::{
+    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
-        function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex},
+        function_signature::{
+            FunctionID, FunctionIDAPI, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
+        },
         FunctionReadError,
     },
-    translation::function::{build_signature, translate_typeql_function},
+    translation::{
+        function::{build_signature, translate_typeql_function},
+        pipeline::TranslatedStage,
+    },
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 
@@ -61,7 +71,7 @@ impl FunctionManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
-    ) -> Result<Arc<IndexedAnnotatedFunctions>, FunctionError> {
+    ) -> Result<Arc<AnnotatedSchemaFunctions>, FunctionError> {
         match self.function_cache.as_ref() {
             None => FunctionCache::build_cache(snapshot, type_manager).map(|cache| cache.get_annotated_functions()),
             Some(cache) => Ok(cache.get_annotated_functions()),
@@ -75,26 +85,30 @@ impl FunctionManager {
         // Prepare ir
         let function_index =
             HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
-        let translated = Self::translate_functions(snapshot, &functions, &function_index)?;
+        let mut translated = Self::translate_functions(snapshot, &functions, &function_index)?;
+
         // Run type-inference
-        annotate_functions(translated, snapshot, type_manager, &IndexedAnnotatedFunctions::empty())
+        let translated_refs = translated.iter().map(|(id, f)| (id.clone(), f)).collect();
+        validate_no_cycles(&translated_refs)?;
+        annotate_stored_functions(&mut translated, snapshot, type_manager)
             .map_err(|source| FunctionError::AllFunctionsTypeCheckFailure { typedb_source: source })?;
         Ok(())
     }
 
-    pub fn define_functions(
+    pub fn define_functions<'a>(
         &self,
         snapshot: &mut impl WritableSnapshot,
-        definitions: Vec<String>,
+        definitions: impl Iterator<Item = &'a typeql::Function> + Clone,
     ) -> Result<Vec<SchemaFunction>, FunctionError> {
         let mut functions: Vec<SchemaFunction> = Vec::new();
-        for definition in &definitions {
+        for definition in definitions.clone() {
             let definition_key = self
                 .definition_key_generator
                 .create_function(snapshot)
                 .map_err(|source| FunctionError::CreateFunctionEncoding { source })?;
-            let function = SchemaFunction::build(definition_key, FunctionDefinition::build_ref(definition))?;
-            let index_key = NameToStructDefinitionIndex::build(function.name().as_str()).into_storage_key();
+            let function =
+                SchemaFunction::build(definition_key, FunctionDefinition::build_ref(definition.unparsed.as_str()))?;
+            let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let existing = snapshot.get::<BUFFER_VALUE_INLINE>(index_key.as_reference()).map_err(|source| {
                 FunctionError::FunctionRetrieval { source: FunctionReadError::FunctionRetrieval { source } }
             })?;
@@ -110,27 +124,73 @@ impl FunctionManager {
         let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
         // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
         Self::translate_functions(snapshot, &functions, &function_index)?;
-
-        for (function, definition) in zip(functions.iter(), definitions.iter()) {
+        for (function, definition) in zip(functions.iter(), definitions.clone()) {
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let definition_key = &function.function_id;
-            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes().bytes()));
+            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
             snapshot.put_val(
                 definition_key.clone().into_storage_key().into_owned_array(),
-                FunctionDefinition::build_ref(definition).into_bytes().into_array(),
+                FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
             );
         }
         Ok(functions)
+    }
+
+    pub fn undefine_function(&self, snapshot: &mut impl WritableSnapshot, name: &str) -> Result<(), FunctionError> {
+        let definition_key = match self.get_function_key(snapshot, name) {
+            Err(source) => Err(FunctionError::FunctionRetrieval { source }),
+            Ok(None) => Err(FunctionError::FunctionNotFound {}),
+            Ok(Some(key)) => Ok(key),
+        }?;
+        snapshot.delete(definition_key.into_storage_key().into_owned_array());
+        let index_key = NameToFunctionDefinitionIndex::build(name);
+        snapshot.delete(index_key.into_storage_key().into_owned_array());
+
+        Ok(())
+    }
+
+    pub fn redefine_function(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        definition: &typeql::Function,
+    ) -> Result<SchemaFunction, FunctionError> {
+        // TODO: Better query time checking. Maybe redefine all functions at once.
+        let definition_key = match self.get_function_key(snapshot, definition.signature.ident.as_str_unchecked()) {
+            Err(source) => Err(FunctionError::FunctionRetrieval { source }),
+            Ok(None) => Err(FunctionError::FunctionNotFound {}),
+            Ok(Some(key)) => Ok(key),
+        }?;
+        let functions =
+            [SchemaFunction::build(definition_key, FunctionDefinition::build_ref(definition.unparsed.as_str()))?];
+        let buffered =
+            HashMapFunctionSignatureIndex::build(functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)));
+        let function_index = ReadThroughFunctionSignatureIndex::new(snapshot, self, buffered);
+        // Translate to ensure the function calls are valid references. Type-inference is done at commit-time.
+        Self::translate_functions(snapshot, &functions, &function_index)?;
+        for (function, definition) in zip(functions.iter(), [definition].iter()) {
+            let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
+            let definition_key = &function.function_id;
+            snapshot.put_val(index_key.into_owned_array(), ByteArray::copy(definition_key.bytes()));
+            snapshot.put_val(
+                definition_key.clone().into_storage_key().into_owned_array(),
+                FunctionDefinition::build_ref(definition.unparsed.as_str()).into_bytes().into_array(),
+            );
+        }
+        let [function] = functions;
+        Ok(function)
     }
 
     pub(crate) fn translate_functions(
         snapshot: &impl ReadableSnapshot,
         functions: &[SchemaFunction],
         function_index: &impl FunctionSignatureIndex,
-    ) -> Result<Vec<ir::pipeline::function::Function>, FunctionError> {
+    ) -> Result<HashMap<DefinitionKey, ir::pipeline::function::Function>, FunctionError> {
         functions
             .iter()
-            .map(|function| translate_typeql_function(snapshot, function_index, &function.parsed))
+            .map(|function| {
+                translate_typeql_function(snapshot, function_index, &function.parsed)
+                    .map(|translated| (function.function_id.clone(), translated))
+            })
             .try_collect()
             .map_err(|err| FunctionError::FunctionTranslation { typedb_source: err })
     }
@@ -139,7 +199,7 @@ impl FunctionManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<DefinitionKey<'static>>, FunctionReadError> {
+    ) -> Result<Option<DefinitionKey>, FunctionReadError> {
         if let Some(cache) = &self.function_cache {
             Ok(cache.get_function_key(name))
         } else {
@@ -150,7 +210,7 @@ impl FunctionManager {
     pub fn get_function(
         &self,
         snapshot: &impl ReadableSnapshot,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
     ) -> Result<MaybeOwns<SchemaFunction>, FunctionReadError> {
         if let Some(cache) = &self.function_cache {
             Ok(MaybeOwns::Borrowed(cache.get_function(definition_key).unwrap()))
@@ -167,13 +227,13 @@ impl FunctionReader {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<SchemaFunction>, FunctionReadError> {
         snapshot
-            .iterate_range(KeyRange::new_within(
-                RangeStart::Inclusive(DefinitionKey::build_prefix(FunctionDefinition::PREFIX)),
+            .iterate_range(&KeyRange::new_within(
+                DefinitionKey::build_prefix(FunctionDefinition::PREFIX),
                 DefinitionKey::FIXED_WIDTH_ENCODING,
             ))
             .collect_cloned_vec(|key, value| {
                 SchemaFunction::build(
-                    DefinitionKey::new(Bytes::Reference(key.byte_ref()).into_owned()),
+                    DefinitionKey::new(Bytes::Reference(key.bytes()).into_owned()),
                     FunctionDefinition::new(Bytes::Reference(value).into_owned()),
                 )
                 .unwrap()
@@ -184,7 +244,7 @@ impl FunctionReader {
     pub(crate) fn get_function_key(
         snapshot: &impl ReadableSnapshot,
         name: &str,
-    ) -> Result<Option<DefinitionKey<'static>>, FunctionReadError> {
+    ) -> Result<Option<DefinitionKey>, FunctionReadError> {
         let index_key = NameToFunctionDefinitionIndex::build(name);
         let bytes_opt = snapshot
             .get(index_key.into_storage_key().as_reference())
@@ -194,7 +254,7 @@ impl FunctionReader {
 
     pub(crate) fn get_function(
         snapshot: &impl ReadableSnapshot,
-        definition_key: DefinitionKey<'static>,
+        definition_key: DefinitionKey,
     ) -> Result<SchemaFunction, FunctionReadError> {
         snapshot
             .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())
@@ -203,6 +263,150 @@ impl FunctionReader {
                 Err(FunctionReadError::FunctionNotFound { function_id: FunctionID::Schema(definition_key.clone()) }),
                 |bytes| Ok(SchemaFunction::build(definition_key, FunctionDefinition::new(Bytes::Array(bytes))).unwrap()),
             )
+    }
+}
+
+pub fn validate_no_cycles<ID: FunctionIDAPI>(
+    functions: &HashMap<ID, &ir::pipeline::function::Function>,
+) -> Result<(), FunctionError> {
+    let mut active = HashMap::new();
+    let mut complete = HashSet::new();
+    for id in functions.keys() {
+        debug_assert!(active.is_empty());
+        if !complete.contains(id) {
+            validate_no_cycles_impl(
+                id.clone(),
+                functions,
+                &mut active,
+                &mut complete,
+                StratumAndDepth { stratum: 0, depth: 0 },
+            )?;
+            debug_assert!(complete.contains(id));
+        }
+    }
+    Ok(())
+}
+
+#[derive(Clone, Copy)]
+struct StratumAndDepth {
+    stratum: usize,
+    depth: usize,
+}
+impl StratumAndDepth {
+    fn add(&self, stratum_increment: usize, depth_increment: usize) -> Self {
+        StratumAndDepth { stratum: self.stratum + stratum_increment, depth: self.depth + depth_increment }
+    }
+}
+fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
+    id: ID,
+    functions: &HashMap<ID, &ir::pipeline::function::Function>,
+    active: &mut HashMap<ID, StratumAndDepth>,
+    complete: &mut HashSet<ID>,
+    current_stratum: StratumAndDepth,
+) -> Result<(), FunctionError> {
+    if complete.contains(&id) {
+        return Ok(());
+    }
+    if let Some(StratumAndDepth { stratum, depth }) = active.get(&id) {
+        if *stratum < current_stratum.stratum {
+            let ids_by_depth = active.iter().map(|(id, sd)| (sd.depth, id)).sorted().collect::<Vec<_>>();
+            debug_assert!(ids_by_depth[*depth].1 == &id);
+            let cycle_names =
+                (*depth..ids_by_depth.len()).map(|i| functions.get(ids_by_depth[i].1).unwrap().name.clone()).join(", ");
+            return Err(FunctionError::StratificationViolation { cycle_names });
+        } else {
+            return Ok(());
+        }
+    }
+
+    active.insert(id.clone(), current_stratum);
+    let function = functions.get(&id).unwrap();
+    for called_id in negated_function_calls(function) {
+        validate_no_cycles_impl(called_id, functions, active, complete, current_stratum.add(1, 1))?;
+    }
+
+    let this_stage_has_operator = function.function_body.stages.iter().any(|stage| {
+        matches!(
+            stage,
+            TranslatedStage::Sort(_)
+                | TranslatedStage::Offset(_)
+                | TranslatedStage::Limit(_)
+                | TranslatedStage::Reduce(_)
+        )
+    });
+    let unnegated_stratum = if this_stage_has_operator { current_stratum.add(1, 1) } else { current_stratum.add(0, 1) };
+    for called_id in unnegated_function_calls(function) {
+        validate_no_cycles_impl(called_id, functions, active, complete, unnegated_stratum)?;
+    }
+    active.remove(&id);
+
+    complete.insert(id);
+    Ok(())
+}
+
+fn negated_function_calls<ID: FunctionIDAPI>(function: &ir::pipeline::function::Function) -> impl Iterator<Item = ID> {
+    let mut calls = Vec::new();
+    for stage in &function.function_body.stages {
+        if let TranslatedStage::Match { block, .. } = stage {
+            collect_negated_function_calls(block.conjunction(), &mut calls, false)
+        }
+    }
+    calls.into_iter()
+}
+
+fn collect_negated_function_calls<ID: FunctionIDAPI>(conjunction: &Conjunction, calls: &mut Vec<ID>, is_negated: bool) {
+    if is_negated {
+        conjunction.constraints().iter().for_each(|constraint| {
+            if let Constraint::FunctionCallBinding(binding) = constraint {
+                let id = binding.function_call().function_id();
+                if let Ok(unwrapped_id) = id.try_into() {
+                    calls.push(unwrapped_id)
+                }
+            }
+        })
+    }
+
+    for pattern in conjunction.nested_patterns() {
+        match pattern {
+            NestedPattern::Negation(inner) => collect_negated_function_calls(inner.conjunction(), calls, true),
+            NestedPattern::Disjunction(inner) => inner.conjunctions().iter().for_each(|branch| {
+                collect_negated_function_calls(branch, calls, is_negated);
+            }),
+            NestedPattern::Optional(inner) => collect_negated_function_calls(inner.conjunction(), calls, is_negated),
+        }
+    }
+}
+
+fn unnegated_function_calls<ID: FunctionIDAPI>(
+    function: &ir::pipeline::function::Function,
+) -> impl Iterator<Item = ID> {
+    let mut calls = Vec::new();
+    for stage in &function.function_body.stages {
+        if let TranslatedStage::Match { block, .. } = stage {
+            collect_unnegated_function_calls(block.conjunction(), &mut calls)
+        }
+    }
+    calls.into_iter()
+}
+
+fn collect_unnegated_function_calls<ID: FunctionIDAPI>(conjunction: &Conjunction, calls: &mut Vec<ID>) {
+    conjunction.constraints().iter().for_each(|constraint| {
+        if let Constraint::FunctionCallBinding(binding) = constraint {
+            let id = binding.function_call().function_id();
+            if let Ok(unwrapped_id) = id.try_into() {
+                calls.push(unwrapped_id)
+            }
+        }
+    });
+
+    for pattern in conjunction.nested_patterns() {
+        match pattern {
+            NestedPattern::Negation(_) => {}
+            NestedPattern::Disjunction(inner) => inner.conjunctions().iter().for_each(|branch| {
+                collect_unnegated_function_calls(branch, calls);
+            }),
+            NestedPattern::Optional(inner) => collect_unnegated_function_calls(inner.conjunction(), calls),
+        }
     }
 }
 
@@ -222,9 +426,7 @@ impl<'this, Snapshot: ReadableSnapshot> ReadThroughFunctionSignatureIndex<'this,
     }
 }
 
-impl<'snapshot, Snapshot: ReadableSnapshot> FunctionSignatureIndex
-    for ReadThroughFunctionSignatureIndex<'snapshot, Snapshot>
-{
+impl<Snapshot: ReadableSnapshot> FunctionSignatureIndex for ReadThroughFunctionSignatureIndex<'_, Snapshot> {
     fn get_function_signature(
         &self,
         name: &str,
@@ -307,13 +509,12 @@ pub mod tests {
 
         let ((_type_animal, type_cat, _type_dog), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let functions_to_define = vec!["
+        let functions_to_define = ["
         fun cat_names($c: animal) -> { name } :
             match
                 $c has cat-name $n;
             return { $n };
-        "
-        .to_owned()];
+        "];
         let expected_name = "cat_names";
 
         let expected_function_id = DefinitionKey::build(Prefix::DefinitionFunction, DefinitionID::build(0));
@@ -323,10 +524,12 @@ pub mod tests {
             vec![(VariableCategory::Object, VariableOptionality::Required)],
             true,
         );
+        let parsed =
+            functions_to_define.iter().map(|f| typeql::parse_definition_function(f).unwrap()).collect::<Vec<_>>();
         let sequence_number = {
             let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
             let mut snapshot = storage.clone().open_snapshot_write();
-            let stored_functions = function_manager.define_functions(&mut snapshot, functions_to_define).unwrap();
+            let stored_functions = function_manager.define_functions(&mut snapshot, parsed.iter()).unwrap();
             // Read buffered
             assert_eq!(expected_function_id, stored_functions[0].function_id());
 
@@ -386,7 +589,7 @@ pub mod tests {
             };
             let var_c = function_annotations.arguments[0];
             let var_c_annotations = body_annotations.vertex_annotations_of(&Vertex::Variable(var_c)).unwrap();
-            assert_eq!(&Arc::new(BTreeSet::from([type_cat.clone()])), var_c_annotations);
+            assert_eq!(&Arc::new(BTreeSet::from([type_cat])), var_c_annotations);
         }
     }
 
@@ -434,8 +637,8 @@ pub mod tests {
                 AttributeTypeAnnotation::Abstract(AnnotationAbstract),
             )
             .unwrap();
-            catname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
-            dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name.clone()).unwrap();
+            catname.set_supertype(&mut snapshot, type_manager, thing_manager, name).unwrap();
+            dogname.set_supertype(&mut snapshot, type_manager, thing_manager, name).unwrap();
 
             name.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
             catname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
@@ -445,8 +648,8 @@ pub mod tests {
             let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
             let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
             let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
-            cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
-            dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal.clone()).unwrap();
+            cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal).unwrap();
+            dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal).unwrap();
             animal
                 .set_annotation(
                     &mut snapshot,
@@ -457,9 +660,9 @@ pub mod tests {
                 .unwrap();
 
             // Ownerships
-            animal.set_owns(&mut snapshot, type_manager, thing_manager, name.clone(), Ordering::Unordered).unwrap();
-            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname.clone(), Ordering::Unordered).unwrap();
-            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname.clone(), Ordering::Unordered).unwrap();
+            animal.set_owns(&mut snapshot, type_manager, thing_manager, name, Ordering::Unordered).unwrap();
+            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname, Ordering::Unordered).unwrap();
+            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname, Ordering::Unordered).unwrap();
 
             snapshot.commit().unwrap();
 

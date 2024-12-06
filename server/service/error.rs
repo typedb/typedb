@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
 
 use error::TypeDBError;
 use tonic::{Code, Status};
@@ -54,13 +54,12 @@ impl IntoGRPCStatus for ProtocolError {
                 driver_version,
                 driver_lang,
             } => {
-                let required_driver_age = if server_protocol_version < driver_protocol_version {
-                    "an older"
-                } else if server_protocol_version > driver_protocol_version {
-                    "a newer"
-                } else {
-                    unreachable!("Incompatible protocl version should only be thrown ")
+                let required_driver_age = match server_protocol_version.cmp(&driver_protocol_version) {
+                    Ordering::Less => "an older",
+                    Ordering::Equal => unreachable!("Incompatible protocol version should only be thrown "),
+                    Ordering::Greater => "a newer",
                 };
+
                 Status::failed_precondition(format!(
                     r#"
                     Incompatible driver version. This '{driver_lang}' driver version '{driver_version}' implements protocol version {driver_protocol_version},

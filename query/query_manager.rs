@@ -7,7 +7,7 @@
 use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
-    annotation::pipeline::{annotate_pipeline, AnnotatedPipeline},
+    annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -15,7 +15,7 @@ use executor::pipeline::{
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
-use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex};
+use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
@@ -41,15 +41,22 @@ impl QueryManager {
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
+        function_manager: &FunctionManager,
         query: SchemaQuery,
     ) -> Result<(), QueryError> {
         match query {
-            SchemaQuery::Define(define) => define::execute(snapshot, type_manager, thing_manager, define)
-                .map_err(|err| QueryError::Define { typedb_source: err }),
-            SchemaQuery::Redefine(redefine) => redefine::execute(snapshot, type_manager, thing_manager, redefine)
-                .map_err(|err| QueryError::Redefine { typedb_source: err }),
-            SchemaQuery::Undefine(undefine) => undefine::execute(snapshot, type_manager, thing_manager, undefine)
-                .map_err(|err| QueryError::Undefine { typedb_source: err }),
+            SchemaQuery::Define(define) => {
+                define::execute(snapshot, type_manager, thing_manager, function_manager, define)
+                    .map_err(|err| QueryError::Define { typedb_source: err })
+            }
+            SchemaQuery::Redefine(redefine) => {
+                redefine::execute(snapshot, type_manager, thing_manager, function_manager, redefine)
+                    .map_err(|err| QueryError::Redefine { typedb_source: err })
+            }
+            SchemaQuery::Undefine(undefine) => {
+                undefine::execute(snapshot, type_manager, thing_manager, function_manager, undefine)
+                    .map_err(|err| QueryError::Undefine { typedb_source: err })
+            }
         }
     }
 
@@ -72,6 +79,10 @@ impl QueryManager {
         let arced_premable = Arc::new(translated_preamble);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
+        match validate_no_cycles(&arced_premable.iter().enumerate().map(|(i, translated)| (i, translated)).collect()) {
+            Ok(_) => {}
+            Err(typedb_source) => return Err(QueryError::FunctionDefinition { typedb_source }),
+        } // TODO: ^It's not really a retrieval error is it?
 
         let executable_pipeline = match self
             .cache
@@ -86,19 +97,20 @@ impl QueryManager {
                 // 2: Annotate
                 let annotated_schema_functions = function_manager
                     .get_annotated_functions(snapshot.as_ref(), type_manager)
-                    .map_err(|err| QueryError::FunctionRetrieval { typedb_source: err })?;
+                    .map_err(|err| QueryError::FunctionDefinition { typedb_source: err })?;
 
-                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotate_pipeline(
-                    snapshot.as_ref(),
-                    type_manager,
-                    &annotated_schema_functions,
-                    &mut variable_registry,
-                    &parameters,
-                    (*arced_premable).clone(),
-                    (*arced_stages).clone(),
-                    (*arced_fetch).clone(),
-                )
-                .map_err(|err| QueryError::Annotation { typedb_source: err })?;
+                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } =
+                    annotate_preamble_and_pipeline(
+                        snapshot.as_ref(),
+                        type_manager,
+                        annotated_schema_functions.clone(),
+                        &mut variable_registry,
+                        &parameters,
+                        (*arced_premable).clone(),
+                        (*arced_stages).clone(),
+                        (*arced_fetch).clone(),
+                    )
+                    .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
                 // 3: Compile
                 let executable_pipeline = compile_pipeline(
@@ -168,17 +180,24 @@ impl QueryManager {
                 executable_pipeline
             }
             None => {
+                match validate_no_cycles(
+                    &arced_premable.iter().enumerate().map(|(i, translated)| (i, translated)).collect(),
+                ) {
+                    Ok(_) => {}
+                    Err(typedb_source) => return Err((snapshot, QueryError::FunctionDefinition { typedb_source })),
+                } // TODO: ^It's not really a retrieval error is it?
+
                 // 2: Annotate
                 let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager)
                 {
                     Ok(functions) => functions,
-                    Err(err) => return Err((snapshot, QueryError::FunctionRetrieval { typedb_source: err })),
+                    Err(err) => return Err((snapshot, QueryError::FunctionDefinition { typedb_source: err })),
                 };
 
-                let annotated_pipeline = annotate_pipeline(
+                let annotated_pipeline = annotate_preamble_and_pipeline(
                     &snapshot,
                     type_manager,
-                    &annotated_schema_functions,
+                    annotated_schema_functions.clone(),
                     &mut variable_registry,
                     &value_parameters,
                     (*arced_premable).clone(),

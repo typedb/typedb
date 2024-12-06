@@ -324,7 +324,7 @@ impl Default for Label {
 }
 
 impl Label {
-    pub fn into_typedb(self) -> TypeDBLabel<'static> {
+    pub fn into_typedb(self) -> TypeDBLabel {
         match &self.label_string.split_once(":") {
             None => TypeDBLabel::build(&self.label_string),
             Some((name, scope)) => TypeDBLabel::build_scoped(scope, name),
@@ -375,7 +375,7 @@ impl ObjectKind {
         self.kind
     }
 
-    pub fn assert(&self, object: &ObjectType<'_>) {
+    pub fn assert(&self, object: &ObjectType) {
         match self.kind {
             TypeDBTypeKind::Entity => assert_matches!(object, ObjectType::Entity(_)),
             TypeDBTypeKind::Relation => assert_matches!(object, ObjectType::Relation(_)),

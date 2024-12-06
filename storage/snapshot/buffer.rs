@@ -13,7 +13,7 @@ use std::{
     sync::{atomic::AtomicBool, Arc},
 };
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, util::increment, Bytes};
+use bytes::{byte_array::ByteArray, util::increment, Bytes};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
@@ -189,10 +189,12 @@ impl WriteBuffer {
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
+        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
         // TODO: we shouldn't have to copy now that we use single-writer semantics
         BufferRangeIterator::new(
             self.writes
-                .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
+                .range::<[u8], _>((start_bytes, end))
                 .map(|(key, val)| (StorageKeyArray::new_raw(self.keyspace_id, key.clone()), val.clone()))
                 .collect::<Vec<_>>(),
         )
@@ -207,9 +209,23 @@ impl WriteBuffer {
         } else {
             Bound::Excluded(&*exclusive_end_bytes)
         };
-        self.writes
-            .range::<[u8], _>((range_start.as_bound().map(|bytes| &**bytes), end))
-            .any(|(_, write)| !write.is_delete())
+        let start_as_bound = Self::range_start_as_bound(range_start);
+        let start_bytes = start_as_bound.as_ref().map(|bytes| bytes.as_ref());
+        self.writes.range::<[u8], _>((start_bytes, end)).any(|(_, write)| !write.is_delete())
+    }
+
+    fn range_start_as_bound<const INLINE: usize>(
+        range_start: RangeStart<Bytes<'_, INLINE>>,
+    ) -> Bound<Bytes<'_, INLINE>> {
+        match range_start {
+            RangeStart::Inclusive(bytes) => Bound::Included(bytes),
+            RangeStart::ExcludeFirstWithPrefix(bytes) => Bound::Excluded(bytes),
+            RangeStart::ExcludePrefix(bytes) => {
+                let mut cloned = bytes.clone().into_array();
+                cloned.increment().unwrap();
+                Bound::Included(Bytes::Array(cloned))
+            }
+        }
     }
 
     fn compute_exclusive_end<const INLINE: usize>(
@@ -240,8 +256,8 @@ impl WriteBuffer {
         &mut self.writes
     }
 
-    pub fn get_write(&self, key: ByteReference<'_>) -> Option<&Write> {
-        self.writes.get(key.bytes())
+    pub fn get_write(&self, key: &[u8]) -> Option<&Write> {
+        self.writes.get(key)
     }
 
     pub fn clear(&mut self) {
@@ -318,7 +334,7 @@ impl<'de> Deserialize<'de> for OperationsBuffer {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -394,7 +410,7 @@ impl<'de> Deserialize<'de> for WriteBuffer {
             {
                 struct FieldVisitor;
 
-                impl<'de> Visitor<'de> for FieldVisitor {
+                impl Visitor<'_> for FieldVisitor {
                     type Value = Field;
 
                     fn expecting(&self, formatter: &mut fmt::Formatter<'_>) -> fmt::Result {

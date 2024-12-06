@@ -143,11 +143,17 @@ build:
         bazel test //tests/behaviour/query/language:test_redefine --test_output=streamed
         bazel test //tests/behaviour/query/language:test_undefine --test_output=streamed
 
-#    test-behaviour-functions:
-#      image: typedb-ubuntu-22.04
-#      dependencies: [build]
-#      command: |
-#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+    test-behaviour-functions:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/query/functions:test_definition --test_output=streamed
+        bazel test //tests/behaviour/query/functions:test_signature --test_output=streamed
+        bazel test //tests/behaviour/query/functions:test_structure --test_output=streamed
+        bazel test //tests/behaviour/query/functions:test_usage --test_output=streamed
+        bazel test //tests/behaviour/query/functions:test_basic --test_output=streamed
+        bazel test //tests/behaviour/query/functions:test_recursion --test_output=streamed
 
 release:
   filter:

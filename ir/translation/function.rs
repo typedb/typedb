@@ -8,7 +8,7 @@ use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{
-        Argument, FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
+        FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
     type_::NamedType,
     TypeRef, TypeRefAny,
@@ -21,7 +21,11 @@ use crate::{
         function_signature::{FunctionID, FunctionSignature, FunctionSignatureIndex},
         FunctionRepresentationError, ParameterRegistry,
     },
-    translation::{pipeline::translate_pipeline_stages, reduce::build_reducer, TranslationContext},
+    translation::{
+        pipeline::{translate_pipeline_stages, TranslatedStage},
+        reduce::build_reducer,
+        TranslationContext,
+    },
 };
 
 pub fn translate_typeql_function(
@@ -29,28 +33,24 @@ pub fn translate_typeql_function(
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
 ) -> Result<Function, FunctionRepresentationError> {
-    translate_function_from(
-        snapshot,
-        function_index,
-        function.signature.ident.as_str(),
-        &function.signature.args,
-        &function.signature.output,
-        &function.block,
-        Some(function),
-    )
+    translate_function_from(snapshot, function_index, &function.signature, &function.block, Some(function))
 }
 
 pub fn translate_function_from(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
-    name: &str,
-    args: &[Argument],
-    output: &Output,
+    signature: &typeql::schema::definable::function::Signature,
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
 ) -> Result<Function, FunctionRepresentationError> {
-    let argument_labels = args.iter().map(|arg| arg.type_.clone()).collect();
-    let arg_names_and_categories = args
+    let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
+        FunctionRepresentationError::IllegalKeywordAsIdentifier {
+            identifier: signature.ident.as_str_unchecked().to_owned(),
+        }
+    })?;
+    let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
+    let arg_names_and_categories = signature
+        .args
         .iter()
         .map(|arg| (arg.var.name().unwrap().to_owned(), type_any_to_category_and_optionality(&arg.type_).0))
         .collect::<Vec<_>>();
@@ -59,7 +59,7 @@ pub fn translate_function_from(
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
 
     // Check for unused arguments
-    for arg in args {
+    for arg in &signature.args {
         let var = context.get_variable(arg.var.name().unwrap()).ok_or_else(|| {
             FunctionRepresentationError::FunctionArgumentUnused {
                 argument_variable: arg.var.name().unwrap().to_owned(),
@@ -67,7 +67,35 @@ pub fn translate_function_from(
             }
         })?;
     }
-    Ok(Function::new(name, context, value_parameters, arguments, Some(argument_labels), Some(output.clone()), body))
+    // Check return declaration aligns with definition
+    let returns_consistent = match (&signature.output, &body.return_operation) {
+        (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars)) => {
+            defined_vars.len() == declared_vars.types.len()
+        }
+        (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars)) => {
+            defined_vars.len() == declared_vars.types.len()
+        }
+        (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers)) => {
+            reducers.len() == declared_vars.types.len()
+        }
+        (Output::Single(declared_vars), ReturnOperation::ReduceCheck()) => declared_vars.types.len() == 1,
+        _ => false,
+    };
+    if !returns_consistent {
+        return Err(FunctionRepresentationError::InconsistentReturn {
+            signature: signature.clone(),
+            return_: block.return_stmt.clone(),
+        });
+    }
+    Ok(Function::new(
+        checked_name,
+        context,
+        value_parameters,
+        arguments,
+        Some(argument_labels),
+        Some(signature.output.clone()),
+        body,
+    ))
 }
 
 pub(crate) fn translate_function_block(
@@ -83,6 +111,19 @@ pub(crate) fn translate_function_block(
                 declaration: function_block.clone(),
                 typedb_source: err,
             })?;
+
+    let mut illegal_stages = stages.iter().filter(|stage| match stage {
+        TranslatedStage::Insert { .. } | TranslatedStage::Delete { .. } | TranslatedStage::Require(_) => true,
+        TranslatedStage::Match { .. }
+        | TranslatedStage::Select(_)
+        | TranslatedStage::Sort(_)
+        | TranslatedStage::Offset(_)
+        | TranslatedStage::Limit(_)
+        | TranslatedStage::Reduce(_) => false,
+    });
+    if illegal_stages.next().is_some() {
+        return Err(FunctionRepresentationError::IllegalStages { declaration: function_block.clone() });
+    }
 
     if fetch.is_some() {
         return Err(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() });

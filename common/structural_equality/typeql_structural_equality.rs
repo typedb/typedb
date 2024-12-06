@@ -23,7 +23,7 @@ impl StructuralEquality for Variable {
             ^ match self {
                 Variable::Anonymous { optional, .. } => optional.is_none() as u64,
                 Variable::Named { ident, optional, .. } => {
-                    ordered_hash_combine(ident.as_str().hash(), optional.is_none() as u64)
+                    ordered_hash_combine(ident.as_str_unchecked().hash(), optional.is_none() as u64)
                 }
             }
     }
@@ -47,11 +47,11 @@ impl StructuralEquality for NamedType {
     fn hash(&self) -> u64 {
         mem::discriminant(self).hash()
             ^ match self {
-                NamedType::Label(label) => label.ident.as_str().hash(),
+                NamedType::Label(label) => label.ident.as_str_unchecked().hash(),
                 NamedType::Role(scoped_label) => {
                     let mut hasher = DefaultHasher::new();
-                    scoped_label.name.ident.as_str().hash_into(&mut hasher);
-                    scoped_label.scope.ident.as_str().hash_into(&mut hasher);
+                    scoped_label.name.ident.as_str_unchecked().hash_into(&mut hasher);
+                    scoped_label.scope.ident.as_str_unchecked().hash_into(&mut hasher);
                     hasher.finish()
                 }
                 NamedType::BuiltinValueType(builtin_value_type) => builtin_value_type.token.as_str().hash(),
@@ -60,10 +60,12 @@ impl StructuralEquality for NamedType {
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Label(inner), Self::Label(other_inner)) => inner.ident.as_str().equals(other_inner.ident.as_str()),
+            (Self::Label(inner), Self::Label(other_inner)) => {
+                inner.ident.as_str_unchecked().equals(other_inner.ident.as_str_unchecked())
+            }
             (Self::Role(inner), Self::Role(other_inner)) => {
-                inner.name.ident.as_str().equals(other_inner.name.ident.as_str())
-                    && inner.scope.ident.as_str().equals(other_inner.scope.ident.as_str())
+                inner.name.ident.as_str_unchecked().equals(other_inner.name.ident.as_str_unchecked())
+                    && inner.scope.ident.as_str_unchecked().equals(other_inner.scope.ident.as_str_unchecked())
             }
             (Self::BuiltinValueType(inner), Self::BuiltinValueType(other_inner)) => {
                 inner.token.as_str().equals(other_inner.token.as_str())

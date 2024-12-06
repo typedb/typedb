@@ -18,7 +18,7 @@ use itertools::Itertools;
 use crate::{
     annotation::{
         fetch::AnnotatedFetch,
-        function::{AnnotatedFunctions, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
         pipeline::AnnotatedStage,
     },
     executable::{
@@ -85,8 +85,8 @@ impl ExecutableStage {
 pub fn compile_pipeline(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
-    annotated_schema_functions: &IndexedAnnotatedFunctions,
-    annotated_preamble: AnnotatedUnindexedFunctions,
+    annotated_schema_functions: &AnnotatedSchemaFunctions,
+    annotated_preamble: AnnotatedPreambleFunctions,
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
@@ -94,9 +94,9 @@ pub fn compile_pipeline(
     // TODO: Cache compiled schema functions?
     let mut executable_schema_functions = HashMap::new();
     let schema_tabling_requirements = determine_tabling_requirements(
-        &annotated_schema_functions.iter_functions().map(|(id, function)| (FunctionID::Schema(id), function)).collect(),
+        &annotated_schema_functions.iter().map(|(id, function)| (FunctionID::Schema(id.clone()), function)).collect(),
     );
-    for (id, function) in annotated_schema_functions.iter_functions() {
+    for (id, function) in annotated_schema_functions.iter() {
         // TODO: We could save cloning the whole function and only clone the stages.
         let compiled = compile_function(
             statistics,
@@ -111,10 +111,10 @@ pub fn compile_pipeline(
         ExecutableFunctionRegistry::new(arced_executable_schema_functions.clone(), HashMap::new());
 
     let preamble_tabling_requirements = determine_tabling_requirements(
-        &annotated_preamble.iter_functions().map(|(id, function)| (FunctionID::Preamble(id), function)).collect(),
+        &annotated_preamble.iter().enumerate().map(|(id, function)| (FunctionID::Preamble(id), function)).collect(),
     );
     let mut executable_preamble_functions = HashMap::new();
-    for (id, function) in annotated_preamble.into_iter_functions().enumerate() {
+    for (id, function) in annotated_preamble.into_iter().enumerate() {
         let compiled = compile_function(
             statistics,
             &schema_function_registry,
@@ -176,7 +176,7 @@ pub(crate) fn compile_pipeline_stages(
     functions: &ExecutableFunctionRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
-    selected_variables: &Vec<Variable>,
+    selected_variables: &[Variable],
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
@@ -189,7 +189,7 @@ pub(crate) fn compile_pipeline_stages(
             .cloned()
             .chain(stage.named_referenced_variables(variable_registry))
             .unique()
-            .collect();
+            .collect_vec();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => {
                 compile_stage(statistics, variable_registry, functions, &row_mapping, &selected_variables, stage)?
@@ -213,7 +213,7 @@ fn compile_stage(
     variable_registry: &VariableRegistry,
     _functions: &ExecutableFunctionRegistry,
     input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &Vec<Variable>,
+    selected_variables: &[Variable],
     annotated_stage: AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {

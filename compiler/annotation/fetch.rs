@@ -27,9 +27,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     expression::compiled_expression::ExpressionValueType,
-    function::{
-        annotate_anonymous_function, AnnotatedFunction, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions,
-    },
+    function::{annotate_anonymous_function, AnnotatedFunction, AnnotatedFunctionSignatures},
     pipeline::{annotate_stages_and_fetch, AnnotatedStage},
     AnnotationError,
 };
@@ -42,15 +40,15 @@ pub struct AnnotatedFetch {
 #[derive(Debug, Clone)]
 pub enum AnnotatedFetchSome {
     SingleVar(Variable),
-    SingleAttribute(Variable, AttributeType<'static>),
+    SingleAttribute(Variable, AttributeType),
     SingleFunction(AnnotatedFunction),
 
     Object(Box<AnnotatedFetchObject>),
 
     ListFunction(AnnotatedFunction),
     ListSubFetch(AnnotatedFetchListSubFetch),
-    ListAttributesAsList(Variable, AttributeType<'static>),
-    ListAttributesFromList(Variable, AttributeType<'static>),
+    ListAttributesAsList(Variable, AttributeType),
+    ListAttributesFromList(Variable, AttributeType),
 }
 
 #[derive(Debug, Clone)]
@@ -73,8 +71,7 @@ pub(crate) fn annotate_fetch(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetch, AnnotationError> {
@@ -84,8 +81,7 @@ pub(crate) fn annotate_fetch(
         type_manager,
         variable_registry,
         parameters,
-        indexed_annotated_functions,
-        local_functions,
+        annotated_function_signatures,
         input_type_annotations,
         input_value_type_annotations,
     )?;
@@ -98,8 +94,7 @@ fn annotate_object(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
@@ -111,8 +106,7 @@ fn annotate_object(
                 type_manager,
                 variable_registry,
                 parameters,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )?;
@@ -128,8 +122,7 @@ fn annotated_object_entries(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<HashMap<ParameterID, AnnotatedFetchSome>, AnnotationError> {
@@ -141,8 +134,7 @@ fn annotated_object_entries(
             type_manager,
             variable_registry,
             parameters,
-            indexed_annotated_functions,
-            local_functions,
+            annotated_function_signatures,
             input_type_annotations,
             input_value_type_annotations,
         )
@@ -161,8 +153,7 @@ fn annotate_some(
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
     parameters: &ParameterRegistry,
-    indexed_annotated_functions: &IndexedAnnotatedFunctions,
-    local_functions: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
@@ -178,13 +169,7 @@ fn annotate_some(
                     name: attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
-            validate_attribute_owned_and_scalar(
-                snapshot,
-                type_manager,
-                variable_name,
-                owner_types,
-                attribute_type.clone(),
-            )?;
+            validate_attribute_owned_and_scalar(snapshot, type_manager, variable_name, owner_types, attribute_type)?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
@@ -192,8 +177,7 @@ fn annotate_some(
                 &mut function,
                 snapshot,
                 type_manager,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )
@@ -207,8 +191,7 @@ fn annotate_some(
                 type_manager,
                 variable_registry,
                 parameters,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )?;
@@ -219,8 +202,7 @@ fn annotate_some(
                 &mut function,
                 snapshot,
                 type_manager,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
             )
@@ -231,8 +213,7 @@ fn annotate_some(
             let annotated_sub_fetch = annotate_sub_fetch(
                 snapshot,
                 type_manager,
-                indexed_annotated_functions,
-                local_functions,
+                annotated_function_signatures,
                 parameters,
                 sub_fetch,
                 input_type_annotations,
@@ -255,7 +236,7 @@ fn annotate_some(
                     type_manager,
                     variable_name,
                     owner_type,
-                    attribute_type.clone(),
+                    attribute_type,
                 )?;
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
@@ -275,7 +256,7 @@ fn validate_attribute_owned_and_scalar(
     type_manager: &TypeManager,
     owner: &str,
     owner_types: &BTreeSet<Type>,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
         if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
@@ -287,7 +268,7 @@ fn validate_attribute_owned_and_scalar(
         }
         let object_type = owner_type.as_object_type();
         if object_type
-            .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
+            .get_owns_attribute(snapshot, type_manager, attribute_type)
             .map_err(|err| AnnotationError::ConceptRead { source: err })?
             .is_none()
         {
@@ -299,7 +280,7 @@ fn validate_attribute_owned_and_scalar(
         }
 
         let is_bounded_to_one = object_type
-            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type.clone())
+            .is_owned_attribute_type_bounded_to_one(snapshot, type_manager, attribute_type)
             .map_err(|err| AnnotationError::ConceptRead { source: err })?;
         if !is_bounded_to_one {
             return Err(AnnotationError::AttributeFetchCardTooHigh {
@@ -317,7 +298,7 @@ fn validate_attribute_owned_and_streamable(
     type_manager: &TypeManager,
     owner: &str,
     owner_type: &Type,
-    attribute_type: AttributeType<'static>,
+    attribute_type: AttributeType,
 ) -> Result<(), AnnotationError> {
     if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
         return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
@@ -329,7 +310,7 @@ fn validate_attribute_owned_and_streamable(
 
     let _ = owner_type
         .as_object_type()
-        .get_owns_attribute(snapshot, type_manager, attribute_type.clone())
+        .get_owns_attribute(snapshot, type_manager, attribute_type)
         .map_err(|err| AnnotationError::ConceptRead { source: err })?
         .ok_or_else(|| AnnotationError::FetchAttributesNotOwned {
             var: owner.to_owned(),
@@ -342,8 +323,7 @@ fn validate_attribute_owned_and_streamable(
 fn annotate_sub_fetch(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    schema_function_annotations: &IndexedAnnotatedFunctions,
-    annotated_preamble: Option<&AnnotatedUnindexedFunctions>,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     parameters: &ParameterRegistry,
     sub_fetch: FetchListSubFetch,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
@@ -354,10 +334,9 @@ fn annotate_sub_fetch(
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,
-        schema_function_annotations,
+        annotated_function_signatures,
         &mut variable_registry,
         parameters,
-        annotated_preamble,
         stages,
         Some(fetch),
         input_type_annotations.clone(),

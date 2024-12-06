@@ -23,109 +23,109 @@ typedb_error!(
         CannotAddOwnerInstanceForNotOwnedAttributeType(
             2,
             "Type '{owner}' cannot own attribute type '{attribute}'.",
-            owner: Label<'static>,
-            attribute: Label<'static>
+            owner: Label,
+            attribute: Label
         ),
         CannotAddPlayerInstanceForNotPlayedRoleType(
             3,
             "Type '{player}' cannot play role '{role}'.",
-            player: Label<'static>,
-            role: Label<'static>
+            player: Label,
+            role: Label
         ),
         CannotAddPlayerInstanceForNotRelatedRoleType(
             4,
             "Relation type '{relation}' cannot relate '{role}'.",
-            relation: Label<'static>,
-            role: Label<'static>
+            relation: Label,
+            role: Label
         ),
         EntityTypeConstraintViolated(
             5,
             "Constraint on entity type '{entity_type}' was violated.",
-            entity_type: Label<'static>,
+            entity_type: Label,
             (typedb_source: Box<ConstraintError>)
         ),
         RelationTypeConstraintViolated(
             6,
             "Constraint on relation type '{relation_type}' was violated.",
-            relation_type: Label<'static>,
+            relation_type: Label,
             (typedb_source: Box<ConstraintError>)
         ),
         AttributeTypeConstraintViolated(
             7,
             "Constraint on attribute type '{attribute_type}' was violated.",
-            attribute_type: Label<'static>,
+            attribute_type: Label,
             (typedb_source: Box<ConstraintError>)
         ),
         KeyConstraintViolatedCard(
             8,
             "Instance {owner_iid} of type '{owner_type}' has a key constraint violation for attribute ownership of '{attribute_type}', since it owns {attribute_count} instead of exactly 1.",
             owner_iid: HexBytesFormatter<'static>,
-            owner_type: Label<'static>,
-            attribute_type: Label<'static>,
+            owner_type: Label,
+            attribute_type: Label,
             attribute_count: u64,
-            constraint_source: Owns<'static>,
+            constraint_source: Owns,
             (typedb_source: Box<ConstraintError>)
         ),
         KeyConstraintViolatedUniqueness(
             9,
             "Instance {owner_iid} of type '{owner_type}' has a key constraint violation for attribute ownership of '{attribute_type}', since it is not the unique owner of attribute '{value}'.",
             owner_iid: HexBytesFormatter<'static>,
-            owner_type: Label<'static>,
-            attribute_type: Label<'static>,
+            owner_type: Label,
+            attribute_type: Label,
             value: Value<'static>,
-            constraint_source: Owns<'static>,
+            constraint_source: Owns,
             (typedb_source: Box<ConstraintError>)
         ),
         OwnsConstraintViolated(
             10,
             "Instance {owner_iid} of type '{owner_type}' has an attribute ownership constraint violation for attribute ownership of type '{attribute_type}'.",
             owner_iid: HexBytesFormatter<'static>,
-            owner_type: Label<'static>,
-            attribute_type: Label<'static>,
-            // constraint_source: Owns<'static>
+            owner_type: Label,
+            attribute_type: Label,
+            // constraint_source: Owns
             (typedb_source: Box<ConstraintError>)
         ),
         RelatesConstraintViolated(
             11,
             "Instance {relation_iid} of relation type '{relation_type}' has a relates constraint violation for role type '{role_type}'.",
             relation_iid: HexBytesFormatter<'static>,
-            relation_type: Label<'static>,
-            role_type: Label<'static>,
+            relation_type: Label,
+            role_type: Label,
             // player_iid: HexBytesFormatter<'static>,
-            // constraint_source: Relates<'static>,
+            // constraint_source: Relates,
             (typedb_source: Box<ConstraintError>)
         ),
         PlaysConstraintViolated(
             12,
             "Instance {player_iid} of type '{player_type}' violated constraint for playing role type '{role_type}'.",
             player_iid: HexBytesFormatter<'static>,
-            player_type: Label<'static>,
-            role_type: Label<'static>,
+            player_type: Label,
+            role_type: Label,
             // relation: Option<Relation<'static>>,
-            // constraint_source: Plays<'static>,
+            // constraint_source: Plays,
             (typedb_source: Box<ConstraintError>)
         ),
         UniqueValueTaken(
             13,
             "Instance {owner_iid} of type '{owner_type}' violated unique-ownership constraint for attribute '{value}' with type '{attribute_type}'.",
             owner_iid: HexBytesFormatter<'static>,
-            owner_type: Label<'static>,
-            attribute_type: Label<'static>,
-            // taken_owner_type: Label<'static>,
-            // taken_attribute_type: Label<'static>,
+            owner_type: Label,
+            attribute_type: Label,
+            // taken_owner_type: Label,
+            // taken_attribute_type: Label,
             value: Value<'static>
         ),
         AttributeTypeHasNoValueType(
             14,
             "Attribute type '{attribute_type}' has no defined value type, but received value '{provided_value}' of type '{provided_value_type}'.",
-            attribute_type: Label<'static>,
+            attribute_type: Label,
             provided_value: Value<'static>,
             provided_value_type: ValueType
         ),
         ValueTypeMismatchWithAttributeType(
             15,
             "Attribute type '{attribute_type}' expects values of type '{expected_value_type}' but received value '{provided_value}' of type '{provided_value_type}'.",
-            attribute_type: Label<'static>,
+            attribute_type: Label,
             expected_value_type: ValueType,
             provided_value: Value<'static>,
             provided_value_type: ValueType

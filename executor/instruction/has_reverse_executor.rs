@@ -5,9 +5,8 @@
  */
 
 use std::{
-    cmp::Ordering,
     collections::{BTreeMap, BTreeSet, Bound, HashMap},
-    fmt,
+    fmt, iter,
     sync::{Arc, OnceLock},
     vec,
 };
@@ -17,21 +16,20 @@ use compiler::{executable::match_::instructions::thing::HasReverseInstruction, E
 use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, has::Has, object::HasReverseIterator, thing_manager::ThingManager},
-    type_::attribute_type::AttributeType,
+    type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use encoding::value::value::Value;
-use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{adaptors::Flatten, kmerge::KMergeBy, AsHkt, AsLendingIterator, LendingIterator, Peekable};
+use itertools::{kmerge_by, Itertools, KMergeBy};
+use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
-use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    snapshot::ReadableSnapshot,
-};
+use storage::snapshot::ReadableSnapshot;
 
+use super::has_executor::HasFilterMapFn;
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
         iterator::{SortedTupleIterator, TupleIterator},
+        min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
         BinaryIterateMode, Checker, VariableModes,
     },
@@ -45,25 +43,26 @@ pub(crate) struct HasReverseExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,
     attribute_owner_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    owner_types: Arc<BTreeSet<Type>>,
+    attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>>,
+    owner_type_range: Bounds<ObjectType>,
     filter_fn: Arc<HasFilterFn>,
-    attribute_cache: OnceLock<Vec<Attribute<'static>>>,
-    checker: Checker<(AsHkt![Has<'_>], u64)>,
+    attribute_cache: OnceLock<Vec<Attribute>>,
+    checker: Checker<(Has, u64)>,
 }
 
 pub(crate) type HasReverseUnboundedSortedAttribute = HasTupleIterator<MultipleTypeHasReverseIterator>;
 pub(crate) type HasReverseUnboundedSortedOwnerMerged = HasTupleIterator<KMergeBy<HasReverseIterator, HasOrderingFn>>;
 pub(crate) type HasReverseUnboundedSortedOwnerSingle = HasTupleIterator<HasReverseIterator>;
 pub(crate) type HasReverseBoundedSortedOwner = HasTupleIterator<HasReverseIterator>;
-type MultipleTypeHasReverseIterator = Flatten<AsLendingIterator<vec::IntoIter<HasReverseIterator>>>;
+type MultipleTypeHasReverseIterator = iter::Flatten<vec::IntoIter<HasReverseIterator>>;
 
 impl HasReverseExecutor {
     pub(crate) fn new(
         has_reverse: HasReverseInstruction<ExecutorVariable>,
         variable_modes: VariableModes,
         sort_by: ExecutorVariable,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
+        _snapshot: &impl ReadableSnapshot,
+        _thing_manager: &ThingManager,
     ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let attribute_owner_types = has_reverse.attribute_to_owner_types().clone();
@@ -81,15 +80,31 @@ impl HasReverseExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
+        let attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>> = attribute_owner_types
+            .iter()
+            .map(|(type_, owner_types)| {
+                let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
+                (
+                    type_.as_attribute_type(),
+                    (
+                        Bound::Included(min_owner_type.as_object_type()),
+                        Bound::Included(max_owner_type.as_object_type()),
+                    ),
+                )
+            })
+            .collect();
+
+        let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
+        let owner_type_range =
+            (Bound::Included(min_owner_type.as_object_type()), Bound::Included(max_owner_type.as_object_type()));
+
         let output_tuple_positions = match iterate_mode {
             BinaryIterateMode::Unbound => TuplePositions::Pair([Some(attribute), Some(owner)]),
             _ => TuplePositions::Pair([Some(owner), Some(attribute)]),
         };
 
-        let checker = Checker::<(Has<'_>, _)>::new(
-            checks,
-            HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]),
-        );
+        let checker =
+            Checker::<(Has, _)>::new(checks, HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]));
 
         Ok(Self {
             has,
@@ -97,7 +112,8 @@ impl HasReverseExecutor {
             variable_modes,
             tuple_positions: output_tuple_positions,
             attribute_owner_types,
-            owner_types,
+            attribute_owner_types_range,
+            owner_type_range,
             filter_fn,
             attribute_cache: OnceLock::new(),
             checker,
@@ -115,22 +131,28 @@ impl HasReverseExecutor {
                 self.checker.value_range_for(context, None, self.has.attribute().as_variable().unwrap())?;
             let mut cache = Vec::new();
             for type_ in self.attribute_owner_types.keys() {
-                let instances: Vec<Attribute<'static>> = context
+                let instances: Vec<Attribute> = context
                     .thing_manager
                     .get_attributes_in_range(context.snapshot.as_ref(), type_.as_attribute_type(), &value_range)?
-                    .map_static(|result| Ok::<_, Box<_>>(result?.clone().into_owned()))
                     .try_collect()?;
                 cache.extend(instances);
             }
-            debug_assert!(cache.len() < CONSTANT_CONCEPT_LIMIT);
+            #[cfg(debug_assertions)]
+            if cache.len() < CONSTANT_CONCEPT_LIMIT {
+                eprintln!("DEBUG_ASSERT_FAILURE: cache.len() > CONSTANT_CONCEPT_LIMIT");
+            }
             self.attribute_cache.get_or_init(|| cache);
         }
 
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<HasFilterFn> = Box::new(move |item| match filter(item) {
-            Ok(true) => check(item),
-            fail => fail,
+        let filter_for_row: Box<HasFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -143,14 +165,10 @@ impl HasReverseExecutor {
                     Some(row.as_reference()),
                     self.has.attribute().as_variable().unwrap(),
                 )?;
-                let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> = Self::all_has_reverse_chained(
-                    snapshot,
-                    thing_manager,
-                    self.attribute_owner_types.keys().map(|type_| type_.as_attribute_type()),
-                    range,
-                )?
-                .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
-                .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> =
+                    Self::all_has_reverse_chained(snapshot, thing_manager, &self.attribute_owner_types_range, range)?
+                        .filter_map(filter_for_row)
+                        .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                 Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -159,24 +177,16 @@ impl HasReverseExecutor {
             }
             BinaryIterateMode::UnboundInverted => {
                 debug_assert!(self.attribute_cache.get().is_some());
-                let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
-                let owner_type_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(min_owner_type.as_object_type()),
-                    RangeEnd::EndPrefixInclusive(max_owner_type.as_object_type()),
-                );
-
                 if self.attribute_cache.get().unwrap().len() == 1 {
-                    let attr = &self.attribute_cache.get().unwrap()[0];
+                    let attribute = &self.attribute_cache.get().unwrap()[0];
                     // no heap allocs needed if there is only 1 iterator
-                    let iterator = thing_manager
-                        .get_has_reverse_by_attribute_and_owner_type_range(
-                            snapshot,
-                            attr.as_reference(),
-                            owner_type_range,
-                        )
-                        .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row);
+                    let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
+                        snapshot,
+                        &attribute,
+                        &self.owner_type_range,
+                    );
                     let as_tuples: HasReverseUnboundedSortedOwnerSingle =
-                        iterator.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
+                        iterator.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
                     Ok(TupleIterator::HasReverseUnboundedInvertedSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -186,19 +196,18 @@ impl HasReverseExecutor {
                     // // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
                     let attributes = self.attribute_cache.get().unwrap().iter();
                     let iterators = attributes.map(|attribute| {
-                        Peekable::new(thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
+                        thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
-                            attribute.as_reference(),
-                            owner_type_range.clone(),
-                        ))
+                            &attribute,
+                            &self.owner_type_range,
+                        )
                     });
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasReverseIterator, HasOrderingFn> =
-                        KMergeBy::new(iterators, compare_has_by_owner_then_attribute);
-                    let as_tuples: HasReverseUnboundedSortedOwnerMerged = merged
-                        .try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row)
-                        .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
+                        kmerge_by(iterators, compare_has_by_owner_then_attribute);
+                    let as_tuples: HasReverseUnboundedSortedOwnerMerged =
+                        merged.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
                     Ok(TupleIterator::HasReverseUnboundedInvertedMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -209,20 +218,14 @@ impl HasReverseExecutor {
             BinaryIterateMode::BoundFrom => {
                 let attribute = self.has.attribute().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > attribute.as_usize());
-                let attribute = row.get(attribute);
-                let (min_owner_type, max_owner_type) = min_max_types(&*self.owner_types);
-                let type_range = KeyRange::new_variable_width(
-                    RangeStart::Inclusive(min_owner_type.as_object_type()),
-                    RangeEnd::EndPrefixInclusive(max_owner_type.as_object_type()),
-                );
+                let variable_value = row.get(attribute);
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                     snapshot,
-                    attribute.as_thing().as_attribute(),
-                    type_range,
+                    variable_value.as_thing().as_attribute(),
+                    &self.owner_type_range,
                 );
-                let filtered = iterator.try_filter::<_, HasFilterFn, (Has<'_>, _), _>(filter_for_row);
                 let as_tuples: HasReverseBoundedSortedOwner =
-                    filtered.map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
+                    iterator.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasReverseBounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -232,32 +235,34 @@ impl HasReverseExecutor {
         }
     }
 
-    fn all_has_reverse_chained<'a>(
+    fn all_has_reverse_chained(
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
-        attribute_types: impl Iterator<Item = AttributeType<'a>>,
+        attribute_type_owner_range: &BTreeMap<AttributeType, (Bound<ObjectType>, Bound<ObjectType>)>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
     ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
-        let iterators: Vec<_> = attribute_types
+        let iterators: Vec<_> = attribute_type_owner_range
+            .iter()
             // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
-            .filter(|type_| type_.get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some()))
-            .map(|type_| thing_manager.get_has_reverse_in_range(snapshot, type_, &attribute_values_range))
+            .filter(|(attribute_type, owner_type_range)| {
+                attribute_type.get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some())
+            })
+            .map(|(attribute_type, owner_types)| {
+                thing_manager.get_has_reverse_in_range(
+                    snapshot,
+                    attribute_type.clone(),
+                    &attribute_values_range,
+                    owner_types,
+                )
+            })
             .try_collect()?;
-        Ok(AsLendingIterator::new(iterators).flatten())
+        Ok(iterators.into_iter().flatten())
     }
 }
 impl fmt::Display for HasReverseExecutor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Reverse[{}], mode={}", &self.has, &self.iterate_mode)
-    }
-}
-
-fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
-    match types.into_iter().minmax() {
-        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
-        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     }
 }
 
@@ -279,11 +284,12 @@ fn create_has_filter_owners(owner_types: Arc<BTreeSet<Type>>) -> Arc<HasFilterFn
 }
 
 fn compare_has_by_owner_then_attribute(
-    pair: (&Result<(Has<'_>, u64), Box<ConceptReadError>>, &Result<(Has<'_>, u64), Box<ConceptReadError>>),
-) -> Ordering {
-    if let (Ok((has_1, _)), Ok((has_2, _))) = pair {
-        (has_2.owner(), has_1.attribute()).cmp(&(has_2.owner(), has_2.attribute()))
+    left: &Result<(Has, u64), Box<ConceptReadError>>,
+    right: &Result<(Has, u64), Box<ConceptReadError>>,
+) -> bool {
+    if let (Ok((has_1, _)), Ok((has_2, _))) = (left, right) {
+        (has_2.owner(), has_1.attribute()) < (has_2.owner(), has_2.attribute())
     } else {
-        Ordering::Equal
+        false
     }
 }

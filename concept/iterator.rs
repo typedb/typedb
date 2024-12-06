@@ -10,19 +10,19 @@
 use std::marker::PhantomData;
 
 use encoding::graph::thing::ThingVertex;
-use lending_iterator::{higher_order::Hkt, LendingIterator};
+use lending_iterator::LendingIterator;
 
 use crate::{
     error::{ConceptReadError, ConceptReadError::SnapshotIterate},
     thing::ThingAPI,
 };
 
-pub struct InstanceIterator<T: Hkt> {
+pub struct InstanceIterator<T> {
     snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
     _ph: PhantomData<T>,
 }
 
-impl<T: Hkt> InstanceIterator<T> {
+impl<T> InstanceIterator<T> {
     pub(crate) fn new(snapshot_iterator: storage::snapshot::iterator::SnapshotRangeIterator) -> Self {
         Self { snapshot_iterator: Some(snapshot_iterator), _ph: PhantomData }
     }
@@ -32,21 +32,23 @@ impl<T: Hkt> InstanceIterator<T> {
     }
 }
 
-impl<T> LendingIterator for InstanceIterator<T>
+impl<T> Iterator for InstanceIterator<T>
 where
-    T: Hkt,
-    for<'a> <T as Hkt>::HktSelf<'a>: ThingAPI<'a>,
+    T: ThingAPI + 'static,
 {
-    type Item<'a> = Result<T::HktSelf<'a>, Box<ConceptReadError>>;
+    type Item = Result<T, Box<ConceptReadError>>;
 
-    fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.snapshot_iterator.as_mut()?.next().map(|result| {
-            result
-                .map(|(storage_key, _value_bytes)| {
-                    T::HktSelf::new(<T::HktSelf<'_> as ThingAPI<'_>>::Vertex::new(storage_key.into_bytes()))
-                })
-                .map_err(|error| Box::new(SnapshotIterate { source: error }))
-        })
+    fn next(&mut self) -> Option<Self::Item> {
+        let iter = match &mut self.snapshot_iterator {
+            Some(iter) => iter,
+            None => return None,
+        };
+        let item = match iter.next() {
+            Some(Ok((storage_key, _))) => Ok(T::new(T::Vertex::decode(storage_key.bytes()))),
+            Some(Err(err)) => Err(Box::new(SnapshotIterate { source: err })),
+            None => return None,
+        };
+        Some(item)
     }
 }
 
@@ -73,7 +75,7 @@ macro_rules! concept_iterator {
         }
 
         impl ::lending_iterator::LendingIterator for $name {
-            type Item<'a> = Result<$concept_type<'a>, Box<$crate::error::ConceptReadError>>;
+            type Item<'a> = Result<$concept_type, Box<$crate::error::ConceptReadError>>;
             fn next(&mut self) -> Option<Self::Item<'_>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.next().map(|result| {
@@ -88,7 +90,7 @@ macro_rules! concept_iterator {
 
 #[macro_export]
 macro_rules! edge_iterator {
-    ($name:ident; $lt:lifetime -> $mapped_type:ty; $map_fn: expr) => {
+    ($name:ident; $mapped_type:ty; $map_fn: expr) => {
         pub struct $name {
             snapshot_iterator: Option<storage::snapshot::iterator::SnapshotRangeIterator>,
         }
@@ -99,11 +101,11 @@ macro_rules! edge_iterator {
                 $name { snapshot_iterator: Some(snapshot_iterator) }
             }
 
-            pub(crate) fn new_empty() -> Self {
+            pub fn new_empty() -> Self {
                 $name { snapshot_iterator: None }
             }
 
-            pub fn peek<$lt>(&$lt mut self) -> Option<Result<$mapped_type, Box<$crate::error::ConceptReadError>>> {
+            pub fn peek(&mut self) -> Option<Result<$mapped_type, Box<$crate::error::ConceptReadError>>> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.peek().map(|result| {
                     result
@@ -122,9 +124,9 @@ macro_rules! edge_iterator {
             }
         }
 
-        impl ::lending_iterator::LendingIterator for $name {
-            type Item<$lt> = Result<$mapped_type, Box<$crate::error::ConceptReadError>>;
-            fn next(&mut self) -> Option<Self::Item<'_>> {
+        impl Iterator for $name {
+            type Item = Result<$mapped_type, Box<$crate::error::ConceptReadError>>;
+            fn next(&mut self) -> Option<Self::Item> {
                 use $crate::error::ConceptReadError::SnapshotIterate;
                 self.snapshot_iterator.as_mut()?.next().map(|result| {
                     result
@@ -132,7 +134,6 @@ macro_rules! edge_iterator {
                         .map_err(|error| Box::new(SnapshotIterate { source: error }))
                 })
             }
-
         }
     };
 }

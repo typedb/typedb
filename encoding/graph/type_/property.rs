@@ -6,7 +6,7 @@
 
 use std::ops::Range;
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference, Bytes};
+use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::key_value::StorageKey;
 
@@ -23,77 +23,68 @@ use crate::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
-pub struct TypeVertexProperty<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+pub struct TypeVertexProperty {
+    type_: TypeVertex,
+    infix: Infix,
+    suffix: Option<ByteArray<0>>,
 }
 
-impl<'a> TypeVertexProperty<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+impl TypeVertexProperty {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const PREFIX: Prefix = Prefix::PropertyTypeVertex;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
-        let property = TypeVertexProperty { bytes };
-        debug_assert_eq!(property.prefix(), Self::PREFIX);
-        property
+    pub fn new(type_: TypeVertex, infix: Infix) -> Self {
+        Self { type_, infix, suffix: None }
     }
 
-    pub fn build(vertex: TypeVertex<'_>, infix: Infix) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
-        array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        TypeVertexProperty { bytes: Bytes::Array(array) }
-    }
-
-    fn build_suffixed<const INLINE_BYTES: usize>(
-        vertex: TypeVertex<'_>,
+    fn new_suffixed<const INLINE_BYTES: usize>(
+        vertex: TypeVertex,
         infix: Infix,
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
-        array[Self::RANGE_PREFIX].copy_from_slice(&Self::PREFIX.prefix_id().bytes());
-        array[Self::range_type_vertex()].copy_from_slice(vertex.bytes().bytes());
-        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        array[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
-        TypeVertexProperty { bytes: Bytes::Array(array) }
+        Self { type_: vertex, infix, suffix: Some(ByteArray::copy(&suffix)) }
+    }
+
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
+        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
+
+        let type_ = TypeVertex::decode(bytes.clone().into_range(Self::range_type_vertex()));
+        let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
+        let suffix =
+            (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
+        Self { type_, infix, suffix }
     }
 
     pub fn build_prefix() -> StorageKey<'static, { TypeVertexProperty::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = TypeVertexProperty::PREFIX.prefix_id().bytes();
-        StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = TypeVertexProperty::PREFIX.prefix_id().to_bytes();
+        StorageKey::new_ref(Self::KEYSPACE, &PREFIX_BYTES)
     }
 
-    pub fn type_vertex(&'a self) -> TypeVertex<'a> {
-        TypeVertex::new(Bytes::reference(&self.bytes().bytes()[Self::range_type_vertex()]))
+    pub fn type_vertex(&self) -> TypeVertex {
+        self.type_
     }
 
     pub fn infix(&self) -> Infix {
-        let infix_bytes = &self.bytes[Self::range_infix()];
-        Infix::from_infix_id(InfixID::new(infix_bytes.try_into().unwrap()))
+        self.infix
     }
 
     fn suffix_length(&self) -> usize {
-        self.bytes().length() - Self::LENGTH_NO_SUFFIX
+        self.suffix.as_ref().map(|s| s.len()).unwrap_or(0)
     }
 
-    pub fn suffix(&self) -> Option<ByteReference> {
-        let suffix_length = self.suffix_length();
-        if suffix_length > 0 {
-            Some(ByteReference::new(&self.bytes[Self::range_suffix(self.suffix_length())]))
-        } else {
-            None
-        }
+    pub fn suffix(&self) -> Option<&[u8]> {
+        self.suffix.as_deref()
     }
 
     const fn range_type_vertex() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeVertex::LENGTH
+        Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + TypeVertex::LENGTH
     }
 
     const fn range_infix() -> Range<usize> {
@@ -105,113 +96,106 @@ impl<'a> TypeVertexProperty<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
-    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
-        self.bytes
+impl AsBytes<BUFFER_KEY_INLINE> for TypeVertexProperty {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
+        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + self.suffix_length());
+        array[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        array[Self::range_type_vertex()].copy_from_slice(&self.type_.to_bytes());
+        array[Self::range_infix()].copy_from_slice(&self.infix.infix_id().bytes());
+        if let Some(suffix) = self.suffix() {
+            array[Self::range_suffix(suffix.len())].copy_from_slice(suffix);
+        }
+        Bytes::Array(array)
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {
+impl Keyable<BUFFER_KEY_INLINE> for TypeVertexProperty {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeVertexProperty<'a> {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeVertexProperty {}
 
-pub trait TypeVertexPropertyEncoding<'a> {
+pub trait TypeVertexPropertyEncoding {
     const INFIX: Infix;
 
-    fn from_value_bytes(value: ByteReference<'_>) -> Self;
+    fn from_value_bytes(value: &[u8]) -> Self;
 
-    fn build_key<'b>(vertex: impl TypeVertexEncoding<'b>) -> TypeVertexProperty<'b> {
-        TypeVertexProperty::build(vertex.into_vertex(), Self::INFIX)
+    fn build_key(vertex: impl TypeVertexEncoding) -> TypeVertexProperty {
+        TypeVertexProperty::new(vertex.into_vertex(), Self::INFIX)
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>; // TODO: Can this be just Bytes?
 
     fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeVertexProperty::LENGTH_NO_SUFFIX
-            && TypeVertexProperty::new(key_bytes).infix() == Self::INFIX
+            && TypeVertexProperty::decode(key_bytes).infix() == Self::INFIX
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
-pub struct TypeEdgeProperty<'a> {
-    bytes: Bytes<'a, BUFFER_KEY_INLINE>,
+pub struct TypeEdgeProperty {
+    edge: TypeEdge,
+    infix: Infix,
+    suffix: Option<ByteArray<0>>,
 }
 
-impl<'a> TypeEdgeProperty<'a> {
-    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::Schema;
+impl TypeEdgeProperty {
+    const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
     const PREFIX: Prefix = Prefix::PropertyTypeEdge;
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + TypeEdge::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub fn new(bytes: Bytes<'a, BUFFER_KEY_INLINE>) -> Self {
-        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
-        let property = TypeEdgeProperty { bytes };
-        debug_assert_eq!(property.prefix(), Self::PREFIX);
-        property
+    pub fn new(edge: TypeEdge, infix: Infix) -> Self {
+        Self { edge, infix, suffix: None }
     }
 
-    pub fn build(edge: TypeEdge<'_>, infix: Infix) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX);
-        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
-        array[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
-        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        TypeEdgeProperty { bytes: Bytes::Array(array) }
+    pub fn decode(bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
+        debug_assert!(bytes.length() >= Self::LENGTH_NO_SUFFIX);
+        debug_assert_eq!(bytes[Self::INDEX_PREFIX], Self::PREFIX.prefix_id().byte);
+        let edge = TypeEdge::decode(bytes.clone().into_range(Self::range_type_edge()));
+        let infix = Infix::from_infix_id(InfixID::new((&bytes[Self::range_infix()]).try_into().unwrap()));
+        let suffix =
+            (bytes.length() > Self::LENGTH_NO_SUFFIX).then(|| ByteArray::copy(&bytes[Self::LENGTH_NO_SUFFIX..]));
+        Self { edge, infix, suffix }
     }
 
     fn build_suffixed<const INLINE_BYTES: usize>(
-        edge: TypeEdge<'_>,
+        edge: TypeEdge,
         infix: Infix,
         suffix: Bytes<'_, INLINE_BYTES>,
     ) -> Self {
-        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + suffix.length());
-        array[Self::RANGE_PREFIX].copy_from_slice(&Prefix::PropertyTypeEdge.prefix_id().bytes());
-        array[Self::range_type_edge()].copy_from_slice(edge.bytes().bytes());
-        array[Self::range_infix()].copy_from_slice(&infix.infix_id().bytes());
-        array[Self::range_suffix(suffix.length())].copy_from_slice(&suffix);
-        TypeEdgeProperty { bytes: Bytes::Array(array) }
+        Self { edge, infix, suffix: Some(ByteArray::copy(&suffix)) }
     }
 
     pub fn build_prefix() -> StorageKey<'static, { TypeEdgeProperty::LENGTH_PREFIX }> {
         // TODO: is it better to have a const fn that is a reference to owned memory, or
         //       to always induce a tiny copy have a non-const function?
-        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = TypeEdgeProperty::PREFIX.prefix_id().bytes();
-        StorageKey::new_ref(Self::KEYSPACE, ByteReference::new(&PREFIX_BYTES))
+        const PREFIX_BYTES: [u8; PrefixID::LENGTH] = TypeEdgeProperty::PREFIX.prefix_id().to_bytes();
+        StorageKey::new_ref(Self::KEYSPACE, &PREFIX_BYTES)
     }
 
-    pub fn type_edge(&'a self) -> TypeEdge<'a> {
-        TypeEdge::new(Bytes::reference(&self.bytes().bytes()[Self::range_type_edge()]))
+    pub fn type_edge(&self) -> TypeEdge {
+        self.edge
     }
 
     pub fn infix(&self) -> Infix {
-        let infix_bytes = &self.bytes[Self::range_infix()];
-        Infix::from_infix_id(InfixID::new(infix_bytes.try_into().unwrap()))
+        self.infix
     }
 
     fn suffix_length(&self) -> usize {
-        self.bytes().length() - Self::LENGTH_NO_SUFFIX
+        self.suffix.as_ref().map(|s| s.len()).unwrap_or(0)
     }
 
-    pub fn suffix(&self) -> Option<ByteReference> {
-        let suffix_length = self.suffix_length();
-        if suffix_length > 0 {
-            Some(ByteReference::new(&self.bytes[Self::range_suffix(suffix_length)]))
-        } else {
-            None
-        }
+    pub fn suffix(&self) -> Option<&[u8]> {
+        self.suffix.as_deref()
     }
 
     const fn range_type_edge() -> Range<usize> {
-        Self::RANGE_PREFIX.end..Self::RANGE_PREFIX.end + TypeEdge::LENGTH
+        Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + TypeEdge::LENGTH
     }
 
     const fn range_infix() -> Range<usize> {
@@ -223,37 +207,40 @@ impl<'a> TypeEdgeProperty<'a> {
     }
 }
 
-impl<'a> AsBytes<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
-    fn bytes(&'a self) -> ByteReference<'a> {
-        self.bytes.as_reference()
-    }
-
-    fn into_bytes(self) -> Bytes<'a, BUFFER_KEY_INLINE> {
-        self.bytes
+impl AsBytes<BUFFER_KEY_INLINE> for TypeEdgeProperty {
+    fn to_bytes(self) -> Bytes<'static, BUFFER_KEY_INLINE> {
+        let mut array = ByteArray::zeros(Self::LENGTH_NO_SUFFIX + self.suffix_length());
+        array[Self::INDEX_PREFIX] = Prefix::PropertyTypeEdge.prefix_id().byte;
+        array[Self::range_type_edge()].copy_from_slice(&self.edge.to_bytes());
+        array[Self::range_infix()].copy_from_slice(&self.infix.infix_id().bytes());
+        if let Some(suffix) = self.suffix() {
+            array[Self::range_suffix(suffix.len())].copy_from_slice(suffix);
+        }
+        Bytes::Array(array)
     }
 }
 
-impl<'a> Keyable<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {
+impl Keyable<BUFFER_KEY_INLINE> for TypeEdgeProperty {
     fn keyspace(&self) -> EncodingKeyspace {
         Self::KEYSPACE
     }
 }
 
-impl<'a> Prefixed<'a, BUFFER_KEY_INLINE> for TypeEdgeProperty<'a> {}
+impl Prefixed<BUFFER_KEY_INLINE> for TypeEdgeProperty {}
 
-pub trait TypeEdgePropertyEncoding<'a>: Sized {
+pub trait TypeEdgePropertyEncoding: Sized {
     const INFIX: Infix;
 
-    fn from_value_bytes(value: ByteReference<'_>) -> Self;
+    fn from_value_bytes(value: &[u8]) -> Self;
 
-    fn build_key<'b>(edge: impl TypeEdgeEncoding<'b>) -> TypeEdgeProperty<'b> {
-        TypeEdgeProperty::build(edge.to_canonical_type_edge(), Self::INFIX)
+    fn build_key(edge: impl TypeEdgeEncoding) -> TypeEdgeProperty {
+        TypeEdgeProperty::new(edge.to_canonical_type_edge(), Self::INFIX)
     }
 
-    fn to_value_bytes(&self) -> Option<Bytes<'a, BUFFER_VALUE_INLINE>>;
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>>;
 
-    fn is_decodable_from(key_bytes: Bytes<'_, BUFFER_KEY_INLINE>) -> bool {
+    fn is_decodable_from(key_bytes: Bytes<'static, BUFFER_KEY_INLINE>) -> bool {
         key_bytes.length() == TypeEdgeProperty::LENGTH_NO_SUFFIX
-            && TypeEdgeProperty::new(key_bytes).infix() == Self::INFIX
+            && TypeEdgeProperty::decode(key_bytes).infix() == Self::INFIX
     }
 }

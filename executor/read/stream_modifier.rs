@@ -55,6 +55,10 @@ impl StreamModifierExecutor {
             Self::Last { inner, .. } => inner,
         }
     }
+
+    pub(crate) fn reset(&mut self) {
+        self.get_inner().reset()
+    }
 }
 
 pub(super) enum StreamModifierResultMapper {

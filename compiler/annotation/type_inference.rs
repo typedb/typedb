@@ -80,7 +80,10 @@ pub mod tests {
     use test_utils::assert_matches;
 
     use crate::annotation::{
-        function::{annotate_named_function, AnnotatedUnindexedFunctions, IndexedAnnotatedFunctions},
+        function::{
+            annotate_named_function, AnnotatedFunctionSignature, AnnotatedFunctionSignaturesImpl,
+            EmptyAnnotatedFunctionSignatures,
+        },
         match_inference::{
             compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
             TypeInferenceGraph, VertexAnnotations,
@@ -102,12 +105,12 @@ pub mod tests {
     #[test]
     fn test_translation() {
         let (var_relation, var_role_type, var_player) = (0..3).map(Variable::new).collect_tuple().unwrap();
-        let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::build(0)));
-        let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(1)));
-        let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(0)));
-        let type_role_1 = Type::RoleType(RoleType::build_from_type_id(TypeID::build(1)));
-        let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::build(0)));
-        let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::build(2)));
+        let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::new(0)));
+        let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::new(1)));
+        let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::new(0)));
+        let type_role_1 = Type::RoleType(RoleType::build_from_type_id(TypeID::new(1)));
+        let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::new(0)));
+        let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::new(2)));
 
         let mut translation_context = TranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
@@ -118,22 +121,17 @@ pub mod tests {
         let nested1 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: VertexAnnotations::from([
-                (var_relation.into(), BTreeSet::from([type_rel_0.clone()])),
-                (var_role_type.into(), BTreeSet::from([type_role_0.clone()])),
-                (var_player.into(), BTreeSet::from([type_player_0.clone()])),
+                (var_relation.into(), BTreeSet::from([type_rel_0])),
+                (var_role_type.into(), BTreeSet::from([type_role_0])),
+                (var_player.into(), BTreeSet::from([type_player_0])),
             ]),
             edges: vec![
-                expected_edge(
-                    &constraint1,
-                    var_relation.into(),
-                    var_role_type.into(),
-                    vec![(type_rel_0.clone(), type_role_0.clone())],
-                ),
+                expected_edge(&constraint1, var_relation.into(), var_role_type.into(), vec![(type_rel_0, type_role_0)]),
                 expected_edge(
                     &constraint1,
                     var_player.into(),
                     var_role_type.into(),
-                    vec![(type_player_0.clone(), type_role_0.clone())],
+                    vec![(type_player_0, type_role_0)],
                 ),
             ],
             nested_disjunctions: vec![],
@@ -141,26 +139,21 @@ pub mod tests {
             nested_optionals: vec![],
         };
         let vertex_annotations = VertexAnnotations::from([
-            (var_relation.into(), BTreeSet::from([type_rel_1.clone()])),
-            (var_role_type.into(), BTreeSet::from([type_role_1.clone()])),
-            (var_player.into(), BTreeSet::from([type_player_1.clone()])),
+            (var_relation.into(), BTreeSet::from([type_rel_1])),
+            (var_role_type.into(), BTreeSet::from([type_role_1])),
+            (var_player.into(), BTreeSet::from([type_player_1])),
         ]);
         let shared_variables = vertex_annotations.keys().filter_map(Vertex::as_variable).collect();
         let nested2 = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: vertex_annotations.clone(),
             edges: vec![
-                expected_edge(
-                    &constraint1,
-                    var_relation.into(),
-                    var_role_type.into(),
-                    vec![(type_rel_1.clone(), type_role_1.clone())],
-                ),
+                expected_edge(&constraint1, var_relation.into(), var_role_type.into(), vec![(type_rel_1, type_role_1)]),
                 expected_edge(
                     &constraint1,
                     var_player.into(),
                     var_role_type.into(),
-                    vec![(type_player_1.clone(), type_role_1.clone())],
+                    vec![(type_player_1, type_role_1)],
                 ),
             ],
             nested_disjunctions: vec![],
@@ -170,9 +163,9 @@ pub mod tests {
         let graph = TypeInferenceGraph {
             conjunction: dummy.conjunction(),
             vertices: VertexAnnotations::from([
-                (var_relation.into(), BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()])),
-                (var_role_type.into(), BTreeSet::from([type_role_0.clone(), type_role_1.clone()])),
-                (var_player.into(), BTreeSet::from([type_player_0.clone(), type_player_1.clone()])),
+                (var_relation.into(), BTreeSet::from([type_rel_0, type_rel_1])),
+                (var_role_type.into(), BTreeSet::from([type_role_0, type_role_1])),
+                (var_player.into(), BTreeSet::from([type_player_0, type_player_1])),
             ]),
             edges: vec![],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
@@ -189,28 +182,22 @@ pub mod tests {
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
 
         let lra1 = LeftRightFilteredAnnotations {
-            left_to_right: Arc::new(BTreeMap::from([(type_rel_0.clone(), vec![type_player_0.clone()])])),
-            filters_on_right: Arc::new(BTreeMap::from([(
-                type_player_0.clone(),
-                BTreeSet::from([type_role_0.clone()]),
-            )])),
-            right_to_left: Arc::new(BTreeMap::from([(type_player_0.clone(), vec![type_rel_0.clone()])])),
-            filters_on_left: Arc::new(BTreeMap::from([(type_rel_0.clone(), BTreeSet::from([type_role_0.clone()]))])),
+            left_to_right: Arc::new(BTreeMap::from([(type_rel_0, vec![type_player_0])])),
+            filters_on_right: Arc::new(BTreeMap::from([(type_player_0, BTreeSet::from([type_role_0]))])),
+            right_to_left: Arc::new(BTreeMap::from([(type_player_0, vec![type_rel_0])])),
+            filters_on_left: Arc::new(BTreeMap::from([(type_rel_0, BTreeSet::from([type_role_0]))])),
         };
         let lra2 = LeftRightFilteredAnnotations {
-            left_to_right: Arc::new(BTreeMap::from([(type_rel_1.clone(), vec![type_player_1.clone()])])),
-            filters_on_right: Arc::new(BTreeMap::from([(
-                type_player_1.clone(),
-                BTreeSet::from([type_role_1.clone()]),
-            )])),
-            right_to_left: Arc::new(BTreeMap::from([(type_player_1.clone(), vec![type_rel_1.clone()])])),
-            filters_on_left: Arc::new(BTreeMap::from([(type_rel_1.clone(), BTreeSet::from([type_role_1.clone()]))])),
+            left_to_right: Arc::new(BTreeMap::from([(type_rel_1, vec![type_player_1])])),
+            filters_on_right: Arc::new(BTreeMap::from([(type_player_1, BTreeSet::from([type_role_1]))])),
+            right_to_left: Arc::new(BTreeMap::from([(type_player_1, vec![type_rel_1])])),
+            filters_on_left: Arc::new(BTreeMap::from([(type_rel_1, BTreeSet::from([type_role_1]))])),
         };
         let expected_annotations = TypeAnnotations::new(
             BTreeMap::from([
-                (var_relation.into(), Arc::new(BTreeSet::from([type_rel_0.clone(), type_rel_1.clone()]))),
-                (var_role_type.into(), Arc::new(BTreeSet::from([type_role_0.clone(), type_role_1.clone()]))),
-                (var_player.into(), Arc::new(BTreeSet::from([type_player_0.clone(), type_player_1.clone()]))),
+                (var_relation.into(), Arc::new(BTreeSet::from([type_rel_0, type_rel_1]))),
+                (var_role_type.into(), Arc::new(BTreeSet::from([type_role_0, type_role_1]))),
+                (var_player.into(), Arc::new(BTreeSet::from([type_player_0, type_player_1]))),
             ]),
             HashMap::from([
                 (constraint1, ConstraintTypeAnnotations::LeftRightFiltered(lra1)),
@@ -228,7 +215,7 @@ pub mod tests {
 
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, _), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let concrete_object_types = [type_cat.clone(), type_dog.clone(), type_fears.clone()];
+        let concrete_object_types = [type_cat, type_dog, type_fears];
 
         let (with_no_cache, with_local_cache, _with_schema_cache) = [
             FunctionID::Preamble(0),
@@ -298,13 +285,12 @@ pub mod tests {
                 &entry_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
             assert_eq!(
                 *annotations_without_schema_cache.vertex_annotations(),
-                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(concrete_object_types.clone())))])
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(concrete_object_types)))])
             );
         }
 
@@ -314,7 +300,7 @@ pub mod tests {
             let (entry, entry_context, mut f_ir) = with_local_cache;
 
             let f_annotations =
-                annotate_named_function(&mut f_ir, &snapshot, &type_manager, &IndexedAnnotatedFunctions::empty(), None)
+                annotate_named_function(&mut f_ir, &snapshot, &type_manager, &EmptyAnnotatedFunctionSignatures)
                     .unwrap();
             let f_var_animal =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal").unwrap();
@@ -325,10 +311,10 @@ pub mod tests {
             assert_eq!(
                 block_annotations.vertex_annotations(),
                 &BTreeMap::from([
-                    (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-                    (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat.clone()]))),
-                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname.clone()]))),
-                    (Vertex::Label(LABEL_CAT), Arc::new(BTreeSet::from([type_cat.clone()]))),
+                    (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat]))),
+                    (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat]))),
+                    (f_var_name.into(), Arc::new(BTreeSet::from([type_catname]))),
+                    (Vertex::Label(LABEL_CAT), Arc::new(BTreeSet::from([type_cat]))),
                 ])
             );
 
@@ -336,23 +322,24 @@ pub mod tests {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             // match $animal = fn_test();
             let var_animal = var_from_registry(&entry_context.variable_registry, "animal").unwrap();
-            let local_cache = AnnotatedUnindexedFunctions::new(vec![f_annotations]);
             let variable_registry = &entry_context.variable_registry;
             let previous_stage_variable_annotations = &BTreeMap::new();
-            let annotated_schema_functions = &IndexedAnnotatedFunctions::empty();
+            let empty_schema_functions = HashMap::<DefinitionKey, AnnotatedFunctionSignature>::new();
+            let preamble_functions = vec![f_annotations];
+            let function_annotations =
+                AnnotatedFunctionSignaturesImpl::new(&empty_schema_functions, &preamble_functions);
             let entry_annotations = infer_types(
                 &snapshot,
                 &entry,
                 variable_registry,
                 &type_manager,
                 previous_stage_variable_annotations,
-                annotated_schema_functions,
-                Some(&local_cache),
+                &function_annotations,
             )
             .unwrap();
             assert_eq!(
                 entry_annotations.vertex_annotations(),
-                &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat.clone()])))]),
+                &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat])))]),
             );
         }
 
@@ -364,7 +351,7 @@ pub mod tests {
         //         &mut f_ir,
         //         &snapshot,
         //         &type_manager,
-        //         &IndexedAnnotatedFunctions::empty(),
+        //         Some(&IndexedAnnotatedFunctions::empty()),
         //         None,
         //         None,
         //         None,
@@ -421,14 +408,10 @@ pub mod tests {
         let mut left_to_right = BTreeMap::new();
         let mut right_to_left = BTreeMap::new();
         for (l, r) in left_right_type_pairs {
-            if !left_to_right.contains_key(&l) {
-                left_to_right.insert(l.clone(), BTreeSet::new());
-            }
-            left_to_right.get_mut(&l).unwrap().insert(r.clone());
-            if !right_to_left.contains_key(&r) {
-                right_to_left.insert(r.clone(), BTreeSet::new());
-            }
-            right_to_left.get_mut(&r).unwrap().insert(l.clone());
+            left_to_right.entry(l).or_insert_with(BTreeSet::new);
+            left_to_right.get_mut(&l).unwrap().insert(r);
+            right_to_left.entry(r).or_insert_with(BTreeSet::new);
+            right_to_left.get_mut(&r).unwrap().insert(l);
         }
         TypeInferenceEdge { constraint, left, right, left_to_right, right_to_left }
     }
@@ -442,8 +425,8 @@ pub mod tests {
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let all_concrete_animals = BTreeSet::from([type_cat.clone(), type_dog.clone()]);
-        let all_concrete_names = BTreeSet::from([type_catname.clone(), type_dogname.clone()]);
+        let all_concrete_animals = BTreeSet::from([type_cat, type_dog]);
+        let all_concrete_names = BTreeSet::from([type_catname, type_dogname]);
 
         {
             // Case 1: $a isa cat, has name $n;
@@ -472,40 +455,34 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
-                    (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name_type.into(), BTreeSet::from([type_name.clone()])),
-                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
-                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (var_name.into(), BTreeSet::from([type_catname])),
+                    (var_animal_type.into(), BTreeSet::from([type_cat])),
+                    (var_name_type.into(), BTreeSet::from([type_name])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![(type_cat.clone(), type_cat.clone())],
+                        vec![(type_cat, type_cat)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![(type_catname.clone(), type_name.clone())],
+                        vec![(type_catname, type_name)],
                     ),
-                    expected_edge(
-                        &constraints[4],
-                        var_animal.into(),
-                        var_name.into(),
-                        vec![(type_cat.clone(), type_catname.clone())],
-                    ),
+                    expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
@@ -545,40 +522,34 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
-                    (var_animal_type.into(), BTreeSet::from([type_animal.clone()])),
-                    (var_name_type.into(), BTreeSet::from([type_catname.clone()])),
-                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal.clone()])),
-                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (var_name.into(), BTreeSet::from([type_catname])),
+                    (var_animal_type.into(), BTreeSet::from([type_animal])),
+                    (var_name_type.into(), BTreeSet::from([type_catname])),
+                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal])),
+                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![(type_cat.clone(), type_animal.clone())],
+                        vec![(type_cat, type_animal)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![(type_catname.clone(), type_catname.clone())],
+                        vec![(type_catname, type_catname)],
                     ),
-                    expected_edge(
-                        &constraints[4],
-                        var_animal.into(),
-                        var_name.into(),
-                        vec![(type_cat.clone(), type_catname.clone())],
-                    ),
+                    expected_edge(&constraints[4], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
@@ -613,8 +584,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap_err();
 
@@ -650,8 +620,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
@@ -660,29 +629,29 @@ pub mod tests {
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), types_a),
                     (var_name.into(), types_n),
-                    (var_animal_type.into(), BTreeSet::from([type_animal.clone()])),
-                    (var_name_type.into(), BTreeSet::from([type_name.clone()])),
-                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal.clone()])),
-                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                    (var_animal_type.into(), BTreeSet::from([type_animal])),
+                    (var_name_type.into(), BTreeSet::from([type_name])),
+                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![(type_cat.clone(), type_animal.clone()), (type_dog.clone(), type_animal.clone())],
+                        vec![(type_cat, type_animal), (type_dog, type_animal)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
+                        vec![(type_catname, type_name), (type_dogname, type_name)],
                     ),
                     expected_edge(
                         &constraints[4],
                         var_animal.into(),
                         var_name.into(),
-                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                        vec![(type_cat, type_catname), (type_dog, type_dogname)],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -741,8 +710,7 @@ pub mod tests {
             &translation_context.variable_registry,
             &type_manager,
             &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            None,
+            &EmptyAnnotatedFunctionSignatures,
         )
         .unwrap();
 
@@ -755,15 +723,15 @@ pub mod tests {
             TypeInferenceGraph {
                 conjunction: b1,
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (b1_var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
-                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (b1_var_animal_type.into(), BTreeSet::from([type_cat])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
                 ]),
                 edges: vec![expected_edge(
                     b1_isa,
                     var_animal.into(),
                     b1_var_animal_type.into(),
-                    vec![(type_cat.clone(), type_cat.clone())],
+                    vec![(type_cat, type_cat)],
                 )],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
@@ -772,15 +740,15 @@ pub mod tests {
             TypeInferenceGraph {
                 conjunction: b2,
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_dog.clone()])),
-                    (b2_var_animal_type.into(), BTreeSet::from([type_dog.clone()])),
-                    (Vertex::Label(LABEL_DOG), BTreeSet::from([type_dog.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_dog])),
+                    (b2_var_animal_type.into(), BTreeSet::from([type_dog])),
+                    (Vertex::Label(LABEL_DOG), BTreeSet::from([type_dog])),
                 ]),
                 edges: vec![expected_edge(
                     b2_isa,
                     var_animal.into(),
                     b2_var_animal_type.into(),
-                    vec![(type_dog.clone(), type_dog.clone())],
+                    vec![(type_dog, type_dog)],
                 )],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
@@ -791,23 +759,23 @@ pub mod tests {
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
-                (var_name_type.into(), BTreeSet::from([type_name.clone()])),
-                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
+                (var_name_type.into(), BTreeSet::from([type_name])),
+                (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
             ]),
             edges: vec![
                 expected_edge(
                     &conjunction.constraints()[1],
                     var_name.into(),
                     var_name_type.into(),
-                    vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
+                    vec![(type_catname, type_name), (type_dogname, type_name)],
                 ),
                 expected_edge(
                     &conjunction.constraints()[2],
                     var_animal.into(),
                     var_name.into(),
-                    vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                    vec![(type_cat, type_catname), (type_dog, type_dogname)],
                 ),
             ],
             nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
@@ -853,22 +821,21 @@ pub mod tests {
             &translation_context.variable_registry,
             &type_manager,
             &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            None,
+            &EmptyAnnotatedFunctionSignatures,
         )
         .unwrap();
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat.clone(), type_dog.clone()])),
-                (var_name.into(), BTreeSet::from([type_catname.clone(), type_dogname.clone()])),
+                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
             ]),
             edges: vec![expected_edge(
                 &constraints[0],
                 var_animal.into(),
                 var_name.into(),
-                vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                vec![(type_cat, type_catname), (type_dog, type_dogname)],
             )],
             nested_disjunctions: Vec::new(),
             nested_negations: Vec::new(),
@@ -942,25 +909,24 @@ pub mod tests {
             &translation_context.variable_registry,
             &type_manager,
             &BTreeMap::new(),
-            &IndexedAnnotatedFunctions::empty(),
-            None,
+            &EmptyAnnotatedFunctionSignatures,
         )
         .unwrap();
 
         let expected_graph = TypeInferenceGraph {
             conjunction,
             vertices: VertexAnnotations::from([
-                (var_has_fear.into(), BTreeSet::from([type_cat.clone()])),
-                (var_is_feared.into(), BTreeSet::from([type_dog.clone()])),
-                (var_fears_type.into(), BTreeSet::from([type_fears.clone()])),
-                (var_fears.into(), BTreeSet::from([type_fears.clone()])),
-                (var_role_has_fear.into(), BTreeSet::from([type_has_fear.clone()])),
-                (var_role_is_feared.into(), BTreeSet::from([type_is_feared.clone()])),
-                (var_role_has_fear_type.into(), BTreeSet::from([type_has_fear.clone()])),
-                (var_role_is_feared_type.into(), BTreeSet::from([type_is_feared.clone()])),
-                (Vertex::Label(LABEL_FEARS), BTreeSet::from([type_fears.clone()])),
-                (Vertex::Label(LABEL_HAS_FEAR), BTreeSet::from([type_has_fear.clone()])),
-                (Vertex::Label(LABEL_IS_FEARED), BTreeSet::from([type_is_feared.clone()])),
+                (var_has_fear.into(), BTreeSet::from([type_cat])),
+                (var_is_feared.into(), BTreeSet::from([type_dog])),
+                (var_fears_type.into(), BTreeSet::from([type_fears])),
+                (var_fears.into(), BTreeSet::from([type_fears])),
+                (var_role_has_fear.into(), BTreeSet::from([type_has_fear])),
+                (var_role_is_feared.into(), BTreeSet::from([type_is_feared])),
+                (var_role_has_fear_type.into(), BTreeSet::from([type_has_fear])),
+                (var_role_is_feared_type.into(), BTreeSet::from([type_is_feared])),
+                (Vertex::Label(LABEL_FEARS), BTreeSet::from([type_fears])),
+                (Vertex::Label(LABEL_HAS_FEAR), BTreeSet::from([type_has_fear])),
+                (Vertex::Label(LABEL_IS_FEARED), BTreeSet::from([type_is_feared])),
             ]),
             edges: vec![
                 // isa
@@ -968,45 +934,45 @@ pub mod tests {
                     &conjunction.constraints()[0],
                     var_fears.into(),
                     var_fears_type.into(),
-                    vec![(type_fears.clone(), type_fears.clone())],
+                    vec![(type_fears, type_fears)],
                 ),
                 // has-fear edge
                 expected_edge(
                     &conjunction.constraints()[2],
                     var_fears.into(),
                     var_role_has_fear.into(),
-                    vec![(type_fears.clone(), type_has_fear.clone())],
+                    vec![(type_fears, type_has_fear)],
                 ),
                 expected_edge(
                     &conjunction.constraints()[2],
                     var_has_fear.into(),
                     var_role_has_fear.into(),
-                    vec![(type_cat.clone(), type_has_fear.clone())],
+                    vec![(type_cat, type_has_fear)],
                 ),
                 // is-feared edge
                 expected_edge(
                     &conjunction.constraints()[3],
                     var_fears.into(),
                     var_role_is_feared.into(),
-                    vec![(type_fears.clone(), type_is_feared.clone())],
+                    vec![(type_fears, type_is_feared)],
                 ),
                 expected_edge(
                     &conjunction.constraints()[3],
                     var_is_feared.into(),
                     var_role_is_feared.into(),
-                    vec![(type_dog.clone(), type_is_feared.clone())],
+                    vec![(type_dog, type_is_feared)],
                 ),
                 expected_edge(
                     &conjunction.constraints()[4],
                     var_role_has_fear.into(),
                     var_role_has_fear_type.into(),
-                    vec![(type_has_fear.clone(), type_has_fear.clone())],
+                    vec![(type_has_fear, type_has_fear)],
                 ),
                 expected_edge(
                     &conjunction.constraints()[6],
                     var_role_is_feared.into(),
                     var_role_is_feared_type.into(),
-                    vec![(type_is_feared.clone(), type_is_feared.clone())],
+                    vec![(type_is_feared, type_is_feared)],
                 ),
             ],
             nested_disjunctions: Vec::new(),
@@ -1026,8 +992,8 @@ pub mod tests {
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let all_concrete_animals = BTreeSet::from([type_cat.clone(), type_dog.clone()]);
-        let all_concrete_names = BTreeSet::from([type_catname.clone(), type_dogname.clone()]);
+        let all_concrete_animals = BTreeSet::from([type_cat, type_dog]);
+        let all_concrete_names = BTreeSet::from([type_catname, type_dogname]);
 
         {
             // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
@@ -1056,38 +1022,37 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
-                    (var_animal_type.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_owned_type.into(), BTreeSet::from([type_catname.clone()])),
-                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (var_name.into(), BTreeSet::from([type_catname])),
+                    (var_animal_type.into(), BTreeSet::from([type_cat])),
+                    (var_owned_type.into(), BTreeSet::from([type_catname])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![(type_cat.clone(), type_cat.clone())],
+                        vec![(type_cat, type_cat)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_name.into(),
                         var_owned_type.into(),
-                        vec![(type_catname.clone(), type_catname.clone())],
+                        vec![(type_catname, type_catname)],
                     ),
                     expected_edge(
                         &constraints[3],
                         var_animal_type.into(),
                         var_owned_type.into(),
-                        vec![(type_cat.clone(), type_catname.clone())],
+                        vec![(type_cat, type_catname)],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1126,38 +1091,37 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
-                    (var_owner_type.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name_type.into(), BTreeSet::from([type_catname.clone()])),
-                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (var_name.into(), BTreeSet::from([type_catname])),
+                    (var_owner_type.into(), BTreeSet::from([type_cat])),
+                    (var_name_type.into(), BTreeSet::from([type_catname])),
+                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         var_owner_type.into(),
-                        vec![(type_cat.clone(), type_cat.clone())],
+                        vec![(type_cat, type_cat)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![(type_catname.clone(), type_catname.clone())],
+                        vec![(type_catname, type_catname)],
                     ),
                     expected_edge(
                         &constraints[3],
                         var_owner_type.into(),
                         var_name_type.into(),
-                        vec![(type_cat.clone(), type_catname.clone())],
+                        vec![(type_cat, type_catname)],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1192,8 +1156,7 @@ pub mod tests {
             let mut graph = TypeGraphSeedingContext::new(
                 &snapshot,
                 &type_manager,
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
                 &translation_context.variable_registry,
             )
             .create_graph(block.block_context(), &BTreeMap::new(), block.conjunction())
@@ -1207,8 +1170,8 @@ pub mod tests {
                     (var_name.into(), BTreeSet::new()),
                     (var_animal_type.into(), BTreeSet::new()),
                     (var_name_type.into(), BTreeSet::new()),
-                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
-                    (Vertex::Label(LABEL_DOGNAME), BTreeSet::from([type_dogname.clone()])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
+                    (Vertex::Label(LABEL_DOGNAME), BTreeSet::from([type_dogname])),
                 ]),
                 edges: vec![
                     expected_edge(&constraints[0], var_animal.into(), var_animal_type.into(), Vec::new()),
@@ -1249,8 +1212,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
@@ -1267,22 +1229,19 @@ pub mod tests {
                         &constraints[0],
                         var_animal.into(),
                         var_animal_type.into(),
-                        vec![(type_cat.clone(), type_cat.clone()), (type_dog.clone(), type_dog.clone())],
+                        vec![(type_cat, type_cat), (type_dog, type_dog)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         var_name_type.into(),
-                        vec![
-                            (type_catname.clone(), type_catname.clone()),
-                            (type_dogname.clone(), type_dogname.clone()),
-                        ],
+                        vec![(type_catname, type_catname), (type_dogname, type_dogname)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_animal_type.into(),
                         var_name_type.into(),
-                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                        vec![(type_cat, type_catname), (type_dog, type_dogname)],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),
@@ -1303,8 +1262,8 @@ pub mod tests {
         let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let all_concrete_animals = BTreeSet::from([type_cat.clone(), type_dog.clone()]);
-        let all_concrete_names = BTreeSet::from([type_catname.clone(), type_dogname.clone()]);
+        let all_concrete_animals = BTreeSet::from([type_cat, type_dog]);
+        let all_concrete_names = BTreeSet::from([type_catname, type_dogname]);
 
         {
             // Case 1: $a isa cat, has name $n;
@@ -1328,38 +1287,32 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
-                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat.clone()])),
-                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (var_name.into(), BTreeSet::from([type_catname])),
+                    (Vertex::Label(LABEL_CAT), BTreeSet::from([type_cat])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         Vertex::Label(LABEL_CAT),
-                        vec![(type_cat.clone(), type_cat.clone())],
+                        vec![(type_cat, type_cat)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         Vertex::Label(LABEL_NAME),
-                        vec![(type_catname.clone(), type_name.clone())],
+                        vec![(type_catname, type_name)],
                     ),
-                    expected_edge(
-                        &constraints[2],
-                        var_animal.into(),
-                        var_name.into(),
-                        vec![(type_cat.clone(), type_catname.clone())],
-                    ),
+                    expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
@@ -1394,38 +1347,32 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
             let expected_graph = TypeInferenceGraph {
                 conjunction: block.conjunction(),
                 vertices: VertexAnnotations::from([
-                    (var_animal.into(), BTreeSet::from([type_cat.clone()])),
-                    (var_name.into(), BTreeSet::from([type_catname.clone()])),
-                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal.clone()])),
-                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname.clone()])),
+                    (var_animal.into(), BTreeSet::from([type_cat])),
+                    (var_name.into(), BTreeSet::from([type_catname])),
+                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal])),
+                    (Vertex::Label(LABEL_CATNAME), BTreeSet::from([type_catname])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         Vertex::Label(LABEL_ANIMAL),
-                        vec![(type_cat.clone(), type_animal.clone())],
+                        vec![(type_cat, type_animal)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         Vertex::Label(LABEL_CATNAME),
-                        vec![(type_catname.clone(), type_catname.clone())],
+                        vec![(type_catname, type_catname)],
                     ),
-                    expected_edge(
-                        &constraints[2],
-                        var_animal.into(),
-                        var_name.into(),
-                        vec![(type_cat.clone(), type_catname.clone())],
-                    ),
+                    expected_edge(&constraints[2], var_animal.into(), var_name.into(), vec![(type_cat, type_catname)]),
                 ],
                 nested_disjunctions: Vec::new(),
                 nested_negations: Vec::new(),
@@ -1455,8 +1402,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap_err();
             assert_matches!(err, TypeInferenceError::DetectedUnsatisfiablePattern {});
@@ -1486,8 +1432,7 @@ pub mod tests {
                 &translation_context.variable_registry,
                 &type_manager,
                 &BTreeMap::new(),
-                &IndexedAnnotatedFunctions::empty(),
-                None,
+                &EmptyAnnotatedFunctionSignatures,
             )
             .unwrap();
 
@@ -1496,27 +1441,27 @@ pub mod tests {
                 vertices: VertexAnnotations::from([
                     (var_animal.into(), types_a),
                     (var_name.into(), types_n),
-                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal.clone()])),
-                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name.clone()])),
+                    (Vertex::Label(LABEL_ANIMAL), BTreeSet::from([type_animal])),
+                    (Vertex::Label(LABEL_NAME), BTreeSet::from([type_name])),
                 ]),
                 edges: vec![
                     expected_edge(
                         &constraints[0],
                         var_animal.into(),
                         Vertex::Label(LABEL_ANIMAL),
-                        vec![(type_cat.clone(), type_animal.clone()), (type_dog.clone(), type_animal.clone())],
+                        vec![(type_cat, type_animal), (type_dog, type_animal)],
                     ),
                     expected_edge(
                         &constraints[1],
                         var_name.into(),
                         Vertex::Label(LABEL_NAME),
-                        vec![(type_catname.clone(), type_name.clone()), (type_dogname.clone(), type_name.clone())],
+                        vec![(type_catname, type_name), (type_dogname, type_name)],
                     ),
                     expected_edge(
                         &constraints[2],
                         var_animal.into(),
                         var_name.into(),
-                        vec![(type_cat.clone(), type_catname.clone()), (type_dog.clone(), type_dogname.clone())],
+                        vec![(type_cat, type_catname), (type_dog, type_dogname)],
                     ),
                 ],
                 nested_disjunctions: Vec::new(),

@@ -11,7 +11,6 @@ use concept::{
     thing::{attribute::Attribute, ThingAPI},
     type_::TypeAPI,
 };
-use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 
 use crate::{
@@ -25,7 +24,7 @@ pub fn attribute_put_instance_with_value_impl(
     context: &mut Context,
     type_label: params::Label,
     value: params::Value,
-) -> Result<Attribute<'static>, Box<ConceptWriteError>> {
+) -> Result<Attribute, Box<ConceptWriteError>> {
     with_write_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
@@ -116,7 +115,7 @@ pub fn get_attribute_by_value(
     context: &mut Context,
     type_label: params::Label,
     value: params::Value,
-) -> Result<Option<Attribute<'static>>, Box<ConceptReadError>> {
+) -> Result<Option<Attribute>, Box<ConceptReadError>> {
     with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
@@ -192,13 +191,13 @@ async fn attribute_instances_contain(
     var: params::Var,
 ) {
     let attribute = context.attributes.get(&var.name).expect("no variable {} in context.").as_ref().unwrap();
-    let actuals: Vec<Attribute<'static>> = with_read_tx!(context, |tx| {
+    let actuals: Vec<Attribute> = with_read_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         tx.thing_manager
             .get_attributes_in(tx.snapshot.as_ref(), attribute_type)
             .unwrap()
-            .map_static(|result| result.unwrap().clone().into_owned())
+            .map(|result| result.unwrap())
             .collect()
     });
     containment.check(std::slice::from_ref(attribute), &actuals);

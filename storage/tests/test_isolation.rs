@@ -6,14 +6,14 @@
 
 use std::{path::Path, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use lending_iterator::LendingIterator;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::IsolationConflict,
-    key_range::{KeyRange, RangeStart},
+    key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
     MVCCStorage, StorageCommitError,
@@ -67,14 +67,14 @@ fn commits_isolated() {
     assert!(get.is_none());
     let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
-    let range = KeyRange::new_within(RangeStart::Inclusive(prefix), false);
-    let retrieved_count = snapshot_2.iterate_range(range.clone()).count();
+    let range = KeyRange::new_within(prefix, false);
+    let retrieved_count = snapshot_2.iterate_range(&range).count();
     assert_eq!(retrieved_count, 2);
 
     let snapshot_3 = storage.open_snapshot_read();
     let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_3.get(StorageKeyReference::from(&key_3)).unwrap();
     assert!(matches!(get, Some(_value_3)));
-    let retrieved_count = snapshot_3.iterate_range(range.clone()).count();
+    let retrieved_count = snapshot_3.iterate_range(&range).count();
     assert_eq!(retrieved_count, 3);
 }
 
@@ -92,7 +92,7 @@ fn g0_update_conflicts_fail() {
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.clone().open_snapshot_write();
 
-    let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, ByteReference::new(&KEY_1)));
+    let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));
 
     snapshot_1.get_required(key_1.clone()).unwrap();
 
@@ -364,7 +364,7 @@ fn g2_predicate_anti_dependency_cycles() {
     let key_4 = StorageKeyArray::new(Keyspace, ByteArray::copy(&key_4_bytes));
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x0]));
-    let prefix = KeyRange::new_within(RangeStart::Inclusive(StorageKey::Array(key_prefix)), false);
+    let prefix = KeyRange::new_within(StorageKey::Array(key_prefix), false);
     let value_31 = ByteArray::inline([30], 1);
     let value_42 = ByteArray::inline([42], 1);
     let storage_path = create_tmp_dir();
@@ -373,14 +373,14 @@ fn g2_predicate_anti_dependency_cycles() {
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.open_snapshot_write();
 
-    let it_1 = snapshot_1.iterate_range(prefix.clone());
+    let it_1 = snapshot_1.iterate_range(&prefix);
     let mut sum_1 = 0;
     for v in it_1.collect_cloned_vec(|_, v| ByteArray::<BUFFER_VALUE_INLINE>::from(v)).unwrap().iter() {
         sum_1 += v[0] as i64;
     }
     assert!(sum_1 == 1);
 
-    let it_2 = snapshot_2.iterate_range(prefix.clone());
+    let it_2 = snapshot_2.iterate_range(&prefix);
     let mut sum_2 = 0;
     for v in it_2.collect_cloned_vec(|_, v| ByteArray::<BUFFER_VALUE_INLINE>::from(v)).unwrap().iter() {
         sum_2 += v[0] as i64;

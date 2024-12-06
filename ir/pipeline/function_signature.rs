@@ -18,7 +18,7 @@ use crate::{
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum FunctionID {
-    Schema(DefinitionKey<'static>),
+    Schema(DefinitionKey),
     Preamble(usize),
 }
 
@@ -46,7 +46,7 @@ impl FunctionSignature {
 }
 
 impl FunctionID {
-    pub fn as_definition_key(&self) -> Option<DefinitionKey<'static>> {
+    pub fn as_definition_key(&self) -> Option<DefinitionKey> {
         if let FunctionID::Schema(definition_key) = self {
             Some(definition_key.clone())
         } else {
@@ -102,8 +102,12 @@ impl fmt::Display for FunctionID {
     }
 }
 
-pub trait FunctionIDAPI: fmt::Debug + Clone + Into<FunctionID> {}
-impl FunctionIDAPI for DefinitionKey<'static> {}
+pub trait FunctionIDAPI:
+    fmt::Debug + Clone + TryFrom<FunctionID> + Into<FunctionID> + std::hash::Hash + Eq + Ord
+{
+}
+
+impl FunctionIDAPI for DefinitionKey {}
 impl FunctionIDAPI for usize {}
 
 impl From<usize> for FunctionID {
@@ -112,9 +116,30 @@ impl From<usize> for FunctionID {
     }
 }
 
-impl From<DefinitionKey<'static>> for FunctionID {
-    fn from(val: DefinitionKey<'static>) -> Self {
+impl From<DefinitionKey> for FunctionID {
+    fn from(val: DefinitionKey) -> Self {
         FunctionID::Schema(val)
+    }
+}
+
+impl TryFrom<FunctionID> for usize {
+    type Error = ();
+    fn try_from(value: FunctionID) -> Result<Self, Self::Error> {
+        match value {
+            FunctionID::Schema(_) => Err(()),
+            FunctionID::Preamble(id) => Ok(id),
+        }
+    }
+}
+
+impl TryFrom<FunctionID> for DefinitionKey {
+    type Error = ();
+
+    fn try_from(value: FunctionID) -> Result<DefinitionKey, Self::Error> {
+        match value {
+            FunctionID::Schema(id) => Ok(id),
+            FunctionID::Preamble(_) => Err(()),
+        }
     }
 }
 
@@ -132,7 +157,7 @@ impl HashMapFunctionSignatureIndex {
     pub fn build<'func>(buffered_typeql: impl Iterator<Item = (FunctionID, &'func typeql::Function)>) -> Self {
         let index = buffered_typeql
             .map(|(function_id, function)| {
-                (function.signature.ident.as_str().to_owned(), build_signature(function_id, function))
+                (function.signature.ident.as_str_unchecked().to_owned(), build_signature(function_id, function))
             })
             .collect();
         Self { index }

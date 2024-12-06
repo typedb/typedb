@@ -425,20 +425,35 @@ impl TransactionService {
 
         let transaction = match transaction_type {
             typedb_protocol::transaction::Type::Read => {
-                Transaction::Read(TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                })?)
+                let transaction = spawn_blocking(move || {
+                    TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                })
+                .await
+                .unwrap()?;
+                Transaction::Read(transaction)
             }
             typedb_protocol::transaction::Type::Write => {
-                Transaction::Write(TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                })?)
+                let transaction = spawn_blocking(move || {
+                    TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                })
+                .await
+                .unwrap()?;
+                Transaction::Write(transaction)
             }
-            typedb_protocol::transaction::Type::Schema => Transaction::Schema(
-                TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
-                    TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
-                })?,
-            ),
+            typedb_protocol::transaction::Type::Schema => {
+                let transaction = spawn_blocking(move || {
+                    TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                })
+                .await
+                .unwrap()?;
+                Transaction::Schema(transaction)
+            }
         };
         self.transaction = Some(transaction);
         self.is_open = true;
@@ -720,12 +735,19 @@ impl TransactionService {
                 transaction_options,
             } = schema_transaction;
             let mut snapshot = Arc::into_inner(snapshot).unwrap();
-            let (snapshot, type_manager, thing_manager, query_manager, result) = spawn_blocking(move || {
-                let result = query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, query);
-                (snapshot, type_manager, thing_manager, query_manager, result)
-            })
-            .await
-            .unwrap();
+            let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) =
+                spawn_blocking(move || {
+                    let result = query_manager.execute_schema(
+                        &mut snapshot,
+                        &type_manager,
+                        &thing_manager,
+                        &function_manager,
+                        query,
+                    );
+                    (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
+                })
+                .await
+                .unwrap();
 
             let transaction = TransactionSchema::from(
                 snapshot,

@@ -6,14 +6,14 @@
 
 use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 
-use bytes::{byte_array::ByteArray, byte_reference::ByteReference};
+use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 
 use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_range::KeyRange,
-    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{iterator::KeyspaceRangeIterator, KeyspaceError, KeyspaceId},
+    key_value::{StorageKey, StorageKeyReference},
+    keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
 
@@ -24,7 +24,7 @@ pub(crate) struct MVCCRangeIterator {
     open_sequence_number: SequenceNumber,
 
     last_visible_key: Option<ByteArray<MVCC_KEY_INLINE_SIZE>>,
-    item: Option<Result<(StorageKeyReference<'static>, ByteReference<'static>), MVCCReadError>>,
+    item: Option<Result<(StorageKeyReference<'static>, &'static [u8]), MVCCReadError>>,
 }
 
 impl MVCCRangeIterator {
@@ -34,11 +34,13 @@ impl MVCCRangeIterator {
     //
     pub(crate) fn new<D, const PS: usize>(
         storage: &MVCCStorage<D>,
-        range: KeyRange<StorageKey<'_, PS>>,
+        iterpool: &IteratorPool,
+        range: &KeyRange<StorageKey<'_, PS>>,
         open_sequence_number: SequenceNumber,
     ) -> Self {
         let keyspace = storage.get_keyspace(range.start().get_value().keyspace_id());
-        let iterator = keyspace.iterate_range(range.map(|key| key.into_bytes(), |fixed_width| fixed_width));
+        let mapped_range = range.map(|key| key.as_bytes(), |fixed_width| fixed_width);
+        let iterator = keyspace.iterate_range(iterpool, &mapped_range);
         MVCCRangeIterator {
             storage_name: storage.name(),
             keyspace_id: keyspace.id(),
@@ -49,7 +51,7 @@ impl MVCCRangeIterator {
         }
     }
 
-    pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, ByteReference<'_>), MVCCReadError>> {
+    pub(crate) fn peek(&mut self) -> Option<&Result<(StorageKeyReference<'_>, &[u8]), MVCCReadError>> {
         type Item<'a> = <MVCCRangeIterator as LendingIterator>::Item<'a>;
         if self.item.is_none() {
             self.item = unsafe { std::mem::transmute::<Option<Item<'_>>, Option<Item<'static>>>(self.next()) };
@@ -75,23 +77,10 @@ impl MVCCRangeIterator {
             }
         }
     }
-
-    pub(crate) fn collect_cloned<const INLINE_KEY: usize, const INLINE_VALUE: usize>(
-        mut self,
-    ) -> Result<Vec<(StorageKeyArray<INLINE_KEY>, ByteArray<INLINE_VALUE>)>, MVCCReadError> {
-        let mut vec = Vec::new();
-        loop {
-            match self.next().transpose()? {
-                None => break,
-                Some((key, value)) => vec.push((StorageKeyArray::from(key), ByteArray::from(value))),
-            }
-        }
-        Ok(vec)
-    }
 }
 
 impl LendingIterator for MVCCRangeIterator {
-    type Item<'a> = Result<(StorageKeyReference<'a>, ByteReference<'a>), MVCCReadError>;
+    type Item<'a> = Result<(StorageKeyReference<'a>, &'a [u8]), MVCCReadError>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if let Some(item) = self.item.take() {
@@ -109,7 +98,7 @@ impl LendingIterator for MVCCRangeIterator {
             };
             Some(Ok((
                 StorageKeyReference::new_raw(self.keyspace_id, MVCCKey::wrap_slice(key).into_key().unwrap_reference()),
-                ByteReference::new(value),
+                value,
             )))
         }
     }

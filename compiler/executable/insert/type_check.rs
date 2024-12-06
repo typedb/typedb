@@ -96,7 +96,7 @@ fn validate_has_insertable(
                     .map(|valid_right_types| valid_right_types.contains(right_type))
                     .unwrap_or(false)
             })
-            .map(|right_type| (left_type.clone(), right_type.clone()))
+            .map(|right_type| (*left_type, *right_type))
     });
     if let Some((left_type, right_type)) = invalid_iter.find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {
@@ -142,7 +142,7 @@ fn validate_links_insertable(
                     .map(|valid_role_types| valid_role_types.contains(role_type))
                     .unwrap_or(false)
             })
-            .map(|role_type| (relation_type.clone(), role_type.clone()))
+            .map(|role_type| (*relation_type, *role_type))
     });
     let invalid_player_role_iter = input_player_types.iter().flat_map(|player_type| {
         input_role_types
@@ -154,7 +154,7 @@ fn validate_links_insertable(
                     .map(|valid_role_types| valid_role_types.contains(role_type))
                     .unwrap_or(false)
             })
-            .map(|role_type| (player_type.clone(), role_type.clone()))
+            .map(|role_type| (*player_type, *role_type))
     });
     if let Some((left_type, right_type)) = invalid_relation_role_iter.chain(invalid_player_role_iter).find(|_| true) {
         Err(TypeInferenceError::IllegalInsertTypes {

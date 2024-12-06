@@ -9,7 +9,7 @@ use crate::{
     value::value_type::ValueType,
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BooleanBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }
@@ -35,6 +35,7 @@ impl BooleanBytes {
 }
 
 impl InlineEncodableAttributeID for BooleanBytes {
+    const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
     const ENCODED_LENGTH: usize = ValueEncodingLength::Short.length();
     const VALUE_TYPE: ValueType = ValueType::Boolean;
 

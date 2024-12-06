@@ -6,7 +6,7 @@
 
 #![deny(unused_must_use)]
 
-use std::{borrow::Cow, collections::HashMap};
+use std::{borrow::Cow, collections::HashMap, ops::Bound};
 
 use concept::{
     error::ConceptReadError,
@@ -20,6 +20,7 @@ use concept::{
     type_::{
         annotation::{AnnotationCardinality, AnnotationDistinct, AnnotationIndependent, AnnotationUnique},
         attribute_type::AttributeTypeAnnotation,
+        object_type::ObjectType,
         owns::OwnsAnnotation,
         relates::RelatesAnnotation,
         type_manager::TypeManager,
@@ -36,7 +37,7 @@ use encoding::{
         value_type::{ValueType, ValueTypeCategory},
     },
 };
-use lending_iterator::LendingIterator;
+use itertools::Itertools;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, WritableSnapshot, WriteSnapshot},
@@ -56,10 +57,10 @@ fn thing_create_iterate() {
         let person_label = Label::build("person");
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        let _person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let _person_2 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let _person_3 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let _person_4 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+        let _person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let _person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let _person_3 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let _person_4 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
@@ -109,12 +110,11 @@ fn attribute_create() {
             )
             .unwrap();
 
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
         assert_eq!(age_1.get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
 
-        let name_1 = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_value)))
-            .unwrap();
+        let name_1 =
+            thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name_value))).unwrap();
         assert_eq!(name_1.get_value(&snapshot, &thing_manager).unwrap(), Value::String(Cow::Borrowed(name_value)));
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
@@ -129,11 +129,7 @@ fn attribute_create() {
         assert_eq!(attributes_count, 2);
 
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
-        let mut ages: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, age_type)
-            .unwrap()
-            .map_static(|result| result.unwrap().into_owned())
-            .collect();
+        let mut ages: Vec<_> = thing_manager.get_attributes_in(&snapshot, age_type).unwrap().try_collect().unwrap();
         assert_eq!(ages.len(), 1);
         assert_eq!(ages.first_mut().unwrap().get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
     }
@@ -177,21 +173,17 @@ fn has() {
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-            .unwrap();
-        person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-            .unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
 
-        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
         let name_1 = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned(String::from(name_value))))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(String::from(name_value))))
             .unwrap();
 
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, age_1).unwrap();
-        person_1.set_has_unordered(&mut snapshot, &thing_manager, name_1).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_1).unwrap();
 
         let retrieved_attributes_count = person_1.get_has_unordered(&snapshot, &thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
@@ -207,11 +199,211 @@ fn has() {
         let attributes_count = thing_manager.get_attributes(&snapshot).unwrap().count();
         assert_eq!(attributes_count, 2);
 
-        let people: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let people: Vec<Entity> = thing_manager.get_entities(&snapshot).try_collect().unwrap();
         let person_1 = people.first().unwrap();
         let retrieved_attributes_count = person_1.get_has_unordered(&snapshot, &thing_manager).count();
         assert_eq!(retrieved_attributes_count, 2);
+    }
+}
+
+#[test]
+fn get_has_reverse_in_range() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+
+    let age_label = Label::build("age");
+    let name_label = Label::build("name");
+    let person_label = Label::build("person");
+    let company_label = Label::build("company");
+
+    let age_value_10: i64 = 10;
+    let age_value_11: i64 = 11;
+    let inlineable_name: &str = "TypeDB";
+    let uninlinable_name: &str = "TypeDB Incorporated In America";
+
+    let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
+    {
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
+            .unwrap();
+        let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
+        name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+        name_type
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                AttributeTypeAnnotation::Independent(AnnotationIndependent),
+            )
+            .unwrap();
+
+        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
+        let person_owns_age = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+            .unwrap();
+        person_owns_age
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+            )
+            .unwrap();
+        let person_owns_name = person_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
+        person_owns_name
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+            )
+            .unwrap();
+
+        let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
+        let company_owns_age = company_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
+            .unwrap();
+        company_owns_age
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+            )
+            .unwrap();
+        let company_owns_name = company_type
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .unwrap();
+        company_owns_name
+            .set_annotation(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+            )
+            .unwrap();
+
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
+        let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
+        let age_10 =
+            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value_10)).unwrap();
+        let age_11 =
+            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value_11)).unwrap();
+        let name_inline = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(inlineable_name)))
+            .unwrap();
+        let name_hashed = thing_manager
+            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(uninlinable_name)))
+            .unwrap();
+
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_inline).unwrap();
+        person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_hashed).unwrap();
+
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &name_inline).unwrap();
+        company_1.set_has_unordered(&mut snapshot, &thing_manager, &name_hashed).unwrap();
+        thing_manager.finalise(&mut snapshot).unwrap();
+    }
+    snapshot.commit().unwrap();
+
+    {
+        let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
+        let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+        let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
+        let company_type = type_manager.get_entity_type(&snapshot, &company_label).unwrap().unwrap();
+        let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
+        let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
+
+        let age_owners_start_value_inclusive = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Included(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+            )
+            .unwrap();
+        assert_eq!(age_owners_start_value_inclusive.count(), 4);
+
+        let age_owners_start_value_exclusive = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Excluded(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+            )
+            .unwrap();
+        assert_eq!(age_owners_start_value_exclusive.count(), 2);
+
+        let age_owners_start_value_inclusive_end_value_exclusive = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Included(Value::Long(age_value_10)), Bound::Excluded(Value::Long(age_value_11))),
+                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+            )
+            .unwrap();
+        assert_eq!(age_owners_start_value_inclusive_end_value_exclusive.count(), 2);
+
+        let age_owners_start_value_excluded_end_value_exclusive = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Excluded(Value::Long(age_value_10)), Bound::Excluded(Value::Long(age_value_11))),
+                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+            )
+            .unwrap();
+        assert_eq!(age_owners_start_value_excluded_end_value_exclusive.count(), 0);
+
+        let age_owners_start_value_included_start_type_excluded = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Included(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Excluded(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+            )
+            .unwrap();
+        // should skip age10-person, and return age10-company + age11-person + age11-company
+        assert_eq!(age_owners_start_value_included_start_type_excluded.count(), 3);
+
+        let age_owners_start_value_excluded_start_type_excluded = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Excluded(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Excluded(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+            )
+            .unwrap();
+        // should skip age10-person, age10-company, and the impl should be able to work out the next prefix is age(10+1)-(person+1), and return only age11-company
+        assert_eq!(age_owners_start_value_excluded_start_type_excluded.count(), 1);
+
+        let age_owners_end_value_included_end_type_excluded = thing_manager
+            .get_has_reverse_in_range(
+                &snapshot,
+                age_type.clone(),
+                &(Bound::Unbounded, Bound::Included(Value::Long(age_value_11))),
+                &(
+                    Bound::Excluded(ObjectType::Entity(person_type.clone())),
+                    Bound::Excluded(ObjectType::Entity(company_type.clone())),
+                ),
+            )
+            .unwrap();
+        // should construct open start age* (making Excluded person type irrelevant), and end before age11-company, returning only age10-person + age10-company + age11-person
+        assert_eq!(age_owners_end_value_included_end_type_excluded.count(), 3);
     }
 }
 
@@ -237,32 +429,30 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Ordered)
-            .unwrap();
+        let owns_age =
+            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Ordered).unwrap();
         owns_age
             .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
             .unwrap();
 
-        let person_name = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Ordered)
-            .unwrap();
+        let person_name =
+            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Ordered).unwrap();
         person_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
 
-        let alice = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let bob = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let age = thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value)).unwrap();
+        let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let bob = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
         let name_alice = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(name_alice_value)))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name_alice_value)))
             .unwrap();
         let name_bob = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Owned(String::from(name_bob_value))))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(String::from(name_bob_value))))
             .unwrap();
 
-        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type.clone(), vec![age.as_reference()]).unwrap();
-        alice.set_has_unordered(&mut snapshot, &thing_manager, name_alice).unwrap();
-        bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.as_reference()]).unwrap();
-        bob.set_has_unordered(&mut snapshot, &thing_manager, name_bob).unwrap();
+        alice.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age.clone()]).unwrap();
+        alice.set_has_unordered(&mut snapshot, &thing_manager, &name_alice).unwrap();
+        bob.set_has_ordered(&mut snapshot, &thing_manager, age_type, vec![age]).unwrap();
+        bob.set_has_unordered(&mut snapshot, &thing_manager, &name_bob).unwrap();
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
     }
@@ -278,20 +468,21 @@ fn attribute_cleanup_on_concurrent_detach() {
         let name_type = type_manager.get_attribute_type(&snapshot_1, &name_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot_1, &age_label).unwrap().unwrap();
 
-        let entities: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot_1).map_static(|result| result.unwrap().into_owned()).collect();
-        let bob = entities
-            .iter()
+        let bob = thing_manager
+            .get_entities(&snapshot_1)
             .find(|entity| {
                 entity
+                    .as_ref()
+                    .unwrap()
                     .has_attribute_with_value(
                         &snapshot_1,
                         &thing_manager,
-                        name_type.clone(),
+                        name_type,
                         Value::String(Cow::Borrowed(name_bob_value)),
                     )
                     .unwrap()
             })
+            .unwrap()
             .unwrap();
 
         bob.unset_has_ordered(&mut snapshot_1, &thing_manager, age_type).unwrap();
@@ -306,27 +497,24 @@ fn attribute_cleanup_on_concurrent_detach() {
         let name_type = type_manager.get_attribute_type(&snapshot_2, &name_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot_2, &age_label).unwrap().unwrap();
 
-        let entities: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot_2).map_static(|result| result.unwrap().into_owned()).collect();
-        let alice = entities
-            .iter()
+        let alice = thing_manager
+            .get_entities(&snapshot_2)
             .find(|entity| {
                 entity
+                    .as_ref()
+                    .unwrap()
                     .has_attribute_with_value(
                         &snapshot_2,
                         &thing_manager,
-                        name_type.clone(),
+                        name_type,
                         Value::String(Cow::Borrowed(name_alice_value)),
                     )
                     .unwrap()
             })
+            .unwrap()
             .unwrap();
 
-        let mut ages: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot_2, age_type.clone())
-            .unwrap()
-            .map_static(|result| result.unwrap().into_owned())
-            .collect();
+        let mut ages: Vec<_> = thing_manager.get_attributes_in(&snapshot_2, age_type).unwrap().try_collect().unwrap();
         let age_position = ages
             .iter()
             .position(|attr| attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_long() == age_value)
@@ -415,32 +603,22 @@ fn role_player_distinct() {
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type.clone()).unwrap();
-        company_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type.clone()).unwrap();
+        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type).unwrap();
+        company_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type).unwrap();
 
-        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
-        let company_2 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
-        let company_3 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let company_1 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
+        let company_2 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
+        let company_3 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
 
-        let employment_1 = thing_manager.create_relation(&mut snapshot, employment_type.clone()).unwrap();
-        employment_1
-            .add_player(&mut snapshot, &thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()))
-            .unwrap();
-        employment_1
-            .add_player(&mut snapshot, &thing_manager, employer_type.clone(), Object::Entity(company_1.as_reference()))
-            .unwrap();
+        let employment_1 = thing_manager.create_relation(&mut snapshot, employment_type).unwrap();
+        employment_1.add_player(&mut snapshot, &thing_manager, employee_type, Object::Entity(person_1)).unwrap();
+        employment_1.add_player(&mut snapshot, &thing_manager, employer_type, Object::Entity(company_1)).unwrap();
 
-        let employment_2 = thing_manager.create_relation(&mut snapshot, employment_type.clone()).unwrap();
-        employment_2
-            .add_player(&mut snapshot, &thing_manager, employee_type.clone(), Object::Entity(person_1.as_reference()))
-            .unwrap();
-        employment_2
-            .add_player(&mut snapshot, &thing_manager, employer_type.clone(), Object::Entity(company_2.as_reference()))
-            .unwrap();
-        employment_2
-            .add_player(&mut snapshot, &thing_manager, employer_type.clone(), Object::Entity(company_3.as_reference()))
-            .unwrap();
+        let employment_2 = thing_manager.create_relation(&mut snapshot, employment_type).unwrap();
+        employment_2.add_player(&mut snapshot, &thing_manager, employee_type, Object::Entity(person_1)).unwrap();
+        employment_2.add_player(&mut snapshot, &thing_manager, employer_type, Object::Entity(company_2)).unwrap();
+        employment_2.add_player(&mut snapshot, &thing_manager, employer_type, Object::Entity(company_3)).unwrap();
 
         assert_eq!(employment_1.get_players(&snapshot, &thing_manager).count(), 2);
         assert_eq!(employment_2.get_players(&snapshot, &thing_manager).count(), 3);
@@ -460,11 +638,9 @@ fn role_player_distinct() {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-        let entities: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 4);
-        let relations: Vec<Relation<'static>> =
-            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 2);
 
         let players_0 = relations[0].get_players(&snapshot, &thing_manager).count();
@@ -522,72 +698,60 @@ fn role_player_duplicates_unordered() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
 
-        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
-        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
-            .unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
-            .unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
-            .unwrap();
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1)).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
 
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 2);
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 1);
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 1);
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
 
@@ -598,16 +762,13 @@ fn role_player_duplicates_unordered() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let entities: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation<'static>> =
-            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 2);
 
         let group_1 = entities
@@ -622,39 +783,35 @@ fn role_player_duplicates_unordered() {
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 1);
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 1);
     }
@@ -696,62 +853,51 @@ fn role_player_duplicates_ordered_default_card() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
 
-        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
-        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
-            .unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
-            .unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
-            .unwrap();
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1)).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
 
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(
             resource_1_indexed_count, 0,
@@ -760,11 +906,10 @@ fn role_player_duplicates_ordered_default_card() {
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
 
@@ -775,16 +920,13 @@ fn role_player_duplicates_ordered_default_card() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let entities: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation<'static>> =
-            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities
@@ -799,39 +941,35 @@ fn role_player_duplicates_ordered_default_card() {
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(
             resource_1_indexed_count, 0,
@@ -883,72 +1021,60 @@ fn role_player_duplicates_ordered_small_card() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type.clone()).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type.clone()).unwrap();
+        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
+        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
 
-        let group_1 = thing_manager.create_entity(&mut snapshot, group_type.clone()).unwrap();
-        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type.clone()).unwrap();
+        let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
+        let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
 
-        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type.clone()).unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, owner_type.clone(), Object::Entity(group_1.as_reference()))
-            .unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
-            .unwrap();
-        collection_1
-            .add_player(&mut snapshot, &thing_manager, entry_type.clone(), Object::Entity(resource_1.as_reference()))
-            .unwrap();
+        let collection_1 = thing_manager.create_relation(&mut snapshot, collection_type).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, owner_type, Object::Entity(group_1)).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
+        collection_1.add_player(&mut snapshot, &thing_manager, entry_type, Object::Entity(resource_1)).unwrap();
 
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
 
@@ -959,16 +1085,13 @@ fn role_player_duplicates_ordered_small_card() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-        let entities: Vec<Entity<'static>> =
-            thing_manager.get_entities(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
-        let relations: Vec<Relation<'static>> =
-            thing_manager.get_relations(&snapshot).map_static(|result| result.unwrap().into_owned()).collect();
+        let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(relations.len(), 1);
 
         let collection_1 = relations.first().unwrap();
-        let player_counts: u64 =
-            collection_1.get_players(&snapshot, &thing_manager).map_static(|res| res.unwrap().1).into_iter().sum();
+        let player_counts: u64 = collection_1.get_players(&snapshot, &thing_manager).map(|res| res.unwrap().1).sum();
         assert_eq!(player_counts, 3);
 
         let group_1 = entities
@@ -983,39 +1106,35 @@ fn role_player_duplicates_ordered_small_card() {
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_relations_count, 1);
         let resource_relations_count: u64 = resource_1
             .get_relations_roles(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_players(&snapshot, &thing_manager)
-            .map_static(|res| {
+            .map(|res| {
                 let (_, _, _, count) = res.unwrap();
                 count
             })
-            .into_iter()
             .sum();
         assert_eq!(resource_1_indexed_count, 2, "Expected index to work");
     }
@@ -1051,10 +1170,10 @@ fn attribute_string_write_read_delete() {
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
@@ -1063,11 +1182,8 @@ fn attribute_string_write_read_delete() {
     // read them back by type
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attrs: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, attr_type.clone())
-            .unwrap()
-            .map_static(|result| result.unwrap().into_owned())
-            .collect();
+        let attrs: Vec<Attribute> =
+            thing_manager.get_attributes_in(&snapshot, attr_type).unwrap().map(|result| result.unwrap()).collect();
         let attr_values: Vec<String> = attrs
             .into_iter()
             .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
@@ -1080,12 +1196,12 @@ fn attribute_string_write_read_delete() {
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
@@ -1100,11 +1216,11 @@ fn attribute_string_write_read_delete() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         assert_eq!(None, read_short_string);
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         assert_eq!(None, read_long_string);
     }
@@ -1125,9 +1241,8 @@ fn attribute_string_write_read_delete_with_has() {
         let owner_type = type_manager.create_entity_type(&mut snapshot, &owner_label).unwrap();
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-        let owns = owner_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type.clone(), Ordering::Unordered)
-            .unwrap();
+        let owns =
+            owner_type.set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type, Ordering::Unordered).unwrap();
         owns.set_annotation(
             &mut snapshot,
             &type_manager,
@@ -1145,15 +1260,15 @@ fn attribute_string_write_read_delete_with_has() {
 
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let owner = thing_manager.create_entity(&mut snapshot, owner_type.clone()).unwrap();
+        let owner = thing_manager.create_entity(&mut snapshot, owner_type).unwrap();
         let short_attr = thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         let long_attr = thing_manager
-            .create_attribute(&mut snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .create_attribute(&mut snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
-        owner.set_has_unordered(&mut snapshot, &thing_manager, short_attr).unwrap();
-        owner.set_has_unordered(&mut snapshot, &thing_manager, long_attr).unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, &short_attr).unwrap();
+        owner.set_has_unordered(&mut snapshot, &thing_manager, &long_attr).unwrap();
         thing_manager.finalise(&mut snapshot).unwrap();
         snapshot.commit().unwrap();
     };
@@ -1161,11 +1276,8 @@ fn attribute_string_write_read_delete_with_has() {
     // read them back by type
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
-        let attrs: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, attr_type.clone())
-            .unwrap()
-            .map_static(|result| result.unwrap().into_owned())
-            .collect();
+        let attrs: Vec<Attribute> =
+            thing_manager.get_attributes_in(&snapshot, attr_type).unwrap().map(|result| result.unwrap()).collect();
         let attr_values: Vec<String> = attrs
             .into_iter()
             .map(|attr| (*attr.get_value(&snapshot, &thing_manager).unwrap().unwrap_string()).to_owned())
@@ -1178,12 +1290,12 @@ fn attribute_string_write_read_delete_with_has() {
     {
         let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(short_string, read_short_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap()
             .unwrap();
         assert_eq!(long_string, read_long_string.get_value(&snapshot, &thing_manager).unwrap().unwrap_string());
@@ -1199,11 +1311,11 @@ fn attribute_string_write_read_delete_with_has() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let read_short_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(short_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(short_string.as_str())))
             .unwrap();
         assert_eq!(None, read_short_string);
         let read_long_string = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::String(Cow::Borrowed(long_string.as_str())))
+            .get_attribute_with_value(&snapshot, attr_type, Value::String(Cow::Borrowed(long_string.as_str())))
             .unwrap();
         assert_eq!(None, read_long_string);
     }
@@ -1267,11 +1379,8 @@ fn attribute_struct_write_read() {
     {
         let snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
         let attr_type = type_manager.get_attribute_type(&snapshot, &attr_label).unwrap().unwrap();
-        let attr_vec: Vec<Attribute<'static>> = thing_manager
-            .get_attributes_in(&snapshot, attr_type.clone())
-            .unwrap()
-            .map_static(|result| result.unwrap().into_owned())
-            .collect();
+        let attr_vec: Vec<Attribute> =
+            thing_manager.get_attributes_in(&snapshot, attr_type).unwrap().map(|result| result.unwrap()).collect();
         let attr = attr_vec.first().unwrap().clone();
         let value_0 = attr.get_value(&snapshot, &thing_manager).unwrap();
         match value_0 {
@@ -1280,7 +1389,7 @@ fn attribute_struct_write_read() {
         }
 
         let attr_by_id = thing_manager
-            .get_attribute_with_value(&snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&struct_value)))
+            .get_attribute_with_value(&snapshot, attr_type, Value::Struct(Cow::Borrowed(&struct_value)))
             .unwrap()
             .unwrap();
         assert_eq!(attr, attr_by_id);
@@ -1343,7 +1452,7 @@ fn read_attribute_struct_by_field() {
                 HashMap::from([(0, Value::Struct(Cow::Owned(nested_struct_value)))]),
             );
             let attr = thing_manager
-                .create_attribute(&mut snapshot, attr_type.clone(), Value::Struct(Cow::Borrowed(&outer_struct_value)))
+                .create_attribute(&mut snapshot, attr_type, Value::Struct(Cow::Borrowed(&outer_struct_value)))
                 .unwrap();
             attrs.push(attr);
         }
@@ -1352,17 +1461,12 @@ fn read_attribute_struct_by_field() {
             let field_path = type_manager
                 .resolve_struct_field(&snapshot, &["f_nested", "nested_string"], struct_def.clone())
                 .unwrap();
-            let mut attr_by_field_iterator = thing_manager
-                .get_attributes_by_struct_field(
-                    &snapshot,
-                    attr_type.clone(),
-                    field_path,
-                    Value::String(Cow::Borrowed(val)),
-                )
+            let attr_by_field_iterator = thing_manager
+                .get_attributes_by_struct_field(&snapshot, attr_type, field_path, Value::String(Cow::Borrowed(val)))
                 .unwrap();
             let mut attr_by_field: Vec<Attribute> = Vec::new();
-            while let Some(res) = attr_by_field_iterator.next() {
-                attr_by_field.push(res.as_ref().unwrap().clone().into_owned());
+            for res in attr_by_field_iterator {
+                attr_by_field.push(res.as_ref().unwrap().clone());
             }
             assert_eq!(1, attr_by_field.len());
             assert_eq!(attr, attr_by_field.first().unwrap());
@@ -1445,7 +1549,7 @@ pub fn define_struct(
     type_manager: &TypeManager,
     name: String,
     definitions: HashMap<String, (ValueType, bool)>,
-) -> DefinitionKey<'static> {
+) -> DefinitionKey {
     let struct_key = type_manager.create_struct(snapshot, name).unwrap();
     for (name, (value_type, optional)) in definitions {
         type_manager.create_struct_field(snapshot, struct_key.clone(), &name, value_type, optional).unwrap();

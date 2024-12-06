@@ -289,7 +289,7 @@ impl<'a> FunctionCallPlanner<'a> {
     }
 }
 
-impl<'a> Costed for FunctionCallPlanner<'a> {
+impl Costed for FunctionCallPlanner<'_> {
     fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
         self.cost
     }

@@ -29,8 +29,7 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
-use itertools::Itertools;
-use lending_iterator::higher_order::{FnHktHelper, Hkt};
+use itertools::{Itertools, MinMaxResult};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -358,21 +357,19 @@ fn type_from_row_or_annotations<'a>(
     }
 }
 
-type FilterFn<T> = dyn for<'a, 'b> FnHktHelper<
-    &'a Result<<T as Hkt>::HktSelf<'b>, Box<ConceptReadError>>,
-    Result<bool, Box<ConceptReadError>>,
->;
+pub(super) type FilterMapFn<T> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+type FilterFn<T> = dyn Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>>;
 
-pub(crate) struct Checker<T: Hkt> {
-    extractors: HashMap<ExecutorVariable, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
+pub(crate) struct Checker<T: 'static> {
+    extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     checks: Vec<CheckInstruction<ExecutorVariable>>,
     _phantom_data: PhantomData<T>,
 }
 
-impl<T: Hkt> Checker<T> {
+impl<T> Checker<T> {
     pub(crate) fn new(
         checks: Vec<CheckInstruction<ExecutorVariable>>,
-        extractors: HashMap<ExecutorVariable, for<'a, 'b> fn(&'a T::HktSelf<'b>) -> VariableValue<'a>>,
+        extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
     ) -> Self {
         Self { extractors, checks, _phantom_data: PhantomData }
     }
@@ -502,8 +499,8 @@ impl<T: Hkt> Checker<T> {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
-        type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>>;
-        let mut filters: Vec<Box<dyn Fn(&T::HktSelf<'_>) -> Result<bool, Box<ConceptReadError>>>> =
+        type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>>;
+        let mut filters: Vec<Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>>> =
             Vec::with_capacity(self.checks.len());
 
         for check in &self.checks {
@@ -519,9 +516,9 @@ impl<T: Hkt> Checker<T> {
                         let value = var(value);
                         match value {
                             VariableValue::Thing(thing) => match thing {
-                                Thing::Entity(entity) => Ok(&*iid == entity.vertex().bytes().bytes()),
-                                Thing::Relation(relation) => Ok(&*iid == relation.vertex().bytes().bytes()),
-                                Thing::Attribute(attribute) => Ok(&*iid == attribute.vertex().bytes().bytes()),
+                                Thing::Entity(entity) => Ok(*iid == *entity.vertex().to_bytes()),
+                                Thing::Relation(relation) => Ok(*iid == *relation.vertex().to_bytes()),
+                                Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().to_bytes()),
                             },
                             VariableValue::Empty => Ok(false),
                             VariableValue::Type(_) => Ok(false),
@@ -700,7 +697,7 @@ impl<T: Hkt> Checker<T> {
                             owner(value).as_thing().as_object().has_attribute(
                                 &*snapshot,
                                 &thing_manager,
-                                attribute(value).as_thing().as_attribute().as_reference(),
+                                attribute(value).as_thing().as_attribute(),
                             )
                         }
                     }));
@@ -729,8 +726,8 @@ impl<T: Hkt> Checker<T> {
                             relation(value).as_thing().as_relation().has_role_player(
                                 &*snapshot,
                                 &thing_manager,
-                                &player(value).as_thing().as_object(),
-                                role(value).as_type().as_role_type().clone(),
+                                player(value).as_thing().as_object(),
+                                role(value).as_type().as_role_type(),
                             )
                         }
                     }));
@@ -826,11 +823,11 @@ impl<T: Hkt> Checker<T> {
     }
 }
 
-fn make_const_extractor<T: Hkt>(
+fn make_const_extractor<T>(
     vertex: &CheckVertex<ExecutorVariable>,
     row: &MaybeOwnedRow<'_>,
     context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-) -> Box<dyn for<'a> Fn(&'a <T as Hkt>::HktSelf<'_>) -> VariableValue<'a>> {
+) -> Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>> {
     let value = get_vertex_value(vertex, Some(row), &context.parameters);
     let owned_value = value.into_owned();
     Box::new(move |_| owned_value.clone())
@@ -850,9 +847,17 @@ fn get_vertex_value<'a>(
                 unreachable!("Comparator check variables must have been recorded in the row.")
             }
         },
-        CheckVertex::Type(type_) => VariableValue::Type(type_.clone()),
+        CheckVertex::Type(type_) => VariableValue::Type(*type_),
         CheckVertex::Parameter(parameter_id) => {
             VariableValue::Value(parameters.value_unchecked(*parameter_id).as_reference())
         }
+    }
+}
+
+fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
+    match types.into_iter().minmax() {
+        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
+        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
+        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
     }
 }

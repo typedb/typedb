@@ -56,18 +56,23 @@ features = {}
 		version = "0.1.40"
 		default-features = false
 
+	[dependencies.primitive]
+		path = "../common/primitive"
+		features = []
+		default-features = false
+
 	[dependencies.resource]
 		path = "../resource"
 		features = []
 		default-features = false
 
-	[dependencies.logger]
-		path = "../common/logger"
+	[dependencies.concept]
+		path = "../concept"
 		features = []
 		default-features = false
 
-	[dependencies.concept]
-		path = "../concept"
+	[dependencies.logger]
+		path = "../common/logger"
 		features = []
 		default-features = false
 
@@ -108,7 +113,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "7b5404c7f098dcea34bfdaaee384abfe8ecf90d1"
+		rev = "3063987ccb66dd8a2e96cd440ab76865ea886f97"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
