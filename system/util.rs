@@ -220,7 +220,7 @@ pub mod answer_util {
     pub fn get_string(tx: &TransactionRead<WALClient>, row: &HashMap<String, VariableValue>, var: &str) -> String {
         let var_ = row.get(var).unwrap();
         let attr = var_.as_thing().as_attribute();
-        let attr_ref = attr.as_reference();
+        let attr_ref = attr;
         let val = attr_ref.get_value(&*tx.snapshot, &tx.thing_manager).unwrap().unwrap_string().to_string();
         val
     }
