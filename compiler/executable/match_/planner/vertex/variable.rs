@@ -13,8 +13,8 @@ use ir::pattern::Vertex;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::planner::{
-        plan::{Graph, PatternVertexId, VariableVertexId, VertexId},
-        vertex::{CombinedCost, CostMetaData, Costed, ElementCost, Input},
+        plan::{PatternVertexId, VariableVertexId, VertexId},
+        vertex::Input,
     },
 };
 
@@ -115,28 +115,6 @@ impl VariableVertex {
     }
 }
 
-impl Costed for VariableVertex {
-    fn cost(
-        &self,
-        _inputs: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _graph: &Graph<'_>,
-    ) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
-    }
-
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        let var_set: Vec<Variable> = vertex_ordering
-            .iter()
-            .map(|id| graph.elements().get(id).unwrap().as_variable().unwrap().variable())
-            .collect();
-        let total_size =
-            if var_set.contains(&self.variable()) { self.expected_output_size(vertex_ordering) } else { 1.0 };
-        (CombinedCost::in_mem_simple_with_ratio(total_size), CostMetaData::None)
-    }
-}
-
 #[derive(Clone)]
 pub(crate) struct InputPlanner {
     variable: Variable,
@@ -151,22 +129,6 @@ impl fmt::Debug for InputPlanner {
 impl InputPlanner {
     pub(crate) fn from_variable(variable: Variable) -> Self {
         Self { variable }
-    }
-}
-
-impl Costed for InputPlanner {
-    fn cost(
-        &self,
-        _: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _: &Graph<'_>,
-    ) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -196,22 +158,6 @@ impl TypePlanner {
     fn restriction_based_selectivity(&self, _inputs: &[VertexId]) -> f64 {
         // TODO: if we incorporate, say, annotations, we could add some selectivity here
         VariableVertex::RESTRICTION_NONE
-    }
-}
-
-impl Costed for TypePlanner {
-    fn cost(
-        &self,
-        _: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _: &Graph<'_>,
-    ) -> ElementCost {
-        ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::in_mem_simple_with_ratio(self.unrestricted_expected_size), CostMetaData::None)
     }
 }
 
@@ -346,22 +292,6 @@ impl ThingPlanner {
     }
 }
 
-impl Costed for ThingPlanner {
-    fn cost(
-        &self,
-        _inputs: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _graph: &Graph<'_>,
-    ) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
-    }
-}
-
 #[derive(Clone)]
 pub(crate) struct ValuePlanner {
     variable: Variable,
@@ -423,26 +353,6 @@ impl ValuePlanner {
             selectivity *= Self::RESTRICTION_ABOVE_SELECTIVITY
         }
         f64::max(selectivity, VariableVertex::SELECTIVITY_MIN)
-    }
-}
-
-impl Costed for ValuePlanner {
-    fn cost(
-        &self,
-        inputs: &[VertexId],
-        _step_sort_variable: Option<VariableVertexId>,
-        _step_start_index: usize,
-        _: &Graph<'_>,
-    ) -> ElementCost {
-        if inputs.is_empty() {
-            ElementCost { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 }
-        } else {
-            ElementCost { per_input: f64::INFINITY, per_output: 0.0, io_ratio: f64::INFINITY }
-        }
-    }
-
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
-        (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None) // TODO: don't understand the above implementation
     }
 }
 
