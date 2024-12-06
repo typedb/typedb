@@ -28,6 +28,7 @@ rust_library(
 
         "@typeql//rust:typeql",
 
+        "@crates//:tracing",
         "@crates//:tokio",
         "@crates//:moka",
     ],

@@ -22,6 +22,7 @@ use ir::{
 };
 use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use tracing::{event, Level};
 use typeql::query::SchemaQuery;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
@@ -44,6 +45,7 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: SchemaQuery,
     ) -> Result<(), QueryError> {
+        event!(Level::TRACE, "Running schema query:\n{}", query);
         match query {
             SchemaQuery::Define(define) => {
                 define::execute(snapshot, type_manager, thing_manager, function_manager, define)
@@ -68,6 +70,7 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, QueryError> {
+        event!(Level::TRACE, "Running read query:\n{}", query);
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
@@ -155,6 +158,7 @@ impl QueryManager {
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, QueryError)> {
+        event!(Level::TRACE, "Running write query:\n{}", query);
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,

@@ -46,10 +46,7 @@ impl Config {
         Self::customised(None, Some(data_directory.to_path_buf()))
     }
 
-    pub fn customised(
-        encryption_config: Option<EncryptionConfig>,
-        data_directory: Option<PathBuf>
-    ) -> Self {
+    pub fn customised(encryption_config: Option<EncryptionConfig>, data_directory: Option<PathBuf>) -> Self {
         let encryption_config = encryption_config.unwrap_or_else(|| EncryptionConfig::disabled());
         let data_directory = data_directory.map(|dir| dir.to_path_buf()).unwrap_or_else(|| {
             let typedb_dir_or_current = std::env::current_exe()

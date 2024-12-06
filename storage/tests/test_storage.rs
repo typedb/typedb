@@ -14,10 +14,9 @@ use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use storage::{
     key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
-    keyspace::{KeyspaceOpenError, KeyspaceValidationError},
+    keyspace::{IteratorPool, KeyspaceOpenError, KeyspaceValidationError},
     StorageOpenError,
 };
-use storage::keyspace::IteratorPool;
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};
 
@@ -130,13 +129,12 @@ fn create_reopen() {
         let items = storage
             .iterate_keyspace_range(
                 &IteratorPool::new(),
-                KeyRange::new_unbounded(RangeStart::Inclusive(
-                    StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&StorageKeyArray::<
-                        BUFFER_VALUE_INLINE,
-                    >::from((
+                KeyRange::new_unbounded(RangeStart::Inclusive(StorageKey::<BUFFER_VALUE_INLINE>::Reference(
+                    StorageKeyReference::from(&StorageKeyArray::<BUFFER_VALUE_INLINE>::from((
                         TestKeyspaceSet::Keyspace,
                         [0x0],
-                ))))))
+                    ))),
+                ))),
             )
             .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
                 let (key, value) = res.unwrap();
@@ -192,7 +190,7 @@ fn get_put_iterate() {
             KeyRange::new_within(
                 StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
                 false,
-            )
+            ),
         )
         .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
             let (key, value) = res.unwrap();

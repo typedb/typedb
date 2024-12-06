@@ -604,12 +604,11 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
-        keyspace::{KeyspaceId, KeyspaceSet, Keyspaces},
+        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
         MVCCStorage,
     };
-    use crate::keyspace::IteratorPool;
 
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {

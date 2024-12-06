@@ -24,7 +24,8 @@ fn test_function_equivalence() {
     let parsed_function = typeql::parse_definition_function(function).unwrap();
 
     let function_ir =
-        translate_typeql_function(&MockSnapshot::new(), &HashMapFunctionSignatureIndex::empty(), &parsed_function).unwrap();
+        translate_typeql_function(&MockSnapshot::new(), &HashMapFunctionSignatureIndex::empty(), &parsed_function)
+            .unwrap();
 
     let hash = function_ir.hash();
     let equals_self = function_ir.equals(&function_ir);

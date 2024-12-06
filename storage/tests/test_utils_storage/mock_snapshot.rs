@@ -10,12 +10,12 @@ use bytes::byte_array::ByteArray;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
+    keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
 };
-use storage::keyspace::IteratorPool;
 
 pub struct MockSnapshot {
     iterator_pool: IteratorPool,
@@ -23,7 +23,7 @@ pub struct MockSnapshot {
 
 impl MockSnapshot {
     pub fn new() -> Self {
-        Self { iterator_pool : IteratorPool::new() }
+        Self { iterator_pool: IteratorPool::new() }
     }
 }
 
