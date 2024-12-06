@@ -14,7 +14,7 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::planner::{
         plan::{Graph, PatternVertexId, VariableVertexId, VertexId},
-        vertex::{CombinedCost, CostMetaData, Costed, Direction, ElementCost, Input},
+        vertex::{CombinedCost, CostMetaData, Costed, ElementCost, Input},
     },
 };
 
@@ -31,18 +31,6 @@ impl VariableVertex {
     const RESTRICTION_NONE: f64 = 1.0;
     const SELECTIVITY_MIN: f64 = 0.000001;
     pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0;
-
-    pub(super) fn is_valid(&self, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        // let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
-        // match self {
-        //     Self::Input(_) => true, // always valid: comes from the enclosing scope
-        //
-        //     Self::Type(inner) => inner.is_valid(index, ordered, graph),
-        //     Self::Thing(inner) => inner.is_valid(index, ordered, graph),
-        //     Self::Value(inner) => inner.is_valid(index, ordered, graph),
-        // }
-        false
-    }
 
     pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {
         let unrestricted_size = match self {
@@ -118,14 +106,6 @@ impl VariableVertex {
         matches!(self, Self::Input(..))
     }
 
-    /// Returns `true` if the variable vertex is [`Value`].
-    ///
-    /// [`Value`]: VariableVertex::Value
-    #[must_use]
-    pub(crate) fn is_value(&self) -> bool {
-        matches!(self, Self::Value(..))
-    }
-
     pub(crate) fn variable(&self) -> Variable {
         match self {
             VariableVertex::Input(var) => var.variable,
@@ -192,7 +172,7 @@ impl Costed for InputPlanner {
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
     }
 }
@@ -220,15 +200,6 @@ impl TypePlanner {
         self.binding = Some(binding_pattern);
     }
 
-    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        if let Some(binding) = self.binding {
-            ordered.contains(&VertexId::Pattern(binding))
-        } else {
-            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-        }
-    }
-
     fn restriction_based_selectivity(&self, _inputs: &[VertexId]) -> f64 {
         // TODO: if we incorporate, say, annotations, we could add some selectivity here
         VariableVertex::RESTRICTION_NONE
@@ -246,7 +217,7 @@ impl Costed for TypePlanner {
         ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
     }
 
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::in_mem_simple_with_ratio(self.unrestricted_expected_size), CostMetaData::None)
     }
 }
@@ -298,10 +269,10 @@ impl ThingPlanner {
                     }
                 }
                 answer::Type::Attribute(type_) => {
-                    statistics.attribute_counts.get(type_).map(|count| {
+                    if let Some(count) = statistics.attribute_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
                         unrestricted_expected_attribute_types += 1;
-                    });
+                    }
                 }
                 answer::Type::RoleType(type_) => {
                     panic!("Found a Thing variable `{variable}` with a Role Type annotation: {type_}")
@@ -337,15 +308,6 @@ impl ThingPlanner {
 
     fn set_binding(&mut self, binding_pattern: PatternVertexId) {
         self.binding = Some(binding_pattern);
-    }
-
-    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        if let Some(binding) = self.binding {
-            ordered.contains(&VertexId::Pattern(binding))
-        } else {
-            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-        }
     }
 
     fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
@@ -388,43 +350,18 @@ impl ThingPlanner {
     }
 }
 
-fn branching_for_intersections(intersection_count: usize) -> f64 {
-    // Note:
-    //   this is a linearly improving cost function.
-    //   In theory, it's min(input sizes), and in practice it's much better than that!
-    //   The n-th root or some factor similarly might also work quite well
-    1.0 / (intersection_count as f64)
-}
-
 impl Costed for ThingPlanner {
     fn cost(
         &self,
-        inputs: &[VertexId],
-        step_sort_variable: Option<VariableVertexId>,
-        step_start_index: usize,
-        graph: &Graph<'_>,
+        _inputs: &[VertexId],
+        _step_sort_variable: Option<VariableVertexId>,
+        _step_start_index: usize,
+        _graph: &Graph<'_>,
     ) -> ElementCost {
-        // match step_sort_variable {
-        //     None => ElementCost::MEM_SIMPLE_BRANCH_1,
-        //     Some(variable_id) => {
-        //         let mut intersection_count = 0;
-        //         for input in inputs {
-        //             let input_element = &graph.elements()[input];
-        //             if input_element.variables().any(|var| var == variable_id) {
-        //                 intersection_count += 1;
-        //             }
-        //         }
-        //         ElementCost {
-        //             per_input: ElementCost::IN_MEM_COST_COMPLEX,
-        //             per_output: ElementCost::IN_MEM_COST_COMPLEX,
-        //             branching_factor: branching_for_intersections(intersection_count),
-        //         }
-        //     }
-        // }
         ElementCost::MEM_SIMPLE_BRANCH_1
     }
 
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None)
     }
 }
@@ -462,15 +399,6 @@ impl ValuePlanner {
 
     fn set_binding(&mut self, binding_pattern: PatternVertexId) {
         self.binding = Some(binding_pattern);
-    }
-
-    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        if let Some(binding) = self.binding {
-            ordered.contains(&VertexId::Pattern(binding))
-        } else {
-            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-        }
     }
 
     pub(crate) fn add_equal(&mut self, other: Input) {
@@ -517,7 +445,7 @@ impl Costed for ValuePlanner {
         }
     }
 
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (CombinedCost, CostMetaData) {
         (CombinedCost::MEM_SIMPLE_BRANCH_1, CostMetaData::None) // TODO: don't understand the above implementation
     }
 }

@@ -53,7 +53,7 @@ pub(super) enum PlannerVertex<'a> {
 impl PlannerVertex<'_> {
     pub(super) fn is_valid(&self, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
         match self {
-            Self::Variable(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Variable(inner) => false,
             Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
             Self::Is(inner) => inner.is_valid(vertex_plan, graph),
             Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),

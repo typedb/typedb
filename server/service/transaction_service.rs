@@ -896,7 +896,6 @@ impl TransactionService {
                     database,
                     transaction_options,
                 ));
-
                 (transaction, result)
             })),
             Some(Transaction::Read(transaction)) => {

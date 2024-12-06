@@ -326,7 +326,7 @@ fn validate_return_against_signature(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     name: &str,
-    inferred_return: &Vec<FunctionParameterAnnotation>,
+    inferred_return: &[FunctionParameterAnnotation],
     signature_return: &Output,
 ) -> Result<(), Box<FunctionAnnotationError>> {
     let return_labels = match signature_return {
