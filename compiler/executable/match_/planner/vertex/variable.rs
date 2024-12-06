@@ -253,11 +253,12 @@ impl ThingPlanner {
     ) -> Self {
         let mut unrestricted_expected_size: f64 = 0.0;
         let mut unrestricted_expected_attribute_types: usize = 0;
-        type_annotations
+        for type_ in type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
             .expect("expected thing variable to have been annotated with types")
             .iter()
-            .for_each(|type_| match type_ {
+        {
+            match type_ {
                 answer::Type::Entity(type_) => {
                     if let Some(count) = statistics.entity_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
@@ -277,7 +278,9 @@ impl ThingPlanner {
                 answer::Type::RoleType(type_) => {
                     panic!("Found a Thing variable `{variable}` with a Role Type annotation: {type_}")
                 }
-            });
+            }
+        }
+
         Self {
             variable,
             binding: None,
