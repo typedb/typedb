@@ -542,7 +542,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut remaining_vertices: HashSet<VertexId> =
             self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id)).collect();
         let mut vertex_plan = Vec::with_capacity(self.graph.element_count());
-        let mut plan_cumulative_cost: ElementCost = ElementCost::EMPTY;
+        let mut plan_cumulative_cost: ElementCost = ElementCost::NOOP;
         let mut meta_data: HashMap<PatternVertexId, CostMetaData> = HashMap::new();
 
         for v in self.input_variables() {

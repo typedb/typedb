@@ -119,7 +119,10 @@ pub(crate) struct ElementCost {
 impl ElementCost {
     const IN_MEM_COST_SIMPLE: f64 = 0.01;
     const IN_MEM_COST_COMPLEX: f64 = ElementCost::IN_MEM_COST_SIMPLE * 2.0;
-    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 };
+
+    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 0.0 };
+    pub const NOOP: Self = Self { per_input: 0.0, per_output: 0.0, io_ratio: 1.0 };
+
     pub const MEM_SIMPLE_BRANCH_1: Self =
         Self { per_input: ElementCost::IN_MEM_COST_SIMPLE, per_output: ElementCost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
     pub const MEM_COMPLEX_BRANCH_1: Self = Self {
@@ -179,6 +182,7 @@ impl CombinedCost {
     const IN_MEM_COST_SIMPLE: f64 = 0.02;
     const IN_MEM_COST_COMPLEX: f64 = CombinedCost::IN_MEM_COST_SIMPLE * 2.0;
     pub const NOOP: Self = Self { cost: 0.0, io_ratio: 1.0 };
+    pub const EMPTY: Self = Self { cost: 0.0, io_ratio: 0.0 };
     pub const INFINITY: Self = Self { cost: f64::INFINITY, io_ratio: 0.0 };
     pub const MEM_SIMPLE_BRANCH_1: Self = Self { cost: CombinedCost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
     pub const MEM_COMPLEX_BRANCH_1: Self = Self { cost: CombinedCost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
@@ -237,7 +241,7 @@ impl Costed for PlannerVertex<'_> {
         graph: &Graph<'_>,
     ) -> ElementCost {
         match self {
-            Self::Variable(_) => unreachable!(),
+            Self::Variable(_) => ElementCost::NOOP,
             Self::Constraint(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
 
             Self::Is(inner) => inner.cost(inputs, step_sort_variable, step_start_index, graph),
@@ -589,7 +593,7 @@ impl Costed for DisjunctionPlanner<'_> {
             .branches()
             .iter()
             .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().combined_cost())
-            .fold(CombinedCost::NOOP, |acc_cost, cost| acc_cost.combine_parallel(cost));
+            .fold(CombinedCost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost));
         (cost, CostMetaData::None)
     }
 }
