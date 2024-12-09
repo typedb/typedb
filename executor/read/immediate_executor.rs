@@ -107,6 +107,15 @@ impl ImmediateExecutor {
         )))
     }
 
+    pub(crate) fn reset(&mut self) {
+        match self {
+            ImmediateExecutor::SortedJoin(sorted) => sorted.reset(),
+            ImmediateExecutor::UnsortedJoin(unsorted) => unsorted.reset(),
+            ImmediateExecutor::Assignment(assignment) => assignment.reset(),
+            ImmediateExecutor::Check(check) => check.reset(),
+        }
+    }
+
     pub(crate) fn prepare(
         &mut self,
         input_batch: FixedBatch,
@@ -137,7 +146,7 @@ impl ImmediateExecutor {
 /// Performs an n-way intersection/join using sorted iterators.
 /// To avoid missing cartesian outputs when multiple variables are unbound, the executor can leverage a
 /// Cartesian sub-program, which generates all cartesian answers within one intersection, if there are any.
-pub(super) struct IntersectionExecutor {
+pub(crate) struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
     output_width: u32,
     outputs_selected: SelectedPositions,
@@ -183,6 +192,11 @@ impl IntersectionExecutor {
             intersection_multiplicity: 1,
             profile,
         })
+    }
+
+    fn reset(&mut self) {
+        self.input = None;
+        self.iterators.clear();
     }
 
     fn prepare(
@@ -608,7 +622,7 @@ impl CartesianIterator {
     }
 }
 
-pub(super) struct UnsortedJoinExecutor {
+pub(crate) struct UnsortedJoinExecutor {
     iterate: ConstraintInstruction<ExecutorVariable>,
     checks: Vec<ConstraintInstruction<ExecutorVariable>>,
 
@@ -627,23 +641,27 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None, profile }
     }
 
+    fn reset(&mut self) {
+        todo!()
+    }
+
     fn prepare(
         &mut self,
-        input_batch: FixedBatch,
-        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        _input_batch: FixedBatch,
+        _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<(), ReadExecutionError> {
         todo!()
     }
 
     fn batch_continue(
         &mut self,
-        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
 
-pub(super) struct AssignExecutor {
+pub(crate) struct AssignExecutor {
     expression: ExecutableExpression<VariablePosition>,
     inputs: Vec<VariablePosition>,
     output: ExecutorVariable,
@@ -664,6 +682,10 @@ impl AssignExecutor {
         profile: Arc<StepProfile>,
     ) -> Self {
         Self { expression, inputs, output, selected_variables, output_width, profile, prepared_input: None }
+    }
+
+    fn reset(&mut self) {
+        self.prepared_input = None;
     }
 
     fn prepare(
@@ -725,7 +747,7 @@ impl AssignExecutor {
     }
 }
 
-pub(super) struct CheckExecutor {
+pub(crate) struct CheckExecutor {
     checker: Checker<()>,
     selected_variables: Vec<VariablePosition>,
     output_width: u32,
@@ -744,10 +766,14 @@ impl CheckExecutor {
         Self { checker, selected_variables, output_width, input: None, profile }
     }
 
+    fn reset(&mut self) {
+        self.input = None;
+    }
+
     fn prepare(
         &mut self,
         input_batch: FixedBatch,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        _context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         self.input = Some(input_batch);
         Ok(())

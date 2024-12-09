@@ -82,7 +82,8 @@ impl PatternExecutor {
                 StepExecutors::Nested(inner) => inner.reset(),
                 StepExecutors::StreamModifier(inner) => inner.reset(),
                 StepExecutors::CollectingStage(inner) => inner.reset(),
-                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) | StepExecutors::Immediate(_) => {}
+                StepExecutors::Immediate(inner) => inner.reset(),
+                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) => {}
             }
         }
         self.control_stack.push(ControlInstruction::PatternStart(PatternStart { input_batch }));
