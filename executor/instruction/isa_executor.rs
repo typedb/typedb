@@ -29,7 +29,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions},
-        BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes, TYPES_EMPTY,
+        BinaryIterateMode, Checker, FilterMapFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -54,9 +54,6 @@ pub(super) type MultipleTypeIsaIterator = iter::Chain<MultipleTypeIsaObjectItera
 
 pub(super) type IsaTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IsaFilterMapFn>>, IsaToTupleFn>;
 
-type RezipThingTypeFn =
-    for<'a, 'b> fn((&'a Result<Thing, Box<ConceptReadError>>, Type)) -> Result<(Thing, Type), Box<ConceptReadError>>;
-
 type ThingWithTypes<I> = iter::FlatMap<
     iter::Zip<I, iter::Repeat<Vec<Type>>>,
     Vec<Result<(Thing, Type), Box<ConceptReadError>>>,
@@ -73,7 +70,6 @@ pub(super) type ObjectEraseFn =
 pub(super) type AttributeEraseFn =
     for<'a> fn(Result<Attribute, Box<ConceptReadError>>) -> Result<Thing, Box<ConceptReadError>>;
 
-pub(super) type IsaFilterFn = FilterFn<(Thing, Type)>;
 pub(super) type IsaFilterMapFn = FilterMapFn<(Thing, Type)>;
 
 type IsaVariableValueExtractor = for<'a, 'b> fn(&'a (Thing, Type)) -> VariableValue<'a>;

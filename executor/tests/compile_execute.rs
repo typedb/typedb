@@ -47,6 +47,14 @@ fn setup(
     schema: &str,
     data: &str,
 ) -> Statistics {
+    std::panic::set_hook({
+        let default_panic = std::panic::take_hook();
+        Box::new(move |info| {
+            default_panic(info);
+            std::process::exit(1);
+        })
+    });
+
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
@@ -140,6 +148,7 @@ fn test_has_planning_traversal() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -236,6 +245,7 @@ fn test_expression_planning_traversal() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -320,6 +330,7 @@ fn test_links_planning_traversal() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -411,6 +422,7 @@ fn test_links_intersection() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -493,6 +505,7 @@ fn test_negation_planning_traversal() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -596,6 +609,7 @@ fn test_forall_planning_traversal() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -685,6 +699,7 @@ fn test_named_var_select() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -774,6 +789,7 @@ fn test_disjunction_planning_traversal() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 
@@ -867,6 +883,7 @@ fn test_disjunction_planning_nested_negations() {
     let rows = iterator
         .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
         .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
 

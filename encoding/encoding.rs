@@ -122,7 +122,7 @@ impl KeyspaceSet for EncodingKeyspace {
         block_options.set_block_size(16 * 1024);
         block_options.set_whole_key_filtering(false);
 
-        block_options.set_bloom_filter(10.0, false);
+        // block_options.set_bloom_filter(10.0, false);
         block_options.set_partition_filters(true);
         block_options.set_index_type(BlockBasedIndexType::TwoLevelIndexSearch);
         block_options.set_optimize_filters_for_memory(true);

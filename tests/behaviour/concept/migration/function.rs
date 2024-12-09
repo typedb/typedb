@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![allow(unexpected_cfgs, reason = "features defined in Bazel targets aren't currently communicated to Cargo")]
+
 use steps::Context;
 
 #[tokio::test]
@@ -11,5 +13,11 @@ async fn test() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
-    assert!(Context::test("../typedb_behaviour/concept/migration/function.feature", true).await);
+    #[cfg(feature = "bazel")]
+    let path = "../typedb_behaviour/concept/migration/function.feature";
+
+    #[cfg(not(feature = "bazel"))]
+    let path = "bazel-typedb/external/typedb_behaviour/concept/migration/function.feature";
+
+    assert!(Context::test(path, true).await);
 }

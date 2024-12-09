@@ -51,49 +51,39 @@ pub(super) enum PlannerVertex<'a> {
 }
 
 impl PlannerVertex<'_> {
-    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        let is_valid = match self {
-            Self::Variable(inner) => inner.is_valid(index, ordered, graph),
-            Self::Is(inner) => inner.is_valid(index, ordered, graph),
-            Self::Constraint(inner) => inner.is_valid(index, ordered, graph),
-
-            Self::Comparison(inner) => inner.is_valid(index, ordered, graph),
-
-            Self::Expression(inner) => inner.is_valid(index, ordered, graph),
-
-            Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
-                arguments.iter().all(|&arg| ordered.contains(&VertexId::Variable(arg)))
+    pub(super) fn is_valid(&self, id: VertexId, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
+        for var in self.variables().filter(|&var| !vertex_plan.contains(&VertexId::Variable(var))) {
+            let variable_vertex = graph.elements()[&VertexId::Variable(var)].as_variable().unwrap();
+            if variable_vertex.binding().is_some_and(|binding| VertexId::Pattern(binding) != id) {
+                return false;
             }
-
-            Self::Negation(inner) => inner.is_valid(index, ordered, graph),
-            Self::Disjunction(inner) => inner.is_valid(index, ordered, graph),
-        };
-        if !is_valid {
-            return false;
         }
-        let mut ordered = ordered.to_owned();
-        ordered.push(index);
-        self.variables().all(|var| {
-            ordered.contains(&VertexId::Variable(var))
-                || graph.elements()[&VertexId::Variable(var)].is_valid(VertexId::Variable(var), &ordered, graph)
-        })
+
+        match self {
+            Self::Variable(_) => false,
+            Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Is(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
+            Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
+                arguments.iter().all(|&arg| vertex_plan.contains(&VertexId::Variable(arg)))
+            }
+            Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
+        }
     }
 
     pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
-            Self::Is(inner) => Box::new(inner.variables()),
             Self::Constraint(inner) => inner.variables(),
+            Self::Is(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
         }
-    }
-
-    pub(super) fn is_variable(&self) -> bool {
-        matches!(self, Self::Variable(_))
     }
 
     pub(super) fn is_constraint(&self) -> bool {
@@ -122,87 +112,78 @@ impl PlannerVertex<'_> {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct ElementCost {
-    pub per_input: f64,
-    pub per_output: f64,
-    pub branching_factor: f64,
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub(crate) struct Cost {
+    pub cost: f64, // per input
+    pub io_ratio: f64,
 }
 
-impl ElementCost {
-    const IN_MEM_COST_SIMPLE: f64 = 0.01;
-    const IN_MEM_COST_COMPLEX: f64 = ElementCost::IN_MEM_COST_SIMPLE * 2.0;
-    pub const EMPTY: Self = Self { per_input: 0.0, per_output: 0.0, branching_factor: 0.0 };
-    pub const MEM_SIMPLE_BRANCH_1: Self = Self {
-        per_input: ElementCost::IN_MEM_COST_SIMPLE,
-        per_output: ElementCost::IN_MEM_COST_SIMPLE,
-        branching_factor: 1.0,
-    };
-    pub const MEM_COMPLEX_BRANCH_1: Self = Self {
-        per_input: ElementCost::IN_MEM_COST_COMPLEX,
-        per_output: ElementCost::IN_MEM_COST_COMPLEX,
-        branching_factor: 1.0,
-    };
+impl Cost {
+    const MIN_IO_RATIO: f64 = 0.000000001;
+    const IN_MEM_COST_SIMPLE: f64 = 0.02;
+    const IN_MEM_COST_COMPLEX: f64 = Cost::IN_MEM_COST_SIMPLE * 2.0;
+    pub const NOOP: Self = Self { cost: 0.0, io_ratio: 1.0 };
+    pub const EMPTY: Self = Self { cost: 0.0, io_ratio: 0.0 };
+    pub const INFINITY: Self = Self { cost: f64::INFINITY, io_ratio: 0.0 };
+    pub const MEM_SIMPLE_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
+    pub const MEM_COMPLEX_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
 
-    fn in_mem_complex_with_branching(branching_factor: f64) -> Self {
-        Self {
-            per_input: ElementCost::IN_MEM_COST_COMPLEX,
-            per_output: ElementCost::IN_MEM_COST_COMPLEX,
-            branching_factor,
-        }
+    fn in_mem_complex_with_ratio(io_ratio: f64) -> Self {
+        Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio }
     }
 
-    fn in_mem_simple_with_branching(branching_factor: f64) -> Self {
-        Self {
-            per_input: ElementCost::IN_MEM_COST_SIMPLE,
-            per_output: ElementCost::IN_MEM_COST_SIMPLE,
-            branching_factor,
-        }
+    fn in_mem_simple_with_ratio(io_ratio: f64) -> Self {
+        Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio }
     }
 
     pub(crate) fn chain(self, other: Self) -> Self {
         Self {
-            per_input: self.per_input + other.per_input * self.branching_factor,
-            per_output: self.per_output / other.branching_factor + other.per_output,
-            branching_factor: self.branching_factor * other.branching_factor,
+            cost: self.cost + other.cost * self.io_ratio,
+            io_ratio: f64::max(self.io_ratio * other.io_ratio, Cost::MIN_IO_RATIO),
+        }
+    }
+
+    pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
+        Self {
+            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix cartesian product situation in Rocks
+            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
         }
     }
 
     pub(crate) fn combine_parallel(self, other: Self) -> Self {
-        fn weighted_mean((lhs_value, lhs_weight): (f64, f64), (rhs_value, rhs_weight): (f64, f64)) -> f64 {
-            (lhs_value * lhs_weight + rhs_value * rhs_weight) / (lhs_weight + rhs_weight)
-        }
-        Self {
-            per_input: self.per_input + other.per_input,
-            per_output: weighted_mean(
-                (self.per_output, self.branching_factor),
-                (other.per_output, other.branching_factor),
-            ),
-            branching_factor: self.branching_factor + other.branching_factor,
-        }
+        Self { cost: self.cost + other.cost, io_ratio: self.io_ratio + other.io_ratio }
     }
 }
 
 pub(super) trait Costed {
-    fn cost(&self, inputs: &[VertexId], sort_variable: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost;
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData);
 }
 
 impl Costed for PlannerVertex<'_> {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         match self {
-            Self::Variable(inner) => inner.cost(inputs, intersection, graph),
-            Self::Constraint(inner) => inner.cost(inputs, intersection, graph),
+            Self::Variable(_) => (Cost::NOOP, CostMetaData::None),
+            Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Is(inner) => inner.cost(inputs, intersection, graph),
-            Self::Comparison(inner) => inner.cost(inputs, intersection, graph),
+            Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::Comparison(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Expression(inner) => inner.cost(inputs, intersection, graph),
-            Self::FunctionCall(inner) => inner.cost(inputs, intersection, graph),
+            Self::Expression(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::FunctionCall(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
-            Self::Negation(inner) => inner.cost(inputs, intersection, graph),
-            Self::Disjunction(inner) => inner.cost(inputs, intersection, graph),
+            Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, graph),
         }
     }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CostMetaData {
+    Direction(Direction), // Cheapest direction of individual constraints
+    // Pushdown(Pushdown), // Pushdown constraints from function calls if they are very selective
+    // Split(Split), // Split negation into disjunctions if one part expensive and low selectivity
+    // Sort(Binding), // Produce sorted iterator for var with binding (easy e.g. for monotone functions)
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -238,7 +219,7 @@ pub(crate) struct ExpressionPlanner<'a> {
     pub expression: &'a ExecutableExpression<Variable>,
     inputs: Vec<VariableVertexId>,
     pub output: VariableVertexId,
-    cost: ElementCost,
+    cost: Cost,
 }
 
 impl<'a> ExpressionPlanner<'a> {
@@ -247,11 +228,11 @@ impl<'a> ExpressionPlanner<'a> {
         inputs: Vec<VariableVertexId>,
         output: VariableVertexId,
     ) -> Self {
-        let cost = ElementCost::MEM_COMPLEX_BRANCH_1;
+        let cost = Cost::MEM_COMPLEX_BRANCH_1;
         Self { inputs, output, cost, expression }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.inputs.iter().all(|&input| ordered.contains(&VertexId::Variable(input)))
     }
 
@@ -261,8 +242,8 @@ impl<'a> ExpressionPlanner<'a> {
 }
 
 impl Costed for ExpressionPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
-        self.cost
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (self.cost, CostMetaData::None)
     }
 }
 
@@ -271,7 +252,7 @@ pub(crate) struct FunctionCallPlanner<'a> {
     pub call_binding: &'a FunctionCallBinding<Variable>,
     pub(super) arguments: Vec<VariableVertexId>,
     pub(super) assigned: Vec<VariableVertexId>,
-    cost: ElementCost,
+    cost: Cost,
 }
 
 impl<'a> FunctionCallPlanner<'a> {
@@ -279,7 +260,7 @@ impl<'a> FunctionCallPlanner<'a> {
         call_binding: &'a FunctionCallBinding<Variable>,
         arguments: Vec<VariableVertexId>,
         assigned: Vec<VariableVertexId>,
-        cost: ElementCost,
+        cost: Cost,
     ) -> Self {
         Self { call_binding, arguments, assigned, cost }
     }
@@ -290,8 +271,8 @@ impl<'a> FunctionCallPlanner<'a> {
 }
 
 impl Costed for FunctionCallPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _graph: &Graph<'_>) -> ElementCost {
-        self.cost
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (self.cost, CostMetaData::None)
     }
 }
 
@@ -314,7 +295,7 @@ impl<'a> IsPlanner<'a> {
         Self { is, lhs: variable_index[&lhs], rhs: variable_index[&rhs] }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         ordered.contains(&VertexId::Variable(self.lhs)) || ordered.contains(&VertexId::Variable(self.rhs))
     }
 
@@ -328,8 +309,8 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -354,7 +335,7 @@ impl<'a> ComparisonPlanner<'a> {
         }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         if let Input::Variable(lhs) = self.lhs {
             if !ordered.contains(&VertexId::Variable(lhs)) {
                 return false;
@@ -378,8 +359,8 @@ impl<'a> ComparisonPlanner<'a> {
 }
 
 impl Costed for ComparisonPlanner<'_> {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
     }
 }
 
@@ -395,7 +376,7 @@ impl<'a> NegationPlanner<'a> {
         Self { plan, shared_variables }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.variables().all(|var| ordered.contains(&VertexId::Variable(var)))
     }
 
@@ -409,8 +390,8 @@ impl<'a> NegationPlanner<'a> {
 }
 
 impl Costed for NegationPlanner<'_> {
-    fn cost(&self, _inputs: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        self.plan.cost()
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (self.plan.cost(), CostMetaData::None)
     }
 }
 
@@ -431,7 +412,7 @@ impl<'a> DisjunctionPlanner<'a> {
         Self { input_variables: Vec::new(), shared_variables, builder }
     }
 
-    fn is_valid(&self, _index: VertexId, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         self.input_variables.iter().all(|&var| ordered.contains(&VertexId::Variable(var)))
     }
 
@@ -445,14 +426,16 @@ impl<'a> DisjunctionPlanner<'a> {
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let input_variables =
-            inputs.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
-        self.builder()
+            vertex_ordering.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
+        let cost = self
+            .builder()
             .branches()
             .iter()
             .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
-            .fold(ElementCost::EMPTY, ElementCost::combine_parallel)
+            .fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost));
+        (cost, CostMetaData::None)
     }
 }
 

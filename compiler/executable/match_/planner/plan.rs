@@ -6,7 +6,8 @@
 
 use std::{
     any::type_name_of_val,
-    collections::{HashMap, HashSet},
+    cmp::Ordering,
+    collections::{BinaryHeap, HashMap, HashSet},
     fmt,
 };
 
@@ -25,7 +26,7 @@ use ir::{
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
-use itertools::{chain, Itertools};
+use itertools::Itertools;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -48,7 +49,7 @@ use crate::{
                     RelatesPlanner, SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                ComparisonPlanner, Costed, Direction, DisjunctionPlanner, ElementCost, ExpressionPlanner,
+                ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
                 FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
             },
             DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
@@ -57,6 +58,8 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+
+pub const MAX_BEAM_WIDTH: usize = 128;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -466,13 +469,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         // TODO: Use the real cost when we have function planning
-        let element_cost = ElementCost { per_input: 1.0, per_output: 1.0, branching_factor: 1.0 };
-        self.graph.push_function_call(FunctionCallPlanner::from_constraint(
-            call_binding,
-            arguments,
-            return_vars,
-            element_cost,
-        ));
+        let cost = Cost { cost: 1.0, io_ratio: 1.0 };
+        self.graph.push_function_call(FunctionCallPlanner::from_constraint(call_binding, arguments, return_vars, cost));
     }
 
     fn register_is(&mut self, is: &'a Is<Variable>) {
@@ -533,136 +531,393 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
-    fn initialise_greedy_ordering(&self) -> Vec<VertexId> {
-        let mut open_set: HashSet<VertexId> = chain!(
-            self.graph.variable_to_pattern.keys().map(|&variable_id| VertexId::Variable(variable_id)),
-            self.graph.pattern_to_variable.keys().map(|&pattern_id| VertexId::Pattern(pattern_id))
-        )
-        .collect();
+    // New approach to planning:
+    //
+    // In our pattern graph, vertices are variables and patterns; edges indicate which patterns contain which variables.
+    // A plan is an ordering of patterns and variable vertices, indicate in which order we retrieve stored patterns
+    // Multiple patterns may be retrieved in the same step if there is a variable on which they can be joined.
+    // Each step may "produce" answers for zero of more variables, which is recorded by appending these variables
+    // (When a step has multiple pattern, the first such produced variable is always the join variable)
+    // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
-        let mut ordering = Vec::with_capacity(self.graph.element_count());
-        for v in self.input_variables() {
-            ordering.push(VertexId::Variable(v));
-            open_set.remove(&VertexId::Variable(v));
-        }
+    fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
+        let num_patterns = self.graph.pattern_to_variable.len();
 
-        let mut produced_at_this_stage: HashSet<VariableVertexId> = HashSet::new();
-        let mut sort_variable: Option<VariableVertexId> = None;
+        let beam_width = ((num_patterns.saturating_sub(10)) * 4).clamp(2, MAX_BEAM_WIDTH);
+        let extension_width = beam_width / 2;
 
-        macro_rules! commit_variables {
-            () => {{
-                if let Some(var) = sort_variable.take().map(VertexId::Variable) {
-                    ordering.push(var);
-                    open_set.remove(&var);
-                }
-                for var in produced_at_this_stage.drain().map(VertexId::Variable) {
-                    if !ordering.contains(&var) {
-                        ordering.push(var);
-                        open_set.remove(&var);
+        let all_patterns = self.graph.pattern_to_variable.keys().copied().collect();
+        let mut best_partial_plans = Vec::with_capacity(beam_width);
+        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), all_patterns, self.input_variables()));
+
+        for _ in 0..num_patterns {
+            let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
+            for plan in best_partial_plans.drain(..) {
+                let mut extension_heap = BinaryHeap::with_capacity(extension_width);
+                for extension in plan.extensions_iter(&self.graph) {
+                    if extension_heap.len() < extension_width {
+                        extension_heap.push(extension);
+                    } else if let Some(top) = extension_heap.peek() {
+                        if extension < *top {
+                            extension_heap.pop();
+                            extension_heap.push(extension);
+                        }
                     }
                 }
-            }};
-        }
 
-        while !open_set.is_empty() {
-            let (next, _cost) = open_set
-                .iter()
-                .filter(|&&elem| self.graph.elements[&elem].is_valid(elem, &ordering, &self.graph))
-                .map(|&elem| {
-                    let cost = self.calculate_marginal_cost(&ordering, elem, sort_variable);
-                    // useful when debugging
-                    let _graph_element = &self.graph.elements[&elem];
-                    (elem, cost)
-                })
-                .min_by(|(_, lhs_cost), (_, rhs_cost)| lhs_cost.total_cmp(rhs_cost))
-                .unwrap();
-            let element = &self.graph.elements[&next];
-
-            if element.is_variable() {
-                commit_variables!();
-            } else if element.is_constraint() {
-                if let Ok(var) = element.variables().filter(|var| produced_at_this_stage.contains(var)).exactly_one() {
-                    let prev = &self.graph.elements[ordering.last().unwrap()];
-                    let next_constraint = &element.as_constraint().unwrap();
-                    let prev_constraint = &prev.as_constraint().unwrap();
-                    if next_constraint.can_sort_on(var)
-                        && prev_constraint.can_sort_on(var)
-                        && (sort_variable == Some(var) || sort_variable.is_none())
+                for extension in extension_heap.drain() {
+                    let new_plan = if !extension.is_constraint(&self.graph) {
+                        plan.clone_and_extend_with_new_step(extension, &self.graph)
+                    } else if extension.step_join_var.is_some()
+                        && (plan.ongoing_step_join_var.is_none()
+                            || plan.ongoing_step_join_var == extension.step_join_var)
                     {
-                        sort_variable = Some(var);
+                        plan.clone_and_extend_with_continued_step(extension, &self.graph)
                     } else {
-                        commit_variables!()
-                    }
-                } else {
-                    commit_variables!()
-                }
+                        plan.clone_and_extend_with_new_step(extension, &self.graph)
+                    };
 
-                produced_at_this_stage
-                    .extend(element.variables().filter(|&var| !ordering.contains(&VertexId::Variable(var))));
-
-                if sort_variable.is_none() {
-                    let constraint = element.as_constraint().unwrap();
-                    if constraint.unbound_direction(&self.graph) == Direction::Canonical {
-                        if let Some(candidate_sort_variable) = constraint.variables().next() {
-                            if produced_at_this_stage.contains(&candidate_sort_variable) {
-                                sort_variable = Some(candidate_sort_variable);
-                            }
+                    if new_plans_heap.len() < beam_width {
+                        new_plans_heap.push(new_plan);
+                    } else if let Some(top) = new_plans_heap.peek() {
+                        if new_plan < *top {
+                            new_plans_heap.pop();
+                            new_plans_heap.push(new_plan);
                         }
-                    } else {
-                        if let Some(candidate_sort_variable) = constraint.variables().nth(1) {
-                            if produced_at_this_stage.contains(&candidate_sort_variable) {
-                                sort_variable = Some(candidate_sort_variable);
-                            }
-                        }
-                    }
-                }
-
-                ordering.push(next);
-                open_set.remove(&next);
-            } else {
-                commit_variables!();
-                ordering.push(next);
-                open_set.remove(&next);
-                for var in element.variables().map(VertexId::Variable) {
-                    if !ordering.contains(&var) {
-                        ordering.push(var);
-                        open_set.remove(&var);
                     }
                 }
             }
+            best_partial_plans = new_plans_heap.into_vec();
         }
-        ordering
+
+        let best_plan = best_partial_plans.into_iter().min().unwrap();
+        let complete_plan = best_plan.into_complete_plan();
+        (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
-    fn calculate_marginal_cost(
-        &self,
-        prefix: &[VertexId],
-        next: VertexId,
-        sort_variable: Option<VariableVertexId>,
-    ) -> f64 {
-        assert!(!prefix.contains(&next));
-        let planner_vertex = &self.graph.elements[&next];
-        let ElementCost { per_input, per_output, branching_factor } =
-            planner_vertex.cost(prefix, sort_variable, &self.graph);
-        per_input + branching_factor * per_output
-    }
-
+    // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
-        let ordering = self.initialise_greedy_ordering();
+        // Beam plan
+        let (ordering, metadata) = self.beam_search_plan();
+
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
         let cost = ordering
             .iter()
             .enumerate()
-            .map(|(i, idx)| {
-                let sort_variable = ordering.get(i + 1).and_then(|vertex| vertex.as_variable_id());
-                self.graph.elements[idx].cost(&ordering[..i], sort_variable, &self.graph)
-            })
-            .fold(ElementCost::MEM_SIMPLE_BRANCH_1, |acc, e| acc.chain(e));
+            .map(|(i, idx)| self.graph.elements[idx].cost_and_metadata(&ordering[..i], &self.graph))
+            .fold(Cost::MEM_SIMPLE_BRANCH_1, |acc, (cost, _)| acc.chain(cost));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
-        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, element_to_order, cost }
+        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, metadata, element_to_order, cost }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct CompleteCostPlan {
+    vertex_ordering: Vec<VertexId>,
+    pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
+    cumulative_cost: Cost,
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct PartialCostPlan {
+    vertex_ordering: Vec<VertexId>,
+    pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
+    cumulative_cost: Cost,
+    remaining_patterns: HashSet<PatternVertexId>,
+    ongoing_step: Vec<VertexId>,
+    ongoing_step_cost: Cost,
+    ongoing_step_produced_vars: HashSet<VariableVertexId>,
+    ongoing_step_join_var: Option<VariableVertexId>,
+    projected_cost: Cost,
+}
+
+impl PartialCostPlan {
+    fn new(
+        total_plan_len: usize,
+        remaining_patterns: HashSet<PatternVertexId>,
+        inputs: impl Iterator<Item = VariableVertexId> + Sized,
+    ) -> Self {
+        let mut vertex_ordering = Vec::with_capacity(total_plan_len);
+        for v in inputs {
+            vertex_ordering.push(VertexId::Variable(v));
+        }
+        Self {
+            vertex_ordering,
+            pattern_metadata: HashMap::new(),
+            cumulative_cost: Cost::NOOP,
+            remaining_patterns,
+            ongoing_step: Vec::new(),
+            ongoing_step_cost: Cost::NOOP,
+            ongoing_step_produced_vars: HashSet::new(),
+            ongoing_step_join_var: None,
+            projected_cost: Cost::INFINITY,
+        }
+    }
+
+    fn extensions_iter<'a>(&'a self, graph: &'a Graph<'_>) -> impl Iterator<Item = StepExtension> + 'a {
+        let mut all_available_vars = self.vertex_ordering.clone();
+        all_available_vars.extend(self.ongoing_step_produced_vars.iter().map(|&var| VertexId::Variable(var)));
+
+        self.remaining_patterns
+            .iter()
+            .filter({
+                let all_available_vars = all_available_vars.clone();
+                move |&&extension| {
+                    let pattern_id = VertexId::Pattern(extension);
+                    graph.elements[&pattern_id].is_valid(pattern_id, &all_available_vars, graph)
+                }
+            })
+            .flat_map(move |&extension| {
+                let join_var = self.determine_joinability(graph, extension);
+
+                if join_var.is_none() {
+                    vec![(extension, join_var)].into_iter()
+                } else {
+                    vec![(extension, None), (extension, join_var)].into_iter()
+                }
+            })
+            .map(move |(extension, join_var)| {
+                let added_cost: Cost;
+                let meta_data: CostMetaData;
+
+                if join_var.is_none() {
+                    (added_cost, meta_data) = self.compute_added_cost(graph, extension, &all_available_vars, join_var);
+                } else {
+                    (added_cost, meta_data) =
+                        self.compute_added_cost(graph, extension, &self.vertex_ordering, join_var);
+                }
+
+                let mut cost_before_extension = self.cumulative_cost;
+                if join_var.is_none() {
+                    // Complete ongoing step
+                    cost_before_extension = cost_before_extension.chain(self.ongoing_step_cost);
+                }
+
+                let projected_cost = cost_before_extension
+                    .chain(added_cost)
+                    .chain(self.heuristic_plan_completion_cost(graph, extension));
+
+                StepExtension {
+                    pattern_extension: extension,
+                    pattern_metadata: meta_data,
+                    step_cost: added_cost,
+                    step_join_var: join_var,
+                    projected_cost,
+                }
+            })
+    }
+
+    fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
+        let mut updated_join_var: Option<VariableVertexId> = None;
+        if let Some(prev_constraint) = self.ongoing_step.last() {
+            let planner = &graph.elements[&VertexId::Pattern(pattern)];
+            if let PlannerVertex::Constraint(constraint) = planner {
+                if let Ok(candidate_join_var) =
+                    constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
+                {
+                    if self.ongoing_step_join_var.is_none()
+                        && constraint.can_sort_on(candidate_join_var)
+                        && graph.elements[prev_constraint]
+                            .as_constraint()
+                            .map_or(false, |c| c.can_sort_on(candidate_join_var))
+                    {
+                        updated_join_var = Some(candidate_join_var);
+                    } else if self.ongoing_step_join_var == Some(candidate_join_var)
+                        && constraint.can_sort_on(candidate_join_var)
+                    {
+                        updated_join_var = self.ongoing_step_join_var;
+                    }
+                }
+            }
+        };
+        updated_join_var
+    }
+
+    fn compute_added_cost(
+        &self,
+        graph: &Graph<'_>,
+        pattern: PatternVertexId,
+        input_vars: &[VertexId],
+        join_var: Option<VariableVertexId>,
+    ) -> (Cost, CostMetaData) {
+        let planner = &graph.elements[&VertexId::Pattern(pattern)];
+        let (updated_cost, extension_metadata) = match planner {
+            PlannerVertex::Constraint(constraint) => {
+                if let Some(join_var) = join_var {
+                    let total_join_size = graph.elements[&VertexId::Variable(join_var)]
+                        .as_variable()
+                        .unwrap()
+                        .expected_output_size(&self.vertex_ordering);
+                    let (constraint_cost, meta_data) = constraint.cost_and_metadata(input_vars, graph);
+                    (self.ongoing_step_cost.join(constraint_cost, total_join_size), meta_data)
+                } else {
+                    constraint.cost_and_metadata(input_vars, graph)
+                }
+            }
+            planner_vertex => planner_vertex.cost_and_metadata(&self.vertex_ordering, graph),
+        };
+        (updated_cost, extension_metadata)
+    }
+
+    fn heuristic_plan_completion_cost(&self, _graph: &Graph<'_>, _pattern: PatternVertexId) -> Cost {
+        Cost::NOOP
+    }
+
+    fn clone_and_extend_with_continued_step(&self, extension: StepExtension, graph: &Graph<'_>) -> PartialCostPlan {
+        let mut new_ongoing_step = self.ongoing_step.clone();
+        new_ongoing_step.push(VertexId::Pattern(extension.pattern_extension));
+
+        let mut new_pattern_metadata = self.pattern_metadata.clone();
+        new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
+
+        let mut new_remaining_patterns = self.remaining_patterns.clone();
+        new_remaining_patterns.remove(&extension.pattern_extension);
+
+        let mut new_produced_vars = self.ongoing_step_produced_vars.clone();
+        new_produced_vars.extend(
+            graph.pattern_to_variable[&extension.pattern_extension]
+                .iter()
+                .copied()
+                .filter(|&var| !self.vertex_ordering.contains(&VertexId::Variable(var))),
+        );
+
+        PartialCostPlan {
+            vertex_ordering: self.vertex_ordering.clone(),
+            pattern_metadata: new_pattern_metadata,
+            remaining_patterns: new_remaining_patterns,
+            cumulative_cost: self.cumulative_cost,
+            ongoing_step: new_ongoing_step,
+            ongoing_step_cost: extension.step_cost,
+            ongoing_step_produced_vars: new_produced_vars,
+            ongoing_step_join_var: extension.step_join_var,
+            projected_cost: extension.projected_cost,
+        }
+    }
+
+    fn clone_and_extend_with_new_step(&self, extension: StepExtension, graph: &Graph<'_>) -> PartialCostPlan {
+        // Commit previous step to plan
+        let mut new_vertex_ordering = self.vertex_ordering.clone();
+        for &pattern in self.ongoing_step.iter() {
+            new_vertex_ordering.push(pattern);
+            debug_assert!(!self.vertex_ordering.contains(&pattern));
+        }
+        if let Some(join_var) = self.ongoing_step_join_var {
+            new_vertex_ordering.push(VertexId::Variable(join_var));
+            for var in self.ongoing_step_produced_vars.clone() {
+                if var != join_var && !self.vertex_ordering.contains(&VertexId::Variable(var)) {
+                    new_vertex_ordering.push(VertexId::Variable(var));
+                }
+            }
+        } else {
+            for var in self.ongoing_step_produced_vars.clone() {
+                if !self.vertex_ordering.contains(&VertexId::Variable(var)) {
+                    new_vertex_ordering.push(VertexId::Variable(var));
+                }
+            }
+        }
+
+        // Start new step with plan extension
+        let new_ongoing_step = vec![VertexId::Pattern(extension.pattern_extension)];
+
+        let mut new_pattern_metadata = self.pattern_metadata.clone();
+        new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
+
+        let mut new_remaining_patterns = self.remaining_patterns.clone();
+        new_remaining_patterns.remove(&extension.pattern_extension);
+
+        let mut new_produced_vars = HashSet::new();
+        new_produced_vars.extend(
+            graph.pattern_to_variable[&extension.pattern_extension]
+                .iter()
+                .copied()
+                .filter(|&var| !new_vertex_ordering.contains(&VertexId::Variable(var))),
+        );
+
+        PartialCostPlan {
+            vertex_ordering: new_vertex_ordering,
+            pattern_metadata: new_pattern_metadata,
+            remaining_patterns: new_remaining_patterns,
+            cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
+            ongoing_step: new_ongoing_step,
+            ongoing_step_cost: extension.step_cost,
+            ongoing_step_produced_vars: new_produced_vars,
+            ongoing_step_join_var: None,
+            projected_cost: extension.projected_cost,
+        }
+    }
+
+    fn into_complete_plan(self) -> CompleteCostPlan {
+        let mut final_vertex_ordering = self.vertex_ordering.clone();
+        for &pattern in self.ongoing_step.iter() {
+            final_vertex_ordering.push(pattern);
+            debug_assert!(!self.vertex_ordering.contains(&pattern));
+        }
+        if let Some(join_var) = self.ongoing_step_join_var {
+            final_vertex_ordering.push(VertexId::Variable(join_var));
+            for var in self.ongoing_step_produced_vars.clone() {
+                if var != join_var && !self.vertex_ordering.contains(&VertexId::Variable(var)) {
+                    final_vertex_ordering.push(VertexId::Variable(var));
+                }
+            }
+        } else {
+            for var in self.ongoing_step_produced_vars.clone() {
+                if !self.vertex_ordering.contains(&VertexId::Variable(var)) {
+                    final_vertex_ordering.push(VertexId::Variable(var));
+                }
+            }
+        }
+
+        CompleteCostPlan {
+            vertex_ordering: final_vertex_ordering,
+            pattern_metadata: self.pattern_metadata.clone(),
+            cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
+        }
+    }
+}
+
+impl Eq for PartialCostPlan {}
+
+impl PartialOrd for PartialCostPlan {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for PartialCostPlan {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.projected_cost.cost.partial_cmp(&other.projected_cost.cost).unwrap_or(Ordering::Greater)
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct StepExtension {
+    pattern_extension: PatternVertexId,
+    pattern_metadata: CostMetaData,
+    step_cost: Cost,
+    step_join_var: Option<VariableVertexId>,
+    projected_cost: Cost,
+}
+
+impl StepExtension {
+    fn is_constraint(&self, graph: &Graph<'_>) -> bool {
+        graph.elements[&VertexId::Pattern(self.pattern_extension)].is_constraint()
+    }
+}
+
+impl Eq for StepExtension {}
+
+impl PartialOrd for StepExtension {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for StepExtension {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.projected_cost.cost.partial_cmp(&other.projected_cost.cost).unwrap_or(Ordering::Greater)
     }
 }
 
@@ -671,9 +926,10 @@ pub(super) struct ConjunctionPlan<'a> {
     shared_variables: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
-    ordering: Vec<VertexId>,
+    ordering: Vec<VertexId>, //TODO: replace with the CostPlan
+    metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
-    cost: ElementCost,
+    cost: Cost,
 }
 
 impl fmt::Debug for ConjunctionPlan<'_> {
@@ -785,6 +1041,7 @@ impl ConjunctionPlan<'_> {
             return;
         }
 
+        let is_join = self.producers_of_var(var).nth(1).is_some();
         for producer in self.producers_of_var(var) {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
@@ -803,7 +1060,8 @@ impl ConjunctionPlan<'_> {
                 PlannerVertex::Constraint(constraint) => {
                     let inputs =
                         self.inputs_of_pattern(producer).map(|var| self.graph.index_to_variable[&var]).collect_vec();
-                    self.lower_constraint(match_builder, constraint, inputs, variable)
+                    let sort_variable = is_join.then_some(variable); // otherwise use metadata
+                    self.lower_constraint(match_builder, constraint, self.metadata[&producer], inputs, sort_variable)
                 }
                 PlannerVertex::Expression(expression) => {
                     let output = match_builder.position_mapping()[&self.graph.index_to_variable[&expression.output]];
@@ -956,8 +1214,9 @@ impl ConjunctionPlan<'_> {
         &self,
         match_builder: &mut MatchExecutableBuilder,
         constraint: &ConstraintVertex<'_>,
+        metadata: CostMetaData,
         inputs: Vec<Variable>,
-        sort_variable: Variable,
+        sort_variable: Option<Variable>,
     ) {
         if let Some(StepBuilder {
             builder:
@@ -972,39 +1231,52 @@ impl ConjunctionPlan<'_> {
 
         macro_rules! binary {
             ($((with $with:ident))? $lhs:ident $con:ident $rhs:ident, $fw:ident($fwi:ident), $bw:ident($bwi:ident)) => {{
-                let lhs = $con.$lhs();
-                let rhs = $con.$rhs();
+                let lhs_var = $con.$lhs().as_variable();
+                let rhs_var = $con.$rhs().as_variable();
 
-                let lhs_var = lhs.as_variable();
-                let rhs_var = rhs.as_variable();
+                let lhs_input = lhs_var.filter(|lhs| inputs.contains(&lhs));
+                let rhs_input = rhs_var.filter(|rhs| inputs.contains(&rhs));
 
-                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                let inputs = match (lhs_input, rhs_input) {
+                    (Some(lhs), Some(rhs)) => Inputs::Dual([lhs, rhs]), // useful for links
+                    (Some(var), None) | (None, Some(var)) => Inputs::Single([var]),
+                    (None, None) => Inputs::None([]),
+                };
 
-                assert!(num_input_variables > 0);
-
-                assert_ne!(inputs.len(), num_input_variables);
+                let direction = if matches!(inputs, Inputs::None([])) {
+                    if sort_variable == lhs_var {
+                        Direction::Canonical
+                    } else if sort_variable == rhs_var {
+                        Direction::Reverse
+                    } else {
+                        let CostMetaData::Direction(unbound_direction) = metadata else {
+                            unreachable!("expected metadata for constraint")
+                        };
+                        unbound_direction
+                    }
+                } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
+                    Direction::Reverse
+                } else {
+                    Direction::Canonical
+                };
 
                 let con = $con.clone();
-                let instruction = if lhs_var.is_some_and(|lhs| inputs.contains(&lhs)) {
-                    ConstraintInstruction::$fw($fwi::new(
-                        con,
-                        Inputs::Single([lhs_var.unwrap()]),
-                        self.type_annotations,
-                    ))
-                } else if rhs_var.is_some_and(|rhs| inputs.contains(&rhs)) {
-                    ConstraintInstruction::$bw($bwi::new(
-                        con,
-                        Inputs::Single([rhs_var.unwrap()]),
-                        self.type_annotations,
-                    ))
-                } else if Some(sort_variable) == lhs_var
-                    || (Some(sort_variable) != rhs_var
-                        && constraint.unbound_direction(&self.graph) == Direction::Canonical)
-                {
-                    ConstraintInstruction::$fw($fwi::new(con, Inputs::None([]), self.type_annotations))
-                } else {
-                    ConstraintInstruction::$bw($bwi::new(con, Inputs::None([]), self.type_annotations))
+                let instruction = match direction {
+                    Direction::Canonical => ConstraintInstruction::$fw($fwi::new(con, inputs, self.type_annotations)),
+                    Direction::Reverse => ConstraintInstruction::$bw($bwi::new(con, inputs, self.type_annotations)),
                 };
+
+                let lhs_produced = lhs_var.xor(lhs_input);
+                let rhs_produced = rhs_var.xor(rhs_input);
+
+                #[allow(unused)]
+                let mut tag: Option<Variable> = None;
+                $(tag = $con.$with().as_variable();)?
+
+                let sort_variable = match direction {
+                    Direction::Canonical => lhs_produced.or(rhs_produced),
+                    Direction::Reverse => rhs_produced.or(lhs_produced),
+                }.or(tag).unwrap();
 
                 match_builder.push_instruction(sort_variable, instruction);
             }};
@@ -1026,7 +1298,7 @@ impl ConjunctionPlan<'_> {
 
             ConstraintVertex::Sub(planner) => {
                 let sub = planner.sub();
-                binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
+                binary!(subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
             }
             ConstraintVertex::Owns(planner) => {
                 let owns = planner.owns();
@@ -1043,7 +1315,7 @@ impl ConjunctionPlan<'_> {
 
             ConstraintVertex::Isa(planner) => {
                 let isa = planner.isa();
-                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+                binary!(thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
             }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();
@@ -1051,51 +1323,8 @@ impl ConjunctionPlan<'_> {
             }
             ConstraintVertex::Links(planner) => {
                 let links = planner.links();
-
-                let relation = links.relation().as_variable().unwrap();
-                let player = links.player().as_variable().unwrap();
-                let _role = links.role_type().as_variable().unwrap();
-
-                assert_ne!(inputs.len(), 3);
-
-                let links = links.clone();
-                let instruction = if inputs.contains(&relation) && inputs.contains(&player) {
-                    if planner.unbound_direction(&self.graph) == Direction::Canonical {
-                        ConstraintInstruction::Links(LinksInstruction::new(
-                            links,
-                            Inputs::Dual([relation, player]),
-                            self.type_annotations,
-                        ))
-                    } else {
-                        ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                            links,
-                            Inputs::Dual([relation, player]),
-                            self.type_annotations,
-                        ))
-                    }
-                } else if inputs.contains(&relation) {
-                    ConstraintInstruction::Links(LinksInstruction::new(
-                        links,
-                        Inputs::Single([relation]),
-                        self.type_annotations,
-                    ))
-                } else if inputs.contains(&player) {
-                    ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                        links,
-                        Inputs::Single([player]),
-                        self.type_annotations,
-                    ))
-                } else if planner.unbound_direction(&self.graph) == Direction::Canonical {
-                    ConstraintInstruction::Links(LinksInstruction::new(links, Inputs::None([]), self.type_annotations))
-                } else {
-                    ConstraintInstruction::LinksReverse(LinksReverseInstruction::new(
-                        links,
-                        Inputs::None([]),
-                        self.type_annotations,
-                    ))
-                };
-
-                match_builder.push_instruction(sort_variable, instruction);
+                // binary!() works here even though links is ostensibly ternary
+                binary!((with role_type) relation links player, Links(LinksInstruction), LinksReverse(LinksReverseInstruction))
             }
         }
     }
@@ -1186,7 +1415,7 @@ impl ConjunctionPlan<'_> {
         }
     }
 
-    pub(super) fn cost(&self) -> ElementCost {
+    pub(super) fn cost(&self) -> Cost {
         self.cost
     }
 
@@ -1212,7 +1441,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
     fn plan(self, input_variables: impl Iterator<Item = Variable> + Clone) -> DisjunctionPlan<'a> {
         let branches =
             self.branches.into_iter().map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect_vec();
-        let cost = branches.iter().map(ConjunctionPlan::cost).fold(ElementCost::EMPTY, ElementCost::combine_parallel);
+        let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
         DisjunctionPlan { branches, _cost: cost }
     }
 }
@@ -1220,7 +1449,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlan<'a> {
     branches: Vec<ConjunctionPlan<'a>>,
-    _cost: ElementCost,
+    _cost: Cost,
 }
 
 impl DisjunctionPlan<'_> {
@@ -1273,10 +1502,6 @@ impl fmt::Debug for Graph<'_> {
 }
 
 impl<'a> Graph<'a> {
-    fn element_count(&self) -> usize {
-        self.variable_to_pattern.len() + self.pattern_to_variable.len()
-    }
-
     fn push_variable(&mut self, variable: Variable, vertex: VariableVertex) {
         let index = self.next_variable_index();
         self.elements.insert(VertexId::Variable(index), PlannerVertex::Variable(vertex));
@@ -1365,10 +1590,6 @@ impl<'a> Graph<'a> {
         let pattern_index = self.next_pattern_id;
         self.next_pattern_id.0 += 1;
         pattern_index
-    }
-
-    pub(super) fn variable_to_pattern(&self) -> &HashMap<VariableVertexId, HashSet<PatternVertexId>> {
-        &self.variable_to_pattern
     }
 
     pub(super) fn elements(&self) -> &HashMap<VertexId, PlannerVertex<'a>> {

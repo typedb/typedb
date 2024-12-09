@@ -107,6 +107,15 @@ impl ImmediateExecutor {
         )))
     }
 
+    pub(crate) fn reset(&mut self) {
+        match self {
+            ImmediateExecutor::SortedJoin(sorted) => sorted.reset(),
+            ImmediateExecutor::UnsortedJoin(unsorted) => unsorted.reset(),
+            ImmediateExecutor::Assignment(assignment) => assignment.reset(),
+            ImmediateExecutor::Check(check) => check.reset(),
+        }
+    }
+
     pub(crate) fn prepare(
         &mut self,
         input_batch: FixedBatch,
@@ -137,7 +146,7 @@ impl ImmediateExecutor {
 /// Performs an n-way intersection/join using sorted iterators.
 /// To avoid missing cartesian outputs when multiple variables are unbound, the executor can leverage a
 /// Cartesian sub-program, which generates all cartesian answers within one intersection, if there are any.
-pub(super) struct IntersectionExecutor {
+pub(crate) struct IntersectionExecutor {
     instruction_executors: Vec<InstructionExecutor>,
     output_width: u32,
     outputs_selected: SelectedPositions,
@@ -149,8 +158,6 @@ pub(super) struct IntersectionExecutor {
     intersection_value: VariableValue<'static>,
     intersection_row: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
-
-    output: Option<FixedBatch>,
 
     profile: Arc<StepProfile>,
 }
@@ -183,9 +190,13 @@ impl IntersectionExecutor {
             intersection_value: VariableValue::Empty,
             intersection_row: vec![VariableValue::Empty; output_width as usize],
             intersection_multiplicity: 1,
-            output: None,
             profile,
         })
+    }
+
+    fn reset(&mut self) {
+        self.input = None;
+        self.iterators.clear();
     }
 
     fn prepare(
@@ -193,10 +204,12 @@ impl IntersectionExecutor {
         input_batch: FixedBatch,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
-        debug_assert!(self.output.is_none() && (self.input.is_none() || self.input.as_mut().unwrap().peek().is_none()));
+        let measurement = self.profile.start_measurement();
+        debug_assert!(self.input.is_none() || self.input.as_mut().unwrap().peek().is_none());
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(context)?;
+        measurement.end(&self.profile, 0, 0);
         Ok(())
     }
 
@@ -205,27 +218,27 @@ impl IntersectionExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        debug_assert!(self.output.is_none());
-        self.may_compute_next_batch(context)?;
-        Ok(self.output.take())
+        self.may_compute_next_batch(context)
     }
 
     fn may_compute_next_batch(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-    ) -> Result<(), ReadExecutionError> {
+    ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         let measurement = self.profile.start_measurement();
-        if self.compute_next_row(context)? {
+        let output = if self.compute_next_row(context)? {
             // don't allocate batch until 1 answer is confirmed
             let mut batch = FixedBatch::new(self.output_width);
             batch.append(|mut row| self.write_next_row_into(&mut row));
             while !batch.is_full() && self.compute_next_row(context)? {
                 batch.append(|mut row| self.write_next_row_into(&mut row));
             }
-            self.output = Some(batch);
-        }
-        measurement.end(&self.profile, 1, self.output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
-        Ok(())
+            Some(batch)
+        } else {
+            None
+        };
+        measurement.end(&self.profile, 1, output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
+        Ok(output)
     }
 
     fn write_next_row_into(&mut self, row: &mut Row<'_>) {
@@ -611,7 +624,7 @@ impl CartesianIterator {
     }
 }
 
-pub(super) struct UnsortedJoinExecutor {
+pub(crate) struct UnsortedJoinExecutor {
     iterate: ConstraintInstruction<ExecutorVariable>,
     checks: Vec<ConstraintInstruction<ExecutorVariable>>,
 
@@ -630,23 +643,27 @@ impl UnsortedJoinExecutor {
         Self { iterate, checks, output_width: total_vars, output: None, profile }
     }
 
+    fn reset(&mut self) {
+        todo!()
+    }
+
     fn prepare(
         &mut self,
-        input_batch: FixedBatch,
-        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        _input_batch: FixedBatch,
+        _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<(), ReadExecutionError> {
         todo!()
     }
 
     fn batch_continue(
         &mut self,
-        context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         todo!()
     }
 }
 
-pub(super) struct AssignExecutor {
+pub(crate) struct AssignExecutor {
     expression: ExecutableExpression<VariablePosition>,
     inputs: Vec<VariablePosition>,
     output: ExecutorVariable,
@@ -667,6 +684,10 @@ impl AssignExecutor {
         profile: Arc<StepProfile>,
     ) -> Self {
         Self { expression, inputs, output, selected_variables, output_width, profile, prepared_input: None }
+    }
+
+    fn reset(&mut self) {
+        self.prepared_input = None;
     }
 
     fn prepare(
@@ -728,7 +749,7 @@ impl AssignExecutor {
     }
 }
 
-pub(super) struct CheckExecutor {
+pub(crate) struct CheckExecutor {
     checker: Checker<()>,
     selected_variables: Vec<VariablePosition>,
     output_width: u32,
@@ -747,10 +768,14 @@ impl CheckExecutor {
         Self { checker, selected_variables, output_width, input: None, profile }
     }
 
+    fn reset(&mut self) {
+        self.input = None;
+    }
+
     fn prepare(
         &mut self,
         input_batch: FixedBatch,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        _context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
         self.input = Some(input_batch);
         Ok(())

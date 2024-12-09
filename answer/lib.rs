@@ -90,6 +90,22 @@ impl Type {
         }
     }
 
+    pub fn is_entity_type(&self) -> bool {
+        matches!(self, Type::Entity(_))
+    }
+
+    pub fn is_relation_type(&self) -> bool {
+        matches!(self, Type::Relation(_))
+    }
+
+    pub fn is_attribute_type(&self) -> bool {
+        matches!(self, Type::Attribute(_))
+    }
+
+    pub fn is_role_type(&self) -> bool {
+        matches!(self, Type::RoleType(_))
+    }
+
     pub fn as_entity_type(&self) -> EntityType {
         match self {
             Type::Entity(entity) => *entity,

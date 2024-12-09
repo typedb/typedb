@@ -82,7 +82,8 @@ impl PatternExecutor {
                 StepExecutors::Nested(inner) => inner.reset(),
                 StepExecutors::StreamModifier(inner) => inner.reset(),
                 StepExecutors::CollectingStage(inner) => inner.reset(),
-                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) | StepExecutors::Immediate(_) => {}
+                StepExecutors::Immediate(inner) => inner.reset(),
+                StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) => {}
             }
         }
         self.control_stack.push(ControlInstruction::PatternStart(PatternStart { input_batch }));
@@ -122,65 +123,7 @@ impl PatternExecutor {
                 ControlInstruction::RestoreSuspension(RestoreSuspension { depth }) => {
                     debug_assert!(depth == suspensions.current_depth()); // Smell. The depth in the step is redundant
                     if let Some(point) = suspensions.next_restore_point_at_current_depth() {
-                        control_stack.push(ControlInstruction::RestoreSuspension(RestoreSuspension { depth }));
-                        match point {
-                            PatternSuspension::AtTabledCall(suspended_call) => {
-                                let TabledCallSuspension { executor_index, next_table_row, input_row, .. } =
-                                    suspended_call;
-                                let executor = executors[executor_index.0].unwrap_tabled_call();
-                                executor.restore_from_suspension(input_row, next_table_row);
-                                control_stack
-                                    .push(ControlInstruction::ExecuteTabledCall(TabledCall { index: executor_index }))
-                            }
-                            PatternSuspension::AtNestedPattern(suspended_nested) => {
-                                let NestedPatternSuspension { executor_index, input_row, branch_index, depth } =
-                                    suspended_nested;
-                                if let StepExecutors::Nested(nested) = &mut executors[executor_index.0] {
-                                    match nested {
-                                        NestedPatternExecutor::Negation(_) => {
-                                            unreachable!("Stratification must have been violated")
-                                        }
-                                        NestedPatternExecutor::Disjunction(disjunction) => {
-                                            disjunction.branches[branch_index.0]
-                                                .prepare_to_restore_from_suspension(depth);
-                                            control_stack.push(ControlInstruction::ExecuteDisjunction(
-                                                ExecuteDisjunction {
-                                                    index: executor_index,
-                                                    branch_index,
-                                                    input: input_row.into_owned(),
-                                                },
-                                            ))
-                                        }
-                                        NestedPatternExecutor::InlinedFunction(inlined) => {
-                                            inlined.inner.prepare_to_restore_from_suspension(depth);
-                                            control_stack.push(ControlInstruction::ExecuteInlinedFunction(
-                                                ExecuteInlinedFunction {
-                                                    index: executor_index,
-                                                    input: input_row.into_owned(),
-                                                },
-                                            ))
-                                        }
-                                    }
-                                } else if let StepExecutors::StreamModifier(StreamModifierExecutor::Distinct {
-                                    inner,
-                                    output_width,
-                                }) = &mut executors[executor_index.0]
-                                {
-                                    inner.prepare_to_restore_from_suspension(depth);
-                                    control_stack.push(ControlInstruction::ExecuteStreamModifier(
-                                        ExecuteStreamModifier {
-                                            index: executor_index,
-                                            mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(
-                                                *output_width,
-                                            )),
-                                            input: input_row.into_owned(),
-                                        },
-                                    ))
-                                } else {
-                                    todo!("Any other modifier should be illegal")
-                                }
-                            }
-                        }
+                        restore_suspension(control_stack, executors, depth, point);
                     }
                 }
                 ControlInstruction::ExecuteImmediate(ExecuteImmediate { index }) => {
@@ -513,5 +456,58 @@ impl PatternExecutor {
             self.push_next_instruction(context, index.next(), mapped)?;
         }
         Ok(())
+    }
+}
+
+fn restore_suspension(
+    control_stack: &mut Vec<ControlInstruction>,
+    executors: &mut [StepExecutors],
+    depth: usize,
+    point: PatternSuspension,
+) {
+    control_stack.push(ControlInstruction::RestoreSuspension(RestoreSuspension { depth }));
+    match point {
+        PatternSuspension::AtTabledCall(suspended_call) => {
+            let TabledCallSuspension { executor_index, next_table_row, input_row, .. } = suspended_call;
+            let executor = executors[executor_index.0].unwrap_tabled_call();
+            executor.restore_from_suspension(input_row, next_table_row);
+            control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index: executor_index }))
+        }
+        PatternSuspension::AtNestedPattern(suspended_nested) => {
+            let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
+            if let StepExecutors::Nested(nested) = &mut executors[executor_index.0] {
+                match nested {
+                    NestedPatternExecutor::Negation(_) => {
+                        unreachable!("Stratification must have been violated")
+                    }
+                    NestedPatternExecutor::Disjunction(disjunction) => {
+                        disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(depth);
+                        control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
+                            index: executor_index,
+                            branch_index,
+                            input: input_row.into_owned(),
+                        }))
+                    }
+                    NestedPatternExecutor::InlinedFunction(inlined) => {
+                        inlined.inner.prepare_to_restore_from_suspension(depth);
+                        control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
+                            index: executor_index,
+                            input: input_row.into_owned(),
+                        }))
+                    }
+                }
+            } else if let StepExecutors::StreamModifier(StreamModifierExecutor::Distinct { inner, output_width }) =
+                &mut executors[executor_index.0]
+            {
+                inner.prepare_to_restore_from_suspension(depth);
+                control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                    index: executor_index,
+                    mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width)),
+                    input: input_row.into_owned(),
+                }))
+            } else {
+                todo!("Any other modifier should be illegal")
+            }
+        }
     }
 }

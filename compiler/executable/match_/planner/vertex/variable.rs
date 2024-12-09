@@ -13,8 +13,8 @@ use ir::pattern::Vertex;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::planner::{
-        plan::{Graph, PatternVertexId, VariableVertexId, VertexId},
-        vertex::{Costed, ElementCost, Input},
+        plan::{PatternVertexId, VariableVertexId, VertexId},
+        vertex::Input,
     },
 };
 
@@ -32,17 +32,6 @@ impl VariableVertex {
     const SELECTIVITY_MIN: f64 = 0.000001;
     pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0;
 
-    pub(super) fn is_valid(&self, index: VertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        let VertexId::Variable(index) = index else { unreachable!("variable with incompatible index: {index:?}") };
-        match self {
-            Self::Input(_) => true, // always valid: comes from the enclosing scope
-
-            Self::Type(inner) => inner.is_valid(index, ordered, graph),
-            Self::Thing(inner) => inner.is_valid(index, ordered, graph),
-            Self::Value(inner) => inner.is_valid(index, ordered, graph),
-        }
-    }
-
     pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {
         let unrestricted_size = match self {
             Self::Input(_) => 1.0,
@@ -50,23 +39,31 @@ impl VariableVertex {
             Self::Thing(inner) => inner.unrestricted_expected_size,
             Self::Value(_) => 1.0,
         };
-        f64::max(unrestricted_size * self.selectivity(inputs), Self::OUTPUT_SIZE_MIN)
+        f64::max(unrestricted_size * self.restriction_based_selectivity(inputs), Self::OUTPUT_SIZE_MIN)
     }
 
-    pub(crate) fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    pub(crate) fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // the fraction of possible actual outputs (based on type information) when restricted (for example, by comparators)
         match self {
             VariableVertex::Input(_) => Self::RESTRICTION_NONE,
-            VariableVertex::Type(inner) => inner.selectivity(inputs),
-            VariableVertex::Thing(inner) => inner.selectivity(inputs),
-            VariableVertex::Value(inner) => inner.selectivity(inputs),
+            VariableVertex::Type(inner) => inner.restriction_based_selectivity(inputs),
+            VariableVertex::Thing(inner) => inner.restriction_based_selectivity(inputs),
+            VariableVertex::Value(inner) => inner.restriction_based_selectivity(inputs),
+        }
+    }
+
+    pub(crate) fn binding(&self) -> Option<PatternVertexId> {
+        match self {
+            Self::Input(_) => None,
+            Self::Type(inner) => inner.binding,
+            Self::Thing(inner) => inner.binding,
+            Self::Value(inner) => inner.binding,
         }
     }
 
     pub(crate) fn set_binding(&mut self, binding_pattern: PatternVertexId) {
         match self {
             Self::Input(_) => unreachable!("attempting to assign to input variable"),
-
             Self::Type(inner) => inner.set_binding(binding_pattern),
             Self::Thing(inner) => inner.set_binding(binding_pattern),
             Self::Value(inner) => inner.set_binding(binding_pattern),
@@ -117,31 +114,12 @@ impl VariableVertex {
         matches!(self, Self::Input(..))
     }
 
-    /// Returns `true` if the variable vertex is [`Value`].
-    ///
-    /// [`Value`]: VariableVertex::Value
-    #[must_use]
-    pub(crate) fn is_value(&self) -> bool {
-        matches!(self, Self::Value(..))
-    }
-
     pub(crate) fn variable(&self) -> Variable {
         match self {
             VariableVertex::Input(var) => var.variable,
             VariableVertex::Type(var) => var.variable,
             VariableVertex::Thing(var) => var.variable,
             VariableVertex::Value(var) => var.variable,
-        }
-    }
-}
-
-impl Costed for VariableVertex {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        match self {
-            Self::Input(inner) => inner.cost(inputs, intersection, graph),
-            Self::Type(inner) => inner.cost(inputs, intersection, graph),
-            Self::Thing(inner) => inner.cost(inputs, intersection, graph),
-            Self::Value(inner) => inner.cost(inputs, intersection, graph),
         }
     }
 }
@@ -160,12 +138,6 @@ impl fmt::Debug for InputPlanner {
 impl InputPlanner {
     pub(crate) fn from_variable(variable: Variable) -> Self {
         Self { variable }
-    }
-}
-
-impl Costed for InputPlanner {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::MEM_SIMPLE_BRANCH_1
     }
 }
 
@@ -192,24 +164,9 @@ impl TypePlanner {
         self.binding = Some(binding_pattern);
     }
 
-    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        if let Some(binding) = self.binding {
-            ordered.contains(&VertexId::Pattern(binding))
-        } else {
-            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-        }
-    }
-
-    fn selectivity(&self, _inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, _inputs: &[VertexId]) -> f64 {
         // TODO: if we incorporate, say, annotations, we could add some selectivity here
         VariableVertex::RESTRICTION_NONE
-    }
-}
-
-impl Costed for TypePlanner {
-    fn cost(&self, _: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        ElementCost::in_mem_simple_with_branching(self.unrestricted_expected_size)
     }
 }
 
@@ -244,11 +201,12 @@ impl ThingPlanner {
     ) -> Self {
         let mut unrestricted_expected_size: f64 = 0.0;
         let mut unrestricted_expected_attribute_types: usize = 0;
-        type_annotations
+        for type_ in type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
             .expect("expected thing variable to have been annotated with types")
             .iter()
-            .for_each(|type_| match type_ {
+        {
+            match type_ {
                 answer::Type::Entity(type_) => {
                     if let Some(count) = statistics.entity_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
@@ -260,15 +218,17 @@ impl ThingPlanner {
                     }
                 }
                 answer::Type::Attribute(type_) => {
-                    statistics.attribute_counts.get(type_).map(|count| {
+                    if let Some(count) = statistics.attribute_counts.get(type_) {
                         unrestricted_expected_size += *count as f64;
                         unrestricted_expected_attribute_types += 1;
-                    });
+                    }
                 }
                 answer::Type::RoleType(type_) => {
                     panic!("Found a Thing variable `{variable}` with a Role Type annotation: {type_}")
                 }
-            });
+            }
+        }
+
         Self {
             variable,
             binding: None,
@@ -301,16 +261,7 @@ impl ThingPlanner {
         self.binding = Some(binding_pattern);
     }
 
-    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        if let Some(binding) = self.binding {
-            ordered.contains(&VertexId::Pattern(binding))
-        } else {
-            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-        }
-    }
-
-    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // decrease selectivity whenever we have any matching restrictions
         let bias: f64 = 2.0;
         let selectivity = if self
@@ -350,36 +301,6 @@ impl ThingPlanner {
     }
 }
 
-fn branching_for_intersections(intersection_count: usize) -> f64 {
-    // Note:
-    //   this is a linearly improving cost function.
-    //   In theory, it's min(input sizes), and in practice it's much better than that!
-    //   The n-th root or some factor similarly might also work quite well
-    1.0 / (intersection_count as f64)
-}
-
-impl Costed for ThingPlanner {
-    fn cost(&self, inputs: &[VertexId], intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
-        match intersection {
-            None => ElementCost::MEM_SIMPLE_BRANCH_1,
-            Some(variable_id) => {
-                let mut intersection_count = 0;
-                for input in inputs {
-                    let input_element = &graph.elements()[input];
-                    if input_element.variables().any(|var| var == variable_id) {
-                        intersection_count += 1;
-                    }
-                }
-                ElementCost {
-                    per_input: ElementCost::IN_MEM_COST_COMPLEX,
-                    per_output: ElementCost::IN_MEM_COST_COMPLEX,
-                    branching_factor: branching_for_intersections(intersection_count),
-                }
-            }
-        }
-    }
-}
-
 #[derive(Clone)]
 pub(crate) struct ValuePlanner {
     variable: Variable,
@@ -415,15 +336,6 @@ impl ValuePlanner {
         self.binding = Some(binding_pattern);
     }
 
-    fn is_valid(&self, index: VariableVertexId, ordered: &[VertexId], graph: &Graph<'_>) -> bool {
-        if let Some(binding) = self.binding {
-            ordered.contains(&VertexId::Pattern(binding))
-        } else {
-            let adjacent = graph.variable_to_pattern().get(&index).unwrap();
-            ordered.iter().filter_map(VertexId::as_pattern_id).any(|id| adjacent.contains(&id))
-        }
-    }
-
     pub(crate) fn add_equal(&mut self, other: Input) {
         self.restriction_value_equal.insert(other);
     }
@@ -436,7 +348,7 @@ impl ValuePlanner {
         self.restriction_value_above.insert(other);
     }
 
-    fn selectivity(&self, inputs: &[VertexId]) -> f64 {
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // since there's no "expected size" of a value variable (we will always assign exactly 1 value)
         // we arbitrarily set some thresholds for selectivity of predicates
         let mut selectivity = VariableVertex::RESTRICTION_NONE;
@@ -450,16 +362,6 @@ impl ValuePlanner {
             selectivity *= Self::RESTRICTION_ABOVE_SELECTIVITY
         }
         f64::max(selectivity, VariableVertex::SELECTIVITY_MIN)
-    }
-}
-
-impl Costed for ValuePlanner {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, _: &Graph<'_>) -> ElementCost {
-        if inputs.is_empty() {
-            ElementCost { per_input: 0.0, per_output: 0.0, branching_factor: 1.0 }
-        } else {
-            ElementCost { per_input: f64::INFINITY, per_output: 0.0, branching_factor: f64::INFINITY }
-        }
     }
 }
 

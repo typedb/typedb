@@ -33,7 +33,7 @@ pub mod database {
 }
 
 pub mod traversal {
-    pub const CONSTANT_CONCEPT_LIMIT: usize = 10;
+    pub const CONSTANT_CONCEPT_LIMIT: usize = 1000;
 }
 
 pub mod snapshot {

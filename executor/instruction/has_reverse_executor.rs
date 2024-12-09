@@ -83,7 +83,7 @@ impl HasReverseExecutor {
         let attribute_owner_types_range: BTreeMap<AttributeType, Bounds<ObjectType>> = attribute_owner_types
             .iter()
             .map(|(type_, owner_types)| {
-                let (min_owner_type, max_owner_type) = min_max_types(&*owner_types);
+                let (min_owner_type, max_owner_type) = min_max_types(owner_types);
                 (
                     type_.as_attribute_type(),
                     (
@@ -182,7 +182,7 @@ impl HasReverseExecutor {
                     // no heap allocs needed if there is only 1 iterator
                     let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                         snapshot,
-                        &attribute,
+                        attribute,
                         &self.owner_type_range,
                     );
                     let as_tuples: HasReverseUnboundedSortedOwnerSingle =
@@ -193,12 +193,12 @@ impl HasReverseExecutor {
                         &self.variable_modes,
                     )))
                 } else {
-                    // // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
+                    // TODO: we could create a reusable space for these temporarily held iterators so we don't have allocate again before the merging iterator
                     let attributes = self.attribute_cache.get().unwrap().iter();
                     let iterators = attributes.map(|attribute| {
                         thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                             snapshot,
-                            &attribute,
+                            attribute,
                             &self.owner_type_range,
                         )
                     });
@@ -288,7 +288,7 @@ fn compare_has_by_owner_then_attribute(
     right: &Result<(Has, u64), Box<ConceptReadError>>,
 ) -> bool {
     if let (Ok((has_1, _)), Ok((has_2, _))) = (left, right) {
-        (has_2.owner(), has_1.attribute()) < (has_2.owner(), has_2.attribute())
+        (has_1.owner(), has_1.attribute()) < (has_2.owner(), has_2.attribute())
     } else {
         false
     }

@@ -917,13 +917,12 @@ impl BinaryConstraint for Owns<Variable> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        owner
-            .get_owns(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|owns| TypeAnnotation::Attribute(owns.attribute()))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        collector.extend(
+            owner
+                .get_owns(seeder.snapshot, seeder.type_manager)?
+                .iter()
+                .map(|owns| TypeAnnotation::Attribute(owns.attribute())),
+        );
         Ok(())
     }
 

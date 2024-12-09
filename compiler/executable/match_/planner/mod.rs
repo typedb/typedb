@@ -128,13 +128,6 @@ enum StepInstructionsBuilder {
 }
 
 impl StepInstructionsBuilder {
-    fn as_intersection(&self) -> Option<&IntersectionBuilder> {
-        match self {
-            Self::Intersection(v) => Some(v),
-            _ => None,
-        }
-    }
-
     fn as_intersection_mut(&mut self) -> Option<&mut IntersectionBuilder> {
         match self {
             Self::Intersection(v) => Some(v),

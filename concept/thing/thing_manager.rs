@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    io::Read,
     iter::once,
     ops::RangeBounds,
     sync::Arc,
@@ -626,7 +625,7 @@ impl ThingManager {
         Ok(has_exists)
     }
 
-    pub fn get_has_from_owner_type_range_unordered<'a>(
+    pub fn get_has_from_owner_type_range_unordered(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner_type_range: &impl RangeBounds<ObjectType>,
@@ -915,11 +914,11 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered<'this, 'snapshot>(
-        &'this self,
-        snapshot: &'snapshot impl ReadableSnapshot,
-        owner: &'this impl ObjectAPI,
-        attribute_type_range_hint: &'this impl RangeBounds<AttributeType>,
+    pub(crate) fn get_has_from_thing_unordered(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owner: impl ObjectAPI,
+        attribute_type_range_hint: &impl RangeBounds<AttributeType>,
     ) -> HasIterator {
         let range_start = match attribute_type_range_hint.start_bound() {
             Bound::Included(attribute_type) => RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(
@@ -1004,11 +1003,11 @@ impl ThingManager {
         )
     }
 
-    pub fn get_has_reverse_by_attribute_and_owner_type_range<'a>(
+    pub fn get_has_reverse_by_attribute_and_owner_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute: &Attribute,
-        owner_type_range: &'a impl RangeBounds<ObjectType>,
+        owner_type_range: &impl RangeBounds<ObjectType>,
     ) -> HasReverseIterator {
         let range_start = match owner_type_range.start_bound() {
             Bound::Included(owner_start) => RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
