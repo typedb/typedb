@@ -10,6 +10,7 @@ use std::{
     time::Duration,
 };
 
+#[derive(Debug)]
 pub struct IntervalRunner {
     shutdown_sink: SyncSender<SyncSender<()>>,
 }

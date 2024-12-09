@@ -4,9 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, fs, io, path::PathBuf, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    error::Error,
+    fmt, fs, io,
+    path::PathBuf,
+    sync::Arc,
+    time::Duration,
+};
 
-use database::{database_manager::DatabaseManager, DatabaseOpenError};
+use concurrency::IntervalRunner;
+use database::{database_manager::DatabaseManager, Database, DatabaseOpenError};
+use diagnostics::{
+    diagnostics_manager::DiagnosticsManager,
+    metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics},
+};
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
@@ -26,9 +38,12 @@ pub struct Server {
     authenticator_cache: Arc<AuthenticatorCache>,
     typedb_service: Option<TypeDBService>,
     config: Config,
+    _database_diagnostics_updater: IntervalRunner,
 }
 
 impl Server {
+    const DIAGNOSTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10); // TODO: Make a constant
+
     pub fn open(config: Config) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
 
@@ -45,10 +60,11 @@ impl Server {
         initialise_default_user(&user_manager);
         let typedb_service = TypeDBService::new(
             &config.server.address,
-            database_manager,
+            database_manager.clone(),
             user_manager.clone(),
             authenticator_cache.clone(),
         );
+        let diagnostics_manager = DiagnosticsManager::new();
         println!("Storage directory: {:?}", storage_directory);
         Ok(Self {
             data_directory: storage_directory.to_owned(),
@@ -56,6 +72,10 @@ impl Server {
             authenticator_cache,
             typedb_service: Some(typedb_service),
             config,
+            _database_diagnostics_updater: IntervalRunner::new(
+                move || synchronize_database_metrics(&database_manager),
+                Self::DIAGNOSTICS_UPDATE_INTERVAL,
+            ),
         })
     }
 
@@ -95,6 +115,34 @@ impl Server {
             source: error,
         })?;
         Ok(())
+    }
+}
+
+fn synchronize_database_metrics(database_manager: &DatabaseManager) {
+    let databases = database_manager.databases();
+    let metrics: HashSet<DatabaseMetrics> = HashSet::with_capacity(databases.len());
+
+    for (database_name, database) in &databases {
+        let schema = SchemaLoadMetrics {
+            type_count: database.type_count(), // TODO: Implement
+        };
+
+        let data = DataLoadMetrics {
+            entity_count: database.entity_count(),
+            relation_count: database.relation_count(),
+            attribute_count: database.attribute_count(),
+            has_count: database.has_count(),
+            role_count: database.role_count(),
+            storage_in_bytes: database.storage_data_bytes_estimate(),
+            storage_key_count: database.storage_data_keys_estimate(),
+        };
+
+        metrics.push(DatabaseMetrics {
+            database_name,
+            schema,
+            data,
+            is_primary_server: true, // TODO: Should be read from somewhere in Cloud
+        });
     }
 }
 

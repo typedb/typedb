@@ -16,11 +16,11 @@ features = {}
 
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
 	[dependencies.tracing-subscriber]
 		features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "regex", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
-		version = "0.3.18"
+		version = "0.3.19"
 		default-features = false
 

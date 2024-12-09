@@ -18,6 +18,10 @@ pub mod server {
 
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
+    pub const SERVER_ID_FILE_NAME: &str = "_server_id";
+    pub const SERVER_ID_LENGTH: u64 = 16;
+    pub const SERVER_ID_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
     pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
     pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
     pub const AUTHENTICATOR_CACHE_TTL: Duration = Duration::from_secs(3 * 60 * 60);
@@ -70,4 +74,8 @@ pub mod encoding {
     pub type DefinitionIDAtomicUInt = AtomicU16;
 
     pub type StructFieldIDUInt = u16;
+}
+
+pub mod diagnostics {
+    pub const REPORTING_URI: &str = "https://diagnostics.typedb.com/";
 }

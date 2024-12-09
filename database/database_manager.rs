@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock, RwLockReadGuard},
 };
 
 use itertools::Itertools;
@@ -30,7 +30,7 @@ pub struct DatabaseManager {
 }
 
 impl DatabaseManager {
-    pub fn new(data_directory: &Path) -> Result<Self, DatabaseOpenError> {
+    pub fn new(data_directory: &Path) -> Result<Arc<Self>, DatabaseOpenError> {
         let databases = fs::read_dir(data_directory)
             .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
                 path: data_directory.to_owned(),
@@ -46,7 +46,7 @@ impl DatabaseManager {
             })
             .try_collect()?;
 
-        Ok(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) })
+        Ok(Arc::new(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) }))
     }
 
     pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
@@ -146,6 +146,10 @@ impl DatabaseManager {
 
     pub fn database_names(&self) -> Vec<String> {
         self.databases.read().unwrap().keys().cloned().filter(|db| Self::is_user_database(db)).collect()
+    }
+
+    pub fn databases(&self) -> RwLockReadGuard<HashMap<String, Arc<Database<WALClient>>>> {
+        self.databases.read().unwrap()
     }
 
     pub fn is_user_database(name: &str) -> bool {

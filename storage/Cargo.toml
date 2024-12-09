@@ -58,7 +58,7 @@ features = {}
 
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
 	[dependencies.primitive]
@@ -133,7 +133,7 @@ features = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
-		version = "0.4.38"
+		version = "0.4.39"
 		default-features = false
 
 	[dependencies.lending_iterator]

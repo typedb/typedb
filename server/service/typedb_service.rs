@@ -56,11 +56,11 @@ pub(crate) struct TypeDBService {
 impl TypeDBService {
     pub(crate) fn new(
         address: &SocketAddr,
-        database_manager: DatabaseManager,
+        database_manager: Arc<DatabaseManager>,
         user_manager: Arc<UserManager>,
         authenticator_cache: Arc<AuthenticatorCache>,
     ) -> Self {
-        Self { address: *address, database_manager: Arc::new(database_manager), user_manager, authenticator_cache }
+        Self { address: *address, database_manager, user_manager, authenticator_cache }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {

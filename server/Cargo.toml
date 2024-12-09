@@ -51,7 +51,7 @@ features = {}
 
 	[dependencies.prost]
 		features = ["default", "derive", "prost-derive", "std"]
-		version = "0.13.3"
+		version = "0.13.4"
 		default-features = false
 
 	[dependencies.chrono-tz]
@@ -97,12 +97,12 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.41.1"
+		version = "1.42.0"
 		default-features = false
 
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
 	[dependencies.typedb-protocol]
@@ -128,7 +128,7 @@ features = {}
 
 	[dependencies.tokio-stream]
 		features = ["default", "net", "time"]
-		version = "0.1.16"
+		version = "0.1.17"
 		default-features = false
 
 	[dependencies.futures]
@@ -138,6 +138,16 @@ features = {}
 
 	[dependencies.encoding]
 		path = "../encoding"
+		features = []
+		default-features = false
+
+	[dependencies.concurrency]
+		path = "../common/concurrency"
+		features = []
+		default-features = false
+
+	[dependencies.diagnostics]
+		path = "../diagnostics"
 		features = []
 		default-features = false
 
@@ -158,7 +168,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.21"
+		version = "4.5.23"
 		default-features = false
 
 	[dependencies.bytes]
@@ -178,7 +188,7 @@ features = {}
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
-		version = "0.4.38"
+		version = "0.4.39"
 		default-features = false
 
 	[dependencies.user]

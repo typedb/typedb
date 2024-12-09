@@ -21,9 +21,14 @@ features = {}
 
 [dependencies]
 
+	[dependencies.tokio]
+		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
+		version = "1.42.0"
+		default-features = false
+
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
 	[dependencies.logger]

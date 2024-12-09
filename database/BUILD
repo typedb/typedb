@@ -26,6 +26,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:rocksdb",
         "@crates//:tracing",
+        "@crates//:tokio",
     ],
     visibility = ["//visibility:public"],
 )
