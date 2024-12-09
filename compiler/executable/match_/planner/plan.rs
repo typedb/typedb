@@ -1269,10 +1269,14 @@ impl ConjunctionPlan<'_> {
                 let lhs_produced = lhs_var.xor(lhs_input);
                 let rhs_produced = rhs_var.xor(rhs_input);
 
+                #[allow(unused)]
+                let mut tag: Option<Variable> = None;
+                $(tag = $con.$with().as_variable();)?
+
                 let sort_variable = match direction {
-                    Direction::Canonical => lhs_produced.or(rhs_produced).unwrap(),
-                    Direction::Reverse => rhs_produced.or(lhs_produced).unwrap(),
-                };
+                    Direction::Canonical => lhs_produced.or(rhs_produced),
+                    Direction::Reverse => rhs_produced.or(lhs_produced),
+                }.or(tag).unwrap();
 
                 match_builder.push_instruction(sort_variable, instruction);
             }};
@@ -1294,7 +1298,7 @@ impl ConjunctionPlan<'_> {
 
             ConstraintVertex::Sub(planner) => {
                 let sub = planner.sub();
-                binary!((with sub_kind) subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
+                binary!(subtype sub supertype, Sub(SubInstruction), SubReverse(SubReverseInstruction))
             }
             ConstraintVertex::Owns(planner) => {
                 let owns = planner.owns();
@@ -1311,7 +1315,7 @@ impl ConjunctionPlan<'_> {
 
             ConstraintVertex::Isa(planner) => {
                 let isa = planner.isa();
-                binary!((with isa_kind) thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
+                binary!(thing isa type_, Isa(IsaInstruction), IsaReverse(IsaReverseInstruction))
             }
             ConstraintVertex::Has(planner) => {
                 let has = planner.has();
@@ -1320,7 +1324,7 @@ impl ConjunctionPlan<'_> {
             ConstraintVertex::Links(planner) => {
                 let links = planner.links();
                 // binary!() works here even though links is ostensibly ternary
-                binary!(relation links player, Links(LinksInstruction), LinksReverse(LinksReverseInstruction))
+                binary!((with role_type) relation links player, Links(LinksInstruction), LinksReverse(LinksReverseInstruction))
             }
         }
     }
