@@ -1234,12 +1234,14 @@ impl ConjunctionPlan<'_> {
                 let lhs_var = $con.$lhs().as_variable();
                 let rhs_var = $con.$rhs().as_variable();
 
-                let inputs =
-                    match (lhs_var.filter(|lhs| inputs.contains(&lhs)), rhs_var.filter(|rhs| inputs.contains(&rhs))) {
-                        (Some(lhs), Some(rhs)) => Inputs::Dual([lhs, rhs]), // useful for links
-                        (Some(var), None) | (None, Some(var)) => Inputs::Single([var]),
-                        (None, None) => Inputs::None([]),
-                    };
+                let lhs_input = lhs_var.filter(|lhs| inputs.contains(&lhs));
+                let rhs_input = rhs_var.filter(|rhs| inputs.contains(&rhs));
+
+                let inputs = match (lhs_input, rhs_input) {
+                    (Some(lhs), Some(rhs)) => Inputs::Dual([lhs, rhs]), // useful for links
+                    (Some(var), None) | (None, Some(var)) => Inputs::Single([var]),
+                    (None, None) => Inputs::None([]),
+                };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
                     if sort_variable == lhs_var {
@@ -1263,9 +1265,13 @@ impl ConjunctionPlan<'_> {
                     Direction::Canonical => ConstraintInstruction::$fw($fwi::new(con, inputs, self.type_annotations)),
                     Direction::Reverse => ConstraintInstruction::$bw($bwi::new(con, inputs, self.type_annotations)),
                 };
+
+                let lhs_produced = lhs_var.xor(lhs_input);
+                let rhs_produced = rhs_var.xor(rhs_input);
+
                 let sort_variable = match direction {
-                    Direction::Canonical => lhs_var.or(rhs_var).unwrap(),
-                    Direction::Reverse => rhs_var.or(lhs_var).unwrap(),
+                    Direction::Canonical => lhs_produced.or(rhs_produced).unwrap(),
+                    Direction::Reverse => rhs_produced.or(lhs_produced).unwrap(),
                 };
 
                 match_builder.push_instruction(sort_variable, instruction);
