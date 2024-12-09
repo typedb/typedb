@@ -204,10 +204,12 @@ impl IntersectionExecutor {
         input_batch: FixedBatch,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
     ) -> Result<(), ReadExecutionError> {
+        let measurement = self.profile.start_measurement();
         debug_assert!(self.input.is_none() || self.input.as_mut().unwrap().peek().is_none());
         self.input = Some(Peekable::new(FixedBatchRowIterator::new(Ok(input_batch))));
         debug_assert!(self.input.as_mut().unwrap().peek().is_some());
         self.may_create_intersection_iterators(context)?;
+        measurement.end(&self.profile, 0, 0);
         Ok(())
     }
 
