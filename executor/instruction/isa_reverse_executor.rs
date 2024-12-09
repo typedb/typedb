@@ -216,10 +216,10 @@ pub(super) fn instances_of_types_chained<'a>(
             } else {
                 vec![*type_]
             };
-            returned_types.into_iter().map(move |_subtype| {
+            returned_types.into_iter().map(move |subtype| {
                 Ok::<_, Box<_>>(with_type(
                     thing_manager
-                        .get_attributes_in_range(snapshot, type_.as_attribute_type(), range)?
+                        .get_attributes_in_range(snapshot, subtype.as_attribute_type(), range)?
                         .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
                     *type_,
                 ))
