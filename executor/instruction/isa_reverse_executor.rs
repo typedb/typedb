@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, fmt, iter, sync::Arc, vec};
+use std::{collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
 
 use answer::{Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
@@ -17,6 +17,7 @@ use concept::{
         thing_manager::ThingManager,
     },
 };
+use encoding::value::value::Value;
 use ir::pattern::constraint::{Isa, IsaKind};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
@@ -107,6 +108,9 @@ impl IsaReverseExecutor {
             Ok(false) => None,
         });
 
+        let range =
+            self.checker.value_range_for(context, Some(row.as_reference()), self.isa.thing().as_variable().unwrap())?;
+
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
         match self.iterate_mode {
@@ -117,6 +121,7 @@ impl IsaReverseExecutor {
                     self.type_to_instance_types.keys(),
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
+                    &range,
                 )?;
                 let as_tuples: IsaReverseUnboundedSortedType =
                     thing_iter.filter_map(filter_for_row).map(isa_to_tuple_type_thing);
@@ -137,6 +142,7 @@ impl IsaReverseExecutor {
                     [&type_].into_iter(),
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
+                    &range,
                 )?;
                 let as_tuples: IsaReverseBoundedSortedThing = iterator
                     .filter_map(Box::new(move |res| match res {
@@ -174,6 +180,7 @@ pub(super) fn instances_of_types_chained<'a>(
     types: impl Iterator<Item = &'a Type>,
     type_to_instance_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
+    range: &(Bound<Value<'_>>, Bound<Value<'_>>),
 ) -> Result<MultipleTypeIsaIterator, Box<ConceptReadError>> {
     let type_manager = thing_manager.type_manager();
     let (attribute_types, object_types) =
@@ -212,7 +219,7 @@ pub(super) fn instances_of_types_chained<'a>(
             returned_types.into_iter().map(move |_subtype| {
                 Ok::<_, Box<_>>(with_type(
                     thing_manager
-                        .get_attributes_in(snapshot, type_.as_attribute_type())?
+                        .get_attributes_in_range(snapshot, type_.as_attribute_type(), range)?
                         .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
                     *type_,
                 ))
