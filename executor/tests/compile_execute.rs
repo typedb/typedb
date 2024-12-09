@@ -47,6 +47,14 @@ fn setup(
     schema: &str,
     data: &str,
 ) -> Statistics {
+    std::panic::set_hook({
+        let default_panic = std::panic::take_hook();
+        Box::new(move |info| {
+            default_panic(info);
+            std::process::exit(1);
+        })
+    });
+
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
