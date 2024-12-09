@@ -55,7 +55,7 @@ fn row_batch_result_to_answer(
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
-fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAnswer, QueryError> {
+fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
         let pipeline = tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
@@ -72,19 +72,19 @@ fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAn
                         .map_err(|err| QueryError::ReadPipelineExecution { typedb_source: err })?;
                     Ok(QueryAnswer::ConceptDocuments(documents, parameters))
                 }
-                Err((err, _)) => Err(QueryError::ReadPipelineExecution { typedb_source: err }),
+                Err((err, _)) => Err(Box::new(QueryError::ReadPipelineExecution { typedb_source: err })),
             }
         } else {
             let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
             let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, _)) => iterator.collect_owned(),
                 Err((err, _)) => {
-                    return Err(QueryError::ReadPipelineExecution { typedb_source: err });
+                    return Err(Box::new(QueryError::ReadPipelineExecution { typedb_source: err }));
                 }
             };
             match result_as_batch {
                 Ok(batch) => Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
-                Err(typedb_source) => Err(QueryError::ReadPipelineExecution { typedb_source }),
+                Err(typedb_source) => Err(Box::new(QueryError::ReadPipelineExecution { typedb_source })),
             }
         }
     })
@@ -116,7 +116,7 @@ fn execute_write_query(
         );
 
         match pipeline_result {
-            Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(error)), Arc::new(snapshot)),
+            Err((snapshot, error)) => (Err(BehaviourTestExecutionError::Query(*error)), Arc::new(snapshot)),
             Ok(pipeline) => {
                 if pipeline.has_fetch() {
                     match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {

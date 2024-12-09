@@ -113,7 +113,7 @@ pub(crate) struct TransactionService {
     request_queue: VecDeque<(Uuid, typeql::query::Pipeline)>,
     responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query:
-        Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>)>,
+        Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>)>)>,
 }
 
 macro_rules! unwrap_or_execute_and_return {
@@ -610,7 +610,7 @@ impl TransactionService {
     fn transmit_write_results(
         &mut self,
         req_id: Uuid,
-        result: Result<(StreamQueryOutputDescriptor, Batch), QueryError>,
+        result: Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>,
     ) -> Result<(), Status> {
         match result {
             Ok((output_descriptor, batch)) => {
@@ -762,7 +762,7 @@ impl TransactionService {
 
             let message_ok_done =
                 result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
-                    TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: err }
+                    TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err }
                         .into_error_message()
                         .into_status()
                 })?;
@@ -827,7 +827,7 @@ impl TransactionService {
         &mut self,
         pipeline: typeql::query::Pipeline,
     ) -> Result<
-        JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), QueryError>)>,
+        JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>)>,
         TransactionServiceError,
     > {
         debug_assert!(self.running_write_query.is_none());
@@ -914,7 +914,7 @@ impl TransactionService {
         query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
-    ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), QueryError>) {
+    ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>) {
         let result =
             query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline);
         let (query_output_descriptor, pipeline) = match result {
@@ -931,16 +931,17 @@ impl TransactionService {
             Err((err, ExecutionContext { snapshot, .. })) => {
                 return (
                     Arc::into_inner(snapshot).unwrap(),
-                    Err(QueryError::WritePipelineExecution { typedb_source: err }),
+                    Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
                 );
             }
         };
 
         let result = match iterator.collect_owned() {
             Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok((query_output_descriptor, batch))),
-            Err(err) => {
-                (Arc::into_inner(snapshot).unwrap(), Err(QueryError::WritePipelineExecution { typedb_source: err }))
-            }
+            Err(err) => (
+                Arc::into_inner(snapshot).unwrap(),
+                Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
+            ),
         };
         if query_profile.is_enabled() {
             event!(Level::INFO, "Write query completed.\n{}", query_profile);
@@ -1132,7 +1133,7 @@ impl TransactionService {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
-    ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, QueryError> {
+    ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         query_manager.prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
     }
 
