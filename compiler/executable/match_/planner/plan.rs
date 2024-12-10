@@ -10,6 +10,8 @@ use std::{
     collections::{BinaryHeap, HashMap, HashSet},
     fmt,
 };
+use std::collections::{BTreeMap, BTreeSet};
+use std::sync::Arc;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -27,6 +29,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
+use answer::Type;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -1332,21 +1335,42 @@ impl ConjunctionPlan<'_> {
                 assert_ne!(inputs.len(), 5);
                 let player_1 = planner.indexed_relation().player_1().as_variable().unwrap();
                 let player_2 = planner.indexed_relation().player_2().as_variable().unwrap();
+                let relation = planner.indexed_relation().relation().as_variable().unwrap();
                 let player_1_role = planner.indexed_relation().role_type_1().as_variable().unwrap();
                 let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
-                let (start_player, end_player, start_role, end_role) = if inputs.contains(player_1) {
-                    (player_1, player_2, player_1_role, player_2_role)
-                } else {
-                    (player_2, player_1, player_2_role, player_1_role)
-                };
 
-                let instruction = ConstraintInstruction::IndexedRelation(IndexedRelationInstruction::new(
-                    start_player,
-                    end_player,
-                    planner.indexed_relation().relation().as_variable().unwrap(),
-                    start_role,
-                    end_role
-                ));
+                let annotations = self.type_annotations.constraint_annotations_of(planner.indexed_relation().clone().into())
+                    .unwrap()
+                    .as_indexed_relation();
+                let array_inputs = Inputs::build_from(&inputs);
+                let instruction = if inputs.contains(&player_1) {
+                    IndexedRelationInstruction::new(
+                        player_1,
+                        player_2,
+                        relation,
+                        player_1_role,
+                        player_2_role,
+                        array_inputs,
+                        annotations.player_1_to_relation.clone(),
+                        annotations.relation_to_player_2.clone(),
+                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
+                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
+                    )
+                } else {
+                    IndexedRelationInstruction::new(
+                        player_2,
+                        player_1,
+                        relation,
+                        player_2_role,
+                        player_1_role,
+                        array_inputs,
+                        annotations.player_2_to_relation.clone(),
+                        annotations.relation_to_player_1.clone(),
+                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
+                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
+                    )
+                };
+                let instruction = ConstraintInstruction::IndexedRelation(instruction);
                 match_builder.push_instruction(sort_variable, instruction);
             }
         }

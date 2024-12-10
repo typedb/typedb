@@ -1509,6 +1509,12 @@ impl<ID: IrID> fmt::Display for IndexedRelation<ID> {
     }
 }
 
+impl<ID: IrID> From<IndexedRelation<ID>> for Constraint<ID> {
+    fn from(val: IndexedRelation<ID>) -> Self {
+        Constraint::IndexedRelation(val)
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Has<ID> {
     owner: Vertex<ID>,

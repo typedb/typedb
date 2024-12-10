@@ -11,6 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{constraint::Constraint, Vertex};
+use crate::executable::match_::instructions::thing::IndexedRelationInstruction;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {
@@ -70,6 +71,14 @@ impl ConstraintTypeAnnotations {
             ConstraintTypeAnnotations::LeftRight(_) | ConstraintTypeAnnotations::IndexedRelation(_)=> {
                 panic!("Unexpected type.")
             },
+        }
+    }
+    
+    pub fn as_indexed_relation(&self) -> &IndexedRelationAnnotations {
+        match self {
+            ConstraintTypeAnnotations::IndexedRelation(annotations) => annotations,
+            ConstraintTypeAnnotations::LeftRight(_) 
+            | ConstraintTypeAnnotations::Links(_) => panic!("Unexpected type")
         }
     }
 }
@@ -172,21 +181,20 @@ impl LinksAnnotations {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct IndexedRelationAnnotations {
     // player 1 to relation to player 2
-    player_1_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
-    relation_to_player_2: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) player_1_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) relation_to_player_2: Arc<BTreeMap<Type, Vec<Type>>>,
     
     // player 2 to relation to player 1
-    player_2_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
-    relation_to_player_1: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) player_2_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) relation_to_player_1: Arc<BTreeMap<Type, Vec<Type>>>,
     
-    player_1_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
-    player_2_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
-    relation_to_player_1_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
-    relation_to_player_2_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub(crate) player_1_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub(crate) player_2_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub(crate) relation_to_player_1_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub(crate) relation_to_player_2_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
 }
 
 impl IndexedRelationAnnotations {
-    
     pub(crate) fn new(
         player_1_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
         relation_to_player_2: Arc<BTreeMap<Type, Vec<Type>>>,

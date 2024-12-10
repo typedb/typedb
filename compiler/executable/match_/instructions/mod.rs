@@ -15,13 +15,13 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
+    constraint::{Comparator, Comparison, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
 use itertools::Itertools;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI,
+    annotation::type_annotations::TypeAnnotations,
     ExecutorVariable, VariablePosition,
 };
 
@@ -223,6 +223,13 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => {
                 links.ids_foreach(|var| apply(var))
             }
+            Self::IndexedRelation(thing::IndexedRelationInstruction { player_start, player_end, relation, role_type_end, role_type_start, .. }) => {
+                apply(*player_start);
+                apply(*player_end);
+                apply(*relation);
+                apply(*role_type_end);
+                apply(*role_type_start);
+            }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {
                 comparison.lhs().as_variable().map(&mut apply);
@@ -319,6 +326,9 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     }
                 })
             }
+            Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
+
+            }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {
                 comparison.lhs().as_variable().map(&mut apply);
@@ -377,36 +387,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::FunctionCallBinding(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
-        }
-    }
-}
-
-impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
-    fn constraint(&self) -> Constraint<ID> {
-        match self {
-            Self::Is(IsInstruction { is, .. }) => is.clone().into(),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.clone().into(),
-            Self::TypeList(_) => todo!(), // TODO underlying constraint?
-            Self::Sub(type_::SubInstruction { sub, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
-            Self::Owns(type_::OwnsInstruction { owns, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.clone().into(),
-            Self::Relates(type_::RelatesInstruction { relates, .. })
-            | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => relates.clone().into(),
-            Self::Plays(type_::PlaysInstruction { plays, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.clone().into(),
-            Self::Isa(thing::IsaInstruction { isa, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.clone().into(),
-            Self::Has(thing::HasInstruction { has, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.clone().into(),
-            Self::Links(thing::LinksInstruction { links, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.clone().into(),
-            Self::IndexedRelation(thing::IndexedRelationInstruction{ indexed_relation, .. }) => {
-                indexed_relation.clone().into()
-            },
-            Self::FunctionCallBinding(call) => call.clone().into(),
-            Self::ComparisonCheck(cmp) => cmp.clone().into(),
-            Self::ExpressionBinding(binding) => binding.clone().into(),
         }
     }
 }
@@ -686,9 +666,25 @@ pub enum Inputs<ID> {
     None([ID; 0]),
     Single([ID; 1]),
     Dual([ID; 2]),
+    Triple([ID; 3]),
+    Quadruple([ID; 4]),
+    Quintuple([ID; 5]),
 }
 
 impl<ID: IrID> Inputs<ID> {
+    
+    pub(crate) fn build_from(inputs: &[ID]) -> Self {
+        match inputs.len() {
+            0 => Self::None([]),
+            1 => Self::Single([inputs[0]]),
+            2 => Self::Dual([inputs[0], inputs[1]]),
+            3 => Self::Triple([inputs[0], inputs[1], inputs[2]]),
+            4 => Self::Quadruple([inputs[0], inputs[1], inputs[2], inputs[3]]),
+            5 => Self::Quintuple([inputs[0], inputs[1], inputs[2], inputs[3], inputs[4]]),
+            _ => panic!("Inputs longer than 5 provided.")
+        }
+    }
+    
     pub(crate) fn contains(&self, id: ID) -> bool {
         self.deref().contains(&id)
     }
@@ -698,6 +694,13 @@ impl<ID: IrID> Inputs<ID> {
             Inputs::None(_) => Inputs::None([]),
             Inputs::Single([var]) => Inputs::Single([mapping[&var]]),
             Inputs::Dual([var_1, var_2]) => Inputs::Dual([mapping[&var_1], mapping[&var_2]]),
+            Inputs::Triple([var_1, var_2, var_3]) => Inputs::Triple([mapping[&var_1], mapping[&var_2], mapping[&var_3]]),
+            Inputs::Quadruple([var_1, var_2, var_3, var_4]) => {
+                Inputs::Quadruple([mapping[&var_1], mapping[&var_2], mapping[&var_3], mapping[&var_4]])
+            },
+            Inputs::Quintuple([var_1, var_2, var_3, var_4, var_5]) => {
+                Inputs::Quintuple([mapping[&var_1], mapping[&var_2], mapping[&var_3], mapping[&var_4], mapping[&var_5]])
+            },
         }
     }
 }
@@ -710,6 +713,9 @@ impl<ID> Deref for Inputs<ID> {
             Inputs::None(ids) => ids,
             Inputs::Single(ids) => ids,
             Inputs::Dual(ids) => ids,
+            Inputs::Triple(ids) => ids,
+            Inputs::Quadruple(ids) => ids,
+            Inputs::Quintuple(ids) => ids,
         }
     }
 }
