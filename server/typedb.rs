@@ -119,31 +119,8 @@ impl Server {
 }
 
 fn synchronize_database_metrics(database_manager: &DatabaseManager) {
-    let databases = database_manager.databases();
-    let metrics: HashSet<DatabaseMetrics> = HashSet::with_capacity(databases.len());
-
-    for (database_name, database) in &databases {
-        let schema = SchemaLoadMetrics {
-            type_count: database.type_count(), // TODO: Implement
-        };
-
-        let data = DataLoadMetrics {
-            entity_count: database.entity_count(),
-            relation_count: database.relation_count(),
-            attribute_count: database.attribute_count(),
-            has_count: database.has_count(),
-            role_count: database.role_count(),
-            storage_in_bytes: database.storage_data_bytes_estimate(),
-            storage_key_count: database.storage_data_keys_estimate(),
-        };
-
-        metrics.push(DatabaseMetrics {
-            database_name,
-            schema,
-            data,
-            is_primary_server: true, // TODO: Should be read from somewhere in Cloud
-        });
-    }
+    let metrics = database_manager.databases().values().map(|database| database.get_metrics()).collect();
+    // TODO: Send metrics
 }
 
 #[derive(Debug)]

@@ -4,22 +4,46 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::format, net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+use std::{collections::HashSet, fmt::format, net::SocketAddr, path::PathBuf, pin::Pin, sync::Arc, time::Instant};
+
+use error::TypeDBError;
+
+use crate::{
+    metrics::{ActionKind, DatabaseMetrics},
+    Diagnostics,
+};
 
 #[derive(Debug)]
 pub struct DiagnosticsManager {
-    // TODO: Rename? Can't actually name it a service
     diagnostics: Diagnostics,
     reporter: Reporter,
     monitoring_server: MonitoringServer,
 }
 
 impl DiagnosticsManager {
-    pub fn new() -> Self {
-        Self { diagnostics: Diagnostcs::new(), reporter: Reporter::new(), monitoring_server: MonitoringServer::new() }
+    pub fn new(
+        deployment_id: String,
+        server_id: String,
+        distribution: String,
+        version: String,
+        data_directory: PathBuf,
+        reporting_enabled: bool,
+    ) -> Self {
+        Self {
+            diagnostics: Diagnostics::new(
+                deployment_id,
+                server_id,
+                distribution,
+                version,
+                data_directory,
+                reporting_enabled,
+            ),
+            reporter: Reporter::new(),
+            monitoring_server: MonitoringServer::new(),
+        }
     }
 
-    // pub fn synchronize_database_metrics(metrics: DatabaseMetrics);
+    pub fn synchronize_database_metrics(metrics: HashSet<DatabaseMetrics>);
 
     pub fn submit_error(database_name: Option<&str>, error: &impl TypeDBError) {
         todo!()

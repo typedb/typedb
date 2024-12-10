@@ -37,7 +37,7 @@ pub(crate) struct ServerProperties {
 }
 
 impl ServerProperties {
-    fn new(
+    pub(crate) fn new(
         deployment_id: String,
         server_id: String,
         distribution: String,
@@ -59,7 +59,7 @@ pub(crate) struct ServerMetrics {
 }
 
 impl ServerMetrics {
-    fn new(version: String, data_directory: PathBuf) -> ServerMetrics {
+    pub(crate) fn new(version: String, data_directory: PathBuf) -> ServerMetrics {
         let system_info = System::new_all();
         let os_name = system_info.name();
         let os_arch = system_info.cpu_arch();
@@ -70,7 +70,7 @@ impl ServerMetrics {
 
 // TODO: Rename? It's only for internal exchange
 pub struct DatabaseMetrics {
-    pub database_name: &'static str,
+    pub database_name: String,
     pub schema: SchemaLoadMetrics,
     pub data: DataLoadMetrics,
     pub is_primary_server: bool,
@@ -107,7 +107,7 @@ pub(crate) struct ConnectionLoadMetrics {
 }
 
 #[derive(Debug, Hash, Copy, Clone, PartialEq, Eq)]
-enum ActionKind {
+pub(crate) enum ActionKind {
     ConnectionOpen,
     ServersAll,
     UsersContains,

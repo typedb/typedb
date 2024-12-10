@@ -31,16 +31,6 @@ features = {}
 		version = "0.1.41"
 		default-features = false
 
-	[dependencies.logger]
-		path = "../common/logger"
-		features = []
-		default-features = false
-
-	[dependencies.durability]
-		path = "../durability"
-		features = []
-		default-features = false
-
 	[dependencies.query]
 		path = "../query"
 		features = []
@@ -48,6 +38,16 @@ features = {}
 
 	[dependencies.concept]
 		path = "../concept"
+		features = []
+		default-features = false
+
+	[dependencies.logger]
+		path = "../common/logger"
+		features = []
+		default-features = false
+
+	[dependencies.durability]
+		path = "../durability"
 		features = []
 		default-features = false
 
@@ -73,6 +73,11 @@ features = {}
 
 	[dependencies.concurrency]
 		path = "../common/concurrency"
+		features = []
+		default-features = false
+
+	[dependencies.diagnostics]
+		path = "../diagnostics"
 		features = []
 		default-features = false
 

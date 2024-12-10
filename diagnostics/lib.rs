@@ -7,7 +7,7 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use crate::metrics::{ActionMetrics, ErrorMetrics, LoadMetrics, ServerMetrics, ServerProperties};
 
@@ -24,4 +24,23 @@ pub struct Diagnostics {
     load_metrics: HashMap<DatabaseName, LoadMetrics>,
     action_metrics: HashMap<DatabaseName, ActionMetrics>,
     error_metrics: HashMap<DatabaseName, ErrorMetrics>,
+}
+
+impl Diagnostics {
+    pub(crate) fn new(
+        deployment_id: String,
+        server_id: String,
+        distribution: String,
+        version: String,
+        data_directory: PathBuf,
+        reporting_enabled: bool,
+    ) -> Diagnostics {
+        Self {
+            server_properties: ServerProperties::new(deployment_id, server_id, distribution, reporting_enabled),
+            server_metrics: ServerMetrics::new(version, data_directory),
+            load_metrics: HashMap::new(),
+            action_metrics: HashMap::new(),
+            error_metrics: HashMap::new(),
+        }
+    }
 }

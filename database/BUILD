@@ -16,6 +16,7 @@ rust_library(
         "//common/options",
         "//common/error",
         "//concept",
+        "//diagnostics",
         "//durability",
         "//encoding",
         "//function",

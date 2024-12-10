@@ -10,6 +10,7 @@ use rocksdb::{DBRawIterator, DB};
 
 use crate::snapshot::pool::{PoolRecycleGuard, Poolable, SinglePool};
 
+mod constants;
 pub mod iterator;
 mod keyspace;
 mod raw_iterator;

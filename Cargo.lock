@@ -814,6 +814,7 @@ version = "0.0.0"
 dependencies = [
  "concept",
  "concurrency",
+ "diagnostics",
  "durability",
  "encoding",
  "error",
