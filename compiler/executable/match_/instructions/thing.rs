@@ -367,17 +367,17 @@ pub struct IndexedRelationInstruction<ID> {
     pub(crate) player_start: ID,
     pub(crate) player_end: ID,
     pub(crate) relation: ID,
-    pub(crate) role_type_start: ID,
-    pub(crate) role_type_end: ID,
-    
+    pub(crate) role_start: ID,
+    pub(crate) role_end: ID,
+
     pub(crate) inputs: Inputs<ID>,
     pub(crate) checks: Vec<CheckInstruction<ID>>,
-    
+
     // the prefixes we will generally want to construct are [rel type][from][to type]
     pub(crate) player_start_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
     pub(crate) relation_to_player_end_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) role_type_start_types: Arc<BTreeSet<Type>>,
-    pub(crate) role_type_end_types: Arc<BTreeSet<Type>>,
+    pub(crate) role_start_types: Arc<BTreeSet<Type>>,
+    pub(crate) role_end_types: Arc<BTreeSet<Type>>,
 }
 
 impl IndexedRelationInstruction<Variable> {
@@ -385,62 +385,78 @@ impl IndexedRelationInstruction<Variable> {
         player_start: Variable,
         player_end: Variable,
         relation: Variable,
-        role_type_start: Variable,
-        role_type_end: Variable,
-        
+        role_start: Variable,
+        role_end: Variable,
+
         inputs: Inputs<Variable>,
-        
+
         player_start_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
         relation_to_player_end_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        role_type_start_types: Arc<BTreeSet<Type>>,
-        role_type_end_types: Arc<BTreeSet<Type>>,
+        role_start_types: Arc<BTreeSet<Type>>,
+        role_end_types: Arc<BTreeSet<Type>>,
     ) -> Self {
-        Self { 
-            player_start, 
+        Self {
+            player_start,
             player_end,
             relation,
-            role_type_start,
-            role_type_end,
+            role_start,
+            role_end,
             inputs,
             player_start_to_relation_types,
             relation_to_player_end_types,
-            role_type_start_types,
-            role_type_end_types,
-            checks: Vec::new() 
+            role_start_types,
+            role_end_types,
+            checks: Vec::new()
         }
     }
 }
 
 impl<ID: IrID> IndexedRelationInstruction<ID> {
+    pub fn player_start(&self) -> &ID {
+        &self.player_start
+    }
+    pub fn player_end(&self) -> &ID {
+        &self.player_end
+    }
+    pub fn relation(&self) -> &ID {
+        &self.relation
+    }
+    pub fn role_start(&self) -> &ID {
+        &self.role_start
+    }
+    pub fn role_end(&self) -> &ID {
+        &self.role_end
+    }
+
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IndexedRelationInstruction<T> {
         let Self {
             player_start,
             player_end,
             relation,
-            role_type_start,
-            role_type_end,
+            role_start,
+            role_end,
             inputs,
             player_start_to_relation_types,
             relation_to_player_end_types,
-            role_type_start_types,
-            role_type_end_types,
+            role_start_types,
+            role_end_types,
             checks,
         } = self;
         IndexedRelationInstruction {
             player_start: mapping[&player_start],
             player_end: mapping[&player_end],
             relation: mapping[&relation],
-            role_type_start: mapping[&role_type_start],
-            role_type_end: mapping[&role_type_end],
+            role_start: mapping[&role_start],
+            role_end: mapping[&role_end],
             inputs: inputs.map(mapping),
             player_start_to_relation_types,
             relation_to_player_end_types,
-            role_type_start_types,
-            role_type_end_types,
+            role_start_types,
+            role_end_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
         }
     }
-    
+
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
@@ -451,9 +467,9 @@ impl<ID: IrID> fmt::Display for IndexedRelationInstruction<ID> {
         write!(f,
                "{} indexed_relation(role: {} -> relation: {} -> role: {}) to {}",
                self.player_start,
-               self.role_type_start,
+               self.role_start,
                self.relation,
-               self.role_type_end,
+               self.role_end,
                self.player_end
         )
     }

@@ -191,10 +191,16 @@ impl IntersectionStep {
     fn output_width(&self) -> u32 {
         self.output_width
     }
+    
+    fn format_with_mapping<T>(&self, f: &mut fmt::Formatter<'_>, mapping: impl Fn(ExecutorVariable) -> T) -> fmt::Result {
+        
+    }
 }
 
 impl fmt::Display for IntersectionStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        self.format_with_mapping(f, |e| e)
+        
         write!(
             f,
             "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",

@@ -38,6 +38,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::min_max_types;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -103,11 +104,15 @@ impl LinksExecutor {
         let role_type = links.role_type().as_variable().unwrap();
 
         let output_tuple_positions = match iterate_mode {
-            TernaryIterateMode::Unbound => TuplePositions::Triple([Some(relation), Some(player), Some(role_type)]),
+            TernaryIterateMode::Unbound => {
+                TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
+            },
             TernaryIterateMode::UnboundInverted => {
                 TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
             }
-            TernaryIterateMode::BoundFrom => TuplePositions::Triple([Some(player), Some(relation), Some(role_type)]),
+            TernaryIterateMode::BoundFrom => {
+                TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
+            },
             TernaryIterateMode::BoundFromBoundTo => {
                 TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
             }
@@ -301,13 +306,5 @@ fn compare_by_player_then_relation(
         (rp_1.player(), rel_1) < (rp_2.player(), rel_2)
     } else {
         false
-    }
-}
-
-fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
-    match types.into_iter().minmax() {
-        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-        MinMaxResult::OneElement(item) => (*item, *item),
-        MinMaxResult::MinMax(min, max) => (*min, *max),
     }
 }

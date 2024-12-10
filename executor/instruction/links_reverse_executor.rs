@@ -43,6 +43,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::min_max_types;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -296,10 +297,3 @@ fn compare_by_relation_then_player(
     }
 }
 
-fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
-    match types.into_iter().minmax() {
-        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-        MinMaxResult::OneElement(item) => (*item, *item),
-        MinMaxResult::MinMax(min, max) => (*min, *max),
-    }
-}

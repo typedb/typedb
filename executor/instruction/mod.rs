@@ -67,6 +67,7 @@ mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
 mod type_list_executor;
+mod indexed_relation_executor;
 
 pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 

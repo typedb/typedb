@@ -99,6 +99,10 @@ impl VariableModes {
     pub fn get(&self, variable_position: ExecutorVariable) -> Option<VariableMode> {
         self.modes.get(&variable_position).copied()
     }
+    
+    pub fn len(&self) -> usize {
+        self.modes.len()
+    }
 
     pub fn all_inputs(&self) -> bool {
         self.modes.values().all(|mode| mode == &VariableMode::Input)
