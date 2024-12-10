@@ -58,6 +58,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::instructions::thing::IndexedRelationInstruction;
 
 pub const MAX_BEAM_WIDTH: usize = 128;
 
@@ -1327,6 +1328,27 @@ impl ConjunctionPlan<'_> {
                 // binary!() works here even though links is ostensibly ternary
                 binary!((with role_type) relation links player, Links(LinksInstruction), LinksReverse(LinksReverseInstruction))
             }
+            ConstraintVertex::IndexedRelation(planner) => {
+                assert_ne!(inputs.len(), 5);
+                let player_1 = planner.indexed_relation().player_1().as_variable().unwrap();
+                let player_2 = planner.indexed_relation().player_2().as_variable().unwrap();
+                let player_1_role = planner.indexed_relation().role_type_1().as_variable().unwrap();
+                let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
+                let (start_player, end_player, start_role, end_role) = if inputs.contains(player_1) {
+                    (player_1, player_2, player_1_role, player_2_role)
+                } else {
+                    (player_2, player_1, player_2_role, player_1_role)
+                };
+
+                let instruction = ConstraintInstruction::IndexedRelation(IndexedRelationInstruction::new(
+                    start_player,
+                    end_player,
+                    planner.indexed_relation().relation().as_variable().unwrap(),
+                    start_role,
+                    end_role
+                ));
+                match_builder.push_instruction(sort_variable, instruction);
+            }
         }
     }
 
@@ -1412,6 +1434,31 @@ impl ConjunctionPlan<'_> {
                 };
 
                 match_builder.push_check(&[relation, player, role], check);
+            }
+            ConstraintVertex::IndexedRelation(planner) => {
+                let player_1 = planner.indexed_relation().player_1().as_variable().unwrap();
+                let player_2 = planner.indexed_relation().player_2().as_variable().unwrap();
+                let relation = planner.indexed_relation().relation().as_variable().unwrap();
+                let player_1_role = planner.indexed_relation().role_type_1().as_variable().unwrap();
+                let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
+
+                // arbitrarily choosing player 1 as start
+                let start_player_pos = match_builder.position(player_1).into();
+                let end_player_pos = match_builder.position(player_2).into();
+                let relation_pos = match_builder.position(relation).into();
+                let start_role_pos = match_builder.position(player_1_role).into();
+                let end_role_pos = match_builder.position(player_2_role).into();
+                let check = CheckInstruction::IndexedRelation {
+                    start_player: CheckVertex::resolve(start_player_pos, self.type_annotations),
+                    end_player: CheckVertex::resolve(end_player_pos, self.type_annotations),
+                    relation: CheckVertex::resolve(relation_pos, self.type_annotations),
+                    start_role: CheckVertex::resolve(start_role_pos, self.type_annotations),
+                    end_role: CheckVertex::resolve(end_role_pos, self.type_annotations),
+                };
+                match_builder.push_check(
+                    &[player_1, player_2, relation, player_1_role, player_2_role],
+                    check
+                );
             }
         }
     }

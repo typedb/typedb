@@ -163,6 +163,8 @@ pub enum ConstraintInstruction<ID> {
     Links(thing::LinksInstruction<ID>),
     // player -> relation
     LinksReverse(thing::LinksReverseInstruction<ID>),
+    
+    IndexedRelation(thing::IndexedRelationInstruction<ID>),
 
     // $x --> $y
     // RolePlayerIndex(IR, IterateBounds)
@@ -249,6 +251,9 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::HasReverse(thing::HasReverseInstruction { inputs, .. })
             | Self::Links(thing::LinksInstruction { inputs, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { inputs, .. }) => {
+                inputs.iter().cloned().for_each(apply)
+            }
+            | Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
                 inputs.iter().cloned().for_each(apply)
             }
             Self::ComparisonCheck(_) => (),
@@ -342,6 +347,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::HasReverse(inner) => inner.add_check(check),
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
+            Self::IndexedRelation(inner) => inner.add_check(check),
             Self::FunctionCallBinding(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
@@ -367,6 +373,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::HasReverse(inner) => ConstraintInstruction::HasReverse(inner.map(mapping)),
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
             Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
+            Self::IndexedRelation(inner) => ConstraintInstruction::IndexedRelation(inner.map(mapping)),
             Self::FunctionCallBinding(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
@@ -394,6 +401,9 @@ impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
             | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.clone().into(),
             Self::Links(thing::LinksInstruction { links, .. })
             | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.clone().into(),
+            Self::IndexedRelation(thing::IndexedRelationInstruction{ indexed_relation, .. }) => {
+                indexed_relation.clone().into()
+            },
             Self::FunctionCallBinding(call) => call.clone().into(),
             Self::ComparisonCheck(cmp) => cmp.clone().into(),
             Self::ExpressionBinding(binding) => binding.clone().into(),
@@ -421,6 +431,7 @@ impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
             ConstraintInstruction::HasReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::LinksReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::IndexedRelation(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::FunctionCallBinding(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::ComparisonCheck(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::ExpressionBinding(instruction) => write!(f, "{instruction}"),
@@ -564,6 +575,13 @@ pub enum CheckInstruction<ID> {
     Isa { isa_kind: IsaKind, type_: CheckVertex<ID>, thing: CheckVertex<ID> },
     Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
     Links { relation: CheckVertex<ID>, player: CheckVertex<ID>, role: CheckVertex<ID> },
+    IndexedRelation { 
+        start_player: CheckVertex<ID>,
+        end_player: CheckVertex<ID>,
+        relation: CheckVertex<ID>,
+        start_role: CheckVertex<ID>,
+        end_role: CheckVertex<ID>,
+    },
 
     Is { lhs: ID, rhs: ID },
     Comparison { lhs: CheckVertex<ID>, rhs: CheckVertex<ID>, comparator: Comparator },
@@ -598,6 +616,13 @@ impl<ID: IrID> CheckInstruction<ID> {
                 relation: relation.map(mapping),
                 player: player.map(mapping),
                 role: role.map(mapping),
+            },
+            Self::IndexedRelation{ start_player, end_player, relation, start_role, end_role} => CheckInstruction::IndexedRelation{
+                relation: relation.map(mapping),
+                start_player: start_player.map(mapping),
+                end_player: end_player.map(mapping),
+                start_role: start_role.map(mapping),
+                end_role: end_role.map(mapping),
             },
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
             Self::Comparison { lhs, rhs, comparator } => {
@@ -641,6 +666,9 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             }
             Self::Links { relation, player, role } => {
                 write!(f, "{relation} {} ({role}:{player})", typeql::token::Keyword::Links)?;
+            }
+            Self::IndexedRelation{ start_player, end_player, relation, start_role, end_role } => {
+                write!(f, "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_role}")?;
             }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;

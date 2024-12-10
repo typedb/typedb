@@ -12,7 +12,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Iid, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value};
+use ir::pattern::constraint::{Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value};
 use itertools::Itertools;
 
 use crate::{
@@ -39,6 +39,7 @@ pub(crate) enum ConstraintVertex<'a> {
     Isa(IsaPlanner<'a>),
     Has(HasPlanner<'a>),
     Links(LinksPlanner<'a>),
+    IndexedRelation(IndexedRelationPlanner<'a>),
 
     Sub(SubPlanner<'a>),
     Owns(OwnsPlanner<'a>),
@@ -58,6 +59,7 @@ impl ConstraintVertex<'_> {
             Self::Isa(_) => Direction::Canonical,
             Self::Has(inner) => inner.unbound_direction(graph, &[]),
             Self::Links(inner) => inner.unbound_direction(graph, &[]),
+            Self::IndexedRelation(inner) => inner.unbound_direction(graph, &[]),
             Self::Sub(inner) => inner.unbound_direction,
             Self::Owns(inner) => inner.unbound_direction,
             Self::Relates(inner) => inner.unbound_direction,
@@ -73,6 +75,7 @@ impl ConstraintVertex<'_> {
             Self::Isa(inner) => Box::new(inner.variables()),
             Self::Has(inner) => Box::new(inner.variables()),
             Self::Links(inner) => Box::new(inner.variables()),
+            Self::IndexedRelation(inner) => Box::new(inner.variables()),
 
             Self::Sub(inner) => Box::new(inner.variables()),
             Self::Owns(inner) => Box::new(inner.variables()),
@@ -98,6 +101,7 @@ impl Costed for ConstraintVertex<'_> {
             Self::Isa(inner) => inner.cost_and_metadata(vertex_ordering, graph),
             Self::Has(inner) => inner.cost_and_metadata(vertex_ordering, graph),
             Self::Links(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::IndexedRelation(inner) => inner.cost_and_metadata(vertex_ordering, graph),
 
             Self::Sub(inner) => inner.cost_and_metadata(vertex_ordering, graph),
             Self::Owns(inner) => inner.cost_and_metadata(vertex_ordering, graph),
@@ -711,6 +715,110 @@ impl Costed for LinksPlanner<'_> {
         (Cost { cost, io_ratio }, CostMetaData::Direction(direction))
     }
 }
+
+#[derive(Clone)]
+pub(crate) struct IndexedRelationPlanner<'a> {
+    indexed_relation: &'a IndexedRelation<Variable>,
+    pub player_1: VariableVertexId,
+    pub player_2: VariableVertexId,
+    pub relation: VariableVertexId,
+    pub role_1: VariableVertexId,
+    pub role_2: VariableVertexId,
+    unbound_typed_expected_size: f64,
+    unbound_typed_expected_size_canonical: f64,
+    unbound_typed_expected_size_reverse: f64,
+}
+
+impl fmt::Debug for IndexedRelationPlanner<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("IndexedRelationPlanner").field("indexed_relation", &self.indexed_relation).finish()
+    }
+}
+
+impl<'a> IndexedRelationPlanner<'a> {
+    pub(crate) fn from_constraint(
+        indexed_relation: &'a IndexedRelation<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        type_annotations: &TypeAnnotations,
+        statistics: &Statistics,
+    ) -> Self {
+        let player_1 = indexed_relation.player_1();
+        let player_2 = indexed_relation.player_2();
+        let relation = indexed_relation.relation();
+        let role_1 = indexed_relation.role_type_1();
+        let role_2 = indexed_relation.role_type_2();
+
+        let player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
+        let player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
+        let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+
+        // let constraint_types =
+        //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();
+
+        let unbound_typed_expected_size = 1.0; // TODO
+        let unbound_typed_expected_size_canonical = 1.0; // TODO
+        let unbound_typed_expected_size_reverse = 1.0;  // TODO
+
+        let player_1 = player_1.as_variable().unwrap();
+        let player_2 = player_2.as_variable().unwrap();
+        let relation = relation.as_variable().unwrap();
+        let role_1 = role_1.as_variable().unwrap();
+        let role_2 = role_2.as_variable().unwrap();
+
+        Self {
+            indexed_relation,
+            player_1: variable_index[&player_1],
+            player_2: variable_index[&player_2],
+            relation: variable_index[&relation],
+            role_1: variable_index[&role_1],
+            role_2: variable_index[&role_2],
+            unbound_typed_expected_size,
+            unbound_typed_expected_size_canonical,
+            unbound_typed_expected_size_reverse,
+        }
+    }
+
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        [self.player_1, self.player_2, self.relation, self.role_1, self.role_2].into_iter()
+    }
+
+    pub(crate) fn indexed_relation(&self) -> &IndexedRelation<Variable> {
+        self.indexed_relation
+    }
+
+    /// We can choose either direction here since it's fully symmetric?
+    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
+        Direction::Canonical
+    }
+
+    fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
+        // TODO
+        1.0
+    }
+
+    fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
+        // TODO
+        1.0
+    }
+
+    fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
+        // fully symmetric?
+        self.unbound_expected_scan_size(graph)
+    }
+
+    fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
+        // TODO
+        1.0
+    }
+}
+
+impl Costed for IndexedRelationPlanner<'_> {
+    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+        // TODO: using a random cost
+        ElementCost::MEM_COMPLEX_BRANCH_1
+    }
+}
+
 
 #[derive(Clone, Debug)]
 pub(crate) struct SubPlanner<'a> {
