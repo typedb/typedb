@@ -7,6 +7,7 @@
 use std::{fmt::format, net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
+use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
 use system::concepts::{Credential, PasswordHash, User};
@@ -51,6 +52,7 @@ pub(crate) struct TypeDBService {
     database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
+    diagnostics_manager: Arc<DiagnosticsManager>,
 }
 
 impl TypeDBService {
@@ -59,8 +61,9 @@ impl TypeDBService {
         database_manager: Arc<DatabaseManager>,
         user_manager: Arc<UserManager>,
         authenticator_cache: Arc<AuthenticatorCache>,
+        diagnostics_manager: Arc<DiagnosticsManager>,
     ) -> Self {
-        Self { address: *address, database_manager, user_manager, authenticator_cache }
+        Self { address: *address, database_manager, user_manager, authenticator_cache, diagnostics_manager }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {

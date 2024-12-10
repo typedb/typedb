@@ -69,6 +69,7 @@ impl ServerMetrics {
 }
 
 // TODO: Rename? It's only for internal exchange
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct DatabaseMetrics {
     pub database_name: String,
     pub schema: SchemaLoadMetrics,
@@ -84,12 +85,12 @@ pub(crate) struct LoadMetrics {
     is_deleted: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct SchemaLoadMetrics {
     pub type_count: u64,
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub struct DataLoadMetrics {
     pub entity_count: u64,
     pub relation_count: u64,

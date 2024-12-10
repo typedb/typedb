@@ -49,6 +49,11 @@ features = {}
 		version = "1.11.0"
 		default-features = false
 
+	[dependencies.rand]
+		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
+		version = "0.8.5"
+		default-features = false
+
 	[dependencies.prost]
 		features = ["default", "derive", "prost-derive", "std"]
 		version = "0.13.4"

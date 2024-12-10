@@ -19,24 +19,35 @@ use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
     metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics},
 };
-use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
+use error::typedb_error;
+use rand::Rng;
+use resource::constants::server::{
+    DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH, VERSION,
+};
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{
     authenticator::Authenticator,
+<<<<<<< HEAD
     authenticator_cache::AuthenticatorCache,
     parameters::config::{Config, EncryptionConfig},
+=======
+    parameters::config::{Config, EncryptionConfig, ServerConfig},
+>>>>>>> e61aaeada (Add diagnostics initialisation)
     service::typedb_service::TypeDBService,
 };
 
 #[derive(Debug)]
 pub struct Server {
+    id: String,
+    deployment_id: String,
     data_directory: PathBuf,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
     typedb_service: Option<TypeDBService>,
+    diagnostics_manager: Arc<DiagnosticsManager>,
     config: Config,
     _database_diagnostics_updater: IntervalRunner,
 }
@@ -46,34 +57,45 @@ impl Server {
 
     pub fn open(config: Config) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
+        Self::initialise_storage_directory(storage_directory)?;
+        println!("Storage directory: {:?}", storage_directory);
 
-        if !storage_directory.exists() {
-            Self::create_storage_directory(storage_directory)?;
-        } else if !storage_directory.is_dir() {
-            return Err(ServerOpenError::NotADirectory { path: storage_directory.to_owned() });
-        }
+        let server_config = &config.server;
+        let server_id = Self::initialise_server_id(storage_directory)?;
+        let deployment_id = server_id.clone(); // TODO: Should be generated based on peers from config in Cloud
+
+        let diagnostics_manager = Arc::new(Self::initialise_diagnostics(
+            deployment_id.clone(),
+            server_id.clone(),
+            server_config,
+            storage_directory.clone(),
+        ));
         let database_manager = DatabaseManager::new(storage_directory)
-            .map_err(|err| ServerOpenError::DatabaseOpenError { source: err })?;
+            .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
         let system_db = initialise_system_database(&database_manager);
         let user_manager = Arc::new(UserManager::new(system_db));
         let authenticator_cache = Arc::new(AuthenticatorCache::new());
         initialise_default_user(&user_manager);
+
         let typedb_service = TypeDBService::new(
             &config.server.address,
             database_manager.clone(),
             user_manager.clone(),
             authenticator_cache.clone(),
+            diagnostics_manager.clone(),
         );
-        let diagnostics_manager = DiagnosticsManager::new();
-        println!("Storage directory: {:?}", storage_directory);
+
         Ok(Self {
+            id: server_id,
+            deployment_id,
             data_directory: storage_directory.to_owned(),
             user_manager,
             authenticator_cache,
             typedb_service: Some(typedb_service),
+            diagnostics_manager,
             config,
             _database_diagnostics_updater: IntervalRunner::new(
-                move || synchronize_database_metrics(&database_manager),
+                move || synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 Self::DIAGNOSTICS_UPDATE_INTERVAL,
             ),
         })
@@ -86,12 +108,39 @@ impl Server {
     pub async fn serve(mut self) -> Result<(), tonic::transport::Error> {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
         let authenticator = Authenticator::new(self.user_manager.clone(), self.authenticator_cache.clone());
-        println!("Ready!");
+
+        println!(format!("Running {DISTRIBUTION_NAME} {VERSION}.\nReady!"));
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
             .serve(self.config.server.address)
             .await
+    }
+
+    fn initialise_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
+        if !storage_directory.exists() {
+            Self::create_storage_directory(storage_directory)
+        } else if !storage_directory.is_dir() {
+            Err(ServerOpenError::NotADirectory { path: storage_directory.to_owned() })
+        } else {
+            Ok(())
+        }
+    }
+
+    fn initialise_diagnostics(
+        deployment_id: String,
+        server_id: String,
+        _config: &ServerConfig,
+        storage_directory: PathBuf,
+    ) -> DiagnosticsManager {
+        DiagnosticsManager::new(
+            deployment_id,
+            server_id,
+            DISTRIBUTION_NAME.clone().to_owned(),
+            VERSION.clone().to_owned(),
+            storage_directory,
+            true, // reporting_enabled -> TODO: Get it from config
+        )
     }
 
     fn create_tonic_server(encryption_config: &EncryptionConfig) -> tonic::transport::Server {
@@ -116,24 +165,53 @@ impl Server {
         })?;
         Ok(())
     }
-}
 
-fn synchronize_database_metrics(database_manager: &DatabaseManager) {
-    let metrics = database_manager.databases().values().map(|database| database.get_metrics()).collect();
-    // TODO: Send metrics
-}
+    fn initialise_server_id(storage_directory: &PathBuf) -> Result<String, ServerOpenError> {
+        let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
+        if server_id_file.exists() {
+            let server_id = fs::read_to_string(&server_id_file)
+                .map_err(|source| ServerOpenError::CouldNotReadServerIDFile { path: server_id_file.clone(), source })?
+                .trim()
+                .to_owned();
+            if server_id.is_empty() {
+                Err(ServerOpenError::InvalidServerID { path: server_id_file })
+            } else {
+                Ok(server_id)
+            }
+        } else {
+            let server_id = Self::generate_server_id();
+            assert!(!server_id.is_empty(), "Generated server ID should not be empty");
+            fs::write(server_id_file, &server_id).map_err(|source| ServerOpenError::CouldNotCreateServerIDFile {
+                path: server_id_file.clone(),
+                source,
+            })?;
+            Ok(server_id)
+        }
+    }
 
-#[derive(Debug)]
-pub enum ServerOpenError {
-    NotADirectory { path: PathBuf },
-    CouldNotCreateDataDirectory { path: PathBuf, source: io::Error },
-    DatabaseOpenError { source: DatabaseOpenError },
-}
-
-impl Error for ServerOpenError {}
-
-impl fmt::Display for ServerOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn generate_server_id() -> String {
+        let mut rng = rand::thread_rng();
+        (0..SERVER_ID_LENGTH)
+            .map(|_| {
+                let idx = rng.gen_range(0..SERVER_ID_ALPHABET.len());
+                SERVER_ID_ALPHABET.chars().nth(idx).unwrap()
+            })
+            .collect()
     }
 }
+
+fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
+    let metrics = database_manager.databases().values().map(|database| database.get_metrics()).collect();
+    diagnostics_manager.synchronize_database_metrics(metrics);
+}
+
+typedb_error!(
+    pub ServerOpenError(component = "Server open", prefix = "SRO") {
+        NotADirectory(1, "Invalid path '{path}': not a directory.", path: PathBuf),
+        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: PathBuf, ( source: io::Error )),
+        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: PathBuf, ( source: io::Error )),
+        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: PathBuf, ( source: io::Error )),
+        InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: PathBuf),
+        DatabaseOpen(6, "Could not open database.", ( typedb_source: DatabaseOpenError )),
+    }
+);

@@ -9,6 +9,9 @@ pub mod server {
 
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 
+    pub const DISTRIBUTION_NAME: &str = "TypeDB CE";
+    pub const VERSION: &str = include_str!("../VERSION");
+
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * 60 * 60);
 
     pub const DEFAULT_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(5 * 60).as_millis() as u64;

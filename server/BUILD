@@ -45,6 +45,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:moka",
         "@crates//:prost",
+        "@crates//:rand",
         "@crates//:tokio",
         "@crates//:tokio-stream",
         "@crates//:tonic",

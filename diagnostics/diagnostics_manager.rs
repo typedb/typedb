@@ -43,7 +43,9 @@ impl DiagnosticsManager {
         }
     }
 
-    pub fn synchronize_database_metrics(metrics: HashSet<DatabaseMetrics>);
+    pub fn synchronize_database_metrics(&self, metrics: HashSet<DatabaseMetrics>) {
+        todo!()
+    }
 
     pub fn submit_error(database_name: Option<&str>, error: &impl TypeDBError) {
         todo!()
