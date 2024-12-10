@@ -20,13 +20,14 @@ use crate::{
     executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::instructions::VarMappedVariableModes;
 
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
     executable_id: u64,
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
-    variable_positions_index: Vec<Variable>,
+    variable_reverse_map: HashMap<ExecutorVariable, Variable>
 }
 
 impl MatchExecutable {
@@ -34,9 +35,9 @@ impl MatchExecutable {
         executable_id: u64,
         steps: Vec<ExecutionStep>,
         variable_positions: HashMap<Variable, VariablePosition>,
-        variable_positions_index: Vec<Variable>,
+        variable_reverse_map: HashMap<ExecutorVariable, Variable>,
     ) -> Self {
-        Self { executable_id, steps, variable_positions, variable_positions_index }
+        Self { executable_id, steps, variable_positions, variable_reverse_map }
     }
 
     pub fn executable_id(&self) -> u64 {
@@ -55,8 +56,8 @@ impl MatchExecutable {
         &self.variable_positions
     }
 
-    pub fn variable_positions_index(&self) -> &[Variable] {
-        &self.variable_positions_index
+    pub fn variable_reverse_map(&self) -> &HashMap<ExecutorVariable, Variable> {
+        &self.variable_reverse_map
     }
 }
 
@@ -191,6 +192,13 @@ impl IntersectionStep {
     fn output_width(&self) -> u32 {
         self.output_width
     }
+
+    pub fn make_var_mapped<'a>(&'a self, map: &'a HashMap<ExecutorVariable, Variable>) -> VarMappedIntersectionStep<'a> {
+        VarMappedIntersectionStep {
+            step: &self,
+            map: map,
+        }
+    }
 }
 
 impl fmt::Display for IntersectionStep {
@@ -202,6 +210,27 @@ impl fmt::Display for IntersectionStep {
         )?;
         for (instruction, modes) in &self.instructions {
             write!(f, "\n      {instruction} with ({modes})")?;
+        }
+        Ok(())
+    }
+}
+
+pub struct VarMappedIntersectionStep<'a> {
+    step: &'a IntersectionStep,
+    map: &'a HashMap<ExecutorVariable, Variable>
+}
+
+impl fmt::Display for VarMappedIntersectionStep<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",
+            &self.step.bound_variables, self.step.output_width, self.step.sort_variable
+        )?;
+        for (instruction, modes) in &self.step.instructions {
+            let var_mapped_instruction = instruction.clone().map(self.map);
+            let var_mapped_modes = modes.make_var_mapped(self.map);
+            write!(f, "\n      {var_mapped_instruction} with ({var_mapped_modes})")?;
         }
         Ok(())
     }
@@ -334,6 +363,13 @@ impl CheckStep {
     pub fn output_width(&self) -> u32 {
         self.output_width
     }
+
+    pub fn make_var_mapped<'a>(&'a self, map: &'a HashMap<ExecutorVariable, Variable>) -> VarMappedCheckStep<'a> {
+        VarMappedCheckStep {
+            check_instructions: &self.check_instructions,
+            map: map
+        }
+    }
 }
 
 impl fmt::Display for CheckStep {
@@ -341,6 +377,21 @@ impl fmt::Display for CheckStep {
         write!(f, "Check")?;
         for check in &self.check_instructions {
             write!(f, "\n      {}", check)?;
+        }
+        Ok(())
+    }
+}
+
+pub struct VarMappedCheckStep<'a> {
+    pub check_instructions: &'a Vec<CheckInstruction<ExecutorVariable>>,
+    pub map: &'a HashMap<ExecutorVariable, Variable>
+}
+
+impl fmt::Display for VarMappedCheckStep<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Check")?;
+        for check in self.check_instructions {
+            write!(f, "\n      {}", check.clone().map(self.map))?;
         }
         Ok(())
     }

@@ -4,11 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    iter,
-};
-
+use std::{collections::{HashMap, HashSet}, fmt, iter};
+use std::fmt::Formatter;
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
@@ -28,8 +25,8 @@ use crate::{
 pub(super) mod constraint;
 pub(super) mod variable;
 
-const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
-const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
+pub(super) const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
+pub(super) const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 
 const _REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 const _CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
@@ -116,6 +113,21 @@ impl PlannerVertex<'_> {
 pub(crate) struct Cost {
     pub cost: f64, // per input
     pub io_ratio: f64,
+}
+
+impl<'a> fmt::Display for PlannerVertex<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self {
+            PlannerVertex::Variable(v) => { write!(f, "|Var {}|", v.variable())}
+            PlannerVertex::Constraint(v) => { write!(f, "{}", v) }
+            PlannerVertex::Is(_) => { write!(f, "|Is|") } //TODO
+            PlannerVertex::Comparison(v) => { write!(f, "|{:?} {:?} {:?}|", v.lhs, v.comparison, v.rhs) }
+            PlannerVertex::Expression(v) => { write!(f, "|Expr of {:?}|", v.expression.variables) }
+            PlannerVertex::FunctionCall(_) => { write!(f, "|Fun Call|") } //TODO
+            PlannerVertex::Negation(_) => { write!(f, "|Negation|") } //TODO
+            PlannerVertex::Disjunction(_) => { write!(f, "|Disjunction|") } //TODO
+        }
+    }
 }
 
 impl Cost {

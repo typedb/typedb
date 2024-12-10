@@ -108,9 +108,34 @@ impl VariableModes {
     pub fn none_inputs(&self) -> bool {
         self.modes.values().all(|mode| mode != &VariableMode::Input)
     }
+
+    pub fn make_var_mapped(&self, mapping: &HashMap<ExecutorVariable, Variable>) -> VarMappedVariableModes {
+        let mut var_mapped_modes = HashMap::new();
+        for (var, mode) in &self.modes {
+            var_mapped_modes.insert(mapping[&var], *mode);
+        }
+        VarMappedVariableModes { modes: var_mapped_modes }
+    }
 }
 
 impl fmt::Display for VariableModes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
+            write!(f, "{key}s=")?;
+            for (var, _) in group {
+                write!(f, "{}, ", var)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct VarMappedVariableModes {
+    modes: HashMap<Variable, VariableMode>,
+}
+
+impl fmt::Display for VarMappedVariableModes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
             write!(f, "{key}s=")?;

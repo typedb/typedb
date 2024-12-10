@@ -11,7 +11,9 @@ use std::{
     fmt,
     sync::Arc,
 };
-
+use std::collections::BTreeSet;
+use std::hash::{DefaultHasher, Hash, Hasher};
+use std::time::Instant;
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
@@ -59,8 +61,11 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::vertex::ADVANCE_ITERATOR_RELATIVE_COST;
+use crate::executable::match_::planner::vertex::OPEN_ITERATOR_RELATIVE_COST;
 
-pub const MAX_BEAM_WIDTH: usize = 128;
+pub const MAX_BEAM_WIDTH: usize = 96;
+pub const MIN_BEAM_WIDTH: usize = 1;
 
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
@@ -143,25 +148,25 @@ fn make_builder<'a>(
     plan_builder
 }
 
-#[derive(Clone, Copy, Default, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct VariableVertexId(usize);
 
 impl fmt::Debug for VariableVertexId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "V[{}]", self.0)
+        write!(f, "V({})", self.0)
     }
 }
 
-#[derive(Clone, Copy, Default, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) struct PatternVertexId(usize);
 
 impl fmt::Debug for PatternVertexId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "P[{}]", self.0)
+        write!(f, "P({})", self.0)
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub(super) enum VertexId {
     Variable(VariableVertexId),
     Pattern(PatternVertexId),
@@ -555,15 +560,18 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
         let num_patterns = self.graph.pattern_to_variable.len();
 
-        let beam_width = ((num_patterns.saturating_sub(10)) * 4).clamp(2, MAX_BEAM_WIDTH);
-        let extension_width = beam_width / 2;
+        let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
+        let mut extension_width = (num_patterns / 2) + 2; // ensure this is larger than (num_patterns / 2) or change narrowing logic
+        let reduction_cycle = 2;
 
         let all_patterns = self.graph.pattern_to_variable.keys().copied().collect();
         let mut best_partial_plans = Vec::with_capacity(beam_width);
         best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), all_patterns, self.input_variables()));
 
-        for _ in 0..num_patterns {
-            let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
+        for i in 0..num_patterns {
+            let mut new_plans_heap  = BinaryHeap::with_capacity(beam_width);
+            let mut new_plans_hashset: HashSet<PartialCostHash> = HashSet::with_capacity(beam_width);
+            if i % reduction_cycle == 0 && beam_width > MIN_BEAM_WIDTH { extension_width -= 1; beam_width -= 1; } // Narrow the beam until it greedy at the tail (for large queries)
             for plan in best_partial_plans.drain(..) {
                 let mut extension_heap = BinaryHeap::with_capacity(extension_width);
                 for extension in plan.extensions_iter(&self.graph) {
@@ -589,12 +597,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         plan.clone_and_extend_with_new_step(extension, &self.graph)
                     };
 
-                    if new_plans_heap.len() < beam_width {
-                        new_plans_heap.push(new_plan);
-                    } else if let Some(top) = new_plans_heap.peek() {
-                        if new_plan < *top {
-                            new_plans_heap.pop();
+                    let new_plan_hash = new_plan.hash();
+                    if !new_plans_hashset.contains(&new_plan_hash) {
+                        new_plans_hashset.insert(new_plan_hash);
+                        if new_plans_heap.len() < beam_width {
                             new_plans_heap.push(new_plan);
+                        } else if let Some(top) = new_plans_heap.peek() {
+                            if new_plan < *top {
+                                new_plans_heap.pop();
+                                new_plans_heap.push(new_plan);
+                            }
                         }
                     }
                 }
@@ -639,7 +651,7 @@ pub(super) struct PartialCostPlan {
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>,
     cumulative_cost: Cost,
     remaining_patterns: HashSet<PatternVertexId>,
-    ongoing_step: Vec<VertexId>,
+    ongoing_step: HashSet<PatternVertexId>,
     ongoing_step_cost: Cost,
     ongoing_step_produced_vars: HashSet<VariableVertexId>,
     ongoing_step_join_var: Option<VariableVertexId>,
@@ -657,11 +669,11 @@ impl PartialCostPlan {
             vertex_ordering.push(VertexId::Variable(v));
         }
         Self {
-            vertex_ordering,
+            vertex_ordering: vertex_ordering.clone(),
             pattern_metadata: HashMap::new(),
             cumulative_cost: Cost::NOOP,
             remaining_patterns,
-            ongoing_step: Vec::new(),
+            ongoing_step: HashSet::new(),
             ongoing_step_cost: Cost::NOOP,
             ongoing_step_produced_vars: HashSet::new(),
             ongoing_step_join_var: None,
@@ -724,7 +736,7 @@ impl PartialCostPlan {
 
     fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
         let mut updated_join_var: Option<VariableVertexId> = None;
-        if let Some(prev_constraint) = self.ongoing_step.last() {
+        if let Some(prev_constraint) = self.ongoing_step.iter().next() {
             let planner = &graph.elements[&VertexId::Pattern(pattern)];
             if let PlannerVertex::Constraint(constraint) = planner {
                 if let Ok(candidate_join_var) =
@@ -732,7 +744,7 @@ impl PartialCostPlan {
                 {
                     if self.ongoing_step_join_var.is_none()
                         && constraint.can_sort_on(candidate_join_var)
-                        && graph.elements[prev_constraint]
+                        && graph.elements[&VertexId::Pattern(*prev_constraint)]
                             .as_constraint()
                             .map_or(false, |c| c.can_sort_on(candidate_join_var))
                     {
@@ -774,13 +786,49 @@ impl PartialCostPlan {
         (updated_cost, extension_metadata)
     }
 
-    fn heuristic_plan_completion_cost(&self, _graph: &Graph<'_>, _pattern: PatternVertexId) -> Cost {
-        Cost::NOOP
+    fn heuristic_plan_completion_cost(&self, graph: &Graph<'_>, extension: PatternVertexId) -> Cost {
+        let mut bound_vars: HashSet<VariableVertexId> = self.vertex_ordering.iter().filter_map(|v| v.as_variable_id()).collect();
+        bound_vars.extend(&self.ongoing_step_produced_vars);
+        bound_vars.extend(graph.elements[&VertexId::Pattern(extension)].variables());
+        let mut join_probabilities_and_fractions = HashMap::new();
+        let mut remaining_patterns_scan_size = 1.0;
+        for var in graph.variable_to_pattern.keys() {
+            let var_vertex = graph.elements[&VertexId::Variable(*var)].as_variable();
+            let full_output = var_vertex.map(|v| v.unrestricted_expected_output_size()).unwrap_or(1.0);
+            if bound_vars.contains(&var) {
+                join_probabilities_and_fractions.insert(var, (1.0, 1.0/full_output));
+            } else {
+                let selectivity = var_vertex.map(|v| v.restriction_based_selectivity(&[])).unwrap_or(1.0);
+                let effective_vertex_size = full_output * selectivity;
+                join_probabilities_and_fractions.insert(var, (1.0 / effective_vertex_size, selectivity));
+                remaining_patterns_scan_size *= effective_vertex_size;
+            }
+        }
+        for pat in self.remaining_patterns.iter() {
+            let constraint_vertex = graph.elements[&VertexId::Pattern(*pat)].as_constraint();
+            match constraint_vertex {
+                Some(ConstraintVertex::Has(has)) => {
+                    let (owner_join_probability, owner_fraction) = join_probabilities_and_fractions[&has.owner];
+                    let (attribute_join_probability, attribute_fraction) = join_probabilities_and_fractions[&has.attribute];
+                    let has_effective_edge_size = has.unbound_typed_expected_size * attribute_fraction * owner_fraction;
+                    remaining_patterns_scan_size *= has_effective_edge_size * owner_join_probability * attribute_join_probability;
+                },
+                Some(ConstraintVertex::Links(links)) => {
+                    let (relation_join_probability, relation_fraction) = join_probabilities_and_fractions[&links.relation];
+                    let (player_join_probability, player_fraction) = join_probabilities_and_fractions[&links.player];
+                    let links_effective_edge_size = links.unbound_typed_expected_size * player_fraction * relation_fraction;
+                    remaining_patterns_scan_size *= links_effective_edge_size * relation_join_probability * player_join_probability;
+                }
+                _ => { }
+            }
+        }
+        Cost { cost: OPEN_ITERATOR_RELATIVE_COST * (self.remaining_patterns.len() as f64) + ADVANCE_ITERATOR_RELATIVE_COST * remaining_patterns_scan_size, io_ratio: remaining_patterns_scan_size }
+       // Cost::NOOP
     }
 
     fn clone_and_extend_with_continued_step(&self, extension: StepExtension, graph: &Graph<'_>) -> PartialCostPlan {
         let mut new_ongoing_step = self.ongoing_step.clone();
-        new_ongoing_step.push(VertexId::Pattern(extension.pattern_extension));
+        new_ongoing_step.insert(extension.pattern_extension);
 
         let mut new_pattern_metadata = self.pattern_metadata.clone();
         new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
@@ -813,8 +861,8 @@ impl PartialCostPlan {
         // Commit previous step to plan
         let mut new_vertex_ordering = self.vertex_ordering.clone();
         for &pattern in self.ongoing_step.iter() {
-            new_vertex_ordering.push(pattern);
-            debug_assert!(!self.vertex_ordering.contains(&pattern));
+            new_vertex_ordering.push(VertexId::Pattern(pattern));
+            debug_assert!(!self.vertex_ordering.contains(&VertexId::Pattern(pattern)));
         }
         if let Some(join_var) = self.ongoing_step_join_var {
             new_vertex_ordering.push(VertexId::Variable(join_var));
@@ -832,7 +880,8 @@ impl PartialCostPlan {
         }
 
         // Start new step with plan extension
-        let new_ongoing_step = vec![VertexId::Pattern(extension.pattern_extension)];
+        let mut new_ongoing_step = HashSet::new();
+        new_ongoing_step.insert(extension.pattern_extension);
 
         let mut new_pattern_metadata = self.pattern_metadata.clone();
         new_pattern_metadata.insert(extension.pattern_extension, extension.pattern_metadata);
@@ -864,8 +913,8 @@ impl PartialCostPlan {
     fn into_complete_plan(self) -> CompleteCostPlan {
         let mut final_vertex_ordering = self.vertex_ordering.clone();
         for &pattern in self.ongoing_step.iter() {
-            final_vertex_ordering.push(pattern);
-            debug_assert!(!self.vertex_ordering.contains(&pattern));
+            final_vertex_ordering.push(VertexId::Pattern(pattern));
+            debug_assert!(!self.vertex_ordering.contains(&VertexId::Pattern(pattern)));
         }
         if let Some(join_var) = self.ongoing_step_join_var {
             final_vertex_ordering.push(VertexId::Variable(join_var));
@@ -888,6 +937,14 @@ impl PartialCostPlan {
             cumulative_cost: self.cumulative_cost.chain(self.ongoing_step_cost),
         }
     }
+
+    fn hash(&self) -> PartialCostHash {
+        PartialCostHash {
+            pattern_set: self.remaining_patterns.clone(),
+            ongoing_set: self.ongoing_step.clone(),
+            total_cost: self.projected_cost.cost as u64, // TODO: improve rounding
+        }
+    }
 }
 
 impl Eq for PartialCostPlan {}
@@ -901,6 +958,33 @@ impl PartialOrd for PartialCostPlan {
 impl Ord for PartialCostPlan {
     fn cmp(&self, other: &Self) -> Ordering {
         self.projected_cost.cost.partial_cmp(&other.projected_cost.cost).unwrap_or(Ordering::Greater)
+    }
+}
+
+#[derive(Clone, PartialEq, Eq)]
+pub(super) struct PartialCostHash {
+    pattern_set: HashSet<PatternVertexId>,
+    ongoing_set: HashSet<PatternVertexId>,
+    total_cost: u64,
+}
+
+impl Hash for PartialCostHash {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let mut acc = 0;
+        for pattern in &self.pattern_set {
+            let mut hasher = DefaultHasher::new();
+            pattern.hash(&mut hasher);
+            acc ^= hasher.finish();
+        }
+        acc.hash(state);
+        let mut acc = 0;
+        for pattern in &self.ongoing_set {
+            let mut hasher = DefaultHasher::new();
+            pattern.hash(&mut hasher);
+            acc ^= hasher.finish();
+        }
+        acc.hash(state);
+        self.total_cost.hash(state);
     }
 }
 
@@ -938,7 +1022,7 @@ pub(super) struct ConjunctionPlan<'a> {
     shared_variables: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
-    ordering: Vec<VertexId>, //TODO: replace with the CostPlan
+    ordering: Vec<VertexId>,
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
     cost: Cost,

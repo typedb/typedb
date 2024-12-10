@@ -1155,8 +1155,8 @@ impl<ID: IrID> fmt::Display for Is<ID> {
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Isa<ID> {
     kind: IsaKind,
-    thing: Vertex<ID>,
-    type_: Vertex<ID>,
+    pub thing: Vertex<ID>,
+    pub type_: Vertex<ID>,
 }
 
 impl<ID: IrID> Isa<ID> {
