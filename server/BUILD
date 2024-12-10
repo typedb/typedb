@@ -41,6 +41,7 @@ rust_library(
         "@crates//:futures",
         "@crates//:http",
         "@crates//:itertools",
+        "@crates//:moka",
         "@crates//:prost",
         "@crates//:tokio",
         "@crates//:tokio-stream",
