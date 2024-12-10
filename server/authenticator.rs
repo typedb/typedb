@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use futures::future::BoxFuture;
@@ -18,11 +18,12 @@ const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
 #[derive(Clone, Debug)]
 pub struct Authenticator {
     user_manager: Arc<UserManager>,
+    cache: HashMap<String, String>
 }
 
 impl Authenticator {
     pub(crate) fn new(user_manager: Arc<UserManager>) -> Self {
-        Self { user_manager }
+        Self { user_manager, cache: HashMap::new() }
     }
 }
 
@@ -37,15 +38,39 @@ impl Authenticator {
         let username = username_metadata.ok_or(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))?;
         let password = password_metadata.ok_or(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))?;
 
+        match self.get_from_cache(username) {
+            Some(p) => {
+                if p == password {
+                    return Ok(http::Request::from_parts(parts, body));
+                } else {
+                    self.remove_from_cache(username);
+                }
+            }
+            None => {}
+        }
+
         let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username) else {
             return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));
         };
 
         if password_hash.matches(password) {
+            self.insert_to_cache(username, password);
             Ok(http::Request::from_parts(parts, body))
         } else {
             Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
         }
+    }
+
+    fn insert_to_cache(&mut self, username: &str, password: &str) {
+        self.cache.insert(username.to_string(), password.to_string());
+    }
+
+    fn get_from_cache(&self, username: &str) -> Option<&String> {
+        self.cache.get(username)
+    }
+
+    fn remove_from_cache(&mut self, username: &str) {
+        self.cache.remove(username);
     }
 }
 
