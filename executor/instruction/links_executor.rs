@@ -21,7 +21,7 @@ use concept::{
     },
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
-use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
+use itertools::{kmerge_by, Itertools, KMergeBy};
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;

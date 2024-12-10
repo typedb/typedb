@@ -5,45 +5,80 @@
  */
 
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::fmt;
+use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::{fmt, iter};
 use std::sync::Arc;
 
-use itertools::Itertools;
-use answer::Type;
-use compiler::executable::match_::instructions::thing::IndexedRelationInstruction;
+use itertools::{Itertools, kmerge_by, KMergeBy};
+use answer::{Thing, Type};
+use answer::variable_value::VariableValue;
+use compiler::executable::match_::instructions::thing::{IndexedRelationInstruction, LinksInstruction};
 
 use compiler::executable::match_::instructions::{VariableMode, VariableModes};
 use compiler::ExecutorVariable;
 use concept::error::ConceptReadError;
+use concept::thing::relation::{IndexedRelationsIterator, IndexedRelationPlayers, Relation, RolePlayer, LinksIterator};
 use concept::thing::thing_manager::ThingManager;
+use concept::type_::role_type::RoleType;
 use ir::pattern::constraint::IndexedRelation;
 use ir::pattern::Vertex;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::instruction::iterator::TupleIterator;
-use crate::instruction::TernaryIterateMode;
-use crate::instruction::tuple::TuplePositions;
+use crate::instruction::iterator::{SortedTupleIterator, TupleIterator};
+use crate::instruction::{Checker, FilterFn, FilterMapFn, TernaryIterateMode};
+use crate::instruction::links_executor::{LinksFilterMapFn, LinksOrderingFn};
+use crate::instruction::tuple::{indexed_relation_to_tuple_start_end_relation_startrole_endrole, IndexedRelationToTupleFn, LinksToTupleFn, TuplePositions};
 use crate::pipeline::stage::ExecutionContext;
 use crate::row::MaybeOwnedRow;
 
-pub(crate) struct IndexedRelationExecutor {
-    indexed_relation: IndexedRelation<ExecutorVariable>,
+pub(super) type IndexedRelationTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IndexedRelationFilterMapFn>>, IndexedRelationToTupleFn>;
 
-    // TODO??
-    iterate_mode: TernaryIterateMode,
+pub(crate) type IndexedRelationSortedTupleIterator = IndexedRelationTupleIterator<IndexedRelationsIterator>;
+pub(crate) type IndexedRelationUnboundedSortedStartMerged = IndexedRelationTupleIterator<KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn>>;
+// pub(crate) type LinksBoundedRelationSortedPlayer = crate::instruction::links_executor::LinksTupleIterator<LinksIterator>;
+// pub(crate) type LinksBoundedRelationPlayer = crate::instruction::links_executor::LinksTupleIterator<LinksIterator>;
+
+type IndexedRelationValueExtractor = fn(&(IndexedRelationPlayers, u64)) -> VariableValue<'static>;
+
+pub(super) const EXTRACT_PLAYER_START: IndexedRelationValueExtractor =
+    |(indexed, _)| VariableValue::Thing(Thing::from(indexed.0));
+pub(super) const EXTRACT_PLAYER_END: IndexedRelationValueExtractor =
+    |(indexed, _)| VariableValue::Thing(Thing::from(indexed.1));
+pub(super) const EXTRACT_RELATION: IndexedRelationValueExtractor =
+    |(indexed, _)| VariableValue::Thing(Thing::Relation(indexed.2));
+pub(super) const EXTRACT_ROLE_START: IndexedRelationValueExtractor =
+    |(indexed, _)| VariableValue::Type(Type::RoleType(indexed.3));
+pub(super) const EXTRACT_ROLE_END: IndexedRelationValueExtractor =
+    |(indexed, _)| VariableValue::Type(Type::RoleType(indexed.4));
+
+pub(super) type IndexedRelationFilterFn = FilterFn<(IndexedRelationPlayers, u64)>;
+pub(super) type IndexedRelationFilterMapFn = FilterMapFn<(IndexedRelationPlayers, u64)>;
+pub(crate) type IndexedRelationOrderingFn = for<'a, 'b> fn(
+    &'a Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
+    &'b Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
+) -> bool;
+
+pub(crate) struct IndexedRelationExecutor {
+    pub(crate) player_start: ExecutorVariable,
+    pub(crate) player_end: ExecutorVariable,
+    pub(crate) relation: ExecutorVariable,
+    pub(crate) role_start: ExecutorVariable,
+    pub(crate) role_end: ExecutorVariable,
+    
+    iterate_mode: IndexedRelationIterateIterateMode,
     variable_modes: VariableModes,
 
     tuple_positions: TuplePositions,
 
-    // relation_player_types: Arc<BTreeMap<Type, Vec<Type>>>, // vecs are in sorted order
-    // relation_type_range: Bounds<RelationType>,
-    // player_type_range: Bounds<ObjectType>,
+    pub(crate) relation_to_player_start_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub(crate) player_start_to_player_end_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub(crate) role_start_types: Arc<BTreeSet<RoleType>>,
+    pub(crate) role_end_types: Arc<BTreeSet<RoleType>>,
 
-    // filter_fn: Arc<crate::instruction::links_executor::LinksFilterFn>,
+    filter_fn: Arc<IndexedRelationFilterFn>,
     // relation_cache: Option<Vec<Relation>>,
 
-    // checker: Checker<(Relation, RolePlayer, u64)>,
+    checker: Checker<(IndexedRelationPlayers, u64)>,
 }
 
 impl IndexedRelationExecutor {
@@ -56,47 +91,63 @@ impl IndexedRelationExecutor {
     ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
 
-        // let relation_player_types = links.relation_to_player_types().clone();
-        // debug_assert!(!relation_player_types.is_empty());
-        // let player_types = links.player_types().clone();
-        // let player_role_types = links.relation_to_role_types().clone();
-        // let LinksInstruction { links, checks, .. } = links;
+        let IndexedRelationInstruction {
+            checks,
+            player_start,
+            player_end,
+            relation,
+            role_start,
+            role_end,
+            inputs,
+            relation_to_player_start_types,
+            player_start_to_player_end_types,
+            role_start_types,
+            role_end_types,
+        } = indexed_relation;
         let iterate_mode = IndexedRelationIterateIterateMode::new(
-            *indexed_relation.player_start(),
-            *indexed_relation.player_end(),
-            *indexed_relation.relation(),
-            *indexed_relation.role_type_start(),
+            player_start,
+            player_end,
+            relation,
+            role_start,
             &variable_modes,
-            &sort_by
+            sort_by
         );
-        // let filter_fn = create_links_filter_relations_players_roles(relation_player_types.clone(), player_role_types);
-        //
-        let start_player = indexed_relation.player_start().as_variable().unwrap();
-        let end_player = indexed_relation.player_end().as_variable().unwrap();
-        let relation = indexed_relation.relation().as_variable().unwrap();
-        let start_role = indexed_relation.role_start().as_variable().unwrap();
-        let end_role = indexed_relation.role_end().as_variable().unwrap();
+        let filter_fn = create_indexed_players_filter(player_start_to_player_end_types.clone(), role_start_types.clone(), role_end_types.clone());
 
+        // produce a lexicographical ordering where the Sorted component comes first: [sort][bound 1][bound 2]...[unbound 1][unbound 2]...
+        // where the Sorted and then Unbound components are lexicographically ordered and unbound
         let output_tuple_positions = match iterate_mode {
             IndexedRelationIterateIterateMode::Unbound  => {
-                TuplePositions::Quintuple([Some(start_player), Some(end_player), Some(relation), Some(start_role), Some(end_role)])
+                TuplePositions::Quintuple([Some(player_start), Some(player_end), Some(relation), Some(role_start), Some(role_end)])
             },
             IndexedRelationIterateIterateMode::UnboundInvertedToPlayer => {
-                TuplePositions::Quintuple([Some(end_player), Some(start_player), Some(relation), Some(start_role), Some(end_role)])
+                TuplePositions::Quintuple([Some(player_end), Some(player_start), Some(relation), Some(role_start), Some(role_end)])
             }
             IndexedRelationIterateIterateMode::BoundStart => {
-                TuplePositions::Quintuple([Some(start_player), Some(end_player), Some(relation), Some(start_role), Some(end_role)])
+                TuplePositions::Quintuple([Some(player_end), Some(player_start), Some(relation), Some(role_start), Some(role_end)])
             }
-            IndexedRelationIterateIterateMode::BoundFromBoundTo => {
-                TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
+            IndexedRelationIterateIterateMode::BoundStartBoundEnd => {
+                TuplePositions::Quintuple([Some(relation), Some(player_start), Some(player_end), Some(role_start), Some(role_end)])
+            }
+            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelation => {
+                TuplePositions::Quintuple([Some(role_start), Some(player_start), Some(player_end), Some(relation), Some(role_end)])
+            }
+            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
+                TuplePositions::Quintuple([Some(role_end), Some(player_start), Some(player_end), Some(relation), Some(role_start)])
             }
         };
-        //
-        // let checker = Checker::<(Relation, RolePlayer, _)>::new(
-        //     checks,
-        //     HashMap::from([(relation, crate::instruction::links_executor::EXTRACT_RELATION), (player, crate::instruction::links_executor::EXTRACT_PLAYER), (role_type, crate::instruction::links_executor::EXTRACT_ROLE)]),
-        // );
-        //
+
+        let checker = Checker::<(IndexedRelationPlayers, u64)>::new(
+            checks,
+            HashMap::from([
+                (player_start, EXTRACT_PLAYER_START),
+                (player_end, EXTRACT_PLAYER_END),
+                (relation, EXTRACT_RELATION),
+                (role_start, EXTRACT_ROLE_START),
+                (role_end, EXTRACT_ROLE_END),
+            ])
+        );
+
         // let relation_type_range = (
         //     Bound::Included(relation_player_types.first_key_value().unwrap().0.as_relation_type()),
         //     Bound::Included(relation_player_types.last_key_value().unwrap().0.as_relation_type()),
@@ -120,19 +171,24 @@ impl IndexedRelationExecutor {
         //     None
         // };
         //
-        // Ok(Self {
-        //     links,
-        //     iterate_mode,
-        //     variable_modes,
-        //     tuple_positions: output_tuple_positions,
-        //     relation_player_types,
-        //     relation_type_range,
-        //     player_type_range,
-        //     filter_fn,
-        //     relation_cache,
-        //     checker,
-        // })
-        todo!()
+        Ok(Self {
+            player_start,
+            player_end,
+            relation,
+            role_start,
+            role_end,
+
+            iterate_mode,
+            variable_modes,
+            tuple_positions: output_tuple_positions,
+            relation_to_player_start_types,
+            player_start_to_player_end_types,
+            role_start_types,
+            role_end_types,
+            filter_fn,
+            // relation_cache,
+            checker,
+        })
     }
 
     pub(crate) fn get_iterator(
@@ -140,20 +196,66 @@ impl IndexedRelationExecutor {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        // let filter = self.filter_fn.clone();
-        // let check = self.checker.filter_for_row(context, &row);
-        // let filter_for_row: Box<crate::instruction::links_executor::LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
-        //     Ok(true) => match check(&item) {
-        //         Ok(true) | Err(_) => Some(item),
-        //         Ok(false) => None,
-        //     },
-        //     Ok(false) => None,
-        //     Err(_) => Some(item),
-        // });
-        //
-        // let snapshot = &**context.snapshot();
-        // let thing_manager = context.thing_manager();
-        //
+        let filter = self.filter_fn.clone();
+        let check = self.checker.filter_for_row(context, &row);
+        let filter_for_row: Box<IndexedRelationFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) | Err(_) => Some(item),
+                Ok(false) => None,
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
+        });
+
+        let snapshot = &**context.snapshot();
+        let thing_manager = context.thing_manager();
+
+        match self.iterate_mode {
+            IndexedRelationIterateIterateMode::Unbound => {
+                // want it sorted by start player, so we must merge an iterator per relation type
+                if self.relation_to_player_start_types.len() == 1 {
+                    let &relation_type = self.relation_to_player_start_types.keys().next().unwrap();
+                    let as_tuples: IndexedRelationSortedTupleIterator = thing_manager.get_indexed_relations_in(snapshot, relation_type.as_relation_type())
+                        .filter_map(filter_for_row)
+                        .map(indexed_relation_to_tuple_start_end_relation_startrole_endrole);
+                    Ok(TupleIterator::IndexedRelationUnbound(SortedTupleIterator::new(
+                        as_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes
+                    )))
+                } else {
+                    let iterators = self.relation_to_player_start_types.keys()
+                        .map(|relation_type| thing_manager.get_indexed_relations_in(snapshot, relation_type.as_relation_type()))
+                        .collect_vec();
+                    let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
+                        kmerge_by(iterators, compare_indexed_players);
+                    let as_tuples: IndexedRelationUnboundedSortedStartMerged = merged
+                        .filter_map(filter_for_row)
+                        .map(indexed_relation_to_tuple_start_end_relation_startrole_endrole);
+                    Ok(TupleIterator::IndexedRelationUnboundStartMerged(SortedTupleIterator::new(
+                        as_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                }
+            }
+            IndexedRelationIterateIterateMode::UnboundInvertedToPlayer => {
+                todo!()
+            }
+            IndexedRelationIterateIterateMode::BoundStart => {
+                todo!()
+            }
+            IndexedRelationIterateIterateMode::BoundStartBoundEnd => {
+                todo!()
+            }
+            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelation => {
+                todo!()
+            }
+            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
+                todo!()
+            }
+        }
+
         // match self.iterate_mode {
         //     TernaryIterateMode::Unbound => {
         //         // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
@@ -245,46 +347,56 @@ impl IndexedRelationExecutor {
         //         )))
         //     }
         // }
-        todo!()
     }
+
 }
 
 impl fmt::Display for IndexedRelationExecutor {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "[{}], mode={}", &self.indexed_relation, &self.iterate_mode)
+        writeln!(
+            f,
+            "[{} -(role: {}, relation: {}, role: {})-> {}], mode={}",
+            self.player_start,
+            self.role_start,
+            self.relation,
+            self.role_end,
+            self.player_end,
+            &self.iterate_mode
+        )
     }
 }
 
-fn create_links_filter_relations_players_roles(
-    relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
-    player_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
-) -> Arc<crate::instruction::links_executor::LinksFilterFn> {
+/// Note: we should never have to filter Relation type, since it must always be specified in the prefix
+fn create_indexed_players_filter(
+    start_player_to_end_player_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    start_role_types: Arc<BTreeSet<RoleType>>,
+    end_role_types: Arc<BTreeSet<RoleType>>,
+) -> Arc<IndexedRelationFilterFn> {
     Arc::new(move |result| {
-        let (rel, rp) = match result {
-            Ok((rel, rp, _)) => (rel, rp),
+        let (player_start, player_end, role_start, role_end) = match result {
+            Ok(((player_start, player_end, relation, role_start, role_end), _)) => (player_start, player_end, role_start, role_end),
             Err(err) => return Err(err.clone()),
         };
-        let Some(player_types) = relation_to_player.get(&Type::from(rel.type_())) else {
+        let Some(end_player_types) = start_player_to_end_player_types.get(&Type::from(player_start.type_())) else {
             return Ok(false);
         };
-        let player_type = Type::from(rp.player().type_());
-        let role_type = Type::from(rp.role_type());
-        Ok(player_types.contains(&player_type)
-            && player_to_role.get(&player_type).is_some_and(|role_types| role_types.contains(&role_type)))
+        Ok(end_player_types.contains(&Type::from(player_end.type_()))
+            && start_role_types.contains(&role_start)
+            && end_role_types.contains(&role_end)
+        )
     })
 }
-//
-// fn compare_by_player_then_relation(
-//     left: &Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
-//     right: &Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
-// ) -> bool {
-//     if let (Ok((rel_1, rp_1, _)), Ok((rel_2, rp_2, _))) = (left, right) {
-//         (rp_1.player(), rel_1) < (rp_2.player(), rel_2)
-//     } else {
-//         false
-//     }
-// }
 
+fn compare_indexed_players(
+    left: &Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
+    right: &Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
+) -> bool {
+    if let (Ok((indexed_players_1, _)), Ok((indexed_players_2, _))) = (left, right) {
+        indexed_players_1 < indexed_players_2
+    } else {
+        false
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub(crate) enum IndexedRelationIterateIterateMode {
@@ -308,7 +420,7 @@ impl IndexedRelationIterateIterateMode {
         player_start: ExecutorVariable,
         player_end: ExecutorVariable,
         relation: ExecutorVariable,
-        player_start_role: ExecutorVariable,
+        player_role_start: ExecutorVariable,
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
     ) -> Self {
@@ -318,8 +430,8 @@ impl IndexedRelationIterateIterateMode {
         let is_start_bound = var_modes.get(player_start) == Some(VariableMode::Input);
         let is_end_bound = var_modes.get(player_end) == Some(VariableMode::Input);
         let is_rel_bound = var_modes.get(relation) == Some(VariableMode::Input);
-        let is_start_role_bound = var_modes.get(player_start_role) == Some(VariableMode::Input);
-        if is_start_role_bound {
+        let is_role_start_bound = var_modes.get(player_role_start) == Some(VariableMode::Input);
+        if is_role_start_bound {
             assert!(is_start_bound && is_end_bound && is_rel_bound);
             Self::BoundStartBoundEndBoundRelationBoundStartRole
         } else if is_rel_bound {
@@ -330,7 +442,7 @@ impl IndexedRelationIterateIterateMode {
             Self::BoundStartBoundEnd
         } else if is_start_bound {
             Self::BoundStart
-        } else if Some(sort_by) == player_end.as_variable() {
+        } else if sort_by == player_end {
             Self::UnboundInvertedToPlayer
         } else {
             Self::Unbound

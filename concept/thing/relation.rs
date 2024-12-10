@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeLinks, ThingEdgeLinksIndex},
+            edge::{ThingEdgeLinks, ThingEdgeIndexedRelation},
             vertex_object::ObjectVertex,
             ThingVertex,
         },
@@ -55,7 +55,7 @@ impl Relation {
         self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> IndexedPlayersIterator {
+    ) -> IndexedRelationsIterator {
         thing_manager.get_indexed_players(snapshot, Object::Relation(self))
     }
 
@@ -480,21 +480,24 @@ edge_iterator!(
     storage_key_links_edge_to_relation_role_player
 );
 
+pub type IndexedRelationPlayers = (Object, Object, Relation, RoleType, RoleType);
+
 fn storage_key_to_indexed_players<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (RolePlayer, RolePlayer, Relation, u64) {
-    let edge = ThingEdgeLinksIndex::decode(Bytes::reference(storage_key.bytes()));
-    let from_role_player =
-        RolePlayer { player: Object::new(edge.from()), role_type: RoleType::build_from_type_id(edge.from_role_id()) };
-    let to_role_player =
-        RolePlayer { player: Object::new(edge.to()), role_type: RoleType::build_from_type_id(edge.to_role_id()) };
-    (from_role_player, to_role_player, Relation::new(edge.relation()), decode_value_u64(&value))
+) -> (IndexedRelationPlayers, u64) {
+    let edge = ThingEdgeIndexedRelation::decode(Bytes::reference(storage_key.bytes()));
+    let start_player = Object::new(edge.from());
+    let end_player = Object::new(edge.to());
+    let relation = Relation::new(edge.relation());
+    let start_role_type = RoleType::build_from_type_id(edge.from_role_id());
+    let end_role_type = RoleType::build_from_type_id(edge.to_role_id());
+    ((start_player, end_player, relation, start_role_type, end_role_type), decode_value_u64(&value))
 }
 
 edge_iterator!(
-    IndexedPlayersIterator;
-    (RolePlayer, RolePlayer, Relation, u64);
+    IndexedRelationsIterator;
+    (IndexedRelationPlayers, u64);
     storage_key_to_indexed_players
 );
 

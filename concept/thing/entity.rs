@@ -25,7 +25,7 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        relation::IndexedPlayersIterator,
+        relation::IndexedRelationsIterator,
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
@@ -47,7 +47,7 @@ impl Entity {
         self,
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
-    ) -> IndexedPlayersIterator {
+    ) -> IndexedRelationsIterator {
         thing_manager.get_indexed_players(snapshot, Object::Entity(self))
     }
 

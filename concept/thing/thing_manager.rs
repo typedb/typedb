@@ -16,7 +16,7 @@ use bytes::{byte_array::ByteArray, util::increment, Bytes};
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeLinksIndex},
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeIndexedRelation},
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
@@ -71,7 +71,7 @@ use crate::{
         entity::Entity,
         object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
         relation::{
-            IndexedPlayersIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator,
+            IndexedRelationsIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator,
         },
         statistics::Statistics,
         thing_manager::validation::{
@@ -1272,12 +1272,24 @@ impl ThingManager {
             },
         )
     }
-
-    pub(crate) fn get_indexed_players(&self, snapshot: &impl ReadableSnapshot, from: Object) -> IndexedPlayersIterator {
-        let prefix = ThingEdgeLinksIndex::prefix_from(from.vertex());
-        IndexedPlayersIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinksIndex::FIXED_WIDTH_ENCODING)),
+    
+    pub fn get_indexed_relations_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType
+    ) -> IndexedRelationsIterator {
+        let prefix = ThingEdgeIndexedRelation::prefix_relation_type(relation_type.vertex().type_id_());
+        IndexedRelationsIterator::new(
+            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING))
         )
+    }
+
+    pub(crate) fn get_indexed_players(&self, snapshot: &impl ReadableSnapshot, from: Object) -> IndexedRelationsIterator {
+        // let prefix = ThingEdgeLinksIndex::prefix_from(from.vertex());
+        // IndexedPlayersIterator::new(
+        //     snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinksIndex::FIXED_WIDTH_ENCODING)),
+        // )
+        todo!()
     }
 
     pub(crate) fn get_status(
@@ -2353,7 +2365,7 @@ impl ThingManager {
         for rp in players {
             let (rp_player, rp_role_type) = rp?;
             debug_assert!(!(rp_player == Object::new(player.vertex()) && role_type == rp_role_type));
-            let index = ThingEdgeLinksIndex::new(
+            let index = ThingEdgeIndexedRelation::new(
                 player.vertex(),
                 rp_player.vertex(),
                 relation.vertex(),
@@ -2361,7 +2373,7 @@ impl ThingManager {
                 rp_role_type.vertex().type_id_(),
             );
             snapshot.delete(index.into_storage_key().into_owned_array());
-            let index_reverse = ThingEdgeLinksIndex::new(
+            let index_reverse = ThingEdgeIndexedRelation::new(
                 rp_player.vertex(),
                 player.vertex(),
                 relation.vertex(),
@@ -2394,7 +2406,7 @@ impl ThingManager {
             if is_same_rp {
                 let repetitions = count_for_player - 1;
                 if repetitions > 0 {
-                    let index = ThingEdgeLinksIndex::new(
+                    let index = ThingEdgeIndexedRelation::new(
                         player.vertex(),
                         player.vertex(),
                         relation.vertex(),
@@ -2408,7 +2420,7 @@ impl ThingManager {
                 }
             } else {
                 let rp_repetitions = rp_count;
-                let index = ThingEdgeLinksIndex::new(
+                let index = ThingEdgeIndexedRelation::new(
                     player.vertex(),
                     rp_player.vertex(),
                     relation.vertex(),
@@ -2418,7 +2430,7 @@ impl ThingManager {
                 snapshot
                     .put_val(index.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(rp_repetitions)));
                 let player_repetitions = count_for_player;
-                let index_reverse = ThingEdgeLinksIndex::new(
+                let index_reverse = ThingEdgeIndexedRelation::new(
                     rp_player.vertex(),
                     player.vertex(),
                     relation.vertex(),

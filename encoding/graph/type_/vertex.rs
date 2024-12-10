@@ -67,7 +67,12 @@ impl Keyable<BUFFER_KEY_INLINE> for TypeVertex {
 
 impl Prefixed<BUFFER_KEY_INLINE> for TypeVertex {}
 
-impl Typed<BUFFER_KEY_INLINE> for TypeVertex {}
+impl Typed<BUFFER_KEY_INLINE> for TypeVertex {
+    fn type_id_(&self) -> TypeID {
+        // TODO: is this the best way to get the TypeID out?
+        TypeID::decode(self.clone().to_bytes()[Self::RANGE_TYPE_ID].try_into().unwrap())
+    }
+}
 
 impl primitive::prefix::Prefix for TypeVertex {
     fn starts_with(&self, other: &Self) -> bool {

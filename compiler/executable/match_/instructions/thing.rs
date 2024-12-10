@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use concept::type_::role_type::RoleType;
 use ir::pattern::{
     constraint::{Has, Iid, Isa, Links},
     IrID,
@@ -364,20 +365,20 @@ impl<ID: IrID> fmt::Display for LinksReverseInstruction<ID> {
 // We use a lowered form of the IndexedRelation, since it is fully symmetric otherwise
 #[derive(Debug, Clone)]
 pub struct IndexedRelationInstruction<ID> {
-    pub(crate) player_start: ID,
-    pub(crate) player_end: ID,
-    pub(crate) relation: ID,
-    pub(crate) role_start: ID,
-    pub(crate) role_end: ID,
+    pub player_start: ID,
+    pub player_end: ID,
+    pub relation: ID,
+    pub role_start: ID,
+    pub role_end: ID,
 
-    pub(crate) inputs: Inputs<ID>,
-    pub(crate) checks: Vec<CheckInstruction<ID>>,
+    pub inputs: Inputs<ID>,
+    pub checks: Vec<CheckInstruction<ID>>,
 
     // the prefixes we will generally want to construct are [rel type][from][to type]
-    pub(crate) player_start_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) relation_to_player_end_types: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) role_start_types: Arc<BTreeSet<Type>>,
-    pub(crate) role_end_types: Arc<BTreeSet<Type>>,
+    pub relation_to_player_start_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub player_start_to_player_end_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub role_start_types: Arc<BTreeSet<RoleType>>,
+    pub role_end_types: Arc<BTreeSet<RoleType>>,
 }
 
 impl IndexedRelationInstruction<Variable> {
@@ -390,11 +391,21 @@ impl IndexedRelationInstruction<Variable> {
 
         inputs: Inputs<Variable>,
 
-        player_start_to_relation_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        relation_to_player_end_types: Arc<BTreeMap<Type, Vec<Type>>>,
-        role_start_types: Arc<BTreeSet<Type>>,
-        role_end_types: Arc<BTreeSet<Type>>,
+        relation_to_player_start_types: Arc<BTreeMap<Type, Vec<Type>>>,
+        player_start_to_relation_types: &BTreeMap<Type, Vec<Type>>,
+        relation_to_player_end_types: &BTreeMap<Type, Vec<Type>>,
+        role_start_types: Arc<BTreeSet<RoleType>>,
+        role_end_types: Arc<BTreeSet<RoleType>>,
     ) -> Self {
+        let mut player_start_to_player_end_types = BTreeMap::new();
+        for (player_start_type, relation_types) in player_start_to_relation_types {
+            let player_end_types = player_start_to_player_end_types.entry(*player_start_type)
+                .or_insert(BTreeSet::new());
+            for relation_type in relation_types {
+                player_end_types.extend(relation_to_player_end_types.get(&relation_type).iter().flat_map(|vec| vec.iter()));
+            }
+        }
+
         Self {
             player_start,
             player_end,
@@ -402,8 +413,8 @@ impl IndexedRelationInstruction<Variable> {
             role_start,
             role_end,
             inputs,
-            player_start_to_relation_types,
-            relation_to_player_end_types,
+            relation_to_player_start_types,
+            player_start_to_player_end_types: Arc::new(player_start_to_player_end_types),
             role_start_types,
             role_end_types,
             checks: Vec::new()
@@ -436,8 +447,8 @@ impl<ID: IrID> IndexedRelationInstruction<ID> {
             role_start,
             role_end,
             inputs,
-            player_start_to_relation_types,
-            relation_to_player_end_types,
+            relation_to_player_start_types,
+            player_start_to_player_end_types,
             role_start_types,
             role_end_types,
             checks,
@@ -449,8 +460,8 @@ impl<ID: IrID> IndexedRelationInstruction<ID> {
             role_start: mapping[&role_start],
             role_end: mapping[&role_end],
             inputs: inputs.map(mapping),
-            player_start_to_relation_types,
-            relation_to_player_end_types,
+            relation_to_player_start_types,
+            player_start_to_player_end_types,
             role_start_types,
             role_end_types,
             checks: checks.into_iter().map(|check| check.map(mapping)).collect(),

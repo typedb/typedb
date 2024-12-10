@@ -46,6 +46,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::indexed_relation_executor::IndexedRelationExecutor;
 
 mod function_call_binding_executor;
 mod has_executor;
@@ -96,6 +97,8 @@ pub(crate) enum InstructionExecutor {
 
     Links(LinksExecutor),
     LinksReverse(LinksReverseExecutor),
+
+    IndexedRelation(IndexedRelationExecutor),
 
     // RolePlayerIndex(RolePlayerIndexExecutor),
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
@@ -157,6 +160,15 @@ impl InstructionExecutor {
                 snapshot,
                 thing_manager,
             )?)),
+            ConstraintInstruction::IndexedRelation(indexed_relation) => {
+                Ok(Self::IndexedRelation(IndexedRelationExecutor::new(
+                    indexed_relation,
+                    variable_modes,
+                    sort_by,
+                    snapshot,
+                    thing_manager
+                )?))
+            },
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
             ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
             ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
@@ -186,30 +198,32 @@ impl InstructionExecutor {
             Self::HasReverse(executor) => executor.get_iterator(context, row),
             Self::Links(executor) => executor.get_iterator(context, row),
             Self::LinksReverse(executor) => executor.get_iterator(context, row),
+            Self::IndexedRelation(executor) => executor.get_iterator(context, row),
             Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 
     pub(crate) const fn name(&self) -> &'static str {
         match self {
-            InstructionExecutor::Is(_) => "is",
-            InstructionExecutor::Iid(_) => "iid",
-            InstructionExecutor::Isa(_) => "isa",
-            InstructionExecutor::IsaReverse(_) => "isa_reverse",
-            InstructionExecutor::Has(_) => "has",
-            InstructionExecutor::HasReverse(_) => "has_reverse",
-            InstructionExecutor::Links(_) => "links",
-            InstructionExecutor::LinksReverse(_) => "links_reverse",
-            InstructionExecutor::FunctionCallBinding(_) => "fn_call_binding",
-            InstructionExecutor::TypeList(_) => "[internal]type_list",
-            InstructionExecutor::Sub(_) => "sub",
-            InstructionExecutor::SubReverse(_) => "sub_reverse",
-            InstructionExecutor::Owns(_) => "owns",
-            InstructionExecutor::OwnsReverse(_) => "owns_reverse",
-            InstructionExecutor::Relates(_) => "relates",
-            InstructionExecutor::RelatesReverse(_) => "relates_reverse",
-            InstructionExecutor::Plays(_) => "plays",
-            InstructionExecutor::PlaysReverse(_) => "plays_reverse",
+            Self::Is(_) => "is",
+            Self::Iid(_) => "iid",
+            Self::Isa(_) => "isa",
+            Self::IsaReverse(_) => "isa_reverse",
+            Self::Has(_) => "has",
+            Self::HasReverse(_) => "has_reverse",
+            Self::Links(_) => "links",
+            Self::LinksReverse(_) => "links_reverse",
+            Self::FunctionCallBinding(_) => "fn_call_binding",
+            Self::TypeList(_) => "[internal]type_list",
+            Self::Sub(_) => "sub",
+            Self::SubReverse(_) => "sub_reverse",
+            Self::Owns(_) => "owns",
+            Self::OwnsReverse(_) => "owns_reverse",
+            Self::Relates(_) => "relates",
+            Self::RelatesReverse(_) => "relates_reverse",
+            Self::Plays(_) => "plays",
+            Self::PlaysReverse(_) => "plays_reverse",
+            Self::IndexedRelation(_) => "indexed_relation",
         }
     }
 }
@@ -234,6 +248,7 @@ impl fmt::Display for InstructionExecutor {
             InstructionExecutor::HasReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::LinksReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::IndexedRelation(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::FunctionCallBinding(inner) => fmt::Display::fmt(inner, f),
         }
     }
@@ -732,6 +747,10 @@ impl<T> Checker<T> {
                             )
                         }
                     }));
+                }
+
+                CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                    // TODO, not using todo!() so build fails!
                 }
 
                 &CheckInstruction::Is { lhs, rhs } => {

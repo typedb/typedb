@@ -227,12 +227,12 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => {
                 links.ids_foreach(|var| apply(var))
             }
-            Self::IndexedRelation(thing::IndexedRelationInstruction { player_start, player_end, relation, role_type_end, role_type_start, .. }) => {
+            Self::IndexedRelation(thing::IndexedRelationInstruction { player_start, player_end, relation, role_end, role_start, .. }) => {
                 apply(*player_start);
                 apply(*player_end);
                 apply(*relation);
-                apply(*role_type_end);
-                apply(*role_type_start);
+                apply(*role_end);
+                apply(*role_start);
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {

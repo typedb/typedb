@@ -50,6 +50,7 @@ use crate::{
     },
     row::Row,
 };
+use crate::instruction::indexed_relation_executor::{IndexedRelationSortedTupleIterator, IndexedRelationUnboundedSortedStartMerged};
 
 // TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.
 //       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)
@@ -148,6 +149,13 @@ pub(crate) enum TupleIterator {
     LinksReverseUnboundedInvertedMerged(SortedTupleIterator<LinksReverseUnboundedSortedRelationMerged>),
     LinksReverseBoundedPlayer(SortedTupleIterator<LinksReverseBoundedPlayerSortedRelation>),
     LinksReverseBoundedPlayerRelation(SortedTupleIterator<LinksReverseBoundedPlayerRelation>),
+
+    IndexedRelationUnbound(SortedTupleIterator<IndexedRelationSortedTupleIterator>),
+    IndexedRelationUnboundStartMerged(SortedTupleIterator<IndexedRelationUnboundedSortedStartMerged>),
+    // LinksUnboundedInvertedSingle(SortedTupleIterator<LinksUnboundedSortedPlayerSingle>),
+    // LinksUnboundedInvertedMerged(SortedTupleIterator<LinksUnboundedSortedPlayerMerged>),
+    // LinksBoundedRelation(SortedTupleIterator<LinksBoundedRelationSortedPlayer>),
+    // LinksBoundedRelationPlayer(SortedTupleIterator<LinksBoundedRelationPlayer>),
 }
 
 impl {

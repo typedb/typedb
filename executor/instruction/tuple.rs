@@ -14,6 +14,7 @@ use concept::{
     },
     type_::{attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
+use concept::thing::relation::IndexedRelationPlayers;
 use lending_iterator::higher_order::Hkt;
 
 #[derive(Debug, Clone)]
@@ -297,5 +298,77 @@ pub(crate) fn links_to_tuple_role_relation_player(
         VariableValue::Type(role_type.into()),
         VariableValue::Thing(rel.into()),
         VariableValue::Thing(rp.player().into()),
+    ]))
+}
+
+
+pub(crate) type IndexedRelationToTupleFn = fn(Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
+
+// corresponds to Unbound mode
+pub(crate) fn indexed_relation_to_tuple_start_end_relation_startrole_endrole(
+    result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
+) -> TupleResult<'static> {
+    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    Ok(Tuple::Quintuple([
+        VariableValue::Thing(player_start.into()),
+        VariableValue::Thing(player_end.into()),
+        VariableValue::Thing(relation.into()),
+        VariableValue::Type(role_start.into()),
+        VariableValue::Type(role_end.into()),
+    ]))
+}
+
+// corresponds to Unbound Inverted or BoundStart modes
+pub(crate) fn indexed_relation_to_tuple_end_start_relation_startrole_endrole(
+    result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
+) -> TupleResult<'static> {
+    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    Ok(Tuple::Quintuple([
+        VariableValue::Thing(player_end.into()),
+        VariableValue::Thing(player_start.into()),
+        VariableValue::Thing(relation.into()),
+        VariableValue::Type(role_start.into()),
+        VariableValue::Type(role_end.into()),
+    ]))
+}
+
+// corresponds to BoundStartBoundEnd mode
+pub(crate) fn indexed_relation_to_tuple_relation_start_end_relation_startrole_endrole(
+    result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
+) -> TupleResult<'static> {
+    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    Ok(Tuple::Quintuple([
+        VariableValue::Thing(relation.into()),
+        VariableValue::Thing(player_start.into()),
+        VariableValue::Thing(player_end.into()),
+        VariableValue::Type(role_start.into()),
+        VariableValue::Type(role_end.into()),
+    ]))
+}
+
+// corresponds to BoundStartBoundEndBoundRelation mode
+pub(crate) fn indexed_relation_to_tuple_startrole_start_end_relation_relation_endrole(
+    result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
+) -> TupleResult<'static> {
+    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    Ok(Tuple::Quintuple([
+        VariableValue::Type(role_start.into()),
+        VariableValue::Thing(player_start.into()),
+        VariableValue::Thing(player_end.into()),
+        VariableValue::Thing(relation.into()),
+        VariableValue::Type(role_end.into()),
+    ]))
+}
+
+pub(crate) fn indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole(
+    result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
+) -> TupleResult<'static> {
+    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    Ok(Tuple::Quintuple([
+        VariableValue::Type(role_end.into()),
+        VariableValue::Thing(player_start.into()),
+        VariableValue::Thing(player_end.into()),
+        VariableValue::Thing(relation.into()),
+        VariableValue::Type(role_start.into()),
     ]))
 }

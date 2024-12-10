@@ -1351,10 +1351,11 @@ impl ConjunctionPlan<'_> {
                         player_1_role,
                         player_2_role,
                         array_inputs,
-                        annotations.player_1_to_relation.clone(),
-                        annotations.relation_to_player_2.clone(),
-                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
-                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
+                        annotations.relation_to_player_1.clone(),
+                        &annotations.player_1_to_relation,
+                        &annotations.relation_to_player_2,
+                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
+                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
                     )
                 } else {
                     IndexedRelationInstruction::new(
@@ -1364,10 +1365,11 @@ impl ConjunctionPlan<'_> {
                         player_2_role,
                         player_1_role,
                         array_inputs,
-                        annotations.player_2_to_relation.clone(),
-                        annotations.relation_to_player_1.clone(),
-                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
-                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter()).cloned().collect()),
+                        annotations.relation_to_player_2.clone(),
+                        &annotations.player_2_to_relation,
+                        &annotations.relation_to_player_1,
+                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
+                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
                     )
                 };
                 let instruction = ConstraintInstruction::IndexedRelation(instruction);
