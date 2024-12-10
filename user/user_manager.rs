@@ -7,7 +7,6 @@
 use std::sync::Arc;
 
 use database::Database;
-use error::TypeDBError;
 use resource::constants::server::DEFAULT_USER_NAME;
 use storage::durability_client::WALClient;
 use system::{
@@ -29,7 +28,7 @@ impl UserManager {
     }
 
     pub fn all(&self) -> Vec<User> {
-        self.transaction_util.read_transaction(|tx| user_repository::list(tx))
+        self.transaction_util.read_transaction(user_repository::list)
     }
 
     pub fn get(&self, username: &str) -> Result<Option<(User, Credential)>, UserGetError> {
@@ -59,8 +58,8 @@ impl UserManager {
                 }
             }
         }
-        let create_result =
-            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
+        let create_result = self.transaction_util.write_transaction(
+            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
                 user_repository::create(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -70,7 +69,8 @@ impl UserManager {
                     user,
                     credential,
                 )
-            });
+            },
+        );
         match create_result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserCreateError::IllegalUsername {}),
@@ -84,8 +84,8 @@ impl UserManager {
         user: &Option<User>,
         credential: &Option<Credential>,
     ) -> Result<(), UserUpdateError> {
-        let update_result =
-            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
+        let update_result = self.transaction_util.write_transaction(
+            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -96,7 +96,8 @@ impl UserManager {
                     user,
                     credential,
                 )
-            });
+            },
+        );
         match update_result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserUpdateError::IllegalUsername {}),
@@ -121,8 +122,8 @@ impl UserManager {
                 }
             }
         }
-        let delete_result =
-            self.transaction_util.write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, db, tx_opts| {
+        let delete_result = self.transaction_util.write_transaction(
+            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -131,7 +132,8 @@ impl UserManager {
                     &query_mgr,
                     username,
                 )
-            });
+            },
+        );
         match delete_result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserDeleteError::IllegalUsername {}),

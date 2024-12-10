@@ -85,6 +85,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.tower]
+		features = ["__common", "balance", "buffer", "default", "discover", "filter", "futures-core", "futures-util", "indexmap", "limit", "load", "log", "make", "pin-project", "pin-project-lite", "rand", "ready-cache", "slab", "tokio", "tokio-util", "tracing", "util"]
+		version = "0.4.13"
+		default-features = false
+
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
 		version = "1.41.1"
@@ -121,6 +126,11 @@ features = {}
 		version = "0.1.16"
 		default-features = false
 
+	[dependencies.futures]
+		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
+		version = "0.3.31"
+		default-features = false
+
 	[dependencies.encoding]
 		path = "../encoding"
 		features = []
@@ -149,6 +159,11 @@ features = {}
 	[dependencies.bytes]
 		path = "../common/bytes"
 		features = []
+		default-features = false
+
+	[dependencies.http]
+		features = ["default", "std"]
+		version = "1.1.0"
 		default-features = false
 
 	[dependencies.tonic]
