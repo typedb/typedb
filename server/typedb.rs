@@ -21,8 +21,12 @@ use diagnostics::{
 };
 use error::typedb_error;
 use rand::Rng;
-use resource::constants::server::{
-    DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH, VERSION,
+use resource::constants::{
+    diagnostics::{DATABASE_METRICS_UPDATE_INTERVAL, MONITORING_PORT},
+    server::{
+        DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
+        VERSION,
+    },
 };
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
@@ -53,8 +57,6 @@ pub struct Server {
 }
 
 impl Server {
-    const DIAGNOSTICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10); // TODO: Make a constant
-
     pub fn open(config: Config) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
@@ -96,7 +98,7 @@ impl Server {
             config,
             _database_diagnostics_updater: IntervalRunner::new(
                 move || synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
-                Self::DIAGNOSTICS_UPDATE_INTERVAL,
+                DATABASE_METRICS_UPDATE_INTERVAL,
             ),
         })
     }
@@ -139,6 +141,7 @@ impl Server {
             DISTRIBUTION_NAME.clone().to_owned(),
             VERSION.clone().to_owned(),
             storage_directory,
+            MONITORING_PORT,
             true, // reporting_enabled -> TODO: Get it from config
         )
     }
@@ -202,7 +205,7 @@ impl Server {
 
 fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
     let metrics = database_manager.databases().values().map(|database| database.get_metrics()).collect();
-    diagnostics_manager.synchronize_database_metrics(metrics);
+    diagnostics_manager.submit_database_metrics(metrics);
 }
 
 typedb_error!(

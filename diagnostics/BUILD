@@ -14,7 +14,12 @@ rust_library(
     deps = [ # TODO: Revisit and clean up
         "//common/error",
         "//common/concurrency",
+        "//common/logger",
+        "//resource",
 
+        "@crates//:chrono",
+        "@crates//:hyper",
+        "@crates//:reqwest",
         "@crates//:serde_json",
         "@crates//:sysinfo",
         "@crates//:tokio",

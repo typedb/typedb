@@ -19,6 +19,21 @@ features = {}
 		version = "1.42.0"
 		default-features = false
 
+	[dependencies.reqwest]
+		features = ["__tls", "blocking", "default", "default-tls", "hyper-tls", "json", "native-tls-crate", "serde_json", "tokio-native-tls"]
+		version = "0.11.27"
+		default-features = false
+
+	[dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
+	[dependencies.logger]
+		path = "../common/logger"
+		features = []
+		default-features = false
+
 	[dependencies.sysinfo]
 		features = ["component", "default", "disk", "multithread", "network", "system", "user"]
 		version = "0.33.0"
@@ -27,6 +42,16 @@ features = {}
 	[dependencies.error]
 		path = "../common/error"
 		features = []
+		default-features = false
+
+	[dependencies.chrono]
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
+		version = "0.4.39"
+		default-features = false
+
+	[dependencies.hyper]
+		features = ["client", "default", "full", "http1", "http2", "server"]
+		version = "1.5.1"
 		default-features = false
 
 	[dependencies.serde_json]

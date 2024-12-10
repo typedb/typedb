@@ -80,5 +80,13 @@ pub mod encoding {
 }
 
 pub mod diagnostics {
+    use std::time::Duration;
+
+    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(600);
+
     pub const REPORTING_URI: &str = "https://diagnostics.typedb.com/";
+    pub const REPORT_INTERVAL: Duration = Duration::from_secs(3600);
+    pub const DISABLED_REPORTING_FILE_NAME: &str = "_reporting_disabled";
+
+    pub const MONITORING_PORT: u16 = 4104; // TODO: Should be in the config
 }

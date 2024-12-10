@@ -7,7 +7,7 @@
 use std::{fmt::format, net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
 use error::typedb_error;
 use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
 use system::concepts::{Credential, PasswordHash, User};
@@ -99,6 +99,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 &message.driver_lang,
                 &message.driver_version
             );
+            self.diagnostics_manager.submit_action_success(None, ActionKind::ConnectionOpen);
+
             // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
             Ok(Response::new(connection_open_res(
                 self.generate_connection_id(),

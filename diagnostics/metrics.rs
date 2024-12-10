@@ -85,6 +85,20 @@ pub(crate) struct LoadMetrics {
     is_deleted: bool,
 }
 
+impl LoadMetrics {
+    pub fn set_schema(&mut self, schema: SchemaLoadMetrics) {
+        self.schema = schema;
+    }
+
+    pub fn set_data(&mut self, data: DataLoadMetrics) {
+        self.data = data;
+    }
+
+    pub fn mark_deleted(&mut self) {
+        self.is_deleted = true;
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct SchemaLoadMetrics {
     pub type_count: u64,
@@ -103,12 +117,51 @@ pub struct DataLoadMetrics {
 
 #[derive(Debug)]
 pub(crate) struct ConnectionLoadMetrics {
-    counts: Mutex<HashMap<Kind, Arc<AtomicU64>>>, // TODO: Should it be mutexed?
-    peak_counts: Mutex<HashMap<Kind, Arc<AtomicU64>>>,
+    counts: Mutex<HashMap<LoadKind, Arc<AtomicU64>>>, // TODO: Should it be mutexed?
+    peak_counts: Mutex<HashMap<LoadKind, Arc<AtomicU64>>>,
+}
+
+#[derive(Debug)]
+pub(crate) struct ActionMetrics {
+    actions: HashMap<ActionKind, ActionInfo>,
+}
+
+#[derive(Debug)]
+pub(crate) struct ActionInfo {
+    successful: AtomicU64,
+    failed: AtomicU64,
+}
+
+#[derive(Debug)]
+pub(crate) struct ErrorMetrics {
+    errors: HashMap<String, ErrorInfo>,
+}
+
+#[derive(Debug)]
+pub(crate) struct ErrorInfo {
+    count: AtomicU64,
 }
 
 #[derive(Debug, Hash, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum ActionKind {
+pub enum LoadKind {
+    SchemaTransactions,
+    ReadTransactions,
+    WriteTransactions,
+}
+
+impl fmt::Display for LoadKind {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        // TODO: I guess we want to support all the possible 2.x names?
+        match self {
+            LoadKind::SchemaTransactions => write!(f, "SCHEMA_TRANSACTIONS"),
+            LoadKind::ReadTransactions => write!(f, "READ_TRANSACTIONS"),
+            LoadKind::WriteTransactions => write!(f, "WRITE_TRANSACTIONS"),
+        }
+    }
+}
+
+#[derive(Debug, Hash, Copy, Clone, PartialEq, Eq)]
+pub enum ActionKind {
     ConnectionOpen,
     ServersAll,
     UsersContains,
@@ -157,25 +210,4 @@ impl fmt::Display for ActionKind {
             ActionKind::TransactionExecute => write!(f, "TRANSACTION_EXECUTE"),
         }
     }
-}
-
-#[derive(Debug)]
-pub(crate) struct ActionMetrics {
-    actions: HashMap<ActionKind, ActionInfo>,
-}
-
-#[derive(Debug)]
-pub(crate) struct ActionInfo {
-    successful: AtomicU64,
-    failed: AtomicU64,
-}
-
-#[derive(Debug)]
-pub(crate) struct ErrorMetrics {
-    errors: HashMap<String, ErrorInfo>,
-}
-
-#[derive(Debug)]
-pub(crate) struct ErrorInfo {
-    count: AtomicU64,
 }
