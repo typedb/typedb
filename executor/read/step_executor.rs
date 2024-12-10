@@ -3,26 +3,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use std::collections::HashMap;
+use std::fmt;
 use std::sync::Arc;
 
-use compiler::{
-    executable::{
-        function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
-        match_::planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, MatchExecutable},
-        },
-        next_executable_id,
-        pipeline::ExecutableStage,
+use compiler::{executable::{
+    function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
+    match_::planner::{
+        function_plan::ExecutableFunctionRegistry,
+        match_executable::{ExecutionStep, MatchExecutable},
     },
-    VariablePosition,
-};
+    next_executable_id,
+    pipeline::ExecutableStage,
+}, ExecutorVariable, VariablePosition};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
-
+use answer::variable::Variable;
 use crate::{
     profile::QueryProfile,
     read::{
@@ -97,7 +95,9 @@ pub(crate) fn create_executors_for_match(
     for (index, step) in match_executable.steps().iter().enumerate() {
         match step {
             ExecutionStep::Intersection(inner) => {
-                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = stage_profile.extend_or_get(index, || {
+                    format!("{}", inner.make_var_mapped(&match_executable.variable_reverse_map()))
+                });
                 let step = ImmediateExecutor::new_intersection(inner, snapshot, thing_manager, step_profile)?;
                 steps.push(step.into());
             }
@@ -112,7 +112,9 @@ pub(crate) fn create_executors_for_match(
                 steps.push(step.into());
             }
             ExecutionStep::Check(inner) => {
-                let step_profile = stage_profile.extend_or_get(index, || format!("{}", inner));
+                let step_profile = stage_profile.extend_or_get(index, || {
+                    format!("{}", inner.make_var_mapped(&match_executable.variable_reverse_map()))
+                });
                 let step = ImmediateExecutor::new_check(inner, step_profile)?;
                 steps.push(step.into());
             }

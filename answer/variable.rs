@@ -26,13 +26,21 @@ impl Variable {
 
 impl fmt::Display for Variable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "${}", self.id)
+        if self.anonymous {
+            write!(f, "$_{}", self.id)
+        } else {
+            write!(f, "${}", self.id)
+        }
     }
 }
 
 impl fmt::Debug for Variable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "${}", self.id)
+        if self.anonymous {
+            write!(f, "$_{}", self.id)
+        } else {
+            write!(f, "${}", self.id)
+        }
     }
 }
 
