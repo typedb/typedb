@@ -305,7 +305,7 @@ workflows:
       - sync-to-typedb-benchmark:
           filters:
             branches:
-              only: [ "3.0" ]
+              only: [ "3.0", "authentication-cache" ]
           requires:
             - test-deploy-snapshot-linux-x86_64
   release:
