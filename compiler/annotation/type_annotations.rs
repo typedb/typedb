@@ -120,12 +120,11 @@ impl LeftRightAnnotations {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LinksAnnotations {
-    // Filtered edges are encoded as  (left,right,filter) and (right,left,filter).
     pub(crate) relation_to_player: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) relation_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the right variable
+    pub(crate) relation_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>, 
 
     pub(crate) player_to_relation: Arc<BTreeMap<Type, Vec<Type>>>,
-    pub(crate) player_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>, // The key is the type of the left variable
+    pub(crate) player_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
 }
 
 impl LinksAnnotations {
@@ -161,20 +160,20 @@ impl LinksAnnotations {
         }
     }
 
-    pub fn player_to_relation(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.player_to_relation.clone()
-    }
-
-    pub fn relation_to_role(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
-        self.relation_to_role.clone()
-    }
-
     pub fn relation_to_player(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
         self.relation_to_player.clone()
     }
 
     pub fn player_to_role(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.player_to_role.clone()
+    }
+
+    pub fn player_to_relation(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
+        self.player_to_relation.clone()
+    }
+
+    pub fn relation_to_role(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
+        self.relation_to_role.clone()
     }
 }
 

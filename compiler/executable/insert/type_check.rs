@@ -138,7 +138,7 @@ fn validate_links_insertable(
             .iter()
             .filter(|role_type| {
                 !left_right_filtered
-                    .player_to_role
+                    .relation_to_role()
                     .get(relation_type)
                     .map(|valid_role_types| valid_role_types.contains(role_type))
                     .unwrap_or(false)
@@ -150,7 +150,7 @@ fn validate_links_insertable(
             .iter()
             .filter(|role_type| {
                 !left_right_filtered
-                    .player_to_role
+                    .player_to_role()
                     .get(player_type)
                     .map(|valid_role_types| valid_role_types.contains(role_type))
                     .unwrap_or(false)
