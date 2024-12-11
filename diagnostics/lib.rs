@@ -61,7 +61,7 @@ impl Diagnostics {
 
     pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>) {
         let mut loads = self.load_metrics.lock().expect("Expected load metrics lock acquisition");
-        let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().collect();
+        let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().cloned().collect();
 
         for metrics in database_metrics {
             let database_hash = Self::hash_database(Some(metrics.database_name));
@@ -79,37 +79,67 @@ impl Diagnostics {
         }
     }
 
-    pub fn submit_error(&self, database_name: Option<&str>, error: &impl TypeDBError) {
-        let database_hash = Self::hash_database(Some(database_name));
-        let mut errors = self.error_metrics.lock().expect("Expected error metrics lock acquisition");
-        errors.entry(database_hash).or_insert(ErrorMetrics::new()).submit(error);
-    }
-
-    pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind) {
-        let database_hash = Self::hash_database(Some(database_name));
-        let mut actions = self.action_metrics.lock().expect("Expected action metrics lock acquisition");
-        actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_success(action_kind);
-    }
-
-    pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind) {
-        let database_hash = Self::hash_database(Some(database_name));
-        let mut actions = self.action_metrics.lock().expect("Expected action metrics lock acquisition");
-        actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_fail(action_kind);
-    }
-
     pub fn increment_load_count(&self, database_name: Option<&str>, load_kind: LoadKind) {
-        let database_hash = Self::hash_database(Some(database_name));
+        let database_hash = Self::hash_database(database_name);
         let mut loads = self.load_metrics.lock().expect("Expected load metrics lock acquisition");
         loads.entry(database_hash).or_insert(LoadMetrics::new()).increment_connection_count(load_kind);
     }
 
     pub fn decrement_load_count(&self, database_name: Option<&str>, load_kind: LoadKind) {
-        let database_hash = Self::hash_database(Some(database_name));
+        let database_hash = Self::hash_database(database_name);
         let mut loads = self.load_metrics.lock().expect("Expected load metrics lock acquisition");
         loads.entry(database_hash).or_insert(LoadMetrics::new()).decrement_connection_count(load_kind);
     }
 
-    fn hash_database(database_name: Option<impl AsRef<str>>) -> DatabaseHash {
+    pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind) {
+        let database_hash = Self::hash_database(database_name);
+        let mut actions = self.action_metrics.lock().expect("Expected action metrics lock acquisition");
+        actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_success(action_kind);
+    }
+
+    pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind) {
+        let database_hash = Self::hash_database(database_name);
+        let mut actions = self.action_metrics.lock().expect("Expected action metrics lock acquisition");
+        actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_fail(action_kind);
+    }
+
+    pub fn submit_error(&self, database_name: Option<&str>, error_code: String) {
+        let database_hash = Self::hash_database(database_name);
+        let mut errors = self.error_metrics.lock().expect("Expected error metrics lock acquisition");
+        errors.entry(database_hash).or_insert(ErrorMetrics::new()).submit(error_code);
+    }
+
+    pub fn take_snapshot(&self) {
+        self.error_metrics
+            .lock()
+            .expect("Expected error metrics lock acquisition")
+            .values_mut()
+            .for_each(|metrics| metrics.take_snapshot());
+        self.action_metrics
+            .lock()
+            .expect("Expected action metrics lock acquisition")
+            .values_mut()
+            .for_each(|metrics| metrics.take_snapshot());
+        self.load_metrics
+            .lock()
+            .expect("Expected load metrics lock acquisition")
+            .values_mut()
+            .for_each(|metrics| metrics.take_snapshot());
+    }
+
+    pub fn to_reporting_json(&self) -> String {
+        todo!()
+    }
+
+    pub fn to_monitoring_json(&self) -> String {
+        todo!()
+    }
+
+    pub fn to_monitoring_prometheus(&self) -> String {
+        todo!()
+    }
+
+    fn hash_database(database_name: Option<impl AsRef<str> + Hash>) -> DatabaseHash {
         match database_name {
             None => None,
             Some(database_name) => {

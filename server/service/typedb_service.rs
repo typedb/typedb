@@ -7,7 +7,11 @@
 use std::{fmt::format, net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
+use diagnostics::{
+    diagnostics_manager::{run_with_diagnostics, DiagnosticsManager},
+    metrics::ActionKind,
+    Diagnostics,
+};
 use error::typedb_error;
 use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
 use system::concepts::{Credential, PasswordHash, User};
@@ -81,33 +85,35 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        let receive_time = Instant::now();
-        let message = request.into_inner();
-        if message.version != typedb_protocol::Version::Version as i32 {
-            let err = ProtocolError::IncompatibleProtocolVersion {
-                server_protocol_version: typedb_protocol::Version::Version as i32,
-                driver_protocol_version: message.version,
-                driver_lang: message.driver_lang.clone(),
-                driver_version: message.driver_version.clone(),
-            };
-            event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
-            return Err(err.into_status());
-        } else {
-            event!(
-                Level::TRACE,
-                "Successful connection_open from '{}' version '{}'",
-                &message.driver_lang,
-                &message.driver_version
-            );
-            self.diagnostics_manager.submit_action_success(None, ActionKind::ConnectionOpen);
+        run_with_diagnostics(&self.diagnostics_manager, ActionKind::ConnectionOpen, || {
+            let receive_time = Instant::now();
+            let message = request.into_inner();
+            if message.version != typedb_protocol::Version::Version as i32 {
+                let err = ProtocolError::IncompatibleProtocolVersion {
+                    server_protocol_version: typedb_protocol::Version::Version as i32,
+                    driver_protocol_version: message.version,
+                    driver_lang: message.driver_lang.clone(),
+                    driver_version: message.driver_version.clone(),
+                };
+                event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
+                return Err(err.into_status());
+            } else {
+                event!(
+                    Level::TRACE,
+                    "Successful connection_open from '{}' version '{}'",
+                    &message.driver_lang,
+                    &message.driver_version
+                );
 
-            // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
-            Ok(Response::new(connection_open_res(
-                self.generate_connection_id(),
-                receive_time,
-                database_all_res(&self.address, self.database_manager.database_names()),
-            )))
-        }
+                // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
+                Ok(Response::new(connection_open_res(
+                    self.generate_connection_id(),
+                    receive_time,
+                    database_all_res(&self.address, self.database_manager.database_names()),
+                )))
+            }
+        })
+        .await
     }
 
     async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {

@@ -24,6 +24,11 @@ features = {}
 		version = "0.11.27"
 		default-features = false
 
+	[dependencies.tonic-types]
+		features = []
+		version = "0.12.3"
+		default-features = false
+
 	[dependencies.resource]
 		path = "../resource"
 		features = []
@@ -39,6 +44,11 @@ features = {}
 		version = "0.33.0"
 		default-features = false
 
+	[dependencies.tonic]
+		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
+		version = "0.12.3"
+		default-features = false
+
 	[dependencies.error]
 		path = "../common/error"
 		features = []
@@ -50,8 +60,8 @@ features = {}
 		default-features = false
 
 	[dependencies.hyper]
-		features = ["client", "default", "full", "http1", "http2", "server"]
-		version = "1.5.1"
+		features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
+		version = "0.14.31"
 		default-features = false
 
 	[dependencies.serde_json]

@@ -23,6 +23,8 @@ rust_library(
         "@crates//:serde_json",
         "@crates//:sysinfo",
         "@crates//:tokio",
+        "@crates//:tonic",
+        "@crates//:tonic-types",
     ]
 )
 

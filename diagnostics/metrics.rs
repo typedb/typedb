@@ -14,6 +14,7 @@ use std::{
 };
 
 use error::TypeDBError;
+use resource::constants::diagnostics::UNKNOWN_STR;
 use serde_json::Value as JSONValue;
 use sysinfo::System;
 
@@ -61,11 +62,18 @@ pub(crate) struct ServerMetrics {
 
 impl ServerMetrics {
     pub(crate) fn new(version: String, data_directory: PathBuf) -> ServerMetrics {
-        let system_info = System::new_all();
-        let os_name = system_info.name();
-        let os_arch = system_info.cpu_arch();
-        let os_version = system_info.os_version();
-        Self { system_info, start_instant: Instant::now(), os_name, os_arch, os_version, version, data_directory }
+        let os_name = System::name().unwrap_or(UNKNOWN_STR.to_owned());
+        let os_arch = System::cpu_arch();
+        let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_owned());
+        Self {
+            system_info: System::new(),
+            start_instant: Instant::now(),
+            os_name,
+            os_arch,
+            os_version,
+            version,
+            data_directory,
+        }
     }
 }
 
@@ -124,6 +132,10 @@ impl LoadMetrics {
     pub fn mark_deleted(&mut self) {
         self.is_deleted = true;
     }
+
+    pub fn take_snapshot(&mut self) {
+        self.connection.take_snapshot()
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -160,8 +172,13 @@ impl ConnectionLoadMetrics {
 
     pub fn decrement_count(&mut self, load_kind: LoadKind) {
         let count = self.counts.entry(load_kind).or_insert(0);
-        assert_ne!(count, 0);
+        assert_ne!(*count, 0u64);
         *count -= 1;
+    }
+
+    pub fn take_snapshot(&mut self) {
+        todo!()
+        // peakCounts.replaceAll((kind, value) -> new AtomicLong(counts.get(kind).get()));
     }
 }
 
@@ -180,6 +197,12 @@ impl ActionMetrics {
     }
     pub fn submit_fail(&mut self, action_kind: ActionKind) {
         self.actions.entry(action_kind).or_insert(ActionInfo::new()).submit_fail();
+    }
+
+    pub fn take_snapshot(&mut self) {
+        todo!()
+        // requestInfosSnapshot.clear();
+        // requestInfos.forEach((kind, requestInfo) -> requestInfosSnapshot.put(kind, requestInfo.clone()));
     }
 }
 
@@ -201,6 +224,12 @@ impl ActionInfo {
     pub fn submit_fail(&mut self) {
         self.failed += 1;
     }
+
+    pub fn take_snapshot(&mut self) {
+        todo!()
+        // requestInfosSnapshot.clear(); ???
+        // requestInfos.forEach((kind, requestInfo) -> requestInfosSnapshot.put(kind, requestInfo.clone()));
+    }
 }
 
 #[derive(Debug)]
@@ -213,8 +242,14 @@ impl ErrorMetrics {
         Self { errors: HashMap::new() }
     }
 
-    pub fn submit(&mut self, error: &impl TypeDBError) {
-        self.errors.entry(error.code().to_owned()).or_insert(ErrorInfo::new()).submit();
+    pub fn submit(&mut self, error_code: String) {
+        self.errors.entry(error_code).or_insert(ErrorInfo::new()).submit();
+    }
+
+    pub fn take_snapshot(&mut self) {
+        todo!()
+        // errorCountsSnapshot.clear();
+        // errorCounts.forEach((code, count) -> errorCountsSnapshot.put(code, new AtomicLong(count.get())));
     }
 }
 

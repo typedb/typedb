@@ -16,10 +16,23 @@ pub struct IntervalRunner {
 }
 
 impl IntervalRunner {
-    pub fn new(mut action: impl FnMut() + Send + 'static, interval: Duration) -> Self {
+    const ZERO_DURATION: Duration = Duration::from_secs(0);
+
+    pub fn new(action: impl FnMut() + Send + 'static, interval: Duration) -> Self {
+        Self::new_with_initial_delay(action, interval, Self::ZERO_DURATION)
+    }
+
+    pub fn new_with_initial_delay(
+        mut action: impl FnMut() + Send + 'static,
+        interval: Duration,
+        initial_delay: Duration,
+    ) -> Self {
         let (sender, receiver) = sync_channel::<SyncSender<()>>(0);
         thread::spawn(move || {
             loop {
+                if !initial_delay.is_zero() {
+                    thread::sleep(initial_delay);
+                }
                 action();
                 match receiver.recv_timeout(interval) {
                     Ok(done_sender) => {

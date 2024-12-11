@@ -148,7 +148,7 @@ impl DatabaseManager {
         self.databases.read().unwrap().keys().cloned().filter(|db| Self::is_user_database(db)).collect()
     }
 
-    pub fn databases(&self) -> RwLockReadGuard<HashMap<String, Arc<Database<WALClient>>>> {
+    pub fn databases(&self) -> RwLockReadGuard<'_, HashMap<String, Arc<Database<WALClient>>>> {
         self.databases.read().unwrap()
     }
 

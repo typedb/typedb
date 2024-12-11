@@ -6,14 +6,6 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public"])
 
-genrule(
-    name = "version_file",
-    srcs = ["//:VERSION"],
-    outs = ["resource/VERSION"],
-    cmd = "cp $(location //:VERSION) $@",
-    visibility = ["//visibility:public"],
-)
-
 rust_library(
     name = "resource",
     crate_root = "resource.rs",
@@ -22,7 +14,7 @@ rust_library(
     ]),
     compile_data = [
         "typedb-ascii.txt",
-        "version_file",
+        "VERSION", # TODO: Should use //:VERSION instead, not this copy
     ],
     deps = [],
 )

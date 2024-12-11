@@ -6,6 +6,7 @@
 
 use std::{
     collections::HashSet,
+    error::Error,
     fmt::format,
     net::SocketAddr,
     path::PathBuf,
@@ -16,6 +17,8 @@ use std::{
 
 use error::TypeDBError;
 use resource::constants::diagnostics::REPORTING_URI;
+use tonic::Status;
+use tonic_types::StatusExt;
 
 use crate::{
     metrics::{ActionKind, DatabaseMetrics, LoadKind},
@@ -70,10 +73,95 @@ impl DiagnosticsManager {
 
     diagnostics_method! {
         pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
-        pub fn submit_error(&self, database_name: Option<&str>, error: &impl TypeDBError);
+        pub fn submit_error(&self, database_name: Option<&str>, error_code: String);
         pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind);
         pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind);
         pub fn increment_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
         pub fn decrement_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
     }
+}
+
+pub struct DiagnosticsResultTracker<'d> {
+    diagnostics_manager: &'d DiagnosticsManager,
+    database_name: Option<&'d str>,
+    action_kind: ActionKind,
+    error_code: Option<String>,
+}
+
+impl<'d> DiagnosticsResultTracker<'d> {
+    pub fn without_database(diagnostics_manager: &'d DiagnosticsManager, action_kind: ActionKind) -> Self {
+        DiagnosticsResultTracker { diagnostics_manager, database_name: None, action_kind, error_code: None }
+    }
+
+    pub fn with_database(
+        diagnostics_manager: &'d DiagnosticsManager,
+        database_name: &'d str,
+        action_kind: ActionKind,
+    ) -> Self {
+        DiagnosticsResultTracker {
+            diagnostics_manager,
+            database_name: Some(database_name),
+            action_kind,
+            error_code: None,
+        }
+    }
+
+    pub fn set_error_code(&mut self, error_code: String) {
+        self.error_code = Some(error_code);
+    }
+}
+
+impl<'d> Drop for DiagnosticsResultTracker<'d> {
+    fn drop(&mut self) {
+        match &self.error_code {
+            Some(error_code) => {
+                self.diagnostics_manager.submit_action_fail(self.database_name, self.action_kind);
+                self.diagnostics_manager.submit_error(self.database_name, error_code.clone());
+            }
+            None => self.diagnostics_manager.submit_action_success(self.database_name, self.action_kind),
+        }
+    }
+}
+
+pub async fn run_with_diagnostics<F, T>(
+    diagnostics_manager: &DiagnosticsManager,
+    action_kind: ActionKind,
+    f: F,
+) -> Result<T, Status>
+where
+    F: FnOnce() -> Result<T, Status>,
+{
+    run_and_track(DiagnosticsResultTracker::without_database(diagnostics_manager, action_kind), f).await
+}
+
+pub async fn run_with_diagnostics_for_database<F, T>(
+    diagnostics_manager: &DiagnosticsManager,
+    database_name: &str,
+    action_kind: ActionKind,
+    f: F,
+) -> Result<T, Status>
+where
+    F: FnOnce() -> Result<T, Status>,
+{
+    run_and_track(DiagnosticsResultTracker::with_database(diagnostics_manager, database_name, action_kind), f).await
+}
+
+async fn run_and_track<F, T>(mut tracker: DiagnosticsResultTracker<'_>, f: F) -> Result<T, Status>
+where
+    F: FnOnce() -> Result<T, Status>,
+{
+    let result = f();
+    if let Err(ref status) = result {
+        tracker.set_error_code(get_status_error_code(status));
+    }
+    result
+}
+
+fn get_status_error_code(status: &Status) -> String {
+    if let Ok(details) = status.check_error_details() {
+        if let Some(error_info) = details.error_info() {
+            return error_info.reason.clone();
+        }
+    }
+    "UKNOWN".to_owned() // TODO: What to do with error codes?
 }

@@ -8,7 +8,7 @@ use std::{
     collections::{HashMap, HashSet},
     error::Error,
     fmt, fs, io,
-    path::PathBuf,
+    path::{Path, PathBuf},
     sync::Arc,
     time::Duration,
 };
@@ -34,12 +34,8 @@ use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{
     authenticator::Authenticator,
-<<<<<<< HEAD
     authenticator_cache::AuthenticatorCache,
-    parameters::config::{Config, EncryptionConfig},
-=======
     parameters::config::{Config, EncryptionConfig, ServerConfig},
->>>>>>> e61aaeada (Add diagnostics initialisation)
     service::typedb_service::TypeDBService,
 };
 
@@ -94,7 +90,7 @@ impl Server {
             user_manager,
             authenticator_cache,
             typedb_service: Some(typedb_service),
-            diagnostics_manager,
+            diagnostics_manager: diagnostics_manager.clone(),
             config,
             _database_diagnostics_updater: IntervalRunner::new(
                 move || synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
@@ -111,7 +107,8 @@ impl Server {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
         let authenticator = Authenticator::new(self.user_manager.clone(), self.authenticator_cache.clone());
 
-        println!(format!("Running {DISTRIBUTION_NAME} {VERSION}.\nReady!"));
+        println!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}.\nReady!"));
+        println!("Ready!");
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
@@ -123,7 +120,7 @@ impl Server {
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)
         } else if !storage_directory.is_dir() {
-            Err(ServerOpenError::NotADirectory { path: storage_directory.to_owned() })
+            Err(ServerOpenError::NotADirectory { path: storage_directory.to_str().unwrap_or("").to_owned() })
         } else {
             Ok(())
         }
@@ -162,9 +159,9 @@ impl Server {
     }
 
     fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
-        fs::create_dir_all(storage_directory).map_err(|error| ServerOpenError::CouldNotCreateDataDirectory {
-            path: storage_directory.to_owned(),
-            source: error,
+        fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
+            path: storage_directory.to_str().unwrap_or("").to_owned(),
+            source: Arc::new(source),
         })?;
         Ok(())
     }
@@ -173,20 +170,25 @@ impl Server {
         let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
         if server_id_file.exists() {
             let server_id = fs::read_to_string(&server_id_file)
-                .map_err(|source| ServerOpenError::CouldNotReadServerIDFile { path: server_id_file.clone(), source })?
+                .map_err(|source| ServerOpenError::CouldNotReadServerIDFile {
+                    path: server_id_file.to_str().unwrap_or("").to_owned(),
+                    source: Arc::new(source),
+                })?
                 .trim()
                 .to_owned();
             if server_id.is_empty() {
-                Err(ServerOpenError::InvalidServerID { path: server_id_file })
+                Err(ServerOpenError::InvalidServerID { path: server_id_file.to_str().unwrap_or("").to_owned() })
             } else {
                 Ok(server_id)
             }
         } else {
             let server_id = Self::generate_server_id();
             assert!(!server_id.is_empty(), "Generated server ID should not be empty");
-            fs::write(server_id_file, &server_id).map_err(|source| ServerOpenError::CouldNotCreateServerIDFile {
-                path: server_id_file.clone(),
-                source,
+            fs::write(server_id_file.clone(), &server_id).map_err(|source| {
+                ServerOpenError::CouldNotCreateServerIDFile {
+                    path: server_id_file.to_str().unwrap_or("").to_owned(),
+                    source: Arc::new(source),
+                }
             })?;
             Ok(server_id)
         }
@@ -210,11 +212,11 @@ fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, da
 
 typedb_error!(
     pub ServerOpenError(component = "Server open", prefix = "SRO") {
-        NotADirectory(1, "Invalid path '{path}': not a directory.", path: PathBuf),
-        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: PathBuf, ( source: io::Error )),
-        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: PathBuf, ( source: io::Error )),
-        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: PathBuf, ( source: io::Error )),
-        InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: PathBuf),
+        NotADirectory(1, "Invalid path '{path}': not a directory.", path: String),
+        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: String, ( source: Arc<io::Error> )),
+        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: String, ( source: Arc<io::Error> )),
+        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: String, ( source: Arc<io::Error> )),
+        InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: String),
         DatabaseOpen(6, "Could not open database.", ( typedb_source: DatabaseOpenError )),
     }
 );

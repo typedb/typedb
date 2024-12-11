@@ -10,7 +10,7 @@ pub mod server {
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 
     pub const DISTRIBUTION_NAME: &str = "TypeDB CE";
-    pub const VERSION: &str = include_str!("../VERSION");
+    pub const VERSION: &str = include_str!("VERSION");
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * 60 * 60);
 
@@ -81,6 +81,8 @@ pub mod encoding {
 
 pub mod diagnostics {
     use std::time::Duration;
+
+    pub const UNKNOWN_STR: &'static str = "Unknown";
 
     pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(600);
 
