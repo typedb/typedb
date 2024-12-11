@@ -51,14 +51,6 @@ impl Relation {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn get_indexed_players<'m>(
-        self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> IndexedRelationsIterator {
-        thing_manager.get_indexed_players(snapshot, Object::Relation(self))
-    }
-
     pub fn has_players(self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
         match self.get_status(snapshot, thing_manager) {
             ConceptStatus::Inserted => thing_manager.has_links(snapshot, self, true),
@@ -379,8 +371,11 @@ impl ThingAPI for Relation {
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role)?;
         }
+        
+        // TODO: fix
+        todo!()
+        // debug_assert_eq!(self.get_indexed_players(snapshot, thing_manager, ).count(), 0);
 
-        debug_assert_eq!(self.get_indexed_players(snapshot, thing_manager).count(), 0);
 
         if self.get_status(snapshot, thing_manager) == ConceptStatus::Inserted {
             thing_manager.uninsert_relation(snapshot, self);

@@ -43,6 +43,8 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::thing::relation::IndexedRelationsIterator;
+use crate::type_::relation_type::RelationType;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Object {
@@ -403,7 +405,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
         Ok(counts)
     }
-    
+
     fn has_indexed_relation_player(
         self,
         snapshot: &impl ReadableSnapshot,
@@ -414,6 +416,46 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         end_role: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_indexed_relation_player(snapshot, self, end_player, relation, start_role, end_role)
+    }
+    
+    fn get_indexed_relation_players(
+        self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation_type: RelationType,
+    ) -> IndexedRelationsIterator {
+        thing_manager.get_indexed_relation_players(snapshot, self, relation_type)
+    }
+    
+    fn get_indexed_relations(
+        self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        end_player: Object,
+        relation_type: RelationType,
+    ) -> IndexedRelationsIterator {
+        thing_manager.get_indexed_relations(snapshot, self, end_player, relation_type)
+    }
+    
+    fn get_indexed_relation_roles(
+        self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        end_player: Object,
+        relation: Relation,
+    ) -> IndexedRelationsIterator {
+        thing_manager.get_indexed_relation_roles(snapshot, self, end_player, relation)
+    }
+
+    fn get_indexed_relation_end_roles(
+        self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        end_player: Object,
+        relation: Relation,
+        start_role: RoleType
+    ) -> IndexedRelationsIterator {
+        thing_manager.get_indexed_relation_end_roles(snapshot, self, end_player, relation, start_role)
     }
 }
 

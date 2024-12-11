@@ -333,7 +333,7 @@ pub(crate) fn indexed_relation_to_tuple_end_start_relation_startrole_endrole(
 }
 
 // corresponds to BoundStartBoundEnd mode
-pub(crate) fn indexed_relation_to_tuple_relation_start_end_relation_startrole_endrole(
+pub(crate) fn indexed_relation_to_tuple_relation_start_end_startrole_endrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
@@ -347,7 +347,7 @@ pub(crate) fn indexed_relation_to_tuple_relation_start_end_relation_startrole_en
 }
 
 // corresponds to BoundStartBoundEndBoundRelation mode
-pub(crate) fn indexed_relation_to_tuple_startrole_start_end_relation_relation_endrole(
+pub(crate) fn indexed_relation_to_tuple_startrole_start_end_relation_endrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>
 ) -> TupleResult<'static> {
     let ((player_start, player_end, relation, role_start, role_end), _count) = result?;

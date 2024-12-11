@@ -32,6 +32,7 @@ use crate::{
     type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
     ConceptAPI, ConceptStatus,
 };
+use crate::type_::relation_type::RelationType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Entity {
@@ -41,14 +42,6 @@ pub struct Entity {
 impl Entity {
     pub fn type_(&self) -> EntityType {
         EntityType::build_from_type_id(self.vertex.type_id_())
-    }
-
-    pub fn get_indexed_players<'m>(
-        self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> IndexedRelationsIterator {
-        thing_manager.get_indexed_players(snapshot, Object::Entity(self))
     }
 
     pub fn next_possible(&self) -> Entity {

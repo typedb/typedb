@@ -666,9 +666,12 @@ impl ThingEdgeIndexedRelation {
         Self::RANGE_START_ROLE_TYPE_ID.end..Self::RANGE_START_ROLE_TYPE_ID.end + TypeID::LENGTH;
     const LENGTH: usize = Self::RANGE_END_ROLE_TYPE_ID.end;
     const RANGE_START_TYPE: Range<usize> = Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + THING_VERTEX_LENGTH_PREFIX_TYPE;
-    pub const LENGTH_PREFIX_REL_TYPE_ID: usize = PrefixID::LENGTH + TypeID::LENGTH;
-    pub const LENGTH_PREFIX_REL_TYPE_ID_FROM_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
-    pub const LENGTH_PREFIX_REL_TYPE_ID_FROM: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectVertex::LENGTH;
+    pub const LENGTH_PREFIX_REL_TYPE_ID: usize = Self::RANGE_RELATION_TYPE_ID.end;
+    pub const LENGTH_PREFIX_REL_TYPE_ID_START_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_REL_TYPE_ID_START: usize = Self::RANGE_START.end;
+    pub const LENGTH_PREFIX_REL_TYPE_ID_START_END: usize = Self::RANGE_END.end;
+    pub const LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION: usize = Self::RANGE_RELATION_ID.end;
+    pub const LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION_START_ROLE: usize = Self::RANGE_START_ROLE_TYPE_ID.end;
 
     pub fn new(
         player_from: ObjectVertex,
@@ -703,17 +706,71 @@ impl ThingEdgeIndexedRelation {
 
     pub fn prefix_relation_type_start_type(
         relation_id: TypeID,
-        from_type_prefix: Prefix,
-        from_type_id: TypeID,
-    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_FROM_TYPE }> {
-        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_FROM_TYPE);
+        start_type_prefix: Prefix,
+        start_type_id: TypeID,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation_id.to_bytes());
         ObjectVertex::write_prefix_type(
             &mut bytes[Self::RANGE_START_TYPE],
-            from_type_prefix,
-            from_type_id
+            start_type_prefix,
+            start_type_id
         );
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_start(
+        relation_id: TypeID,
+        start: ObjectVertex,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START);
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation_id.to_bytes());
+        bytes[Self::RANGE_START].copy_from_slice(&start.to_bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_start_end(
+        relation_id: TypeID,
+        start: ObjectVertex,
+        end: ObjectVertex,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_END }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_END);
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation_id.to_bytes());
+        bytes[Self::RANGE_START].copy_from_slice(&start.to_bytes());
+        bytes[Self::RANGE_END].copy_from_slice(&end.to_bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_start_end_relation(
+        start: ObjectVertex,
+        end: ObjectVertex,
+        relation: ObjectVertex,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION);
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation.type_id_().to_bytes());
+        bytes[Self::RANGE_START].copy_from_slice(&start.to_bytes());
+        bytes[Self::RANGE_END].copy_from_slice(&end.to_bytes());
+        bytes[Self::RANGE_RELATION_ID].copy_from_slice(&relation.object_id().to_bytes());
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+    
+    pub fn prefix_start_end_relation_startrole(
+        start: ObjectVertex,
+        end: ObjectVertex,
+        relation: ObjectVertex,
+        start_role: TypeVertex,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION_START_ROLE }> {
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION_START_ROLE);
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation.type_id_().to_bytes());
+        bytes[Self::RANGE_START].copy_from_slice(&start.to_bytes());
+        bytes[Self::RANGE_END].copy_from_slice(&end.to_bytes());
+        bytes[Self::RANGE_RELATION_ID].copy_from_slice(&relation.object_id().to_bytes());
+        bytes[Self::RANGE_START_ROLE_TYPE_ID].copy_from_slice(&start_role.type_id_().to_bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 

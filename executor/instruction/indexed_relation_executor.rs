@@ -17,6 +17,7 @@ use compiler::executable::match_::instructions::thing::{IndexedRelationInstructi
 use compiler::executable::match_::instructions::{VariableMode, VariableModes};
 use compiler::ExecutorVariable;
 use concept::error::ConceptReadError;
+use concept::thing::object::ObjectAPI;
 use concept::thing::relation::{IndexedRelationsIterator, IndexedRelationPlayers, Relation, RolePlayer, LinksIterator};
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::role_type::RoleType;
@@ -27,7 +28,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::instruction::iterator::{SortedTupleIterator, TupleIterator};
 use crate::instruction::{Checker, FilterFn, FilterMapFn, TernaryIterateMode};
 use crate::instruction::links_executor::{LinksFilterMapFn, LinksOrderingFn};
-use crate::instruction::tuple::{indexed_relation_to_tuple_start_end_relation_startrole_endrole, IndexedRelationToTupleFn, LinksToTupleFn, TuplePositions};
+use crate::instruction::tuple::{indexed_relation_to_tuple_end_start_relation_startrole_endrole, indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole, indexed_relation_to_tuple_relation_start_end_relation_startrole_endrole, indexed_relation_to_tuple_relation_start_end_startrole_endrole, indexed_relation_to_tuple_start_end_relation_startrole_endrole, indexed_relation_to_tuple_startrole_start_end_relation_endrole, IndexedRelationToTupleFn, LinksToTupleFn, TuplePositions};
 use crate::pipeline::stage::ExecutionContext;
 use crate::row::MaybeOwnedRow;
 
@@ -98,7 +99,7 @@ impl IndexedRelationExecutor {
             relation,
             role_start,
             role_end,
-            inputs,
+            inputs: _inputs,
             relation_to_player_start_types,
             player_start_to_player_end_types,
             role_start_types,
@@ -218,7 +219,7 @@ impl IndexedRelationExecutor {
                     let as_tuples: IndexedRelationSortedTupleIterator = thing_manager.get_indexed_relations_in(snapshot, relation_type.as_relation_type())
                         .filter_map(filter_for_row)
                         .map(indexed_relation_to_tuple_start_end_relation_startrole_endrole);
-                    Ok(TupleIterator::IndexedRelationUnbound(SortedTupleIterator::new(
+                    Ok(TupleIterator::IndexedRelations(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes
@@ -232,7 +233,7 @@ impl IndexedRelationExecutor {
                     let as_tuples: IndexedRelationUnboundedSortedStartMerged = merged
                         .filter_map(filter_for_row)
                         .map(indexed_relation_to_tuple_start_end_relation_startrole_endrole);
-                    Ok(TupleIterator::IndexedRelationUnboundStartMerged(SortedTupleIterator::new(
+                    Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -243,112 +244,125 @@ impl IndexedRelationExecutor {
                 todo!()
             }
             IndexedRelationIterateIterateMode::BoundStart => {
-                todo!()
+                let start_player = match row.get(self.player_start.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("Start player just be a thing object")
+                };
+                if self.relation_to_player_start_types.len() == 1 {
+                    let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
+                    let as_tuples: IndexedRelationSortedTupleIterator = start_player
+                        .get_indexed_relation_players(snapshot, thing_manager, relation_type)
+                        .filter_map(filter_for_row)
+                        .map(indexed_relation_to_tuple_end_start_relation_startrole_endrole);
+                    Ok(TupleIterator::IndexedRelations(SortedTupleIterator::new(
+                        as_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                } else {
+                    let iterators = self.relation_to_player_start_types.keys()
+                        .map(|relation_type| start_player.get_indexed_relation_players(snapshot, thing_manager, relation_type.as_relation_type()))
+                        .collect_vec();
+                    let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
+                        kmerge_by(iterators, compare_indexed_players);
+                    let as_tuples: IndexedRelationUnboundedSortedStartMerged = merged
+                        .filter_map(filter_for_row)
+                        .map(indexed_relation_to_tuple_end_start_relation_startrole_endrole);
+                    Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
+                        as_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                }
             }
             IndexedRelationIterateIterateMode::BoundStartBoundEnd => {
-                todo!()
+                let start_player = match row.get(self.player_start.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("Start player just be a thing object")
+                };
+                let end_player = match row.get(self.player_end.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("End player just be a thing object")
+                };
+                if self.relation_to_player_start_types.len() == 1 {
+                    let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
+                    let as_tuples: IndexedRelationSortedTupleIterator = start_player
+                        .get_indexed_relations(snapshot, thing_manager, end_player, relation_type)
+                        .filter_map(filter_for_row)
+                        .map(indexed_relation_to_tuple_relation_start_end_startrole_endrole);
+                    Ok(TupleIterator::IndexedRelations(SortedTupleIterator::new(
+                        as_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                } else {
+                    let iterators = self.relation_to_player_start_types.keys()
+                        .map(|relation_type| start_player.get_indexed_relations(snapshot, thing_manager, end_player, relation_type))
+                        .collect_vec();
+                    let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
+                        kmerge_by(iterators, compare_indexed_players);
+                    let as_tuples: IndexedRelationUnboundedSortedStartMerged = merged
+                        .filter_map(filter_for_row)
+                        .map(indexed_relation_to_tuple_relation_start_end_startrole_endrole);
+                    Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
+                        as_tuples,
+                        self.tuple_positions.clone(),
+                        &self.variable_modes,
+                    )))
+                }
             }
             IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelation => {
-                todo!()
+                let start_player = match row.get(self.player_start.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("Start player just be a thing object")
+                };
+                let end_player = match row.get(self.player_end.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("End player just be a thing object")
+                };
+                let relation = match row.get(self.relation.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_relation(),
+                    _ => unreachable!("Indexed relation must be a thing relation")
+                };
+                let as_tuples: IndexedRelationSortedTupleIterator = start_player
+                    .get_indexed_relation_roles(snapshot, thing_manager, end_player, relation)
+                    .filter_map(filter_for_row)
+                    .map(indexed_relation_to_tuple_startrole_start_end_relation_endrole);
+                Ok(TupleIterator::IndexedRelations(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
             }
             IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
-                todo!()
+                let start_player = match row.get(self.player_start.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("Start player just be a thing object")
+                };
+                let end_player = match row.get(self.player_end.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_object(),
+                    _ => unreachable!("End player just be a thing object")
+                };
+                let relation = match row.get(self.relation.as_position().unwrap()) {
+                    &VariableValue::Thing(thing) => thing.as_relation(),
+                    _ => unreachable!("Indexed relation must be a thing relation")
+                };
+                let start_role = match row.get(self.role_start.as_position().unwrap()) {
+                    &VariableValue::Type(type_) => type_.as_role_type(),
+                    _ => unreachable!("Indexed startrole must be a role type")
+                };
+                let as_tuples: IndexedRelationSortedTupleIterator = start_player
+                    .get_indexed_relation_end_roles(snapshot, thing_manager, end_player, relation, start_role)
+                    .filter_map(filter_for_row)
+                    .map(indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole);
+                Ok(TupleIterator::IndexedRelations(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
             }
         }
-
-        // match self.iterate_mode {
-        //     TernaryIterateMode::Unbound => {
-        //         // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
-        //         let iterator = thing_manager.get_links_by_relation_type_range(snapshot, &self.relation_type_range);
-        //         let as_tuples: crate::instruction::links_executor::LinksUnboundedSortedRelation =
-        //             iterator.filter_map(filter_for_row).map(links_to_tuple_relation_player_role as _);
-        //         Ok(TupleIterator::LinksUnbounded(SortedTupleIterator::new(
-        //             as_tuples,
-        //             self.tuple_positions.clone(),
-        //             &self.variable_modes,
-        //         )))
-        //     }
-        //
-        //     TernaryIterateMode::UnboundInverted => {
-        //         debug_assert!(self.relation_cache.is_some());
-        //         if let Some([relation]) = self.relation_cache.as_deref() {
-        //             // no heap allocs needed if there is only 1 iterator
-        //             let iterator = thing_manager.get_links_by_relation_and_player_type_range(
-        //                 snapshot,
-        //                 *relation,
-        //                 // TODO: this should be just the types owned by the one instance's type in the cache!
-        //                 &self.player_type_range,
-        //             );
-        //             let as_tuples: crate::instruction::links_executor::LinksUnboundedSortedPlayerSingle =
-        //                 iterator.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-        //             Ok(TupleIterator::LinksUnboundedInvertedSingle(SortedTupleIterator::new(
-        //                 as_tuples,
-        //                 self.tuple_positions.clone(),
-        //                 &self.variable_modes,
-        //             )))
-        //         } else {
-        //             // TODO: we could create a reusable space for these temporarily held iterators
-        //             //       so we don't have allocate again before the merging iterator
-        //             let relations = self.relation_cache.as_ref().unwrap().iter();
-        //             let iterators = relations
-        //                 .map(|&relation| {
-        //                     thing_manager.get_links_by_relation_and_player_type_range(
-        //                         snapshot,
-        //                         relation,
-        //                         &self.player_type_range,
-        //                     )
-        //                 })
-        //                 .collect_vec();
-        //
-        //             // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
-        //             let merged: KMergeBy<LinksIterator, crate::instruction::links_executor::LinksOrderingFn> =
-        //                 kmerge_by(iterators, compare_by_player_then_relation);
-        //             let as_tuples: crate::instruction::links_executor::LinksUnboundedSortedPlayerMerged =
-        //                 merged.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-        //             Ok(TupleIterator::LinksUnboundedInvertedMerged(SortedTupleIterator::new(
-        //                 as_tuples,
-        //                 self.tuple_positions.clone(),
-        //                 &self.variable_modes,
-        //             )))
-        //         }
-        //     }
-        //
-        //     TernaryIterateMode::BoundFrom => {
-        //         let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
-        //         debug_assert!(row.len() > relation.as_usize());
-        //         let iterator = match row.get(relation) {
-        //             &VariableValue::Thing(Thing::Relation(relation)) => thing_manager
-        //                 .get_links_by_relation_and_player_type_range(snapshot, relation, &self.player_type_range),
-        //             _ => unreachable!("Links relation must be a relation."),
-        //         };
-        //         let as_tuples: crate::instruction::links_executor::LinksBoundedRelationSortedPlayer =
-        //             iterator.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-        //         Ok(TupleIterator::LinksBoundedRelation(SortedTupleIterator::new(
-        //             as_tuples,
-        //             self.tuple_positions.clone(),
-        //             &self.variable_modes,
-        //         )))
-        //     }
-        //
-        //     TernaryIterateMode::BoundFromBoundTo => {
-        //         let relation = self.links.relation().as_variable().unwrap().as_position().unwrap();
-        //         let player = self.links.player().as_variable().unwrap().as_position().unwrap();
-        //         debug_assert!(row.len() > relation.as_usize());
-        //         debug_assert!(row.len() > player.as_usize());
-        //         let relation = row.get(relation).as_thing().as_relation();
-        //         let player = row.get(player).as_thing().as_object();
-        //         let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player);
-        //         let as_tuples: crate::instruction::links_executor::LinksBoundedRelationSortedPlayer =
-        //             iterator.filter_map(filter_for_row).map(links_to_tuple_role_relation_player);
-        //         Ok(TupleIterator::LinksBoundedRelationPlayer(SortedTupleIterator::new(
-        //             as_tuples,
-        //             self.tuple_positions.clone(),
-        //             &self.variable_modes,
-        //         )))
-        //     }
-        // }
     }
-
 }
 
 impl fmt::Display for IndexedRelationExecutor {
@@ -424,9 +438,8 @@ impl IndexedRelationIterateIterateMode {
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
     ) -> Self {
-        debug_assert!(var_modes.len() == 3);
+        debug_assert!(var_modes.len() == 5);
         debug_assert!(!var_modes.all_inputs());
-
         let is_start_bound = var_modes.get(player_start) == Some(VariableMode::Input);
         let is_end_bound = var_modes.get(player_end) == Some(VariableMode::Input);
         let is_rel_bound = var_modes.get(relation) == Some(VariableMode::Input);

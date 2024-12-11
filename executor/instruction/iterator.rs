@@ -150,8 +150,8 @@ pub(crate) enum TupleIterator {
     LinksReverseBoundedPlayer(SortedTupleIterator<LinksReverseBoundedPlayerSortedRelation>),
     LinksReverseBoundedPlayerRelation(SortedTupleIterator<LinksReverseBoundedPlayerRelation>),
 
-    IndexedRelationUnbound(SortedTupleIterator<IndexedRelationSortedTupleIterator>),
-    IndexedRelationUnboundStartMerged(SortedTupleIterator<IndexedRelationUnboundedSortedStartMerged>),
+    IndexedRelations(SortedTupleIterator<IndexedRelationSortedTupleIterator>),
+    IndexedRelationsMerged(SortedTupleIterator<IndexedRelationUnboundedSortedStartMerged>),
     // LinksUnboundedInvertedSingle(SortedTupleIterator<LinksUnboundedSortedPlayerSingle>),
     // LinksUnboundedInvertedMerged(SortedTupleIterator<LinksUnboundedSortedPlayerMerged>),
     // LinksBoundedRelation(SortedTupleIterator<LinksBoundedRelationSortedPlayer>),
