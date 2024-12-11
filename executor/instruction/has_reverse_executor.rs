@@ -50,11 +50,10 @@ pub(crate) struct HasReverseExecutor {
     checker: Checker<(Has, u64)>,
 }
 
-pub(crate) type HasReverseUnboundedSortedAttribute = HasTupleIterator<MultipleTypeHasReverseIterator>;
+pub(crate) type HasReverseTupleIteratorSingle = HasTupleIterator<HasReverseIterator>;
+pub(crate) type HasReverseTupleIteratorChained = HasTupleIterator<ChainedHasReverseIterator>;
+type ChainedHasReverseIterator = iter::Flatten<vec::IntoIter<HasReverseIterator>>;
 pub(crate) type HasReverseUnboundedSortedOwnerMerged = HasTupleIterator<KMergeBy<HasReverseIterator, HasOrderingFn>>;
-pub(crate) type HasReverseUnboundedSortedOwnerSingle = HasTupleIterator<HasReverseIterator>;
-pub(crate) type HasReverseBoundedSortedOwner = HasTupleIterator<HasReverseIterator>;
-type MultipleTypeHasReverseIterator = iter::Flatten<vec::IntoIter<HasReverseIterator>>;
 
 impl HasReverseExecutor {
     pub(crate) fn new(
@@ -165,11 +164,11 @@ impl HasReverseExecutor {
                     Some(row.as_reference()),
                     self.has.attribute().as_variable().unwrap(),
                 )?;
-                let as_tuples: HasTupleIterator<MultipleTypeHasReverseIterator> =
+                let as_tuples: HasTupleIterator<ChainedHasReverseIterator> =
                     Self::all_has_reverse_chained(snapshot, thing_manager, &self.attribute_owner_types_range, range)?
                         .filter_map(filter_for_row)
                         .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
-                Ok(TupleIterator::HasReverseUnbounded(SortedTupleIterator::new(
+                Ok(TupleIterator::HasReverseChained(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -185,9 +184,9 @@ impl HasReverseExecutor {
                         attribute,
                         &self.owner_type_range,
                     );
-                    let as_tuples: HasReverseUnboundedSortedOwnerSingle =
+                    let as_tuples: HasReverseTupleIteratorSingle =
                         iterator.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
-                    Ok(TupleIterator::HasReverseUnboundedInvertedSingle(SortedTupleIterator::new(
+                    Ok(TupleIterator::HasReverseSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -208,7 +207,7 @@ impl HasReverseExecutor {
                         kmerge_by(iterators, compare_has_by_owner_then_attribute);
                     let as_tuples: HasReverseUnboundedSortedOwnerMerged =
                         merged.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
-                    Ok(TupleIterator::HasReverseUnboundedInvertedMerged(SortedTupleIterator::new(
+                    Ok(TupleIterator::HasReverseMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -224,9 +223,9 @@ impl HasReverseExecutor {
                     variable_value.as_thing().as_attribute(),
                     &self.owner_type_range,
                 );
-                let as_tuples: HasReverseBoundedSortedOwner =
+                let as_tuples: HasReverseTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
-                Ok(TupleIterator::HasReverseBounded(SortedTupleIterator::new(
+                Ok(TupleIterator::HasReverseSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -240,7 +239,7 @@ impl HasReverseExecutor {
         thing_manager: &ThingManager,
         attribute_type_owner_range: &BTreeMap<AttributeType, (Bound<ObjectType>, Bound<ObjectType>)>,
         attribute_values_range: (Bound<Value<'_>>, Bound<Value<'_>>),
-    ) -> Result<MultipleTypeHasReverseIterator, Box<ConceptReadError>> {
+    ) -> Result<ChainedHasReverseIterator, Box<ConceptReadError>> {
         let type_manager = thing_manager.type_manager();
         let iterators: Vec<_> = attribute_type_owner_range
             .iter()

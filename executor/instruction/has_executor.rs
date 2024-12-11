@@ -53,10 +53,8 @@ pub(crate) struct HasExecutor {
 
 pub(super) type HasTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<HasFilterMapFn>>, HasToTupleFn>;
 
-pub(crate) type HasUnboundedSortedOwner = HasTupleIterator<HasIterator>;
-pub(crate) type HasUnboundedSortedAttributeMerged = HasTupleIterator<KMergeBy<HasIterator, HasOrderingFn>>;
-pub(crate) type HasUnboundedSortedAttributeSingle = HasTupleIterator<HasIterator>;
-pub(crate) type HasBoundedSortedAttribute = HasTupleIterator<HasIterator>;
+pub(crate) type HasUnboundedTupleIteratorSingle = HasTupleIterator<HasIterator>;
+pub(crate) type HasUnboundedTupleIteratorMerged = HasTupleIterator<KMergeBy<HasIterator, HasOrderingFn>>;
 
 pub(super) type HasFilterFn = FilterFn<(Has, u64)>;
 pub(super) type HasFilterMapFn = FilterMapFn<(Has, u64)>;
@@ -167,11 +165,11 @@ impl HasExecutor {
 
                 // TODO: in the HasReverse case, we look up N iterators (one per type) and link them - here we scan and post-filter
                 //        we should determine which strategy we want long-term
-                let as_tuples: HasUnboundedSortedOwner = thing_manager
+                let as_tuples: HasUnboundedTupleIteratorSingle = thing_manager
                     .get_has_from_owner_type_range_unordered(snapshot, &self.owner_type_range)
                     .filter_map(filter_for_row)
                     .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_owner_attribute);
-                Ok(TupleIterator::HasUnbounded(SortedTupleIterator::new(
+                Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -187,10 +185,10 @@ impl HasExecutor {
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.attribute_type_range,
                     );
-                    let as_tuples: HasUnboundedSortedAttributeSingle = iterator
+                    let as_tuples: HasUnboundedTupleIteratorSingle = iterator
                         .filter_map(filter_for_row)
                         .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
-                    Ok(TupleIterator::HasUnboundedInvertedSingle(SortedTupleIterator::new(
+                    Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -208,9 +206,9 @@ impl HasExecutor {
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<HasIterator, HasOrderingFn> =
                         kmerge_by(iterators, compare_has_by_attribute_then_owner);
-                    let as_tuples: HasUnboundedSortedAttributeMerged =
+                    let as_tuples: HasUnboundedTupleIteratorMerged =
                         merged.filter_map(filter_for_row).map(has_to_tuple_attribute_owner);
-                    Ok(TupleIterator::HasUnboundedInvertedMerged(SortedTupleIterator::new(
+                    Ok(TupleIterator::HasMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -230,9 +228,9 @@ impl HasExecutor {
                     }
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
-                let as_tuples: HasBoundedSortedAttribute =
+                let as_tuples: HasUnboundedTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(has_to_tuple_attribute_owner);
-                Ok(TupleIterator::HasBounded(SortedTupleIterator::new(
+                Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,

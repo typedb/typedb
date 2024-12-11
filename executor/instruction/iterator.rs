@@ -6,37 +6,28 @@
 
 use std::{cmp::Ordering, iter};
 
+use itertools::zip_eq;
+
 use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::instructions::{VariableMode, VariableModes},
     ExecutorVariable, VariablePosition,
 };
 use concept::error::ConceptReadError;
-use itertools::zip_eq;
 
 use crate::{
     instruction::{
         has_executor::{
-            HasBoundedSortedAttribute, HasUnboundedSortedAttributeMerged, HasUnboundedSortedAttributeSingle,
-            HasUnboundedSortedOwner,
+            HasUnboundedTupleIteratorMerged, HasUnboundedTupleIteratorSingle,
         },
         has_reverse_executor::{
-            HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged,
-            HasReverseUnboundedSortedOwnerSingle,
+            HasReverseTupleIteratorChained, HasReverseUnboundedSortedOwnerMerged,
         },
         iid_executor::IidIterator,
         is_executor::IsIterator,
         isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
-        isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
-        links_executor::{
-            LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
-            LinksUnboundedSortedPlayerSingle, LinksUnboundedSortedRelation,
-        },
-        links_reverse_executor::{
-            LinksReverseBoundedPlayerRelation, LinksReverseBoundedPlayerSortedRelation,
-            LinksReverseUnboundedSortedPlayer, LinksReverseUnboundedSortedRelationMerged,
-            LinksReverseUnboundedSortedRelationSingle,
-        },
+        isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType}
+        ,
         owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
         owns_reverse_executor::{OwnsReverseBoundedSortedOwner, OwnsReverseUnboundedSortedAttribute},
         plays_executor::{PlaysBoundedSortedRole, PlaysUnboundedSortedPlayer},
@@ -50,7 +41,9 @@ use crate::{
     },
     row::Row,
 };
-use crate::instruction::indexed_relation_executor::{IndexedRelationSortedTupleIterator, IndexedRelationUnboundedSortedStartMerged};
+use crate::instruction::has_reverse_executor::HasReverseTupleIteratorSingle;
+use crate::instruction::indexed_relation_executor::{IndexedRelationTupleIteratorMerged, IndexedRelationTupleIteratorSingle};
+use crate::instruction::links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle};
 
 // TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.
 //       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)
@@ -128,34 +121,21 @@ pub(crate) enum TupleIterator {
     IsaReverseUnbounded(SortedTupleIterator<IsaReverseUnboundedSortedType>),
     IsaReverseBounded(SortedTupleIterator<IsaReverseBoundedSortedThing>),
 
-    HasUnbounded(SortedTupleIterator<HasUnboundedSortedOwner>),
-    HasUnboundedInvertedSingle(SortedTupleIterator<HasUnboundedSortedAttributeSingle>),
-    HasUnboundedInvertedMerged(SortedTupleIterator<HasUnboundedSortedAttributeMerged>),
-    HasBounded(SortedTupleIterator<HasBoundedSortedAttribute>),
+    HasSingle(SortedTupleIterator<HasUnboundedTupleIteratorSingle>),
+    HasMerged(SortedTupleIterator<HasUnboundedTupleIteratorMerged>),
 
-    HasReverseUnbounded(SortedTupleIterator<HasReverseUnboundedSortedAttribute>),
-    HasReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
-    HasReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
-    HasReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
+    HasReverseSingle(SortedTupleIterator<HasReverseTupleIteratorSingle>),
+    HasReverseChained(SortedTupleIterator<HasReverseTupleIteratorChained>),
+    HasReverseMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
 
-    LinksUnbounded(SortedTupleIterator<LinksUnboundedSortedRelation>),
-    LinksUnboundedInvertedSingle(SortedTupleIterator<LinksUnboundedSortedPlayerSingle>),
-    LinksUnboundedInvertedMerged(SortedTupleIterator<LinksUnboundedSortedPlayerMerged>),
-    LinksBoundedRelation(SortedTupleIterator<LinksBoundedRelationSortedPlayer>),
-    LinksBoundedRelationPlayer(SortedTupleIterator<LinksBoundedRelationPlayer>),
+    LinksSingle(SortedTupleIterator<LinksTupleIteratorSingle>),
+    LinksMerged(SortedTupleIterator<LinksTupleIteratorMerged>),
 
-    LinksReverseUnbounded(SortedTupleIterator<LinksReverseUnboundedSortedPlayer>),
-    LinksReverseUnboundedInvertedSingle(SortedTupleIterator<LinksReverseUnboundedSortedRelationSingle>),
-    LinksReverseUnboundedInvertedMerged(SortedTupleIterator<LinksReverseUnboundedSortedRelationMerged>),
-    LinksReverseBoundedPlayer(SortedTupleIterator<LinksReverseBoundedPlayerSortedRelation>),
-    LinksReverseBoundedPlayerRelation(SortedTupleIterator<LinksReverseBoundedPlayerRelation>),
+    LinksReverseSingle(SortedTupleIterator<LinksTupleIteratorSingle>),
+    LinksReverseMerged(SortedTupleIterator<LinksTupleIteratorMerged>),
 
-    IndexedRelations(SortedTupleIterator<IndexedRelationSortedTupleIterator>),
-    IndexedRelationsMerged(SortedTupleIterator<IndexedRelationUnboundedSortedStartMerged>),
-    // LinksUnboundedInvertedSingle(SortedTupleIterator<LinksUnboundedSortedPlayerSingle>),
-    // LinksUnboundedInvertedMerged(SortedTupleIterator<LinksUnboundedSortedPlayerMerged>),
-    // LinksBoundedRelation(SortedTupleIterator<LinksBoundedRelationSortedPlayer>),
-    // LinksBoundedRelationPlayer(SortedTupleIterator<LinksBoundedRelationPlayer>),
+    IndexedRelationsSingle(SortedTupleIterator<IndexedRelationTupleIteratorSingle>),
+    IndexedRelationsMerged(SortedTupleIterator<IndexedRelationTupleIteratorMerged>),
 }
 
 impl {

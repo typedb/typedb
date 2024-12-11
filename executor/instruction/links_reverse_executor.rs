@@ -43,6 +43,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle};
 use crate::instruction::min_max_types;
 
 pub(crate) struct LinksReverseExecutor {
@@ -62,13 +63,6 @@ pub(crate) struct LinksReverseExecutor {
 
     checker: Checker<(Relation, RolePlayer, u64)>,
 }
-
-pub(crate) type LinksReverseUnboundedSortedPlayer = LinksTupleIterator<LinksIterator>;
-pub(crate) type LinksReverseUnboundedSortedRelationSingle = LinksTupleIterator<LinksIterator>;
-pub(crate) type LinksReverseUnboundedSortedRelationMerged =
-    LinksTupleIterator<KMergeBy<LinksIterator, LinksOrderingFn>>;
-pub(crate) type LinksReverseBoundedPlayerSortedRelation = LinksTupleIterator<LinksIterator>;
-pub(crate) type LinksReverseBoundedPlayerRelation = LinksTupleIterator<LinksIterator>;
 
 impl LinksReverseExecutor {
     pub(crate) fn new(
@@ -171,9 +165,9 @@ impl LinksReverseExecutor {
             TernaryIterateMode::Unbound => {
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator = thing_manager.get_links_reverse_by_player_type_range(snapshot, &self.player_type_range);
-                let as_tuples: LinksReverseUnboundedSortedPlayer =
+                let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-                Ok(TupleIterator::LinksReverseUnbounded(SortedTupleIterator::new(
+                Ok(TupleIterator::LinksReverseSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -190,9 +184,9 @@ impl LinksReverseExecutor {
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.relation_type_range,
                     );
-                    let as_tuples: LinksReverseUnboundedSortedRelationSingle =
+                    let as_tuples: LinksTupleIteratorSingle =
                         filtered.filter_map(filter_for_row).map(links_to_tuple_relation_player_role);
-                    Ok(TupleIterator::LinksReverseUnboundedInvertedSingle(SortedTupleIterator::new(
+                    Ok(TupleIterator::LinksReverseSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -214,9 +208,9 @@ impl LinksReverseExecutor {
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<LinksIterator, LinksOrderingFn> =
                         kmerge_by(iterators, compare_by_relation_then_player);
-                    let as_tuples: LinksReverseUnboundedSortedRelationMerged =
+                    let as_tuples: LinksTupleIteratorMerged =
                         merged.filter_map(filter_for_row).map(links_to_tuple_relation_player_role);
-                    Ok(TupleIterator::LinksReverseUnboundedInvertedMerged(SortedTupleIterator::new(
+                    Ok(TupleIterator::LinksReverseMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -232,9 +226,9 @@ impl LinksReverseExecutor {
                     row.get(player).as_thing().as_object(),
                     &self.relation_type_range,
                 );
-                let as_tuples: LinksReverseBoundedPlayerSortedRelation =
+                let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_relation_player_role);
-                Ok(TupleIterator::LinksReverseBoundedPlayer(SortedTupleIterator::new(
+                Ok(TupleIterator::LinksReverseSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -249,9 +243,9 @@ impl LinksReverseExecutor {
                 let relation = row.get(relation).as_thing().as_relation();
                 let player = row.get(player).as_thing().as_object();
                 let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player); // NOTE: not reverse, no difference
-                let as_tuples: LinksReverseBoundedPlayerSortedRelation =
+                let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_role_relation_player);
-                Ok(TupleIterator::LinksReverseBoundedPlayerRelation(SortedTupleIterator::new(
+                Ok(TupleIterator::LinksReverseSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,

@@ -60,11 +60,8 @@ pub(crate) struct LinksExecutor {
 
 pub(super) type LinksTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<LinksFilterMapFn>>, LinksToTupleFn>;
 
-pub(crate) type LinksUnboundedSortedRelation = LinksTupleIterator<LinksIterator>;
-pub(crate) type LinksUnboundedSortedPlayerSingle = LinksTupleIterator<LinksIterator>;
-pub(crate) type LinksUnboundedSortedPlayerMerged = LinksTupleIterator<KMergeBy<LinksIterator, LinksOrderingFn>>;
-pub(crate) type LinksBoundedRelationSortedPlayer = LinksTupleIterator<LinksIterator>;
-pub(crate) type LinksBoundedRelationPlayer = LinksTupleIterator<LinksIterator>;
+pub(crate) type LinksTupleIteratorSingle = LinksTupleIterator<LinksIterator>;
+pub(crate) type LinksTupleIteratorMerged = LinksTupleIterator<KMergeBy<LinksIterator, LinksOrderingFn>>;
 
 pub(super) type LinksFilterFn = FilterFn<(Relation, RolePlayer, u64)>;
 pub(super) type LinksFilterMapFn = FilterMapFn<(Relation, RolePlayer, u64)>;
@@ -183,9 +180,9 @@ impl LinksExecutor {
             TernaryIterateMode::Unbound => {
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
                 let iterator = thing_manager.get_links_by_relation_type_range(snapshot, &self.relation_type_range);
-                let as_tuples: LinksUnboundedSortedRelation =
+                let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_relation_player_role as _);
-                Ok(TupleIterator::LinksUnbounded(SortedTupleIterator::new(
+                Ok(TupleIterator::LinksSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -202,9 +199,9 @@ impl LinksExecutor {
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.player_type_range,
                     );
-                    let as_tuples: LinksUnboundedSortedPlayerSingle =
+                    let as_tuples: LinksTupleIteratorSingle =
                         iterator.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-                    Ok(TupleIterator::LinksUnboundedInvertedSingle(SortedTupleIterator::new(
+                    Ok(TupleIterator::LinksSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -226,9 +223,9 @@ impl LinksExecutor {
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
                     let merged: KMergeBy<LinksIterator, LinksOrderingFn> =
                         kmerge_by(iterators, compare_by_player_then_relation);
-                    let as_tuples: LinksUnboundedSortedPlayerMerged =
+                    let as_tuples: LinksTupleIteratorMerged =
                         merged.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-                    Ok(TupleIterator::LinksUnboundedInvertedMerged(SortedTupleIterator::new(
+                    Ok(TupleIterator::LinksMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
                         &self.variable_modes,
@@ -244,9 +241,9 @@ impl LinksExecutor {
                         .get_links_by_relation_and_player_type_range(snapshot, relation, &self.player_type_range),
                     _ => unreachable!("Links relation must be a relation."),
                 };
-                let as_tuples: LinksBoundedRelationSortedPlayer =
+                let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_player_relation_role);
-                Ok(TupleIterator::LinksBoundedRelation(SortedTupleIterator::new(
+                Ok(TupleIterator::LinksSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
@@ -261,9 +258,9 @@ impl LinksExecutor {
                 let relation = row.get(relation).as_thing().as_relation();
                 let player = row.get(player).as_thing().as_object();
                 let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player);
-                let as_tuples: LinksBoundedRelationSortedPlayer =
+                let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_role_relation_player);
-                Ok(TupleIterator::LinksBoundedRelationPlayer(SortedTupleIterator::new(
+                Ok(TupleIterator::LinksSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
