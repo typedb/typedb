@@ -11,6 +11,7 @@ use std::{
     collections::{HashMap, HashSet},
     hash::{DefaultHasher, Hash, Hasher},
     path::PathBuf,
+    sync::Mutex,
 };
 
 use error::TypeDBError;
@@ -31,11 +32,11 @@ type DatabaseHash = Option<u64>;
 pub struct Diagnostics {
     server_properties: ServerProperties,
     server_metrics: ServerMetrics,
-    load_metrics: HashMap<DatabaseHash, LoadMetrics>, // TODO: Mutexes over these metrics?
-    action_metrics: HashMap<DatabaseHash, ActionMetrics>, // TODO: Mutexes over these metrics?
-    error_metrics: HashMap<DatabaseHash, ErrorMetrics>, // TODO: Mutexes over these metrics?
+    load_metrics: Mutex<HashMap<DatabaseHash, LoadMetrics>>,
+    action_metrics: Mutex<HashMap<DatabaseHash, ActionMetrics>>,
+    error_metrics: Mutex<HashMap<DatabaseHash, ErrorMetrics>>,
 
-    owned_databases: HashSet<DatabaseHash>,
+    owned_databases: Mutex<HashSet<DatabaseHash>>,
 }
 
 impl Diagnostics {
@@ -50,77 +51,81 @@ impl Diagnostics {
         Self {
             server_properties: ServerProperties::new(deployment_id, server_id, distribution, reporting_enabled),
             server_metrics: ServerMetrics::new(version, data_directory),
-            load_metrics: HashMap::new(),
-            action_metrics: HashMap::new(),
-            error_metrics: HashMap::new(),
+            load_metrics: Mutex::new(HashMap::new()),
+            action_metrics: Mutex::new(HashMap::new()),
+            error_metrics: Mutex::new(HashMap::new()),
 
-            owned_databases: HashSet::new(),
+            owned_databases: Mutex::new(HashSet::new()),
         }
     }
 
     pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>) {
-        let mut deleted_databases: HashSet<DatabaseHash> = self.load_metrics.keys().collect();
+        let mut loads = self.load_metrics.lock().expect("Expected load metrics lock acquisition");
+        let mut deleted_databases: HashSet<DatabaseHash> = loads.keys().collect();
 
         for metrics in database_metrics {
-            let database_hash = self.hash_and_add_database(Some(metrics.database_name));
+            let database_hash = Self::hash_database(Some(metrics.database_name));
             deleted_databases.remove(&database_hash);
 
-            let load_metrics =
-                self.load_metrics.get_mut(&database_hash).expect("Expected to add database to load metrics");
-            load_metrics.set_schema(metrics.schema);
-            load_metrics.set_data(metrics.data);
+            let database_load = loads.entry(database_hash.clone()).or_insert(LoadMetrics::new());
+            database_load.set_schema(metrics.schema);
+            database_load.set_data(metrics.data);
 
             self.update_owned_databases(database_hash, metrics.is_primary_server);
         }
 
         for database_hash in deleted_databases {
-            self.load_metrics.get_mut(&database_hash).expect("Expected to ... TODO").mark_deleted();
+            loads.get_mut(&database_hash).expect("Expected database in load metrics").mark_deleted();
         }
     }
 
     pub fn submit_error(&self, database_name: Option<&str>, error: &impl TypeDBError) {
-        todo!()
-        // error.code();
+        let database_hash = Self::hash_database(Some(database_name));
+        let mut errors = self.error_metrics.lock().expect("Expected error metrics lock acquisition");
+        errors.entry(database_hash).or_insert(ErrorMetrics::new()).submit(error);
     }
 
     pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind) {
-        todo!()
+        let database_hash = Self::hash_database(Some(database_name));
+        let mut actions = self.action_metrics.lock().expect("Expected action metrics lock acquisition");
+        actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_success(action_kind);
     }
 
     pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind) {
-        todo!()
+        let database_hash = Self::hash_database(Some(database_name));
+        let mut actions = self.action_metrics.lock().expect("Expected action metrics lock acquisition");
+        actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_fail(action_kind);
     }
 
-    pub fn increment_current_count(&self, database_name: Option<&str>, connection_: LoadKind) {
-        todo!()
+    pub fn increment_load_count(&self, database_name: Option<&str>, load_kind: LoadKind) {
+        let database_hash = Self::hash_database(Some(database_name));
+        let mut loads = self.load_metrics.lock().expect("Expected load metrics lock acquisition");
+        loads.entry(database_hash).or_insert(LoadMetrics::new()).increment_connection_count(load_kind);
     }
 
-    pub fn decrement_current_count(&self, database_name: Option<&str>, connection_: LoadKind) {
-        todo!()
+    pub fn decrement_load_count(&self, database_name: Option<&str>, load_kind: LoadKind) {
+        let database_hash = Self::hash_database(Some(database_name));
+        let mut loads = self.load_metrics.lock().expect("Expected load metrics lock acquisition");
+        loads.entry(database_hash).or_insert(LoadMetrics::new()).decrement_connection_count(load_kind);
     }
 
-    fn hash_and_add_database(&self, database_name: Option<String>) -> DatabaseHash {
-        let database_hash = match database_name {
+    fn hash_database(database_name: Option<impl AsRef<str>>) -> DatabaseHash {
+        match database_name {
             None => None,
             Some(database_name) => {
                 let mut database_name_hasher = DefaultHasher::new();
                 database_name.hash(&mut database_name_hasher);
-                let database_hash = database_name_hasher.finish();
-                // self.databaseLoad.computeIfAbsent(databaseHash, val -> new DatabaseLoadDiagnostics());
-                Some(database_hash)
+                Some(database_name_hasher.finish())
             }
-        };
-
-        // self.requests.computeIfAbsent(databaseHash, val -> new NetworkRequests());
-        // self.userErrors.computeIfAbsent(databaseHash, val -> new UserErrorStatistics());
-
-        database_hash
+        }
     }
 
     fn update_owned_databases(&self, database_hash: DatabaseHash, is_primary_server: bool) {
-        match is_primary_server {
-            false => self.owned_databases.remove(&database_hash),
-            true => self.owned_databases.insert(database_hash),
+        let mut owned_databases = self.owned_databases.lock().expect("Expected owned databases lock acquisition");
+        if is_primary_server {
+            owned_databases.insert(database_hash);
+        } else {
+            owned_databases.remove(&database_hash);
         }
     }
 }

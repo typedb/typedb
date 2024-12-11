@@ -13,6 +13,7 @@ use std::{
     time::Instant,
 };
 
+use error::TypeDBError;
 use serde_json::Value as JSONValue;
 use sysinfo::System;
 
@@ -86,12 +87,38 @@ pub(crate) struct LoadMetrics {
 }
 
 impl LoadMetrics {
+    pub fn new() -> Self {
+        Self {
+            // TODO: Maybe optionals?
+            schema: SchemaLoadMetrics { type_count: 0 },
+            data: DataLoadMetrics {
+                entity_count: 0,
+                relation_count: 0,
+                attribute_count: 0,
+                has_count: 0,
+                role_count: 0,
+                storage_in_bytes: 0,
+                storage_key_count: 0,
+            },
+            connection: ConnectionLoadMetrics::new(),
+            is_deleted: false,
+        }
+    }
+
     pub fn set_schema(&mut self, schema: SchemaLoadMetrics) {
         self.schema = schema;
     }
 
     pub fn set_data(&mut self, data: DataLoadMetrics) {
         self.data = data;
+    }
+
+    pub fn increment_connection_count(&mut self, load_kind: LoadKind) {
+        self.connection.increment_count(load_kind);
+    }
+
+    pub fn decrement_connection_count(&mut self, load_kind: LoadKind) {
+        self.connection.decrement_count(load_kind);
     }
 
     pub fn mark_deleted(&mut self) {
@@ -117,8 +144,25 @@ pub struct DataLoadMetrics {
 
 #[derive(Debug)]
 pub(crate) struct ConnectionLoadMetrics {
-    counts: Mutex<HashMap<LoadKind, Arc<AtomicU64>>>, // TODO: Should it be mutexed?
-    peak_counts: Mutex<HashMap<LoadKind, Arc<AtomicU64>>>,
+    counts: HashMap<LoadKind, u64>,
+    peak_counts: HashMap<LoadKind, u64>,
+}
+
+impl ConnectionLoadMetrics {
+    pub fn new() -> Self {
+        Self { counts: HashMap::new(), peak_counts: HashMap::new() }
+    }
+
+    pub fn increment_count(&mut self, load_kind: LoadKind) {
+        let count = self.counts.entry(load_kind).or_insert(0);
+        *count += 1;
+    }
+
+    pub fn decrement_count(&mut self, load_kind: LoadKind) {
+        let count = self.counts.entry(load_kind).or_insert(0);
+        assert_ne!(count, 0);
+        *count -= 1;
+    }
 }
 
 #[derive(Debug)]
@@ -126,10 +170,37 @@ pub(crate) struct ActionMetrics {
     actions: HashMap<ActionKind, ActionInfo>,
 }
 
+impl ActionMetrics {
+    pub fn new() -> Self {
+        Self { actions: HashMap::new() }
+    }
+
+    pub fn submit_success(&mut self, action_kind: ActionKind) {
+        self.actions.entry(action_kind).or_insert(ActionInfo::new()).submit_success();
+    }
+    pub fn submit_fail(&mut self, action_kind: ActionKind) {
+        self.actions.entry(action_kind).or_insert(ActionInfo::new()).submit_fail();
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct ActionInfo {
-    successful: AtomicU64,
-    failed: AtomicU64,
+    successful: u64,
+    failed: u64,
+}
+
+impl ActionInfo {
+    pub fn new() -> Self {
+        Self { successful: 0, failed: 0 }
+    }
+
+    pub fn submit_success(&mut self) {
+        self.successful += 1;
+    }
+
+    pub fn submit_fail(&mut self) {
+        self.failed += 1;
+    }
 }
 
 #[derive(Debug)]
@@ -137,9 +208,29 @@ pub(crate) struct ErrorMetrics {
     errors: HashMap<String, ErrorInfo>,
 }
 
+impl ErrorMetrics {
+    pub fn new() -> Self {
+        Self { errors: HashMap::new() }
+    }
+
+    pub fn submit(&mut self, error: &impl TypeDBError) {
+        self.errors.entry(error.code().to_owned()).or_insert(ErrorInfo::new()).submit();
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct ErrorInfo {
-    count: AtomicU64,
+    count: u64,
+}
+
+impl ErrorInfo {
+    pub fn new() -> Self {
+        Self { count: 0 }
+    }
+
+    pub fn submit(&mut self) {
+        self.count += 1;
+    }
 }
 
 #[derive(Debug, Hash, Copy, Clone, PartialEq, Eq)]

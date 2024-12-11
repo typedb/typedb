@@ -73,7 +73,7 @@ impl DiagnosticsManager {
         pub fn submit_error(&self, database_name: Option<&str>, error: &impl TypeDBError);
         pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind);
         pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind);
-        pub fn increment_current_count(&self, database_name: Option<&str>, connection_: LoadKind);
-        pub fn decrement_current_count(&self, database_name: Option<&str>, connection_: LoadKind);
+        pub fn increment_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
+        pub fn decrement_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
     }
 }
