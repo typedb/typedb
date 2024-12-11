@@ -161,20 +161,20 @@ impl LinksAnnotations {
         }
     }
 
-    pub fn relation_to_player(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
-        self.relation_to_player.clone()
-    }
-
-    pub fn player_to_role(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
-        self.player_to_role.clone()
-    }
-
     pub fn player_to_relation(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
         self.player_to_relation.clone()
     }
 
     pub fn relation_to_role(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
         self.relation_to_role.clone()
+    }
+
+    pub fn relation_to_player(&self) -> Arc<BTreeMap<Type, Vec<Type>>> {
+        self.relation_to_player.clone()
+    }
+
+    pub fn player_to_role(&self) -> Arc<BTreeMap<Type, BTreeSet<Type>>> {
+        self.player_to_role.clone()
     }
 }
 
