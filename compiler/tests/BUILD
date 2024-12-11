@@ -22,7 +22,9 @@ rust_test(
     deps = [
         "//compiler:compiler",
         "//concept:concept",
+        "//encoding:encoding",
         "//ir:ir",
+        "//storage:storage",
         
         "//concept/tests:test_utils_concept",
         "//encoding/tests:test_utils_encoding",

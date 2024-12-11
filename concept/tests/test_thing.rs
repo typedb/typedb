@@ -1006,7 +1006,7 @@ fn role_player_duplicates_ordered_small_card() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))), // must be small to allow index to kick in
             )
             .unwrap();
         let entry_type = entry_relates.role();

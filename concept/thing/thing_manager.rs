@@ -1293,6 +1293,7 @@ impl ThingManager {
         start_role: RoleType,
         end_role: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
+        debug_assert!(self.type_manager.relation_index_available(snapshot, relation.type_()).unwrap());
         let edge = ThingEdgeIndexedRelation::new(
             start_player.vertex(),
             end_player.vertex(),
@@ -1312,9 +1313,12 @@ impl ThingManager {
         relation_type: RelationType,
     ) -> IndexedRelationsIterator {
         let prefix = ThingEdgeIndexedRelation::prefix_start(relation_type.vertex().type_id_(), start.vertex());
-        IndexedRelationsIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
+        self.iterate_indexed_relations(
+            snapshot,
+            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
+            relation_type,
         )
+
     }
 
     pub(crate) fn get_indexed_relations(
@@ -1325,8 +1329,10 @@ impl ThingManager {
         relation_type: RelationType,
     ) -> IndexedRelationsIterator {
         let prefix = ThingEdgeIndexedRelation::prefix_start_end(relation_type.vertex().type_id_(), start.vertex(), end.vertex());
-        IndexedRelationsIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
+        self.iterate_indexed_relations(
+            snapshot,
+            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
+            relation_type,
         )
     }
 
@@ -1338,8 +1344,10 @@ impl ThingManager {
         relation: Relation
     ) -> IndexedRelationsIterator {
         let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation(start.vertex(), end.vertex(), relation.vertex());
-        IndexedRelationsIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
+        self.iterate_indexed_relations(
+            snapshot,
+            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
+            relation.type_(),
         )
     }
 
@@ -1352,9 +1360,22 @@ impl ThingManager {
         start_role: RoleType,
     ) -> IndexedRelationsIterator {
         let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation_startrole(start.vertex(), end.vertex(), relation.vertex(), start_role.vertex());
-        IndexedRelationsIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
+        self.iterate_indexed_relations(
+            snapshot,
+            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
+            relation.type_(),
         )
+    }
+
+    fn iterate_indexed_relations<const INLINE_SIZE: usize>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        range: &KeyRange<StorageKey<'_, INLINE_SIZE>>,
+        // for assertions:
+        relation_type: RelationType,
+    ) -> IndexedRelationsIterator {
+        debug_assert!(self.type_manager().relation_index_available(snapshot, relation_type).unwrap());
+        IndexedRelationsIterator::new(snapshot.iterate_range(range))
     }
 
     pub(crate) fn get_status(
