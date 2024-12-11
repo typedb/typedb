@@ -403,6 +403,18 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
         Ok(counts)
     }
+    
+    fn has_indexed_relation_player(
+        self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        end_player: Object,
+        relation: Relation,
+        start_role: RoleType,
+        end_role: RoleType,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        thing_manager.has_indexed_relation_player(snapshot, self, end_player, relation, start_role, end_role)
+    }
 }
 
 impl ObjectAPI for Object {

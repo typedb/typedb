@@ -1284,6 +1284,27 @@ impl ThingManager {
         )
     }
 
+    pub(crate) fn has_indexed_relation_player(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        start_player: Object,
+        end_player: Object,
+        relation: Relation,
+        start_role: RoleType,
+        end_role: RoleType,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        let edge = ThingEdgeIndexedRelation::new(
+            start_player.vertex(),
+            end_player.vertex(), 
+            relation.vertex(), 
+            start_role.vertex().type_id_(), 
+            end_role.vertex().type_id_()
+        );
+        snapshot.get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference())
+            .map(|option| option.is_some())
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
+    }
+
     pub(crate) fn get_indexed_players(&self, snapshot: &impl ReadableSnapshot, from: Object) -> IndexedRelationsIterator {
         // let prefix = ThingEdgeLinksIndex::prefix_from(from.vertex());
         // IndexedPlayersIterator::new(

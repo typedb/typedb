@@ -750,8 +750,45 @@ impl<T> Checker<T> {
                 }
 
                 CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
-                    // TODO, not using todo!() so build fails!
-                }
+                    let maybe_start_player_extractor = start_player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_start_role_extractor = start_role.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_end_role_extractor = end_role.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let start_player_extractor: BoxExtractor<T> = match maybe_start_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(start_player, row, context),
+                    };
+                    let end_player_extractor: BoxExtractor<T> = match maybe_end_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(end_player, row, context),
+                    };
+                    let relation_extractor: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => make_const_extractor(relation, row, context),
+                    };
+                    let start_role_extractor: BoxExtractor<T> = match maybe_start_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => make_const_extractor(start_role, row, context),
+                    };
+                    let end_role_extractor: BoxExtractor<T> = match maybe_end_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => make_const_extractor(end_role, row, context),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            start_player_extractor(value).as_thing().as_object().has_indexed_relation(
+                                &*snapshot,
+                                &thing_manager,
+                                end_player_extractor(value).as_thing().as_object(),
+                                relation_extractor(value).as_thing().as_relation(),
+                                start_role_extractor(value).as_type().as_role_type(),
+                                end_role_extractor(value).as_type().as_role_type(),
+                            )
+                        }
+                    }));                }
 
                 &CheckInstruction::Is { lhs, rhs } => {
                     let maybe_lhs_extractor = self.extractors.get(&lhs);
