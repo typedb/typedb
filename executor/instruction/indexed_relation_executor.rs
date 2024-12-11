@@ -17,12 +17,13 @@ use compiler::executable::match_::instructions::thing::{IndexedRelationInstructi
 use compiler::executable::match_::instructions::{VariableMode, VariableModes};
 use compiler::ExecutorVariable;
 use concept::error::ConceptReadError;
-use concept::thing::object::ObjectAPI;
+use concept::thing::object::{Object, ObjectAPI};
 use concept::thing::relation::{IndexedRelationsIterator, IndexedRelationPlayers, Relation, RolePlayer, LinksIterator};
 use concept::thing::thing_manager::ThingManager;
 use concept::type_::role_type::RoleType;
 use ir::pattern::constraint::IndexedRelation;
 use ir::pattern::Vertex;
+use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::instruction::iterator::{SortedTupleIterator, TupleIterator};
@@ -77,7 +78,7 @@ pub(crate) struct IndexedRelationExecutor {
     pub(crate) role_end_types: Arc<BTreeSet<RoleType>>,
 
     filter_fn: Arc<IndexedRelationFilterFn>,
-    // relation_cache: Option<Vec<Relation>>,
+    start_player_cache: Option<Vec<Object>>,
 
     checker: Checker<(IndexedRelationPlayers, u64)>,
 }
@@ -149,29 +150,21 @@ impl IndexedRelationExecutor {
             ])
         );
 
-        // let relation_type_range = (
-        //     Bound::Included(relation_player_types.first_key_value().unwrap().0.as_relation_type()),
-        //     Bound::Included(relation_player_types.last_key_value().unwrap().0.as_relation_type()),
-        // );
-        // let (min_player_type, max_player_type) = min_max_types(player_types.iter());
-        // let player_type_range =
-        //     (Bound::Included(min_player_type.as_object_type()), Bound::Included(max_player_type.as_object_type()));
-        // let relation_cache = if iterate_mode == TernaryIterateMode::UnboundInverted {
-        //     let mut cache = Vec::new();
-        //     for type_ in relation_player_types.keys() {
-        //         let instances: Vec<Relation> =
-        //             thing_manager.get_relations_in(snapshot, type_.as_relation_type()).try_collect()?;
-        //         cache.extend(instances);
-        //     }
-        //     #[cfg(debug_assertions)]
-        //     if cache.len() < CONSTANT_CONCEPT_LIMIT {
-        //         eprintln!("DEBUG_ASSERT_FAILURE: cache.len() > CONSTANT_CONCEPT_LIMIT");
-        //     }
-        //     Some(cache)
-        // } else {
-        //     None
-        // };
-        //
+        let start_player_cache = if iterate_mode == IndexedRelationIterateIterateMode::UnboundInvertedToPlayer {
+            let mut cache = Vec::new();
+            for type_ in player_start_to_player_end_types.keys() {
+                let instances: Vec<Object> = thing_manager.get_objects_in(snapshot, type_.as_object_type()).try_collect()?;
+                cache.extend(instances);
+            }
+            #[cfg(debug_assertions)]
+            if cache.len() < CONSTANT_CONCEPT_LIMIT {
+                eprintln!("DEBUG_ASSERT_FAILURE: cache.len() > CONSTANT_CONCEPT_LIMIT");
+            }
+            Some(cache)
+        } else {
+            None
+        };
+        
         Ok(Self {
             player_start,
             player_end,
@@ -187,7 +180,8 @@ impl IndexedRelationExecutor {
             role_start_types,
             role_end_types,
             filter_fn,
-            // relation_cache,
+            
+            start_player_cache,
             checker,
         })
     }
@@ -241,7 +235,30 @@ impl IndexedRelationExecutor {
                 }
             }
             IndexedRelationIterateIterateMode::UnboundInvertedToPlayer => {
-                todo!()
+                debug_assert!(self.start_player_cache.is_some());
+                let mut iterators = Vec::new();
+                self.start_player_cache.as_ref()
+                    .into_iter()
+                    .flat_map(|start_players| start_players.iter())
+                    .for_each(|start_player| {
+                        for relation_type in self.relation_to_player_start_types.keys() {
+                            iterators.push(start_player.get_indexed_relation_players(
+                                snapshot,
+                                thing_manager,
+                                relation_type.as_relation_type()
+                            ))
+                        }
+                    });
+                let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
+                    kmerge_by(iterators, compare_indexed_players);
+                let as_tuples: IndexedRelationUnboundedSortedStartMerged = merged
+                    .filter_map(filter_for_row)
+                    .map(indexed_relation_to_tuple_end_start_relation_startrole_endrole);
+                Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
+                    as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                ))) 
             }
             IndexedRelationIterateIterateMode::BoundStart => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
