@@ -372,7 +372,7 @@ impl ThingAPI for Relation {
             thing_manager.unset_links(snapshot, self, player, role)?;
             
             debug_assert!(
-                !player.get_indexed_relation_players(snapshot, thing_manager, self.type_())
+                !player.get_indexed_relations(snapshot, thing_manager, self.type_())
                     .map(|result| result.unwrap())
                     .any(|((start, end, relation, start_role, _), _)| {
                         start == player && start_role == role

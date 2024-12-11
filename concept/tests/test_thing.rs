@@ -628,7 +628,7 @@ fn role_player_distinct() {
         assert_eq!(company_2.get_relations_roles(&snapshot, &thing_manager).count(), 1);
         assert_eq!(company_3.get_relations_roles(&snapshot, &thing_manager).count(), 1);
 
-        assert_eq!(person_1.get_indexed_players(&snapshot, &thing_manager).count(), 3);
+        assert_eq!(person_1.get_indexed_relations(&snapshot, &thing_manager, employment_type).count(), 3);
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
@@ -638,6 +638,8 @@ fn role_player_distinct() {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
+        let employment_type = type_manager.get_relation_type(&snapshot, &employment_label).unwrap().unwrap();
+        
         let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 4);
         let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
@@ -656,7 +658,7 @@ fn role_player_distinct() {
             .unwrap();
 
         assert_eq!(person_1.get_relations_roles(&snapshot, &thing_manager).count(), 2);
-        assert_eq!(person_1.get_indexed_players(&snapshot, &thing_manager).count(), 3);
+        assert_eq!(person_1.get_indexed_relations(&snapshot, &thing_manager, employment_type).count(), 3);
     }
 }
 
@@ -730,17 +732,17 @@ fn role_player_duplicates_unordered() {
         assert_eq!(resource_relations_count, 1);
 
         let group_1_indexed_count: u64 = group_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
@@ -762,6 +764,8 @@ fn role_player_duplicates_unordered() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
+        
         let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
         let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
@@ -799,17 +803,17 @@ fn role_player_duplicates_unordered() {
         assert_eq!(resource_relations_count, 1);
 
         let group_1_indexed_count: u64 = group_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
@@ -885,17 +889,17 @@ fn role_player_duplicates_ordered_default_card() {
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
         assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
@@ -920,6 +924,7 @@ fn role_player_duplicates_ordered_default_card() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
         let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
         let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
@@ -957,17 +962,17 @@ fn role_player_duplicates_ordered_default_card() {
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
         assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
         let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
@@ -1053,17 +1058,17 @@ fn role_player_duplicates_ordered_small_card() {
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
@@ -1085,6 +1090,7 @@ fn role_player_duplicates_ordered_small_card() {
     {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+        let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
         let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
         let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
@@ -1122,17 +1128,17 @@ fn role_player_duplicates_ordered_small_card() {
         assert_eq!(resource_relations_count, 2);
 
         let group_1_indexed_count: u64 = group_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_players(&snapshot, &thing_manager)
+            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
             .map(|res| {
-                let (_, _, _, count) = res.unwrap();
+                let (_, count) = res.unwrap();
                 count
             })
             .sum();

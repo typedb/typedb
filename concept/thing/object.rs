@@ -417,8 +417,8 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
     ) -> Result<bool, Box<ConceptReadError>> {
         thing_manager.has_indexed_relation_player(snapshot, self, end_player, relation, start_role, end_role)
     }
-    
-    fn get_indexed_relation_players(
+
+    fn get_indexed_relations(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -426,8 +426,8 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
     ) -> IndexedRelationsIterator {
         thing_manager.get_indexed_relation_players(snapshot, self, relation_type)
     }
-    
-    fn get_indexed_relations(
+
+    fn get_indexed_relations_with_player(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -436,8 +436,8 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
     ) -> IndexedRelationsIterator {
         thing_manager.get_indexed_relations(snapshot, self, end_player, relation_type)
     }
-    
-    fn get_indexed_relation_roles(
+
+    fn get_indexed_relation_roles_with_player_and_relation(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
@@ -447,7 +447,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.get_indexed_relation_roles(snapshot, self, end_player, relation)
     }
 
-    fn get_indexed_relation_end_roles(
+    fn get_indexed_relation_end_roles_with_player_and_relation_and_start_role(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,

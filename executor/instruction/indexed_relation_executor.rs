@@ -237,7 +237,7 @@ impl IndexedRelationExecutor {
                     .flat_map(|start_players| start_players.iter())
                     .for_each(|start_player| {
                         for relation_type in self.relation_to_player_start_types.keys() {
-                            iterators.push(start_player.get_indexed_relation_players(
+                            iterators.push(start_player.get_indexed_relations(
                                 snapshot,
                                 thing_manager,
                                 relation_type.as_relation_type()
@@ -263,7 +263,7 @@ impl IndexedRelationExecutor {
                 if self.relation_to_player_start_types.len() == 1 {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let as_tuples: IndexedRelationTupleIteratorSingle = start_player
-                        .get_indexed_relation_players(snapshot, thing_manager, relation_type)
+                        .get_indexed_relations(snapshot, thing_manager, relation_type)
                         .filter_map(filter_for_row)
                         .map(indexed_relation_to_tuple_end_start_relation_startrole_endrole);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
@@ -273,7 +273,7 @@ impl IndexedRelationExecutor {
                     )))
                 } else {
                     let iterators = self.relation_to_player_start_types.keys()
-                        .map(|relation_type| start_player.get_indexed_relation_players(snapshot, thing_manager, relation_type.as_relation_type()))
+                        .map(|relation_type| start_player.get_indexed_relations(snapshot, thing_manager, relation_type.as_relation_type()))
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                         kmerge_by(iterators, compare_indexed_players);
@@ -299,7 +299,7 @@ impl IndexedRelationExecutor {
                 if self.relation_to_player_start_types.len() == 1 {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let as_tuples: IndexedRelationTupleIteratorSingle = start_player
-                        .get_indexed_relations(snapshot, thing_manager, end_player, relation_type)
+                        .get_indexed_relations_with_player(snapshot, thing_manager, end_player, relation_type)
                         .filter_map(filter_for_row)
                         .map(indexed_relation_to_tuple_relation_start_end_startrole_endrole);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
@@ -309,7 +309,7 @@ impl IndexedRelationExecutor {
                     )))
                 } else {
                     let iterators = self.relation_to_player_start_types.keys()
-                        .map(|relation_type| start_player.get_indexed_relations(snapshot, thing_manager, end_player, relation_type.as_relation_type()))
+                        .map(|relation_type| start_player.get_indexed_relations_with_player(snapshot, thing_manager, end_player, relation_type.as_relation_type()))
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                         kmerge_by(iterators, compare_indexed_players);
@@ -337,7 +337,7 @@ impl IndexedRelationExecutor {
                     _ => unreachable!("Indexed relation must be a thing relation")
                 };
                 let as_tuples: IndexedRelationTupleIteratorSingle = start_player
-                    .get_indexed_relation_roles(snapshot, thing_manager, end_player, relation)
+                    .get_indexed_relation_roles_with_player_and_relation(snapshot, thing_manager, end_player, relation)
                     .filter_map(filter_for_row)
                     .map(indexed_relation_to_tuple_startrole_start_end_relation_endrole);
                 Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
@@ -364,7 +364,7 @@ impl IndexedRelationExecutor {
                     _ => unreachable!("Indexed startrole must be a role type")
                 };
                 let as_tuples: IndexedRelationTupleIteratorSingle = start_player
-                    .get_indexed_relation_end_roles(snapshot, thing_manager, end_player, relation, start_role)
+                    .get_indexed_relation_end_roles_with_player_and_relation_and_start_role(snapshot, thing_manager, end_player, relation, start_role)
                     .filter_map(filter_for_row)
                     .map(indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole);
                 Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
