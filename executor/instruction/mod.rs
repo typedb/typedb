@@ -779,7 +779,7 @@ impl<T> Checker<T> {
                     };
                     filters.push(Box::new({
                         move |value| {
-                            start_player_extractor(value).as_thing().as_object().has_indexed_relation(
+                            start_player_extractor(value).as_thing().as_object().has_indexed_relation_player(
                                 &*snapshot,
                                 &thing_manager,
                                 end_player_extractor(value).as_thing().as_object(),

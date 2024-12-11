@@ -28,7 +28,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::instruction::iterator::{SortedTupleIterator, TupleIterator};
 use crate::instruction::{Checker, FilterFn, FilterMapFn, TernaryIterateMode};
 use crate::instruction::links_executor::{LinksFilterMapFn, LinksOrderingFn};
-use crate::instruction::tuple::{indexed_relation_to_tuple_end_start_relation_startrole_endrole, indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole, indexed_relation_to_tuple_relation_start_end_relation_startrole_endrole, indexed_relation_to_tuple_relation_start_end_startrole_endrole, indexed_relation_to_tuple_start_end_relation_startrole_endrole, indexed_relation_to_tuple_startrole_start_end_relation_endrole, IndexedRelationToTupleFn, LinksToTupleFn, TuplePositions};
+use crate::instruction::tuple::{indexed_relation_to_tuple_end_start_relation_startrole_endrole, indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole, indexed_relation_to_tuple_relation_start_end_startrole_endrole, indexed_relation_to_tuple_start_end_relation_startrole_endrole, indexed_relation_to_tuple_startrole_start_end_relation_endrole, IndexedRelationToTupleFn, LinksToTupleFn, TuplePositions};
 use crate::pipeline::stage::ExecutionContext;
 use crate::row::MaybeOwnedRow;
 
@@ -245,7 +245,7 @@ impl IndexedRelationExecutor {
             }
             IndexedRelationIterateIterateMode::BoundStart => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
                 };
                 if self.relation_to_player_start_types.len() == 1 {
@@ -277,11 +277,11 @@ impl IndexedRelationExecutor {
             }
             IndexedRelationIterateIterateMode::BoundStartBoundEnd => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
                 };
                 let end_player = match row.get(self.player_end.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("End player just be a thing object")
                 };
                 if self.relation_to_player_start_types.len() == 1 {
@@ -297,7 +297,7 @@ impl IndexedRelationExecutor {
                     )))
                 } else {
                     let iterators = self.relation_to_player_start_types.keys()
-                        .map(|relation_type| start_player.get_indexed_relations(snapshot, thing_manager, end_player, relation_type))
+                        .map(|relation_type| start_player.get_indexed_relations(snapshot, thing_manager, end_player, relation_type.as_relation_type()))
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                         kmerge_by(iterators, compare_indexed_players);
@@ -313,15 +313,15 @@ impl IndexedRelationExecutor {
             }
             IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelation => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
                 };
                 let end_player = match row.get(self.player_end.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("End player just be a thing object")
                 };
                 let relation = match row.get(self.relation.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_relation(),
+                    VariableValue::Thing(thing) => thing.as_relation(),
                     _ => unreachable!("Indexed relation must be a thing relation")
                 };
                 let as_tuples: IndexedRelationSortedTupleIterator = start_player
@@ -336,19 +336,19 @@ impl IndexedRelationExecutor {
             }
             IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
                 };
                 let end_player = match row.get(self.player_end.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("End player just be a thing object")
                 };
                 let relation = match row.get(self.relation.as_position().unwrap()) {
-                    &VariableValue::Thing(thing) => thing.as_relation(),
+                    VariableValue::Thing(thing) => thing.as_relation(),
                     _ => unreachable!("Indexed relation must be a thing relation")
                 };
                 let start_role = match row.get(self.role_start.as_position().unwrap()) {
-                    &VariableValue::Type(type_) => type_.as_role_type(),
+                    VariableValue::Type(type_) => type_.as_role_type(),
                     _ => unreachable!("Indexed startrole must be a role type")
                 };
                 let as_tuples: IndexedRelationSortedTupleIterator = start_player
