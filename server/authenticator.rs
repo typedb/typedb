@@ -43,26 +43,20 @@ impl Authenticator {
         match self.authenticator_cache.get_user(username) {
             Some(p) => {
                 if p == password {
-                    println!("password is verified to be correct (cache) (user = {}, password = {})", username, password);
                     Ok(http::Request::from_parts(parts, body))
                 } else {
-                    println!("password is verified to be incorrect (cache) (user = {}, password = {})", username, password);
                     Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
                 }
             },
             None => {
-                println!("user not cached. falling back to db... (user = {}, password = {})", username, password);
                 let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username) else {
-                    println!("user not found (db) (user = {}, password = {})", username, password);
                     return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));
                 };
 
                 if password_hash.matches(password) {
-                    println!("password is verified to be correct (db). (user = {}, password = {})", username, password);
-                    self.authenticator_cache.cache_user(username, password); // TODO: add to cache
+                    self.authenticator_cache.cache_user(username, password);
                     Ok(http::Request::from_parts(parts, body))
                 } else {
-                    println!("password is verified to be incorrect (db). (user = {}, password = {})", username, password);
                     Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
                 }
             }
