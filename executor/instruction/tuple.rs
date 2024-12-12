@@ -302,7 +302,7 @@ pub(crate) fn links_to_tuple_role_relation_player(
 }
 
 
-pub(crate) type IndexedRelationToTupleFn = fn(Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
+pub(crate) type IndexedRelationToTupleFn = dyn Fn(Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
 
 // corresponds to Unbound mode
 pub(crate) fn indexed_relation_to_tuple_start_end_relation_startrole_endrole(
