@@ -99,10 +99,7 @@ impl UserManager {
             },
         );
         match update_result {
-            Ok(Ok(())) => {
-                // TODO: invalidate cache
-                Ok(())
-            },
+            Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserUpdateError::IllegalUsername {}),
             Err(_commit_error) => Err(UserUpdateError::Unexpected {}),
         }
@@ -138,10 +135,7 @@ impl UserManager {
             },
         );
         match delete_result {
-            Ok(Ok(())) => {
-                // TODO: invalidate cache
-                Ok(())
-            },
+            Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserDeleteError::IllegalUsername {}),
             Err(_commit_error) => Err(UserDeleteError::Unexpected {}),
         }
