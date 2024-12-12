@@ -11,9 +11,10 @@ use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use user::{initialise_default_user, user_manager::UserManager};
-use crate::authenticator_cache::AuthenticatorCache;
+
 use crate::{
     authenticator::Authenticator,
+    authenticator_cache::AuthenticatorCache,
     parameters::config::{Config, EncryptionConfig},
     service::typedb_service::TypeDBService,
 };
@@ -42,7 +43,12 @@ impl Server {
         let user_manager = Arc::new(UserManager::new(system_db));
         let authenticator_cache = Arc::new(AuthenticatorCache::new());
         initialise_default_user(&user_manager);
-        let typedb_service = TypeDBService::new(&config.server.address, database_manager, user_manager.clone(), authenticator_cache.clone());
+        let typedb_service = TypeDBService::new(
+            &config.server.address,
+            database_manager,
+            user_manager.clone(),
+            authenticator_cache.clone(),
+        );
         println!("Storage directory: {:?}", storage_directory);
         Ok(Self {
             data_directory: storage_directory.to_owned(),

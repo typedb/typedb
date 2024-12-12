@@ -25,21 +25,24 @@ use user::{
     user_manager::UserManager,
 };
 use uuid::Uuid;
-use crate::authenticator_cache::AuthenticatorCache;
-use crate::service::{
-    error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
-    request_parser::{users_create_req, users_update_req},
-    response_builders::{
-        connection::connection_open_res,
-        database::database_delete_res,
-        database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
-        server_manager::servers_all_res,
-        user_manager::{
-            user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res, users_get_res,
+
+use crate::{
+    authenticator_cache::AuthenticatorCache,
+    service::{
+        error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
+        request_parser::{users_create_req, users_update_req},
+        response_builders::{
+            connection::connection_open_res,
+            database::database_delete_res,
+            database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
+            server_manager::servers_all_res,
+            user_manager::{
+                user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res, users_get_res,
+            },
         },
+        transaction_service::TransactionService,
+        ConnectionID,
     },
-    transaction_service::TransactionService,
-    ConnectionID,
 };
 
 #[derive(Debug)]
@@ -47,11 +50,16 @@ pub(crate) struct TypeDBService {
     address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
-    authenticator_cache: Arc<AuthenticatorCache>
+    authenticator_cache: Arc<AuthenticatorCache>,
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: Arc<UserManager>, authenticator_cache: Arc<AuthenticatorCache>) -> Self {
+    pub(crate) fn new(
+        address: &SocketAddr,
+        database_manager: DatabaseManager,
+        user_manager: Arc<UserManager>,
+        authenticator_cache: Arc<AuthenticatorCache>,
+    ) -> Self {
         Self { address: *address, database_manager: Arc::new(database_manager), user_manager, authenticator_cache }
     }
 
@@ -238,7 +246,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Ok(()) => {
                         self.authenticator_cache.invalidate_user(username);
                         Ok(Response::new(user_update_res()))
-                    },
+                    }
                     Err(user_update_err) => Err(user_update_err.into_error_message().into_status()),
                 }
             }
@@ -261,7 +269,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             Ok(_) => {
                 self.authenticator_cache.invalidate_user(username);
                 Ok(Response::new(users_delete_res()))
-            },
+            }
             Err(e) => Err(e.into_error_message().into_status()),
         }
     }

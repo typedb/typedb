@@ -3,24 +3,24 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
-use std::sync::Arc;
-use moka::sync::Cache;
+use std::{collections::HashMap, sync::Arc};
 
 use futures::future::BoxFuture;
+use moka::sync::Cache;
 use resource::constants::server::{AUTHENTICATOR_PASSWORD_FIELD, AUTHENTICATOR_USERNAME_FIELD};
 use system::concepts::Credential;
 use tonic::{body::BoxBody, metadata::MetadataMap, Status};
 use tower::{Layer, Service};
-use crate::authenticator_cache::AuthenticatorCache;
 use user::user_manager::UserManager;
+
+use crate::authenticator_cache::AuthenticatorCache;
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
     user_manager: Arc<UserManager>,
-    authenticator_cache: Arc<AuthenticatorCache>
+    authenticator_cache: Arc<AuthenticatorCache>,
 }
 
 impl Authenticator {
@@ -47,7 +47,7 @@ impl Authenticator {
                 } else {
                     Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
                 }
-            },
+            }
             None => {
                 let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username) else {
                     return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));

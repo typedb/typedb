@@ -8,7 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 mod authenticator;
+pub mod authenticator_cache;
 pub mod parameters;
 mod service;
 pub mod typedb;
-pub mod authenticator_cache;
