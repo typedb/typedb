@@ -29,7 +29,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
-use answer::Type;
+use ir::pattern::constraint::IndexedRelation;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -62,6 +62,7 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 use crate::executable::match_::instructions::thing::IndexedRelationInstruction;
+use crate::executable::match_::planner::vertex::constraint::IndexedRelationPlanner;
 
 pub const MAX_BEAM_WIDTH: usize = 128;
 
@@ -365,7 +366,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Iid(iid) => self.register_iid(iid),
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
-                Constraint::IndexedRelation(indexed_relation) => todo!(),
+                Constraint::IndexedRelation(indexed_relation) => self.register_indexed_relation(indexed_relation),
 
                 Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
                 Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),
@@ -448,6 +449,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner =
             LinksPlanner::from_constraint(links, &self.graph.variable_index, self.type_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Links(planner));
+    }
+
+    fn register_indexed_relation(&mut self, indexed_relation: &'a IndexedRelation<Variable>) {
+        let planner = IndexedRelationPlanner::from_constraint(
+            indexed_relation,
+            &self.graph.variable_index,
+            self.type_annotations,
+            self.statistics
+        );
+        self.graph.push_constraint(ConstraintVertex::IndexedRelation(planner))
     }
 
     fn register_expression_binding(

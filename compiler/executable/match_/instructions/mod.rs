@@ -330,8 +330,32 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     }
                 })
             }
-            Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
-
+            Self::IndexedRelation(
+                thing::IndexedRelationInstruction {
+                    player_start,
+                    player_end,
+                    relation,
+                    role_start,
+                    role_end,
+                    inputs,
+                    ..
+                }
+            ) => {
+                if !inputs.contains(*player_start) {
+                    apply(*player_start)
+                }
+                if !inputs.contains(*player_end) {
+                    apply(*player_end)
+                }
+                if !inputs.contains(*relation) {
+                    apply(*relation)
+                }
+                if !inputs.contains(*role_start) {
+                    apply(*role_start)
+                }
+                if !inputs.contains(*role_end) {
+                    apply(*role_end)
+                }
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {

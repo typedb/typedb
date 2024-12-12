@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use typeql::query::Pipeline;
 use concept::error::ConceptReadError;
 use error::typedb_error;
 use ir::pattern::conjunction::Conjunction;
@@ -12,7 +11,7 @@ use crate::annotation::pipeline::AnnotatedPipeline;
 
 pub mod relation_index;
 mod redundant_constraints;
-mod transform;
+pub mod transform;
 
 pub(crate) trait ConjunctionTransformation {
     fn apply(conjunction: &mut Conjunction);

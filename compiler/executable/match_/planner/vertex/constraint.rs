@@ -748,9 +748,9 @@ impl<'a> IndexedRelationPlanner<'a> {
         let role_1 = indexed_relation.role_type_1();
         let role_2 = indexed_relation.role_type_2();
 
-        let player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
-        let player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
-        let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+        let _player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
+        let _player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
+        let _relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
 
         // let constraint_types =
         //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();

@@ -100,7 +100,6 @@ pub(crate) enum InstructionExecutor {
 
     IndexedRelation(IndexedRelationExecutor),
 
-    // RolePlayerIndex(RolePlayerIndexExecutor),
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
 }
 
@@ -788,7 +787,8 @@ impl<T> Checker<T> {
                                 end_role_extractor(value).as_type().as_role_type(),
                             )
                         }
-                    }));                }
+                    }));
+                }
 
                 &CheckInstruction::Is { lhs, rhs } => {
                     let maybe_lhs_extractor = self.extractors.get(&lhs);
