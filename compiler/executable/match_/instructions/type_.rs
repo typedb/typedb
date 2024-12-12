@@ -30,7 +30,7 @@ pub struct TypeListInstruction<ID> {
 }
 
 impl TypeListInstruction<Variable> {
-    pub(crate) fn new(type_var: Variable, types: Arc<BTreeSet<Type>>) -> Self {
+    pub fn new(type_var: Variable, types: Arc<BTreeSet<Type>>) -> Self {
         Self { type_var, types, checks: Vec::new() }
     }
 }
