@@ -27,16 +27,16 @@ use crate::Diagnostics;
 pub struct MonitoringServer {
     diagnostics: Arc<Diagnostics>,
     port: u16,
-    enabled: bool,
+    is_enabled: bool,
 }
 
 impl MonitoringServer {
-    pub fn new(diagnostics: Arc<Diagnostics>, port: u16, enabled: bool) -> Self {
-        Self { diagnostics, port, enabled }
+    pub fn new(diagnostics: Arc<Diagnostics>, port: u16, is_enabled: bool) -> Self {
+        Self { diagnostics, port, is_enabled }
     }
 
     pub fn may_start(&self) {
-        if !self.enabled {
+        if !self.is_enabled {
             return;
         }
 
@@ -74,9 +74,9 @@ impl MonitoringServer {
         let query = req.uri().query().unwrap_or("").to_lowercase();
 
         let (content_type, body) = if query.contains("format=json") {
-            ("application/json", diagnostics.to_monitoring_json().into_bytes())
+            ("application/json", diagnostics.to_monitoring_json().to_string().into_bytes())
         } else {
-            ("text/plain", diagnostics.to_monitoring_prometheus().into_bytes())
+            ("text/plain", diagnostics.to_prometheus_data().into_bytes())
         };
 
         Ok(Response::builder()

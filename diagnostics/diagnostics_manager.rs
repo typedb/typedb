@@ -54,8 +54,8 @@ impl DiagnosticsManager {
         version: String,
         data_directory: PathBuf,
         monitoring_port: u16,
-        monitoring_enabled: bool,
-        reporting_enabled: bool,
+        is_monitoring_enabled: bool,
+        is_reporting_enabled: bool,
     ) -> Self {
         let diagnostics = Arc::new(Diagnostics::new(
             deployment_id.clone(),
@@ -63,11 +63,11 @@ impl DiagnosticsManager {
             distribution,
             version,
             data_directory.clone(),
-            reporting_enabled,
+            is_reporting_enabled,
         ));
         let reporter =
-            Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, reporting_enabled);
-        let monitoring_server = MonitoringServer::new(diagnostics.clone(), monitoring_port, monitoring_enabled);
+            Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, is_reporting_enabled);
+        let monitoring_server = MonitoringServer::new(diagnostics.clone(), monitoring_port, is_monitoring_enabled);
 
         Self { diagnostics, reporter, monitoring_server }
     }
@@ -77,8 +77,8 @@ impl DiagnosticsManager {
         pub fn submit_error(&self, database_name: Option<&str>, error_code: String);
         pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind);
         pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind);
-        pub fn increment_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
-        pub fn decrement_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
+        pub fn increment_load_count(&self, database_name: &str, connection_: LoadKind);
+        pub fn decrement_load_count(&self, database_name: &str, connection_: LoadKind);
     }
 
     pub fn may_start_reporting(&self) {

@@ -38,7 +38,7 @@ pub struct Reporter {
     diagnostics: Arc<Diagnostics>,
     reporting_uri: &'static str,
     data_directory: PathBuf,
-    enabled: bool,
+    is_enabled: bool,
     _reporting_job: Arc<Option<IntervalRunner>>,
 }
 
@@ -48,13 +48,13 @@ impl Reporter {
         diagnostics: Arc<Diagnostics>,
         reporting_uri: &'static str,
         data_directory: PathBuf,
-        enabled: bool,
+        is_enabled: bool,
     ) -> Self {
-        Self { deployment_id, diagnostics, reporting_uri, data_directory, enabled, _reporting_job: Arc::new(None) }
+        Self { deployment_id, diagnostics, reporting_uri, data_directory, is_enabled, _reporting_job: Arc::new(None) }
     }
 
     pub fn may_start(&self) {
-        if self.enabled {
+        if self.is_enabled {
             Self::delete_disabled_reporting_file_if_exists(&self.data_directory);
             self.schedule_reporting();
         } else {
@@ -111,7 +111,7 @@ impl Reporter {
     }
 
     fn report(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
-        let diagnostics_json = diagnostics.to_reporting_json();
+        let diagnostics_json = diagnostics.to_reporting_json().to_string();
         diagnostics.take_snapshot();
 
         let client = Client::new();
