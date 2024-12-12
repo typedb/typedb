@@ -1,6 +1,5 @@
-use std::sync::Arc;
-use system::concepts::Credential;
 use moka::sync::Cache;
+use resource::constants::server::{AUTHENTICATOR_CACHE_TTI, AUTHENTICATOR_CACHE_TTL};
 
 #[derive(Clone, Debug)]
 pub struct AuthenticatorCache {
@@ -9,7 +8,12 @@ pub struct AuthenticatorCache {
 
 impl AuthenticatorCache {
     pub fn new() -> Self {
-        Self { cache: Cache::new(100) }
+        Self {
+            cache: Cache::builder()
+                .time_to_live(AUTHENTICATOR_CACHE_TTL)
+                .time_to_idle(AUTHENTICATOR_CACHE_TTI)
+                .build()
+        }
     }
 
     pub fn get_user(&self, username: &str) -> Option<String> {
