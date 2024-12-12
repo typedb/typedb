@@ -191,7 +191,6 @@ impl IndexedRelationExecutor {
                 let instances: Vec<Object> = thing_manager.get_objects_in(snapshot, type_.as_object_type()).try_collect()?;
                 cache.extend(instances);
             }
-            println!("{:?}", &cache);
             #[cfg(debug_assertions)]
             if cache.len() < CONSTANT_CONCEPT_LIMIT {
                 eprintln!("DEBUG_ASSERT_FAILURE: cache.len() > CONSTANT_CONCEPT_LIMIT");

@@ -755,9 +755,9 @@ impl<'a> IndexedRelationPlanner<'a> {
         // let constraint_types =
         //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();
 
-        let unbound_typed_expected_size = 1.0; // TODO
-        let unbound_typed_expected_size_canonical = 1.0; // TODO
-        let unbound_typed_expected_size_reverse = 1.0;  // TODO
+        let unbound_typed_expected_size = 10.0;
+        let unbound_typed_expected_size_canonical = 10.0;
+        let unbound_typed_expected_size_reverse = 10.0;
 
         let player_1 = player_1.as_variable().unwrap();
         let player_2 = player_2.as_variable().unwrap();
@@ -793,12 +793,12 @@ impl<'a> IndexedRelationPlanner<'a> {
 
     fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
         // TODO
-        1.0
+        10.0
     }
 
     fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
         // TODO
-        1.0
+        10.0
     }
 
     fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
@@ -808,14 +808,15 @@ impl<'a> IndexedRelationPlanner<'a> {
 
     fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
         // TODO
-        1.0
+        10.0
     }
 }
 
 impl Costed for IndexedRelationPlanner<'_> {
     fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         // TODO: using a random cost
-        ElementCost::MEM_COMPLEX_BRANCH_1
+        // ElementCost::MEM_COMPLEX_BRANCH_1
+        ElementCost { per_input: OPEN_ITERATOR_RELATIVE_COST, per_output: ADVANCE_ITERATOR_RELATIVE_COST, branching_factor: 10.0 }
     }
 }
 
