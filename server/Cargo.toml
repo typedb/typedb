@@ -24,6 +24,11 @@ features = {}
 		version = "1.0.0"
 		default-features = false
 
+	[dependencies.moka]
+		features = ["atomic64", "default", "quanta", "sync"]
+		version = "0.12.8"
+		default-features = false
+
 	[dependencies.storage]
 		path = "../storage"
 		features = []

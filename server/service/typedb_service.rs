@@ -26,20 +26,23 @@ use user::{
 };
 use uuid::Uuid;
 
-use crate::service::{
-    error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
-    request_parser::{users_create_req, users_update_req},
-    response_builders::{
-        connection::connection_open_res,
-        database::database_delete_res,
-        database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
-        server_manager::servers_all_res,
-        user_manager::{
-            user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res, users_get_res,
+use crate::{
+    authenticator_cache::AuthenticatorCache,
+    service::{
+        error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError},
+        request_parser::{users_create_req, users_update_req},
+        response_builders::{
+            connection::connection_open_res,
+            database::database_delete_res,
+            database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
+            server_manager::servers_all_res,
+            user_manager::{
+                user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res, users_get_res,
+            },
         },
+        transaction_service::TransactionService,
+        ConnectionID,
     },
-    transaction_service::TransactionService,
-    ConnectionID,
 };
 
 #[derive(Debug)]
@@ -47,11 +50,17 @@ pub(crate) struct TypeDBService {
     address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
+    authenticator_cache: Arc<AuthenticatorCache>,
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: &SocketAddr, database_manager: DatabaseManager, user_manager: Arc<UserManager>) -> Self {
-        Self { address: *address, database_manager: Arc::new(database_manager), user_manager }
+    pub(crate) fn new(
+        address: &SocketAddr,
+        database_manager: DatabaseManager,
+        user_manager: Arc<UserManager>,
+        authenticator_cache: Arc<AuthenticatorCache>,
+    ) -> Self {
+        Self { address: *address, database_manager: Arc::new(database_manager), user_manager, authenticator_cache }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {
@@ -229,11 +238,15 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         let accessor = extract_username_field(request.metadata());
         match users_update_req(request) {
             Ok((username, user_update, credential_update)) => {
-                if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username.as_str()) {
+                let username = username.as_str();
+                if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
                     return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
                 }
-                match self.user_manager.update(username.as_str(), &user_update, &credential_update) {
-                    Ok(()) => Ok(Response::new(user_update_res())),
+                match self.user_manager.update(username, &user_update, &credential_update) {
+                    Ok(()) => {
+                        self.authenticator_cache.invalidate_user(username);
+                        Ok(Response::new(user_update_res()))
+                    }
                     Err(user_update_err) => Err(user_update_err.into_error_message().into_status()),
                 }
             }
@@ -247,12 +260,16 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
         let accessor = extract_username_field(request.metadata());
         let delete_req = request.into_inner();
-        if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), delete_req.name.as_str()) {
+        let username = delete_req.name.as_str();
+        if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), username) {
             return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
         }
-        let result = self.user_manager.delete(delete_req.name.as_str());
+        let result = self.user_manager.delete(username);
         match result {
-            Ok(_) => Ok(Response::new(users_delete_res())),
+            Ok(_) => {
+                self.authenticator_cache.invalidate_user(username);
+                Ok(Response::new(users_delete_res()))
+            }
             Err(e) => Err(e.into_error_message().into_status()),
         }
     }

@@ -3,26 +3,29 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use futures::future::BoxFuture;
+use moka::sync::Cache;
 use resource::constants::server::{AUTHENTICATOR_PASSWORD_FIELD, AUTHENTICATOR_USERNAME_FIELD};
 use system::concepts::Credential;
 use tonic::{body::BoxBody, metadata::MetadataMap, Status};
 use tower::{Layer, Service};
 use user::user_manager::UserManager;
 
+use crate::authenticator_cache::AuthenticatorCache;
+
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
     user_manager: Arc<UserManager>,
+    authenticator_cache: Arc<AuthenticatorCache>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(user_manager: Arc<UserManager>) -> Self {
-        Self { user_manager }
+    pub(crate) fn new(user_manager: Arc<UserManager>, authenticator_cache: Arc<AuthenticatorCache>) -> Self {
+        Self { user_manager, authenticator_cache }
     }
 }
 
@@ -37,14 +40,26 @@ impl Authenticator {
         let username = username_metadata.ok_or(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))?;
         let password = password_metadata.ok_or(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))?;
 
-        let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username) else {
-            return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));
-        };
+        match self.authenticator_cache.get_user(username) {
+            Some(p) => {
+                if p == password {
+                    Ok(http::Request::from_parts(parts, body))
+                } else {
+                    Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
+                }
+            }
+            None => {
+                let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username) else {
+                    return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));
+                };
 
-        if password_hash.matches(password) {
-            Ok(http::Request::from_parts(parts, body))
-        } else {
-            Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
+                if password_hash.matches(password) {
+                    self.authenticator_cache.cache_user(username, password);
+                    Ok(http::Request::from_parts(parts, body))
+                } else {
+                    Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
+                }
+            }
         }
     }
 }

@@ -20,6 +20,8 @@ pub mod server {
 
     pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
     pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
+    pub const AUTHENTICATOR_CACHE_TTL: Duration = Duration::from_secs(3 * 60 * 60);
+    pub const AUTHENTICATOR_CACHE_TTI: Duration = Duration::from_secs(60 * 60);
 
     pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
     pub const DEFAULT_USER_NAME: &str = "admin";
