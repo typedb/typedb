@@ -24,11 +24,6 @@ features = {}
 		version = "0.11.27"
 		default-features = false
 
-	[dependencies.tonic-types]
-		features = []
-		version = "0.12.3"
-		default-features = false
-
 	[dependencies.resource]
 		path = "../resource"
 		features = []
@@ -39,6 +34,26 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.futures]
+		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
+		version = "0.3.31"
+		default-features = false
+
+	[dependencies.error]
+		path = "../common/error"
+		features = []
+		default-features = false
+
+	[dependencies.concurrency]
+		path = "../common/concurrency"
+		features = []
+		default-features = false
+
+	[dependencies.tonic-types]
+		features = []
+		version = "0.12.3"
+		default-features = false
+
 	[dependencies.sysinfo]
 		features = ["component", "default", "disk", "multithread", "network", "system", "user"]
 		version = "0.33.0"
@@ -47,11 +62,6 @@ features = {}
 	[dependencies.tonic]
 		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
 		version = "0.12.3"
-		default-features = false
-
-	[dependencies.error]
-		path = "../common/error"
-		features = []
 		default-features = false
 
 	[dependencies.chrono]
@@ -67,10 +77,5 @@ features = {}
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.133"
-		default-features = false
-
-	[dependencies.concurrency]
-		path = "../common/concurrency"
-		features = []
 		default-features = false
 

@@ -10,7 +10,7 @@ use std::{
     str::FromStr,
 };
 
-use resource::constants::server::DEFAULT_ADDRESS;
+use resource::constants::server::{DEFAULT_ADDRESS, MONITORING_ENABLED, MONITORING_PORT, REPORTING_ENABLED};
 
 #[derive(Debug)]
 pub struct Config {
@@ -33,6 +33,9 @@ impl Config {
             server: ServerConfig {
                 address: SocketAddr::from_str(DEFAULT_ADDRESS).unwrap(),
                 encryption: EncryptionConfig::disabled(),
+                monitoring_port: MONITORING_PORT,
+                monitoring_enabled: MONITORING_ENABLED,
+                reporting_enabled: REPORTING_ENABLED,
             },
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
         }
@@ -58,6 +61,9 @@ impl Config {
             server: ServerConfig {
                 address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
                 encryption: encryption_config,
+                monitoring_port: MONITORING_PORT,
+                monitoring_enabled: MONITORING_ENABLED,
+                reporting_enabled: REPORTING_ENABLED,
             },
             storage: StorageConfig { data: data_directory.to_owned() },
         }
@@ -68,6 +74,9 @@ impl Config {
 pub(crate) struct ServerConfig {
     pub(crate) address: SocketAddr,
     pub(crate) encryption: EncryptionConfig,
+    pub(crate) monitoring_port: u16,
+    pub(crate) monitoring_enabled: bool,
+    pub(crate) reporting_enabled: bool,
 }
 
 #[derive(Debug)]

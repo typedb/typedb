@@ -31,20 +31,29 @@ pub struct DatabaseManager {
 
 impl DatabaseManager {
     pub fn new(data_directory: &Path) -> Result<Arc<Self>, DatabaseOpenError> {
-        let databases = fs::read_dir(data_directory)
-            .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
-                path: data_directory.to_owned(),
-                source: Arc::new(error),
-            })?
-            .map(|entry| {
-                let entry = entry.map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+        let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+            path: data_directory.to_owned(),
+            source: Arc::new(error),
+        })?;
+
+        let mut databases: HashMap<String, Arc<Database<WALClient>>> = HashMap::new();
+
+        for entry in entries {
+            let entry_path = entry
+                .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
                     path: data_directory.to_owned(),
                     source: Arc::new(error),
-                })?;
-                let database = Database::<WALClient>::open(&entry.path())?;
-                Ok((database.name().to_owned(), Arc::new(database)))
-            })
-            .try_collect()?;
+                })?
+                .path();
+
+            if entry_path.file_name().unwrap().to_string_lossy().starts_with("_") {
+                continue;
+            }
+
+            let database = Database::<WALClient>::open(&entry_path)?;
+            assert!(!databases.contains_key(database.name()));
+            databases.insert(database.name().to_owned(), Arc::new(database));
+        }
 
         Ok(Arc::new(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) }))
     }

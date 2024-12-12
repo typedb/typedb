@@ -14,15 +14,12 @@ use std::{
 };
 
 use concurrency::IntervalRunner;
-use database::{database_manager::DatabaseManager, Database, DatabaseOpenError};
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics},
-};
+use database::{database_manager::DatabaseManager, DatabaseOpenError};
+use diagnostics::diagnostics_manager::DiagnosticsManager;
 use error::typedb_error;
 use rand::Rng;
 use resource::constants::{
-    diagnostics::{DATABASE_METRICS_UPDATE_INTERVAL, MONITORING_PORT},
+    diagnostics::DATABASE_METRICS_UPDATE_INTERVAL,
     server::{
         DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
         VERSION,
@@ -62,7 +59,7 @@ impl Server {
         let server_id = Self::initialise_server_id(storage_directory)?;
         let deployment_id = server_id.clone(); // TODO: Should be generated based on peers from config in Cloud
 
-        let diagnostics_manager = Arc::new(Self::initialise_diagnostics(
+        let mut diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
             server_config,
@@ -82,6 +79,9 @@ impl Server {
             authenticator_cache.clone(),
             diagnostics_manager.clone(),
         );
+
+        diagnostics_manager.may_start_monitoring();
+        diagnostics_manager.may_start_reporting();
 
         Ok(Self {
             id: server_id,
@@ -129,7 +129,7 @@ impl Server {
     fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
-        _config: &ServerConfig,
+        config: &ServerConfig,
         storage_directory: PathBuf,
     ) -> DiagnosticsManager {
         DiagnosticsManager::new(
@@ -138,8 +138,9 @@ impl Server {
             DISTRIBUTION_NAME.clone().to_owned(),
             VERSION.clone().to_owned(),
             storage_directory,
-            MONITORING_PORT,
-            true, // reporting_enabled -> TODO: Get it from config
+            config.monitoring_port,
+            config.monitoring_enabled,
+            config.reporting_enabled,
         )
     }
 

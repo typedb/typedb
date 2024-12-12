@@ -8,8 +8,10 @@ use std::{
     convert::Infallible,
     net::SocketAddr,
     sync::{Arc, Mutex},
+    thread,
 };
 
+use futures::executor::block_on;
 use hyper::{
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
     service::{make_service_fn, service_fn},
@@ -17,6 +19,7 @@ use hyper::{
 };
 use logger::{debug, trace};
 use serde_json::json;
+use tokio::{runtime::Runtime, task};
 
 use crate::Diagnostics;
 
@@ -24,32 +27,38 @@ use crate::Diagnostics;
 pub struct MonitoringServer {
     diagnostics: Arc<Diagnostics>,
     port: u16,
+    enabled: bool,
 }
 
 impl MonitoringServer {
-    pub fn new(diagnostics: Arc<Diagnostics>, port: u16) -> Self {
-        Self { diagnostics, port }
+    pub fn new(diagnostics: Arc<Diagnostics>, port: u16, enabled: bool) -> Self {
+        Self { diagnostics, port, enabled }
     }
 
-    pub async fn start_serving(&self) {
+    pub fn may_start(&self) {
+        if !self.enabled {
+            return;
+        }
+
         let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
         let diagnostics = self.diagnostics.clone();
 
-        let make_svc = make_service_fn(move |_| {
-            let diagnostics = diagnostics.clone();
-            async move {
-                Ok::<_, Infallible>(service_fn(move |req| {
-                    let diagnostics = diagnostics.clone();
-                    async move { Self::handle_request(req, diagnostics).await }
-                }))
+        task::spawn(async move {
+            let make_svc = make_service_fn(move |_| {
+                let diagnostics = diagnostics.clone();
+                async move {
+                    Ok::<_, hyper::Error>(service_fn(move |req| {
+                        let diagnostics = diagnostics.clone();
+                        async move { MonitoringServer::handle_request(req, diagnostics).await }
+                    }))
+                }
+            });
+
+            let server = Server::bind(&addr).serve(make_svc);
+            if let Err(e) = server.await {
+                eprintln!("Monitoring server error: {}", e);
             }
         });
-
-        let server = Server::bind(&addr).serve(make_svc);
-
-        if let Err(e) = server.await {
-            debug!("Monitoring server error: {}", e);
-        }
     }
 
     async fn handle_request(req: Request<Body>, diagnostics: Arc<Diagnostics>) -> Result<Response<Body>, Infallible> {

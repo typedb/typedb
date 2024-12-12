@@ -18,6 +18,7 @@ rust_library(
         "//resource",
 
         "@crates//:chrono",
+        "@crates//:futures",
         "@crates//:hyper",
         "@crates//:reqwest",
         "@crates//:serde_json",

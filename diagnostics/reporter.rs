@@ -5,6 +5,7 @@
  */
 
 use std::{
+    cell::RefCell,
     collections::HashMap,
     fs,
     hash::{DefaultHasher, Hash, Hasher},
@@ -37,8 +38,8 @@ pub struct Reporter {
     diagnostics: Arc<Diagnostics>,
     reporting_uri: &'static str,
     data_directory: PathBuf,
-    reporting_enabled: bool,
-    _reporting_job: Option<IntervalRunner>,
+    enabled: bool,
+    _reporting_job: Arc<Option<IntervalRunner>>,
 }
 
 impl Reporter {
@@ -47,20 +48,13 @@ impl Reporter {
         diagnostics: Arc<Diagnostics>,
         reporting_uri: &'static str,
         data_directory: PathBuf,
-        _reporting_enabled: bool, // TODO: use
+        enabled: bool,
     ) -> Self {
-        Self {
-            deployment_id,
-            diagnostics,
-            reporting_uri,
-            data_directory,
-            reporting_enabled: false,
-            _reporting_job: None,
-        }
+        Self { deployment_id, diagnostics, reporting_uri, data_directory, enabled, _reporting_job: Arc::new(None) }
     }
 
-    pub fn start_reporting(&mut self) {
-        if self.reporting_enabled {
+    pub fn may_start(&self) {
+        if self.enabled {
             Self::delete_disabled_reporting_file_if_exists(&self.data_directory);
             self.schedule_reporting();
         } else {
@@ -68,16 +62,18 @@ impl Reporter {
         }
     }
 
-    fn schedule_reporting(&mut self) {
+    fn schedule_reporting(&self) {
         let diagnostics = self.diagnostics.clone();
         let reporting_uri = self.reporting_uri;
-        self._reporting_job = Some(IntervalRunner::new_with_initial_delay(
+
+        let reporting_job = IntervalRunner::new_with_initial_delay(
             move || {
                 Self::report(diagnostics.clone(), reporting_uri);
             },
             REPORT_INTERVAL,
             self.calculate_initial_delay(),
-        ));
+        );
+        let _ = Arc::get_mut(&mut Arc::clone(&self._reporting_job)).map(|opt| *opt = Some(reporting_job));
     }
 
     fn report_once_if_needed(&self) {

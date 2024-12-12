@@ -54,6 +54,7 @@ impl DiagnosticsManager {
         version: String,
         data_directory: PathBuf,
         monitoring_port: u16,
+        monitoring_enabled: bool,
         reporting_enabled: bool,
     ) -> Self {
         let diagnostics = Arc::new(Diagnostics::new(
@@ -66,7 +67,7 @@ impl DiagnosticsManager {
         ));
         let reporter =
             Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, reporting_enabled);
-        let monitoring_server = MonitoringServer::new(diagnostics.clone(), monitoring_port);
+        let monitoring_server = MonitoringServer::new(diagnostics.clone(), monitoring_port, monitoring_enabled);
 
         Self { diagnostics, reporter, monitoring_server }
     }
@@ -78,6 +79,14 @@ impl DiagnosticsManager {
         pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind);
         pub fn increment_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
         pub fn decrement_load_count(&self, database_name: Option<&str>, connection_: LoadKind);
+    }
+
+    pub fn may_start_reporting(&self) {
+        self.reporter.may_start()
+    }
+
+    pub fn may_start_monitoring(&self) {
+        self.monitoring_server.may_start()
     }
 }
 

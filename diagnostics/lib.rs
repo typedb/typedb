@@ -132,11 +132,11 @@ impl Diagnostics {
     }
 
     pub fn to_monitoring_json(&self) -> String {
-        todo!()
+        "TODO".to_owned()
     }
 
     pub fn to_monitoring_prometheus(&self) -> String {
-        todo!()
+        "TODO PROMETHEUS".to_owned()
     }
 
     fn hash_database(database_name: Option<impl AsRef<str> + Hash>) -> DatabaseHash {

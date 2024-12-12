@@ -864,6 +864,7 @@ dependencies = [
  "chrono",
  "concurrency",
  "error",
+ "futures",
  "hyper 0.14.31",
  "logger",
  "reqwest",
