@@ -8,6 +8,7 @@ use std::{
     collections::HashSet,
     error::Error,
     fmt::format,
+    future::Future,
     net::SocketAddr,
     path::PathBuf,
     pin::Pin,
@@ -132,7 +133,7 @@ impl<'d> Drop for DiagnosticsResultTracker<'d> {
     }
 }
 
-pub async fn run_with_diagnostics<F, T>(
+pub fn run_with_diagnostics<F, T>(
     diagnostics_manager: &DiagnosticsManager,
     action_kind: ActionKind,
     f: F,
@@ -140,10 +141,10 @@ pub async fn run_with_diagnostics<F, T>(
 where
     F: FnOnce() -> Result<T, Status>,
 {
-    run_and_track(DiagnosticsResultTracker::without_database(diagnostics_manager, action_kind), f).await
+    run_and_track(DiagnosticsResultTracker::without_database(diagnostics_manager, action_kind), f)
 }
 
-pub async fn run_with_diagnostics_for_database<F, T>(
+pub fn run_with_diagnostics_for_database<F, T>(
     diagnostics_manager: &DiagnosticsManager,
     database_name: &str,
     action_kind: ActionKind,
@@ -152,14 +153,54 @@ pub async fn run_with_diagnostics_for_database<F, T>(
 where
     F: FnOnce() -> Result<T, Status>,
 {
-    run_and_track(DiagnosticsResultTracker::with_database(diagnostics_manager, database_name, action_kind), f).await
+    run_and_track(DiagnosticsResultTracker::with_database(diagnostics_manager, database_name, action_kind), f)
 }
 
-async fn run_and_track<F, T>(mut tracker: DiagnosticsResultTracker<'_>, f: F) -> Result<T, Status>
+fn run_and_track<F, T>(mut tracker: DiagnosticsResultTracker<'_>, f: F) -> Result<T, Status>
 where
     F: FnOnce() -> Result<T, Status>,
 {
     let result = f();
+    if let Err(ref status) = result {
+        tracker.set_error_code(get_status_error_code(status));
+    }
+    result
+}
+
+pub async fn run_with_diagnostics_async<F, Fut, T>(
+    diagnostics_manager: Arc<DiagnosticsManager>,
+    action_kind: ActionKind,
+    f: F,
+) -> Result<T, Status>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<T, Status>> + Send,
+    T: Send,
+{
+    run_and_track_async(DiagnosticsResultTracker::without_database(&diagnostics_manager, action_kind), f).await
+}
+
+pub async fn run_with_diagnostics_for_database_async<F, Fut, T>(
+    diagnostics_manager: Arc<DiagnosticsManager>,
+    database_name: &str,
+    action_kind: ActionKind,
+    f: F,
+) -> Result<T, Status>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<T, Status>> + Send,
+    T: Send,
+{
+    run_and_track_async(DiagnosticsResultTracker::with_database(&diagnostics_manager, database_name, action_kind), f)
+        .await
+}
+
+async fn run_and_track_async<F, Fut, T>(mut tracker: DiagnosticsResultTracker<'_>, f: F) -> Result<T, Status>
+where
+    F: FnOnce() -> Fut,
+    Fut: Future<Output = Result<T, Status>> + Send,
+{
+    let result = f().await;
     if let Err(ref status) = result {
         tracker.set_error_code(get_status_error_code(status));
     }

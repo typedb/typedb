@@ -491,7 +491,7 @@ impl ActionMetrics {
     pub fn to_prometheus_data_attempted(&self, database_hash: &DatabaseHashOpt) -> String {
         let mut buf = String::new();
         for (kind, info) in &self.actions {
-            buf.push_str("typedb_attempted_requests_total{{");
+            buf.push_str("typedb_attempted_requests_total{");
             if let Some(database_hash) = database_hash {
                 buf.push_str(&format!("database=\"{}\", ", database_hash));
             }
@@ -503,7 +503,7 @@ impl ActionMetrics {
     pub fn to_prometheus_data_successful(&self, database_hash: &DatabaseHashOpt) -> String {
         let mut buf = String::new();
         for (kind, info) in &self.actions {
-            buf.push_str("typedb_attempted_requests_total{{");
+            buf.push_str("typedb_successful_requests_total{");
             if let Some(database_hash) = database_hash {
                 buf.push_str(&format!("database=\"{}\", ", database_hash));
             }
@@ -545,7 +545,7 @@ impl ActionInfo {
     }
 
     pub fn get_attempted(&self) -> u64 {
-        self.successful - self.failed
+        self.successful + self.failed
     }
 }
 
@@ -677,12 +677,11 @@ pub enum ActionKind {
     ServersAll,
     UsersContains,
     UsersCreate,
+    UsersUpdate,
     UsersDelete,
     UsersAll,
     UsersGet,
-    UsersPasswordSet,
-    UserPasswordUpdate,
-    UserToken,
+    UserToken, // TODO:
     DatabasesContains,
     DatabasesCreate,
     DatabasesGet,
@@ -692,7 +691,7 @@ pub enum ActionKind {
     DatabaseDelete,
     TransactionOpen,
     TransactionClose,
-    TransactionExecute, // TODO: Split to commit, rollback, etc?
+    TransactionExecute, // TODO: Split to commit, query, rollback, etc?
 }
 
 impl fmt::Display for ActionKind {
@@ -703,11 +702,10 @@ impl fmt::Display for ActionKind {
             ActionKind::ServersAll => write!(f, "SERVERS_ALL"),
             ActionKind::UsersContains => write!(f, "USERS_CONTAINS"),
             ActionKind::UsersCreate => write!(f, "USERS_CREATE"),
+            ActionKind::UsersUpdate => write!(f, "USERS_UPDATE"),
             ActionKind::UsersDelete => write!(f, "USERS_DELETE"),
             ActionKind::UsersAll => write!(f, "USERS_ALL"),
             ActionKind::UsersGet => write!(f, "USERS_GET"),
-            ActionKind::UsersPasswordSet => write!(f, "USERS_PASSWORD_SET"),
-            ActionKind::UserPasswordUpdate => write!(f, "USER_PASSWORD_UPDATE"),
             ActionKind::UserToken => write!(f, "USER_TOKEN"),
             ActionKind::DatabasesContains => write!(f, "DATABASES_CONTAINS"),
             ActionKind::DatabasesCreate => write!(f, "DATABASES_CREATE"),
