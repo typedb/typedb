@@ -47,6 +47,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::links_executor::may_get_role;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -152,16 +153,10 @@ impl LinksReverseExecutor {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
 
-        let role_var = self.links.role_type().as_variable().unwrap();
-        let row_role = if self.variable_modes.get(role_var).is_some_and(|mode| matches!(VariableMode::Input, mode)) {
-            Some(row.get(role_var.as_position().unwrap()).as_type().as_role_type().clone())
-        } else {
-            None
-        };
-
+        let existing_role = may_get_role(self.links.role_type().as_variable().unwrap(), row.as_reference());
         let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
-                Ok(true) => match verify_role(&item, row_role) {
+                Ok(true) => match verify_role(&item, existing_role) {
                     Ok(true) | Err(_) => Some(item),
                     Ok(false) => None,
                 },

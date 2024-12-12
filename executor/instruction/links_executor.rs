@@ -164,16 +164,10 @@ impl LinksExecutor {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
 
-        let role_var = self.links.role_type().as_variable().unwrap();
-        let row_role = if self.variable_modes.get(role_var).is_some_and(|mode| matches!(VariableMode::Input, mode)) {
-            Some(row.get(role_var.as_position().unwrap()).as_type().as_role_type().clone())
-        } else {
-            None
-        };
-
+        let existing_role = may_get_role(self.links.role_type().as_variable().unwrap(), row.as_reference());
         let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
-                Ok(true) => match verify_role(&item, row_role) {
+                Ok(true) => match verify_role(&item, existing_role) {
                     Ok(true) | Err(_) => Some(item),
                     Ok(false) => None,
                 },
@@ -314,6 +308,23 @@ fn compare_by_player_then_relation(
         (rp_1.player(), rel_1) < (rp_2.player(), rel_2)
     } else {
         false
+    }
+}
+
+pub(crate) fn may_get_role(role_var: ExecutorVariable, row: MaybeOwnedRow<'_>, ) -> Option<RoleType> {
+    match role_var {
+        ExecutorVariable::RowPosition(position) => {
+            if position.as_usize() < row.len() {
+                if let VariableValue::Type(type_) = row.get(position) {
+                    Some(type_.as_role_type())
+                } else {
+                    None
+                }
+            } else {
+                None
+            }
+        }
+        ExecutorVariable::Internal(_) => None,
     }
 }
 
