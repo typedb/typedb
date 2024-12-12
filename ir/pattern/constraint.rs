@@ -42,10 +42,7 @@ impl Deref for Constraints {
 
 impl Constraints {
     pub(crate) fn new(scope: ScopeId) -> Self {
-        Self {
-            scope,
-            constraints: Vec::new(),
-        }
+        Self { scope, constraints: Vec::new() }
     }
 
     pub(crate) fn scope(&self) -> ScopeId {
@@ -55,7 +52,7 @@ impl Constraints {
     pub fn constraints(&self) -> &[Constraint<Variable>] {
         &self.constraints
     }
-    
+
     pub fn constraints_mut(&mut self) -> &mut Vec<Constraint<Variable>> {
         &mut self.constraints
     }
@@ -460,7 +457,6 @@ pub enum Constraint<ID> {
     Value(Value<ID>),
 }
 
-
 impl<ID: IrID> Constraint<ID> {
     pub fn name(&self) -> &str {
         match self {
@@ -529,8 +525,8 @@ impl<ID: IrID> Constraint<ID> {
     }
 
     pub fn ids_foreach<F>(&self, function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         match self {
             Self::Is(is) => is.ids_foreach(function),
@@ -634,7 +630,7 @@ impl<ID: IrID> Constraint<ID> {
     pub fn as_indexed_relation(&self) -> Option<&IndexedRelation<ID>> {
         match self {
             Constraint::IndexedRelation(indexed_relation) => Some(indexed_relation),
-            _ => None
+            _ => None,
         }
     }
 
@@ -813,8 +809,8 @@ impl<ID: IrID> Label<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.type_var.as_variable().inspect(|&id| function(id));
     }
@@ -879,8 +875,8 @@ impl<ID: IrID> RoleName<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.left.as_variable().inspect(|&id| function(id));
     }
@@ -943,12 +939,11 @@ impl<ID: IrID> Kind<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.type_.as_variable().inspect(|&id| function(id));
     }
-
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
         Kind { kind: self.kind, type_: self.type_.map(mapping) }
@@ -1054,8 +1049,8 @@ impl<ID: IrID> Sub<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.subtype.as_variable().inspect(|&id| function(id));
         self.supertype.as_variable().inspect(|&id| function(id));
@@ -1120,8 +1115,8 @@ impl<ID: IrID> Is<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.lhs.as_variable().inspect(|&id| function(id));
         self.rhs.as_variable().inspect(|&id| function(id));
@@ -1190,8 +1185,8 @@ impl<ID: IrID> Isa<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.thing.as_variable().inspect(|&id| function(id));
         self.type_.as_variable().inspect(|&id| function(id));
@@ -1291,8 +1286,8 @@ impl<ID: IrID> Iid<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.var.as_variable().inspect(|&id| function(id));
     }
@@ -1364,8 +1359,8 @@ impl<ID: IrID> Links<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.relation.as_variable().inspect(|&id| function(id));
         self.player.as_variable().inspect(|&id| function(id));
@@ -1440,7 +1435,7 @@ impl<ID: IrID> IndexedRelation<ID> {
     pub fn relation(&self) -> &Vertex<ID> {
         &self.relation
     }
-    
+
     pub fn role_type_1(&self) -> &Vertex<ID> {
         &self.role_type_1
     }
@@ -1449,20 +1444,20 @@ impl<ID: IrID> IndexedRelation<ID> {
         &self.role_type_2
     }
 
-    pub fn ids(&self) -> impl Iterator<Item=ID> {
+    pub fn ids(&self) -> impl Iterator<Item = ID> {
         [&self.relation, &self.player_1, &self.player_2, &self.role_type_1, &self.role_type_2]
             .map(Vertex::as_variable)
             .into_iter()
             .flatten()
     }
 
-    pub fn vertices(&self) -> impl Iterator<Item=&Vertex<ID>> {
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
         [&self.relation, &self.player_1, &self.player_2, &self.role_type_1, &self.role_type_2].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.player_1.as_variable().inspect(|&id| function(id));
         self.player_2.as_variable().inspect(|&id| function(id));
@@ -1505,7 +1500,11 @@ impl<ID: StructuralEquality> StructuralEquality for IndexedRelation<ID> {
 
 impl<ID: IrID> fmt::Display for IndexedRelation<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} connected-to {} via {} using role {} and role {}", self.player_1, self.player_2, self.relation, self.role_type_1, self.role_type_2)
+        write!(
+            f,
+            "{} connected-to {} via {} using role {} and role {}",
+            self.player_1, self.player_2, self.relation, self.role_type_1, self.role_type_2
+        )
     }
 }
 
@@ -1543,8 +1542,8 @@ impl<ID: IrID> Has<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.owner.as_variable().inspect(|&id| function(id));
         self.attribute.as_variable().inspect(|&id| function(id));
@@ -1608,8 +1607,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.ids_assigned().for_each(|id| function(id));
         self.expression().variables().for_each(|id| function(id));
@@ -1682,8 +1681,8 @@ impl<ID: IrID> FunctionCallBinding<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         for id in self.ids_assigned() {
             function(id)
@@ -1827,8 +1826,8 @@ impl<ID: IrID> Comparison<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.lhs.as_variable().inspect(|&id| function(id));
         self.rhs.as_variable().inspect(|&id| function(id));
@@ -1889,8 +1888,8 @@ impl<ID: IrID> Owns<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.owner.as_variable().inspect(|&id| function(id));
         self.attribute.as_variable().inspect(|&id| function(id));
@@ -1954,8 +1953,8 @@ impl<ID: IrID> Relates<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.relation.as_variable().inspect(|&id| function(id));
         self.role_type.as_variable().inspect(|&id| function(id));
@@ -2019,8 +2018,8 @@ impl<ID: IrID> Plays<ID> {
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.player.as_variable().inspect(|&id| function(id));
         self.role_type.as_variable().inspect(|&id| function(id));
@@ -2082,10 +2081,10 @@ impl<ID: IrID> Value<ID> {
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> {
         [&self.attribute_type].into_iter()
     }
-    
+
     pub fn ids_foreach<F>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
         self.attribute_type.as_variable().inspect(|&id| function(id));
     }

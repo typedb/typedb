@@ -29,10 +29,9 @@ use crate::{
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
-    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
+    type_::{entity_type::EntityType, relation_type::RelationType, ObjectTypeAPI, Ordering, OwnerAPI},
     ConceptAPI, ConceptStatus,
 };
-use crate::type_::relation_type::RelationType;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Entity {

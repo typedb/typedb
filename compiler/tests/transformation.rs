@@ -4,22 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::BTreeMap;
-use std::sync::Arc;
+use std::{collections::BTreeMap, sync::Arc};
 
-use compiler::annotation::function::EmptyAnnotatedFunctionSignatures;
-use compiler::annotation::match_inference::infer_types;
-use compiler::transformation::relation_index::relation_index_transformation;
+use compiler::{
+    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    transformation::relation_index::relation_index_transformation,
+};
 use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
 use encoding::value::label::Label;
-use ir::pattern::Vertex;
-use ir::pipeline::function_signature::HashMapFunctionSignatureIndex;
-use ir::pipeline::ParameterRegistry;
-use ir::translation::match_::translate_match;
-use ir::translation::TranslationContext;
-use storage::durability_client::WALClient;
-use storage::MVCCStorage;
-use storage::snapshot::CommittableSnapshot;
+use ir::{
+    pattern::Vertex,
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    translation::{match_::translate_match, TranslationContext},
+};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -39,13 +37,31 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
     let dog_type = type_manager.create_entity_type(&mut snapshot, &DOG_LABEL).unwrap();
     let dog_ownership_type = type_manager.create_relation_type(&mut snapshot, &DOG_OWNERSHIP_LABEL).unwrap();
-    let relates_dog = dog_ownership_type.create_relates(&mut snapshot, &type_manager, &thing_manager, DOG_OWNERSHIP_DOG.name.as_str(), Ordering::Unordered).unwrap();
-    let relates_owner = dog_ownership_type.create_relates(&mut snapshot, &type_manager, &thing_manager, DOG_OWNERSHIP_OWNER.name.as_str(), Ordering::Unordered).unwrap();
+    let relates_dog = dog_ownership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            DOG_OWNERSHIP_DOG.name.as_str(),
+            Ordering::Unordered,
+        )
+        .unwrap();
+    let relates_owner = dog_ownership_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            DOG_OWNERSHIP_OWNER.name.as_str(),
+            Ordering::Unordered,
+        )
+        .unwrap();
     person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, relates_owner.role()).unwrap();
     dog_type.set_plays(&mut snapshot, &type_manager, &thing_manager, relates_dog.role()).unwrap();
 
     let start_time_type = type_manager.create_attribute_type(&mut snapshot, &START_TIME_LABEL).unwrap();
-    dog_ownership_type.set_owns(&mut snapshot, &type_manager, &thing_manager, start_time_type, Ordering::Unordered).unwrap();
+    dog_ownership_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, start_time_type, Ordering::Unordered)
+        .unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok());
@@ -66,12 +82,8 @@ fn test_relation_index_transformation_single() {
     let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
-    let translated = translate_match(
-        &mut context,
-        &mut parameters,
-        &HashMapFunctionSignatureIndex::empty(),
-        &parsed,
-    ).unwrap();
+    let translated =
+        translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let block = translated.finish().unwrap();
     let mut type_annotations = infer_types(
@@ -81,21 +93,15 @@ fn test_relation_index_transformation_single() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut conjunction = block.into_conjunction();
 
-    relation_index_transformation(
-        &mut conjunction,
-        &mut type_annotations,
-        &type_manager,
-        &snapshot
-    ).unwrap();
+    relation_index_transformation(&mut conjunction, &mut type_annotations, &type_manager, &snapshot).unwrap();
 
-    let indexed_relation = conjunction.constraints().iter()
-        .filter_map(|constraint| constraint.as_indexed_relation())
-        .next()
-        .unwrap();
+    let indexed_relation =
+        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation()).next().unwrap();
 
     let var_r = Vertex::Variable(context.get_variable("r").unwrap());
     let var_x = Vertex::Variable(context.get_variable("x").unwrap());
@@ -124,12 +130,8 @@ fn test_relation_index_transformation_dual() {
     let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
-    let translated = translate_match(
-        &mut context,
-        &mut parameters,
-        &HashMapFunctionSignatureIndex::empty(),
-        &parsed,
-    ).unwrap();
+    let translated =
+        translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let block = translated.finish().unwrap();
     let mut type_annotations = infer_types(
@@ -139,16 +141,12 @@ fn test_relation_index_transformation_dual() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut conjunction = block.into_conjunction();
 
-    relation_index_transformation(
-        &mut conjunction,
-        &mut type_annotations,
-        &type_manager,
-        &snapshot
-    ).unwrap();
+    relation_index_transformation(&mut conjunction, &mut type_annotations, &type_manager, &snapshot).unwrap();
 
     let var_r = Vertex::Variable(context.get_variable("r").unwrap());
     let var_x = Vertex::Variable(context.get_variable("x").unwrap());
@@ -158,8 +156,8 @@ fn test_relation_index_transformation_dual() {
     let var_a = Vertex::Variable(context.get_variable("a").unwrap());
     let var_b = Vertex::Variable(context.get_variable("b").unwrap());
 
-    let mut indexed_relations = conjunction.constraints().iter()
-        .filter_map(|constraint| constraint.as_indexed_relation());
+    let mut indexed_relations =
+        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
     let first_indexed_relation = indexed_relations.next().unwrap();
     let second_indexed_relation = indexed_relations.next().unwrap();
 
@@ -194,12 +192,8 @@ fn test_relation_index_transformation_not_applied_ternary() {
     let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
-    let translated = translate_match(
-        &mut context,
-        &mut parameters,
-        &HashMapFunctionSignatureIndex::empty(),
-        &parsed,
-    ).unwrap();
+    let translated =
+        translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let block = translated.finish().unwrap();
     let mut type_annotations = infer_types(
@@ -209,19 +203,15 @@ fn test_relation_index_transformation_not_applied_ternary() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
-    ).unwrap();
+    )
+    .unwrap();
 
     let mut conjunction = block.into_conjunction();
 
-    relation_index_transformation(
-        &mut conjunction,
-        &mut type_annotations,
-        &type_manager,
-        &snapshot
-    ).unwrap();
+    relation_index_transformation(&mut conjunction, &mut type_annotations, &type_manager, &snapshot).unwrap();
 
-    let mut indexed_relations = conjunction.constraints().iter()
-        .filter_map(|constraint| constraint.as_indexed_relation());
+    let mut indexed_relations =
+        conjunction.constraints().iter().filter_map(|constraint| constraint.as_indexed_relation());
     assert!(!indexed_relations.next().is_some());
 }
 

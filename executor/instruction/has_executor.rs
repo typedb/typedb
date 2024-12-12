@@ -185,9 +185,10 @@ impl HasExecutor {
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.attribute_type_range,
                     );
-                    let as_tuples: HasUnboundedTupleIteratorSingle = iterator
-                        .filter_map(filter_for_row)
-                        .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
+                    let as_tuples: HasUnboundedTupleIteratorSingle =
+                        iterator
+                            .filter_map(filter_for_row)
+                            .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
                     Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),

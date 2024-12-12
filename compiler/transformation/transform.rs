@@ -6,23 +6,20 @@
 
 use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
-use crate::annotation::pipeline::{AnnotatedPipeline, AnnotatedStage};
-use crate::transformation::relation_index::relation_index_transformation;
-use crate::transformation::StaticOptimiserError;
+
+use crate::{
+    annotation::pipeline::{AnnotatedPipeline, AnnotatedStage},
+    transformation::{relation_index::relation_index_transformation, StaticOptimiserError},
+};
 
 pub fn apply_transformations(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    pipeline: &mut AnnotatedPipeline
+    pipeline: &mut AnnotatedPipeline,
 ) -> Result<(), StaticOptimiserError> {
     for stage in &mut pipeline.annotated_stages {
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
-            relation_index_transformation(
-                block.conjunction_mut(),
-                block_annotations,
-                type_manager,
-                snapshot
-            )?;
+            relation_index_transformation(block.conjunction_mut(), block_annotations, type_manager, snapshot)?;
         }
     }
     Ok(())

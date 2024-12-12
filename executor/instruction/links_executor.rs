@@ -12,18 +12,19 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
+use compiler::{
+    executable::match_::instructions::{thing::LinksInstruction, VariableMode},
+    ExecutorVariable,
+};
 use concept::{
     error::ConceptReadError,
     thing::{
         relation::{LinksIterator, Relation, RolePlayer},
         thing_manager::ThingManager,
     },
-    type_::{object_type::ObjectType, relation_type::RelationType},
+    type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy};
-use compiler::executable::match_::instructions::VariableMode;
-use concept::type_::role_type::RoleType;
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -31,6 +32,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        min_max_types,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, LinksToTupleFn, TuplePositions,
@@ -38,10 +40,8 @@ use crate::{
         Checker, FilterFn, FilterMapFn, TernaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
-    row::MaybeOwnedRow,
+    row::{MaybeOwnedRow, Row},
 };
-use crate::instruction::min_max_types;
-use crate::row::Row;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -104,15 +104,11 @@ impl LinksExecutor {
         let role_type = links.role_type().as_variable().unwrap();
 
         let output_tuple_positions = match iterate_mode {
-            TernaryIterateMode::Unbound => {
-                TuplePositions::Triple([Some(relation), Some(player), Some(role_type)])
-            },
+            TernaryIterateMode::Unbound => TuplePositions::Triple([Some(relation), Some(player), Some(role_type)]),
             TernaryIterateMode::UnboundInverted => {
                 TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
             }
-            TernaryIterateMode::BoundFrom => {
-                TuplePositions::Triple([Some(player), Some(relation), Some(role_type)])
-            },
+            TernaryIterateMode::BoundFrom => TuplePositions::Triple([Some(player), Some(relation), Some(role_type)]),
             TernaryIterateMode::BoundFromBoundTo => {
                 TuplePositions::Triple([Some(role_type), Some(relation), Some(player)])
             }
@@ -175,19 +171,17 @@ impl LinksExecutor {
             None
         };
 
-        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item|{
-            match filter(&item) {
-                Ok(true) => match check(&item) {
-                    Ok(true) => match verify_role(&item, row_role) {
-                        Ok(true) | Err(_) => Some(item),
-                        Ok(false) => None,
-                    }
+        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) => match verify_role(&item, row_role) {
+                    Ok(true) | Err(_) => Some(item),
                     Ok(false) => None,
-                    Err(_) => Some(item),
-                }
+                },
                 Ok(false) => None,
-                Err(_) => Some(item)
-            }
+                Err(_) => Some(item),
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -323,11 +317,12 @@ fn compare_by_player_then_relation(
     }
 }
 
-pub(crate) fn verify_role(item: &Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>, expected_role: Option<RoleType>) -> Result<bool, &ConceptReadError> {
+pub(crate) fn verify_role(
+    item: &Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+    expected_role: Option<RoleType>,
+) -> Result<bool, &ConceptReadError> {
     match item {
-        Ok((_, role_player, _)) => {
-            Ok(expected_role.map(|role| role == role_player.role_type()).unwrap_or(true))
-        }
+        Ok((_, role_player, _)) => Ok(expected_role.map(|role| role == role_player.role_type()).unwrap_or(true)),
         Err(err) => Err(err),
     }
 }

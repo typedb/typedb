@@ -28,7 +28,7 @@ impl Disjunction {
     pub fn conjunctions(&self) -> &[Conjunction] {
         &self.conjunctions
     }
-    
+
     pub fn conjunctions_mut(&mut self) -> &mut [Conjunction] {
         &mut self.conjunctions
     }

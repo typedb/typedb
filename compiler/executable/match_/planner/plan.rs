@@ -6,12 +6,12 @@
 
 use std::{
     any::type_name_of_val,
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     cmp::Ordering,
     collections::{BinaryHeap, HashMap, HashSet},
     fmt,
+    sync::Arc,
 };
-use std::collections::{BTreeMap, BTreeSet};
-use std::sync::Arc;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -19,8 +19,8 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, Is, Isa, Kind, Label,
-            Links, Owns, Plays, Relates, RoleName, Sub, Value,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
+            Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -29,15 +29,14 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
-use ir::pattern::constraint::IndexedRelation;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{
             thing::{
-                HasInstruction, HasReverseInstruction, IidInstruction, IsaInstruction, IsaReverseInstruction,
-                LinksInstruction, LinksReverseInstruction,
+                HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
+                IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
             },
             type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
@@ -48,8 +47,8 @@ use crate::{
         planner::{
             vertex::{
                 constraint::{
-                    ConstraintVertex, HasPlanner, IidPlanner, IsaPlanner, LinksPlanner, OwnsPlanner, PlaysPlanner,
-                    RelatesPlanner, SubPlanner, TypeListPlanner,
+                    ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
+                    OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
@@ -61,8 +60,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::instructions::thing::IndexedRelationInstruction;
-use crate::executable::match_::planner::vertex::constraint::IndexedRelationPlanner;
 
 pub const MAX_BEAM_WIDTH: usize = 128;
 
@@ -456,7 +453,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             indexed_relation,
             &self.graph.variable_index,
             self.type_annotations,
-            self.statistics
+            self.statistics,
         );
         self.graph.push_constraint(ConstraintVertex::IndexedRelation(planner))
     }
@@ -1350,7 +1347,9 @@ impl ConjunctionPlan<'_> {
                 let player_1_role = planner.indexed_relation().role_type_1().as_variable().unwrap();
                 let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
 
-                let annotations = self.type_annotations.constraint_annotations_of(planner.indexed_relation().clone().into())
+                let annotations = self
+                    .type_annotations
+                    .constraint_annotations_of(planner.indexed_relation().clone().into())
                     .unwrap()
                     .as_indexed_relation();
                 let array_inputs = Inputs::build_from(&inputs);
@@ -1365,8 +1364,20 @@ impl ConjunctionPlan<'_> {
                         annotations.relation_to_player_1.clone(),
                         &annotations.player_1_to_relation,
                         &annotations.relation_to_player_2,
-                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
+                        Arc::new(
+                            annotations
+                                .player_1_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
+                        Arc::new(
+                            annotations
+                                .player_2_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
                     )
                 } else {
                     IndexedRelationInstruction::new(
@@ -1379,8 +1390,20 @@ impl ConjunctionPlan<'_> {
                         annotations.relation_to_player_2.clone(),
                         &annotations.player_2_to_relation,
                         &annotations.relation_to_player_1,
-                        Arc::new(annotations.player_2_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                        Arc::new(annotations.player_1_to_role.values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
+                        Arc::new(
+                            annotations
+                                .player_2_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
+                        Arc::new(
+                            annotations
+                                .player_1_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
                     )
                 };
                 let instruction = ConstraintInstruction::IndexedRelation(instruction);
@@ -1492,10 +1515,7 @@ impl ConjunctionPlan<'_> {
                     start_role: CheckVertex::resolve(start_role_pos, self.type_annotations),
                     end_role: CheckVertex::resolve(end_role_pos, self.type_annotations),
                 };
-                match_builder.push_check(
-                    &[player_1, player_2, relation, player_1_role, player_2_role],
-                    check
-                );
+                match_builder.push_check(&[player_1, player_2, relation, player_1_role, player_2_role], check);
             }
         }
     }

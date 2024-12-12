@@ -18,7 +18,7 @@ use crate::{
     graph::{
         thing::{
             vertex_attribute::{AttributeID, AttributeVertex},
-            vertex_object::ObjectVertex,
+            vertex_object::{ObjectID, ObjectVertex},
             ThingVertex, THING_VERTEX_LENGTH_PREFIX_TYPE,
         },
         type_::vertex::{TypeID, TypeVertex},
@@ -28,7 +28,6 @@ use crate::{
     value::value_type::ValueTypeCategory,
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use crate::graph::thing::vertex_object::ObjectID;
 
 ///
 /// [has][object][Attribute8|Attribute17]
@@ -658,16 +657,20 @@ impl ThingEdgeIndexedRelation {
     pub const FIXED_WIDTH_ENCODING: bool = Self::PREFIX.fixed_width_keys();
 
     const RANGE_RELATION_TYPE_ID: Range<usize> = Self::INDEX_PREFIX + 1..Self::INDEX_PREFIX + 1 + TypeID::LENGTH;
-    const RANGE_START: Range<usize> = Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + ObjectVertex::LENGTH;
+    const RANGE_START: Range<usize> =
+        Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + ObjectVertex::LENGTH;
     const RANGE_END: Range<usize> = Self::RANGE_START.end..Self::RANGE_START.end + ObjectVertex::LENGTH;
     const RANGE_RELATION_ID: Range<usize> = Self::RANGE_END.end..Self::RANGE_END.end + ObjectID::LENGTH;
-    const RANGE_START_ROLE_TYPE_ID: Range<usize> = Self::RANGE_RELATION_ID.end..Self::RANGE_RELATION_ID.end + TypeID::LENGTH;
+    const RANGE_START_ROLE_TYPE_ID: Range<usize> =
+        Self::RANGE_RELATION_ID.end..Self::RANGE_RELATION_ID.end + TypeID::LENGTH;
     const RANGE_END_ROLE_TYPE_ID: Range<usize> =
         Self::RANGE_START_ROLE_TYPE_ID.end..Self::RANGE_START_ROLE_TYPE_ID.end + TypeID::LENGTH;
     const LENGTH: usize = Self::RANGE_END_ROLE_TYPE_ID.end;
-    const RANGE_START_TYPE: Range<usize> = Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    const RANGE_START_TYPE: Range<usize> =
+        Self::RANGE_RELATION_TYPE_ID.end..Self::RANGE_RELATION_TYPE_ID.end + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_REL_TYPE_ID: usize = Self::RANGE_RELATION_TYPE_ID.end;
-    pub const LENGTH_PREFIX_REL_TYPE_ID_START_TYPE: usize = PrefixID::LENGTH + TypeID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    pub const LENGTH_PREFIX_REL_TYPE_ID_START_TYPE: usize =
+        PrefixID::LENGTH + TypeID::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
     pub const LENGTH_PREFIX_REL_TYPE_ID_START: usize = Self::RANGE_START.end;
     pub const LENGTH_PREFIX_REL_TYPE_ID_START_END: usize = Self::RANGE_END.end;
     pub const LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION: usize = Self::RANGE_RELATION_ID.end;
@@ -697,7 +700,9 @@ impl ThingEdgeIndexedRelation {
         Self { player_from, player_to, relation, role_id_from, role_id_to }
     }
 
-    pub fn prefix_relation_type(relation_id: TypeID) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID }> {
+    pub fn prefix_relation_type(
+        relation_id: TypeID,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation_id.to_bytes());
@@ -712,11 +717,7 @@ impl ThingEdgeIndexedRelation {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation_id.to_bytes());
-        ObjectVertex::write_prefix_type(
-            &mut bytes[Self::RANGE_START_TYPE],
-            start_type_prefix,
-            start_type_id
-        );
+        ObjectVertex::write_prefix_type(&mut bytes[Self::RANGE_START_TYPE], start_type_prefix, start_type_id);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 
@@ -757,13 +758,14 @@ impl ThingEdgeIndexedRelation {
         bytes[Self::RANGE_RELATION_ID].copy_from_slice(&relation.object_id().to_bytes());
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
-    
+
     pub fn prefix_start_end_relation_startrole(
         start: ObjectVertex,
         end: ObjectVertex,
         relation: ObjectVertex,
         start_role: TypeVertex,
-    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION_START_ROLE }> {
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION_START_ROLE }>
+    {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_END_RELATION_START_ROLE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation.type_id_().to_bytes());

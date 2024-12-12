@@ -13,10 +13,9 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::type_::role_type::RoleType;
 use ir::pattern::{
-    constraint::{Has, Iid, Isa, Links},
+    constraint::{Has, Iid, IndexedRelation, Isa, Links},
     IrID,
 };
-use ir::pattern::constraint::IndexedRelation;
 use storage::MVCCKey;
 
 use crate::{
@@ -256,8 +255,7 @@ pub struct LinksInstruction<ID> {
 
 impl LinksInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
+        let edge_annotations = type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
         let player_to_role_types = edge_annotations.player_to_role();
         let relation_to_player_types = edge_annotations.relation_to_player();
         let player_types = type_annotations.vertex_annotations_of(links.player()).unwrap().clone();
@@ -399,10 +397,11 @@ impl IndexedRelationInstruction<Variable> {
     ) -> Self {
         let mut player_start_to_player_end_types = BTreeMap::new();
         for (player_start_type, relation_types) in player_start_to_relation_types {
-            let player_end_types = player_start_to_player_end_types.entry(*player_start_type)
-                .or_insert(BTreeSet::new());
+            let player_end_types =
+                player_start_to_player_end_types.entry(*player_start_type).or_insert(BTreeSet::new());
             for relation_type in relation_types {
-                player_end_types.extend(relation_to_player_end_types.get(&relation_type).iter().flat_map(|vec| vec.iter()));
+                player_end_types
+                    .extend(relation_to_player_end_types.get(&relation_type).iter().flat_map(|vec| vec.iter()));
             }
         }
 
@@ -417,7 +416,7 @@ impl IndexedRelationInstruction<Variable> {
             player_start_to_player_end_types: Arc::new(player_start_to_player_end_types),
             role_start_types,
             role_end_types,
-            checks: Vec::new()
+            checks: Vec::new(),
         }
     }
 }
@@ -475,13 +474,10 @@ impl<ID: IrID> IndexedRelationInstruction<ID> {
 
 impl<ID: IrID> fmt::Display for IndexedRelationInstruction<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f,
-               "{} indexed_relation(role: {} -> relation: {} -> role: {}) to {}",
-               self.player_start,
-               self.role_start,
-               self.relation,
-               self.role_end,
-               self.player_end
+        write!(
+            f,
+            "{} indexed_relation(role: {} -> relation: {} -> role: {}) to {}",
+            self.player_start, self.role_start, self.relation, self.role_end, self.player_end
         )
     }
 }

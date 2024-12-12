@@ -16,7 +16,7 @@ use bytes::{byte_array::ByteArray, util::increment, Bytes};
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks, ThingEdgeIndexedRelation},
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeIndexedRelation, ThingEdgeLinks},
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
@@ -1276,11 +1276,11 @@ impl ThingManager {
     pub fn get_indexed_relations_in(
         &self,
         snapshot: &impl ReadableSnapshot,
-        relation_type: RelationType
+        relation_type: RelationType,
     ) -> IndexedRelationsIterator {
         let prefix = ThingEdgeIndexedRelation::prefix_relation_type(relation_type.vertex().type_id_());
         IndexedRelationsIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING))
+            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
         )
     }
 
@@ -1299,9 +1299,10 @@ impl ThingManager {
             end_player.vertex(),
             relation.vertex(),
             start_role.vertex().type_id_(),
-            end_role.vertex().type_id_()
+            end_role.vertex().type_id_(),
         );
-        snapshot.get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference())
+        snapshot
+            .get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference())
             .map(|option| option.is_some())
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
@@ -1318,7 +1319,6 @@ impl ThingManager {
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
             relation_type,
         )
-
     }
 
     pub(crate) fn get_indexed_relations(
@@ -1328,7 +1328,8 @@ impl ThingManager {
         end: impl ObjectAPI,
         relation_type: RelationType,
     ) -> IndexedRelationsIterator {
-        let prefix = ThingEdgeIndexedRelation::prefix_start_end(relation_type.vertex().type_id_(), start.vertex(), end.vertex());
+        let prefix =
+            ThingEdgeIndexedRelation::prefix_start_end(relation_type.vertex().type_id_(), start.vertex(), end.vertex());
         self.iterate_indexed_relations(
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
@@ -1341,9 +1342,10 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         start: impl ObjectAPI,
         end: impl ObjectAPI,
-        relation: Relation
+        relation: Relation,
     ) -> IndexedRelationsIterator {
-        let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation(start.vertex(), end.vertex(), relation.vertex());
+        let prefix =
+            ThingEdgeIndexedRelation::prefix_start_end_relation(start.vertex(), end.vertex(), relation.vertex());
         self.iterate_indexed_relations(
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
@@ -1359,7 +1361,12 @@ impl ThingManager {
         relation: Relation,
         start_role: RoleType,
     ) -> IndexedRelationsIterator {
-        let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation_startrole(start.vertex(), end.vertex(), relation.vertex(), start_role.vertex());
+        let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation_startrole(
+            start.vertex(),
+            end.vertex(),
+            relation.vertex(),
+            start_role.vertex(),
+        );
         self.iterate_indexed_relations(
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),

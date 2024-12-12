@@ -12,7 +12,9 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value};
+use ir::pattern::constraint::{
+    Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
+};
 use itertools::Itertools;
 
 use crate::{
@@ -550,8 +552,7 @@ impl<'a> LinksPlanner<'a> {
         let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
         let player_types = &**type_annotations.vertex_annotations_of(player).unwrap();
 
-        let constraint_types =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
+        let constraint_types = type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
 
         let unbound_typed_expected_size = constraint_types
             .relation_to_role()
@@ -816,10 +817,13 @@ impl Costed for IndexedRelationPlanner<'_> {
     fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
         // TODO: using a random cost
         // ElementCost::MEM_COMPLEX_BRANCH_1
-        ElementCost { per_input: OPEN_ITERATOR_RELATIVE_COST, per_output: ADVANCE_ITERATOR_RELATIVE_COST, branching_factor: 10.0 }
+        ElementCost {
+            per_input: OPEN_ITERATOR_RELATIVE_COST,
+            per_output: ADVANCE_ITERATOR_RELATIVE_COST,
+            branching_factor: 10.0,
+        }
     }
 }
-
 
 #[derive(Clone, Debug)]
 pub(crate) struct SubPlanner<'a> {

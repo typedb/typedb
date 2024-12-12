@@ -12,7 +12,10 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
+use compiler::{
+    executable::match_::instructions::{thing::LinksReverseInstruction, VariableMode},
+    ExecutorVariable,
+};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -23,7 +26,6 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
-use compiler::executable::match_::instructions::VariableMode;
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -32,9 +34,10 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            LinksFilterFn, LinksFilterMapFn, LinksOrderingFn, LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION,
-            EXTRACT_ROLE,
+            verify_role, LinksFilterFn, LinksFilterMapFn, LinksOrderingFn, LinksTupleIterator,
+            LinksTupleIteratorMerged, LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
+        min_max_types,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, TuplePositions,
@@ -44,8 +47,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle, verify_role};
-use crate::instruction::min_max_types;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -158,19 +159,17 @@ impl LinksReverseExecutor {
             None
         };
 
-        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item|{
-            match filter(&item) {
-                Ok(true) => match check(&item) {
-                    Ok(true) => match verify_role(&item, row_role) {
-                        Ok(true) | Err(_) => Some(item),
-                        Ok(false) => None,
-                    }
+        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
+            Ok(true) => match check(&item) {
+                Ok(true) => match verify_role(&item, row_role) {
+                    Ok(true) | Err(_) => Some(item),
                     Ok(false) => None,
-                    Err(_) => Some(item),
-                }
+                },
                 Ok(false) => None,
-                Err(_) => Some(item)
-            }
+                Err(_) => Some(item),
+            },
+            Ok(false) => None,
+            Err(_) => Some(item),
         });
 
         let snapshot = &**context.snapshot();
@@ -305,4 +304,3 @@ fn compare_by_relation_then_player(
         false
     }
 }
-

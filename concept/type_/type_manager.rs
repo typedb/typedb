@@ -6,10 +6,10 @@
 
 use std::{
     borrow::Cow,
+    cmp::max_by,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
-use std::cmp::max_by;
 
 use encoding::{
     error::EncodingError,
@@ -22,8 +22,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::concept::RELATION_INDEX_THRESHOLD;
-use resource::constants::encoding::StructFieldIDUInt;
+use resource::constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use type_cache::TypeCache;
 use type_writer::TypeWriter;

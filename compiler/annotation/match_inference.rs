@@ -22,9 +22,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     function::AnnotatedFunctionSignatures,
-    type_annotations::{
-        ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
-    },
+    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
     type_seeder::TypeGraphSeedingContext,
     TypeInferenceError,
 };
@@ -207,23 +205,12 @@ impl TypeInferenceGraph<'_> {
                 if let Some((other_left_right, other_right_left)) = combine_links_edges.remove(&edge.right) {
                     let lrf_annotation = {
                         if &edge.left == links.relation() {
-                            LinksAnnotations::build(
-                                left_to_right,
-                                right_to_left,
-                                other_left_right,
-                                other_right_left,
-                            )
+                            LinksAnnotations::build(left_to_right, right_to_left, other_left_right, other_right_left)
                         } else {
-                            LinksAnnotations::build(
-                                other_left_right,
-                                other_right_left,
-                                left_to_right,
-                                right_to_left,
-                            )
+                            LinksAnnotations::build(other_left_right, other_right_left, left_to_right, right_to_left)
                         }
                     };
-                    constraint_annotations
-                        .insert(constraint.clone(), ConstraintTypeAnnotations::Links(lrf_annotation));
+                    constraint_annotations.insert(constraint.clone(), ConstraintTypeAnnotations::Links(lrf_annotation));
                 } else {
                     combine_links_edges.insert(edge.right, (left_to_right, right_to_left));
                 }

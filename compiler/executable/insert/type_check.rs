@@ -18,9 +18,7 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    type_annotations::{
-        ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
-    },
+    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
     TypeInferenceError,
 };
 
@@ -68,7 +66,7 @@ pub fn check_annotations(
             | Constraint::Relates(_)
             | Constraint::Plays(_)
             | Constraint::Value(_) => (),
-            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations can only appear after type inference")
+            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations can only appear after type inference"),
         }
     }
     Ok(())

@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeLinks, ThingEdgeIndexedRelation},
+            edge::{ThingEdgeIndexedRelation, ThingEdgeLinks},
             vertex_object::ObjectVertex,
             ThingVertex,
         },
@@ -370,14 +370,11 @@ impl ThingAPI for Relation {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role)?;
-            
-            debug_assert!(
-                !player.get_indexed_relations(snapshot, thing_manager, self.type_())
-                    .map(|result| result.unwrap())
-                    .any(|((start, end, relation, start_role, _), _)| {
-                        start == player && start_role == role
-                    })
-            );
+
+            debug_assert!(!player
+                .get_indexed_relations(snapshot, thing_manager, self.type_())
+                .map(|result| result.unwrap())
+                .any(|((start, end, relation, start_role, _), _)| { start == player && start_role == role }));
         }
 
         if self.get_status(snapshot, thing_manager) == ConceptStatus::Inserted {

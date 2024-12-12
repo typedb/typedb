@@ -35,9 +35,10 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor, is_executor::IsExecutor,
-        isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-        links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
+        indexed_relation_executor::IndexedRelationExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
+        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
+        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
         owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
@@ -46,12 +47,12 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::indexed_relation_executor::IndexedRelationExecutor;
 
 mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
 mod iid_executor;
+mod indexed_relation_executor;
 mod is_executor;
 mod isa_executor;
 mod isa_reverse_executor;
@@ -68,7 +69,6 @@ mod sub_executor;
 mod sub_reverse_executor;
 pub(crate) mod tuple;
 mod type_list_executor;
-mod indexed_relation_executor;
 
 pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
@@ -159,15 +159,9 @@ impl InstructionExecutor {
                 snapshot,
                 thing_manager,
             )?)),
-            ConstraintInstruction::IndexedRelation(indexed_relation) => {
-                Ok(Self::IndexedRelation(IndexedRelationExecutor::new(
-                    indexed_relation,
-                    variable_modes,
-                    sort_by,
-                    snapshot,
-                    thing_manager
-                )?))
-            },
+            ConstraintInstruction::IndexedRelation(indexed_relation) => Ok(Self::IndexedRelation(
+                IndexedRelationExecutor::new(indexed_relation, variable_modes, sort_by, snapshot, thing_manager)?,
+            )),
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
             ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
             ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
@@ -747,7 +741,8 @@ impl<T> Checker<T> {
                 }
 
                 CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
-                    let maybe_start_player_extractor = start_player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_start_player_extractor =
+                        start_player.as_variable().and_then(|var| self.extractors.get(&var));
                     let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
                     let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
                     let maybe_start_role_extractor = start_role.as_variable().and_then(|var| self.extractors.get(&var));

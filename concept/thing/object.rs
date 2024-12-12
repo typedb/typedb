@@ -34,17 +34,16 @@ use crate::{
         attribute::Attribute,
         entity::Entity,
         has::Has,
-        relation::{Relation, RelationRoleIterator},
+        relation::{IndexedRelationsIterator, Relation, RelationRoleIterator},
         thing_manager::{validation::operation_time_validation::OperationTimeValidation, ThingManager},
         HKInstance, ThingAPI,
     },
     type_::{
-        attribute_type::AttributeType, object_type::ObjectType, role_type::RoleType, ObjectTypeAPI, Ordering, OwnerAPI,
+        attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
+        ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };
-use crate::thing::relation::IndexedRelationsIterator;
-use crate::type_::relation_type::RelationType;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Object {
@@ -453,7 +452,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager: &ThingManager,
         end_player: Object,
         relation: Relation,
-        start_role: RoleType
+        start_role: RoleType,
     ) -> IndexedRelationsIterator {
         thing_manager.get_indexed_relation_end_roles(snapshot, self, end_player, relation, start_role)
     }

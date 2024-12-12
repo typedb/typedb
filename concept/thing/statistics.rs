@@ -13,7 +13,7 @@ use bytes::Bytes;
 use durability::DurabilityRecordType;
 use encoding::graph::{
     thing::{
-        edge::{ThingEdgeHas, ThingEdgeLinks, ThingEdgeIndexedRelation},
+        edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
         ThingVertex,

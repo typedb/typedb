@@ -14,42 +14,38 @@ use compiler::{
     executable::{
         match_::{
             instructions::{
-                ConstraintInstruction, Inputs,
+                thing::{HasReverseInstruction, IndexedRelationInstruction},
+                type_::TypeListInstruction,
+                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
                 function_plan::ExecutableFunctionRegistry,
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
             },
         },
         next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
-use compiler::executable::match_::instructions::{CheckInstruction, CheckVertex};
-use compiler::executable::match_::instructions::thing::{HasReverseInstruction, IndexedRelationInstruction};
-use compiler::executable::match_::instructions::type_::TypeListInstruction;
-use compiler::executable::match_::planner::match_executable::CheckStep;
 use concept::{
     thing::object::ObjectAPI,
-    type_::{
-        annotation::AnnotationCardinality, Ordering, OwnerAPI, PlayerAPI,
-        relates::RelatesAnnotation,
-    },
+    type_::{annotation::AnnotationCardinality, relates::RelatesAnnotation, Ordering, OwnerAPI, PlayerAPI},
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, ExecutionInterrupt, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
-    profile::QueryProfile, row::MaybeOwnedRow,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
-    pattern::constraint::IsaKind,
+    pattern::{
+        constraint::{Comparator, IsaKind},
+        Vertex,
+    },
     pipeline::{block::Block, ParameterRegistry},
     translation::TranslationContext,
 };
-use ir::pattern::constraint::Comparator;
-use ir::pattern::Vertex;
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -96,7 +92,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         )
         .unwrap();
     let casting_actor_type = relates_actor.role();
-    
+
     let relates_character = casting_type
         .create_relates(
             &mut snapshot,
@@ -106,12 +102,14 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             Ordering::Unordered,
         )
         .unwrap();
-    relates_character.set_annotation(
-        &mut snapshot,
-        &type_manager,
-        &thing_manager,
-        RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2)))
-    ).unwrap();
+    relates_character
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))),
+        )
+        .unwrap();
     let casting_character_type = relates_character.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
@@ -183,12 +181,22 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     casting_ternary.add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_2.into_object()).unwrap();
     casting_ternary.add_player(&mut snapshot, &thing_manager, casting_actor_type, person_1.into_object()).unwrap();
-    casting_ternary.add_player(&mut snapshot, &thing_manager, casting_character_type, character_1.into_object()).unwrap();
+    casting_ternary
+        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_1.into_object())
+        .unwrap();
 
-    casting_quaternary_multi_role_player.add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_3.into_object()).unwrap();
-    casting_quaternary_multi_role_player.add_player(&mut snapshot, &thing_manager, casting_actor_type, person_2.into_object()).unwrap();
-    casting_quaternary_multi_role_player.add_player(&mut snapshot, &thing_manager, casting_character_type, character_2.into_object()).unwrap();
-    casting_quaternary_multi_role_player.add_player(&mut snapshot, &thing_manager, casting_character_type, character_3.into_object()).unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_3.into_object())
+        .unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_2.into_object())
+        .unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_2.into_object())
+        .unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_3.into_object())
+        .unwrap();
 
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
@@ -218,10 +226,13 @@ fn traverse_index_from_unbound() {
     let var_character = conjunction.get_or_declare_variable("character").unwrap();
     let var_casting = conjunction.get_or_declare_variable("casting").unwrap();
 
-    let links_casting_character = conjunction.constraints_mut()
-        .add_links(var_casting, var_character, var_casting_character_type).unwrap().clone();
-    let links_casting_movie = conjunction.constraints_mut()
-        .add_links(var_casting, var_movie, var_casting_movie_type).unwrap().clone();
+    let links_casting_character = conjunction
+        .constraints_mut()
+        .add_links(var_casting, var_character, var_casting_character_type)
+        .unwrap()
+        .clone();
+    let links_casting_movie =
+        conjunction.constraints_mut().add_links(var_casting, var_movie, var_casting_movie_type).unwrap().clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_movie, var_movie_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into()).unwrap();
@@ -245,7 +256,7 @@ fn traverse_index_from_unbound() {
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
     )
-        .unwrap();
+    .unwrap();
 
     let row_vars = vec![var_movie, var_character, var_casting];
     let variable_positions =
@@ -260,13 +271,13 @@ fn traverse_index_from_unbound() {
             var_character,
             var_casting,
         ]
-            .map(|var| {
-                if row_vars.contains(&var) {
-                    (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-                } else {
-                    (var, ExecutorVariable::Internal(var))
-                }
-            }),
+        .map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
     );
     let named_variables = mapping.values().copied().collect();
 
@@ -281,26 +292,49 @@ fn traverse_index_from_unbound() {
             mapping[&var_movie],
             vec![ConstraintInstruction::IndexedRelation(
                 IndexedRelationInstruction::new(
-                    var_movie, var_character, var_casting, var_casting_movie_type, var_casting_character_type,
+                    var_movie,
+                    var_character,
+                    var_casting,
+                    var_casting_movie_type,
+                    var_casting_character_type,
                     Inputs::None([]),
-                    entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
+                    entry_annotations
+                        .constraint_annotations_of(links_casting_movie.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    &entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_movie.clone().into())
+                        .unwrap()
                         .as_links()
                         .player_to_relation(),
-                    &entry_annotations.constraint_annotations_of(links_casting_character.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_character.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_character.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                ).map(&mapping)
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_movie.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_character.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                )
+                .map(&mapping),
             )],
             vec![variable_positions[&var_movie], variable_positions[&var_character], variable_positions[&var_casting]],
             &named_variables,
@@ -320,7 +354,7 @@ fn traverse_index_from_unbound() {
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
-        .unwrap();
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager.clone(), value_parameters.clone());
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -335,7 +369,6 @@ fn traverse_index_from_unbound() {
     }
     assert_eq!(rows.len(), 3);
 
-
     // Plan with unbound character as the start -- should produce:
 
     // character 1 -> movie 2
@@ -347,26 +380,49 @@ fn traverse_index_from_unbound() {
             mapping[&var_movie],
             vec![ConstraintInstruction::IndexedRelation(
                 IndexedRelationInstruction::new(
-                    var_character, var_movie, var_casting, var_casting_character_type, var_casting_movie_type,
+                    var_character,
+                    var_movie,
+                    var_casting,
+                    var_casting_character_type,
+                    var_casting_movie_type,
                     Inputs::None([]),
-                    entry_annotations.constraint_annotations_of(links_casting_character.clone().into()).unwrap()
+                    entry_annotations
+                        .constraint_annotations_of(links_casting_character.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    &entry_annotations.constraint_annotations_of(links_casting_character.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_character.clone().into())
+                        .unwrap()
                         .as_links()
                         .player_to_relation(),
-                    &entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_movie.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_character.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                ).map(&mapping)
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_character.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_movie.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                )
+                .map(&mapping),
             )],
             vec![variable_positions[&var_movie], variable_positions[&var_character], variable_positions[&var_casting]],
             &named_variables,
@@ -386,7 +442,7 @@ fn traverse_index_from_unbound() {
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
-        .unwrap();
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, value_parameters);
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -429,12 +485,11 @@ fn traverse_index_from_bound() {
     let var_casting = conjunction.get_or_declare_variable("casting").unwrap();
     let var_id = conjunction.get_or_declare_variable("id").unwrap();
 
-    let links_casting_actor = conjunction.constraints_mut()
-        .add_links(var_casting, var_person, var_casting_actor_type).unwrap().clone();
-    let links_casting_movie = conjunction.constraints_mut()
-        .add_links(var_casting, var_movie, var_casting_movie_type).unwrap().clone();
-    let movie_has_id = conjunction.constraints_mut()
-        .add_has(var_movie, var_id).unwrap().clone();
+    let links_casting_actor =
+        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_actor_type).unwrap().clone();
+    let links_casting_movie =
+        conjunction.constraints_mut().add_links(var_casting, var_movie, var_casting_movie_type).unwrap().clone();
+    let movie_has_id = conjunction.constraints_mut().add_has(var_movie, var_id).unwrap().clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_movie, var_movie_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into()).unwrap();
@@ -444,7 +499,10 @@ fn traverse_index_from_bound() {
     conjunction.constraints_mut().add_label(var_id_type, ID_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_casting_movie_type, CASTING_MOVIE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_casting_actor_type, CASTING_ACTOR_LABEL.clone()).unwrap();
-    conjunction.constraints_mut().add_comparison(Vertex::Variable(var_id), Vertex::Parameter(id_0_parameter), Comparator::Equal).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_id), Vertex::Parameter(id_0_parameter), Comparator::Equal)
+        .unwrap();
 
     let entry = builder.finish().unwrap();
 
@@ -460,7 +518,7 @@ fn traverse_index_from_bound() {
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
     )
-        .unwrap();
+    .unwrap();
 
     let row_vars = vec![var_id, var_movie, var_person, var_casting];
     let variable_positions =
@@ -472,19 +530,18 @@ fn traverse_index_from_bound() {
             var_id_type,
             var_casting_movie_type,
             var_casting_actor_type,
-
             var_movie,
             var_person,
             var_casting,
             var_id,
         ]
-            .map(|var| {
-                if row_vars.contains(&var) {
-                    (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-                } else {
-                    (var, ExecutorVariable::Internal(var))
-                }
-            }),
+        .map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
     );
     let named_variables = mapping.values().copied().collect();
 
@@ -493,11 +550,9 @@ fn traverse_index_from_bound() {
         // movie has id;
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_movie],
-            vec![
-                ConstraintInstruction::HasReverse(
-                    HasReverseInstruction::new(movie_has_id, Inputs::None([]), &entry_annotations).map(&mapping),
-                ),
-            ],
+            vec![ConstraintInstruction::HasReverse(
+                HasReverseInstruction::new(movie_has_id, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
             vec![variable_positions[&var_movie], variable_positions[&var_id]],
             &named_variables,
             2,
@@ -507,7 +562,7 @@ fn traverse_index_from_bound() {
             vec![CheckInstruction::Comparison {
                 lhs: CheckVertex::Variable(mapping.get(&var_id).unwrap().clone()),
                 rhs: CheckVertex::Parameter(id_0_parameter),
-                comparator: Comparator::Equal
+                comparator: Comparator::Equal,
             }],
             vec![variable_positions[&var_movie], variable_positions[&var_id]],
             2,
@@ -517,31 +572,54 @@ fn traverse_index_from_bound() {
             mapping[&var_person],
             vec![ConstraintInstruction::IndexedRelation(
                 IndexedRelationInstruction::new(
-                    var_movie, var_person, var_casting, var_casting_movie_type, var_casting_actor_type,
+                    var_movie,
+                    var_person,
+                    var_casting,
+                    var_casting_movie_type,
+                    var_casting_actor_type,
                     Inputs::Single([var_movie]),
-                    entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
+                    entry_annotations
+                        .constraint_annotations_of(links_casting_movie.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    &entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_movie.clone().into())
+                        .unwrap()
                         .as_links()
                         .player_to_relation(),
-                    &entry_annotations.constraint_annotations_of(links_casting_actor.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_actor.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_actor.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                ).map(&mapping)
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_movie.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_actor.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                )
+                .map(&mapping),
             )],
             vec![variable_positions[&var_movie], variable_positions[&var_id], variable_positions[&var_person]],
             &named_variables,
             3,
-        ))
+        )),
     ];
 
     let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
@@ -556,7 +634,7 @@ fn traverse_index_from_bound() {
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
-        .unwrap();
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -596,10 +674,10 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     let var_person = conjunction.get_or_declare_variable("person").unwrap();
     let var_casting = conjunction.get_or_declare_variable("casting").unwrap();
 
-    let links_casting_other = conjunction.constraints_mut()
-        .add_links(var_casting, var_person, var_casting_other_type).unwrap().clone();
-    let links_casting_movie = conjunction.constraints_mut()
-        .add_links(var_casting, var_movie, var_casting_movie_type).unwrap().clone();
+    let links_casting_other =
+        conjunction.constraints_mut().add_links(var_casting, var_person, var_casting_other_type).unwrap().clone();
+    let links_casting_movie =
+        conjunction.constraints_mut().add_links(var_casting, var_movie, var_casting_movie_type).unwrap().clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_movie, var_movie_type.into()).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_casting, var_casting_type.into()).unwrap();
@@ -621,7 +699,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
     )
-        .unwrap();
+    .unwrap();
 
     let row_vars = vec![var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting];
     let variable_positions =
@@ -632,23 +710,22 @@ fn traverse_index_bound_role_type_filtered_correctly() {
             var_casting_type,
             var_casting_movie_type,
             var_casting_other_type,
-
             var_movie,
             var_person,
             var_casting,
         ]
-            .map(|var| {
-                if row_vars.contains(&var) {
-                    (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-                } else {
-                    (var, ExecutorVariable::Internal(var))
-                }
-            }),
+        .map(|var| {
+            if row_vars.contains(&var) {
+                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+            } else {
+                (var, ExecutorVariable::Internal(var))
+            }
+        }),
     );
     let named_variables = mapping.values().copied().collect();
 
     // Plan with a single bound role, should produce:
-    
+
     // casting (movie: movie 1, actor: person 1)
     // casting (movie: movie 2, actor: person 1)
     // casting (movie: movie 2, character: character 1)
@@ -659,14 +736,11 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         // $0 type casting:movie
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_casting_movie_type],
-            vec![
-                ConstraintInstruction::TypeList(
-                    TypeListInstruction::new(
-                        var_casting_movie_type,
-                        entry_annotations.vertex_annotations_of(&Vertex::Variable(var_casting_movie_type)).unwrap().clone()
-                    )
-                ).map(&mapping),
-            ],
+            vec![ConstraintInstruction::TypeList(TypeListInstruction::new(
+                var_casting_movie_type,
+                entry_annotations.vertex_annotations_of(&Vertex::Variable(var_casting_movie_type)).unwrap().clone(),
+            ))
+            .map(&mapping)],
             vec![variable_positions[&var_casting_movie_type]],
             &named_variables,
             1,
@@ -676,26 +750,49 @@ fn traverse_index_bound_role_type_filtered_correctly() {
             mapping[&var_movie],
             vec![ConstraintInstruction::IndexedRelation(
                 IndexedRelationInstruction::new(
-                    var_person, var_movie, var_casting, var_casting_other_type, var_casting_movie_type,
+                    var_person,
+                    var_movie,
+                    var_casting,
+                    var_casting_other_type,
+                    var_casting_movie_type,
                     Inputs::Single([var_casting_movie_type]),
-                    entry_annotations.constraint_annotations_of(links_casting_other.clone().into()).unwrap()
+                    entry_annotations
+                        .constraint_annotations_of(links_casting_other.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    &entry_annotations.constraint_annotations_of(links_casting_other.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_other.clone().into())
+                        .unwrap()
                         .as_links()
                         .player_to_relation(),
-                    &entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
+                    &entry_annotations
+                        .constraint_annotations_of(links_casting_movie.clone().into())
+                        .unwrap()
                         .as_links()
                         .relation_to_player(),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_other.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                    Arc::new(entry_annotations.constraint_annotations_of(links_casting_movie.clone().into()).unwrap()
-                        .as_links()
-                        .player_to_role()
-                        .values().flat_map(|set| set.iter().map(|type_| type_.as_role_type())).collect()),
-                ).map(&mapping)
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_other.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                    Arc::new(
+                        entry_annotations
+                            .constraint_annotations_of(links_casting_movie.clone().into())
+                            .unwrap()
+                            .as_links()
+                            .player_to_role()
+                            .values()
+                            .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                            .collect(),
+                    ),
+                )
+                .map(&mapping),
             )],
             vec![
                 variable_positions[&var_casting_movie_type],
@@ -706,7 +803,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
             ],
             &named_variables,
             5,
-        ))
+        )),
     ];
 
     let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
@@ -721,7 +818,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         Arc::new(ExecutableFunctionRegistry::empty()),
         &QueryProfile::new(false),
     )
-        .unwrap();
+    .unwrap();
 
     let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
     let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
@@ -738,4 +835,3 @@ fn traverse_index_bound_role_type_filtered_correctly() {
 
     assert_eq!(rows.len(), 6);
 }
-

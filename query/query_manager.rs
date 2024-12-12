@@ -9,6 +9,7 @@ use std::{collections::HashSet, sync::Arc};
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
+    transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
@@ -24,7 +25,6 @@ use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
-use compiler::transformation::transform::apply_transformations;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -103,19 +103,17 @@ impl QueryManager {
                     .get_annotated_functions(snapshot.as_ref(), type_manager)
                     .map_err(|err| QueryError::FunctionDefinition { typedb_source: err })?;
 
-                let mut annotated_pipeline =
-                    annotate_preamble_and_pipeline(
-                        snapshot.as_ref(),
-                        type_manager,
-                        annotated_schema_functions.clone(),
-                        &mut variable_registry,
-                        &parameters,
-                        (*arced_preamble).clone(),
-                        (*arced_stages).clone(),
-                        (*arced_fetch).clone(),
-                    )
-                    .map_err(|err| QueryError::Annotation { typedb_source: err })?;
-
+                let mut annotated_pipeline = annotate_preamble_and_pipeline(
+                    snapshot.as_ref(),
+                    type_manager,
+                    annotated_schema_functions.clone(),
+                    &mut variable_registry,
+                    &parameters,
+                    (*arced_preamble).clone(),
+                    (*arced_stages).clone(),
+                    (*arced_fetch).clone(),
+                )
+                .map_err(|err| QueryError::Annotation { typedb_source: err })?;
                 apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline)
                     .map_err(|err| QueryError::Transformation { typedb_source: err })?;
 

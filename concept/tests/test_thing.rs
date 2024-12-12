@@ -639,7 +639,7 @@ fn role_player_distinct() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let employment_type = type_manager.get_relation_type(&snapshot, &employment_label).unwrap().unwrap();
-        
+
         let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 4);
         let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();
@@ -765,7 +765,7 @@ fn role_player_duplicates_unordered() {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let collection_type = type_manager.get_relation_type(&snapshot, &collection_label).unwrap().unwrap();
-        
+
         let entities: Vec<Entity> = thing_manager.get_entities(&snapshot).map(|result| result.unwrap()).collect();
         assert_eq!(entities.len(), 2);
         let relations: Vec<Relation> = thing_manager.get_relations(&snapshot).map(|result| result.unwrap()).collect();

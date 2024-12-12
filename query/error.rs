@@ -7,8 +7,8 @@
 use compiler::{
     annotation::{expression::ExpressionCompileError, AnnotationError},
     executable::{insert::WriteCompilationError, ExecutableCompilationError},
+    transformation::StaticOptimiserError,
 };
-use compiler::transformation::StaticOptimiserError;
 use error::typedb_error;
 use executor::pipeline::{pipeline::PipelineError, PipelineExecutionError};
 use function::FunctionError;

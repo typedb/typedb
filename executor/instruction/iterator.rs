@@ -6,28 +6,26 @@
 
 use std::{cmp::Ordering, iter};
 
-use itertools::zip_eq;
-
 use answer::variable_value::VariableValue;
 use compiler::{
     executable::match_::instructions::{VariableMode, VariableModes},
     ExecutorVariable, VariablePosition,
 };
 use concept::error::ConceptReadError;
+use itertools::zip_eq;
 
 use crate::{
     instruction::{
-        has_executor::{
-            HasUnboundedTupleIteratorMerged, HasUnboundedTupleIteratorSingle,
-        },
+        has_executor::{HasUnboundedTupleIteratorMerged, HasUnboundedTupleIteratorSingle},
         has_reverse_executor::{
-            HasReverseTupleIteratorChained, HasReverseUnboundedSortedOwnerMerged,
+            HasReverseTupleIteratorChained, HasReverseTupleIteratorSingle, HasReverseUnboundedSortedOwnerMerged,
         },
         iid_executor::IidIterator,
+        indexed_relation_executor::{IndexedRelationTupleIteratorMerged, IndexedRelationTupleIteratorSingle},
         is_executor::IsIterator,
         isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
-        isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType}
-        ,
+        isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
+        links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle},
         owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
         owns_reverse_executor::{OwnsReverseBoundedSortedOwner, OwnsReverseUnboundedSortedAttribute},
         plays_executor::{PlaysBoundedSortedRole, PlaysUnboundedSortedPlayer},
@@ -41,9 +39,6 @@ use crate::{
     },
     row::Row,
 };
-use crate::instruction::has_reverse_executor::HasReverseTupleIteratorSingle;
-use crate::instruction::indexed_relation_executor::{IndexedRelationTupleIteratorMerged, IndexedRelationTupleIteratorSingle};
-use crate::instruction::links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle};
 
 // TODO: the 'check' can deduplicate against all relevant variables as soon as an anonymous variable is no longer relevant.
 //       if the deduplicated answer leads to an answer, we should not re-emit it again (we will rediscover the same answers)

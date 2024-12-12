@@ -20,10 +20,7 @@ use ir::pattern::{
 };
 use itertools::Itertools;
 
-use crate::{
-    annotation::type_annotations::TypeAnnotations,
-    ExecutorVariable, VariablePosition,
-};
+use crate::{annotation::type_annotations::TypeAnnotations, ExecutorVariable, VariablePosition};
 
 pub mod thing;
 pub mod type_;
@@ -99,7 +96,7 @@ impl VariableModes {
     pub fn get(&self, variable_position: ExecutorVariable) -> Option<VariableMode> {
         self.modes.get(&variable_position).copied()
     }
-    
+
     pub fn len(&self) -> usize {
         self.modes.len()
     }
@@ -167,7 +164,7 @@ pub enum ConstraintInstruction<ID> {
     Links(thing::LinksInstruction<ID>),
     // player -> relation
     LinksReverse(thing::LinksReverseInstruction<ID>),
-    
+
     IndexedRelation(thing::IndexedRelationInstruction<ID>),
 
     // $x --> $y
@@ -216,18 +213,21 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 relates.ids_foreach(|var| apply(var))
             }
             Self::Plays(type_::PlaysInstruction { plays, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => {
-                plays.ids_foreach(|var| apply(var))
-            }
+            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.ids_foreach(|var| apply(var)),
             Self::Isa(thing::IsaInstruction { isa, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var| apply(var)),
             Self::Has(thing::HasInstruction { has, .. })
             | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(|var| apply(var)),
             Self::Links(thing::LinksInstruction { links, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => {
-                links.ids_foreach(|var| apply(var))
-            }
-            Self::IndexedRelation(thing::IndexedRelationInstruction { player_start, player_end, relation, role_end, role_start, .. }) => {
+            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.ids_foreach(|var| apply(var)),
+            Self::IndexedRelation(thing::IndexedRelationInstruction {
+                player_start,
+                player_end,
+                relation,
+                role_end,
+                role_start,
+                ..
+            }) => {
                 apply(*player_start);
                 apply(*player_end);
                 apply(*relation);
@@ -303,13 +303,11 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 })
             }
             Self::Plays(type_::PlaysInstruction { plays, inputs, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, inputs, .. }) => {
-                plays.ids_foreach(|var| {
-                    if !inputs.contains(var) {
-                        apply(var)
-                    }
-                })
-            }
+            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, inputs, .. }) => plays.ids_foreach(|var| {
+                if !inputs.contains(var) {
+                    apply(var)
+                }
+            }),
             Self::Isa(thing::IsaInstruction { isa, inputs, .. })
             | Self::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => isa.ids_foreach(|var| {
                 if !inputs.contains(var) {
@@ -323,24 +321,20 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 }
             }),
             Self::Links(thing::LinksInstruction { links, inputs, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, inputs, .. }) => {
-                links.ids_foreach(|var| {
-                    if !inputs.contains(var) {
-                        apply(var)
-                    }
-                })
-            }
-            Self::IndexedRelation(
-                thing::IndexedRelationInstruction {
-                    player_start,
-                    player_end,
-                    relation,
-                    role_start,
-                    role_end,
-                    inputs,
-                    ..
+            | Self::LinksReverse(thing::LinksReverseInstruction { links, inputs, .. }) => links.ids_foreach(|var| {
+                if !inputs.contains(var) {
+                    apply(var)
                 }
-            ) => {
+            }),
+            Self::IndexedRelation(thing::IndexedRelationInstruction {
+                player_start,
+                player_end,
+                relation,
+                role_start,
+                role_end,
+                inputs,
+                ..
+            }) => {
                 if !inputs.contains(*player_start) {
                     apply(*player_start)
                 }
@@ -572,18 +566,48 @@ impl<ID: IrID> fmt::Display for CheckVertex<ID> {
 
 #[derive(Clone, Debug)]
 pub enum CheckInstruction<ID> {
-    TypeList { type_var: ID, types: Arc<BTreeSet<Type>> },
-    Iid { var: ID, iid: ParameterID },
+    TypeList {
+        type_var: ID,
+        types: Arc<BTreeSet<Type>>,
+    },
+    Iid {
+        var: ID,
+        iid: ParameterID,
+    },
 
-    Sub { sub_kind: SubKind, subtype: CheckVertex<ID>, supertype: CheckVertex<ID> },
-    Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
-    Relates { relation: CheckVertex<ID>, role_type: CheckVertex<ID> },
-    Plays { player: CheckVertex<ID>, role_type: CheckVertex<ID> },
+    Sub {
+        sub_kind: SubKind,
+        subtype: CheckVertex<ID>,
+        supertype: CheckVertex<ID>,
+    },
+    Owns {
+        owner: CheckVertex<ID>,
+        attribute: CheckVertex<ID>,
+    },
+    Relates {
+        relation: CheckVertex<ID>,
+        role_type: CheckVertex<ID>,
+    },
+    Plays {
+        player: CheckVertex<ID>,
+        role_type: CheckVertex<ID>,
+    },
 
-    Isa { isa_kind: IsaKind, type_: CheckVertex<ID>, thing: CheckVertex<ID> },
-    Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
-    Links { relation: CheckVertex<ID>, player: CheckVertex<ID>, role: CheckVertex<ID> },
-    IndexedRelation { 
+    Isa {
+        isa_kind: IsaKind,
+        type_: CheckVertex<ID>,
+        thing: CheckVertex<ID>,
+    },
+    Has {
+        owner: CheckVertex<ID>,
+        attribute: CheckVertex<ID>,
+    },
+    Links {
+        relation: CheckVertex<ID>,
+        player: CheckVertex<ID>,
+        role: CheckVertex<ID>,
+    },
+    IndexedRelation {
         start_player: CheckVertex<ID>,
         end_player: CheckVertex<ID>,
         relation: CheckVertex<ID>,
@@ -591,8 +615,15 @@ pub enum CheckInstruction<ID> {
         end_role: CheckVertex<ID>,
     },
 
-    Is { lhs: ID, rhs: ID },
-    Comparison { lhs: CheckVertex<ID>, rhs: CheckVertex<ID>, comparator: Comparator },
+    Is {
+        lhs: ID,
+        rhs: ID,
+    },
+    Comparison {
+        lhs: CheckVertex<ID>,
+        rhs: CheckVertex<ID>,
+        comparator: Comparator,
+    },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
@@ -625,13 +656,15 @@ impl<ID: IrID> CheckInstruction<ID> {
                 player: player.map(mapping),
                 role: role.map(mapping),
             },
-            Self::IndexedRelation{ start_player, end_player, relation, start_role, end_role} => CheckInstruction::IndexedRelation{
-                relation: relation.map(mapping),
-                start_player: start_player.map(mapping),
-                end_player: end_player.map(mapping),
-                start_role: start_role.map(mapping),
-                end_role: end_role.map(mapping),
-            },
+            Self::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                CheckInstruction::IndexedRelation {
+                    relation: relation.map(mapping),
+                    start_player: start_player.map(mapping),
+                    end_player: end_player.map(mapping),
+                    start_role: start_role.map(mapping),
+                    end_role: end_role.map(mapping),
+                }
+            }
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
@@ -675,8 +708,11 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::Links { relation, player, role } => {
                 write!(f, "{relation} {} ({role}:{player})", typeql::token::Keyword::Links)?;
             }
-            Self::IndexedRelation{ start_player, end_player, relation, start_role, end_role } => {
-                write!(f, "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_role}")?;
+            Self::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                write!(
+                    f,
+                    "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_role}"
+                )?;
             }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
@@ -700,7 +736,6 @@ pub enum Inputs<ID> {
 }
 
 impl<ID: IrID> Inputs<ID> {
-    
     pub(crate) fn build_from(inputs: &[ID]) -> Self {
         match inputs.len() {
             0 => Self::None([]),
@@ -709,10 +744,10 @@ impl<ID: IrID> Inputs<ID> {
             3 => Self::Triple([inputs[0], inputs[1], inputs[2]]),
             4 => Self::Quadruple([inputs[0], inputs[1], inputs[2], inputs[3]]),
             5 => Self::Quintuple([inputs[0], inputs[1], inputs[2], inputs[3], inputs[4]]),
-            _ => panic!("Inputs longer than 5 provided.")
+            _ => panic!("Inputs longer than 5 provided."),
         }
     }
-    
+
     pub(crate) fn contains(&self, id: ID) -> bool {
         self.deref().contains(&id)
     }
@@ -722,13 +757,15 @@ impl<ID: IrID> Inputs<ID> {
             Inputs::None(_) => Inputs::None([]),
             Inputs::Single([var]) => Inputs::Single([mapping[&var]]),
             Inputs::Dual([var_1, var_2]) => Inputs::Dual([mapping[&var_1], mapping[&var_2]]),
-            Inputs::Triple([var_1, var_2, var_3]) => Inputs::Triple([mapping[&var_1], mapping[&var_2], mapping[&var_3]]),
+            Inputs::Triple([var_1, var_2, var_3]) => {
+                Inputs::Triple([mapping[&var_1], mapping[&var_2], mapping[&var_3]])
+            }
             Inputs::Quadruple([var_1, var_2, var_3, var_4]) => {
                 Inputs::Quadruple([mapping[&var_1], mapping[&var_2], mapping[&var_3], mapping[&var_4]])
-            },
+            }
             Inputs::Quintuple([var_1, var_2, var_3, var_4, var_5]) => {
                 Inputs::Quintuple([mapping[&var_1], mapping[&var_2], mapping[&var_3], mapping[&var_4], mapping[&var_5]])
-            },
+            }
         }
     }
 }

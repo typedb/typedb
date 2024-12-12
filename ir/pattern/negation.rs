@@ -37,7 +37,7 @@ impl Negation {
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
     }
-    
+
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
