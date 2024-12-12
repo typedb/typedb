@@ -62,7 +62,7 @@ pub(crate) struct IndexedRelationExecutor {
     pub(crate) role_start: ExecutorVariable,
     pub(crate) role_end: ExecutorVariable,
     
-    iterate_mode: IndexedRelationIterateIterateMode,
+    iterate_mode: IndexedRelationIterateMode,
     variable_modes: VariableModes,
 
     tuple_positions: TuplePositions,
@@ -101,7 +101,7 @@ impl IndexedRelationExecutor {
             role_start_types,
             role_end_types,
         } = indexed_relation;
-        let iterate_mode = IndexedRelationIterateIterateMode::new(
+        let iterate_mode = IndexedRelationIterateMode::new(
             player_start,
             player_end,
             relation,
@@ -114,22 +114,22 @@ impl IndexedRelationExecutor {
         // produce a lexicographical ordering where the Sorted component comes first: [sort][bound 1][bound 2]...[unbound 1][unbound 2]...
         // where the Sorted and then Unbound components are lexicographically ordered and unbound
         let output_tuple_positions = match iterate_mode {
-            IndexedRelationIterateIterateMode::Unbound  => {
+            IndexedRelationIterateMode::Unbound  => {
                 TuplePositions::Quintuple([Some(player_start), Some(player_end), Some(relation), Some(role_start), Some(role_end)])
             },
-            IndexedRelationIterateIterateMode::UnboundInvertedToPlayer => {
+            IndexedRelationIterateMode::UnboundInvertedToPlayer => {
                 TuplePositions::Quintuple([Some(player_end), Some(player_start), Some(relation), Some(role_start), Some(role_end)])
             }
-            IndexedRelationIterateIterateMode::BoundStart => {
+            IndexedRelationIterateMode::BoundStart => {
                 TuplePositions::Quintuple([Some(player_end), Some(player_start), Some(relation), Some(role_start), Some(role_end)])
             }
-            IndexedRelationIterateIterateMode::BoundStartBoundEnd => {
+            IndexedRelationIterateMode::BoundStartBoundEnd => {
                 TuplePositions::Quintuple([Some(relation), Some(player_start), Some(player_end), Some(role_start), Some(role_end)])
             }
-            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelation => {
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => {
                 TuplePositions::Quintuple([Some(role_start), Some(player_start), Some(player_end), Some(relation), Some(role_end)])
             }
-            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
                 TuplePositions::Quintuple([Some(role_end), Some(player_start), Some(player_end), Some(relation), Some(role_start)])
             }
         };
@@ -145,7 +145,7 @@ impl IndexedRelationExecutor {
             ])
         );
 
-        let start_player_cache = if iterate_mode == IndexedRelationIterateIterateMode::UnboundInvertedToPlayer {
+        let start_player_cache = if iterate_mode == IndexedRelationIterateMode::UnboundInvertedToPlayer {
             let mut cache = Vec::new();
             for type_ in player_start_to_player_end_types.keys() {
                 let instances: Vec<Object> = thing_manager.get_objects_in(snapshot, type_.as_object_type()).try_collect()?;
@@ -201,7 +201,7 @@ impl IndexedRelationExecutor {
         let thing_manager = context.thing_manager();
 
         match self.iterate_mode {
-            IndexedRelationIterateIterateMode::Unbound => {
+            IndexedRelationIterateMode::Unbound => {
                 // want it sorted by start player, so we must merge an iterator per relation type
                 if self.relation_to_player_start_types.len() == 1 {
                     let &relation_type = self.relation_to_player_start_types.keys().next().unwrap();
@@ -229,7 +229,7 @@ impl IndexedRelationExecutor {
                     )))
                 }
             }
-            IndexedRelationIterateIterateMode::UnboundInvertedToPlayer => {
+            IndexedRelationIterateMode::UnboundInvertedToPlayer => {
                 debug_assert!(self.start_player_cache.is_some());
                 let mut iterators = Vec::new();
                 self.start_player_cache.as_ref()
@@ -255,7 +255,7 @@ impl IndexedRelationExecutor {
                     &self.variable_modes,
                 ))) 
             }
-            IndexedRelationIterateIterateMode::BoundStart => {
+            IndexedRelationIterateMode::BoundStart => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
                     VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
@@ -287,7 +287,7 @@ impl IndexedRelationExecutor {
                     )))
                 }
             }
-            IndexedRelationIterateIterateMode::BoundStartBoundEnd => {
+            IndexedRelationIterateMode::BoundStartBoundEnd => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
                     VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
@@ -323,7 +323,7 @@ impl IndexedRelationExecutor {
                     )))
                 }
             }
-            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelation => {
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
                     VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
@@ -346,7 +346,7 @@ impl IndexedRelationExecutor {
                     &self.variable_modes,
                 )))
             }
-            IndexedRelationIterateIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelationBoundStartRole => {
                 let start_player = match row.get(self.player_start.as_position().unwrap()) {
                     VariableValue::Thing(thing) => thing.as_object(),
                     _ => unreachable!("Start player just be a thing object")
@@ -425,7 +425,7 @@ fn compare_indexed_players(
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum IndexedRelationIterateIterateMode {
+pub(crate) enum IndexedRelationIterateMode {
     // [x, y, r, a, b] = standard sort order
     Unbound,
     // [y, x, r, a, b] sort order
@@ -434,14 +434,12 @@ pub(crate) enum IndexedRelationIterateIterateMode {
     BoundStart,
     // [X, Y, r, a, b]
     BoundStartBoundEnd,
-    // [X, Y, R, a, b]
+    
+    // note: this needs a specific check for when all 3 are bound, we can't just handle a bound relation on its own without all prefixes satisfied
     BoundStartBoundEndBoundRelation,
-    // [X, Y, R, A, b]
-    BoundStartBoundEndBoundRelationBoundStartRole,
-    // cannot have all bound - would be a check!
 }
 
-impl IndexedRelationIterateIterateMode {
+impl IndexedRelationIterateMode {
     pub(crate) fn new(
         player_start: ExecutorVariable,
         player_end: ExecutorVariable,
@@ -475,7 +473,7 @@ impl IndexedRelationIterateIterateMode {
     }
 }
 
-impl fmt::Display for IndexedRelationIterateIterateMode {
+impl fmt::Display for IndexedRelationIterateMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }

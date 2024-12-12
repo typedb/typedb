@@ -22,6 +22,8 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy};
+use compiler::executable::match_::instructions::VariableMode;
+use concept::type_::role_type::RoleType;
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -39,12 +41,13 @@ use crate::{
     row::MaybeOwnedRow,
 };
 use crate::instruction::min_max_types;
+use crate::row::Row;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
 
     iterate_mode: TernaryIterateMode,
-    variable_modes: VariableModes,
+    variable_modes: Arc<VariableModes>,
 
     tuple_positions: TuplePositions,
 
@@ -146,7 +149,7 @@ impl LinksExecutor {
         Ok(Self {
             links,
             iterate_mode,
-            variable_modes,
+            variable_modes: Arc::new(variable_modes),
             tuple_positions: output_tuple_positions,
             relation_player_types,
             relation_type_range,
@@ -164,13 +167,27 @@ impl LinksExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
-            Ok(true) => match check(&item) {
-                Ok(true) | Err(_) => Some(item),
+
+        let role_var = self.links.role_type().as_variable().unwrap();
+        let row_role = if self.variable_modes.get(role_var).is_some_and(|mode| matches!(VariableMode::Input, mode)) {
+            Some(row.get(role_var.as_position().unwrap()).as_type().as_role_type().clone())
+        } else {
+            None
+        };
+
+        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item|{
+            match filter(&item) {
+                Ok(true) => match check(&item) {
+                    Ok(true) => match verify_role(&item, row_role) {
+                        Ok(true) | Err(_) => Some(item),
+                        Ok(false) => None,
+                    }
+                    Ok(false) => None,
+                    Err(_) => Some(item),
+                }
                 Ok(false) => None,
-            },
-            Ok(false) => None,
-            Err(_) => Some(item),
+                Err(_) => Some(item)
+            }
         });
 
         let snapshot = &**context.snapshot();
@@ -303,5 +320,14 @@ fn compare_by_player_then_relation(
         (rp_1.player(), rel_1) < (rp_2.player(), rel_2)
     } else {
         false
+    }
+}
+
+pub(crate) fn verify_role(item: &Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>, expected_role: Option<RoleType>) -> Result<bool, &ConceptReadError> {
+    match item {
+        Ok((_, role_player, _)) => {
+            Ok(expected_role.map(|role| role == role_player.role_type()).unwrap_or(true))
+        }
+        Err(err) => Err(err),
     }
 }

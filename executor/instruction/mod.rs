@@ -321,9 +321,7 @@ impl TernaryIterateMode {
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
     ) -> TernaryIterateMode {
-        // TODO
-        // debug_assert!(var_modes.len() == 3);
-
+        debug_assert!(var_modes.len() == 3);
         debug_assert!(!var_modes.all_inputs());
 
         let is_from_bound = match from_vertex {

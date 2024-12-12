@@ -23,6 +23,7 @@ use concept::{
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
 use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
+use compiler::executable::match_::instructions::VariableMode;
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -43,7 +44,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle};
+use crate::instruction::links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle, verify_role};
 use crate::instruction::min_max_types;
 
 pub(crate) struct LinksReverseExecutor {
@@ -149,13 +150,27 @@ impl LinksReverseExecutor {
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
         let check = self.checker.filter_for_row(context, &row);
-        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item| match filter(&item) {
-            Ok(true) => match check(&item) {
-                Ok(true) | Err(_) => Some(item),
+
+        let role_var = self.links.role_type().as_variable().unwrap();
+        let row_role = if self.variable_modes.get(role_var).is_some_and(|mode| matches!(VariableMode::Input, mode)) {
+            Some(row.get(role_var.as_position().unwrap()).as_type().as_role_type().clone())
+        } else {
+            None
+        };
+
+        let filter_for_row: Box<LinksFilterMapFn> = Box::new(move |item|{
+            match filter(&item) {
+                Ok(true) => match check(&item) {
+                    Ok(true) => match verify_role(&item, row_role) {
+                        Ok(true) | Err(_) => Some(item),
+                        Ok(false) => None,
+                    }
+                    Ok(false) => None,
+                    Err(_) => Some(item),
+                }
                 Ok(false) => None,
-            },
-            Ok(false) => None,
-            Err(_) => Some(item),
+                Err(_) => Some(item)
+            }
         });
 
         let snapshot = &**context.snapshot();
