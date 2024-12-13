@@ -37,6 +37,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -57,7 +58,7 @@ pub(crate) type HasUnboundedTupleIteratorSingle = HasTupleIterator<HasIterator>;
 pub(crate) type HasUnboundedTupleIteratorMerged = HasTupleIterator<KMergeBy<HasIterator, HasOrderingFn>>;
 
 pub(super) type HasFilterFn = FilterFn<(Has, u64)>;
-pub(super) type HasFilterMapFn = FilterMapFn<(Has, u64)>;
+pub(super) type HasFilterMapFn = FilterMapUnchangedFn<(Has, u64)>;
 
 type HasVariableValueExtractor = for<'a, 'b> fn(&'a (Has, u64)) -> VariableValue<'a>;
 pub(super) const EXTRACT_OWNER: HasVariableValueExtractor = |(has, _)| VariableValue::Thing(Thing::from(has.owner()));

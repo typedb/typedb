@@ -29,6 +29,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct RelatesExecutor {
     relates: ir::pattern::constraint::Relates<ExecutorVariable>,
@@ -57,7 +58,7 @@ pub(super) type RelatesBoundedSortedRole = RelatesTupleIterator<
 >;
 
 pub(super) type RelatesFilterFn = FilterFn<(RelationType, RoleType)>;
-pub(super) type RelatesFilterMapFn = FilterMapFn<(RelationType, RoleType)>;
+pub(super) type RelatesFilterMapFn = FilterMapUnchangedFn<(RelationType, RoleType)>;
 
 pub(super) type RelatesVariableValueExtractor = for<'a> fn(&'a (RelationType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_RELATION: RelatesVariableValueExtractor =

@@ -297,7 +297,7 @@ impl fmt::Display for BinaryIterateMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum TernaryIterateMode {
+pub(crate) enum LinksIterateMode {
     // [x, y, z] = standard sort order
     Unbound,
     // [y, x, z] sort order
@@ -308,13 +308,13 @@ pub(crate) enum TernaryIterateMode {
     BoundFromBoundTo,
 }
 
-impl TernaryIterateMode {
+impl LinksIterateMode {
     pub(crate) fn new(
         from_vertex: &Vertex<ExecutorVariable>,
         to_vertex: &Vertex<ExecutorVariable>,
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
-    ) -> TernaryIterateMode {
+    ) -> LinksIterateMode {
         debug_assert!(var_modes.len() == 3);
         debug_assert!(!var_modes.all_inputs());
 
@@ -341,7 +341,7 @@ impl TernaryIterateMode {
     }
 }
 
-impl fmt::Display for TernaryIterateMode {
+impl fmt::Display for LinksIterateMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
@@ -364,7 +364,8 @@ fn type_from_row_or_annotations<'a>(
     }
 }
 
-pub(super) type FilterMapFn<T> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+pub(super) type FilterMapUnchangedFn<T> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+pub(super) type FilterMapFn<T, U> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<U, Box<ConceptReadError>>>;
 type FilterFn<T> = dyn Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>>;
 
 pub(crate) struct Checker<T: 'static> {

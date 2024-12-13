@@ -34,6 +34,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<ExecutorVariable>,
@@ -70,7 +71,7 @@ pub(super) type ObjectEraseFn =
 pub(super) type AttributeEraseFn =
     for<'a> fn(Result<Attribute, Box<ConceptReadError>>) -> Result<Thing, Box<ConceptReadError>>;
 
-pub(super) type IsaFilterMapFn = FilterMapFn<(Thing, Type)>;
+pub(super) type IsaFilterMapFn = FilterMapUnchangedFn<(Thing, Type)>;
 
 type IsaVariableValueExtractor = for<'a, 'b> fn(&'a (Thing, Type)) -> VariableValue<'a>;
 

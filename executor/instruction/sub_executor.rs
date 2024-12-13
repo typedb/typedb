@@ -26,6 +26,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct SubExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,
@@ -44,7 +45,7 @@ pub(super) type SubUnboundedSortedSub = SubTupleIterator<vec::IntoIter<Result<(T
 pub(super) type SubBoundedSortedSuper = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
-pub(super) type SubFilterMapFn = FilterMapFn<(Type, Type)>;
+pub(super) type SubFilterMapFn = FilterMapUnchangedFn<(Type, Type)>;
 
 type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'_>;
 pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(*sub);

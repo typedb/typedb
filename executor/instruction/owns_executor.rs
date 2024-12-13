@@ -31,6 +31,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct OwnsExecutor {
     owns: ir::pattern::constraint::Owns<ExecutorVariable>,
@@ -59,7 +60,7 @@ pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
 >;
 
 pub(super) type OwnsFilterFn = FilterFn<(ObjectType, AttributeType)>;
-pub(super) type OwnsFilterMapFn = FilterMapFn<(ObjectType, AttributeType)>;
+pub(super) type OwnsFilterMapFn = FilterMapUnchangedFn<(ObjectType, AttributeType)>;
 
 pub(super) type OwnsVariableValueExtractor = for<'a> fn(&'a (ObjectType, AttributeType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_OWNER: OwnsVariableValueExtractor = |(owner, _)| VariableValue::Type(Type::from(*owner));

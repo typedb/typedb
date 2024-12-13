@@ -29,6 +29,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct PlaysExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,
@@ -57,7 +58,7 @@ pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
 >;
 
 pub(super) type PlaysFilterFn = FilterFn<(ObjectType, RoleType)>;
-pub(super) type PlaysFilterMapFn = FilterMapFn<(ObjectType, RoleType)>;
+pub(super) type PlaysFilterMapFn = FilterMapUnchangedFn<(ObjectType, RoleType)>;
 
 pub(super) type PlaysVariableValueExtractor = for<'a> fn(&'a (ObjectType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_PLAYER: PlaysVariableValueExtractor = |(player, _)| VariableValue::Type(Type::from(*player));

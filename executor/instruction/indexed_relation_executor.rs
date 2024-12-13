@@ -38,8 +38,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(super) type IndexedRelationTupleIterator<I> =
-    iter::Map<iter::FilterMap<I, Box<IndexedRelationFilterMapFn>>, Box<IndexedRelationToTupleFn>>;
+pub(super) type IndexedRelationTupleIterator<I> = iter::FilterMap<I, Box<IndexedRelationFilterMapFn>>;
 
 pub(crate) type IndexedRelationTupleIteratorSingle = IndexedRelationTupleIterator<IndexedRelationsIterator>;
 pub(crate) type IndexedRelationTupleIteratorMerged =
@@ -59,7 +58,7 @@ pub(super) const EXTRACT_ROLE_END: IndexedRelationValueExtractor =
     |(indexed, _)| VariableValue::Type(Type::RoleType(indexed.4));
 
 pub(super) type IndexedRelationFilterFn = FilterFn<(IndexedRelationPlayers, u64)>;
-pub(super) type IndexedRelationFilterMapFn = FilterMapFn<(IndexedRelationPlayers, u64)>;
+pub(super) type IndexedRelationFilterMapFn = FilterMapFn<(IndexedRelationPlayers, u64), Tuple<'static>>;
 pub(crate) type IndexedRelationOrderingFn = for<'a, 'b> fn(
     &'a Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
     &'b Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
@@ -243,34 +242,32 @@ impl IndexedRelationExecutor {
 
         let (relation, start_role, end_role) = self.may_get_relation_and_roles(row.as_reference());
 
-        let filter_for_row: Box<IndexedRelationFilterMapFn> = Box::new(move |item| match filter(&item) {
+        let positions = self.tuple_positions.clone();
+        let component_ordering = self.component_ordering;
+        let filter_map_for_row: Box<IndexedRelationFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) => match verify_relation_and_roles(&item, relation, start_role, end_role) {
-                    Ok(true) | Err(_) => Some(item),
+                    Ok(true) | Err(_) => Some(to_tuple(item, positions.clone(), component_ordering)),
                     Ok(false) => None,
                 },
                 Ok(false) => None,
-                Err(_) => Some(item),
+                Err(_) => Some(to_tuple(item, positions.clone(), component_ordering)),
             },
             Ok(false) => None,
-            Err(_) => Some(item),
+            Err(_) => Some(to_tuple(item, positions.clone(), component_ordering)),
         });
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
-
-        // TODO: this re-creates the same thing every time??
-        let to_tuple_fn = to_tuple_fn(self.tuple_positions.clone(), self.component_ordering);
-
+        
         match self.iterate_mode {
             IndexedRelationIterateMode::Unbound => {
                 // want it sorted by start player, so we must merge an iterator per relation type
                 if self.relation_to_player_start_types.len() == 1 {
                     let &relation_type = self.relation_to_player_start_types.keys().next().unwrap();
-                    let as_tuples: IndexedRelationTupleIteratorSingle = thing_manager
+                    let as_tuples  = thing_manager
                         .get_indexed_relations_in(snapshot, relation_type.as_relation_type())
-                        .filter_map(filter_for_row)
-                        .map(to_tuple_fn);
+                        .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -286,8 +283,7 @@ impl IndexedRelationExecutor {
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                         kmerge_by(iterators, compare_indexed_players);
-                    let as_tuples: IndexedRelationTupleIteratorMerged =
-                        merged.filter_map(filter_for_row).map(to_tuple_fn);
+                    let as_tuples = merged.filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -311,7 +307,7 @@ impl IndexedRelationExecutor {
                 );
                 let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                     kmerge_by(iterators, compare_indexed_players_inverted);
-                let as_tuples: IndexedRelationTupleIteratorMerged = merged.filter_map(filter_for_row).map(to_tuple_fn);
+                let as_tuples: IndexedRelationTupleIteratorMerged = merged.filter_map(filter_map_for_row);
                 Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -327,8 +323,7 @@ impl IndexedRelationExecutor {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let as_tuples: IndexedRelationTupleIteratorSingle = start_player
                         .get_indexed_relations(snapshot, thing_manager, relation_type)
-                        .filter_map(filter_for_row)
-                        .map(to_tuple_fn);
+                        .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -348,8 +343,7 @@ impl IndexedRelationExecutor {
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                         kmerge_by(iterators, compare_indexed_players);
-                    let as_tuples: IndexedRelationTupleIteratorMerged =
-                        merged.filter_map(filter_for_row).map(to_tuple_fn);
+                    let as_tuples: IndexedRelationTupleIteratorMerged = merged.filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -370,8 +364,7 @@ impl IndexedRelationExecutor {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let as_tuples: IndexedRelationTupleIteratorSingle = start_player
                         .get_indexed_relations_with_player(snapshot, thing_manager, end_player, relation_type)
-                        .filter_map(filter_for_row)
-                        .map(to_tuple_fn);
+                        .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -392,8 +385,7 @@ impl IndexedRelationExecutor {
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
                         kmerge_by(iterators, compare_indexed_players);
-                    let as_tuples: IndexedRelationTupleIteratorMerged =
-                        merged.filter_map(filter_for_row).map(to_tuple_fn);
+                    let as_tuples: IndexedRelationTupleIteratorMerged = merged.filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsMerged(SortedTupleIterator::new(
                         as_tuples,
                         self.tuple_positions.clone(),
@@ -416,8 +408,7 @@ impl IndexedRelationExecutor {
                 };
                 let as_tuples: IndexedRelationTupleIteratorSingle = start_player
                     .get_indexed_relation_roles_with_player_and_relation(snapshot, thing_manager, end_player, relation)
-                    .filter_map(filter_for_row)
-                    .map(to_tuple_fn);
+                    .filter_map(filter_map_for_row);
                 Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -551,27 +542,26 @@ fn verify_relation_and_roles(
     }
 }
 
-fn to_tuple_fn(
+fn to_tuple(
+    indexed_relation_players: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
     tuple_positions: TuplePositions,
     component_ordering: [ExecutorVariable; 5],
-) -> Box<dyn Fn(Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>) -> TupleResult<'static>> {
-    Box::new(move |result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>| {
-        let (components, _) = result?;
-        let tuple: [VariableValue<'static>; 5] = std::array::from_fn(|i| {
-            let variable_at_position = tuple_positions.as_quintuple()[i].unwrap();
-            let source_component_index =
-                component_ordering.iter().position(|var| *var == variable_at_position).unwrap();
-            match source_component_index {
-                0 => VariableValue::Thing(components.0.into()),
-                1 => VariableValue::Thing(components.1.into()),
-                2 => VariableValue::Thing(Thing::Relation(components.2)),
-                3 => VariableValue::Type(Type::RoleType(components.3)),
-                4 => VariableValue::Type(Type::RoleType(components.4)),
-                _ => unreachable!("only 5 components exist"),
-            }
-        });
-        TupleResult::Ok(Tuple::Quintuple(tuple))
-    })
+) -> TupleResult<'static> {
+    let (components, _) = indexed_relation_players?;
+    let tuple: [VariableValue<'static>; 5] = std::array::from_fn(|i| {
+        let variable_at_position = tuple_positions.as_quintuple()[i].unwrap();
+        let source_component_index =
+            component_ordering.iter().position(|var| *var == variable_at_position).unwrap();
+        match source_component_index {
+            0 => VariableValue::Thing(components.0.into()),
+            1 => VariableValue::Thing(components.1.into()),
+            2 => VariableValue::Thing(Thing::Relation(components.2)),
+            3 => VariableValue::Type(Type::RoleType(components.3)),
+            4 => VariableValue::Type(Type::RoleType(components.4)),
+            _ => unreachable!("only 5 components exist"),
+        }
+    });
+    TupleResult::Ok(Tuple::Quintuple(tuple))
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
