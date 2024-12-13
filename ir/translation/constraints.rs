@@ -99,8 +99,12 @@ fn add_thing_statement(
 ) -> Result<(), Box<RepresentationError>> {
     let var = match &thing.head {
         typeql::statement::thing::Head::Variable(var) => register_typeql_var(constraints, var)?,
-        typeql::statement::thing::Head::Relation(rel) => {
+        typeql::statement::thing::Head::Relation(type_opt, rel) => {
             let relation = constraints.create_anonymous_variable()?;
+            if let Some(type_ref) = type_opt {
+                let type_ = register_typeql_type(constraints, type_ref)?;
+                constraints.add_isa(IsaKind::Subtype, relation, type_)?;
+            }
             add_typeql_relation(constraints, relation, rel)?;
             relation
         }

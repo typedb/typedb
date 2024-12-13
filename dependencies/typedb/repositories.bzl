@@ -21,8 +21,8 @@ def typedb_dependencies():
 def typeql():
     git_repository(
         name = "typeql",
-        remote = "https://github.com/typedb/typeql",
-        commit = "3063987ccb66dd8a2e96cd440ab76865ea886f97",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
+        remote = "https://github.com/krishnangovindraj/typeql",
+        commit = "c8a90df125d4a6dc527227cc19ac5f4c2e5c8e12",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
     )
 
 
