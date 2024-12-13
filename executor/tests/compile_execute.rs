@@ -174,7 +174,7 @@ fn test_expression_planning_traversal() {
     let query = "match
         $person_1 isa person, has age $age_1;
         $person_2 isa person, has age == $age_2;
-        $age_2 = $age_1 + 2;
+        let $age_2 = $age_1 + 2;
     ";
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
 

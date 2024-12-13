@@ -133,11 +133,11 @@ fn test_pipeline_equivalence() {
     let pipeline = "
 with fun avg_salary($x: person) -> double:
   match $x has salary $salary;
-        $salary_plus_1 = $salary + 1;
+        let $salary_plus_1 = $salary + 1;
   return mean($salary_plus_1);
 match
   $c isa CUSTOMER, has C_ID 42029, has C_BALANCE $c_balance;
-  $c_balance_new = $c_balance + 1;
+  let $c_balance_new = $c_balance + 1;
   $o links (customer: $c), isa ORDER, has O_ID 69, has O_NEW_ORDER $o_new_order, has O_CARRIER_ID $o_carrier_id;
 delete
   has $o_new_order of $o;
@@ -166,11 +166,11 @@ fetch {
     let structurally_equivalent_pipeline = "\
 with fun avg_salary($DIFF: person) -> double:
   match $DIFF has salary $salary;
-        $salary_plus_2 = $salary + 2;
+        let $salary_plus_2 = $salary + 2;
   return mean($salary_plus_2);
 match
   $C_DIFF isa CUSTOMER, has C_ID 0, has C_BALANCE $c_balance;
-  $c_balance_new = $c_balance + 5;
+  let $c_balance_new = $c_balance + 5;
   $o links (customer: $C_DIFF), isa ORDER, has O_ID 0, has O_NEW_ORDER $o_new_order, has O_CARRIER_ID $o_carrier_id;
 delete
   has $o_new_order of $o;
@@ -215,7 +215,7 @@ with fun avg_salary($x: person) -> double:
   return mean($salary);
 match
   $c isa CUSTOMER, has C_ID 42029, has C_BALANCE $c_balance;
-  $c_balance_new = $c_balance + 1;
+  let $c_balance_new = $c_balance + 1;
   $o links (customer: $c), isa ORDER, has O_ID 69, has O_NEW_ORDER $o_new_order, has O_CARRIER_ID $o_carrier_id;
 delete
   has $o_new_order of $o;
@@ -247,7 +247,7 @@ with fun avg_age($x: person) -> double:
   return mean($age);
 match
   $c isa CUSTOMER, has C_ID 0, has C_BALANCE $c_balance;
-  $c_balance_new = $c_balance + 5;
+  let $c_balance_new = $c_balance + 5;
   $o links (customer: $c), isa ORDER, has O_ID 0, has O_NEW_ORDER $o_new_order;
 delete
   has $o_new_order of $o;

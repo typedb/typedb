@@ -48,7 +48,7 @@ fn compile_expression_via_match(
     (HashMap<String, Variable>, ExecutableExpression<Variable>, ParameterRegistry),
     PatternDefitionOrExpressionCompileError,
 > {
-    let query = format!("match $x = {}; select $x;", s);
+    let query = format!("match let $x = {}; select $x;", s);
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {

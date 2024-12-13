@@ -238,7 +238,7 @@ pub mod tests {
         let mut context = TranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let block =
-            parse_query_get_match(&mut context, &mut value_parameters, "match $y = 5 + 9 * 6; select $y;").unwrap();
+            parse_query_get_match(&mut context, &mut value_parameters, "match let $y = 5 + 9 * 6; select $y;").unwrap();
         let var_y = get_named_variable(&context, "y");
 
         let lhs = block.conjunction().constraints()[0].as_expression_binding().unwrap().left();

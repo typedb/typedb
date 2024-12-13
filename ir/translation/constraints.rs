@@ -11,7 +11,7 @@ use itertools::Itertools;
 use typeql::{
     expression::{FunctionCall, FunctionName},
     statement::{
-        comparison::ComparisonStatement, thing::AttributeComparisonStatement, type_::ValueType as TypeQLValueType,
+        comparison::ComparisonStatement, thing::isa::IsaInstanceConstraint, type_::ValueType as TypeQLValueType,
         Assignment, AssignmentPattern, InIterable, Is,
     },
     token::Kind,
@@ -70,23 +70,6 @@ pub(super) fn add_statement(
             }
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
-        typeql::Statement::AttributeValue(attribute_value) => {
-            let attribute = register_typeql_var(constraints, &attribute_value.var)?;
-            add_typeql_isa(constraints, attribute, &attribute_value.isa)?;
-
-            let value = translate_literal(&attribute_value.value).map_err(|source| {
-                RepresentationError::LiteralParseError { source, literal: attribute_value.value.to_string().clone() }
-            })?;
-            let value_id = constraints.parameters().register_value(value);
-
-            constraints.add_comparison(Vertex::Variable(attribute), Vertex::Parameter(value_id), Comparator::Equal)?;
-        }
-        typeql::Statement::AttributeComparison(AttributeComparisonStatement { var, comparison, isa, .. }) => {
-            let attribute = register_typeql_var(constraints, var)?;
-            add_typeql_isa(constraints, attribute, isa)?;
-            let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparison.comparator.into())?;
-        }
         typeql::Statement::Type(type_) => add_type_statement(constraints, type_)?,
     }
     Ok(())
@@ -111,7 +94,7 @@ fn add_thing_statement(
     };
     for constraint in &thing.constraints {
         match constraint {
-            typeql::statement::thing::Constraint::Isa(isa) => add_typeql_isa(constraints, var, isa)?,
+            typeql::statement::thing::Constraint::Isa(isa) => add_typeql_isa(function_index, constraints, var, isa)?,
             typeql::statement::thing::Constraint::Iid(iid) => add_typeql_iid(constraints, var, iid)?,
             typeql::statement::thing::Constraint::Has(has) => add_typeql_has(function_index, constraints, var, has)?,
             typeql::statement::thing::Constraint::Links(links) => {
@@ -371,6 +354,7 @@ fn add_typeql_value(
 }
 
 fn add_typeql_isa(
+    function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
     thing: Variable,
     isa: &typeql::statement::thing::isa::Isa,
@@ -378,6 +362,31 @@ fn add_typeql_isa(
     let kind = isa.kind.into();
     let type_ = register_typeql_type(constraints, &isa.type_)?;
     constraints.add_isa(kind, thing, type_)?;
+    if let Some(instance_constraint) = &isa.constraint {
+        match instance_constraint {
+            IsaInstanceConstraint::Relation(relation) => {
+                add_typeql_relation(constraints, thing, relation)?;
+            }
+            IsaInstanceConstraint::Value(value) => {
+                let value = translate_literal(value).map_err(|source| RepresentationError::LiteralParseError {
+                    source,
+                    literal: value.to_string().clone(),
+                })?;
+                let value_id = constraints.parameters().register_value(value);
+                constraints.add_comparison(Vertex::Variable(thing), Vertex::Parameter(value_id), Comparator::Equal)?;
+            }
+            IsaInstanceConstraint::Expression(expression) => {
+                let assigned_to = add_typeql_expression(function_index, constraints, expression)?;
+                constraints.add_comparison(Vertex::Variable(thing), assigned_to, Comparator::Equal)?;
+            }
+            IsaInstanceConstraint::Comparison(comparison) => {
+                add_typeql_isa(function_index, constraints, thing, isa)?;
+                let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
+                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparison.comparator.into())?;
+            }
+            IsaInstanceConstraint::Struct(_) => todo!(),
+        }
+    }
     Ok(())
 }
 
