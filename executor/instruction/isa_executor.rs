@@ -29,12 +29,11 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions},
-        BinaryIterateMode, Checker, FilterMapFn, VariableModes, TYPES_EMPTY,
+        BinaryIterateMode, Checker, FilterMapFn, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct IsaExecutor {
     isa: Isa<ExecutorVariable>,

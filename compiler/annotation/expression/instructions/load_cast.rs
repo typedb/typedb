@@ -9,10 +9,10 @@ use encoding::value::{decimal_value::Decimal, value::NativeValueConvertible, val
 
 use crate::annotation::expression::{
     expression_compiler::ExpressionCompilationContext,
-    ExpressionCompileError,
     instructions::{
-        CompilableExpression, ExpressionEvaluationError, ExpressionInstruction, op_codes::ExpressionOpCode,
+        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
     },
+    ExpressionCompileError,
 };
 
 // Declarations

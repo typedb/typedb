@@ -6,9 +6,6 @@
 
 use std::{collections::HashSet, sync::Arc};
 
-use tracing::{event, Level};
-use typeql::query::SchemaQuery;
-
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
@@ -19,13 +16,15 @@ use executor::pipeline::{
     pipeline::Pipeline,
     stage::{ReadPipelineStage, WritePipelineStage},
 };
-use function::function_manager::{FunctionManager, ReadThroughFunctionSignatureIndex, validate_no_cycles};
+use function::function_manager::{validate_no_cycles, FunctionManager, ReadThroughFunctionSignatureIndex};
 use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
 use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use tracing::{event, Level};
+use typeql::query::SchemaQuery;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 

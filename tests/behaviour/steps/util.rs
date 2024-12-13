@@ -13,7 +13,7 @@ use std::{
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
 
-use crate::{Context, generic_step, json::JSON};
+use crate::{generic_step, json::JSON, Context};
 
 pub(crate) fn iter_table(step: &Step) -> impl Iterator<Item = &str> {
     step.table().unwrap().rows.iter().flatten().map(String::as_str)

@@ -8,9 +8,8 @@ use std::marker::PhantomData;
 
 use bytes::byte_array::ByteArray;
 use encoding::{
-    AsBytes,
     graph::{
-        definition::{definition_key::DefinitionKey, DefinitionValueEncoding, r#struct::StructDefinition},
+        definition::{definition_key::DefinitionKey, r#struct::StructDefinition, DefinitionValueEncoding},
         type_::{
             edge::TypeEdgeEncoding,
             index::{LabelToTypeVertexIndex, NameToStructDefinitionIndex},
@@ -18,14 +17,15 @@ use encoding::{
             vertex::TypeVertexEncoding,
         },
     },
-    Keyable, value::{label::Label, value_type::ValueType},
+    value::{label::Label, value_type::ValueType},
+    AsBytes, Keyable,
 };
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
     error::ConceptWriteError,
     type_::{
-        attribute_type::AttributeType, Ordering, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, TypeAPI,
+        attribute_type::AttributeType, owns::Owns, sub::Sub, type_manager::type_reader::TypeReader, Ordering, TypeAPI,
     },
 };
 

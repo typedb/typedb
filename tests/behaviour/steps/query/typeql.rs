@@ -6,38 +6,37 @@
 
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use cucumber::gherkin::Step;
-use itertools::Itertools;
-use macro_rules_attribute::apply;
-
-use answer::{Thing, variable_value::VariableValue};
+use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
 use concept::{
     thing::{object::ObjectAPI, ThingAPI},
     type_::TypeAPI,
 };
+use cucumber::gherkin::Step;
 use encoding::{
-    AsBytes,
     value::{label::Label, value_type::ValueType, ValueEncodable},
+    AsBytes,
 };
 use executor::{
     batch::Batch,
-    ExecutionInterrupt,
     pipeline::stage::{ExecutionContext, StageIterator},
+    ExecutionInterrupt,
 };
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use macro_rules_attribute::apply;
 use query::error::QueryError;
 use test_utils::assert_matches;
 
 use crate::{
-    BehaviourTestExecutionError, Context,
-    generic_step,
-    params,
-    query_answer_context::{QueryAnswer, with_rows_answer},
+    generic_step, params,
+    query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
-        ActiveTransaction::{Read, Schema}, with_read_tx, with_schema_tx,
-        with_write_tx_deconstructed,
-    }, util::{iter_table_map, list_contains_json, parse_json},
+        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
+        ActiveTransaction::{Read, Schema},
+    },
+    util::{iter_table_map, list_contains_json, parse_json},
+    BehaviourTestExecutionError, Context,
 };
 
 fn row_batch_result_to_answer(

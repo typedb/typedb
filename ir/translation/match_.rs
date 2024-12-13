@@ -11,8 +11,8 @@ use crate::{
         function_signature::FunctionSignatureIndex,
         ParameterRegistry,
     },
-    RepresentationError,
     translation::{constraints::add_statement, TranslationContext},
+    RepresentationError,
 };
 
 pub fn translate_match<'a>(

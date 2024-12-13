@@ -5,7 +5,7 @@
  */
 
 pub use snapshot::{
-    CommittableSnapshot, ReadableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
+    CommittableSnapshot, ReadSnapshot, ReadableSnapshot, SchemaSnapshot, SnapshotError, SnapshotGetError,
     WritableSnapshot, WriteSnapshot,
 };
 

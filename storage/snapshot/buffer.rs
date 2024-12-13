@@ -7,25 +7,24 @@
 use std::{
     borrow::Borrow,
     cmp::Ordering,
-    collections::{Bound, BTreeMap},
+    collections::{BTreeMap, Bound},
     fmt,
     iter::{IntoIterator, Peekable},
-    sync::{Arc, atomic::AtomicBool},
+    sync::{atomic::AtomicBool, Arc},
 };
 
+use bytes::{byte_array::ByteArray, util::increment, Bytes};
+use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use serde::{
     de::{self, MapAccess, SeqAccess, Visitor},
-    Deserialize,
-    Deserializer, ser::SerializeStruct, Serialize, Serializer,
+    ser::SerializeStruct,
+    Deserialize, Deserializer, Serialize, Serializer,
 };
-
-use bytes::{byte_array::ByteArray, Bytes, util::increment};
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 
 use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKeyArray,
-    keyspace::{KEYSPACE_MAXIMUM_COUNT, KeyspaceId},
+    keyspace::{KeyspaceId, KEYSPACE_MAXIMUM_COUNT},
     snapshot::{lock::LockType, write::Write},
 };
 

@@ -18,14 +18,14 @@ use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
-    MVCCStorage,
     sequence_number::SequenceNumber,
     snapshot::{
         buffer::{BufferRangeIterator, OperationsBuffer},
         iterator::SnapshotRangeIterator,
         lock::LockType,
         write::Write,
-    }, StorageCommitError,
+    },
+    MVCCStorage, StorageCommitError,
 };
 
 macro_rules! get_mapped_method {

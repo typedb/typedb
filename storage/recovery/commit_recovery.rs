@@ -6,18 +6,17 @@
 
 use std::{collections::BTreeMap, sync::Arc};
 
-use tracing::{event, Level};
-
 use durability::RawRecord;
 use error::typedb_error;
+use tracing::{event, Level};
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord},
     isolation_manager::{CommitRecord, IsolationManager, StatusRecord, ValidatedCommit},
     keyspace::{KeyspaceError, Keyspaces},
-    MVCCStorage,
     sequence_number::SequenceNumber,
     write_batches::WriteBatches,
+    MVCCStorage,
 };
 
 /// Load commit data from the start onwards. Ignores any statuses that are not paired with commit data.

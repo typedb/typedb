@@ -123,7 +123,8 @@ impl IndexedRelationExecutor {
         // note that we don't record Roles as 'bound' (though they may be), and sometimes Relations are also bound but may need post-filtering
         let variables_lexicographically_ordered = [player_start, player_end, relation, role_start, role_end];
 
-        static MODE_PRIORITY: [VariableMode; 4] = [VariableMode::Input, VariableMode::Output, VariableMode::Count, VariableMode::Check];
+        static MODE_PRIORITY: [VariableMode; 4] =
+            [VariableMode::Input, VariableMode::Output, VariableMode::Count, VariableMode::Check];
 
         let mut output_tuple_positions: [Option<ExecutorVariable>; 5] = [None; 5];
         // index 0 is always the sort variable
@@ -143,7 +144,9 @@ impl IndexedRelationExecutor {
             } else {
                 variable_modes.get(preceding_variable).unwrap()
             };
-            'mode: for mode_index in MODE_PRIORITY.iter().position(|mode| *mode == preceding_variable_mode).unwrap()..MODE_PRIORITY.len() {
+            'mode: for mode_index in
+                MODE_PRIORITY.iter().position(|mode| *mode == preceding_variable_mode).unwrap()..MODE_PRIORITY.len()
+            {
                 let mode = MODE_PRIORITY[mode_index];
                 // find first unused variable with this mode (else, try the next mode)
                 for variable in variables_lexicographically_ordered {
@@ -237,13 +240,13 @@ impl IndexedRelationExecutor {
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
-        
+
         match self.iterate_mode {
             IndexedRelationIterateMode::Unbound => {
                 // want it sorted by start player, so we must merge an iterator per relation type
                 if self.relation_to_player_start_types.len() == 1 {
                     let &relation_type = self.relation_to_player_start_types.keys().next().unwrap();
-                    let as_tuples  = thing_manager
+                    let as_tuples = thing_manager
                         .get_indexed_relations_in(snapshot, relation_type.as_relation_type())
                         .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
@@ -528,8 +531,7 @@ fn to_tuple(
     let (components, _) = indexed_relation_players?;
     let tuple: [VariableValue<'static>; 5] = std::array::from_fn(|i| {
         let variable_at_position = tuple_positions.as_quintuple()[i].unwrap();
-        let source_component_index =
-            component_ordering.iter().position(|var| *var == variable_at_position).unwrap();
+        let source_component_index = component_ordering.iter().position(|var| *var == variable_at_position).unwrap();
         match source_component_index {
             0 => VariableValue::Thing(components.0.into()),
             1 => VariableValue::Thing(components.1.into()),

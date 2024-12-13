@@ -6,8 +6,6 @@
 
 use std::collections::{HashMap, HashSet, VecDeque};
 
-use itertools::Itertools;
-
 use encoding::{
     graph::{
         definition::definition_key::DefinitionKey,
@@ -15,6 +13,7 @@ use encoding::{
     },
     value::{label::Label, value_type::ValueType},
 };
+use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 
@@ -23,8 +22,8 @@ use crate::{
     thing::{
         object::ObjectAPI,
         thing_manager::{
+            validation::{validation::DataValidation, DataValidationError},
             ThingManager,
-            validation::{DataValidationError, validation::DataValidation},
         },
     },
     type_::{
@@ -33,33 +32,33 @@ use crate::{
             AnnotationRegex, AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
-        Capability,
         constraint::{
-            CapabilityConstraint, Constraint, ConstraintDescription, ConstraintScope,
             filter_by_constraint_category, filter_by_scope, filter_out_unchecked_constraints, get_abstract_constraints,
             get_checked_constraints, get_distinct_constraints, get_range_constraints, get_regex_constraints,
-            get_values_constraints, type_get_constraints_closest_source, TypeConstraint,
+            get_values_constraints, type_get_constraints_closest_source, CapabilityConstraint, Constraint,
+            ConstraintDescription, ConstraintScope, TypeConstraint,
         },
         entity_type::EntityType,
-        KindAPI,
         object_type::ObjectType,
-        Ordering,
-        OwnerAPI,
         owns::{Owns, OwnsAnnotation},
-        PlayerAPI,
-        plays::Plays, relates::{Relates, RelatesAnnotation}, relation_type::RelationType, role_type::RoleType, type_manager::{
+        plays::Plays,
+        relates::{Relates, RelatesAnnotation},
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{
             type_reader::TypeReader,
-            TypeManager,
             validation::{
-                SchemaValidationError,
                 validation::{
                     get_label_or_schema_err, get_opt_label_or_schema_err, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match, validate_sibling_owns_ordering_match_for_type,
                     validate_type_declared_constraints_narrowing_of_supertype_constraints,
                     validate_type_supertype_abstractness,
                 },
+                SchemaValidationError,
             },
-        }, TypeAPI,
+            TypeManager,
+        },
+        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

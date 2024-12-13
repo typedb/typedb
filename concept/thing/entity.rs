@@ -6,32 +6,30 @@
 
 use std::fmt;
 
-use itertools::Itertools;
-
 use bytes::Bytes;
 use encoding::{
-    AsBytes,
     graph::{
-        thing::{ThingVertex, vertex_object::ObjectVertex},
+        thing::{vertex_object::ObjectVertex, ThingVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
-    Keyable, layout::prefix::Prefix, Prefixed,
+    layout::prefix::Prefix,
+    AsBytes, Keyable, Prefixed,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
-    ConceptAPI,
-    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        HKInstance
-        ,
         object::{Object, ObjectAPI},
-        thing_manager::ThingManager, ThingAPI,
-    }, type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
+        thing_manager::ThingManager,
+        HKInstance, ThingAPI,
+    },
+    type_::{entity_type::EntityType, ObjectTypeAPI, Ordering, OwnerAPI},
+    ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]

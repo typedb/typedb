@@ -5,14 +5,13 @@
  */
 
 use std::sync::{
-    Arc,
     atomic::{AtomicBool, Ordering},
+    Arc,
 };
-
-use serde::{Deserialize, Serialize};
 
 use bytes::byte_array::ByteArray;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub enum Write {

@@ -32,12 +32,11 @@ use crate::{
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions},
-        BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
+        BinaryIterateMode, Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,

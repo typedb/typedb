@@ -8,20 +8,19 @@ use std::{borrow::Cow, str::FromStr};
 
 use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
 use chrono_tz::Tz;
-use typeql::{
-    annotation::Regex,
-    value::{
-        BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal,
-        Sign, SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
-    },
-};
-
 use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
     decimal_value::Decimal,
     duration_value::{Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
+};
+use typeql::{
+    annotation::Regex,
+    value::{
+        BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal,
+        Sign, SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
+    },
 };
 
 use crate::LiteralParseError;
@@ -259,18 +258,17 @@ impl FromTypeQLLiteral for AnnotationRegex {
 
 #[cfg(test)]
 pub mod tests {
-    use typeql::query::stage::Stage;
-
     use encoding::value::{
         decimal_value::{Decimal, FRACTIONAL_PART_DENOMINATOR_LOG10},
         value::Value,
     };
+    use typeql::query::stage::Stage;
 
     use crate::{
         pattern::expression::Expression,
         pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-        RepresentationError,
         translation::{match_::translate_match, TranslationContext},
+        RepresentationError,
     };
 
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, Box<RepresentationError>> {

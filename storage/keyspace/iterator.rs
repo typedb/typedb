@@ -11,7 +11,7 @@ use lending_iterator::{LendingIterator, Seekable};
 
 use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
-    keyspace::{IteratorPool, Keyspace, KeyspaceError, raw_iterator, raw_iterator::DBIterator},
+    keyspace::{raw_iterator, raw_iterator::DBIterator, IteratorPool, Keyspace, KeyspaceError},
 };
 
 pub struct KeyspaceRangeIterator {

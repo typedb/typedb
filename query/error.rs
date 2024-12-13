@@ -5,8 +5,8 @@
  */
 
 use compiler::{
-    annotation::{AnnotationError, expression::ExpressionCompileError},
-    executable::{ExecutableCompilationError, insert::WriteCompilationError},
+    annotation::{expression::ExpressionCompileError, AnnotationError},
+    executable::{insert::WriteCompilationError, ExecutableCompilationError},
     transformation::StaticOptimiserError,
 };
 use error::typedb_error;

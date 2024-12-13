@@ -6,37 +6,36 @@
 
 use std::collections::{HashMap, HashSet};
 
-use itertools::Itertools;
-
 use encoding::graph::definition::r#struct::StructDefinition;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ConceptReadError,
     type_::{
         attribute_type::AttributeType,
-        Capability,
-        constraint::{Constraint, ConstraintDescription, filter_by_source},
+        constraint::{filter_by_source, Constraint, ConstraintDescription},
         entity_type::EntityType,
-        KindAPI,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        OwnerAPI,
         owns::Owns,
-        PlayerAPI,
-        plays::Plays, relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::{
+        plays::Plays,
+        relates::Relates,
+        relation_type::RelationType,
+        role_type::RoleType,
+        type_manager::{
             type_reader::TypeReader,
-            TypeManager,
             validation::{
-                SchemaValidationError,
                 validation::{
                     get_label_or_concept_read_err, validate_role_name_uniqueness_non_transitive,
                     validate_role_type_supertype_ordering_match, validate_sibling_owns_ordering_match_for_type,
                     validate_type_declared_constraints_narrowing_of_supertype_constraints,
                     validate_type_supertype_abstractness,
                 },
+                SchemaValidationError,
             },
-        }, TypeAPI,
+            TypeManager,
+        },
+        Capability, KindAPI, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

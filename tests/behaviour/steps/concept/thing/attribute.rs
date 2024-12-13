@@ -6,19 +6,18 @@
 
 use std::sync::Arc;
 
-use macro_rules_attribute::apply;
-
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{attribute::Attribute, ThingAPI},
     type_::TypeAPI,
 };
+use macro_rules_attribute::apply;
 
 use crate::{
-    Context,
     generic_step,
     params::{self, check_boolean},
     transaction_context::{with_read_tx, with_write_tx},
+    Context,
 };
 
 pub fn attribute_put_instance_with_value_impl(

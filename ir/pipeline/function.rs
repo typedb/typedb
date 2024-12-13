@@ -10,16 +10,15 @@ use std::{
     mem,
 };
 
+use answer::variable::Variable;
+use structural_equality::StructuralEquality;
 use typeql::{
     schema::definable::function::{Output, SingleSelector},
     TypeRefAny,
 };
 
-use answer::variable::Variable;
-use structural_equality::StructuralEquality;
-
 use crate::{
-    pipeline::{ParameterRegistry, reduce::Reducer},
+    pipeline::{reduce::Reducer, ParameterRegistry},
     translation::{pipeline::TranslatedStage, TranslationContext},
 };
 

@@ -37,12 +37,11 @@ use crate::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, LinksToTupleFn, TuplePositions,
         },
-        Checker, FilterFn, FilterMapFn, LinksIterateMode, VariableModes,
+        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
 };
-use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -312,7 +311,7 @@ fn compare_by_player_then_relation(
     }
 }
 
-pub(crate) fn may_get_role(role_var: ExecutorVariable, row: MaybeOwnedRow<'_>, ) -> Option<RoleType> {
+pub(crate) fn may_get_role(role_var: ExecutorVariable, row: MaybeOwnedRow<'_>) -> Option<RoleType> {
     match role_var {
         ExecutorVariable::RowPosition(position) => {
             if position.as_usize() < row.len() {

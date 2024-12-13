@@ -17,17 +17,17 @@ use crate::{
         object::{Object, ObjectAPI},
         relation::Relation,
         thing_manager::{
-            ThingManager,
             validation::{
+                validation::{get_label_or_data_err, DataValidation},
                 DataValidationError,
-                validation::{DataValidation, get_label_or_data_err},
             },
+            ThingManager,
         },
         ThingAPI,
     },
     type_::{
         attribute_type::AttributeType, constraint::Constraint, entity_type::EntityType, object_type::ObjectType,
-        ObjectTypeAPI, OwnerAPI, PlayerAPI, relation_type::RelationType, role_type::RoleType, TypeAPI,
+        relation_type::RelationType, role_type::RoleType, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

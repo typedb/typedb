@@ -11,8 +11,8 @@ use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
     durability_client::WALClient,
     key_value::{StorageKeyArray, StorageKeyReference},
-    MVCCStorage,
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
+    MVCCStorage,
 };
 use test_utils::{create_tmp_dir, init_logging};
 use test_utils_storage::{checkpoint_storage, create_storage, load_storage, test_keyspace_set};

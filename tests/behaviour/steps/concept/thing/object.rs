@@ -6,14 +6,13 @@
 
 use std::sync::Arc;
 
-use itertools::Itertools;
-use macro_rules_attribute::apply;
-
 use concept::{
     error::ConceptWriteError,
     thing::{object::Object, ThingAPI},
     type_::{object_type::ObjectType, TypeAPI},
 };
+use itertools::Itertools;
+use macro_rules_attribute::apply;
 use test_utils::assert_matches;
 
 use crate::{
@@ -21,11 +20,11 @@ use crate::{
         attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
         has::object_set_has_impl,
     },
-    Context, generic_step,
-    params,
+    generic_step, params,
     params::check_boolean,
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
+    Context,
 };
 
 fn object_create_instance_impl(

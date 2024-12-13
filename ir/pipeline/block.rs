@@ -13,8 +13,8 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
-        Scope,
-        ScopeId, variable_category::VariableCategory,
+        variable_category::VariableCategory,
+        Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,

@@ -5,8 +5,7 @@
  */
 
 use std::{
-    borrow::Cow
-    ,
+    borrow::Cow,
     collections::{HashMap, HashSet},
     sync::Arc,
 };
@@ -17,7 +16,7 @@ use encoding::{
         definition::{
             definition_key::DefinitionKey, definition_key_generator::DefinitionKeyGenerator, r#struct::StructDefinition,
         },
-        type_::{Kind, vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator},
+        type_::{vertex::TypeVertexEncoding, vertex_generator::TypeVertexGenerator, Kind},
     },
     value::{label::Label, value_type::ValueType},
 };
@@ -38,21 +37,21 @@ use crate::{
             AnnotationUnique, AnnotationValues,
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
-        Capability,
         constraint::{
-            CapabilityConstraint, Constraint, get_abstract_constraint, get_cardinality_constraint,
-            get_cardinality_constraints, get_distinct_constraints, get_independent_constraints,
-            get_owns_default_constraints, get_plays_default_constraints, get_range_constraints, get_regex_constraints,
-            get_relates_default_constraints, get_unique_constraint, get_values_constraints, TypeConstraint,
+            get_abstract_constraint, get_cardinality_constraint, get_cardinality_constraints, get_distinct_constraints,
+            get_independent_constraints, get_owns_default_constraints, get_plays_default_constraints,
+            get_range_constraints, get_regex_constraints, get_relates_default_constraints, get_unique_constraint,
+            get_values_constraints, CapabilityConstraint, Constraint, TypeConstraint,
         },
         entity_type::{EntityType, EntityTypeAnnotation},
-        KindAPI,
         object_type::ObjectType,
-        ObjectTypeAPI,
-        Ordering,
-        OwnerAPI,
         owns::{Owns, OwnsAnnotation},
-        PlayerAPI, plays::{Plays, PlaysAnnotation}, relates::{Relates, RelatesAnnotation}, relation_type::{RelationType, RelationTypeAnnotation}, role_type::{RoleType, RoleTypeAnnotation}, type_manager::type_reader::TypeReader, TypeAPI,
+        plays::{Plays, PlaysAnnotation},
+        relates::{Relates, RelatesAnnotation},
+        relation_type::{RelationType, RelationTypeAnnotation},
+        role_type::{RoleType, RoleTypeAnnotation},
+        type_manager::type_reader::TypeReader,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
 

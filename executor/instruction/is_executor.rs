@@ -19,12 +19,11 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapFn, VariableModes,
+        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct IsExecutor {
     is: Is<ExecutorVariable>,

@@ -16,12 +16,11 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
-        Checker, FilterFn, FilterMapFn, VariableModes,
+        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::FilterMapUnchangedFn;
 
 pub(crate) struct TypeListExecutor {
     variable_modes: VariableModes,

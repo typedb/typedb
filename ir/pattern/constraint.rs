@@ -12,17 +12,16 @@ use std::{
     ops::Deref,
 };
 
-use itertools::Itertools;
-
 use answer::variable::Variable;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
         expression::{ExpressionDefinitionError, ExpressionTree},
         function_call::FunctionCall,
-        IrID,
-        ParameterID, ScopeId, ValueType, variable_category::VariableCategory, Vertex,
+        variable_category::VariableCategory,
+        IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     RepresentationError,

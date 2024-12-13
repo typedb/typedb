@@ -6,20 +6,19 @@
 
 use std::sync::Arc;
 
+use concept::type_::{
+    annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint, entity_type::EntityTypeAnnotation,
+    object_type::ObjectType, relation_type::RelationTypeAnnotation, KindAPI, TypeAPI,
+};
 use cucumber::gherkin::Step;
+use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 
-use concept::type_::{
-    annotation, attribute_type::AttributeTypeAnnotation, constraint::Constraint, entity_type::EntityTypeAnnotation,
-    KindAPI, object_type::ObjectType, relation_type::RelationTypeAnnotation, TypeAPI,
-};
-use encoding::{graph::type_::Kind, value::value_type::ValueType};
-
 use crate::{
-    Context, generic_step,
-    params,
-    transaction_context::{with_read_tx, with_schema_tx, with_write_tx}, util, with_type,
+    generic_step, params,
+    transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
+    util, with_type, Context,
 };
 
 #[macro_export]

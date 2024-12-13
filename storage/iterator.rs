@@ -9,14 +9,13 @@ use std::{cmp::Ordering, error::Error, fmt, sync::Arc};
 use bytes::byte_array::ByteArray;
 use lending_iterator::{LendingIterator, Peekable, Seekable};
 
+use super::{MVCCKey, MVCCStorage, StorageOperation, MVCC_KEY_INLINE_SIZE};
 use crate::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{iterator::KeyspaceRangeIterator, IteratorPool, KeyspaceError, KeyspaceId},
     sequence_number::SequenceNumber,
 };
-
-use super::{MVCC_KEY_INLINE_SIZE, MVCCKey, MVCCStorage, StorageOperation};
 
 pub(crate) struct MVCCRangeIterator {
     storage_name: Arc<String>,

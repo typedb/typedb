@@ -364,8 +364,10 @@ fn type_from_row_or_annotations<'a>(
     }
 }
 
-pub(super) type FilterMapUnchangedFn<T> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
-pub(super) type FilterMapFn<T, U> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<U, Box<ConceptReadError>>>;
+pub(super) type FilterMapUnchangedFn<T> =
+    dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+pub(super) type FilterMapFn<T, U> =
+    dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<U, Box<ConceptReadError>>>;
 type FilterFn<T> = dyn Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>>;
 
 pub(crate) struct Checker<T: 'static> {

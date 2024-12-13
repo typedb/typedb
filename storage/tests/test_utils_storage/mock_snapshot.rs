@@ -13,7 +13,7 @@ use storage::{
     keyspace::IteratorPool,
     sequence_number::SequenceNumber,
     snapshot::{
-        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, ReadableSnapshot, SnapshotGetError, write::Write,
+        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::Write, ReadableSnapshot, SnapshotGetError,
     },
 };
 

@@ -7,18 +7,17 @@
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
     sync::{
-        Arc,
         atomic::{AtomicU64, Ordering},
+        Arc,
     },
 };
-
-use moka::sync::Cache;
 
 use compiler::executable::pipeline::ExecutablePipeline;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
     translation::pipeline::TranslatedStage,
 };
+use moka::sync::Cache;
 use resource::{
     constants::database::{QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT, QUERY_PLAN_CACHE_SIZE},
     perf_counters::QUERY_CACHE_FLUSH,

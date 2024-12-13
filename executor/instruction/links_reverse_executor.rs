@@ -34,7 +34,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            verify_role, LinksFilterFn, LinksFilterMapFn, LinksOrderingFn, LinksTupleIterator,
+            may_get_role, verify_role, LinksFilterFn, LinksFilterMapFn, LinksOrderingFn, LinksTupleIterator,
             LinksTupleIteratorMerged, LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
         min_max_types,
@@ -47,7 +47,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::links_executor::may_get_role;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,

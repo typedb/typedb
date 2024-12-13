@@ -16,20 +16,19 @@ use std::{
     ops::Add,
 };
 
-use regex::Regex;
-use serde::{Deserialize, Serialize};
-
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
     graph::type_::property::{TypeEdgePropertyEncoding, TypeVertexPropertyEncoding},
     layout::infix::Infix,
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
+use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use serde::{Deserialize, Serialize};
 
 use crate::type_::{
-    Capability,
-    constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint}, KindAPI,
+    constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
+    Capability, KindAPI,
 };
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
@@ -891,13 +890,6 @@ impl Error for AnnotationError {
 mod serialize_annotation {
     use std::{borrow::Cow, fmt};
 
-    use serde::{
-        de,
-        de::{MapAccess, SeqAccess, Visitor},
-        Deserialize,
-        Deserializer, ser::SerializeStruct, Serialize, Serializer,
-    };
-
     use bytes::Bytes;
     use encoding::value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
@@ -906,6 +898,12 @@ mod serialize_annotation {
         value_type::ValueTypeCategory, ValueEncodable,
     };
     use resource::constants::encoding::AD_HOC_BYTES_INLINE;
+    use serde::{
+        de,
+        de::{MapAccess, SeqAccess, Visitor},
+        ser::SerializeStruct,
+        Deserialize, Deserializer, Serialize, Serializer,
+    };
 
     use crate::type_::annotation::{AnnotationRange, AnnotationValues};
 

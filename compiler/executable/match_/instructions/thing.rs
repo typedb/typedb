@@ -470,7 +470,7 @@ impl<ID: IrID> IndexedRelationInstruction<ID> {
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
-    
+
     pub(crate) fn first_unbound_component(&self) -> ID {
         if !self.inputs.contains(self.player_start) {
             self.player_start

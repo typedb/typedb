@@ -17,7 +17,7 @@ use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, TranslationContext},
 };
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 

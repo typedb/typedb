@@ -11,7 +11,6 @@ use std::{
 };
 
 use itertools::Itertools;
-
 use structural_equality::StructuralEquality;
 
 use crate::{pattern::IrID, pipeline::function_signature::FunctionID};

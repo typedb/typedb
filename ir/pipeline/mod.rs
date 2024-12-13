@@ -6,22 +6,21 @@
 
 use std::{collections::HashMap, error::Error, fmt, sync::Arc};
 
-use itertools::Itertools;
-use typeql::schema::definable::function::{
-    Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream, Signature,
-};
-
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::value::Value};
 use error::typedb_error;
+use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
+use typeql::schema::definable::function::{
+    Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream, Signature,
+};
 
 use crate::{
     pattern::{
         constraint::Constraint,
-        ParameterID,
         variable_category::{VariableCategory, VariableOptionality},
+        ParameterID,
     },
     pipeline::{function_signature::FunctionID, reduce::Reducer},
     RepresentationError,

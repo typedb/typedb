@@ -13,20 +13,19 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
-use itertools::Itertools;
-
 use bytes::Bytes;
 use encoding::{
-    AsBytes,
     graph::{
         thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
-    Keyable,
-    layout::prefix::Prefix, value::{decode_value_u64, value::Value, value_type::ValueType},
+    layout::prefix::Prefix,
+    value::{decode_value_u64, value::Value, value_type::ValueType},
+    AsBytes, Keyable,
 };
 use iterator::State;
+use itertools::Itertools;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
@@ -35,11 +34,11 @@ use storage::{
 };
 
 use crate::{
-    ConceptAPI,
-    ConceptStatus,
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{HKInstance, object::Object, thing_manager::ThingManager, ThingAPI}, type_::{attribute_type::AttributeType, ObjectTypeAPI},
+    thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI},
+    ConceptAPI, ConceptStatus,
 };
 
 #[derive(Debug, Clone)]
