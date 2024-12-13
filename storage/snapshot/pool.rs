@@ -28,7 +28,7 @@ impl<T: Poolable> SinglePool<T> {
     }
 
     pub fn get_or_create(&self, create_fn: impl FnOnce() -> T) -> PoolRecycleGuard<T> {
-        let mut unlocked = self.pool.try_lock().unwrap();
+        let mut unlocked = self.pool.lock().unwrap();
         if let Some(item) = unlocked.pop() {
             PoolRecycleGuard { item: Some(item), pool: self.clone() }
         } else {
@@ -38,7 +38,7 @@ impl<T: Poolable> SinglePool<T> {
     }
 
     fn recycle(&self, item: T) {
-        let mut unlocked = self.pool.try_lock().unwrap();
+        let mut unlocked = self.pool.lock().unwrap();
         unlocked.push(item);
     }
 }
