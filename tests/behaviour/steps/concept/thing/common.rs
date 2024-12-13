@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use encoding::graph::type_::Kind;
 use macro_rules_attribute::apply;
 
-use crate::{generic_step, params, Context};
+use encoding::graph::type_::Kind;
+
+use crate::{Context, generic_step, params};
 
 #[apply(generic_step)]
 #[step(expr = r"{kind} {var} {exists_or_doesnt}")]

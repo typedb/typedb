@@ -12,12 +12,13 @@ use std::{
 
 use rocksdb::WriteBatch;
 
-use super::{MVCCKey, StorageOperation};
 use crate::{
     keyspace::KEYSPACE_MAXIMUM_COUNT,
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
 };
+
+use super::{MVCCKey, StorageOperation};
 
 pub(crate) struct WriteBatches {
     pub(crate) batches: [Option<WriteBatch>; KEYSPACE_MAXIMUM_COUNT],

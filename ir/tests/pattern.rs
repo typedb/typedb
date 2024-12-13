@@ -4,12 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use typeql::query::stage::Stage;
+
 use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, TranslationContext},
     RepresentationError,
+    translation::{match_::translate_match, TranslationContext},
 };
-use typeql::query::stage::Stage;
 
 #[test]
 fn build_conjunction_constraints() {

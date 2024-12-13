@@ -6,12 +6,9 @@
 
 use std::collections::{HashMap, HashSet};
 
-use answer::variable::Variable;
-use error::typedb_error;
-use primitive::maybe_owns::MaybeOwns;
-use storage::snapshot::ReadableSnapshot;
 use typeql::{
     expression::{FunctionCall, FunctionName},
+    Expression,
     query::stage::{
         fetch::{
             FetchAttribute, FetchList as TypeQLFetchList, FetchObject as TypeQLFetchObject,
@@ -22,9 +19,13 @@ use typeql::{
     },
     schema::definable::function::{FunctionBlock, SingleSelector},
     type_::NamedType,
-    value::StringLiteral,
-    Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
+    TypeRef, TypeRefAny, value::StringLiteral, Variable as TypeQLVariable,
 };
+
+use answer::variable::Variable;
+use error::typedb_error;
+use primitive::maybe_owns::MaybeOwns;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::ParameterID,
@@ -38,6 +39,7 @@ use crate::{
         function_signature::{FunctionSignature, FunctionSignatureIndex},
         FunctionReadError, ParameterRegistry,
     },
+    RepresentationError,
     translation::{
         expression::{add_user_defined_function_call, build_expression},
         fetch::FetchRepresentationError::{
@@ -50,7 +52,6 @@ use crate::{
         tokens::checked_identifier,
         TranslationContext,
     },
-    RepresentationError,
 };
 
 pub(super) fn translate_fetch(

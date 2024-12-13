@@ -4,25 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::Type as TypeEnum;
-use concept::{
-    error::{ConceptReadError, ConceptWriteError},
-    thing::thing_manager::ThingManager,
-    type_::{
-        annotation::{AnnotationCategory, AnnotationError},
-        attribute_type::AttributeTypeAnnotation,
-        type_manager::TypeManager,
-        Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
-    },
-};
-use encoding::{
-    graph::type_::Kind,
-    value::{label::Label, value_type::ValueType},
-};
-use error::typedb_error;
-use function::{function_manager::FunctionManager, FunctionError};
-use ir::{translation::tokens::translate_annotation_category, LiteralParseError};
-use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     common::{error::TypeQLError, token::Keyword},
     query::schema::Undefine,
@@ -41,17 +22,37 @@ use typeql::{
     type_::Label as TypeQLLabel,
 };
 
+use answer::Type as TypeEnum;
+use concept::{
+    error::{ConceptReadError, ConceptWriteError},
+    thing::thing_manager::ThingManager,
+    type_::{
+        annotation::{AnnotationCategory, AnnotationError},
+        attribute_type::AttributeTypeAnnotation,
+        Capability,
+        KindAPI, Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager, TypeAPI,
+    },
+};
+use encoding::{
+    graph::type_::Kind,
+    value::{label::Label, value_type::ValueType},
+};
+use error::typedb_error;
+use function::{function_manager::FunctionManager, FunctionError};
+use ir::{LiteralParseError, translation::tokens::translate_annotation_category};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+
 use crate::{
     definable_resolution::{
         filter_variants, resolve_attribute_type, resolve_object_type, resolve_owns_declared, resolve_plays_declared,
         resolve_relates, resolve_relates_declared, resolve_relation_type, resolve_role_type,
-        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, type_ref_to_label_and_ordering,
-        type_to_object_type, SymbolResolutionError,
+        resolve_struct_definition_key, resolve_typeql_type, resolve_value_type, SymbolResolutionError,
+        type_ref_to_label_and_ordering, type_to_object_type,
     },
     definable_status::{
-        get_capability_annotation_category_status, get_owns_status, get_plays_status, get_relates_status,
-        get_sub_status, get_type_annotation_category_status, get_value_type_status, DefinableStatus,
-        DefinableStatusMode,
+        DefinableStatus, DefinableStatusMode, get_capability_annotation_category_status, get_owns_status,
+        get_plays_status, get_relates_status, get_sub_status, get_type_annotation_category_status,
+        get_value_type_status,
     },
 };
 

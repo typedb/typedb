@@ -15,8 +15,8 @@ use crate::{
         reduce::{AssignedReduction, Reduce, Reducer},
         VariableRegistry,
     },
-    translation::TranslationContext,
     RepresentationError,
+    translation::TranslationContext,
 };
 
 pub fn translate_reduce(

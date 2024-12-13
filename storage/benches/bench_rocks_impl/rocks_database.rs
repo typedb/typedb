@@ -4,8 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use non_transactional_rocks::NonTransactionalRocks;
 use rocksdb::{Options, WriteOptions};
+
+use non_transactional_rocks::NonTransactionalRocks;
 use storage::StorageOpenError;
 
 use crate::{bench_rocks_impl::rocks_database::typedb_database::TypeDBDatabase, CLIArgs};
@@ -41,7 +42,8 @@ pub fn create_typedb<const N_DATABASES: usize>() -> Result<TypeDBDatabase<N_DATA
 mod non_transactional_rocks {
     use std::iter::zip;
 
-    use rocksdb::{Options, WriteBatch, WriteOptions, DB};
+    use rocksdb::{DB, Options, WriteBatch, WriteOptions};
+
     use test_utils::{create_tmp_dir, TempDir};
 
     use crate::{RocksDatabase, RocksWriteBatch};
@@ -98,12 +100,12 @@ mod typedb_database {
         durability_client::WALClient,
         key_value::StorageKeyArray,
         keyspace::{KeyspaceId, KeyspaceSet},
-        snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
-        MVCCStorage, StorageOpenError,
+        MVCCStorage,
+        snapshot::{CommittableSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot}, StorageOpenError,
     };
     use test_utils::{create_tmp_dir, TempDir};
 
-    use crate::{RocksDatabase, RocksWriteBatch, KEY_SIZE};
+    use crate::{KEY_SIZE, RocksDatabase, RocksWriteBatch};
 
     pub struct TypeDBDatabase<const N_DATABASES: usize> {
         storage: Arc<MVCCStorage<WALClient>>,

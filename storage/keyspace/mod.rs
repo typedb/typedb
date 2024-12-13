@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub(crate) use keyspace::{Keyspace, KeyspaceCheckpointError, KeyspaceError, Keyspaces, KEYSPACE_MAXIMUM_COUNT};
-pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};
-use rocksdb::{DBRawIterator, DB};
+use rocksdb::{DB, DBRawIterator};
 
-use crate::snapshot::pool::{PoolRecycleGuard, Poolable, SinglePool};
+pub(crate) use keyspace::{Keyspace, KEYSPACE_MAXIMUM_COUNT, KeyspaceCheckpointError, KeyspaceError, Keyspaces};
+pub use keyspace::{KeyspaceDeleteError, KeyspaceId, KeyspaceOpenError, KeyspaceSet, KeyspaceValidationError};
+
+use crate::snapshot::pool::{Poolable, PoolRecycleGuard, SinglePool};
 
 pub mod iterator;
 mod keyspace;

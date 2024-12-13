@@ -57,7 +57,7 @@ where
         };
         let batch_len = batch.len();
         let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
-        let step_profile = profile.extend_or_get(1, || String::from("Sort execution"));
+        let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
         let measurement = step_profile.start_measurement();
         let sorted_iterator = SortStageIterator::from_unsorted(batch, &executable);
         measurement.end(&step_profile, 1, batch_len as u64);

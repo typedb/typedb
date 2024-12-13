@@ -9,7 +9,7 @@ use std::{error::Error, fmt};
 use encoding::value::value_type::ValueTypeCategory;
 
 use crate::annotation::expression::{
-    expression_compiler::ExpressionCompilationContext, instructions::op_codes::ExpressionOpCode, ExpressionCompileError,
+    expression_compiler::ExpressionCompilationContext, ExpressionCompileError, instructions::op_codes::ExpressionOpCode,
 };
 
 pub mod binary;

@@ -10,10 +10,10 @@ use encoding::value::{value::NativeValueConvertible, value_type::ValueTypeCatego
 
 use crate::annotation::expression::{
     expression_compiler::ExpressionCompilationContext,
-    instructions::{
-        op_codes::ExpressionOpCode, CompilableExpression, ExpressionEvaluationError, ExpressionInstruction,
-    },
     ExpressionCompileError,
+    instructions::{
+        CompilableExpression, ExpressionEvaluationError, ExpressionInstruction, op_codes::ExpressionOpCode,
+    },
 };
 
 pub trait UnaryExpression<T1: NativeValueConvertible, R: NativeValueConvertible> {

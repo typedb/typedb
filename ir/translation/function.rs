@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use answer::variable::Variable;
-use storage::snapshot::ReadableSnapshot;
 use typeql::{
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
@@ -13,6 +11,9 @@ use typeql::{
     type_::NamedType,
     TypeRef, TypeRefAny,
 };
+
+use answer::variable::Variable;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     pattern::variable_category::{VariableCategory, VariableOptionality},

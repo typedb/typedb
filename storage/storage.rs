@@ -12,7 +12,7 @@ use std::{
     error::Error,
     fs, io,
     path::{Path, PathBuf},
-    sync::{atomic::Ordering, Arc},
+    sync::{Arc, atomic::Ordering},
     thread::sleep,
     time::Duration,
 };
@@ -35,14 +35,14 @@ use crate::{
     key_value::{StorageKey, StorageKeyReference},
     keyspace::{
         iterator::KeyspaceRangeIterator, IteratorPool, Keyspace, KeyspaceError, KeyspaceId, KeyspaceOpenError,
-        KeyspaceSet, Keyspaces,
+        Keyspaces, KeyspaceSet,
     },
     recovery::{
         checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
         commit_recovery::{apply_recovered, load_commit_data_from, StorageRecoveryError},
     },
     sequence_number::SequenceNumber,
-    snapshot::{write::Write, CommittableSnapshot, ReadSnapshot, SchemaSnapshot, WriteSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, write::Write, WriteSnapshot},
 };
 
 pub mod durability_client;
@@ -604,10 +604,10 @@ mod tests {
         durability_client::{DurabilityClient, WALClient},
         isolation_manager::{CommitRecord, CommitType},
         key_value::StorageKeyArray,
-        keyspace::{IteratorPool, KeyspaceId, KeyspaceSet, Keyspaces},
+        keyspace::{IteratorPool, KeyspaceId, Keyspaces, KeyspaceSet},
+        MVCCStorage,
         snapshot::buffer::OperationsBuffer,
         write_batches::WriteBatches,
-        MVCCStorage,
     };
 
     macro_rules! test_keyspace_set {

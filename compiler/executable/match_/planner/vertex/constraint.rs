@@ -788,7 +788,7 @@ impl<'a> IndexedRelationPlanner<'a> {
     }
 
     /// We can choose either direction here since it's fully symmetric?
-    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
+    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> Direction {
         Direction::Canonical
     }
 
@@ -814,14 +814,9 @@ impl<'a> IndexedRelationPlanner<'a> {
 }
 
 impl Costed for IndexedRelationPlanner<'_> {
-    fn cost(&self, inputs: &[VertexId], _intersection: Option<VariableVertexId>, graph: &Graph<'_>) -> ElementCost {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         // TODO: using a random cost
-        // ElementCost::MEM_COMPLEX_BRANCH_1
-        ElementCost {
-            per_input: OPEN_ITERATOR_RELATIVE_COST,
-            per_output: ADVANCE_ITERATOR_RELATIVE_COST,
-            branching_factor: 10.0,
-        }
+        (Cost { cost: 10.0, io_ratio: 2.0 }, CostMetaData::None)
     }
 }
 

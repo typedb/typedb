@@ -470,6 +470,21 @@ impl<ID: IrID> IndexedRelationInstruction<ID> {
     pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
+    
+    pub(crate) fn first_unbound_component(&self) -> ID {
+        if !self.inputs.contains(self.player_start) {
+            self.player_start
+        } else if !self.inputs.contains(self.player_end) {
+            self.player_end
+        } else if !self.inputs.contains(self.relation) {
+            self.relation
+        } else if !self.inputs.contains(self.role_start) {
+            self.role_start
+        } else {
+            debug_assert!(!self.inputs.contains(self.role_end));
+            self.role_end
+        }
+    }
 }
 
 impl<ID: IrID> fmt::Display for IndexedRelationInstruction<ID> {

@@ -11,7 +11,7 @@ use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerato
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 

@@ -4,14 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    any::type_name_of_val,
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
-    cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
-    fmt,
-    sync::Arc,
-};
+use itertools::Itertools;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -28,37 +21,45 @@ use ir::{
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
-use itertools::Itertools;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::{
         instructions::{
-            thing::{
+            CheckInstruction,
+            CheckVertex,
+            ConstraintInstruction, Inputs, IsInstruction, thing::{
                 HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
                 IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
-            },
-            type_::{
+            }, type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
                 RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
             },
-            CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
         },
         planner::{
-            vertex::{
+            DisjunctionBuilder,
+            ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder, NegationBuilder,
+            StepBuilder, StepInstructionsBuilder, vertex::{
+                ComparisonPlanner,
                 constraint::{
                     ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
                     OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                 },
-                variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
+                Cost, Costed, CostMetaData, Direction, DisjunctionPlanner, ExpressionPlanner, FunctionCallPlanner,
+                Input, IsPlanner, NegationPlanner, PlannerVertex, variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
             },
-            DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
-            NegationBuilder, StepBuilder, StepInstructionsBuilder,
         },
     },
     ExecutorVariable, VariablePosition,
+};
+
+use std::{
+    any::type_name_of_val,
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    cmp::Ordering,
+    collections::{BinaryHeap, },
+    fmt,
+    sync::Arc,
 };
 
 pub const MAX_BEAM_WIDTH: usize = 128;
@@ -1406,6 +1407,7 @@ impl ConjunctionPlan<'_> {
                         ),
                     )
                 };
+                let sort_variable = instruction.first_unbound_component();
                 let instruction = ConstraintInstruction::IndexedRelation(instruction);
                 match_builder.push_instruction(sort_variable, instruction);
             }

@@ -6,37 +6,38 @@
 
 use std::{collections::HashMap, str::FromStr, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use cucumber::gherkin::Step;
+use itertools::Itertools;
+use macro_rules_attribute::apply;
+
+use answer::{Thing, variable_value::VariableValue};
 use compiler::VariablePosition;
 use concept::{
     thing::{object::ObjectAPI, ThingAPI},
     type_::TypeAPI,
 };
-use cucumber::gherkin::Step;
 use encoding::{
-    value::{label::Label, value_type::ValueType, ValueEncodable},
     AsBytes,
+    value::{label::Label, value_type::ValueType, ValueEncodable},
 };
 use executor::{
     batch::Batch,
-    pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
+    pipeline::stage::{ExecutionContext, StageIterator},
 };
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use macro_rules_attribute::apply;
 use query::error::QueryError;
 use test_utils::assert_matches;
 
 use crate::{
-    generic_step, params,
-    query_answer_context::{with_rows_answer, QueryAnswer},
-    transaction_context::{
-        with_read_tx, with_schema_tx, with_write_tx_deconstructed,
-        ActiveTransaction::{Read, Schema},
-    },
-    util::{iter_table_map, list_contains_json, parse_json},
     BehaviourTestExecutionError, Context,
+    generic_step,
+    params,
+    query_answer_context::{QueryAnswer, with_rows_answer},
+    transaction_context::{
+        ActiveTransaction::{Read, Schema}, with_read_tx, with_schema_tx,
+        with_write_tx_deconstructed,
+    }, util::{iter_table_map, list_contains_json, parse_json},
 };
 
 fn row_batch_result_to_answer(

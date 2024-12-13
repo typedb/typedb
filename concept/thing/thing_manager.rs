@@ -12,16 +12,20 @@ use std::{
     sync::Arc,
 };
 
-use bytes::{byte_array::ByteArray, util::increment, Bytes};
+use itertools::Itertools;
+
+use bytes::{byte_array::ByteArray, Bytes, util::increment};
 use encoding::{
+    AsBytes,
+    EncodingKeyspace,
     graph::{
         thing::{
             edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeIndexedRelation, ThingEdgeLinks},
             property::{build_object_vertex_property_has_order, build_object_vertex_property_links_order},
+            ThingVertex,
             vertex_attribute::{AttributeID, AttributeVertex},
             vertex_generator::ThingVertexGenerator,
             vertex_object::ObjectVertex,
-            ThingVertex,
         },
         type_::{
             property::{TypeVertexProperty, TypeVertexPropertyEncoding},
@@ -29,8 +33,7 @@ use encoding::{
         },
         Typed,
     },
-    layout::{infix::Infix, prefix::Prefix},
-    value::{
+    Keyable, layout::{infix::Infix, prefix::Prefix}, Prefixed, value::{
         boolean_bytes::BooleanBytes,
         date_bytes::DateBytes,
         date_time_bytes::DateTimeBytes,
@@ -47,9 +50,7 @@ use encoding::{
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
-    AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::{
@@ -59,10 +60,11 @@ use resource::constants::{
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::{StorageKey, StorageKeyArray},
-    snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
+    snapshot::{lock::create_custom_lock_key, ReadableSnapshot, WritableSnapshot, write::Write},
 };
 
 use crate::{
+    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
@@ -76,23 +78,22 @@ use crate::{
         statistics::Statistics,
         thing_manager::validation::{
             commit_time_validation::{collect_errors, CommitTimeValidation},
-            operation_time_validation::OperationTimeValidation,
             DataValidationError,
+            operation_time_validation::OperationTimeValidation,
         },
         ThingAPI,
     },
     type_::{
         annotation::{AnnotationCascade, AnnotationIndependent},
         attribute_type::AttributeType,
-        constraint::{get_checked_constraints, Constraint},
+        Capability,
+        constraint::{Constraint, get_checked_constraints},
         entity_type::EntityType,
         object_type::ObjectType,
-        relation_type::RelationType,
-        role_type::RoleType,
-        type_manager::TypeManager,
-        Capability, ObjectTypeAPI, OwnerAPI, PlayerAPI, TypeAPI,
+        ObjectTypeAPI,
+        OwnerAPI,
+        PlayerAPI, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
     },
-    ConceptStatus,
 };
 
 pub mod validation;

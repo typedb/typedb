@@ -9,11 +9,12 @@ use std::fmt;
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use super::conjunction::ConjunctionBuilder;
 use crate::{
     pattern::{conjunction::Conjunction, Scope, ScopeId},
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
+
+use super::conjunction::ConjunctionBuilder;
 
 #[derive(Clone, Debug, Default)]
 pub struct Disjunction {

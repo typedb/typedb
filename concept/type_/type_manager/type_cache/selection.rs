@@ -5,11 +5,11 @@
  */
 
 use crate::type_::{
+    KindAPI,
     type_manager::type_cache::{
         kind_cache::{CommonTypeCache, ObjectCache},
         TypeCache,
     },
-    KindAPI,
 };
 
 pub(crate) trait HasCommonTypeCache<T: KindAPI> {

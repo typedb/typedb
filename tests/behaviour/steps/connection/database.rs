@@ -7,9 +7,10 @@
 use cucumber::gherkin::Step;
 use futures::future::join_all;
 use macro_rules_attribute::apply;
+
 use server::typedb::Server;
 
-use crate::{generic_step, params, util, Context};
+use crate::{Context, generic_step, params, util};
 
 async fn server_create_database(server: &'_ Server, name: String, may_error: params::MayError) {
     may_error.check(server.database_manager().create_database(&name));

@@ -6,8 +6,9 @@
 
 use std::{cmp::Ordering, mem::transmute};
 
-use lending_iterator::{LendingIterator, Seekable};
 use rocksdb::DBRawIterator;
+
+use lending_iterator::{LendingIterator, Seekable};
 
 use crate::snapshot::pool::PoolRecycleGuard;
 

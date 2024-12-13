@@ -6,13 +6,20 @@
 
 // TODO: not sure if these go elsewhere, or are useful in lower level packges outside //query
 
+use typeql::{
+    common::error::TypeQLError,
+    schema::definable::struct_::Field,
+    type_::{BuiltinValueType, NamedType, Optional},
+    TypeRef, TypeRefAny,
+};
+
 use answer::Type;
 use concept::{
     error::ConceptReadError,
     type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, owns::Owns, plays::Plays,
-        relates::Relates, relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI,
-        Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, ObjectTypeAPI, Ordering,
+        OwnerAPI, owns::Owns, PlayerAPI, plays::Plays, relates::Relates,
+        relation_type::RelationType, role_type::RoleType, type_manager::TypeManager, TypeAPI,
     },
 };
 use encoding::{
@@ -21,12 +28,6 @@ use encoding::{
 };
 use error::typedb_error;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use typeql::{
-    common::error::TypeQLError,
-    schema::definable::struct_::Field,
-    type_::{BuiltinValueType, NamedType, Optional},
-    TypeRef, TypeRefAny,
-};
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {

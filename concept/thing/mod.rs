@@ -6,19 +6,19 @@
 
 use bytes::{byte_array::ByteArray, Bytes};
 use encoding::{
-    graph::thing::{vertex_attribute::AttributeID, vertex_object::ObjectVertex, ThingVertex},
+    AsBytes,
+    graph::thing::{ThingVertex, vertex_attribute::AttributeID, vertex_object::ObjectVertex},
     layout::prefix::Prefix,
     value::value_type::ValueTypeCategory,
-    AsBytes,
 };
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
+    ConceptStatus,
     error::{ConceptReadError, ConceptWriteError},
     thing::thing_manager::ThingManager,
     type_::TypeAPI,
-    ConceptStatus,
 };
 
 pub mod attribute;

@@ -14,19 +14,20 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use error::typedb_error;
-use storage::{sequence_number::SequenceNumber, MVCCStorage};
+use storage::{MVCCStorage, sequence_number::SequenceNumber};
 
 use crate::type_::{
     attribute_type::AttributeType,
     constraint::{CapabilityConstraint, Constraint, ConstraintCategory, TypeConstraint},
     entity_type::EntityType,
+    KindAPI,
     object_type::ObjectType,
+    Ordering,
+    OwnerAPI,
     owns::{Owns, OwnsAnnotation},
+    PlayerAPI,
     plays::{Plays, PlaysAnnotation},
-    relates::{Relates, RelatesAnnotation},
-    relation_type::RelationType,
-    role_type::RoleType,
-    type_manager::type_cache::{
+    relates::{Relates, RelatesAnnotation}, relation_type::RelationType, role_type::RoleType, type_manager::type_cache::{
         kind_cache::{
             AttributeTypeCache, CommonTypeCache, EntityTypeCache, ObjectCache, OwnsCache, PlaysCache, RelatesCache,
             RelationTypeCache, RoleTypeCache,
@@ -35,7 +36,6 @@ use crate::type_::{
         selection::{CacheGetter, HasCommonTypeCache, HasObjectCache},
         struct_definition_cache::StructDefinitionCache,
     },
-    KindAPI, Ordering, OwnerAPI, PlayerAPI,
 };
 
 // TODO: could/should we slab allocate the schema cache?

@@ -14,16 +14,17 @@ use std::{
     fmt,
     io::Read,
     sync::{
-        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
-        Arc, OnceLock, RwLock,
+        Arc,
+        atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering}, OnceLock, RwLock,
     },
 };
+
+use serde::{Deserialize, Serialize};
 
 use durability::DurabilityRecordType;
 use logger::result::ResultExt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::storage::TIMELINE_WINDOW_SIZE;
-use serde::{Deserialize, Serialize};
 
 use crate::{
     durability_client::{
@@ -848,8 +849,8 @@ mod tests {
     use std::{
         array,
         sync::{
-            atomic::{AtomicU64, Ordering},
             Arc,
+            atomic::{AtomicU64, Ordering},
         },
         thread::{self, JoinHandle},
     };

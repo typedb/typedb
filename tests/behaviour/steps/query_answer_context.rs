@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, collections::HashMap, sync::Arc};
 
-use answer::{variable_value::VariableValue, Concept, Thing, Type};
+use answer::{Concept, Thing, Type, variable_value::VariableValue};
 use concept::{
     thing::thing_manager::ThingManager,
     type_::{type_manager::TypeManager, TypeAPI},

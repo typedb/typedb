@@ -10,6 +10,7 @@
 use std::{path::PathBuf, str::FromStr};
 
 use clap::Parser;
+
 use logger::initialise_logging_global;
 use resource::constants::server::ASCII_LOGO;
 use server::parameters::{

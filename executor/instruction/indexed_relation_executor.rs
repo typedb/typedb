@@ -75,7 +75,7 @@ pub(crate) struct IndexedRelationExecutor {
     variable_modes: VariableModes,
 
     tuple_positions: TuplePositions,
-    component_ordering: [ExecutorVariable; 5], // TODO: can we just store an Arc<Fn> to do this instead of allocating it each time??
+    variables_lexicographically_ordered: [ExecutorVariable; 5], // TODO: can we just store an Arc<Fn> to do this instead of allocating it each time??
 
     pub(crate) relation_to_player_start_types: Arc<BTreeMap<Type, Vec<Type>>>,
     pub(crate) player_start_to_player_end_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
@@ -121,62 +121,40 @@ impl IndexedRelationExecutor {
 
         // sort variable always comes first, then inputs, and any lexicographically ordered items come afterward
         // note that we don't record Roles as 'bound' (though they may be), and sometimes Relations are also bound but may need post-filtering
-        let component_ordering = [player_start, player_end, relation, role_start, role_end];
+        let variables_lexicographically_ordered = [player_start, player_end, relation, role_start, role_end];
 
-        let mut component_modes = [
-            Some(variable_modes.get(player_start) == Some(VariableMode::Input)),
-            Some(variable_modes.get(player_end) == Some(VariableMode::Input)),
-            Some(variable_modes.get(relation) == Some(VariableMode::Input)),
-            Some(variable_modes.get(role_start) == Some(VariableMode::Input)),
-            Some(variable_modes.get(role_end) == Some(VariableMode::Input)),
-        ];
+        static MODE_PRIORITY: [VariableMode; 4] = [VariableMode::Input, VariableMode::Output, VariableMode::Count, VariableMode::Check];
 
         let mut output_tuple_positions: [Option<ExecutorVariable>; 5] = [None; 5];
-        // index 0
+        // index 0 is always the sort variable
         match iterate_mode {
-            IndexedRelationIterateMode::Unbound => {
-                component_modes[0] = None;
-                output_tuple_positions[0] = Some(player_start);
-            }
+            IndexedRelationIterateMode::Unbound => output_tuple_positions[0] = Some(player_start),
             IndexedRelationIterateMode::UnboundInvertedToPlayer | IndexedRelationIterateMode::BoundStart => {
-                component_modes[1] = None;
                 output_tuple_positions[0] = Some(player_end);
             }
-            IndexedRelationIterateMode::BoundStartBoundEnd => {
-                component_modes[2] = None;
-                output_tuple_positions[0] = Some(relation);
-            }
-            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => {
-                component_modes[3] = None;
-                output_tuple_positions[0] = Some(role_start);
-            }
+            IndexedRelationIterateMode::BoundStartBoundEnd => output_tuple_positions[0] = Some(relation),
+            IndexedRelationIterateMode::BoundStartBoundEndBoundRelation => output_tuple_positions[0] = Some(role_start),
         };
-
-        let mut output_index = 1;
-        while output_index < 5 {
-            let mut bound_position_assigned = false;
-            for index in 0..component_modes.len() {
-                // set to None when allocated to a tuple position
-                if let Some(is_bound) = component_modes[index] {
-                    if is_bound {
-                        component_modes[index] = None;
-                        output_tuple_positions[output_index] = Some(component_ordering[index]);
-                        output_index += 1;
-                        bound_position_assigned = true;
+        for output_index in 1..5 {
+            let preceding_variable = output_tuple_positions[output_index - 1].unwrap();
+            let preceding_variable_mode = if Some(preceding_variable) == output_tuple_positions[0] {
+                // special case: we need to allow inputs to follow, so ignore actual mode of sort variable and treat it as input
+                VariableMode::Input
+            } else {
+                variable_modes.get(preceding_variable).unwrap()
+            };
+            'mode: for mode_index in MODE_PRIORITY.iter().position(|mode| *mode == preceding_variable_mode).unwrap()..MODE_PRIORITY.len() {
+                let mode = MODE_PRIORITY[mode_index];
+                // find first unused variable with this mode (else, try the next mode)
+                for variable in variables_lexicographically_ordered {
+                    let variable_mode = variable_modes.get(variable).unwrap();
+                    if !output_tuple_positions.contains(&Some(variable)) && mode == variable_mode {
+                        output_tuple_positions[output_index] = Some(variable);
+                        break 'mode;
                     }
                 }
             }
-            if !bound_position_assigned {
-                for index in 0..component_modes.len() {
-                    // set to None when allocated to a tuple position
-                    if let Some(_) = component_modes[index] {
-                        component_modes[index] = None;
-                        output_tuple_positions[output_index] = Some(component_ordering[index]);
-                        output_index += 1;
-                        bound_position_assigned = true;
-                    }
-                }
-            }
+            debug_assert!(output_tuple_positions[output_index].is_some());
         }
         debug_assert!(output_tuple_positions.iter().all(|option| option.is_some()));
 
@@ -219,7 +197,7 @@ impl IndexedRelationExecutor {
             iterate_mode,
             variable_modes,
             tuple_positions: output_tuple_positions.clone(),
-            component_ordering,
+            variables_lexicographically_ordered,
 
             relation_to_player_start_types,
             player_start_to_player_end_types,
@@ -243,7 +221,7 @@ impl IndexedRelationExecutor {
         let (relation, start_role, end_role) = self.may_get_relation_and_roles(row.as_reference());
 
         let positions = self.tuple_positions.clone();
-        let component_ordering = self.component_ordering;
+        let component_ordering = self.variables_lexicographically_ordered;
         let filter_map_for_row: Box<IndexedRelationFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) => match verify_relation_and_roles(&item, relation, start_role, end_role) {

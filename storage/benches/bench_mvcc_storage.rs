@@ -8,18 +8,19 @@
 
 use std::{fs::File, os::raw::c_int, path::Path, sync::Arc};
 
-use bytes::byte_array::ByteArray;
-use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
-use durability::wal::WAL;
+use criterion::{Criterion, criterion_group, criterion_main, profiler::Profiler};
 use pprof::ProfilerGuard;
+
+use bytes::byte_array::ByteArray;
+use durability::wal::WAL;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     durability_client::WALClient,
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     keyspace::{KeyspaceId, KeyspaceSet},
-    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use test_utils::{create_tmp_dir, init_logging};
 

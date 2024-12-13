@@ -15,15 +15,16 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use ::concept::thing::{attribute::Attribute, object::Object};
-use ::query::error::QueryError;
 use cucumber::{gherkin::Feature, StatsWriter, World};
-use database::Database;
 use futures::{
     future::Either,
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
+
+use ::concept::thing::{attribute::Attribute, object::Object};
+use ::query::error::QueryError;
+use database::Database;
 use server::typedb;
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;

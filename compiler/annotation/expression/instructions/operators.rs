@@ -5,10 +5,10 @@
  */
 
 use crate::annotation::expression::instructions::{
-    binary::{binary_instruction, Binary, BinaryExpression},
+    binary::{Binary, binary_instruction, BinaryExpression},
     check_operation,
-    op_codes::ExpressionOpCode,
     ExpressionEvaluationError,
+    op_codes::ExpressionOpCode,
 };
 
 binary_instruction! {
