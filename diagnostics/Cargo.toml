@@ -59,6 +59,11 @@ features = {}
 		version = "0.33.0"
 		default-features = false
 
+	[dependencies.xxhash-rust]
+		features = ["xxh3"]
+		version = "0.8.12"
+		default-features = false
+
 	[dependencies.tonic]
 		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
 		version = "0.12.3"

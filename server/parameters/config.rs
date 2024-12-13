@@ -34,8 +34,8 @@ impl Config {
                 address: SocketAddr::from_str(DEFAULT_ADDRESS).unwrap(),
                 encryption: EncryptionConfig::disabled(),
                 monitoring_port: MONITORING_PORT,
-                monitoring_enabled: MONITORING_ENABLED,
-                reporting_enabled: REPORTING_ENABLED,
+                is_monitoring_enabled: MONITORING_ENABLED,
+                is_reporting_enabled: REPORTING_ENABLED,
             },
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
         }
@@ -62,8 +62,8 @@ impl Config {
                 address: SocketAddr::from_str("0.0.0.0:1729").unwrap(),
                 encryption: encryption_config,
                 monitoring_port: MONITORING_PORT,
-                monitoring_enabled: MONITORING_ENABLED,
-                reporting_enabled: REPORTING_ENABLED,
+                is_monitoring_enabled: MONITORING_ENABLED,
+                is_reporting_enabled: REPORTING_ENABLED,
             },
             storage: StorageConfig { data: data_directory.to_owned() },
         }
@@ -75,8 +75,8 @@ pub(crate) struct ServerConfig {
     pub(crate) address: SocketAddr,
     pub(crate) encryption: EncryptionConfig,
     pub(crate) monitoring_port: u16,
-    pub(crate) monitoring_enabled: bool,
-    pub(crate) reporting_enabled: bool,
+    pub(crate) is_monitoring_enabled: bool,
+    pub(crate) is_reporting_enabled: bool,
 }
 
 #[derive(Debug)]

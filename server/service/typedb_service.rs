@@ -85,7 +85,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::ConnectionOpen, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::ConnectionOpen, || {
             let receive_time = Instant::now();
             let message = request.into_inner();
             if message.version != typedb_protocol::Version::Version as i32 {
@@ -116,7 +116,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     }
 
     async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::ServersAll, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::ServersAll, || {
             Ok(Response::new(servers_all_res(&self.address)))
         })
     }
@@ -125,7 +125,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabasesAll, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::DatabasesAll, || {
             Ok(Response::new(database_all_res(&self.address, self.database_manager.database_names())))
         })
     }
@@ -134,8 +134,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabasesGet, || {
-            let message = request.into_inner();
+        let message = request.into_inner();
+        run_with_diagnostics(&self.diagnostics_manager, Some(message.name.clone()), ActionKind::DatabasesGet, || {
             let database = self.database_manager.database(&message.name);
             match database {
                 None => {
@@ -150,8 +150,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::database_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabasesContains, || {
-            let message = request.into_inner();
+        let message = request.into_inner();
+        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabasesContains, || {
             Ok(Response::new(database_contains_res(self.database_manager.database(&message.name).is_some())))
         })
     }
@@ -160,8 +160,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabasesCreate, || {
-            let message = request.into_inner();
+        let message = request.into_inner();
+        run_with_diagnostics(&self.diagnostics_manager, Some(message.name.clone()), ActionKind::DatabasesCreate, || {
             self.database_manager
                 .create_database(message.name.clone())
                 .map(|_| Response::new(database_create_res(message.name, &self.address)))
@@ -171,9 +171,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn database_schema(
         &self,
-        _request: Request<typedb_protocol::database::schema::Req>,
+        request: Request<typedb_protocol::database::schema::Req>,
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabaseSchema, || {
+        let message = request.into_inner();
+        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseSchema, || {
             Err(ServiceError::Unimplemented { description: "Database schema retrieval.".to_string() }
                 .into_error_message()
                 .into_status())
@@ -182,9 +183,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn database_type_schema(
         &self,
-        _request: Request<typedb_protocol::database::type_schema::Req>,
+        request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabaseTypeSchema, || {
+        let message = request.into_inner();
+        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseTypeSchema, || {
             Err(ServiceError::Unimplemented { description: "Database schema (types only) retrieval.".to_string() }
                 .into_error_message()
                 .into_status())
@@ -195,8 +197,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::database::delete::Req>,
     ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::DatabaseDelete, || {
-            let message = request.into_inner();
+        let message = request.into_inner();
+        run_with_diagnostics(&self.diagnostics_manager, Some(message.name.clone()), ActionKind::DatabaseDelete, || {
             self.database_manager
                 .delete_database(message.name)
                 .map(|_| Response::new(database_delete_res()))
@@ -208,7 +210,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::UsersGet, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersGet, || {
             let accessor = extract_username_field(request.metadata());
             let get_req = request.into_inner();
             if !PermissionManager::exec_user_get_permitted(accessor.as_str(), get_req.name.as_str()) {
@@ -228,7 +230,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::UsersAll, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
             let accessor = extract_username_field(request.metadata());
             if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
                 return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
@@ -242,7 +244,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::UsersContains, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
             let contains_req = request.into_inner();
             self.user_manager
                 .contains(contains_req.name.as_str())
@@ -255,7 +257,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::UsersCreate, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersCreate, || {
             let accessor = extract_username_field(request.metadata());
             if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
                 return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
@@ -271,7 +273,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::UsersUpdate, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersUpdate, || {
             let accessor = extract_username_field(request.metadata());
             match users_update_req(request) {
                 Ok((username, user_update, credential_update)) => {
@@ -296,7 +298,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::UsersDelete, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersDelete, || {
             let accessor = extract_username_field(request.metadata());
             let delete_req = request.into_inner();
             let username = delete_req.name.as_str();

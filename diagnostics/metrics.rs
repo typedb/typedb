@@ -32,6 +32,18 @@ impl ServerProperties {
         Self { json_api_version: JSON_API_VERSION, deployment_id, server_id, distribution, is_reporting_enabled }
     }
 
+    pub fn deployment_id(&self) -> &str {
+        &self.deployment_id
+    }
+
+    pub fn server_id(&self) -> &str {
+        &self.server_id
+    }
+
+    pub fn is_reporting_enabled(&self) -> bool {
+        self.is_reporting_enabled
+    }
+
     pub fn to_reporting_json(&self) -> JSONValue {
         json!({
             "version": self.json_api_version,
@@ -75,14 +87,14 @@ pub(crate) struct ServerMetrics {
 
 impl ServerMetrics {
     pub(crate) fn new(version: String, data_directory: PathBuf) -> ServerMetrics {
-        let os_name = System::name().unwrap_or(UNKNOWN_STR.to_owned());
+        let os_name = System::name().unwrap_or(UNKNOWN_STR.to_string());
         let os_arch = System::cpu_arch();
-        let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_owned());
+        let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_string());
         Self { start_instant: Instant::now(), os_name, os_arch, os_version, version, data_directory }
     }
 
-    fn get_uptime_in_seconds(&self) -> i64 {
-        self.start_instant.elapsed().as_secs() as i64
+    pub fn data_directory(&self) -> &PathBuf {
+        &self.data_directory
     }
 
     pub fn to_full_reporting_json(&self) -> JSONValue {
@@ -173,6 +185,10 @@ impl ServerMetrics {
             None => SizeInfo { total: 0u64, available: 0u64 },
         }
     }
+
+    fn get_uptime_in_seconds(&self) -> i64 {
+        self.start_instant.elapsed().as_secs() as i64
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, Hash)]
@@ -239,7 +255,7 @@ impl LoadMetrics {
     pub fn to_reporting_json(&self, database_hash: &DatabaseHash, is_owned: bool) -> Option<JSONValue> {
         if !self.is_deleted || !self.connection.is_empty() {
             let mut load_object = json!({
-                "database": database_hash.to_string(),
+                "database": format!("{:.0}", database_hash),
                 "connection": self.connection.to_json(),
             });
 
@@ -257,7 +273,7 @@ impl LoadMetrics {
     pub fn to_monitoring_json(&self, database_hash: &DatabaseHash, is_owned: bool) -> Option<JSONValue> {
         if is_owned && !self.is_deleted {
             let load_object = json!({
-                "database": database_hash.to_string(),
+                "database": format!("{:.0}", database_hash),
                 "schema": self.schema.to_json(),
                 "data": self.data.to_json(),
             });
@@ -381,7 +397,7 @@ impl ConnectionLoadMetrics {
     pub fn to_json(&self) -> JSONValue {
         let mut peak = JSONMap::new();
         for (kind, &value) in self.peak_counts.iter() {
-            peak.insert(kind.to_string().to_owned(), json!(value));
+            peak.insert(kind.to_string(), json!(value));
         }
         json!(peak)
     }
@@ -439,7 +455,7 @@ impl ActionMetrics {
             let mut object = JSONMap::new();
             object.insert("name".to_string(), json!(kind.to_string()));
             if let Some(database_hash) = database_hash {
-                object.insert("database".to_string(), json!(database_hash.to_string()));
+                object.insert("database".to_string(), json!(format!("{:.0}", database_hash)));
             }
             object.insert("successful".to_string(), json!(successful));
             object.insert("failed".to_string(), json!(failed));
@@ -456,7 +472,7 @@ impl ActionMetrics {
             let mut request_object = serde_json::Map::new();
             request_object.insert("name".to_string(), json!(kind.to_string()));
             if let Some(database_hash) = database_hash {
-                request_object.insert("database".to_string(), json!(database_hash));
+                request_object.insert("database".to_string(), json!(format!("{:.0}", database_hash)));
             }
             request_object.insert("attempted".to_string(), json!(info.get_attempted()));
             request_object.insert("successful".to_string(), json!(info.get_successful()));
@@ -574,11 +590,11 @@ impl ErrorMetrics {
             }
 
             let mut error_object = JSONMap::new();
-            error_object.insert("code".to_owned(), json!(code));
+            error_object.insert("code".to_string(), json!(code));
             if let Some(database_hash) = database_hash {
-                error_object.insert("database".to_owned(), json!(database_hash.to_string()));
+                error_object.insert("database".to_string(), json!(format!("{:.0}", database_hash)));
             }
-            error_object.insert("count".to_owned(), json!(count_delta));
+            error_object.insert("count".to_string(), json!(count_delta));
 
             errors.push(JSONValue::Object(error_object));
         }
@@ -593,7 +609,7 @@ impl ErrorMetrics {
             let mut error_object = JSONMap::new();
             error_object.insert("code".to_string(), json!(code));
             if let Some(database_hash) = database_hash {
-                error_object.insert("database".to_string(), json!(database_hash.to_string()));
+                error_object.insert("database".to_string(), json!(format!("{:.0}", database_hash)));
             }
             error_object.insert("count".to_string(), json!(info.count));
 

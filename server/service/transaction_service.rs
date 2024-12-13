@@ -23,7 +23,7 @@ use database::{
     },
 };
 use diagnostics::{
-    diagnostics_manager::{run_with_diagnostics, run_with_diagnostics_async, DiagnosticsManager},
+    diagnostics_manager::{run_with_diagnostics_async, DiagnosticsManager},
     metrics::{ActionKind, LoadKind},
 };
 use error::typedb_error;
@@ -105,6 +105,10 @@ impl Transaction {
             Transaction::Write(_) => LoadKind::WriteTransactions,
             Transaction::Schema(_) => LoadKind::SchemaTransactions,
         }
+    }
+
+    pub fn get_database_name(&self) -> &str {
+        with_readable_transaction!(self, |transaction| { transaction.database.name() })
     }
 }
 
@@ -348,19 +352,33 @@ impl TransactionService {
     ) -> Result<ControlFlow<(), ()>, Status> {
         match (self.is_open, req) {
             (false, typedb_protocol::transaction::req::Req::OpenReq(open_req)) => {
-                let result = self.handle_open(request_id, open_req).await;
-                match &result {
-                    Ok(ControlFlow::Continue(_)) => event!(Level::TRACE, "Transaction opened successfully."),
-                    Ok(ControlFlow::Break(_)) => event!(Level::TRACE, "Transaction open aborted."),
-                    Err(status) => event!(Level::TRACE, "Error opening transaction: {}", status),
-                }
-                result
+                run_with_diagnostics_async(
+                    self.diagnostics_manager.clone(),
+                    Some(open_req.database.clone()),
+                    ActionKind::TransactionOpen,
+                    || async {
+                        let result = self.handle_open(request_id, open_req).await;
+                        match &result {
+                            Ok(Continue(_)) => event!(Level::TRACE, "Transaction opened successfully."),
+                            Ok(Break(_)) => event!(Level::TRACE, "Transaction open aborted."),
+                            Err(status) => event!(Level::TRACE, "Error opening transaction: {}", status),
+                        }
+                        result
+                    },
+                )
+                .await
             }
             (true, typedb_protocol::transaction::req::Req::OpenReq(_)) => {
                 Err(ProtocolError::TransactionAlreadyOpen {}.into_status())
             }
             (true, typedb_protocol::transaction::req::Req::QueryReq(query_req)) => {
-                self.handle_query(request_id, query_req).await
+                run_with_diagnostics_async(
+                    self.diagnostics_manager.clone(),
+                    self.get_database_name().map(|name| name.to_owned()),
+                    ActionKind::TransactionQuery,
+                    || async { self.handle_query(request_id, query_req).await },
+                )
+                .await
             }
             (true, typedb_protocol::transaction::req::Req::StreamReq(stream_req)) => {
                 match self.handle_stream_continue(request_id, stream_req).await {
@@ -371,16 +389,38 @@ impl TransactionService {
                 }
             }
             (true, typedb_protocol::transaction::req::Req::CommitReq(commit_req)) => {
-                // Eagerly executed in main loop
-                self.handle_commit(commit_req).await?;
-                Ok(Break(()))
+                run_with_diagnostics_async(
+                    self.diagnostics_manager.clone(),
+                    self.get_database_name().map(|name| name.to_owned()),
+                    ActionKind::TransactionCommit,
+                    || async {
+                        // Eagerly executed in main loop
+                        self.handle_commit(commit_req).await?;
+                        Ok(Break(()))
+                    },
+                )
+                .await
             }
             (true, typedb_protocol::transaction::req::Req::RollbackReq(rollback_req)) => {
-                self.handle_rollback(rollback_req).await
+                run_with_diagnostics_async(
+                    self.diagnostics_manager.clone(),
+                    self.get_database_name().map(|name| name.to_owned()),
+                    ActionKind::TransactionRollback,
+                    || async { self.handle_rollback(rollback_req).await },
+                )
+                .await
             }
             (true, typedb_protocol::transaction::req::Req::CloseReq(close_req)) => {
-                self.handle_close(close_req).await;
-                Ok(Break(()))
+                run_with_diagnostics_async(
+                    self.diagnostics_manager.clone(),
+                    self.get_database_name().map(|name| name.to_owned()),
+                    ActionKind::TransactionClose,
+                    || async {
+                        self.handle_close(close_req).await;
+                        Ok(Break(()))
+                    },
+                )
+                .await
             }
             (false, _) => Err(ProtocolError::TransactionClosed {}.into_status()),
         }
@@ -414,169 +454,145 @@ impl TransactionService {
         req_id: Uuid,
         open_req: typedb_protocol::transaction::open::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionOpen, || async {
-            let receive_time = Instant::now();
-            self.network_latency_millis = Some(open_req.network_latency_millis);
-            let mut transaction_options = TransactionOptions::default();
-            if let Some(options) = open_req.options {
-                // transaction options
-                if let Some(parallel) = options.parallel {
-                    transaction_options.parallel = parallel;
-                }
-                if let Some(timeout) = options.schema_lock_acquire_timeout_millis {
-                    transaction_options.schema_lock_acquire_timeout_millis = timeout
-                }
-
-                // service options
-                self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE));
-                self.transaction_timeout_millis =
-                    options.transaction_timeout_millis.or(Some(DEFAULT_TRANSACTION_TIMEOUT_MILLIS));
+        let receive_time = Instant::now();
+        self.network_latency_millis = Some(open_req.network_latency_millis);
+        let mut transaction_options = TransactionOptions::default();
+        if let Some(options) = open_req.options {
+            // transaction options
+            if let Some(parallel) = options.parallel {
+                transaction_options.parallel = parallel;
+            }
+            if let Some(timeout) = options.schema_lock_acquire_timeout_millis {
+                transaction_options.schema_lock_acquire_timeout_millis = timeout
             }
 
-            let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type).map_err(|_| {
-                ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status()
-            })?;
+            // service options
+            self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE));
+            self.transaction_timeout_millis =
+                options.transaction_timeout_millis.or(Some(DEFAULT_TRANSACTION_TIMEOUT_MILLIS));
+        }
 
-            let database_name = open_req.database;
-            let database = self.database_manager.database(database_name.as_ref()).ok_or_else(|| {
-                TransactionServiceError::DatabaseNotFound { name: database_name.clone() }
-                    .into_error_message()
-                    .into_status()
-            })?;
+        let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
+            .map_err(|_| ProtocolError::UnrecognisedTransactionType { enum_variant: open_req.r#type }.into_status())?;
 
-            let transaction = match transaction_type {
-                typedb_protocol::transaction::Type::Read => {
-                    let transaction = spawn_blocking(move || {
-                        TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
-                            TransactionServiceError::TransactionFailed { typedb_source }
-                                .into_error_message()
-                                .into_status()
-                        })
-                    })
-                    .await
-                    .unwrap()?;
-                    Transaction::Read(transaction)
-                }
-                typedb_protocol::transaction::Type::Write => {
-                    let transaction = spawn_blocking(move || {
-                        TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
-                            TransactionServiceError::TransactionFailed { typedb_source }
-                                .into_error_message()
-                                .into_status()
-                        })
-                    })
-                    .await
-                    .unwrap()?;
-                    Transaction::Write(transaction)
-                }
-                typedb_protocol::transaction::Type::Schema => {
-                    let transaction = spawn_blocking(move || {
-                        TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
-                            TransactionServiceError::TransactionFailed { typedb_source }
-                                .into_error_message()
-                                .into_status()
-                        })
-                    })
-                    .await
-                    .unwrap()?;
-                    Transaction::Schema(transaction)
-                }
-            };
-            self.diagnostics_manager.increment_load_count(&database_name, transaction.to_load_kind());
-            self.transaction = Some(transaction);
-            self.is_open = true;
+        let database_name = open_req.database;
+        let database = self.database_manager.database(database_name.as_ref()).ok_or_else(|| {
+            TransactionServiceError::DatabaseNotFound { name: database_name.clone() }.into_error_message().into_status()
+        })?;
 
-            let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
-            if let Err(err) = self.response_sender.send(Ok(transaction_open_res(req_id, processing_time_millis))).await
-            {
-                event!(Level::TRACE, "Submit message failed: {:?}", err);
-                Ok(Break(()))
-            } else {
-                Ok(Continue(()))
-            }
-        })
-        .await
-    }
-
-    async fn handle_commit(&mut self, _commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionCommit, || async {
-            // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
-            //   note: if any write query errors, the whole transaction errors
-            // finish any active write query
-            self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await?;
-
-            // interrupt active queries and close write transmitters
-            self.interrupt_and_close_responders(InterruptType::TransactionCommitted).await;
-            if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
-                return Err(TransactionServiceError::ServiceClosingFailedQueueCleanup {}
-                    .into_error_message()
-                    .into_status());
-            }
-
-            // finish executing any remaining writes so they make it into the commit
-            self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
-
-            let diagnostics_manager = self.diagnostics_manager.clone();
-            match self.transaction.take().unwrap() {
-                Transaction::Read(_) => {
-                    Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
-                }
-                Transaction::Write(transaction) => spawn_blocking(move || {
-                    diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::WriteTransactions);
-                    transaction.commit().map_err(|err| {
-                        TransactionServiceError::DataCommitFailed { typedb_source: err }
-                            .into_error_message()
-                            .into_status()
+        let transaction = match transaction_type {
+            typedb_protocol::transaction::Type::Read => {
+                let transaction = spawn_blocking(move || {
+                    TransactionRead::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
                     })
                 })
                 .await
-                .unwrap(),
-                Transaction::Schema(transaction) => {
-                    diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::SchemaTransactions);
-                    transaction.commit().map_err(|typedb_source| {
-                        TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
-                    })
-                }
+                .unwrap()?;
+                Transaction::Read(transaction)
             }
-        })
-        .await
+            typedb_protocol::transaction::Type::Write => {
+                let transaction = spawn_blocking(move || {
+                    TransactionWrite::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                })
+                .await
+                .unwrap()?;
+                Transaction::Write(transaction)
+            }
+            typedb_protocol::transaction::Type::Schema => {
+                let transaction = spawn_blocking(move || {
+                    TransactionSchema::open(database, transaction_options).map_err(|typedb_source| {
+                        TransactionServiceError::TransactionFailed { typedb_source }.into_error_message().into_status()
+                    })
+                })
+                .await
+                .unwrap()?;
+                Transaction::Schema(transaction)
+            }
+        };
+        self.diagnostics_manager.increment_load_count(&database_name, transaction.to_load_kind());
+        self.transaction = Some(transaction);
+        self.is_open = true;
+
+        let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
+        if let Err(err) = self.response_sender.send(Ok(transaction_open_res(req_id, processing_time_millis))).await {
+            event!(Level::TRACE, "Submit message failed: {:?}", err);
+            Ok(Break(()))
+        } else {
+            Ok(Continue(()))
+        }
+    }
+
+    async fn handle_commit(&mut self, _commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
+        // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
+        //   note: if any write query errors, the whole transaction errors
+        // finish any active write query
+        self.finish_running_write_query_no_transmit(InterruptType::TransactionCommitted).await?;
+
+        // interrupt active queries and close write transmitters
+        self.interrupt_and_close_responders(InterruptType::TransactionCommitted).await;
+        if let Break(()) = self.cancel_queued_read_queries(InterruptType::TransactionCommitted).await {
+            return Err(TransactionServiceError::ServiceClosingFailedQueueCleanup {}
+                .into_error_message()
+                .into_status());
+        }
+
+        // finish executing any remaining writes so they make it into the commit
+        self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
+
+        let diagnostics_manager = self.diagnostics_manager.clone();
+        match self.transaction.take().unwrap() {
+            Transaction::Read(_) => {
+                Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
+            }
+            Transaction::Write(transaction) => spawn_blocking(move || {
+                diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::WriteTransactions);
+                transaction.commit().map_err(|err| {
+                    TransactionServiceError::DataCommitFailed { typedb_source: err }.into_error_message().into_status()
+                })
+            })
+            .await
+            .unwrap(),
+            Transaction::Schema(transaction) => {
+                diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::SchemaTransactions);
+                transaction.commit().map_err(|typedb_source| {
+                    TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
+                })
+            }
+        }
     }
 
     async fn handle_rollback(
         &mut self,
         _rollback_req: typedb_protocol::transaction::rollback::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionRollback, || async {
-            // interrupt all queries, cancel writes, then rollback
-            self.interrupt_and_close_responders(InterruptType::TransactionRolledback).await;
-            if let Break(_) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
-                return Ok(Break(()));
-            }
+        // interrupt all queries, cancel writes, then rollback
+        self.interrupt_and_close_responders(InterruptType::TransactionRolledback).await;
+        if let Break(_) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
+            return Ok(Break(()));
+        }
 
-            self.finish_running_write_query_no_transmit(InterruptType::TransactionRolledback).await?;
-            if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
-                return Ok(Break(()));
-            }
+        self.finish_running_write_query_no_transmit(InterruptType::TransactionRolledback).await?;
+        if let Break(()) = self.cancel_queued_write_queries(InterruptType::TransactionRolledback).await {
+            return Ok(Break(()));
+        }
 
-            match self.transaction.take().unwrap() {
-                Transaction::Read(_) => {
-                    return Err(TransactionServiceError::CannotRollbackReadTransaction {}
-                        .into_error_message()
-                        .into_status());
-                }
-                Transaction::Write(mut transaction) => transaction.rollback(),
-                Transaction::Schema(mut transaction) => transaction.rollback(),
-            };
-            Ok(Continue(()))
-        })
-        .await
+        match self.transaction.take().unwrap() {
+            Transaction::Read(_) => {
+                return Err(TransactionServiceError::CannotRollbackReadTransaction {}
+                    .into_error_message()
+                    .into_status());
+            }
+            Transaction::Write(mut transaction) => transaction.rollback(),
+            Transaction::Schema(mut transaction) => transaction.rollback(),
+        };
+        Ok(Continue(()))
     }
 
     async fn handle_close(&mut self, _close_req: typedb_protocol::transaction::close::Req) {
-        let _ = run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionClose, || async {
-            self.do_close().await;
-            Ok(())
-        });
+        self.do_close().await;
     }
 
     async fn do_close(&mut self) {
@@ -734,53 +750,50 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionQuery, || async {
-            let _query_options = &query_req.options; // TODO: pass query options
-            let parsed = match parse_query(&query_req.query) {
-                Ok(parsed) => parsed,
-                Err(err) => {
-                    let response = ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
-                        typedb_source: err,
-                    });
-                    return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
-                }
-            };
-            match parsed {
-                Query::Schema(schema_query) => {
-                    self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;
-                    self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
-                    self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
+        let _query_options = &query_req.options; // TODO: pass query options
+        let parsed = match parse_query(&query_req.query) {
+            Ok(parsed) => parsed,
+            Err(err) => {
+                let response = ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
+                    typedb_source: err,
+                });
+                return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+            }
+        };
+        match parsed {
+            Query::Schema(schema_query) => {
+                self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;
+                self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
+                self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
 
-                    // schema queries are handled immediately so there is a query response or a fatal Status
-                    let response = self.handle_query_schema(schema_query).await?;
-                    Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
-                }
-                Query::Pipeline(pipeline) => {
-                    #[allow(clippy::collapsible_else_if)]
-                    if Self::is_write_pipeline(&pipeline) {
-                        if !self.request_queue.is_empty() || self.running_write_query.is_some() {
-                            self.request_queue.push_back((req_id, pipeline));
-                            // queued queries are not handled yet so there will be no query response yet
-                            Ok(Continue(()))
-                        } else {
-                            self.run_write_query(req_id, pipeline).await;
-                            Ok(Continue(()))
-                        }
+                // schema queries are handled immediately so there is a query response or a fatal Status
+                let response = self.handle_query_schema(schema_query).await?;
+                Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
+            }
+            Query::Pipeline(pipeline) => {
+                #[allow(clippy::collapsible_else_if)]
+                if Self::is_write_pipeline(&pipeline) {
+                    if !self.request_queue.is_empty() || self.running_write_query.is_some() {
+                        self.request_queue.push_back((req_id, pipeline));
+                        // queued queries are not handled yet so there will be no query response yet
+                        Ok(Continue(()))
                     } else {
-                        if !self.request_queue.is_empty() || self.running_write_query.is_some() {
-                            self.request_queue.push_back((req_id, pipeline));
-                            // queued queries are not handled yet so there will be no query response yet
-                            Ok(Continue(()))
-                        } else {
-                            self.run_and_activate_read_transmitter(req_id, pipeline);
-                            // running read queries have no response on the main loop and will respond asynchronously
-                            Ok(Continue(()))
-                        }
+                        self.run_write_query(req_id, pipeline).await;
+                        Ok(Continue(()))
+                    }
+                } else {
+                    if !self.request_queue.is_empty() || self.running_write_query.is_some() {
+                        self.request_queue.push_back((req_id, pipeline));
+                        // queued queries are not handled yet so there will be no query response yet
+                        Ok(Continue(()))
+                    } else {
+                        self.run_and_activate_read_transmitter(req_id, pipeline);
+                        // running read queries have no response on the main loop and will respond asynchronously
+                        Ok(Continue(()))
                     }
                 }
             }
-        })
-        .await
+        }
     }
 
     async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<ImmediateQueryResponse, Status> {
@@ -1235,6 +1248,10 @@ impl TransactionService {
             }
         }
         false
+    }
+
+    fn get_database_name(&self) -> Option<&str> {
+        self.transaction.as_ref().map(Transaction::get_database_name)
     }
 }
 

@@ -111,7 +111,7 @@ impl Reporter {
     }
 
     fn report(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
-        let diagnostics_json = diagnostics.to_reporting_json().to_string();
+        let diagnostics_json = diagnostics.to_reporting_json_against_snapshot().to_string();
         diagnostics.take_snapshot();
 
         let client = Client::new();

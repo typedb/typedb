@@ -4,22 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    convert::Infallible,
-    net::SocketAddr,
-    sync::{Arc, Mutex},
-    thread,
-};
+use std::{convert::Infallible, net::SocketAddr, sync::Arc};
 
-use futures::executor::block_on;
 use hyper::{
     header::{CONNECTION, CONTENT_LENGTH, CONTENT_TYPE},
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server, StatusCode,
 };
-use logger::{debug, trace};
-use serde_json::json;
-use tokio::{runtime::Runtime, task};
+use tokio::task;
 
 use crate::Diagnostics;
 
@@ -27,19 +19,14 @@ use crate::Diagnostics;
 pub struct MonitoringServer {
     diagnostics: Arc<Diagnostics>,
     port: u16,
-    is_enabled: bool,
 }
 
 impl MonitoringServer {
-    pub fn new(diagnostics: Arc<Diagnostics>, port: u16, is_enabled: bool) -> Self {
-        Self { diagnostics, port, is_enabled }
+    pub fn new(diagnostics: Arc<Diagnostics>, port: u16) -> Self {
+        Self { diagnostics, port }
     }
 
-    pub fn may_start(&self) {
-        if !self.is_enabled {
-            return;
-        }
-
+    pub async fn start_serving(&self) {
         let addr = SocketAddr::from(([0, 0, 0, 0], self.port));
         let diagnostics = self.diagnostics.clone();
 

@@ -4,17 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashSet,
-    error::Error,
-    fmt::format,
-    future::Future,
-    net::SocketAddr,
-    path::PathBuf,
-    pin::Pin,
-    sync::{Arc, Mutex},
-    time::Instant,
-};
+use std::{collections::HashSet, future::Future, hash::Hash, sync::Arc};
 
 use error::TypeDBError;
 use resource::constants::{database::INTERNAL_DATABASE_PREFIX, diagnostics::REPORTING_URI};
@@ -44,40 +34,32 @@ macro_rules! diagnostics_method {
 pub struct DiagnosticsManager {
     diagnostics: Arc<Diagnostics>,
     reporter: Reporter,
-    monitoring_server: MonitoringServer,
+    monitoring_server: Option<MonitoringServer>,
 }
 
 impl DiagnosticsManager {
-    pub fn new(
-        deployment_id: String,
-        server_id: String,
-        distribution: String,
-        version: String,
-        data_directory: PathBuf,
-        monitoring_port: u16,
-        is_monitoring_enabled: bool,
-        is_reporting_enabled: bool,
-    ) -> Self {
-        let diagnostics = Arc::new(Diagnostics::new(
-            deployment_id.clone(),
-            server_id,
-            distribution,
-            version,
-            data_directory.clone(),
-            is_reporting_enabled,
-        ));
+    pub fn new(diagnostics: Diagnostics, monitoring_port: u16, is_monitoring_enabled: bool) -> Self {
+        let deployment_id = diagnostics.server_properties.deployment_id().clone().to_owned();
+        let data_directory = diagnostics.server_metrics.data_directory().clone();
+        let is_reporting_enabled = diagnostics.server_properties.is_reporting_enabled();
+        let diagnostics = Arc::new(diagnostics);
+
         let reporter =
             Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, is_reporting_enabled);
-        let monitoring_server = MonitoringServer::new(diagnostics.clone(), monitoring_port, is_monitoring_enabled);
+        let monitoring_server = if is_monitoring_enabled {
+            Some(MonitoringServer::new(diagnostics.clone(), monitoring_port))
+        } else {
+            None
+        };
 
         Self { diagnostics, reporter, monitoring_server }
     }
 
     diagnostics_method! {
         pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
-        pub fn submit_error(&self, database_name: Option<&str>, error_code: String);
-        pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind);
-        pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind);
+        pub fn submit_error(&self, database_name: Option<impl AsRef<str> + Hash>, error_code: String);
+        pub fn submit_action_success(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
+        pub fn submit_action_fail(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
         pub fn increment_load_count(&self, database_name: &str, connection_: LoadKind);
         pub fn decrement_load_count(&self, database_name: &str, connection_: LoadKind);
     }
@@ -86,103 +68,30 @@ impl DiagnosticsManager {
         self.reporter.may_start()
     }
 
-    pub fn may_start_monitoring(&self) {
-        self.monitoring_server.may_start()
-    }
-}
-
-pub struct DiagnosticsResultTracker<'d> {
-    diagnostics_manager: &'d DiagnosticsManager,
-    database_name: Option<&'d str>,
-    action_kind: ActionKind,
-    error_code: Option<String>,
-}
-
-impl<'d> DiagnosticsResultTracker<'d> {
-    pub fn without_database(diagnostics_manager: &'d DiagnosticsManager, action_kind: ActionKind) -> Self {
-        DiagnosticsResultTracker { diagnostics_manager, database_name: None, action_kind, error_code: None }
-    }
-
-    pub fn with_database(
-        diagnostics_manager: &'d DiagnosticsManager,
-        database_name: &'d str,
-        action_kind: ActionKind,
-    ) -> Self {
-        DiagnosticsResultTracker {
-            diagnostics_manager,
-            database_name: Some(database_name),
-            action_kind,
-            error_code: None,
-        }
-    }
-
-    pub fn set_error_code(&mut self, error_code: String) {
-        self.error_code = Some(error_code);
-    }
-
-    fn is_tracking_needed(&self) -> bool {
-        // TODO: Would be good to reuse DatabaseManager's is_user_database() instead,
-        // maybe move it somewhere?
-        if let Some(database_name) = self.database_name {
-            !database_name.starts_with(INTERNAL_DATABASE_PREFIX)
-        } else {
-            true
-        }
-    }
-}
-
-impl<'d> Drop for DiagnosticsResultTracker<'d> {
-    fn drop(&mut self) {
-        if !self.is_tracking_needed() {
-            return;
-        }
-
-        match &self.error_code {
-            Some(error_code) => {
-                self.diagnostics_manager.submit_action_fail(self.database_name, self.action_kind);
-                self.diagnostics_manager.submit_error(self.database_name, error_code.clone());
-            }
-            None => self.diagnostics_manager.submit_action_success(self.database_name, self.action_kind),
+    pub async fn may_start_monitoring(&self) {
+        if let Some(server) = &self.monitoring_server {
+            server.start_serving().await;
         }
     }
 }
 
 pub fn run_with_diagnostics<F, T>(
     diagnostics_manager: &DiagnosticsManager,
+    database_name: Option<impl AsRef<str> + Hash>,
     action_kind: ActionKind,
     f: F,
 ) -> Result<T, Status>
-where
-    F: FnOnce() -> Result<T, Status>,
-{
-    run_and_track(DiagnosticsResultTracker::without_database(diagnostics_manager, action_kind), f)
-}
-
-pub fn run_with_diagnostics_for_database<F, T>(
-    diagnostics_manager: &DiagnosticsManager,
-    database_name: &str,
-    action_kind: ActionKind,
-    f: F,
-) -> Result<T, Status>
-where
-    F: FnOnce() -> Result<T, Status>,
-{
-    run_and_track(DiagnosticsResultTracker::with_database(diagnostics_manager, database_name, action_kind), f)
-}
-
-fn run_and_track<F, T>(mut tracker: DiagnosticsResultTracker<'_>, f: F) -> Result<T, Status>
 where
     F: FnOnce() -> Result<T, Status>,
 {
     let result = f();
-    if let Err(ref status) = result {
-        tracker.set_error_code(get_status_error_code(status));
-    }
+    submit_result_metrics(diagnostics_manager, database_name, action_kind, &result);
     result
 }
 
 pub async fn run_with_diagnostics_async<F, Fut, T>(
     diagnostics_manager: Arc<DiagnosticsManager>,
+    database_name: Option<impl AsRef<str> + Hash>,
     action_kind: ActionKind,
     f: F,
 ) -> Result<T, Status>
@@ -190,35 +99,30 @@ where
     F: FnOnce() -> Fut,
     Fut: Future<Output = Result<T, Status>> + Send,
     T: Send,
-{
-    run_and_track_async(DiagnosticsResultTracker::without_database(&diagnostics_manager, action_kind), f).await
-}
-
-pub async fn run_with_diagnostics_for_database_async<F, Fut, T>(
-    diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: &str,
-    action_kind: ActionKind,
-    f: F,
-) -> Result<T, Status>
-where
-    F: FnOnce() -> Fut,
-    Fut: Future<Output = Result<T, Status>> + Send,
-    T: Send,
-{
-    run_and_track_async(DiagnosticsResultTracker::with_database(&diagnostics_manager, database_name, action_kind), f)
-        .await
-}
-
-async fn run_and_track_async<F, Fut, T>(mut tracker: DiagnosticsResultTracker<'_>, f: F) -> Result<T, Status>
-where
-    F: FnOnce() -> Fut,
-    Fut: Future<Output = Result<T, Status>> + Send,
 {
     let result = f().await;
-    if let Err(ref status) = result {
-        tracker.set_error_code(get_status_error_code(status));
-    }
+    submit_result_metrics(&diagnostics_manager, database_name, action_kind, &result);
     result
+}
+
+fn submit_result_metrics<T>(
+    diagnostics_manager: &DiagnosticsManager,
+    database_name: Option<impl AsRef<str> + Hash>,
+    action_kind: ActionKind,
+    result: &Result<T, Status>,
+) {
+    if !is_diagnostics_needed(database_name.as_ref()) {
+        return;
+    }
+
+    match result {
+        Ok(_) => diagnostics_manager.submit_action_success(database_name, action_kind),
+        Err(status) => {
+            let error_code = get_status_error_code(status);
+            diagnostics_manager.submit_action_fail(database_name.as_ref(), action_kind);
+            diagnostics_manager.submit_error(database_name, error_code.clone());
+        }
+    }
 }
 
 fn get_status_error_code(status: &Status) -> String {
@@ -227,5 +131,14 @@ fn get_status_error_code(status: &Status) -> String {
             return error_info.reason.clone();
         }
     }
-    "UKNOWN".to_owned() // TODO: What to do with error codes?
+    status.code().to_string()
+}
+
+fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
+    // TODO: Would be good to reuse DatabaseManager's is_user_database() instead,
+    // maybe move it somewhere?
+    match database_name {
+        Some(database_name) => !database_name.as_ref().starts_with(INTERNAL_DATABASE_PREFIX),
+        None => true,
+    }
 }

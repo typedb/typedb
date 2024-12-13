@@ -9,13 +9,14 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    hash::{DefaultHasher, Hash, Hasher},
+    hash::{Hash, Hasher},
     path::PathBuf,
     sync::{Mutex, MutexGuard},
 };
 
 use error::TypeDBError;
 use serde_json::Value as JSONValue;
+use xxhash_rust::xxh3::Xxh3;
 
 use crate::metrics::{
     ActionKind, ActionMetrics, DatabaseMetrics, ErrorMetrics, LoadKind, LoadMetrics, ServerMetrics, ServerProperties,
@@ -43,7 +44,7 @@ pub struct Diagnostics {
 }
 
 impl Diagnostics {
-    pub(crate) fn new(
+    pub fn new(
         deployment_id: String,
         server_id: String,
         distribution: String,
@@ -95,19 +96,19 @@ impl Diagnostics {
         loads.entry(database_hash).or_insert(LoadMetrics::new()).decrement_connection_count(load_kind);
     }
 
-    pub fn submit_action_success(&self, database_name: Option<&str>, action_kind: ActionKind) {
+    pub fn submit_action_success(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind) {
         let database_hash = Self::hash_database_opt(database_name);
         let mut actions = self.lock_action_metrics();
         actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_success(action_kind);
     }
 
-    pub fn submit_action_fail(&self, database_name: Option<&str>, action_kind: ActionKind) {
+    pub fn submit_action_fail(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind) {
         let database_hash = Self::hash_database_opt(database_name);
         let mut actions = self.lock_action_metrics();
         actions.entry(database_hash).or_insert(ActionMetrics::new()).submit_fail(action_kind);
     }
 
-    pub fn submit_error(&self, database_name: Option<&str>, error_code: String) {
+    pub fn submit_error(&self, database_name: Option<impl AsRef<str> + Hash>, error_code: String) {
         let database_hash = Self::hash_database_opt(database_name);
         let mut errors = self.lock_error_metrics();
         errors.entry(database_hash).or_insert(ErrorMetrics::new()).submit(error_code);
@@ -131,14 +132,14 @@ impl Diagnostics {
             .for_each(|metrics| metrics.take_snapshot());
     }
 
-    pub fn to_reporting_json(&self) -> JSONValue {
+    pub fn to_reporting_json_against_snapshot(&self) -> JSONValue {
         match self.is_full_reporting {
             true => self.to_minimal_reporting_json(),
             false => self.to_full_reporting_json(),
         }
     }
 
-    pub fn to_full_reporting_json(&self) -> JSONValue {
+    fn to_full_reporting_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_reporting_json();
 
         diagnostics["server"] = self.server_metrics.to_full_reporting_json();
@@ -171,7 +172,7 @@ impl Diagnostics {
         diagnostics
     }
 
-    pub fn to_minimal_reporting_json(&self) -> JSONValue {
+    fn to_minimal_reporting_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_reporting_json();
         diagnostics["server"] = self.server_metrics.to_reporting_minimal_json();
         diagnostics
@@ -268,9 +269,10 @@ impl Diagnostics {
     }
 
     fn hash_database(database_name: impl AsRef<str> + Hash) -> DatabaseHash {
-        let mut database_name_hasher = DefaultHasher::new();
-        database_name.hash(&mut database_name_hasher);
-        database_name_hasher.finish()
+        // The hash has to be consistent over time and restarts, so the default hasher doesn't suit
+        let mut hasher = Xxh3::new();
+        hasher.update(database_name.as_ref().as_bytes());
+        hasher.digest()
     }
 
     fn update_owned_databases(&self, database_hash: DatabaseHash, is_primary_server: bool) {

@@ -36,7 +36,7 @@ impl Authenticator {
 
 impl Authenticator {
     pub fn authenticate(&self, http: http::Request<BoxBody>) -> Result<http::Request<BoxBody>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, ActionKind::Authenticate, || {
+        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::Authenticate, || {
             let (parts, body) = http.into_parts();
 
             let metadata = MetadataMap::from_headers(parts.headers.clone());

@@ -15,7 +15,7 @@ use std::{
 
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
-use diagnostics::diagnostics_manager::DiagnosticsManager;
+use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use rand::Rng;
 use resource::constants::{
@@ -50,7 +50,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn open(config: Config) -> Result<Self, ServerOpenError> {
+    pub async fn open(config: Config) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
         println!("Storage directory: {:?}", storage_directory);
@@ -80,7 +80,7 @@ impl Server {
             diagnostics_manager.clone(),
         );
 
-        diagnostics_manager.may_start_monitoring();
+        diagnostics_manager.may_start_monitoring().await;
         diagnostics_manager.may_start_reporting();
 
         Ok(Self {
@@ -132,16 +132,16 @@ impl Server {
         config: &ServerConfig,
         storage_directory: PathBuf,
     ) -> DiagnosticsManager {
-        DiagnosticsManager::new(
+        let diagnostics = Diagnostics::new(
             deployment_id,
             server_id,
             DISTRIBUTION_NAME.clone().to_owned(),
             VERSION.clone().to_owned(),
             storage_directory,
-            config.monitoring_port,
-            config.monitoring_enabled,
-            config.reporting_enabled,
-        )
+            config.is_reporting_enabled,
+        );
+
+        DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled)
     }
 
     fn create_tonic_server(encryption_config: &EncryptionConfig) -> tonic::transport::Server {
