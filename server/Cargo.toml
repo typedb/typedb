@@ -183,7 +183,7 @@ features = {}
 
 	[dependencies.http]
 		features = ["default", "std"]
-		version = "1.1.0"
+		version = "1.2.0"
 		default-features = false
 
 	[dependencies.tonic]

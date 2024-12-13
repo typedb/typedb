@@ -4,32 +4,31 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    error::Error,
-    fmt,
-    sync::{Arc, Mutex, OnceLock},
-};
+use std::{error::Error, fmt, sync::Arc};
 
 use macro_rules_attribute::apply;
 use server::{parameters::config::Config, typedb};
 use test_utils::{create_tmp_dir, TempDir};
+use tokio::sync::{Mutex, OnceCell};
 
 use crate::{generic_step, Context};
 
 mod database;
 mod transaction;
 
-static TYPEDB: OnceLock<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceLock::new();
+static TYPEDB: OnceCell<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceCell::const_new();
 
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
-    let (_, server) = TYPEDB.get_or_init(|| {
-        let server_dir = create_tmp_dir();
-        let config = Config::new_with_data_directory(server_dir.as_ref());
-        let server = typedb::Server::open(config).await.unwrap();
-        (server_dir, Arc::new(Mutex::new(server)))
-    });
+    let (_, server) = TYPEDB
+        .get_or_init(|| async {
+            let server_dir = create_tmp_dir();
+            let config = Config::new_with_data_directory(server_dir.as_ref());
+            let server = typedb::Server::open(config).await.unwrap();
+            (server_dir, Arc::new(Mutex::new(server)))
+        })
+        .await;
 
     context.server = Some(server.clone());
 }
@@ -44,7 +43,7 @@ pub async fn connection_ignore(_: &mut Context) {}
 #[apply(generic_step)]
 #[step(expr = r"connection has {int} database(s)")]
 pub async fn connection_has_count_databases(context: &mut Context, count: usize) {
-    assert_eq!(context.server().unwrap().lock().unwrap().database_manager().database_names().len(), count)
+    assert_eq!(context.server().unwrap().lock().await.database_manager().database_names().len(), count)
 }
 
 #[derive(Debug, Clone)]

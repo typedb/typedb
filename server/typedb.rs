@@ -105,7 +105,11 @@ impl Server {
 
     pub async fn serve(mut self) -> Result<(), tonic::transport::Error> {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
-        let authenticator = Authenticator::new(self.user_manager.clone(), self.authenticator_cache.clone(), self.diagnostics_manager.clone());
+        let authenticator = Authenticator::new(
+            self.user_manager.clone(),
+            self.authenticator_cache.clone(),
+            self.diagnostics_manager.clone(),
+        );
 
         println!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}.\nReady!"));
         println!("Ready!");

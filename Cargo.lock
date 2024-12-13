@@ -200,7 +200,7 @@ dependencies = [
  "axum-core",
  "bytes 1.8.0",
  "futures-util",
- "http 1.1.0",
+ "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
  "itoa",
@@ -226,7 +226,7 @@ dependencies = [
  "async-trait",
  "bytes 1.8.0",
  "futures-util",
- "http 1.1.0",
+ "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
  "mime",
@@ -1313,7 +1313,7 @@ dependencies = [
  "fnv",
  "futures-core",
  "futures-sink",
- "http 1.1.0",
+ "http 1.2.0",
  "indexmap 2.6.0",
  "slab",
  "tokio",
@@ -1408,9 +1408,9 @@ dependencies = [
 
 [[package]]
 name = "http"
-version = "1.1.0"
+version = "1.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21b9ddb458710bc376481b842f5da65cdf31522de232c1ca8146abce2a358258"
+checksum = "f16ca2af56261c99fba8bac40a10251ce8188205a4c448fbb745a2e4daa76fea"
 dependencies = [
  "bytes 1.8.0",
  "fnv",
@@ -1435,7 +1435,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1efedce1fb8e6913f23e0c92de8e62cd5b772a67e7b3946df930a62566c93184"
 dependencies = [
  "bytes 1.8.0",
- "http 1.1.0",
+ "http 1.2.0",
 ]
 
 [[package]]
@@ -1446,7 +1446,7 @@ checksum = "793429d76616a256bcb62c2a2ec2bed781c8307e797e2598c50010f2bee2544f"
 dependencies = [
  "bytes 1.8.0",
  "futures-util",
- "http 1.1.0",
+ "http 1.2.0",
  "http-body 1.0.1",
  "pin-project-lite",
 ]
@@ -1503,7 +1503,7 @@ dependencies = [
  "futures-channel",
  "futures-util",
  "h2 0.4.6",
- "http 1.1.0",
+ "http 1.2.0",
  "http-body 1.0.1",
  "httparse",
  "httpdate",
@@ -1549,7 +1549,7 @@ dependencies = [
  "bytes 1.8.0",
  "futures-channel",
  "futures-util",
- "http 1.1.0",
+ "http 1.2.0",
  "http-body 1.0.1",
  "hyper 1.5.1",
  "pin-project-lite",
@@ -3230,7 +3230,7 @@ dependencies = [
  "executor",
  "function",
  "futures",
- "http 1.1.0",
+ "http 1.2.0",
  "ir",
  "itertools 0.10.5",
  "lending_iterator",
@@ -3404,6 +3404,7 @@ dependencies = [
  "server",
  "storage",
  "test_utils",
+ "tokio",
  "typeql",
 ]
 
@@ -3860,7 +3861,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes 1.8.0",
  "h2 0.4.6",
- "http 1.1.0",
+ "http 1.2.0",
  "http-body 1.0.1",
  "http-body-util",
  "hyper 1.5.1",

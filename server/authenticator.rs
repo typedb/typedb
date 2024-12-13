@@ -5,12 +5,11 @@
  */
 use std::sync::Arc;
 
-use futures::future::BoxFuture;
-
 use diagnostics::{
     diagnostics_manager::{run_with_diagnostics, DiagnosticsManager},
     metrics::ActionKind,
 };
+use futures::future::BoxFuture;
 use resource::constants::server::{AUTHENTICATOR_PASSWORD_FIELD, AUTHENTICATOR_USERNAME_FIELD};
 use system::concepts::Credential;
 use tonic::{body::BoxBody, metadata::MetadataMap, Status};
@@ -29,7 +28,11 @@ pub struct Authenticator {
 }
 
 impl Authenticator {
-    pub(crate) fn new(user_manager: Arc<UserManager>, authenticator_cache: Arc<AuthenticatorCache>, diagnostics_manager: Arc<DiagnosticsManager>) -> Self {
+    pub(crate) fn new(
+        user_manager: Arc<UserManager>,
+        authenticator_cache: Arc<AuthenticatorCache>,
+        diagnostics_manager: Arc<DiagnosticsManager>,
+    ) -> Self {
         Self { user_manager, authenticator_cache, diagnostics_manager }
     }
 }
@@ -55,7 +58,8 @@ impl Authenticator {
                     }
                 }
                 None => {
-                    let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username) else {
+                    let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username)
+                    else {
                         return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));
                     };
 

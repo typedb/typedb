@@ -39,6 +39,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:macro_rules_attribute",
         "@crates//:serde_json",
+        "@crates//:tokio",
     ],
 )
 

@@ -52,7 +52,7 @@ fn transaction_type_matches(tx: &ActiveTransaction, tx_type: &str) {
 #[step(expr = "connection open {word} transaction for database: {word}")]
 pub async fn connection_open_transaction(context: &mut Context, tx_type: String, database_name: String) {
     assert!(context.transaction().is_none(), "Existing transaction must be closed first");
-    let server = context.server().unwrap().lock().unwrap();
+    let server = context.server().unwrap().lock().await;
     let tx = server_open_transaction_for_database(&server, tx_type, &database_name).await;
     drop(server);
     context.set_transaction(tx);
@@ -61,7 +61,7 @@ pub async fn connection_open_transaction(context: &mut Context, tx_type: String,
 #[apply(generic_step)]
 #[step(expr = "connection open transaction(s) for database: {word}, of type:")]
 pub async fn connection_open_transactions(context: &mut Context, database_name: String, step: &Step) {
-    let server = context.server().unwrap().lock().unwrap();
+    let server = context.server().unwrap().lock().await;
     let mut transactions = vec![];
     for tx_type in util::iter_table(step) {
         transactions.push(server_open_transaction_for_database(&server, tx_type.into(), &database_name).await);
@@ -73,7 +73,7 @@ pub async fn connection_open_transactions(context: &mut Context, database_name: 
 #[apply(generic_step)]
 #[step(expr = "connection open transaction(s) in parallel for database: {word}, of type:")]
 pub async fn connection_open_transactions_in_parallel(context: &mut Context, database_name: String, step: &Step) {
-    let server = context.server().unwrap().lock().unwrap();
+    let server = context.server().unwrap().lock().await;
     let transactions: Vec<ActiveTransaction> = join_all(
         util::iter_table(step)
             .map(|tx_type| server_open_transaction_for_database(&server, tx_type.into(), &database_name)),
