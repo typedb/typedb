@@ -17,7 +17,7 @@ use std::{
 };
 
 use error::TypeDBError;
-use resource::constants::diagnostics::REPORTING_URI;
+use resource::constants::{database::INTERNAL_DATABASE_PREFIX, diagnostics::REPORTING_URI};
 use tonic::Status;
 use tonic_types::StatusExt;
 
@@ -119,10 +119,24 @@ impl<'d> DiagnosticsResultTracker<'d> {
     pub fn set_error_code(&mut self, error_code: String) {
         self.error_code = Some(error_code);
     }
+
+    fn is_tracking_needed(&self) -> bool {
+        // TODO: Would be good to reuse DatabaseManager's is_user_database() instead,
+        // maybe move it somewhere?
+        if let Some(database_name) = self.database_name {
+            !database_name.starts_with(INTERNAL_DATABASE_PREFIX)
+        } else {
+            true
+        }
+    }
 }
 
 impl<'d> Drop for DiagnosticsResultTracker<'d> {
     fn drop(&mut self) {
+        if !self.is_tracking_needed() {
+            return;
+        }
+
         match &self.error_code {
             Some(error_code) => {
                 self.diagnostics_manager.submit_action_fail(self.database_name, self.action_kind);

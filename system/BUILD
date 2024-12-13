@@ -23,6 +23,7 @@ rust_library(
         "//executor",
         "//function",
         "//query",
+        "//resource",
         "//storage",
         "@typeql//rust:typeql",
         "@crates//:pwhash",

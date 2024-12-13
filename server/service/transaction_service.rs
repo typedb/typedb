@@ -24,7 +24,7 @@ use database::{
 };
 use diagnostics::{
     diagnostics_manager::{run_with_diagnostics, run_with_diagnostics_async, DiagnosticsManager},
-    metrics::ActionKind,
+    metrics::{ActionKind, LoadKind},
 };
 use error::typedb_error;
 use executor::{
@@ -96,6 +96,16 @@ macro_rules! with_readable_transaction {
             Transaction::Schema($transaction) => $block
         }
     }}
+}
+
+impl Transaction {
+    pub fn to_load_kind(&self) -> LoadKind {
+        match self {
+            Transaction::Read(_) => LoadKind::ReadTransactions,
+            Transaction::Write(_) => LoadKind::WriteTransactions,
+            Transaction::Schema(_) => LoadKind::SchemaTransactions,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -429,7 +439,9 @@ impl TransactionService {
 
             let database_name = open_req.database;
             let database = self.database_manager.database(database_name.as_ref()).ok_or_else(|| {
-                TransactionServiceError::DatabaseNotFound { name: database_name }.into_error_message().into_status()
+                TransactionServiceError::DatabaseNotFound { name: database_name.clone() }
+                    .into_error_message()
+                    .into_status()
             })?;
 
             let transaction = match transaction_type {
@@ -470,6 +482,7 @@ impl TransactionService {
                     Transaction::Schema(transaction)
                 }
             };
+            self.diagnostics_manager.increment_load_count(&database_name, transaction.to_load_kind());
             self.transaction = Some(transaction);
             self.is_open = true;
 
@@ -503,11 +516,13 @@ impl TransactionService {
             // finish executing any remaining writes so they make it into the commit
             self.finish_queued_write_queries(InterruptType::TransactionCommitted).await?;
 
+            let diagnostics_manager = self.diagnostics_manager.clone();
             match self.transaction.take().unwrap() {
                 Transaction::Read(_) => {
                     Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
                 }
                 Transaction::Write(transaction) => spawn_blocking(move || {
+                    diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::WriteTransactions);
                     transaction.commit().map_err(|err| {
                         TransactionServiceError::DataCommitFailed { typedb_source: err }
                             .into_error_message()
@@ -516,9 +531,12 @@ impl TransactionService {
                 })
                 .await
                 .unwrap(),
-                Transaction::Schema(transaction) => transaction.commit().map_err(|typedb_source| {
-                    TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
-                }),
+                Transaction::Schema(transaction) => {
+                    diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::SchemaTransactions);
+                    transaction.commit().map_err(|typedb_source| {
+                        TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
+                    })
+                }
             }
         })
         .await
@@ -569,9 +587,19 @@ impl TransactionService {
 
         match self.transaction.take() {
             None => (),
-            Some(Transaction::Read(transaction)) => transaction.close(),
-            Some(Transaction::Write(transaction)) => transaction.close(),
-            Some(Transaction::Schema(transaction)) => transaction.close(),
+            Some(Transaction::Read(transaction)) => {
+                self.diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::ReadTransactions);
+                transaction.close()
+            }
+            Some(Transaction::Write(transaction)) => {
+                self.diagnostics_manager.decrement_load_count(transaction.database.name(), LoadKind::WriteTransactions);
+                transaction.close()
+            }
+            Some(Transaction::Schema(transaction)) => {
+                self.diagnostics_manager
+                    .decrement_load_count(transaction.database.name(), LoadKind::SchemaTransactions);
+                transaction.close()
+            }
         };
     }
 

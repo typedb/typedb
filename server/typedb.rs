@@ -207,7 +207,12 @@ impl Server {
 }
 
 fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
-    let metrics = database_manager.databases().values().map(|database| database.get_metrics()).collect();
+    let metrics = database_manager
+        .databases()
+        .values()
+        .filter(|database| DatabaseManager::is_user_database(database.name()))
+        .map(|database| database.get_metrics())
+        .collect();
     diagnostics_manager.submit_database_metrics(metrics);
 }
 

@@ -4,20 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    error::Error,
-    fmt, fs, io,
-    path::PathBuf,
-    sync::{atomic::AtomicU64, Arc, Mutex},
-    time::Instant,
-};
+use std::{collections::HashMap, fmt, path::PathBuf, time::Instant};
 
 use chrono::Utc;
-use error::TypeDBError;
 use resource::constants::diagnostics::{REPORT_INTERVAL, UNKNOWN_STR};
 use serde_json::{json, map::Map as JSONMap, Value as JSONValue};
-use sysinfo::{DiskRefreshKind, MemoryRefreshKind, ProcessRefreshKind, RefreshKind, System};
+use sysinfo::{MemoryRefreshKind, RefreshKind, System};
 
 use crate::{version::JSON_API_VERSION, DatabaseHash, DatabaseHashOpt};
 
@@ -184,7 +176,6 @@ impl ServerMetrics {
     }
 }
 
-// TODO: Rename? It's only for internal exchange
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub struct DatabaseMetrics {
     pub database_name: String,
@@ -246,9 +237,7 @@ impl LoadMetrics {
         self.connection.take_snapshot()
     }
 
-    pub fn to_reporting_json(&self, database_hash: &DatabaseHash, is_owned: bool) -> JSONValue {
-        let mut load = vec![];
-
+    pub fn to_reporting_json(&self, database_hash: &DatabaseHash, is_owned: bool) -> Option<JSONValue> {
         if !self.is_deleted || !self.connection.is_empty() {
             let mut load_object = json!({
                 "database": database_hash.to_string(),
@@ -260,25 +249,23 @@ impl LoadMetrics {
                 load_object.as_object_mut().unwrap().insert("data".to_string(), self.data.to_json());
             }
 
-            load.push(load_object);
+            Some(load_object)
+        } else {
+            None
         }
-
-        json!(load)
     }
 
-    pub fn to_monitoring_json(&self, database_hash: &DatabaseHash, is_owned: bool) -> JSONValue {
-        let mut load = vec![];
-
+    pub fn to_monitoring_json(&self, database_hash: &DatabaseHash, is_owned: bool) -> Option<JSONValue> {
         if is_owned && !self.is_deleted {
             let load_object = json!({
                 "database": database_hash.to_string(),
                 "schema": self.schema.to_json(),
                 "data": self.data.to_json(),
             });
-            load.push(load_object);
+            Some(load_object)
+        } else {
+            None
         }
-
-        json!(load)
     }
 
     pub fn prometheus_header() -> &'static str {
@@ -376,7 +363,7 @@ impl ConnectionLoadMetrics {
     }
 
     pub fn update_peak_counts(&mut self, load_kind: LoadKind, count: u64) {
-        if self.peak_counts.get(&load_kind).unwrap_or(&count) < &count {
+        if self.peak_counts.get(&load_kind).unwrap_or(&0u64) < &count {
             self.peak_counts.insert(load_kind, count);
         }
     }
@@ -440,8 +427,8 @@ impl ActionMetrics {
         }
     }
 
-    pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> JSONValue {
-        let mut requests = vec![];
+    pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
+        let mut actions = vec![];
 
         for (kind, info) in &self.actions {
             let successful = info.get_successful();
@@ -457,14 +444,14 @@ impl ActionMetrics {
             }
             object.insert("successful".to_string(), json!(successful));
             object.insert("failed".to_string(), json!(failed));
-            requests.push(json!(object));
+            actions.push(json!(object));
         }
 
-        json!(requests)
+        actions
     }
 
-    pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> JSONValue {
-        let mut requests = vec![];
+    pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
+        let mut actions = vec![];
 
         for (kind, info) in &self.actions {
             let mut request_object = serde_json::Map::new();
@@ -474,10 +461,10 @@ impl ActionMetrics {
             }
             request_object.insert("attempted".to_string(), json!(info.get_attempted()));
             request_object.insert("successful".to_string(), json!(info.get_successful()));
-            requests.push(json!(request_object));
+            actions.push(json!(request_object));
         }
 
-        json!(requests)
+        actions
     }
 
     pub fn prometheus_header_attempted() -> &'static str {
@@ -578,8 +565,8 @@ impl ErrorMetrics {
         }
     }
 
-    pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> JSONValue {
-        let mut errors = Vec::new();
+    pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
+        let mut errors = vec![];
 
         for code in self.errors.keys() {
             let count_delta = self.get_count_delta(code);
@@ -597,11 +584,11 @@ impl ErrorMetrics {
             errors.push(JSONValue::Object(error_object));
         }
 
-        JSONValue::Array(errors)
+        errors
     }
 
-    pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> JSONValue {
-        let mut errors = Vec::new();
+    pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
+        let mut errors = vec![];
 
         for (code, info) in &self.errors {
             let mut error_object = JSONMap::new();
@@ -614,7 +601,7 @@ impl ErrorMetrics {
             errors.push(JSONValue::Object(error_object));
         }
 
-        JSONValue::Array(errors)
+        errors
     }
 
     pub fn prometheus_header() -> &'static str {

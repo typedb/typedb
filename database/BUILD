@@ -21,6 +21,7 @@ rust_library(
         "//encoding",
         "//function",
         "//query",
+        "//resource",
         "//storage",
 
         "@typeql//rust:typeql",

@@ -143,25 +143,29 @@ impl Diagnostics {
 
         diagnostics["server"] = self.server_metrics.to_full_reporting_json();
 
-        let mut load = Vec::new();
-        for (database_hash, metrics) in self.lock_load_metrics().iter() {
-            let load_data = metrics.to_reporting_json(database_hash, self.is_owned(database_hash));
-            load.push(load_data);
-        }
+        let load = self
+            .lock_load_metrics()
+            .iter()
+            .filter_map(|(database_hash, metrics)| {
+                metrics.to_reporting_json(database_hash, self.is_owned(database_hash))
+            })
+            .collect();
         diagnostics["load"] = JSONValue::Array(load);
 
-        let mut actions = Vec::new();
-        for (database_hash, metrics) in self.lock_action_metrics().iter() {
-            let actions_data = metrics.to_reporting_json(database_hash);
-            actions.push(actions_data);
-        }
+        let actions = self
+            .lock_action_metrics()
+            .iter()
+            .map(|(database_hash, metrics)| metrics.to_reporting_json(database_hash))
+            .flatten()
+            .collect();
         diagnostics["actions"] = JSONValue::Array(actions);
 
-        let mut errors = Vec::new();
-        for (database_hash, metrics) in self.lock_error_metrics().iter() {
-            let errors_data = metrics.to_reporting_json(database_hash);
-            errors.push(errors_data);
-        }
+        let errors = self
+            .lock_error_metrics()
+            .iter()
+            .map(|(database_hash, metrics)| metrics.to_reporting_json(database_hash))
+            .flatten()
+            .collect();
         diagnostics["errors"] = JSONValue::Array(errors);
 
         diagnostics
@@ -178,25 +182,29 @@ impl Diagnostics {
 
         diagnostics["server"] = self.server_metrics.to_monitoring_json();
 
-        let mut load = Vec::new();
-        for (database_hash, metrics) in self.lock_load_metrics().iter() {
-            let load_data = metrics.to_monitoring_json(database_hash, self.is_owned(database_hash));
-            load.push(load_data);
-        }
+        let load = self
+            .lock_load_metrics()
+            .iter()
+            .filter_map(|(database_hash, metrics)| {
+                metrics.to_monitoring_json(database_hash, self.is_owned(database_hash))
+            })
+            .collect();
         diagnostics["load"] = JSONValue::Array(load);
 
-        let mut actions = Vec::new();
-        for (database_hash, metrics) in self.lock_action_metrics().iter() {
-            let actions_data = metrics.to_monitoring_json(database_hash);
-            actions.push(actions_data);
-        }
+        let actions = self
+            .lock_action_metrics()
+            .iter()
+            .map(|(database_hash, metrics)| metrics.to_monitoring_json(database_hash))
+            .flatten()
+            .collect();
         diagnostics["actions"] = JSONValue::Array(actions);
 
-        let mut errors = Vec::new();
-        for (database_hash, metrics) in self.lock_error_metrics().iter() {
-            let errors_data = metrics.to_monitoring_json(database_hash);
-            errors.push(errors_data);
-        }
+        let errors = self
+            .lock_error_metrics()
+            .iter()
+            .map(|(database_hash, metrics)| metrics.to_monitoring_json(database_hash))
+            .flatten()
+            .collect();
         diagnostics["errors"] = JSONValue::Array(errors);
 
         diagnostics

@@ -10,7 +10,8 @@ pub mod util;
 
 use std::{fmt::format, sync::Arc};
 
-use database::{database_manager::DatabaseManager, internal_database_prefix, Database};
+use database::{database_manager::DatabaseManager, Database};
+use resource::internal_database_prefix;
 use storage::durability_client::WALClient;
 use typeql;
 

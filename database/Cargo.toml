@@ -31,6 +31,11 @@ features = {}
 		version = "0.1.41"
 		default-features = false
 
+	[dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
 	[dependencies.query]
 		path = "../query"
 		features = []

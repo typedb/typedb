@@ -38,12 +38,22 @@ pub mod server {
     pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";
+
+    pub const SYSTEM_FILE_PREFIX: &str = "_";
 }
 
 pub mod database {
     pub const QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT: f64 = 0.05;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_PERCENT: f64 = 0.05;
+
+    #[macro_export]
+    macro_rules! internal_database_prefix {
+        () => {
+            "_"
+        };
+    }
+    pub const INTERNAL_DATABASE_PREFIX: &str = internal_database_prefix!();
 }
 
 pub mod concept {
@@ -89,7 +99,9 @@ pub mod diagnostics {
 
     pub const UNKNOWN_STR: &'static str = "Unknown";
 
-    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(600);
+    // pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(600);
+    // TODO: Return the value above
+    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(30);
 
     pub const REPORTING_URI: &str = "https://diagnostics.typedb.com/";
     pub const REPORT_INTERVAL: Duration = Duration::from_secs(3600);

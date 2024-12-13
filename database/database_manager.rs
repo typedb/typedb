@@ -12,16 +12,10 @@ use std::{
 };
 
 use itertools::Itertools;
+use resource::constants::{database::INTERNAL_DATABASE_PREFIX, server::SYSTEM_FILE_PREFIX};
 use storage::durability_client::WALClient;
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
-
-#[macro_export]
-macro_rules! internal_database_prefix {
-    () => {
-        "_"
-    };
-}
 
 #[derive(Debug)]
 pub struct DatabaseManager {
@@ -46,7 +40,7 @@ impl DatabaseManager {
                 })?
                 .path();
 
-            if entry_path.file_name().unwrap().to_string_lossy().starts_with("_") {
+            if entry_path.file_name().unwrap().to_string_lossy().starts_with(SYSTEM_FILE_PREFIX) {
                 continue;
             }
 
@@ -166,6 +160,6 @@ impl DatabaseManager {
     }
 
     pub fn is_internal_database(name: &str) -> bool {
-        name.starts_with(internal_database_prefix!())
+        name.starts_with(INTERNAL_DATABASE_PREFIX)
     }
 }
