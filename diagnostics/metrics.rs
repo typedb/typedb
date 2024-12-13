@@ -9,7 +9,7 @@ use std::{collections::HashMap, fmt, path::PathBuf, time::Instant};
 use chrono::Utc;
 use resource::constants::diagnostics::{REPORT_INTERVAL, UNKNOWN_STR};
 use serde_json::{json, map::Map as JSONMap, Value as JSONValue};
-use sysinfo::{MemoryRefreshKind, RefreshKind, System};
+use sysinfo::{Disks, MemoryRefreshKind, RefreshKind, System};
 
 use crate::{version::JSON_API_VERSION, DatabaseHash, DatabaseHashOpt};
 
@@ -65,7 +65,6 @@ impl ServerProperties {
 
 #[derive(Debug)]
 pub(crate) struct ServerMetrics {
-    system_info: System,
     start_instant: Instant,
     os_name: String,
     os_arch: String,
@@ -79,15 +78,7 @@ impl ServerMetrics {
         let os_name = System::name().unwrap_or(UNKNOWN_STR.to_owned());
         let os_arch = System::cpu_arch();
         let os_version = System::os_version().unwrap_or(UNKNOWN_STR.to_owned());
-        Self {
-            system_info: System::new(),
-            start_instant: Instant::now(),
-            os_name,
-            os_arch,
-            os_version,
-            version,
-            data_directory,
-        }
+        Self { start_instant: Instant::now(), os_name, os_arch, os_version, version, data_directory }
     }
 
     fn get_uptime_in_seconds(&self) -> i64 {
@@ -171,8 +162,16 @@ impl ServerMetrics {
     }
 
     fn get_disk_info(&self) -> SizeInfo {
-        // TODO: Implement
-        SizeInfo { total: 0u64, available: 0u64 }
+        let disks = Disks::new_with_refreshed_list();
+        let disk = match self.data_directory.canonicalize() {
+            Ok(path) => disks.iter().find(|disk| path.starts_with(disk.mount_point())),
+            Err(_) => None, // TODO: Ignore?
+        };
+
+        match disk {
+            Some(disk) => SizeInfo { total: disk.total_space(), available: disk.available_space() },
+            None => SizeInfo { total: 0u64, available: 0u64 },
+        }
     }
 }
 
@@ -668,7 +667,7 @@ pub enum ActionKind {
     UsersDelete,
     UsersAll,
     UsersGet,
-    UserToken, // TODO:
+    Authenticate,
     DatabasesContains,
     DatabasesCreate,
     DatabasesGet,
@@ -678,7 +677,9 @@ pub enum ActionKind {
     DatabaseDelete,
     TransactionOpen,
     TransactionClose,
-    TransactionExecute, // TODO: Split to commit, query, rollback, etc?
+    TransactionCommit,
+    TransactionRollback,
+    TransactionQuery,
 }
 
 impl fmt::Display for ActionKind {
@@ -693,7 +694,7 @@ impl fmt::Display for ActionKind {
             ActionKind::UsersDelete => write!(f, "USERS_DELETE"),
             ActionKind::UsersAll => write!(f, "USERS_ALL"),
             ActionKind::UsersGet => write!(f, "USERS_GET"),
-            ActionKind::UserToken => write!(f, "USER_TOKEN"),
+            ActionKind::Authenticate => write!(f, "AUTHENTICATE"), // Analogue of 2.x's USER_TOKEN
             ActionKind::DatabasesContains => write!(f, "DATABASES_CONTAINS"),
             ActionKind::DatabasesCreate => write!(f, "DATABASES_CREATE"),
             ActionKind::DatabasesGet => write!(f, "DATABASES_GET"),
@@ -703,7 +704,9 @@ impl fmt::Display for ActionKind {
             ActionKind::DatabaseDelete => write!(f, "DATABASES_DELETE"),
             ActionKind::TransactionOpen => write!(f, "TRANSACTION_OPEN"),
             ActionKind::TransactionClose => write!(f, "TRANSACTION_CLOSE"),
-            ActionKind::TransactionExecute => write!(f, "TRANSACTION_EXECUTE"),
+            ActionKind::TransactionCommit => write!(f, "TRANSACTION_COMMIT"),
+            ActionKind::TransactionRollback => write!(f, "TRANSACTION_ROLLBACK"),
+            ActionKind::TransactionQuery => write!(f, "TRANSACTION_QUERY"),
         }
     }
 }

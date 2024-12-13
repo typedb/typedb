@@ -499,7 +499,7 @@ impl TransactionService {
     }
 
     async fn handle_commit(&mut self, _commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionExecute, || async {
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionCommit, || async {
             // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
             //   note: if any write query errors, the whole transaction errors
             // finish any active write query
@@ -546,7 +546,7 @@ impl TransactionService {
         &mut self,
         _rollback_req: typedb_protocol::transaction::rollback::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionExecute, || async {
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionRollback, || async {
             // interrupt all queries, cancel writes, then rollback
             self.interrupt_and_close_responders(InterruptType::TransactionRolledback).await;
             if let Break(_) = self.cancel_queued_read_queries(InterruptType::TransactionRolledback).await {
@@ -734,7 +734,7 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionExecute, || async {
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), ActionKind::TransactionQuery, || async {
             let _query_options = &query_req.options; // TODO: pass query options
             let parsed = match parse_query(&query_req.query) {
                 Ok(parsed) => parsed,
