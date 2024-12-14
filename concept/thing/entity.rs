@@ -25,7 +25,6 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
         object::{Object, ObjectAPI},
-        relation::IndexedPlayersIterator,
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
@@ -41,14 +40,6 @@ pub struct Entity {
 impl Entity {
     pub fn type_(&self) -> EntityType {
         EntityType::build_from_type_id(self.vertex.type_id_())
-    }
-
-    pub fn get_indexed_players<'m>(
-        self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> IndexedPlayersIterator {
-        thing_manager.get_indexed_players(snapshot, Object::Entity(self))
     }
 
     pub fn next_possible(&self) -> Entity {

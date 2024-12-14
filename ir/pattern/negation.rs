@@ -38,6 +38,10 @@ impl Negation {
         &self.conjunction
     }
 
+    pub fn conjunction_mut(&mut self) -> &mut Conjunction {
+        &mut self.conjunction
+    }
+
     pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }

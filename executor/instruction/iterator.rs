@@ -16,27 +16,16 @@ use itertools::zip_eq;
 
 use crate::{
     instruction::{
-        has_executor::{
-            HasBoundedSortedAttribute, HasUnboundedSortedAttributeMerged, HasUnboundedSortedAttributeSingle,
-            HasUnboundedSortedOwner,
-        },
+        has_executor::{HasUnboundedTupleIteratorMerged, HasUnboundedTupleIteratorSingle},
         has_reverse_executor::{
-            HasReverseBoundedSortedOwner, HasReverseUnboundedSortedAttribute, HasReverseUnboundedSortedOwnerMerged,
-            HasReverseUnboundedSortedOwnerSingle,
+            HasReverseTupleIteratorChained, HasReverseTupleIteratorSingle, HasReverseUnboundedSortedOwnerMerged,
         },
         iid_executor::IidIterator,
+        indexed_relation_executor::{IndexedRelationTupleIteratorMerged, IndexedRelationTupleIteratorSingle},
         is_executor::IsIterator,
         isa_executor::{IsaBoundedSortedType, IsaUnboundedSortedThing},
         isa_reverse_executor::{IsaReverseBoundedSortedThing, IsaReverseUnboundedSortedType},
-        links_executor::{
-            LinksBoundedRelationPlayer, LinksBoundedRelationSortedPlayer, LinksUnboundedSortedPlayerMerged,
-            LinksUnboundedSortedPlayerSingle, LinksUnboundedSortedRelation,
-        },
-        links_reverse_executor::{
-            LinksReverseBoundedPlayerRelation, LinksReverseBoundedPlayerSortedRelation,
-            LinksReverseUnboundedSortedPlayer, LinksReverseUnboundedSortedRelationMerged,
-            LinksReverseUnboundedSortedRelationSingle,
-        },
+        links_executor::{LinksTupleIteratorMerged, LinksTupleIteratorSingle},
         owns_executor::{OwnsBoundedSortedAttribute, OwnsUnboundedSortedOwner},
         owns_reverse_executor::{OwnsReverseBoundedSortedOwner, OwnsReverseUnboundedSortedAttribute},
         plays_executor::{PlaysBoundedSortedRole, PlaysUnboundedSortedPlayer},
@@ -127,27 +116,21 @@ pub(crate) enum TupleIterator {
     IsaReverseUnbounded(SortedTupleIterator<IsaReverseUnboundedSortedType>),
     IsaReverseBounded(SortedTupleIterator<IsaReverseBoundedSortedThing>),
 
-    HasUnbounded(SortedTupleIterator<HasUnboundedSortedOwner>),
-    HasUnboundedInvertedSingle(SortedTupleIterator<HasUnboundedSortedAttributeSingle>),
-    HasUnboundedInvertedMerged(SortedTupleIterator<HasUnboundedSortedAttributeMerged>),
-    HasBounded(SortedTupleIterator<HasBoundedSortedAttribute>),
+    HasSingle(SortedTupleIterator<HasUnboundedTupleIteratorSingle>),
+    HasMerged(SortedTupleIterator<HasUnboundedTupleIteratorMerged>),
 
-    HasReverseUnbounded(SortedTupleIterator<HasReverseUnboundedSortedAttribute>),
-    HasReverseUnboundedInvertedSingle(SortedTupleIterator<HasReverseUnboundedSortedOwnerSingle>),
-    HasReverseUnboundedInvertedMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
-    HasReverseBounded(SortedTupleIterator<HasReverseBoundedSortedOwner>),
+    HasReverseSingle(SortedTupleIterator<HasReverseTupleIteratorSingle>),
+    HasReverseChained(SortedTupleIterator<HasReverseTupleIteratorChained>),
+    HasReverseMerged(SortedTupleIterator<HasReverseUnboundedSortedOwnerMerged>),
 
-    LinksUnbounded(SortedTupleIterator<LinksUnboundedSortedRelation>),
-    LinksUnboundedInvertedSingle(SortedTupleIterator<LinksUnboundedSortedPlayerSingle>),
-    LinksUnboundedInvertedMerged(SortedTupleIterator<LinksUnboundedSortedPlayerMerged>),
-    LinksBoundedRelation(SortedTupleIterator<LinksBoundedRelationSortedPlayer>),
-    LinksBoundedRelationPlayer(SortedTupleIterator<LinksBoundedRelationPlayer>),
+    LinksSingle(SortedTupleIterator<LinksTupleIteratorSingle>),
+    LinksMerged(SortedTupleIterator<LinksTupleIteratorMerged>),
 
-    LinksReverseUnbounded(SortedTupleIterator<LinksReverseUnboundedSortedPlayer>),
-    LinksReverseUnboundedInvertedSingle(SortedTupleIterator<LinksReverseUnboundedSortedRelationSingle>),
-    LinksReverseUnboundedInvertedMerged(SortedTupleIterator<LinksReverseUnboundedSortedRelationMerged>),
-    LinksReverseBoundedPlayer(SortedTupleIterator<LinksReverseBoundedPlayerSortedRelation>),
-    LinksReverseBoundedPlayerRelation(SortedTupleIterator<LinksReverseBoundedPlayerRelation>),
+    LinksReverseSingle(SortedTupleIterator<LinksTupleIteratorSingle>),
+    LinksReverseMerged(SortedTupleIterator<LinksTupleIteratorMerged>),
+
+    IndexedRelationsSingle(SortedTupleIterator<IndexedRelationTupleIteratorSingle>),
+    IndexedRelationsMerged(SortedTupleIterator<IndexedRelationTupleIteratorMerged>),
 }
 
 impl {

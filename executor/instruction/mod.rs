@@ -35,9 +35,10 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor, is_executor::IsExecutor,
-        isa_executor::IsaExecutor, isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator,
-        links_executor::LinksExecutor, links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
+        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
+        indexed_relation_executor::IndexedRelationExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
+        isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
+        links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
         owns_reverse_executor::OwnsReverseExecutor, plays_executor::PlaysExecutor,
         plays_reverse_executor::PlaysReverseExecutor, relates_executor::RelatesExecutor,
         relates_reverse_executor::RelatesReverseExecutor, sub_executor::SubExecutor,
@@ -51,6 +52,7 @@ mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
 mod iid_executor;
+mod indexed_relation_executor;
 mod is_executor;
 mod isa_executor;
 mod isa_reverse_executor;
@@ -96,7 +98,8 @@ pub(crate) enum InstructionExecutor {
     Links(LinksExecutor),
     LinksReverse(LinksReverseExecutor),
 
-    // RolePlayerIndex(RolePlayerIndexExecutor),
+    IndexedRelation(IndexedRelationExecutor),
+
     FunctionCallBinding(FunctionCallBindingIteratorExecutor),
 }
 
@@ -156,6 +159,9 @@ impl InstructionExecutor {
                 snapshot,
                 thing_manager,
             )?)),
+            ConstraintInstruction::IndexedRelation(indexed_relation) => Ok(Self::IndexedRelation(
+                IndexedRelationExecutor::new(indexed_relation, variable_modes, sort_by, snapshot, thing_manager)?,
+            )),
             ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
             ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
             ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
@@ -185,30 +191,32 @@ impl InstructionExecutor {
             Self::HasReverse(executor) => executor.get_iterator(context, row),
             Self::Links(executor) => executor.get_iterator(context, row),
             Self::LinksReverse(executor) => executor.get_iterator(context, row),
+            Self::IndexedRelation(executor) => executor.get_iterator(context, row),
             Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 
     pub(crate) const fn name(&self) -> &'static str {
         match self {
-            InstructionExecutor::Is(_) => "is",
-            InstructionExecutor::Iid(_) => "iid",
-            InstructionExecutor::Isa(_) => "isa",
-            InstructionExecutor::IsaReverse(_) => "isa_reverse",
-            InstructionExecutor::Has(_) => "has",
-            InstructionExecutor::HasReverse(_) => "has_reverse",
-            InstructionExecutor::Links(_) => "links",
-            InstructionExecutor::LinksReverse(_) => "links_reverse",
-            InstructionExecutor::FunctionCallBinding(_) => "fn_call_binding",
-            InstructionExecutor::TypeList(_) => "[internal]type_list",
-            InstructionExecutor::Sub(_) => "sub",
-            InstructionExecutor::SubReverse(_) => "sub_reverse",
-            InstructionExecutor::Owns(_) => "owns",
-            InstructionExecutor::OwnsReverse(_) => "owns_reverse",
-            InstructionExecutor::Relates(_) => "relates",
-            InstructionExecutor::RelatesReverse(_) => "relates_reverse",
-            InstructionExecutor::Plays(_) => "plays",
-            InstructionExecutor::PlaysReverse(_) => "plays_reverse",
+            Self::Is(_) => "is",
+            Self::Iid(_) => "iid",
+            Self::Isa(_) => "isa",
+            Self::IsaReverse(_) => "isa_reverse",
+            Self::Has(_) => "has",
+            Self::HasReverse(_) => "has_reverse",
+            Self::Links(_) => "links",
+            Self::LinksReverse(_) => "links_reverse",
+            Self::FunctionCallBinding(_) => "fn_call_binding",
+            Self::TypeList(_) => "[internal]type_list",
+            Self::Sub(_) => "sub",
+            Self::SubReverse(_) => "sub_reverse",
+            Self::Owns(_) => "owns",
+            Self::OwnsReverse(_) => "owns_reverse",
+            Self::Relates(_) => "relates",
+            Self::RelatesReverse(_) => "relates_reverse",
+            Self::Plays(_) => "plays",
+            Self::PlaysReverse(_) => "plays_reverse",
+            Self::IndexedRelation(_) => "indexed_relation",
         }
     }
 }
@@ -233,6 +241,7 @@ impl fmt::Display for InstructionExecutor {
             InstructionExecutor::HasReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::LinksReverse(inner) => fmt::Display::fmt(inner, f),
+            InstructionExecutor::IndexedRelation(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::FunctionCallBinding(inner) => fmt::Display::fmt(inner, f),
         }
     }
@@ -288,7 +297,7 @@ impl fmt::Display for BinaryIterateMode {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
-pub(crate) enum TernaryIterateMode {
+pub(crate) enum LinksIterateMode {
     // [x, y, z] = standard sort order
     Unbound,
     // [y, x, z] sort order
@@ -299,16 +308,14 @@ pub(crate) enum TernaryIterateMode {
     BoundFromBoundTo,
 }
 
-impl TernaryIterateMode {
+impl LinksIterateMode {
     pub(crate) fn new(
         from_vertex: &Vertex<ExecutorVariable>,
         to_vertex: &Vertex<ExecutorVariable>,
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
-    ) -> TernaryIterateMode {
-        // TODO
-        // debug_assert!(var_modes.len() == 3);
-
+    ) -> LinksIterateMode {
+        debug_assert!(var_modes.len() == 3);
         debug_assert!(!var_modes.all_inputs());
 
         let is_from_bound = match from_vertex {
@@ -334,7 +341,7 @@ impl TernaryIterateMode {
     }
 }
 
-impl fmt::Display for TernaryIterateMode {
+impl fmt::Display for LinksIterateMode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
@@ -357,7 +364,10 @@ fn type_from_row_or_annotations<'a>(
     }
 }
 
-pub(super) type FilterMapFn<T> = dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+pub(super) type FilterMapUnchangedFn<T> =
+    dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<T, Box<ConceptReadError>>>;
+pub(super) type FilterMapFn<T, U> =
+    dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<U, Box<ConceptReadError>>>;
 type FilterFn<T> = dyn Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>>;
 
 pub(crate) struct Checker<T: 'static> {
@@ -728,6 +738,49 @@ impl<T> Checker<T> {
                                 &thing_manager,
                                 player(value).as_thing().as_object(),
                                 role(value).as_type().as_role_type(),
+                            )
+                        }
+                    }));
+                }
+
+                CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                    let maybe_start_player_extractor =
+                        start_player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_start_role_extractor = start_role.as_variable().and_then(|var| self.extractors.get(&var));
+                    let maybe_end_role_extractor = end_role.as_variable().and_then(|var| self.extractors.get(&var));
+                    let snapshot = context.snapshot.clone();
+                    let thing_manager = context.thing_manager.clone();
+                    let start_player_extractor: BoxExtractor<T> = match maybe_start_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(start_player, row, context),
+                    };
+                    let end_player_extractor: BoxExtractor<T> = match maybe_end_player_extractor {
+                        Some(&player) => Box::new(player),
+                        None => make_const_extractor(end_player, row, context),
+                    };
+                    let relation_extractor: BoxExtractor<T> = match maybe_relation_extractor {
+                        Some(&relation) => Box::new(relation),
+                        None => make_const_extractor(relation, row, context),
+                    };
+                    let start_role_extractor: BoxExtractor<T> = match maybe_start_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => make_const_extractor(start_role, row, context),
+                    };
+                    let end_role_extractor: BoxExtractor<T> = match maybe_end_role_extractor {
+                        Some(&role) => Box::new(role),
+                        None => make_const_extractor(end_role, row, context),
+                    };
+                    filters.push(Box::new({
+                        move |value| {
+                            start_player_extractor(value).as_thing().as_object().has_indexed_relation_player(
+                                &*snapshot,
+                                &thing_manager,
+                                end_player_extractor(value).as_thing().as_object(),
+                                relation_extractor(value).as_thing().as_relation(),
+                                start_role_extractor(value).as_type().as_role_type(),
+                                end_role_extractor(value).as_type().as_role_type(),
                             )
                         }
                     }));

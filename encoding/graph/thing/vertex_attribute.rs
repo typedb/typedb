@@ -170,7 +170,11 @@ impl AsBytes<BUFFER_KEY_INLINE> for AttributeVertex {
 
 impl Prefixed<BUFFER_KEY_INLINE> for AttributeVertex {}
 
-impl Typed<BUFFER_KEY_INLINE> for AttributeVertex {}
+impl Typed<BUFFER_KEY_INLINE> for AttributeVertex {
+    fn type_id_(&self) -> TypeID {
+        self.type_id
+    }
+}
 
 impl ThingVertex for AttributeVertex {
     fn decode(bytes: &[u8]) -> Self {

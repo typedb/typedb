@@ -20,7 +20,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapFn, VariableModes,
+        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -39,7 +39,7 @@ pub(crate) type IidToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptRead
 pub(super) type IidTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IidFilterMapFn>>, IidToTupleFn>;
 
 pub(super) type IidFilterFn = FilterFn<VariableValue<'static>>;
-pub(super) type IidFilterMapFn = FilterMapFn<VariableValue<'static>>;
+pub(super) type IidFilterMapFn = FilterMapUnchangedFn<VariableValue<'static>>;
 
 pub(crate) type IidIterator =
     IidTupleIterator<<Option<Result<VariableValue<'static>, Box<ConceptReadError>>> as IntoIterator>::IntoIter>;

@@ -15,15 +15,12 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use ir::pattern::{
-    constraint::{Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
+    constraint::{Comparator, Comparison, ExpressionBinding, FunctionCallBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
 use itertools::Itertools;
 
-use crate::{
-    annotation::type_annotations::TypeAnnotations, executable::match_::planner::match_executable::InstructionAPI,
-    ExecutorVariable, VariablePosition,
-};
+use crate::{annotation::type_annotations::TypeAnnotations, ExecutorVariable, VariablePosition};
 
 pub mod thing;
 pub mod type_;
@@ -100,6 +97,10 @@ impl VariableModes {
         self.modes.get(&variable_position).copied()
     }
 
+    pub fn len(&self) -> usize {
+        self.modes.len()
+    }
+
     pub fn all_inputs(&self) -> bool {
         self.modes.values().all(|mode| mode == &VariableMode::Input)
     }
@@ -164,6 +165,8 @@ pub enum ConstraintInstruction<ID> {
     // player -> relation
     LinksReverse(thing::LinksReverseInstruction<ID>),
 
+    IndexedRelation(thing::IndexedRelationInstruction<ID>),
+
     // $x --> $y
     // RolePlayerIndex(IR, IterateBounds)
     FunctionCallBinding(FunctionCallBinding<ID>),
@@ -198,28 +201,38 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn used_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var, _| apply(var)),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var, _| apply(var)),
+            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var| apply(var)),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var, _| apply(var)),
+            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var| apply(var)),
             Self::Owns(type_::OwnsInstruction { owns, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(|var, _| apply(var)),
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(|var| apply(var)),
             Self::Relates(type_::RelatesInstruction { relates, .. })
             | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => {
-                relates.ids_foreach(|var, _| apply(var))
+                relates.ids_foreach(|var| apply(var))
             }
             Self::Plays(type_::PlaysInstruction { plays, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => {
-                plays.ids_foreach(|var, _| apply(var))
-            }
+            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.ids_foreach(|var| apply(var)),
             Self::Isa(thing::IsaInstruction { isa, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var, _| apply(var)),
+            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var| apply(var)),
             Self::Has(thing::HasInstruction { has, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(|var, _| apply(var)),
+            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(|var| apply(var)),
             Self::Links(thing::LinksInstruction { links, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => {
-                links.ids_foreach(|var, _| apply(var))
+            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.ids_foreach(|var| apply(var)),
+            Self::IndexedRelation(thing::IndexedRelationInstruction {
+                player_start,
+                player_end,
+                relation,
+                role_end,
+                role_start,
+                ..
+            }) => {
+                apply(*player_start);
+                apply(*player_end);
+                apply(*relation);
+                apply(*role_end);
+                apply(*role_start);
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {
@@ -251,6 +264,9 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::LinksReverse(thing::LinksReverseInstruction { inputs, .. }) => {
                 inputs.iter().cloned().for_each(apply)
             }
+            | Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
+                inputs.iter().cloned().for_each(apply)
+            }
             Self::ComparisonCheck(_) => (),
             Self::FunctionCallBinding(call) => call.function_call().argument_ids().for_each(apply),
             Self::ExpressionBinding(binding) => binding.expression().variables().for_each(apply),
@@ -259,60 +275,81 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub(crate) fn new_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Is(IsInstruction { is, inputs, .. }) => is.ids_foreach(|var, _| {
+            Self::Is(IsInstruction { is, inputs, .. }) => is.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var, _| apply(var)),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var| apply(var)),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var, _| {
+            | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Owns(type_::OwnsInstruction { owns, inputs, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, inputs, .. }) => owns.ids_foreach(|var, _| {
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, inputs, .. }) => owns.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Relates(type_::RelatesInstruction { relates, inputs, .. })
             | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, inputs, .. }) => {
-                relates.ids_foreach(|var, _| {
+                relates.ids_foreach(|var| {
                     if !inputs.contains(var) {
                         apply(var)
                     }
                 })
             }
             Self::Plays(type_::PlaysInstruction { plays, inputs, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, inputs, .. }) => {
-                plays.ids_foreach(|var, _| {
-                    if !inputs.contains(var) {
-                        apply(var)
-                    }
-                })
-            }
+            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, inputs, .. }) => plays.ids_foreach(|var| {
+                if !inputs.contains(var) {
+                    apply(var)
+                }
+            }),
             Self::Isa(thing::IsaInstruction { isa, inputs, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => isa.ids_foreach(|var, _| {
+            | Self::IsaReverse(thing::IsaReverseInstruction { isa, inputs, .. }) => isa.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Has(thing::HasInstruction { has, inputs, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var, _| {
+            | Self::HasReverse(thing::HasReverseInstruction { has, inputs, .. }) => has.ids_foreach(|var| {
                 if !inputs.contains(var) {
                     apply(var)
                 }
             }),
             Self::Links(thing::LinksInstruction { links, inputs, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, inputs, .. }) => {
-                links.ids_foreach(|var, _| {
-                    if !inputs.contains(var) {
-                        apply(var)
-                    }
-                })
+            | Self::LinksReverse(thing::LinksReverseInstruction { links, inputs, .. }) => links.ids_foreach(|var| {
+                if !inputs.contains(var) {
+                    apply(var)
+                }
+            }),
+            Self::IndexedRelation(thing::IndexedRelationInstruction {
+                player_start,
+                player_end,
+                relation,
+                role_start,
+                role_end,
+                inputs,
+                ..
+            }) => {
+                if !inputs.contains(*player_start) {
+                    apply(*player_start)
+                }
+                if !inputs.contains(*player_end) {
+                    apply(*player_end)
+                }
+                if !inputs.contains(*relation) {
+                    apply(*relation)
+                }
+                if !inputs.contains(*role_start) {
+                    apply(*role_start)
+                }
+                if !inputs.contains(*role_end) {
+                    apply(*role_end)
+                }
             }
             Self::FunctionCallBinding(call) => call.ids_assigned().for_each(apply),
             Self::ComparisonCheck(comparison) => {
@@ -342,6 +379,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::HasReverse(inner) => inner.add_check(check),
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
+            Self::IndexedRelation(inner) => inner.add_check(check),
             Self::FunctionCallBinding(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
@@ -367,36 +405,10 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::HasReverse(inner) => ConstraintInstruction::HasReverse(inner.map(mapping)),
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
             Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
+            Self::IndexedRelation(inner) => ConstraintInstruction::IndexedRelation(inner.map(mapping)),
             Self::FunctionCallBinding(_) => todo!(),
             Self::ComparisonCheck(_) => todo!(),
             Self::ExpressionBinding(_) => todo!(),
-        }
-    }
-}
-
-impl<ID: IrID + Copy> InstructionAPI<ID> for ConstraintInstruction<ID> {
-    fn constraint(&self) -> Constraint<ID> {
-        match self {
-            Self::Is(IsInstruction { is, .. }) => is.clone().into(),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.clone().into(),
-            Self::TypeList(_) => todo!(), // TODO underlying constraint?
-            Self::Sub(type_::SubInstruction { sub, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.clone().into(),
-            Self::Owns(type_::OwnsInstruction { owns, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.clone().into(),
-            Self::Relates(type_::RelatesInstruction { relates, .. })
-            | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => relates.clone().into(),
-            Self::Plays(type_::PlaysInstruction { plays, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.clone().into(),
-            Self::Isa(thing::IsaInstruction { isa, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.clone().into(),
-            Self::Has(thing::HasInstruction { has, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.clone().into(),
-            Self::Links(thing::LinksInstruction { links, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.clone().into(),
-            Self::FunctionCallBinding(call) => call.clone().into(),
-            Self::ComparisonCheck(cmp) => cmp.clone().into(),
-            Self::ExpressionBinding(binding) => binding.clone().into(),
         }
     }
 }
@@ -421,6 +433,7 @@ impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
             ConstraintInstruction::HasReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::LinksReverse(instruction) => write!(f, "{instruction}"),
+            ConstraintInstruction::IndexedRelation(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::FunctionCallBinding(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::ComparisonCheck(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::ExpressionBinding(instruction) => write!(f, "{instruction}"),
@@ -553,20 +566,64 @@ impl<ID: IrID> fmt::Display for CheckVertex<ID> {
 
 #[derive(Clone, Debug)]
 pub enum CheckInstruction<ID> {
-    TypeList { type_var: ID, types: Arc<BTreeSet<Type>> },
-    Iid { var: ID, iid: ParameterID },
+    TypeList {
+        type_var: ID,
+        types: Arc<BTreeSet<Type>>,
+    },
+    Iid {
+        var: ID,
+        iid: ParameterID,
+    },
 
-    Sub { sub_kind: SubKind, subtype: CheckVertex<ID>, supertype: CheckVertex<ID> },
-    Owns { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
-    Relates { relation: CheckVertex<ID>, role_type: CheckVertex<ID> },
-    Plays { player: CheckVertex<ID>, role_type: CheckVertex<ID> },
+    Sub {
+        sub_kind: SubKind,
+        subtype: CheckVertex<ID>,
+        supertype: CheckVertex<ID>,
+    },
+    Owns {
+        owner: CheckVertex<ID>,
+        attribute: CheckVertex<ID>,
+    },
+    Relates {
+        relation: CheckVertex<ID>,
+        role_type: CheckVertex<ID>,
+    },
+    Plays {
+        player: CheckVertex<ID>,
+        role_type: CheckVertex<ID>,
+    },
 
-    Isa { isa_kind: IsaKind, type_: CheckVertex<ID>, thing: CheckVertex<ID> },
-    Has { owner: CheckVertex<ID>, attribute: CheckVertex<ID> },
-    Links { relation: CheckVertex<ID>, player: CheckVertex<ID>, role: CheckVertex<ID> },
+    Isa {
+        isa_kind: IsaKind,
+        type_: CheckVertex<ID>,
+        thing: CheckVertex<ID>,
+    },
+    Has {
+        owner: CheckVertex<ID>,
+        attribute: CheckVertex<ID>,
+    },
+    Links {
+        relation: CheckVertex<ID>,
+        player: CheckVertex<ID>,
+        role: CheckVertex<ID>,
+    },
+    IndexedRelation {
+        start_player: CheckVertex<ID>,
+        end_player: CheckVertex<ID>,
+        relation: CheckVertex<ID>,
+        start_role: CheckVertex<ID>,
+        end_role: CheckVertex<ID>,
+    },
 
-    Is { lhs: ID, rhs: ID },
-    Comparison { lhs: CheckVertex<ID>, rhs: CheckVertex<ID>, comparator: Comparator },
+    Is {
+        lhs: ID,
+        rhs: ID,
+    },
+    Comparison {
+        lhs: CheckVertex<ID>,
+        rhs: CheckVertex<ID>,
+        comparator: Comparator,
+    },
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
@@ -599,6 +656,15 @@ impl<ID: IrID> CheckInstruction<ID> {
                 player: player.map(mapping),
                 role: role.map(mapping),
             },
+            Self::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                CheckInstruction::IndexedRelation {
+                    relation: relation.map(mapping),
+                    start_player: start_player.map(mapping),
+                    end_player: end_player.map(mapping),
+                    start_role: start_role.map(mapping),
+                    end_role: end_role.map(mapping),
+                }
+            }
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
@@ -642,6 +708,12 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::Links { relation, player, role } => {
                 write!(f, "{relation} {} ({role}:{player})", typeql::token::Keyword::Links)?;
             }
+            Self::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
+                write!(
+                    f,
+                    "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_role}"
+                )?;
+            }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
             }
@@ -658,9 +730,24 @@ pub enum Inputs<ID> {
     None([ID; 0]),
     Single([ID; 1]),
     Dual([ID; 2]),
+    Triple([ID; 3]),
+    Quadruple([ID; 4]),
+    Quintuple([ID; 5]),
 }
 
 impl<ID: IrID> Inputs<ID> {
+    pub(crate) fn build_from(inputs: &[ID]) -> Self {
+        match inputs.len() {
+            0 => Self::None([]),
+            1 => Self::Single([inputs[0]]),
+            2 => Self::Dual([inputs[0], inputs[1]]),
+            3 => Self::Triple([inputs[0], inputs[1], inputs[2]]),
+            4 => Self::Quadruple([inputs[0], inputs[1], inputs[2], inputs[3]]),
+            5 => Self::Quintuple([inputs[0], inputs[1], inputs[2], inputs[3], inputs[4]]),
+            _ => panic!("Inputs longer than 5 provided."),
+        }
+    }
+
     pub(crate) fn contains(&self, id: ID) -> bool {
         self.deref().contains(&id)
     }
@@ -670,6 +757,15 @@ impl<ID: IrID> Inputs<ID> {
             Inputs::None(_) => Inputs::None([]),
             Inputs::Single([var]) => Inputs::Single([mapping[&var]]),
             Inputs::Dual([var_1, var_2]) => Inputs::Dual([mapping[&var_1], mapping[&var_2]]),
+            Inputs::Triple([var_1, var_2, var_3]) => {
+                Inputs::Triple([mapping[&var_1], mapping[&var_2], mapping[&var_3]])
+            }
+            Inputs::Quadruple([var_1, var_2, var_3, var_4]) => {
+                Inputs::Quadruple([mapping[&var_1], mapping[&var_2], mapping[&var_3], mapping[&var_4]])
+            }
+            Inputs::Quintuple([var_1, var_2, var_3, var_4, var_5]) => {
+                Inputs::Quintuple([mapping[&var_1], mapping[&var_2], mapping[&var_3], mapping[&var_4], mapping[&var_5]])
+            }
         }
     }
 }
@@ -682,6 +778,9 @@ impl<ID> Deref for Inputs<ID> {
             Inputs::None(ids) => ids,
             Inputs::Single(ids) => ids,
             Inputs::Dual(ids) => ids,
+            Inputs::Triple(ids) => ids,
+            Inputs::Quadruple(ids) => ids,
+            Inputs::Quintuple(ids) => ids,
         }
     }
 }

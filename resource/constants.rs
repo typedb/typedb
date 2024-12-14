@@ -34,6 +34,11 @@ pub mod database {
     pub const STATISTICS_DURABLE_WRITE_CHANGE_PERCENT: f64 = 0.05;
 }
 
+pub mod concept {
+    // TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
+    pub const RELATION_INDEX_THRESHOLD: u64 = 5;
+}
+
 pub mod traversal {
     pub const CONSTANT_CONCEPT_LIMIT: usize = 1000;
 }
@@ -49,7 +54,7 @@ pub mod storage {
     pub const WATERMARK_WAIT_INTERVAL_MICROSECONDS: u64 = 50;
     pub const COMMIT_WAIT_FOR_FSYNC: bool = true;
 
-    pub const ROCKSDB_CACHE_SIZE_MB: u64 = 1000;
+    pub const ROCKSDB_CACHE_SIZE_MB: u64 = 1024;
 }
 
 pub mod encoding {

@@ -109,7 +109,11 @@ impl Keyable<BUFFER_KEY_INLINE> for ObjectVertex {
 
 impl Prefixed<BUFFER_KEY_INLINE> for ObjectVertex {}
 
-impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {}
+impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {
+    fn type_id_(&self) -> TypeID {
+        self.type_id
+    }
+}
 
 impl ThingVertex for ObjectVertex {
     fn decode(bytes: &[u8]) -> ObjectVertex {
@@ -127,18 +131,18 @@ pub struct ObjectID {
 }
 
 impl ObjectID {
-    const LENGTH: usize = 8;
+    pub(crate) const LENGTH: usize = 8;
 
     pub fn new(id: u64) -> Self {
         debug_assert_eq!(mem::size_of_val(&id), Self::LENGTH);
         ObjectID { value: id }
     }
 
-    fn decode(bytes: [u8; ObjectID::LENGTH]) -> Self {
+    pub fn decode(bytes: [u8; ObjectID::LENGTH]) -> Self {
         ObjectID { value: u64::from_be_bytes(bytes) }
     }
 
-    fn to_bytes(self) -> [u8; ObjectID::LENGTH] {
+    pub fn to_bytes(self) -> [u8; ObjectID::LENGTH] {
         self.value.to_be_bytes()
     }
 

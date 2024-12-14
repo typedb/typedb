@@ -7,8 +7,9 @@
 use std::{
     any::type_name_of_val,
     cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
+    sync::Arc,
 };
 
 use answer::variable::Variable;
@@ -17,8 +18,8 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{
-            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, Is, Isa, Kind, Label,
-            Links, Owns, Plays, Relates, RoleName, Sub, Value,
+            Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
+            Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -33,8 +34,8 @@ use crate::{
     executable::match_::{
         instructions::{
             thing::{
-                HasInstruction, HasReverseInstruction, IidInstruction, IsaInstruction, IsaReverseInstruction,
-                LinksInstruction, LinksReverseInstruction,
+                HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
+                IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
             },
             type_::{
                 OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
@@ -45,8 +46,8 @@ use crate::{
         planner::{
             vertex::{
                 constraint::{
-                    ConstraintVertex, HasPlanner, IidPlanner, IsaPlanner, LinksPlanner, OwnsPlanner, PlaysPlanner,
-                    RelatesPlanner, SubPlanner, TypeListPlanner,
+                    ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
+                    OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
@@ -361,6 +362,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Iid(iid) => self.register_iid(iid),
                 Constraint::Has(has) => self.register_has(has),
                 Constraint::Links(links) => self.register_links(links),
+                Constraint::IndexedRelation(indexed_relation) => self.register_indexed_relation(indexed_relation),
 
                 Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
                 Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),
@@ -443,6 +445,16 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner =
             LinksPlanner::from_constraint(links, &self.graph.variable_index, self.type_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Links(planner));
+    }
+
+    fn register_indexed_relation(&mut self, indexed_relation: &'a IndexedRelation<Variable>) {
+        let planner = IndexedRelationPlanner::from_constraint(
+            indexed_relation,
+            &self.graph.variable_index,
+            self.type_annotations,
+            self.statistics,
+        );
+        self.graph.push_constraint(ConstraintVertex::IndexedRelation(planner))
     }
 
     fn register_expression_binding(
@@ -1326,6 +1338,77 @@ impl ConjunctionPlan<'_> {
                 // binary!() works here even though links is ostensibly ternary
                 binary!((with role_type) relation links player, Links(LinksInstruction), LinksReverse(LinksReverseInstruction))
             }
+            ConstraintVertex::IndexedRelation(planner) => {
+                assert_ne!(inputs.len(), 5);
+                let player_1 = planner.indexed_relation().player_1().as_variable().unwrap();
+                let player_2 = planner.indexed_relation().player_2().as_variable().unwrap();
+                let relation = planner.indexed_relation().relation().as_variable().unwrap();
+                let player_1_role = planner.indexed_relation().role_type_1().as_variable().unwrap();
+                let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
+
+                let annotations = self
+                    .type_annotations
+                    .constraint_annotations_of(planner.indexed_relation().clone().into())
+                    .unwrap()
+                    .as_indexed_relation();
+                let array_inputs = Inputs::build_from(&inputs);
+                let instruction = if inputs.contains(&player_1) {
+                    IndexedRelationInstruction::new(
+                        player_1,
+                        player_2,
+                        relation,
+                        player_1_role,
+                        player_2_role,
+                        array_inputs,
+                        annotations.relation_to_player_1.clone(),
+                        &annotations.player_1_to_relation,
+                        &annotations.relation_to_player_2,
+                        Arc::new(
+                            annotations
+                                .player_1_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
+                        Arc::new(
+                            annotations
+                                .player_2_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
+                    )
+                } else {
+                    IndexedRelationInstruction::new(
+                        player_2,
+                        player_1,
+                        relation,
+                        player_2_role,
+                        player_1_role,
+                        array_inputs,
+                        annotations.relation_to_player_2.clone(),
+                        &annotations.player_2_to_relation,
+                        &annotations.relation_to_player_1,
+                        Arc::new(
+                            annotations
+                                .player_2_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
+                        Arc::new(
+                            annotations
+                                .player_1_to_role
+                                .values()
+                                .flat_map(|set| set.iter().map(|type_| type_.as_role_type()))
+                                .collect(),
+                        ),
+                    )
+                };
+                let sort_variable = instruction.first_unbound_component();
+                let instruction = ConstraintInstruction::IndexedRelation(instruction);
+                match_builder.push_instruction(sort_variable, instruction);
+            }
         }
     }
 
@@ -1411,6 +1494,28 @@ impl ConjunctionPlan<'_> {
                 };
 
                 match_builder.push_check(&[relation, player, role], check);
+            }
+            ConstraintVertex::IndexedRelation(planner) => {
+                let player_1 = planner.indexed_relation().player_1().as_variable().unwrap();
+                let player_2 = planner.indexed_relation().player_2().as_variable().unwrap();
+                let relation = planner.indexed_relation().relation().as_variable().unwrap();
+                let player_1_role = planner.indexed_relation().role_type_1().as_variable().unwrap();
+                let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
+
+                // arbitrarily choosing player 1 as start
+                let start_player_pos = match_builder.position(player_1).into();
+                let end_player_pos = match_builder.position(player_2).into();
+                let relation_pos = match_builder.position(relation).into();
+                let start_role_pos = match_builder.position(player_1_role).into();
+                let end_role_pos = match_builder.position(player_2_role).into();
+                let check = CheckInstruction::IndexedRelation {
+                    start_player: CheckVertex::resolve(start_player_pos, self.type_annotations),
+                    end_player: CheckVertex::resolve(end_player_pos, self.type_annotations),
+                    relation: CheckVertex::resolve(relation_pos, self.type_annotations),
+                    start_role: CheckVertex::resolve(start_role_pos, self.type_annotations),
+                    end_role: CheckVertex::resolve(end_role_pos, self.type_annotations),
+                };
+                match_builder.push_check(&[player_1, player_2, relation, player_1_role, player_2_role], check);
             }
         }
     }

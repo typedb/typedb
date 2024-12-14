@@ -29,7 +29,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, IsaToTupleFn, TuplePositions},
-        BinaryIterateMode, Checker, FilterMapFn, VariableModes, TYPES_EMPTY,
+        BinaryIterateMode, Checker, FilterMapFn, FilterMapUnchangedFn, VariableModes, TYPES_EMPTY,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -70,7 +70,7 @@ pub(super) type ObjectEraseFn =
 pub(super) type AttributeEraseFn =
     for<'a> fn(Result<Attribute, Box<ConceptReadError>>) -> Result<Thing, Box<ConceptReadError>>;
 
-pub(super) type IsaFilterMapFn = FilterMapFn<(Thing, Type)>;
+pub(super) type IsaFilterMapFn = FilterMapUnchangedFn<(Thing, Type)>;
 
 type IsaVariableValueExtractor = for<'a, 'b> fn(&'a (Thing, Type)) -> VariableValue<'a>;
 

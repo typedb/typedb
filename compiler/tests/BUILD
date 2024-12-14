@@ -14,3 +14,23 @@ checkstyle_test(
         "Cargo.*",
     ]),
 )
+
+rust_test(
+    name = "transformation",
+    crate_root = "transformation.rs",
+    srcs =  ["transformation.rs"],
+    deps = [
+        "//compiler:compiler",
+        "//concept:concept",
+        "//encoding:encoding",
+        "//ir:ir",
+        "//storage:storage",
+        
+        "//concept/tests:test_utils_concept",
+        "//encoding/tests:test_utils_encoding",
+        "//util/test:test_utils",
+    
+        "@typeql//rust:typeql",
+    ],
+)
+

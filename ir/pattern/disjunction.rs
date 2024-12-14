@@ -29,6 +29,10 @@ impl Disjunction {
         &self.conjunctions
     }
 
+    pub fn conjunctions_mut(&mut self) -> &mut [Conjunction] {
+        &mut self.conjunctions
+    }
+
     pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }

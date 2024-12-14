@@ -97,7 +97,7 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_annotations::{ConstraintTypeAnnotations, LeftRightFilteredAnnotations, TypeAnnotations},
+        type_annotations::{ConstraintTypeAnnotations, LinksAnnotations, TypeAnnotations},
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };
@@ -181,17 +181,17 @@ pub mod tests {
         graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
 
-        let lra1 = LeftRightFilteredAnnotations {
-            left_to_right: Arc::new(BTreeMap::from([(type_rel_0, vec![type_player_0])])),
-            filters_on_right: Arc::new(BTreeMap::from([(type_player_0, BTreeSet::from([type_role_0]))])),
-            right_to_left: Arc::new(BTreeMap::from([(type_player_0, vec![type_rel_0])])),
-            filters_on_left: Arc::new(BTreeMap::from([(type_rel_0, BTreeSet::from([type_role_0]))])),
+        let lra1 = LinksAnnotations {
+            relation_to_player: Arc::new(BTreeMap::from([(type_rel_0, vec![type_player_0])])),
+            player_to_role: Arc::new(BTreeMap::from([(type_player_0, BTreeSet::from([type_role_0]))])),
+            player_to_relation: Arc::new(BTreeMap::from([(type_player_0, vec![type_rel_0])])),
+            relation_to_role: Arc::new(BTreeMap::from([(type_rel_0, BTreeSet::from([type_role_0]))])),
         };
-        let lra2 = LeftRightFilteredAnnotations {
-            left_to_right: Arc::new(BTreeMap::from([(type_rel_1, vec![type_player_1])])),
-            filters_on_right: Arc::new(BTreeMap::from([(type_player_1, BTreeSet::from([type_role_1]))])),
-            right_to_left: Arc::new(BTreeMap::from([(type_player_1, vec![type_rel_1])])),
-            filters_on_left: Arc::new(BTreeMap::from([(type_rel_1, BTreeSet::from([type_role_1]))])),
+        let lra2 = LinksAnnotations {
+            relation_to_player: Arc::new(BTreeMap::from([(type_rel_1, vec![type_player_1])])),
+            player_to_role: Arc::new(BTreeMap::from([(type_player_1, BTreeSet::from([type_role_1]))])),
+            player_to_relation: Arc::new(BTreeMap::from([(type_player_1, vec![type_rel_1])])),
+            relation_to_role: Arc::new(BTreeMap::from([(type_rel_1, BTreeSet::from([type_role_1]))])),
         };
         let expected_annotations = TypeAnnotations::new(
             BTreeMap::from([
@@ -200,8 +200,8 @@ pub mod tests {
                 (var_player.into(), Arc::new(BTreeSet::from([type_player_0, type_player_1]))),
             ]),
             HashMap::from([
-                (constraint1, ConstraintTypeAnnotations::LeftRightFiltered(lra1)),
-                (constraint2, ConstraintTypeAnnotations::LeftRightFiltered(lra2)),
+                (constraint1, ConstraintTypeAnnotations::Links(lra1)),
+                (constraint2, ConstraintTypeAnnotations::Links(lra2)),
             ]),
         );
         assert_eq!(expected_annotations.vertex_annotations(), type_annotations.vertex_annotations());

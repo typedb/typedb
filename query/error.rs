@@ -7,6 +7,7 @@
 use compiler::{
     annotation::{expression::ExpressionCompileError, AnnotationError},
     executable::{insert::WriteCompilationError, ExecutableCompilationError},
+    transformation::StaticOptimiserError,
 };
 use error::typedb_error;
 use executor::pipeline::{pipeline::PipelineError, PipelineExecutionError};
@@ -25,12 +26,13 @@ typedb_error!(
         FunctionDefinition(5, "Error defining function. ", ( typedb_source: FunctionError )),
         Representation(7, "Error in provided query. ", ( typedb_source: Box<RepresentationError> )),
         Annotation(8, "Error analysing query. ", ( typedb_source: AnnotationError )),
-        ExecutableCompilation(9, "Error compiling query. ", ( typedb_source: ExecutableCompilationError )),
-        WriteCompilation(10, "Error while compiling write query.", ( source: WriteCompilationError )),
-        ExpressionCompilation(11, "Error while compiling expression.", ( source: ExpressionCompileError )),
-        Pipeline(12, "Pipeline error.", ( typedb_source: Box<PipelineError> )),
-        WritePipelineExecution(13, "Error while execution write pipeline.", ( typedb_source: Box<PipelineExecutionError> )),
-        ReadPipelineExecution(14, "Error while executing read pipeline.", ( typedb_source: Box<PipelineExecutionError> )),
-        QueryExecutionClosedEarly(15, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
+        Transformation(9, "Error applying query transformation. ", ( typedb_source: StaticOptimiserError )),
+        ExecutableCompilation(10, "Error compiling query. ", ( typedb_source: ExecutableCompilationError )),
+        WriteCompilation(11, "Error while compiling write query.", ( source: WriteCompilationError )),
+        ExpressionCompilation(12, "Error while compiling expression.", ( source: ExpressionCompileError )),
+        Pipeline(13, "Pipeline error.", ( typedb_source: Box<PipelineError> )),
+        WritePipelineExecution(14, "Error while execution write pipeline.", ( typedb_source: Box<PipelineExecutionError> )),
+        ReadPipelineExecution(15, "Error while executing read pipeline.", ( typedb_source: Box<PipelineExecutionError> )),
+        QueryExecutionClosedEarly(16, "Query execution was closed before it finished, possibly due to transaction close, rollback, commit, or a server-side error (these should be visible in the server logs)."),
     }
 );

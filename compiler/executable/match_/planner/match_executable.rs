@@ -439,7 +439,3 @@ impl fmt::Display for FunctionCallStep {
         )
     }
 }
-
-pub trait InstructionAPI<ID: IrID> {
-    fn constraint(&self) -> Constraint<ID>;
-}

@@ -24,7 +24,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn,
+        VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -57,7 +58,7 @@ pub(super) type RelatesBoundedSortedRole = RelatesTupleIterator<
 >;
 
 pub(super) type RelatesFilterFn = FilterFn<(RelationType, RoleType)>;
-pub(super) type RelatesFilterMapFn = FilterMapFn<(RelationType, RoleType)>;
+pub(super) type RelatesFilterMapFn = FilterMapUnchangedFn<(RelationType, RoleType)>;
 
 pub(super) type RelatesVariableValueExtractor = for<'a> fn(&'a (RelationType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_RELATION: RelatesVariableValueExtractor =

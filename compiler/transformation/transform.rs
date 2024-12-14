@@ -4,15 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::annotation::pipeline::AnnotatedPipeline;
+use concept::type_::type_manager::TypeManager;
+use storage::snapshot::ReadableSnapshot;
 
-pub fn apply_optimisations(_pipeline: &mut AnnotatedPipeline) {
+use crate::{
+    annotation::pipeline::{AnnotatedPipeline, AnnotatedStage},
+    transformation::{relation_index::relation_index_transformation, StaticOptimiserError},
+};
 
-    // apply optimisation passes through pipeline, within stages and across stages
-
-    // 1. apply role player indexing
-
-    // last: eliminate redundant constraints (eg. $x type person, $x isa $_generated -- both covered by type inference and embeddable as a filter into an IR).
+pub fn apply_transformations(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    pipeline: &mut AnnotatedPipeline,
+) -> Result<(), StaticOptimiserError> {
+    for stage in &mut pipeline.annotated_stages {
+        if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
+            relation_index_transformation(block.conjunction_mut(), block_annotations, type_manager, snapshot)?;
+        }
+    }
+    Ok(())
 
     // Ideas:
     // - we should move subtrees/graphs of a query that have no returned variables into a new pattern: "Check", which are only checked for a single answer

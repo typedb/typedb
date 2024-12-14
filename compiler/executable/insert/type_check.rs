@@ -18,9 +18,7 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
-    type_annotations::{
-        ConstraintTypeAnnotations, LeftRightAnnotations, LeftRightFilteredAnnotations, TypeAnnotations,
-    },
+    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
     TypeInferenceError,
 };
 
@@ -53,7 +51,7 @@ pub fn check_annotations(
                     links,
                     input_annotations_variables,
                     input_annotations_constraints,
-                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_left_right_filtered(),
+                    insert_annotations.constraint_annotations_of(constraint.clone()).unwrap().as_links(),
                 )?;
             }
             | Constraint::Kind(_)
@@ -68,6 +66,7 @@ pub fn check_annotations(
             | Constraint::Relates(_)
             | Constraint::Plays(_)
             | Constraint::Value(_) => (),
+            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations can only appear after type inference"),
         }
     }
     Ok(())
@@ -124,7 +123,7 @@ fn validate_links_insertable(
     links: &Links<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
-    left_right_filtered: &LeftRightFilteredAnnotations,
+    left_right_filtered: &LinksAnnotations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
@@ -137,7 +136,7 @@ fn validate_links_insertable(
             .iter()
             .filter(|role_type| {
                 !left_right_filtered
-                    .filters_on_left
+                    .relation_to_role()
                     .get(relation_type)
                     .map(|valid_role_types| valid_role_types.contains(role_type))
                     .unwrap_or(false)
@@ -149,7 +148,7 @@ fn validate_links_insertable(
             .iter()
             .filter(|role_type| {
                 !left_right_filtered
-                    .filters_on_right
+                    .player_to_role()
                     .get(player_type)
                     .map(|valid_role_types| valid_role_types.contains(role_type))
                     .unwrap_or(false)

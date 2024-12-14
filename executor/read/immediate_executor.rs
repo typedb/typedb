@@ -534,18 +534,27 @@ impl CartesianIterator {
             {
                 self.cartesian_executor_indices.push(index);
 
-                // reopen/move existing cartesian iterators forward to the intersection point
+                // reopen/move existing cartesian iterators forward to the intersection point if we can
                 let preexisting_iterator = self.iterators[index].take();
                 let iterator = match preexisting_iterator {
                     None => self.reopen_iterator(context, &iterator_executors[index])?,
-                    Some(mut iter) => {
-                        // TODO: use seek()
-                        let next_value_cmp = iter
-                            .advance_until_index_is(iter.first_unbound_index(), source_intersection_value)
-                            .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
-                        debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
-                        iter
-                    }
+                    Some(mut iter) => match iter.peek_first_unbound_value() {
+                        None => self.reopen_iterator(context, &iterator_executors[index])?,
+                        Some(Ok(value)) => {
+                            if value < source_intersection_value {
+                                let next_value_cmp = iter
+                                    .advance_until_index_is(iter.first_unbound_index(), source_intersection_value)
+                                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+                                debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
+                                iter
+                            } else {
+                                self.reopen_iterator(context, &iterator_executors[index])?
+                            }
+                        }
+                        Some(Err(err)) => {
+                            return Err(ReadExecutionError::ConceptRead { source: err });
+                        }
+                    },
                 };
                 self.iterators[index] = Some(iterator);
             }

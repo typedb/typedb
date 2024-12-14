@@ -16,7 +16,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
-        Checker, FilterFn, FilterMapFn, VariableModes,
+        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -30,7 +30,7 @@ pub(crate) struct TypeListExecutor {
 }
 
 pub(super) type TypeFilterFn = FilterFn<Type>;
-pub(super) type TypeFilterMapFn = FilterMapFn<Type>;
+pub(super) type TypeFilterMapFn = FilterMapUnchangedFn<Type>;
 
 pub(super) type TypeTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<TypeFilterMapFn>>, TypeToTupleFn>;
 

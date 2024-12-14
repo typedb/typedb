@@ -567,6 +567,8 @@ dependencies = [
  "itertools 0.10.5",
  "storage",
  "test_utils",
+ "test_utils_concept",
+ "test_utils_encoding",
  "typeql",
 ]
 

@@ -223,6 +223,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) => (),
+                | Constraint::IndexedRelation(_) => {
+                    unreachable!("IndexedRelations are only generated after type inference")
+                }
             }
         }
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
@@ -384,6 +387,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::Label(_)
             | Constraint::Kind(_)
             | Constraint::Value(_) => false,
+            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference")
         };
         Ok(any_modified)
     }
@@ -514,6 +518,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Value(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::FunctionCallBinding(_) => (), // Do nothing
+                | Constraint::IndexedRelation(_) => {
+                    unreachable!("Indexed relations are only generated after type inference")
+                }
             }
         }
         for disj in &mut graph.nested_disjunctions {

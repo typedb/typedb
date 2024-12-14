@@ -10,7 +10,7 @@ use bytes::Bytes;
 use encoding::{
     graph::{
         thing::{
-            edge::{ThingEdgeLinks, ThingEdgeLinksIndex},
+            edge::{ThingEdgeIndexedRelation, ThingEdgeLinks},
             vertex_object::ObjectVertex,
             ThingVertex,
         },
@@ -49,14 +49,6 @@ pub struct Relation {
 impl Relation {
     pub fn type_(&self) -> RelationType {
         RelationType::build_from_type_id(self.vertex.type_id_())
-    }
-
-    pub fn get_indexed_players<'m>(
-        self,
-        snapshot: &'m impl ReadableSnapshot,
-        thing_manager: &'m ThingManager,
-    ) -> IndexedPlayersIterator {
-        thing_manager.get_indexed_players(snapshot, Object::Relation(self))
     }
 
     pub fn has_players(self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
@@ -378,9 +370,12 @@ impl ThingAPI for Relation {
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role)?;
-        }
 
-        debug_assert_eq!(self.get_indexed_players(snapshot, thing_manager).count(), 0);
+            debug_assert!(!player
+                .get_indexed_relations(snapshot, thing_manager, self.type_())
+                .map(|result| result.unwrap())
+                .any(|((start, end, relation, start_role, _), _)| { start == player && start_role == role }));
+        }
 
         if self.get_status(snapshot, thing_manager) == ConceptStatus::Inserted {
             thing_manager.uninsert_relation(snapshot, self);
@@ -480,21 +475,24 @@ edge_iterator!(
     storage_key_links_edge_to_relation_role_player
 );
 
+pub type IndexedRelationPlayers = (Object, Object, Relation, RoleType, RoleType);
+
 fn storage_key_to_indexed_players<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (RolePlayer, RolePlayer, Relation, u64) {
-    let edge = ThingEdgeLinksIndex::decode(Bytes::reference(storage_key.bytes()));
-    let from_role_player =
-        RolePlayer { player: Object::new(edge.from()), role_type: RoleType::build_from_type_id(edge.from_role_id()) };
-    let to_role_player =
-        RolePlayer { player: Object::new(edge.to()), role_type: RoleType::build_from_type_id(edge.to_role_id()) };
-    (from_role_player, to_role_player, Relation::new(edge.relation()), decode_value_u64(&value))
+) -> (IndexedRelationPlayers, u64) {
+    let edge = ThingEdgeIndexedRelation::decode(Bytes::reference(storage_key.bytes()));
+    let start_player = Object::new(edge.from());
+    let end_player = Object::new(edge.to());
+    let relation = Relation::new(edge.relation());
+    let start_role_type = RoleType::build_from_type_id(edge.from_role_id());
+    let end_role_type = RoleType::build_from_type_id(edge.to_role_id());
+    ((start_player, end_player, relation, start_role_type, end_role_type), decode_value_u64(&value))
 }
 
 edge_iterator!(
-    IndexedPlayersIterator;
-    (RolePlayer, RolePlayer, Relation, u64);
+    IndexedRelationsIterator;
+    (IndexedRelationPlayers, u64);
     storage_key_to_indexed_players
 );
 

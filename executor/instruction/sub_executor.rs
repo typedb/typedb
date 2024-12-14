@@ -21,7 +21,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn,
+        VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -44,7 +45,7 @@ pub(super) type SubUnboundedSortedSub = SubTupleIterator<vec::IntoIter<Result<(T
 pub(super) type SubBoundedSortedSuper = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;
 
 pub(super) type SubFilterFn = FilterFn<(Type, Type)>;
-pub(super) type SubFilterMapFn = FilterMapFn<(Type, Type)>;
+pub(super) type SubFilterMapFn = FilterMapUnchangedFn<(Type, Type)>;
 
 type SubVariableValueExtractor = fn(&(Type, Type)) -> VariableValue<'_>;
 pub(super) const EXTRACT_SUB: SubVariableValueExtractor = |(sub, _)| VariableValue::Type(*sub);

@@ -57,6 +57,13 @@ rust_test(
 )
 
 rust_test(
+    name = "test_execute_relation_index",
+    crate_root = "execute_relation_index.rs",
+    srcs = ["execute_relation_index.rs"],
+    deps = deps,
+)
+
+rust_test(
     name = "test_select",
     crate_root = "execute_select.rs",
     srcs = ["execute_select.rs"],

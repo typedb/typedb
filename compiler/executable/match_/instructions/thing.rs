@@ -11,10 +11,12 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use concept::type_::role_type::RoleType;
 use ir::pattern::{
-    constraint::{Has, Iid, Isa, Links},
+    constraint::{Has, Iid, IndexedRelation, Isa, Links},
     IrID,
 };
+use storage::MVCCKey;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -253,10 +255,9 @@ pub struct LinksInstruction<ID> {
 
 impl LinksInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
-        let edge_annotations =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered();
-        let player_to_role_types = edge_annotations.filters_on_right();
-        let relation_to_player_types = edge_annotations.left_to_right();
+        let edge_annotations = type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links();
+        let player_to_role_types = edge_annotations.player_to_role();
+        let relation_to_player_types = edge_annotations.relation_to_player();
         let player_types = type_annotations.vertex_annotations_of(links.player()).unwrap().clone();
         Self { links, inputs, relation_to_player_types, player_types, player_to_role_types, checks: Vec::new() }
     }
@@ -313,9 +314,9 @@ pub struct LinksReverseInstruction<ID> {
 impl LinksReverseInstruction<Variable> {
     pub fn new(links: Links<Variable>, inputs: Inputs<Variable>, type_annotations: &TypeAnnotations) -> Self {
         let edge_annotations =
-            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_left_right_filtered().clone();
-        let relation_to_role_types = edge_annotations.filters_on_left();
-        let player_to_relation_types = edge_annotations.right_to_left();
+            type_annotations.constraint_annotations_of(links.clone().into()).unwrap().as_links().clone();
+        let relation_to_role_types = edge_annotations.relation_to_role();
+        let player_to_relation_types = edge_annotations.player_to_relation();
         let relation_types = type_annotations.vertex_annotations_of(links.relation()).unwrap().clone();
         Self { links, inputs, player_to_relation_types, relation_types, relation_to_role_types, checks: Vec::new() }
     }
@@ -356,5 +357,142 @@ impl<ID: IrID> LinksReverseInstruction<ID> {
 impl<ID: IrID> fmt::Display for LinksReverseInstruction<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Reverse[{}] filter {}", &self.links, DisplayVec::new(&self.checks))
+    }
+}
+
+// We use a lowered form of the IndexedRelation, since it is fully symmetric otherwise
+#[derive(Debug, Clone)]
+pub struct IndexedRelationInstruction<ID> {
+    pub player_start: ID,
+    pub player_end: ID,
+    pub relation: ID,
+    pub role_start: ID,
+    pub role_end: ID,
+
+    pub inputs: Inputs<ID>,
+    pub checks: Vec<CheckInstruction<ID>>,
+
+    // the prefixes we will generally want to construct are [rel type][from][to type]
+    pub relation_to_player_start_types: Arc<BTreeMap<Type, Vec<Type>>>,
+    pub player_start_to_player_end_types: Arc<BTreeMap<Type, BTreeSet<Type>>>,
+    pub role_start_types: Arc<BTreeSet<RoleType>>,
+    pub role_end_types: Arc<BTreeSet<RoleType>>,
+}
+
+impl IndexedRelationInstruction<Variable> {
+    pub fn new(
+        player_start: Variable,
+        player_end: Variable,
+        relation: Variable,
+        role_start: Variable,
+        role_end: Variable,
+
+        inputs: Inputs<Variable>,
+
+        relation_to_player_start_types: Arc<BTreeMap<Type, Vec<Type>>>,
+        player_start_to_relation_types: &BTreeMap<Type, Vec<Type>>,
+        relation_to_player_end_types: &BTreeMap<Type, Vec<Type>>,
+        role_start_types: Arc<BTreeSet<RoleType>>,
+        role_end_types: Arc<BTreeSet<RoleType>>,
+    ) -> Self {
+        let mut player_start_to_player_end_types = BTreeMap::new();
+        for (player_start_type, relation_types) in player_start_to_relation_types {
+            let player_end_types =
+                player_start_to_player_end_types.entry(*player_start_type).or_insert(BTreeSet::new());
+            for relation_type in relation_types {
+                player_end_types
+                    .extend(relation_to_player_end_types.get(&relation_type).iter().flat_map(|vec| vec.iter()));
+            }
+        }
+
+        Self {
+            player_start,
+            player_end,
+            relation,
+            role_start,
+            role_end,
+            inputs,
+            relation_to_player_start_types,
+            player_start_to_player_end_types: Arc::new(player_start_to_player_end_types),
+            role_start_types,
+            role_end_types,
+            checks: Vec::new(),
+        }
+    }
+}
+
+impl<ID: IrID> IndexedRelationInstruction<ID> {
+    pub fn player_start(&self) -> &ID {
+        &self.player_start
+    }
+    pub fn player_end(&self) -> &ID {
+        &self.player_end
+    }
+    pub fn relation(&self) -> &ID {
+        &self.relation
+    }
+    pub fn role_start(&self) -> &ID {
+        &self.role_start
+    }
+    pub fn role_end(&self) -> &ID {
+        &self.role_end
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IndexedRelationInstruction<T> {
+        let Self {
+            player_start,
+            player_end,
+            relation,
+            role_start,
+            role_end,
+            inputs,
+            relation_to_player_start_types,
+            player_start_to_player_end_types,
+            role_start_types,
+            role_end_types,
+            checks,
+        } = self;
+        IndexedRelationInstruction {
+            player_start: mapping[&player_start],
+            player_end: mapping[&player_end],
+            relation: mapping[&relation],
+            role_start: mapping[&role_start],
+            role_end: mapping[&role_end],
+            inputs: inputs.map(mapping),
+            relation_to_player_start_types,
+            player_start_to_player_end_types,
+            role_start_types,
+            role_end_types,
+            checks: checks.into_iter().map(|check| check.map(mapping)).collect(),
+        }
+    }
+
+    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+        self.checks.push(check)
+    }
+
+    pub(crate) fn first_unbound_component(&self) -> ID {
+        if !self.inputs.contains(self.player_start) {
+            self.player_start
+        } else if !self.inputs.contains(self.player_end) {
+            self.player_end
+        } else if !self.inputs.contains(self.relation) {
+            self.relation
+        } else if !self.inputs.contains(self.role_start) {
+            self.role_start
+        } else {
+            debug_assert!(!self.inputs.contains(self.role_end));
+            self.role_end
+        }
+    }
+}
+
+impl<ID: IrID> fmt::Display for IndexedRelationInstruction<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} indexed_relation(role: {} -> relation: {} -> role: {}) to {}",
+            self.player_start, self.role_start, self.relation, self.role_end, self.player_end
+        )
     }
 }

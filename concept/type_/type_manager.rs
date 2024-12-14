@@ -21,7 +21,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::encoding::StructFieldIDUInt;
+use resource::constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use type_cache::TypeCache;
 use type_writer::TypeWriter;
@@ -59,9 +59,6 @@ pub mod type_cache;
 pub mod type_reader;
 mod type_writer;
 pub mod validation;
-
-// TODO: this should be parametrised into the database options? Would be great to have it be changable at runtime!
-pub(crate) const RELATION_INDEX_THRESHOLD: u64 = 8;
 
 #[derive(Debug)]
 pub struct TypeManager {
@@ -766,7 +763,7 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn relation_index_available(
+    pub fn relation_index_available(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,

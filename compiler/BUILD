@@ -12,7 +12,7 @@ rust_library(
     srcs = glob([
         "*.rs",
         "annotation/**/*.rs",
-        "optimisation/**/*.rs",
+        "transformation/**/*.rs",
         "executable/**/*.rs",
     ]),
     deps = [

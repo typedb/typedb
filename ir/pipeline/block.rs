@@ -35,6 +35,10 @@ impl Block {
         &self.conjunction
     }
 
+    pub fn conjunction_mut(&mut self) -> &mut Conjunction {
+        &mut self.conjunction
+    }
+
     pub fn block_context(&self) -> &BlockContext {
         &self.block_context
     }
@@ -57,6 +61,10 @@ impl Block {
 
     pub fn input_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.variable_scopes().filter_map(|(&v, scope)| if scope == &ScopeId::INPUT { Some(v) } else { None })
+    }
+
+    pub fn into_conjunction(self) -> Conjunction {
+        self.conjunction
     }
 }
 

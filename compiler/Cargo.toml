@@ -19,8 +19,18 @@ features = {}
 		features = []
 		default-features = false
 
+	[dev-dependencies.test_utils_encoding]
+		path = "../encoding/tests"
+		features = []
+		default-features = false
+
 	[dev-dependencies.durability]
 		path = "../durability"
+		features = []
+		default-features = false
+
+	[dev-dependencies.test_utils_concept]
+		path = "../concept/tests"
 		features = []
 		default-features = false
 
@@ -71,4 +81,8 @@ features = {}
 		features = ["default", "use_alloc", "use_std"]
 		version = "0.10.5"
 		default-features = false
+
+[[test]]
+	path = "tests/transformation.rs"
+	name = "transformation"
 

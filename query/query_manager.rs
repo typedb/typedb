@@ -9,6 +9,7 @@ use std::{collections::HashSet, sync::Arc};
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline, ExecutablePipeline},
+    transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::pipeline::{
@@ -102,19 +103,22 @@ impl QueryManager {
                     .get_annotated_functions(snapshot.as_ref(), type_manager)
                     .map_err(|err| QueryError::FunctionDefinition { typedb_source: err })?;
 
-                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } =
-                    annotate_preamble_and_pipeline(
-                        snapshot.as_ref(),
-                        type_manager,
-                        annotated_schema_functions.clone(),
-                        &mut variable_registry,
-                        &parameters,
-                        (*arced_preamble).clone(),
-                        (*arced_stages).clone(),
-                        (*arced_fetch).clone(),
-                    )
-                    .map_err(|err| QueryError::Annotation { typedb_source: err })?;
+                let mut annotated_pipeline = annotate_preamble_and_pipeline(
+                    snapshot.as_ref(),
+                    type_manager,
+                    annotated_schema_functions.clone(),
+                    &mut variable_registry,
+                    &parameters,
+                    (*arced_preamble).clone(),
+                    (*arced_stages).clone(),
+                    (*arced_fetch).clone(),
+                )
+                .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
+                // apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline)
+                //     .map_err(|err| QueryError::Transformation { typedb_source: err })?;
+
+                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
                 // 3: Compile
                 let executable_pipeline = compile_pipeline(
                     thing_manager.statistics(),
@@ -200,7 +204,7 @@ impl QueryManager {
                     }
                 };
 
-                let annotated_pipeline = annotate_preamble_and_pipeline(
+                let mut annotated_pipeline = annotate_preamble_and_pipeline(
                     &snapshot,
                     type_manager,
                     annotated_schema_functions.clone(),
@@ -211,11 +215,17 @@ impl QueryManager {
                     (*arced_fetch).clone(),
                 );
 
-                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } =
-                    match annotated_pipeline {
-                        Ok(annotated_pipeline) => annotated_pipeline,
-                        Err(err) => return Err((snapshot, Box::new(QueryError::Annotation { typedb_source: err }))),
-                    };
+                let mut annotated_pipeline = match annotated_pipeline {
+                    Ok(annotated_pipeline) => annotated_pipeline,
+                    Err(err) => return Err((snapshot, Box::new(QueryError::Annotation { typedb_source: err }))),
+                };
+
+                // match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
+                //     Ok(_) => {},
+                //     Err(err) => return Err((snapshot, Box::new(QueryError::Transformation { typedb_source: err })))
+                // };
+
+                let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
 
                 // 3: Compile
                 let executable_pipeline = match compile_pipeline(

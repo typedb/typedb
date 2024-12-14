@@ -24,7 +24,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn,
+        VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -57,7 +58,7 @@ pub(super) type PlaysBoundedSortedRole = PlaysTupleIterator<
 >;
 
 pub(super) type PlaysFilterFn = FilterFn<(ObjectType, RoleType)>;
-pub(super) type PlaysFilterMapFn = FilterMapFn<(ObjectType, RoleType)>;
+pub(super) type PlaysFilterMapFn = FilterMapUnchangedFn<(ObjectType, RoleType)>;
 
 pub(super) type PlaysVariableValueExtractor = for<'a> fn(&'a (ObjectType, RoleType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_PLAYER: PlaysVariableValueExtractor = |(player, _)| VariableValue::Type(Type::from(*player));

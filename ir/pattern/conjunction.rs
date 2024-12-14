@@ -41,8 +41,16 @@ impl Conjunction {
         self.constraints.constraints()
     }
 
+    pub fn constraints_mut(&mut self) -> &mut Constraints {
+        &mut self.constraints
+    }
+
     pub fn nested_patterns(&self) -> &[NestedPattern] {
         &self.nested_patterns
+    }
+
+    pub fn nested_patterns_mut(&mut self) -> &mut [NestedPattern] {
+        &mut self.nested_patterns
     }
 
     pub fn captured_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {

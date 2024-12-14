@@ -26,7 +26,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn,
+        VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -59,7 +60,7 @@ pub(super) type OwnsBoundedSortedAttribute = OwnsTupleIterator<
 >;
 
 pub(super) type OwnsFilterFn = FilterFn<(ObjectType, AttributeType)>;
-pub(super) type OwnsFilterMapFn = FilterMapFn<(ObjectType, AttributeType)>;
+pub(super) type OwnsFilterMapFn = FilterMapUnchangedFn<(ObjectType, AttributeType)>;
 
 pub(super) type OwnsVariableValueExtractor = for<'a> fn(&'a (ObjectType, AttributeType)) -> VariableValue<'a>;
 pub(super) const EXTRACT_OWNER: OwnsVariableValueExtractor = |(owner, _)| VariableValue::Type(Type::from(*owner));

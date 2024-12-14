@@ -295,7 +295,7 @@ impl ParameterRegistry {
         Self::default()
     }
 
-    pub(crate) fn register_value(&mut self, value: Value<'static>) -> ParameterID {
+    pub fn register_value(&mut self, value: Value<'static>) -> ParameterID {
         let id = ParameterID::Value(self.value_registry.len());
         let _prev = self.value_registry.insert(id, value);
         debug_assert_eq!(_prev, None);
