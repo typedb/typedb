@@ -1277,11 +1277,16 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+        if !self.type_manager.relation_index_available(snapshot, relation_type)? {
+            Err(ConceptReadError::RelationIndexNotAvailable {
+                relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
+            })?;
+        }
         let prefix = ThingEdgeIndexedRelation::prefix_relation_type(relation_type.vertex().type_id_());
-        IndexedRelationsIterator::new(
+        Ok(IndexedRelationsIterator::new(
             snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
-        )
+        ))
     }
 
     pub(crate) fn has_indexed_relation_player(
@@ -1293,7 +1298,11 @@ impl ThingManager {
         start_role: RoleType,
         end_role: RoleType,
     ) -> Result<bool, Box<ConceptReadError>> {
-        debug_assert!(self.type_manager.relation_index_available(snapshot, relation.type_()).unwrap());
+        if !self.type_manager.relation_index_available(snapshot, relation.type_())? {
+            Err(ConceptReadError::RelationIndexNotAvailable {
+                relation_label: relation.type_().get_label(snapshot, self.type_manager())?.to_owned(),
+            })?;
+        }
         let edge = ThingEdgeIndexedRelation::new(
             start_player.vertex(),
             end_player.vertex(),
@@ -1312,7 +1321,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         start: impl ObjectAPI,
         relation_type: RelationType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeIndexedRelation::prefix_start(relation_type.vertex().type_id_(), start.vertex());
         self.iterate_indexed_relations(
             snapshot,
@@ -1327,7 +1336,7 @@ impl ThingManager {
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation_type: RelationType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix =
             ThingEdgeIndexedRelation::prefix_start_end(relation_type.vertex().type_id_(), start.vertex(), end.vertex());
         self.iterate_indexed_relations(
@@ -1343,7 +1352,7 @@ impl ThingManager {
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation: Relation,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix =
             ThingEdgeIndexedRelation::prefix_start_end_relation(start.vertex(), end.vertex(), relation.vertex());
         self.iterate_indexed_relations(
@@ -1360,7 +1369,7 @@ impl ThingManager {
         end: impl ObjectAPI,
         relation: Relation,
         start_role: RoleType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation_startrole(
             start.vertex(),
             end.vertex(),
@@ -1378,11 +1387,14 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         range: &KeyRange<StorageKey<'_, INLINE_SIZE>>,
-        // for assertions:
         relation_type: RelationType,
-    ) -> IndexedRelationsIterator {
-        debug_assert!(self.type_manager().relation_index_available(snapshot, relation_type).unwrap());
-        IndexedRelationsIterator::new(snapshot.iterate_range(range))
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
+        if !self.type_manager().relation_index_available(snapshot, relation_type)? {
+            Err(ConceptReadError::RelationIndexNotAvailable {
+                relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
+            })?;
+        }
+        Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range)))
     }
 
     pub(crate) fn get_status(

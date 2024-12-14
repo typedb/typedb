@@ -113,6 +113,9 @@ pub enum ConceptReadError {
         expected: Option<ValueType>,
         provided: ValueType,
     },
+    RelationIndexNotAvailable {
+        relation_label: Label,
+    },
 }
 
 impl fmt::Display for ConceptReadError {
@@ -146,6 +149,7 @@ impl Error for ConceptReadError {
             Self::Annotation { .. } => None,
             Self::Constraint { .. } => None,
             Self::ValueTypeMismatchWithAttributeType { .. } => None,
+            Self::RelationIndexNotAvailable { .. } => None,
         }
     }
 }

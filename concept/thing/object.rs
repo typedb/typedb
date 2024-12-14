@@ -422,7 +422,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation_type: RelationType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         thing_manager.get_indexed_relation_players(snapshot, self, relation_type)
     }
 
@@ -432,7 +432,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager: &ThingManager,
         end_player: Object,
         relation_type: RelationType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         thing_manager.get_indexed_relations(snapshot, self, end_player, relation_type)
     }
 
@@ -442,7 +442,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager: &ThingManager,
         end_player: Object,
         relation: Relation,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         thing_manager.get_indexed_relation_roles(snapshot, self, end_player, relation)
     }
 
@@ -453,7 +453,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         end_player: Object,
         relation: Relation,
         start_role: RoleType,
-    ) -> IndexedRelationsIterator {
+    ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         thing_manager.get_indexed_relation_end_roles(snapshot, self, end_player, relation, start_role)
     }
 }

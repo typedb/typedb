@@ -248,6 +248,7 @@ impl IndexedRelationExecutor {
                     let &relation_type = self.relation_to_player_start_types.keys().next().unwrap();
                     let as_tuples = thing_manager
                         .get_indexed_relations_in(snapshot, relation_type.as_relation_type())
+                        .expect("Relation index should be available")
                         .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                         as_tuples,
@@ -259,7 +260,9 @@ impl IndexedRelationExecutor {
                         .relation_to_player_start_types
                         .keys()
                         .map(|relation_type| {
-                            thing_manager.get_indexed_relations_in(snapshot, relation_type.as_relation_type())
+                            thing_manager
+                                .get_indexed_relations_in(snapshot, relation_type.as_relation_type())
+                                .expect("Relation index should be available")
                         })
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
@@ -278,11 +281,11 @@ impl IndexedRelationExecutor {
                 self.start_player_cache.as_ref().into_iter().flat_map(|start_players| start_players.iter()).for_each(
                     |start_player| {
                         for relation_type in self.relation_to_player_start_types.keys() {
-                            iterators.push(start_player.get_indexed_relations(
-                                snapshot,
-                                thing_manager,
-                                relation_type.as_relation_type(),
-                            ))
+                            iterators.push(
+                                start_player
+                                    .get_indexed_relations(snapshot, thing_manager, relation_type.as_relation_type())
+                                    .expect("Relation index expected to be available"),
+                            )
                         }
                     },
                 );
@@ -304,6 +307,7 @@ impl IndexedRelationExecutor {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let as_tuples: IndexedRelationTupleIteratorSingle = start_player
                         .get_indexed_relations(snapshot, thing_manager, relation_type)
+                        .expect("Relation index should be available")
                         .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                         as_tuples,
@@ -315,11 +319,9 @@ impl IndexedRelationExecutor {
                         .relation_to_player_start_types
                         .keys()
                         .map(|relation_type| {
-                            start_player.get_indexed_relations(
-                                snapshot,
-                                thing_manager,
-                                relation_type.as_relation_type(),
-                            )
+                            start_player
+                                .get_indexed_relations(snapshot, thing_manager, relation_type.as_relation_type())
+                                .expect("Relation index should be available")
                         })
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
@@ -345,6 +347,7 @@ impl IndexedRelationExecutor {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let as_tuples: IndexedRelationTupleIteratorSingle = start_player
                         .get_indexed_relations_with_player(snapshot, thing_manager, end_player, relation_type)
+                        .expect("Relation index should be available")
                         .filter_map(filter_map_for_row);
                     Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                         as_tuples,
@@ -356,12 +359,14 @@ impl IndexedRelationExecutor {
                         .relation_to_player_start_types
                         .keys()
                         .map(|relation_type| {
-                            start_player.get_indexed_relations_with_player(
-                                snapshot,
-                                thing_manager,
-                                end_player,
-                                relation_type.as_relation_type(),
-                            )
+                            start_player
+                                .get_indexed_relations_with_player(
+                                    snapshot,
+                                    thing_manager,
+                                    end_player,
+                                    relation_type.as_relation_type(),
+                                )
+                                .expect("Relation index should be available")
                         })
                         .collect_vec();
                     let merged: KMergeBy<IndexedRelationsIterator, IndexedRelationOrderingFn> =
@@ -389,6 +394,7 @@ impl IndexedRelationExecutor {
                 };
                 let as_tuples: IndexedRelationTupleIteratorSingle = start_player
                     .get_indexed_relation_roles_with_player_and_relation(snapshot, thing_manager, end_player, relation)
+                    .expect("Relation index should be available")
                     .filter_map(filter_map_for_row);
                 Ok(TupleIterator::IndexedRelationsSingle(SortedTupleIterator::new(
                     as_tuples,

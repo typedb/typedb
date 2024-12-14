@@ -628,7 +628,7 @@ fn role_player_distinct() {
         assert_eq!(company_2.get_relations_roles(&snapshot, &thing_manager).count(), 1);
         assert_eq!(company_3.get_relations_roles(&snapshot, &thing_manager).count(), 1);
 
-        assert_eq!(person_1.get_indexed_relations(&snapshot, &thing_manager, employment_type).count(), 3);
+        assert_eq!(person_1.get_indexed_relations(&snapshot, &thing_manager, employment_type).unwrap().count(), 3);
 
         let finalise_result = thing_manager.finalise(&mut snapshot);
         assert!(finalise_result.is_ok());
@@ -658,7 +658,7 @@ fn role_player_distinct() {
             .unwrap();
 
         assert_eq!(person_1.get_relations_roles(&snapshot, &thing_manager).count(), 2);
-        assert_eq!(person_1.get_indexed_relations(&snapshot, &thing_manager, employment_type).count(), 3);
+        assert_eq!(person_1.get_indexed_relations(&snapshot, &thing_manager, employment_type).unwrap().count(), 3);
     }
 }
 
@@ -733,6 +733,7 @@ fn role_player_duplicates_unordered() {
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -741,6 +742,7 @@ fn role_player_duplicates_unordered() {
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -804,6 +806,7 @@ fn role_player_duplicates_unordered() {
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -812,6 +815,7 @@ fn role_player_duplicates_unordered() {
         assert_eq!(group_1_indexed_count, 1);
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -844,7 +848,7 @@ fn role_player_duplicates_ordered_default_card() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(4))), // must be small to allow index to kick in
+                RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(3))), // must be small to allow index to kick in
             )
             .unwrap();
         let entry_type = entry_relates.role();
@@ -888,25 +892,8 @@ fn role_player_duplicates_ordered_default_card() {
             .sum();
         assert_eq!(resource_relations_count, 2);
 
-        let group_1_indexed_count: u64 = group_1
-            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
-            .map(|res| {
-                let (_, count) = res.unwrap();
-                count
-            })
-            .sum();
-        assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
-        let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
-            .map(|res| {
-                let (_, count) = res.unwrap();
-                count
-            })
-            .sum();
-        assert_eq!(
-            resource_1_indexed_count, 0,
-            "// Default card.end for ordered is INF -> indexing is OFF -> expected 0"
-        );
+        let result = group_1.get_indexed_relations(&snapshot, &thing_manager, collection_type);
+        assert!(result.is_err());
 
         let group_relations_count: u64 = group_1
             .get_relations_roles(&snapshot, &thing_manager)
@@ -961,25 +948,10 @@ fn role_player_duplicates_ordered_default_card() {
             .sum();
         assert_eq!(resource_relations_count, 2);
 
-        let group_1_indexed_count: u64 = group_1
-            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
-            .map(|res| {
-                let (_, count) = res.unwrap();
-                count
-            })
-            .sum();
-        assert_eq!(group_1_indexed_count, 0, "// Default card.end for ordered is INF -> indexing is OFF -> expected 0");
-        let resource_1_indexed_count: u64 = resource_1
-            .get_indexed_relations(&snapshot, &thing_manager, collection_type)
-            .map(|res| {
-                let (_, count) = res.unwrap();
-                count
-            })
-            .sum();
-        assert_eq!(
-            resource_1_indexed_count, 0,
-            "// Default card.end for ordered is INF -> indexing is OFF -> expected 0"
-        );
+        let result = group_1.get_indexed_relations(&snapshot, &thing_manager, collection_type);
+        assert!(result.is_err());
+        let result = resource_1.get_indexed_relations(&snapshot, &thing_manager, collection_type);
+        assert!(result.is_err());
     }
 }
 
@@ -1059,6 +1031,7 @@ fn role_player_duplicates_ordered_small_card() {
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -1067,6 +1040,7 @@ fn role_player_duplicates_ordered_small_card() {
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -1129,6 +1103,7 @@ fn role_player_duplicates_ordered_small_card() {
 
         let group_1_indexed_count: u64 = group_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
@@ -1137,6 +1112,7 @@ fn role_player_duplicates_ordered_small_card() {
         assert_eq!(group_1_indexed_count, 2, "Expected index to work");
         let resource_1_indexed_count: u64 = resource_1
             .get_indexed_relations(&snapshot, &thing_manager, collection_type)
+            .unwrap()
             .map(|res| {
                 let (_, count) = res.unwrap();
                 count
