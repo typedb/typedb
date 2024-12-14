@@ -45,7 +45,7 @@ checkstyle_test(
         "*",
         "annotation/**/*.rs",
         "executable/**/*.rs",
-        "optimisation/**/*.rs",
+        "transformation/**/*.rs",
     ]),
     exclude = glob([
         "Cargo.*",
