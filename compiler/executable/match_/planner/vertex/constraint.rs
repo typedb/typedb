@@ -54,21 +54,6 @@ impl ConstraintVertex<'_> {
         true // always valid
     }
 
-    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>) -> Direction {
-        match self {
-            Self::TypeList(_) => Direction::Canonical,
-            Self::Iid(_) => Direction::Canonical,
-            Self::Isa(_) => Direction::Canonical,
-            Self::Has(inner) => inner.unbound_direction(graph, &[]),
-            Self::Links(inner) => inner.unbound_direction(graph, &[]),
-            Self::IndexedRelation(inner) => inner.unbound_direction(graph, &[]),
-            Self::Sub(inner) => inner.unbound_direction,
-            Self::Owns(inner) => inner.unbound_direction,
-            Self::Relates(inner) => inner.unbound_direction,
-            Self::Plays(inner) => inner.unbound_direction,
-        }
-    }
-
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::TypeList(inner) => Box::new(inner.variables()),
@@ -106,6 +91,7 @@ impl<'a> fmt::Display for ConstraintVertex<'a> {
             ConstraintVertex::Owns(_) => { write!(f, "|Owns|") } //TODO
             ConstraintVertex::Relates(_) => { write!(f, "|Relates|") } //TODO
             ConstraintVertex::Plays(_) => { write!(f, "|Plays|") } //TODO
+            ConstraintVertex::IndexedRelation(_) => {  write!(f, "|Relation Index|") }
         }
     }
 }

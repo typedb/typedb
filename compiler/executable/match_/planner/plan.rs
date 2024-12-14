@@ -11,7 +11,6 @@ use std::{
     fmt,
     sync::Arc,
 };
-use std::collections::BTreeSet;
 use std::hash::{DefaultHasher, Hash, Hasher};
 use std::time::Instant;
 use answer::variable::Variable;
@@ -558,15 +557,18 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
-        let num_patterns = self.graph.pattern_to_variable.len();
+        let non_restriction_patterns: HashSet<_> = self.graph.pattern_to_variable
+            .keys()
+            .filter(|&&p| { !matches![self.graph.elements[&VertexId::Pattern(p)], PlannerVertex::Comparison(_)] })
+            .copied().collect(); // Comparisons are pushed down anyway so no need to sort
+        let num_patterns = non_restriction_patterns.len();
 
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
         let mut extension_width = (num_patterns / 2) + 2; // ensure this is larger than (num_patterns / 2) or change narrowing logic
         let reduction_cycle = 2;
 
-        let all_patterns = self.graph.pattern_to_variable.keys().copied().collect();
         let mut best_partial_plans = Vec::with_capacity(beam_width);
-        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), all_patterns, self.input_variables()));
+        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), non_restriction_patterns, self.input_variables()));
 
         for i in 0..num_patterns {
             let mut new_plans_heap  = BinaryHeap::with_capacity(beam_width);
@@ -615,7 +617,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
-        let complete_plan = best_plan.into_complete_plan();
+        let complete_plan = best_plan.into_complete_plan(&self.graph);
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
@@ -910,8 +912,14 @@ impl PartialCostPlan {
         }
     }
 
-    fn into_complete_plan(self) -> CompleteCostPlan {
+    fn into_complete_plan(self, graph: &Graph<'_>) -> CompleteCostPlan {
         let mut final_vertex_ordering = self.vertex_ordering.clone();
+        for comparison in graph.pattern_to_variable
+            .keys()
+            .filter(|&&p| { matches![graph.elements[&VertexId::Pattern(p)], PlannerVertex::Comparison(_)] })
+            .copied() {
+            final_vertex_ordering.push(VertexId::Pattern(comparison));
+        }
         for &pattern in self.ongoing_step.iter() {
             final_vertex_ordering.push(VertexId::Pattern(pattern));
             debug_assert!(!self.vertex_ordering.contains(&VertexId::Pattern(pattern)));
