@@ -225,7 +225,9 @@ impl fmt::Display for VarMappedIntersectionStep<'_> {
         write!(
             f,
             "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",
-            &self.step.bound_variables, self.step.output_width, self.step.sort_variable
+            &self.step.bound_variables.iter().map(|&v| self.map[&ExecutorVariable::RowPosition(v)]).collect::<Vec<_>>(),
+            self.step.output_width,
+            self.map[&self.step.sort_variable]
         )?;
         for (instruction, modes) in &self.step.instructions {
             let var_mapped_instruction = instruction.clone().map(self.map);
