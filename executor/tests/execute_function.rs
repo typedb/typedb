@@ -33,7 +33,7 @@ struct Context {
 
 const COMMON_SCHEMA: &str = r#"
     define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..), plays membership:member;
         entity organisation plays membership:group;
@@ -271,7 +271,7 @@ fn function_compiles() {
     {
         let query = r#"
             with
-            fun get_ages($p_arg: person) -> { long }:
+            fun get_ages($p_arg: person) -> { integer }:
             match
                 $p_arg has age $age_return;
             reduce $age_sum = sum($age_return);
@@ -450,7 +450,7 @@ fn linear_reachability_in_tree() {
 #[test]
 fn fibonacci() {
     let custom_schema = r#"define
-        attribute number @independent, value long;
+        attribute number @independent, value integer;
     "#;
     let context = setup_common(custom_schema);
     let insert_query = r#"insert
@@ -476,7 +476,7 @@ fn fibonacci() {
     {
         let query = r#"
             with
-            fun ith_fibonacci_number($i: long) -> { number }:
+            fun ith_fibonacci_number($i: integer) -> { number }:
             match
                 $ret isa number;
                 { $i == 1; $ret == 1; $ret isa number; } or
@@ -497,6 +497,6 @@ fn fibonacci() {
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
         let answer_position = *positions.get("as_value").unwrap();
-        assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_long(), 13);
+        assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_integer(), 13);
     }
 }

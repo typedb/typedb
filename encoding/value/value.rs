@@ -25,7 +25,7 @@ use crate::value::{
     double_bytes::DoubleBytes,
     duration_bytes::DurationBytes,
     duration_value::Duration,
-    long_bytes::LongBytes,
+    integer_bytes::IntegerBytes,
     string_bytes::StringBytes,
     struct_bytes::StructBytes,
     timezone::TimeZone,
@@ -37,7 +37,7 @@ use crate::value::{
 #[derive(Debug, Clone, PartialEq)]
 pub enum Value<'a> {
     Boolean(bool),
-    Long(i64),
+    Integer(i64),
     Double(f64),
     Decimal(Decimal),
     Date(NaiveDate),
@@ -55,7 +55,7 @@ impl PartialOrd for Value<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
             (Self::Boolean(self_bool), Self::Boolean(other_bool)) => self_bool.partial_cmp(other_bool),
-            (Self::Long(self_long), Self::Long(other_long)) => self_long.partial_cmp(other_long),
+            (Self::Integer(self_integer), Self::Integer(other_integer)) => self_integer.partial_cmp(other_integer),
             (Self::Double(self_double), Self::Double(other_double)) => self_double.partial_cmp(other_double),
             (Self::Decimal(self_decimal), Self::Decimal(other_decimal)) => self_decimal.partial_cmp(other_decimal),
             (Self::Date(self_date), Self::Date(other_date)) => self_date.partial_cmp(other_date),
@@ -75,7 +75,7 @@ impl Hash for Value<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
             Value::Boolean(value) => Hash::hash(value, state),
-            Value::Long(value) => Hash::hash(value, state),
+            Value::Integer(value) => Hash::hash(value, state),
             Value::Double(_value) => Hash::hash(&self.encode_double(), state), // same bitwise representation as storage of values
             Value::Decimal(value) => Hash::hash(value, state),
             Value::Date(value) => Hash::hash(value, state),
@@ -92,7 +92,7 @@ impl<'a> Value<'a> {
     pub fn as_reference(&self) -> Value<'_> {
         match *self {
             Value::Boolean(boolean) => Value::Boolean(boolean),
-            Value::Long(long) => Value::Long(long),
+            Value::Integer(integer) => Value::Integer(integer),
             Value::Double(double) => Value::Double(double),
             Value::Decimal(decimal) => Value::Decimal(decimal),
             Value::Date(date) => Value::Date(date),
@@ -107,14 +107,14 @@ impl<'a> Value<'a> {
     pub fn unwrap_boolean(self) -> bool {
         match self {
             Self::Boolean(boolean) => boolean,
-            _ => panic!("Cannot unwrap Long if not a long value."),
+            _ => panic!("Cannot unwrap Integer if not a integer value."),
         }
     }
 
-    pub fn unwrap_long(self) -> i64 {
+    pub fn unwrap_integer(self) -> i64 {
         match self {
-            Self::Long(long) => long,
-            _ => panic!("Cannot unwrap Long if not a long value."),
+            Self::Integer(integer) => integer,
+            _ => panic!("Cannot unwrap Integer if not a integer value."),
         }
     }
 
@@ -177,7 +177,7 @@ impl<'a> Value<'a> {
     pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),
-            Self::Long(long) => Value::Long(long),
+            Self::Integer(integer) => Value::Integer(integer),
             Self::Double(double) => Value::Double(double),
             Self::Decimal(decimal) => Value::Decimal(decimal),
             Self::Date(date) => Value::Date(date),
@@ -197,11 +197,11 @@ impl<'a> Value<'a> {
         }
 
         match self {
-            Value::Long(long) => {
+            Value::Integer(integer) => {
                 debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Decimal));
                 match value_type {
-                    ValueType::Double => Some(Value::Double(long as f64)),
-                    ValueType::Decimal => Some(Value::Decimal(Decimal::new(long, 0))),
+                    ValueType::Double => Some(Value::Double(integer as f64)),
+                    ValueType::Decimal => Some(Value::Decimal(Decimal::new(integer, 0))),
                     _ => unreachable!(),
                 }
             }
@@ -227,17 +227,17 @@ impl<'a> Value<'a> {
         }
 
         match self {
-            Value::Long(_) => unreachable!("Handled by trivial cast"),
+            Value::Integer(_) => unreachable!("Handled by trivial cast"),
             Value::Decimal(decimal) => {
-                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Long));
+                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Integer));
                 match value_type {
-                    ValueType::Long => Some(Value::Long(decimal.integer_part())),
+                    ValueType::Integer => Some(Value::Integer(decimal.integer_part())),
                     ValueType::Double => Some(Value::Double(decimal.to_f64())),
                     _ => unreachable!(),
                 }
             }
             Value::Double(double) => {
-                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Long));
+                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Integer));
                 match value_type {
                     ValueType::Decimal => {
                         let integer_part =
@@ -245,11 +245,11 @@ impl<'a> Value<'a> {
                         let fractional_part = (double - (integer_part as f64)).abs();
                         Some(Value::Decimal(Decimal::new_lower_bound_from(integer_part, fractional_part)))
                     }
-                    ValueType::Long => {
+                    ValueType::Integer => {
                         if double.floor() > i64::MAX as f64 {
-                            Some(Value::Long(i64::MAX))
+                            Some(Value::Integer(i64::MAX))
                         } else {
-                            Some(Value::Long(double.floor() as i64))
+                            Some(Value::Integer(double.floor() as i64))
                         }
                     }
                     _ => unreachable!(),
@@ -270,16 +270,16 @@ impl<'a> Value<'a> {
         }
 
         match self {
-            Value::Long(_) => unreachable!("Handled by trivial cast"),
+            Value::Integer(_) => unreachable!("Handled by trivial cast"),
             Value::Decimal(decimal) => {
-                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Long));
+                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Integer));
                 match value_type {
-                    ValueType::Long => {
+                    ValueType::Integer => {
                         let integer_part = decimal.integer_part();
                         if decimal.fractional_part() == 0 {
-                            Some(Value::Long(integer_part))
+                            Some(Value::Integer(integer_part))
                         } else {
-                            Some(Value::Long(integer_part + 1))
+                            Some(Value::Integer(integer_part + 1))
                         }
                     }
                     ValueType::Double => {
@@ -290,7 +290,7 @@ impl<'a> Value<'a> {
                 }
             }
             Value::Double(double) => {
-                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Long));
+                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Integer));
                 match value_type {
                     ValueType::Decimal => {
                         let integer_part = if double.floor() > i64::MAX as f64 {
@@ -301,11 +301,11 @@ impl<'a> Value<'a> {
                         let fractional_part = (double - (integer_part as f64)).abs();
                         Some(Value::Decimal(Decimal::new_upper_bound_from(integer_part, fractional_part)))
                     }
-                    ValueType::Long => {
+                    ValueType::Integer => {
                         if double.floor() > i64::MAX as f64 {
-                            panic!("Cannot create an upper-bounding long from double {}", double);
+                            panic!("Cannot create an upper-bounding integer from double {}", double);
                         } else {
-                            Some(Value::Long(double.ceil() as i64))
+                            Some(Value::Integer(double.ceil() as i64))
                         }
                     }
                     _ => unreachable!(),
@@ -321,7 +321,7 @@ impl ValueEncodable for Value<'_> {
     fn value_type(&self) -> ValueType {
         match self {
             Value::Boolean(_) => ValueType::Boolean,
-            Value::Long(_) => ValueType::Long,
+            Value::Integer(_) => ValueType::Integer,
             Value::Double(_) => ValueType::Double,
             Value::Decimal(_) => ValueType::Decimal,
             Value::Date(_) => ValueType::Date,
@@ -340,10 +340,10 @@ impl ValueEncodable for Value<'_> {
         }
     }
 
-    fn encode_long(&self) -> LongBytes {
+    fn encode_integer(&self) -> IntegerBytes {
         match self {
-            Self::Long(long) => LongBytes::build(*long),
-            _ => panic!("Cannot encode non-long as LongBytes"),
+            Self::Integer(integer) => IntegerBytes::build(*integer),
+            _ => panic!("Cannot encode non-integer as IntegerBytes"),
         }
     }
 
@@ -406,7 +406,7 @@ impl ValueEncodable for Value<'_> {
     fn encode_bytes<const INLINE_LENGTH: usize>(&self) -> ByteArray<INLINE_LENGTH> {
         match self {
             Value::Boolean(_) => ByteArray::copy(&self.encode_boolean().bytes()),
-            Value::Long(_) => ByteArray::copy(&self.encode_long().bytes()),
+            Value::Integer(_) => ByteArray::copy(&self.encode_integer().bytes()),
             Value::Double(_) => ByteArray::copy(&self.encode_double().bytes()),
             Value::Decimal(_) => ByteArray::copy(&self.encode_decimal().bytes()),
             Value::Date(_) => ByteArray::copy(&self.encode_date().bytes()),
@@ -423,7 +423,7 @@ impl fmt::Display for Value<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Value::Boolean(bool) => write!(f, "{bool}"),
-            Value::Long(long) => write!(f, "{long}"),
+            Value::Integer(integer) => write!(f, "{integer}"),
             Value::Double(double) => write!(f, "{double}"),
             Value::Decimal(decimal) => write!(f, "{decimal}"),
             Value::Date(date) => write!(f, "{date}"),
@@ -479,17 +479,17 @@ impl NativeValueConvertible for f64 {
 }
 
 impl NativeValueConvertible for i64 {
-    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Long;
+    const VALUE_TYPE_CATEGORY: ValueTypeCategory = ValueTypeCategory::Integer;
 
     fn from_db_value(value: Value<'static>) -> Result<Self, ()> {
         match value {
-            Value::Long(value) => Ok(value),
+            Value::Integer(value) => Ok(value),
             _ => Err(()),
         }
     }
 
     fn to_db_value(self) -> Value<'static> {
-        Value::Long(self)
+        Value::Integer(self)
     }
 }
 

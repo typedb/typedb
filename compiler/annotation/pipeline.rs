@@ -462,21 +462,20 @@ pub fn resolve_reduce_instruction_by_value_type(
     value_type: ValueType,
     variable_registry: &VariableRegistry,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
-    use encoding::value::value_type::ValueTypeCategory::{Double, Long};
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
     match value_type.category() {
-        Long => match reducer {
+        ValueTypeCategory::Integer => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
-            Reducer::Sum(var) => Ok(ReduceInstruction::SumLong(var)),
-            Reducer::Max(var) => Ok(ReduceInstruction::MaxLong(var)),
-            Reducer::Min(var) => Ok(ReduceInstruction::MinLong(var)),
-            Reducer::Mean(var) => Ok(ReduceInstruction::MeanLong(var)),
-            Reducer::Median(var) => Ok(ReduceInstruction::MedianLong(var)),
-            Reducer::Std(var) => Ok(ReduceInstruction::StdLong(var)),
+            Reducer::Sum(var) => Ok(ReduceInstruction::SumInteger(var)),
+            Reducer::Max(var) => Ok(ReduceInstruction::MaxInteger(var)),
+            Reducer::Min(var) => Ok(ReduceInstruction::MinInteger(var)),
+            Reducer::Mean(var) => Ok(ReduceInstruction::MeanInteger(var)),
+            Reducer::Median(var) => Ok(ReduceInstruction::MedianInteger(var)),
+            Reducer::Std(var) => Ok(ReduceInstruction::StdInteger(var)),
         },
-        Double => match reducer {
+        ValueTypeCategory::Double => match reducer {
             Reducer::Count => Ok(ReduceInstruction::Count),
             Reducer::CountVar(var) => Ok(ReduceInstruction::CountVar(var)),
             Reducer::Sum(var) => Ok(ReduceInstruction::SumDouble(var)),

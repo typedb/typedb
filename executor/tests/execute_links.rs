@@ -97,7 +97,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let membership_group_type = relates_group.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
@@ -135,8 +135,8 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let membership_1 = thing_manager.create_relation(&mut snapshot, membership_type).unwrap();
     let membership_2 = thing_manager.create_relation(&mut snapshot, membership_type).unwrap();
 
-    let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(10)).unwrap();
-    let age_2 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(11)).unwrap();
+    let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(10)).unwrap();
+    let age_2 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(11)).unwrap();
 
     let name_1 = thing_manager
         .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Abby".to_string())))

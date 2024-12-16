@@ -85,7 +85,7 @@ fn setup_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let membership_group_type = relates_group.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
@@ -318,7 +318,7 @@ fn has() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let age_type = type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
-    let attr_age_10 = thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+    let attr_age_10 = thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Integer(10)).unwrap().unwrap();
     assert_eq!(1, attr_age_10.get_owners(&snapshot, &thing_manager).count());
     snapshot.close_resources()
 }

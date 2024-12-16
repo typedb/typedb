@@ -31,7 +31,7 @@ use crate::{
         decimal_bytes::DecimalBytes,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
-        long_bytes::LongBytes,
+        integer_bytes::IntegerBytes,
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
         value::Value,
@@ -214,7 +214,7 @@ impl ValueEncodingLength {
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AttributeID {
     Boolean(BooleanAttributeID),
-    Long(LongAttributeID),
+    Integer(IntegerAttributeID),
     Double(DoubleAttributeID),
     Decimal(DecimalAttributeID),
     Date(DateAttributeID),
@@ -230,7 +230,7 @@ impl AttributeID {
         let &[prefix, ..] = bytes else { unreachable!("empty value bytes") };
         match ValueTypeCategory::from_bytes([prefix]) {
             ValueTypeCategory::Boolean => Self::Boolean(BooleanAttributeID::new(bytes.try_into().unwrap())),
-            ValueTypeCategory::Long => Self::Long(LongAttributeID::new(bytes.try_into().unwrap())),
+            ValueTypeCategory::Integer => Self::Integer(IntegerAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Double => Self::Double(DoubleAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Decimal => Self::Decimal(DecimalAttributeID::new(bytes.try_into().unwrap())),
             ValueTypeCategory::Date => Self::Date(DateAttributeID::new(bytes.try_into().unwrap())),
@@ -246,7 +246,7 @@ impl AttributeID {
         debug_assert!(Self::is_inlineable(value.as_reference()));
         match value.value_type() {
             ValueType::Boolean => Self::Boolean(BooleanAttributeID::build(value.encode_boolean())),
-            ValueType::Long => Self::Long(LongAttributeID::build(value.encode_long())),
+            ValueType::Integer => Self::Integer(IntegerAttributeID::build(value.encode_integer())),
             ValueType::Double => Self::Double(DoubleAttributeID::build(value.encode_double())),
             ValueType::Decimal => Self::Decimal(DecimalAttributeID::build(value.encode_decimal())),
             ValueType::Date => Self::Date(DateAttributeID::build(value.encode_date())),
@@ -266,7 +266,7 @@ impl AttributeID {
         debug_assert!(bytes.len() >= AttributeID::max_length());
         match value.value_type().category() {
             ValueTypeCategory::Boolean => (BooleanAttributeID::write(value.encode_boolean(), bytes), true),
-            ValueTypeCategory::Long => (LongAttributeID::write(value.encode_long(), bytes), true),
+            ValueTypeCategory::Integer => (IntegerAttributeID::write(value.encode_integer(), bytes), true),
             ValueTypeCategory::Double => (DoubleAttributeID::write(value.encode_double(), bytes), true),
             ValueTypeCategory::Decimal => (DecimalAttributeID::write(value.encode_decimal(), bytes), true),
             ValueTypeCategory::Date => (DateAttributeID::write(value.encode_date(), bytes), true),
@@ -295,7 +295,7 @@ impl AttributeID {
     pub fn is_inlineable(value: impl ValueEncodable) -> bool {
         match value.value_type() {
             ValueType::Boolean => BooleanAttributeID::is_inlineable(),
-            ValueType::Long => LongAttributeID::is_inlineable(),
+            ValueType::Integer => IntegerAttributeID::is_inlineable(),
             ValueType::Double => DoubleAttributeID::is_inlineable(),
             ValueType::Decimal => DecimalAttributeID::is_inlineable(),
             ValueType::Date => DateAttributeID::is_inlineable(),
@@ -310,7 +310,7 @@ impl AttributeID {
     pub fn bytes(&self) -> &[u8] {
         match self {
             AttributeID::Boolean(boolean_id) => boolean_id.bytes_ref(),
-            AttributeID::Long(long_id) => long_id.bytes_ref(),
+            AttributeID::Integer(integer_id) => integer_id.bytes_ref(),
             AttributeID::Double(double_id) => double_id.bytes_ref(),
             AttributeID::Decimal(decimal_id) => decimal_id.bytes_ref(),
             AttributeID::Date(date_id) => date_id.bytes_ref(),
@@ -325,7 +325,7 @@ impl AttributeID {
     pub fn value_type_encoding_length(value_type_category: ValueTypeCategory) -> usize {
         match value_type_category {
             ValueTypeCategory::Boolean => BooleanAttributeID::LENGTH,
-            ValueTypeCategory::Long => LongAttributeID::LENGTH,
+            ValueTypeCategory::Integer => IntegerAttributeID::LENGTH,
             ValueTypeCategory::Double => DoubleAttributeID::LENGTH,
             ValueTypeCategory::Decimal => DecimalAttributeID::LENGTH,
             ValueTypeCategory::Date => DateAttributeID::LENGTH,
@@ -344,7 +344,7 @@ impl AttributeID {
     pub(crate) const fn value_type_encoded_value_length(value_type_category: ValueTypeCategory) -> ValueEncodingLength {
         match value_type_category {
             ValueTypeCategory::Boolean => BooleanAttributeID::VALUE_LENGTH_ID,
-            ValueTypeCategory::Long => LongAttributeID::VALUE_LENGTH_ID,
+            ValueTypeCategory::Integer => IntegerAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Double => DoubleAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Decimal => DecimalAttributeID::VALUE_LENGTH_ID,
             ValueTypeCategory::Date => DateAttributeID::VALUE_LENGTH_ID,
@@ -371,10 +371,10 @@ impl AttributeID {
         }
     }
 
-    pub fn unwrap_long(self) -> LongAttributeID {
+    pub fn unwrap_integer(self) -> IntegerAttributeID {
         match self {
-            AttributeID::Long(long_id) => long_id,
-            _ => panic!("Cannot unwrap Long ID from non-long attribute ID."),
+            AttributeID::Integer(integer_id) => integer_id,
+            _ => panic!("Cannot unwrap Integer ID from non-integer attribute ID."),
         }
     }
 
@@ -437,7 +437,7 @@ impl AttributeID {
     pub fn value_type_category(self) -> ValueTypeCategory {
         match self {
             AttributeID::Boolean(_) => ValueTypeCategory::Boolean,
-            AttributeID::Long(_) => ValueTypeCategory::Long,
+            AttributeID::Integer(_) => ValueTypeCategory::Integer,
             AttributeID::Double(_) => ValueTypeCategory::Double,
             AttributeID::Decimal(_) => ValueTypeCategory::Decimal,
             AttributeID::Date(_) => ValueTypeCategory::Date,
@@ -468,8 +468,8 @@ pub trait InlineEncodableAttributeID {
 
 pub type BooleanAttributeID =
     InlinePrimitiveID<{ ValueTypeBytes::CATEGORY_LENGTH + BooleanBytes::ENCODED_LENGTH }, BooleanBytes>;
-pub type LongAttributeID =
-    InlinePrimitiveID<{ ValueTypeBytes::CATEGORY_LENGTH + LongBytes::ENCODED_LENGTH }, LongBytes>;
+pub type IntegerAttributeID =
+    InlinePrimitiveID<{ ValueTypeBytes::CATEGORY_LENGTH + IntegerBytes::ENCODED_LENGTH }, IntegerBytes>;
 pub type DoubleAttributeID =
     InlinePrimitiveID<{ ValueTypeBytes::CATEGORY_LENGTH + DoubleBytes::ENCODED_LENGTH }, DoubleBytes>;
 pub type DecimalAttributeID =

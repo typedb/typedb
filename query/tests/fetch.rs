@@ -27,7 +27,7 @@ fn define_schema(
     let query_str = r#"
     define
       attribute name value string;
-      attribute age value long;
+      attribute age value integer;
       relation friendship relates friend @card(0..);
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;

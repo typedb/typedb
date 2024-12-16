@@ -10,16 +10,16 @@ use answer::{variable_value::VariableValue, Thing};
 use compiler::annotation::expression::{
     compiled_expression::ExecutableExpression,
     instructions::{
-        binary::{Binary, BinaryExpression, MathRemainderLong},
+        binary::{Binary, BinaryExpression, MathRemainderInteger},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftLongToDouble, CastRightDecimalToDouble,
-            CastRightLongToDouble, CastUnary, CastUnaryDecimalToDouble, CastUnaryLongToDouble, ImplicitCast,
+            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDouble, CastRightDecimalToDouble,
+            CastRightIntegerToDouble, CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDouble, ImplicitCast,
             LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
-        unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression},
+        unary::{MathAbsDouble, MathAbsInteger, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression},
         ExpressionEvaluationError,
     },
 };
@@ -151,20 +151,20 @@ fn evaluate_instruction(
         ExpressionOpCode::ListIndex => ListIndex::evaluate(state),
         ExpressionOpCode::ListIndexRange => ListIndexRange::evaluate(state),
 
-        ExpressionOpCode::CastUnaryLongToDouble => CastUnaryLongToDouble::evaluate(state),
-        ExpressionOpCode::CastLeftLongToDouble => CastLeftLongToDouble::evaluate(state),
-        ExpressionOpCode::CastRightLongToDouble => CastRightLongToDouble::evaluate(state),
+        ExpressionOpCode::CastUnaryIntegerToDouble => CastUnaryIntegerToDouble::evaluate(state),
+        ExpressionOpCode::CastLeftIntegerToDouble => CastLeftIntegerToDouble::evaluate(state),
+        ExpressionOpCode::CastRightIntegerToDouble => CastRightIntegerToDouble::evaluate(state),
 
         ExpressionOpCode::CastUnaryDecimalToDouble => CastUnaryDecimalToDouble::evaluate(state),
         ExpressionOpCode::CastLeftDecimalToDouble => CastLeftDecimalToDouble::evaluate(state),
         ExpressionOpCode::CastRightDecimalToDouble => CastRightDecimalToDouble::evaluate(state),
 
-        ExpressionOpCode::OpLongAddLong => operators::OpLongAddLong::evaluate(state),
-        ExpressionOpCode::OpLongSubtractLong => operators::OpLongSubtractLong::evaluate(state),
-        ExpressionOpCode::OpLongMultiplyLong => operators::OpLongMultiplyLong::evaluate(state),
-        ExpressionOpCode::OpLongDivideLong => operators::OpLongDivideLong::evaluate(state),
-        ExpressionOpCode::OpLongModuloLong => operators::OpLongModuloLong::evaluate(state),
-        ExpressionOpCode::OpLongPowerLong => operators::OpLongPowerLong::evaluate(state),
+        ExpressionOpCode::OpIntegerAddInteger => operators::OpIntegerAddInteger::evaluate(state),
+        ExpressionOpCode::OpIntegerSubtractInteger => operators::OpIntegerSubtractInteger::evaluate(state),
+        ExpressionOpCode::OpIntegerMultiplyInteger => operators::OpIntegerMultiplyInteger::evaluate(state),
+        ExpressionOpCode::OpIntegerDivideInteger => operators::OpIntegerDivideInteger::evaluate(state),
+        ExpressionOpCode::OpIntegerModuloInteger => operators::OpIntegerModuloInteger::evaluate(state),
+        ExpressionOpCode::OpIntegerPowerInteger => operators::OpIntegerPowerInteger::evaluate(state),
 
         ExpressionOpCode::OpDoubleAddDouble => operators::OpDoubleAddDouble::evaluate(state),
         ExpressionOpCode::OpDoubleSubtractDouble => operators::OpDoubleSubtractDouble::evaluate(state),
@@ -173,11 +173,11 @@ fn evaluate_instruction(
         ExpressionOpCode::OpDoubleModuloDouble => operators::OpDoubleModuloDouble::evaluate(state),
         ExpressionOpCode::OpDoublePowerDouble => operators::OpDoublePowerDouble::evaluate(state),
 
-        ExpressionOpCode::MathRemainderLong => MathRemainderLong::evaluate(state),
+        ExpressionOpCode::MathRemainderInteger => MathRemainderInteger::evaluate(state),
         ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),
         ExpressionOpCode::MathCeilDouble => MathCeilDouble::evaluate(state),
         ExpressionOpCode::MathFloorDouble => MathFloorDouble::evaluate(state),
-        ExpressionOpCode::MathAbsLong => MathAbsLong::evaluate(state),
+        ExpressionOpCode::MathAbsInteger => MathAbsInteger::evaluate(state),
         ExpressionOpCode::MathAbsDouble => MathAbsDouble::evaluate(state),
     }
 }
@@ -203,7 +203,7 @@ where
 
 impl ExpressionEvaluation for ListConstructor {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
-        let n_elements = state.pop_value().unwrap_long() as usize;
+        let n_elements = state.pop_value().unwrap_integer() as usize;
         let elements: Arc<[Value<'static>]> = (0..n_elements).map(|_| state.pop_value()).collect();
         state.push_list(elements);
         Ok(())
@@ -213,7 +213,7 @@ impl ExpressionEvaluation for ListConstructor {
 impl ExpressionEvaluation for ListIndex {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let list = state.pop_list();
-        let index = state.pop_value().unwrap_long();
+        let index = state.pop_value().unwrap_integer();
         if let Some(value) = list.get(index as usize) {
             state.push_value(value.clone()); // Should we avoid cloning?
             Ok(())
@@ -226,8 +226,8 @@ impl ExpressionEvaluation for ListIndex {
 impl ExpressionEvaluation for ListIndexRange {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let list = state.pop_list();
-        let to_index = state.pop_value().unwrap_long() as usize;
-        let from_index = state.pop_value().unwrap_long() as usize;
+        let to_index = state.pop_value().unwrap_integer() as usize;
+        let from_index = state.pop_value().unwrap_integer() as usize;
         if let Some(sub_slice) = list.get(from_index..to_index) {
             state.push_list(sub_slice.into()); // TODO: Should we make this more efficient by storing (Vec, range) ?
             Ok(())

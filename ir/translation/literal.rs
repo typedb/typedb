@@ -45,7 +45,7 @@ impl FromTypeQLLiteral for Value<'static> {
         // We don't know the final type yet. Zip with value-type annotations when constructing the executor.
         match &literal.inner {
             ValueLiteral::Boolean(boolean) => Ok(Value::Boolean(bool::from_typeql_literal(boolean)?)),
-            ValueLiteral::Integer(integer) => Ok(Value::Long(i64::from_typeql_literal(integer)?)),
+            ValueLiteral::Integer(integer) => Ok(Value::Integer(i64::from_typeql_literal(integer)?)),
             ValueLiteral::Decimal(decimal) => match Decimal::from_typeql_literal(decimal) {
                 Ok(decimal) => Ok(Value::Decimal(decimal)),
                 Err(_) => Ok(Value::Double(f64::from_typeql_literal(decimal)?)),

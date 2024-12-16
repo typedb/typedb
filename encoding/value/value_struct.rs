@@ -44,7 +44,7 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value, ValueEncodable,
+        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value, ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
@@ -224,7 +224,7 @@ impl StructIndexEntry<'static> {
 
         let value = match &value {
             Value::Boolean(_)
-            | Value::Long(_)
+            | Value::Integer(_)
             | Value::Double(_)
             | Value::Decimal(_)
             | Value::Date(_)
@@ -278,7 +278,7 @@ impl StructIndexEntry<'static> {
         }
         match &value {
             Value::Boolean(value) => buf.extend_from_slice(&BooleanBytes::build(*value).bytes()),
-            Value::Long(value) => buf.extend_from_slice(&LongBytes::build(*value).bytes()),
+            Value::Integer(value) => buf.extend_from_slice(&IntegerBytes::build(*value).bytes()),
             Value::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
             Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
             Value::Date(value) => buf.extend_from_slice(&DateBytes::build(*value).bytes()),

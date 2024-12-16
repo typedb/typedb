@@ -91,7 +91,7 @@ fn build_recursive(
                 .iter()
                 .map(|sub_expr| build_recursive(function_index, constraints, sub_expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            let len_id = constraints.parameters().register_value(Value::Long(items.len() as i64));
+            let len_id = constraints.parameters().register_value(Value::Integer(items.len() as i64));
             Expression::List(ListConstructor::new(items, len_id))
         }
         typeql::Expression::ListIndexRange(range) => {
@@ -253,11 +253,11 @@ pub mod tests {
 
         assert_eq!(rhs.len(), 5);
         let Expression::Constant(id) = rhs[0] else { panic!("Expected Constant, found: {:?}", rhs[0]) };
-        assert_eq!(value_parameters.value(id), Some(&Value::Long(5)));
+        assert_eq!(value_parameters.value(id), Some(&Value::Integer(5)));
         let Expression::Constant(id) = rhs[1] else { panic!("Expected Constant, found: {:?}", rhs[1]) };
-        assert_eq!(value_parameters.value(id), Some(&Value::Long(9)));
+        assert_eq!(value_parameters.value(id), Some(&Value::Integer(9)));
         let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
-        assert_eq!(value_parameters.value(id), Some(&Value::Long(6)));
+        assert_eq!(value_parameters.value(id), Some(&Value::Integer(6)));
         assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
         assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
     }

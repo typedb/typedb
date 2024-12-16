@@ -78,7 +78,7 @@ fn test_has_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..);
     ";
@@ -160,7 +160,7 @@ fn test_expression_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
-        attribute age value long;
+        attribute age value integer;
         entity person owns age @card(0..);
     ";
     let data = "insert
@@ -431,7 +431,7 @@ fn test_negation_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..);
     ";
@@ -622,7 +622,7 @@ fn test_named_var_select() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..);
     ";
@@ -708,7 +708,7 @@ fn test_disjunction_planning_traversal() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..);
     ";
@@ -795,7 +795,7 @@ fn test_disjunction_planning_nested_negations() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
     let schema = "define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..);
     ";

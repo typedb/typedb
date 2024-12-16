@@ -84,7 +84,7 @@ pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
         token::ValueType::Decimal => ValueType::Decimal,
         token::ValueType::Double => ValueType::Double,
         token::ValueType::Duration => ValueType::Duration,
-        token::ValueType::Long => ValueType::Long,
+        token::ValueType::Integer => ValueType::Integer,
         token::ValueType::String => ValueType::String,
     }
 }

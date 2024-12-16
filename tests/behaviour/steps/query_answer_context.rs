@@ -196,7 +196,7 @@ impl QueryAnswer {
     fn value_as_json(value: &Value<'_>) -> JSON {
         match value {
             Value::Boolean(bool) => JSON::Boolean(*bool),
-            Value::Long(long) => JSON::Number(*long as f64),
+            Value::Integer(integer) => JSON::Number(*integer as f64),
             Value::Double(double) => JSON::Number(*double),
             Value::String(cow) => JSON::String(Cow::Owned(match cow {
                 Cow::Borrowed(s) => s.to_string(),
@@ -205,7 +205,6 @@ impl QueryAnswer {
             Value::Decimal(_) | Value::Date(_) | Value::DateTime(_) | Value::DateTimeTZ(_) | Value::Duration(_) => {
                 JSON::String(Cow::Owned(value.to_string()))
             }
-
             Value::Struct(_) => todo!("Structs are not implemented in fetch tests"),
         }
     }

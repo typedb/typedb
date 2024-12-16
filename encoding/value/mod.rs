@@ -9,7 +9,7 @@ use bytes::byte_array::ByteArray;
 use self::{
     boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
     date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-    duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
+    duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
     value_type::ValueType,
 };
 
@@ -23,7 +23,7 @@ pub mod double_bytes;
 pub mod duration_bytes;
 pub mod duration_value;
 pub mod label;
-pub mod long_bytes;
+pub mod integer_bytes;
 pub mod primitive_encoding;
 pub mod string_bytes;
 pub mod struct_bytes;
@@ -41,7 +41,7 @@ pub trait ValueEncodable: Clone {
 
     fn encode_boolean(&self) -> BooleanBytes;
 
-    fn encode_long(&self) -> LongBytes;
+    fn encode_integer(&self) -> IntegerBytes;
 
     fn encode_double(&self) -> DoubleBytes;
 

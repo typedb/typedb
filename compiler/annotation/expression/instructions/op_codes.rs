@@ -16,23 +16,23 @@ pub enum ExpressionOpCode {
 
     // Casts
     // TODO: We can't cast arguments for functions of arity > 2. It may require rewriting compilation.
-    CastUnaryLongToDouble,
-    CastLeftLongToDouble,
-    CastRightLongToDouble,
+    CastUnaryIntegerToDouble,
+    CastLeftIntegerToDouble,
+    CastRightIntegerToDouble,
 
     CastUnaryDecimalToDouble,
     CastLeftDecimalToDouble,
     CastRightDecimalToDouble,
 
     // Operators
-    OpLongAddLong,
+    OpIntegerAddInteger,
     OpDoubleAddDouble,
-    OpLongMultiplyLong,
+    OpIntegerMultiplyInteger,
 
-    OpLongSubtractLong,
-    OpLongDivideLong,
-    OpLongModuloLong,
-    OpLongPowerLong,
+    OpIntegerSubtractInteger,
+    OpIntegerDivideInteger,
+    OpIntegerModuloInteger,
+    OpIntegerPowerInteger,
 
     OpDoubleSubtractDouble,
     OpDoubleMultiplyDouble,
@@ -41,9 +41,9 @@ pub enum ExpressionOpCode {
     OpDoublePowerDouble,
 
     // BuiltIns, maybe by domain?
-    MathAbsLong,
+    MathAbsInteger,
     MathAbsDouble,
-    MathRemainderLong,
+    MathRemainderInteger,
     MathRoundDouble,
     MathCeilDouble,
     MathFloorDouble,

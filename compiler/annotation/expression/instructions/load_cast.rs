@@ -19,9 +19,9 @@ use crate::annotation::expression::{
 pub struct LoadVariable {}
 pub struct LoadConstant {}
 
-pub type CastUnaryLongToDouble = CastUnary<i64, f64>;
-pub type CastLeftLongToDouble = CastBinaryLeft<i64, f64>;
-pub type CastRightLongToDouble = CastBinaryRight<i64, f64>;
+pub type CastUnaryIntegerToDouble = CastUnary<i64, f64>;
+pub type CastLeftIntegerToDouble = CastBinaryLeft<i64, f64>;
+pub type CastRightIntegerToDouble = CastBinaryRight<i64, f64>;
 
 pub type CastUnaryDecimalToDouble = CastUnary<Decimal, f64>;
 pub type CastLeftDecimalToDouble = CastBinaryLeft<Decimal, f64>;
@@ -124,9 +124,9 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
 }
 
 impl ImplicitCast<i64> for f64 {
-    const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryLongToDouble;
-    const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftLongToDouble;
-    const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightLongToDouble;
+    const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryIntegerToDouble;
+    const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftIntegerToDouble;
+    const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightIntegerToDouble;
 
     fn cast(from: i64) -> Result<Self, ExpressionEvaluationError> {
         Ok(from as f64)

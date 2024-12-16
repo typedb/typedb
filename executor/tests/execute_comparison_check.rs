@@ -52,13 +52,13 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let mut snapshot = storage.clone().open_snapshot_write();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     age_type.set_annotation(&mut snapshot, &type_manager, &thing_manager, ATTRIBUTE_INDEPENDENT).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
     let _age = [10, 11, 12, 13, 14]
-        .map(|age| thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age)).unwrap());
+        .map(|age| thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age)).unwrap());
 
     let _name = ["John", "Alice", "Leila"].map(|name| {
         thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name))).unwrap()

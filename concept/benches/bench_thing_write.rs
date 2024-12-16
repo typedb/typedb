@@ -67,11 +67,11 @@ fn write_entity_attributes(
         let name_type = type_manager.get_attribute_type(&snapshot, NAME_LABEL.get().unwrap()).unwrap().unwrap();
         let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
 
-        let random_long: i64 = rand::random();
+        let random_integer: i64 = rand::random();
         let length: u8 = rand::random();
         let random_string: String = Alphanumeric.sample_string(&mut rand::thread_rng(), length as usize);
 
-        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(random_long)).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(random_integer)).unwrap();
         let name = thing_manager
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string)))
             .unwrap();
@@ -86,7 +86,7 @@ fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     let age_type = type_manager.create_attribute_type(&mut snapshot, AGE_LABEL.get().unwrap()).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
