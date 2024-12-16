@@ -111,8 +111,11 @@ impl Server {
             self.diagnostics_manager.clone(),
         );
 
-        println!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}.\nReady!"));
-        println!("Ready!");
+        print!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}"));
+        // if development_mode { // TODO: Add
+        //     print!(" in development mode");
+        // }
+        println!(".\nReady!");
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
