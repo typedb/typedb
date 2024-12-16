@@ -19,18 +19,19 @@ use std::{
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use chrono::{DateTime, Local, Timelike};
+use chrono::{DateTime, Timelike, Utc};
 use concurrency::IntervalRunner;
 use logger::{debug, trace};
 use reqwest::{
     blocking::{Client, Response},
     header::{HeaderValue, CONNECTION, CONTENT_TYPE},
 };
-use resource::constants::diagnostics::{
-    DATABASE_METRICS_UPDATE_INTERVAL, DISABLED_REPORTING_FILE_NAME, REPORT_INTERVAL,
+use resource::constants::{
+    common::SECONDS_IN_MINUTE,
+    diagnostics::{DATABASE_METRICS_UPDATE_INTERVAL, DISABLED_REPORTING_FILE_NAME, REPORT_INTERVAL, REPORT_ONCE_DELAY},
 };
 
-use crate::Diagnostics;
+use crate::{hash_string_consistently, Diagnostics};
 
 #[derive(Debug)]
 pub struct Reporter {
@@ -39,7 +40,7 @@ pub struct Reporter {
     reporting_uri: &'static str,
     data_directory: PathBuf,
     is_enabled: bool,
-    _reporting_job: Arc<Option<IntervalRunner>>,
+    _reporting_job: Arc<Mutex<Option<IntervalRunner>>>,
 }
 
 impl Reporter {
@@ -50,7 +51,14 @@ impl Reporter {
         data_directory: PathBuf,
         is_enabled: bool,
     ) -> Self {
-        Self { deployment_id, diagnostics, reporting_uri, data_directory, is_enabled, _reporting_job: Arc::new(None) }
+        Self {
+            deployment_id,
+            diagnostics,
+            reporting_uri,
+            data_directory,
+            is_enabled,
+            _reporting_job: Arc::new(Mutex::new(None)),
+        }
     }
 
     pub fn may_start(&self) {
@@ -73,7 +81,7 @@ impl Reporter {
             REPORT_INTERVAL,
             self.calculate_initial_delay(),
         );
-        let _ = Arc::get_mut(&mut Arc::clone(&self._reporting_job)).map(|opt| *opt = Some(reporting_job));
+        *self._reporting_job.lock().expect("Expected reporting job exclusive lock acquision") = Some(reporting_job);
     }
 
     fn report_once_if_needed(&self) {
@@ -83,7 +91,7 @@ impl Reporter {
             let reporting_uri = self.reporting_uri;
             let data_directory = self.data_directory.clone();
             thread::spawn(move || {
-                thread::sleep(Duration::from_secs(3600)); // TODO: Make a constant
+                thread::sleep(REPORT_ONCE_DELAY);
                 if Self::report(diagnostics, reporting_uri) {
                     Self::save_disabled_reporting_file(&data_directory);
                 }
@@ -95,18 +103,15 @@ impl Reporter {
         let report_interval_secs = REPORT_INTERVAL.as_secs();
         assert!(report_interval_secs == 3600, "Modify the algorithm if you change the interval!");
 
-        let current_minute = Local::now().minute() as u64;
-
-        let mut deployment_id_hasher = DefaultHasher::new();
-        self.deployment_id.hash(&mut deployment_id_hasher);
-        let scheduled_minute = deployment_id_hasher.finish() % report_interval_secs / 60;
+        let current_minute = Utc::now().minute() as u64;
+        let scheduled_minute =
+            hash_string_consistently(&self.deployment_id) % (report_interval_secs / SECONDS_IN_MINUTE);
 
         let delay_secs = if current_minute > scheduled_minute {
-            report_interval_secs - (current_minute + scheduled_minute) * 60
+            report_interval_secs - (current_minute + scheduled_minute) * SECONDS_IN_MINUTE
         } else {
-            (scheduled_minute - current_minute) * 60
+            (scheduled_minute - current_minute) * SECONDS_IN_MINUTE
         };
-
         Duration::from_secs(delay_secs)
     }
 
@@ -140,7 +145,7 @@ impl Reporter {
 
     fn save_disabled_reporting_file(data_directory: &PathBuf) {
         let disabled_reporting_file = data_directory.join(DISABLED_REPORTING_FILE_NAME);
-        if let Err(e) = fs::write(&disabled_reporting_file, Local::now().to_string()) {
+        if let Err(e) = fs::write(&disabled_reporting_file, Utc::now().to_string()) {
             debug!("Failed to save disabled reporting file: {}", e);
         }
     }

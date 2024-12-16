@@ -4,8 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+pub mod common {
+    pub const SECONDS_IN_MINUTE: u64 = 60;
+    pub const MINUTES_IN_HOUR: u64 = 60;
+    pub const SECONDS_IN_HOUR: u64 = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
+}
+
 pub mod server {
     use std::time::Duration;
+
+    use crate::constants::common::SECONDS_IN_HOUR;
 
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 
@@ -22,9 +30,9 @@ pub mod server {
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
     // TODO: Move these fields to config
-    pub const MONITORING_PORT: u16 = 4104;
+    pub const MONITORING_PORT: u16 = 4105; // TODO: Return
     pub const MONITORING_ENABLED: bool = true;
-    pub const REPORTING_ENABLED: bool = false;
+    pub const REPORTING_ENABLED: bool = false; // TODO: Should be based on feature?
 
     pub const SERVER_ID_FILE_NAME: &str = "_server_id";
     pub const SERVER_ID_LENGTH: u64 = 16;
@@ -32,8 +40,8 @@ pub mod server {
 
     pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
     pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
-    pub const AUTHENTICATOR_CACHE_TTL: Duration = Duration::from_secs(3 * 60 * 60);
-    pub const AUTHENTICATOR_CACHE_TTI: Duration = Duration::from_secs(60 * 60);
+    pub const AUTHENTICATOR_CACHE_TTL: Duration = Duration::from_secs(3 * SECONDS_IN_HOUR);
+    pub const AUTHENTICATOR_CACHE_TTI: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
 
     pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
     pub const DEFAULT_USER_NAME: &str = "admin";
@@ -97,13 +105,16 @@ pub mod encoding {
 pub mod diagnostics {
     use std::time::Duration;
 
+    use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE};
+
     pub const UNKNOWN_STR: &'static str = "Unknown";
 
-    // pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(600);
-    // TODO: Return the value above
-    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(30);
+    pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10 * SECONDS_IN_MINUTE);
 
-    pub const REPORTING_URI: &str = "https://diagnostics.typedb.com/";
-    pub const REPORT_INTERVAL: Duration = Duration::from_secs(3600);
+    // pub const REPORTING_URI: &str = "https://diagnostics.typedb.com/";
+    // TODO: Return the value above
+    pub const REPORTING_URI: &str = "http://0.0.0.0:8080";
+    pub const REPORT_INTERVAL: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+    pub const REPORT_ONCE_DELAY: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
     pub const DISABLED_REPORTING_FILE_NAME: &str = "_reporting_disabled";
 }

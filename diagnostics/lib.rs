@@ -134,8 +134,8 @@ impl Diagnostics {
 
     pub fn to_reporting_json_against_snapshot(&self) -> JSONValue {
         match self.is_full_reporting {
-            true => self.to_minimal_reporting_json(),
-            false => self.to_full_reporting_json(),
+            true => self.to_full_reporting_json(),
+            false => self.to_minimal_reporting_json(),
         }
     }
 
@@ -261,18 +261,15 @@ impl Diagnostics {
         .join("\n")
     }
 
+    fn hash_database(database_name: impl AsRef<str> + Hash) -> DatabaseHash {
+        hash_string_consistently(database_name)
+    }
+
     fn hash_database_opt(database_name: Option<impl AsRef<str> + Hash>) -> DatabaseHashOpt {
         match database_name {
             None => None,
             Some(database_name) => Some(Self::hash_database(database_name)),
         }
-    }
-
-    fn hash_database(database_name: impl AsRef<str> + Hash) -> DatabaseHash {
-        // The hash has to be consistent over time and restarts, so the default hasher doesn't suit
-        let mut hasher = Xxh3::new();
-        hasher.update(database_name.as_ref().as_bytes());
-        hasher.digest()
     }
 
     fn update_owned_databases(&self, database_hash: DatabaseHash, is_primary_server: bool) {
@@ -299,4 +296,11 @@ impl Diagnostics {
     fn is_owned(&self, database_hash: &DatabaseHash) -> bool {
         self.owned_databases.lock().expect("Expected owned databases lock acquisition").contains(database_hash)
     }
+}
+
+// Used when the hash has to be consistent over time and restarts (default hasher does not suit)
+pub fn hash_string_consistently(value: impl AsRef<str> + Hash) -> u64 {
+    let mut hasher = Xxh3::new();
+    hasher.update(value.as_ref().as_bytes());
+    hasher.digest()
 }

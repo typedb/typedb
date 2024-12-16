@@ -4,14 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-    fmt, fs, io,
-    path::{Path, PathBuf},
-    sync::Arc,
-    time::Duration,
-};
+use std::{fs, io, path::PathBuf, sync::Arc};
 
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};

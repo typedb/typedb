@@ -71,7 +71,7 @@ impl ServerProperties {
     }
 
     fn format_datetime(&self, datetime: chrono::DateTime<Utc>) -> String {
-        datetime.format("%Y-%m-%dT%H:%M:%S%.9f").to_string()
+        datetime.format("%Y-%m-%dT%H:%M:%S%.3f").to_string()
     }
 }
 
@@ -358,8 +358,7 @@ pub(crate) struct ConnectionLoadMetrics {
 
 impl ConnectionLoadMetrics {
     pub fn new() -> Self {
-        // TODO: Initialise with all the counts inserted?
-        Self { counts: HashMap::new(), peak_counts: HashMap::new() }
+        Self { counts: LoadKind::all_empty_counts_map(), peak_counts: LoadKind::all_empty_counts_map() }
     }
 
     pub fn increment_count(&mut self, load_kind: LoadKind) {
@@ -421,33 +420,33 @@ impl ActionMetrics {
         self.actions.entry(action_kind).or_insert(ActionInfo::new()).submit_fail();
     }
 
-    fn get_successful_delta(&self, action_kind: ActionKind) -> i64 {
+    fn get_successful_delta(&self, action_kind: &ActionKind) -> i64 {
         get_delta(
-            self.actions.get(&action_kind).unwrap_or(&ActionInfo::default()).successful,
-            self.actions_snapshot.get(&action_kind).unwrap_or(&ActionInfo::default()).successful,
+            self.actions.get(action_kind).unwrap_or(&ActionInfo::default()).successful,
+            self.actions_snapshot.get(action_kind).unwrap_or(&ActionInfo::default()).successful,
         )
     }
 
-    fn get_failed_delta(&self, action_kind: ActionKind) -> i64 {
+    fn get_failed_delta(&self, action_kind: &ActionKind) -> i64 {
         get_delta(
-            self.actions.get(&action_kind).unwrap_or(&ActionInfo::default()).failed,
-            self.actions_snapshot.get(&action_kind).unwrap_or(&ActionInfo::default()).failed,
+            self.actions.get(action_kind).unwrap_or(&ActionInfo::default()).failed,
+            self.actions_snapshot.get(action_kind).unwrap_or(&ActionInfo::default()).failed,
         )
     }
 
     pub fn take_snapshot(&mut self) {
         for kind in self.actions.keys() {
             *self.actions_snapshot.entry(*kind).or_insert(ActionInfo::default()) =
-                self.actions.get(kind).unwrap().clone();
+                self.actions.get(kind).expect("Expected action by kind").clone();
         }
     }
 
     pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
         let mut actions = vec![];
 
-        for (kind, info) in &self.actions {
-            let successful = info.get_successful();
-            let failed = info.get_failed();
+        for kind in self.actions.keys() {
+            let successful = self.get_successful_delta(kind);
+            let failed = self.get_failed_delta(kind);
             if successful == 0 && failed == 0 {
                 continue;
             }
@@ -576,7 +575,7 @@ impl ErrorMetrics {
     pub fn take_snapshot(&mut self) {
         for code in self.errors.keys() {
             *self.errors_snapshot.entry(code.clone()).or_insert(ErrorInfo::default()) =
-                self.errors.get(code).unwrap().clone();
+                self.errors.get(code).expect("Expected error by code").clone();
         }
     }
 
@@ -661,6 +660,16 @@ pub enum LoadKind {
     SchemaTransactions,
     ReadTransactions,
     WriteTransactions,
+}
+
+// TODO: Would be great to have a static protection that every kind is covered here
+impl LoadKind {
+    const ALL_EMPTY_COUNTS: [(LoadKind, u64); 3] =
+        [(LoadKind::SchemaTransactions, 0u64), (LoadKind::WriteTransactions, 0u64), (LoadKind::ReadTransactions, 0u64)];
+
+    fn all_empty_counts_map() -> HashMap<LoadKind, u64> {
+        HashMap::from(Self::ALL_EMPTY_COUNTS)
+    }
 }
 
 impl fmt::Display for LoadKind {
