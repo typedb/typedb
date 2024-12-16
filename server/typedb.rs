@@ -43,14 +43,15 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn open(config: Config) -> Result<Self, ServerOpenError> {
+    // TODO: passing `deployment_id` as an arg to simply override it in Cloud. Consider refactoring
+    pub async fn open(config: Config, deployment_id: Option<String>) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
         println!("Storage directory: {:?}", storage_directory);
 
         let server_config = &config.server;
         let server_id = Self::initialise_server_id(storage_directory)?;
-        let deployment_id = server_id.clone(); // TODO: Should be generated based on peers from config in Cloud
+        let deployment_id = deployment_id.unwrap_or(server_id.clone());
 
         let mut diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),

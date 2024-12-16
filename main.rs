@@ -25,9 +25,10 @@ async fn main() {
     print_ascii_logo(); // very important
     initialise_logging_global();
 
+    let deployment_id = None;
     let config = get_configuration(cli_args);
 
-    let open_result = server::typedb::Server::open(config).await;
+    let open_result = server::typedb::Server::open(config, deployment_id).await;
 
     let result = open_result.unwrap().serve().await;
     match result {
