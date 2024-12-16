@@ -792,9 +792,9 @@ impl PartialCostPlan {
     }
 
     fn heuristic_plan_completion_cost(&self, current_query_size: f64) -> Cost {
-        let remaining_steps = self.remaining_patterns.len() as f64;
-        let interpolation_cost = (OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * 0.5 * (current_query_size + OLTP_OUTPUT_SIZE_ESTIMATE)) * remaining_steps;
-        Cost { cost: interpolation_cost, io_ratio: OLTP_OUTPUT_SIZE_ESTIMATE }
+        // let remaining_steps = self.remaining_patterns.len() as f64;
+        // let interpolation_cost = (OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * 0.5 * (current_query_size + OLTP_OUTPUT_SIZE_ESTIMATE)) * remaining_steps;
+        // Cost { cost: interpolation_cost, io_ratio: OLTP_OUTPUT_SIZE_ESTIMATE }
         Cost { cost: 1.0, io_ratio: OLTP_OUTPUT_SIZE_ESTIMATE }
         // Cost::NOOP
     }
