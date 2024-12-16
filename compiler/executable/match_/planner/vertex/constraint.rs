@@ -661,7 +661,7 @@ impl<'a> LinksPlanner<'a> {
             scan_size_canonical /= relation_size;
             if is_player_bound {
                 scan_size_canonical /= player_size;
-            }
+            } // Ignore nested selectivity for now
         } else {
             scan_size_canonical *= relation_selectivity;  // restrictions (like iid) apply if var still unbound
         }
@@ -681,7 +681,7 @@ impl<'a> LinksPlanner<'a> {
             scan_size_reverse /= player_size;
             if is_relation_bound {
                 scan_size_reverse /= relation_size;
-            }
+            } // Ignore nested selectivity for now
         } else {
             scan_size_reverse *= player_selectivity; // restrictions (like iid) apply if var still unbound
         }
@@ -763,16 +763,21 @@ impl<'a> IndexedRelationPlanner<'a> {
         let role_1 = indexed_relation.role_type_1();
         let role_2 = indexed_relation.role_type_2();
 
-        let _player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
-        let _relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+        let player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
         let player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
         let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
 
         // let constraint_types =
         //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();
 
+        // TODO: Correctly account for irrelevant relation types in the index
+        let unbound_typed_expected_size = player_1_types.iter()
             .cartesian_product(player_2_types.iter())
             .filter_map( |(p1_type, p2_type)| {
+                statistics
+                    .links_index_counts
+                    .get(&p1_type.as_object_type())?
+                    .get(&p2_type.as_object_type())
             })
             .sum::<u64>() as f64;
 
@@ -804,26 +809,28 @@ impl<'a> IndexedRelationPlanner<'a> {
     pub(crate) fn relation_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (bool, f64, f64) {
         let relation_id = VertexId::Variable(self.relation);
         let relation = &graph.elements()[&relation_id].as_variable().unwrap();
+        let is_relation_bound = inputs.contains(&relation_id);
+        let relation_size = relation.unrestricted_expected_output_size();
         let relation_selectivity = relation.restriction_based_selectivity(inputs);
         (is_relation_bound, relation_size, relation_selectivity)
     }
 
-    fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
-        // TODO
-        10.0
     pub(crate) fn player_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>, id: usize) -> (bool, f64, f64) {
         let player_id =  if id == 1 { VertexId::Variable(self.player_1) } else { VertexId::Variable(self.player_2) };
+        let player = &graph.elements()[&player_id].as_variable().unwrap();
+        let is_player_bound = inputs.contains(&player_id);
+        let player_size = player.unrestricted_expected_output_size();
+        let player_selectivity = player.restriction_based_selectivity(inputs);
+        (is_player_bound, player_size, player_selectivity)
     }
 
-    fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
-        // TODO
-        10.0
     pub(crate) fn canonical_scan_size_estimate(&self,
                                                is_relation_bound: bool,
                                                is_player1_bound: bool,
                                                player1_size: f64,
                                                player1_selectivity: f64,
                                                is_player2_bound: bool,
+                                               player2_size: f64,
     ) -> f64 {
         let mut scan_size_canonical = self.unbound_typed_expected_size;
         if is_player1_bound {

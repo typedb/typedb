@@ -115,8 +115,8 @@ impl QueryManager {
                 )
                 .map_err(|err| QueryError::Annotation { typedb_source: err })?;
 
-                // apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline)
-                //     .map_err(|err| QueryError::Transformation { typedb_source: err })?;
+                apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline)
+                    .map_err(|err| QueryError::Transformation { typedb_source: err })?;
 
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
                 // 3: Compile
