@@ -14,7 +14,7 @@ rust_library(
     ]),
     compile_data = [
         "typedb-ascii.txt",
-        "VERSION", # TODO: Should use //:VERSION instead, not this copy
+        "//:VERSION",
     ],
     deps = [],
 )
