@@ -742,8 +742,6 @@ pub(crate) struct IndexedRelationPlanner<'a> {
     pub role_1: VariableVertexId,
     pub role_2: VariableVertexId,
     unbound_typed_expected_size: f64,
-    unbound_typed_expected_size_canonical: f64,
-    unbound_typed_expected_size_reverse: f64,
 }
 
 impl fmt::Debug for IndexedRelationPlanner<'_> {
@@ -765,16 +763,18 @@ impl<'a> IndexedRelationPlanner<'a> {
         let role_1 = indexed_relation.role_type_1();
         let role_2 = indexed_relation.role_type_2();
 
-        let _player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
         let _player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
         let _relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+        let player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
+        let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
 
         // let constraint_types =
         //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();
 
-        let unbound_typed_expected_size = 10.0;
-        let unbound_typed_expected_size_canonical = 10.0;
-        let unbound_typed_expected_size_reverse = 10.0;
+            .cartesian_product(player_2_types.iter())
+            .filter_map( |(p1_type, p2_type)| {
+            })
+            .sum::<u64>() as f64;
 
         let player_1 = player_1.as_variable().unwrap();
         let player_2 = player_2.as_variable().unwrap();
@@ -790,8 +790,6 @@ impl<'a> IndexedRelationPlanner<'a> {
             role_1: variable_index[&role_1],
             role_2: variable_index[&role_2],
             unbound_typed_expected_size,
-            unbound_typed_expected_size_canonical,
-            unbound_typed_expected_size_reverse,
         }
     }
 
@@ -803,36 +801,115 @@ impl<'a> IndexedRelationPlanner<'a> {
         self.indexed_relation
     }
 
-    /// We can choose either direction here since it's fully symmetric?
-    pub(crate) fn unbound_direction(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> Direction {
-        Direction::Canonical
+    pub(crate) fn relation_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (bool, f64, f64) {
+        let relation_id = VertexId::Variable(self.relation);
+        let relation = &graph.elements()[&relation_id].as_variable().unwrap();
+        let relation_selectivity = relation.restriction_based_selectivity(inputs);
+        (is_relation_bound, relation_size, relation_selectivity)
     }
 
     fn unbound_expected_scan_size(&self, graph: &Graph<'_>) -> f64 {
         // TODO
         10.0
+    pub(crate) fn player_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>, id: usize) -> (bool, f64, f64) {
+        let player_id =  if id == 1 { VertexId::Variable(self.player_1) } else { VertexId::Variable(self.player_2) };
     }
 
     fn unbound_expected_scan_size_canonical(&self, graph: &Graph<'_>) -> f64 {
         // TODO
         10.0
+    pub(crate) fn canonical_scan_size_estimate(&self,
+                                               is_relation_bound: bool,
+                                               is_player1_bound: bool,
+                                               player1_size: f64,
+                                               player1_selectivity: f64,
+                                               is_player2_bound: bool,
+    ) -> f64 {
+        let mut scan_size_canonical = self.unbound_typed_expected_size;
+        if is_player1_bound {
+            scan_size_canonical /= player1_size;
+            if is_player2_bound {
+                scan_size_canonical /= player2_size;
+                if is_relation_bound {
+                    scan_size_canonical = 1.0;
+                }
+            } // Ignore nested selectivities for now
+        } else {
+            scan_size_canonical *= player1_selectivity;  // restrictions (like iid) apply if var still unbound
+        }
+        scan_size_canonical.max(MIN_SCAN_SIZE)
     }
 
-    fn unbound_expected_scan_size_reverse(&self, graph: &Graph<'_>) -> f64 {
-        // fully symmetric?
-        self.unbound_expected_scan_size(graph)
+    pub(crate) fn reverse_scan_size_estimate(&self,
+                                             is_relation_bound: bool,
+                                             is_player1_bound: bool,
+                                             player1_size: f64,
+                                             is_player2_bound: bool,
+                                             player2_size: f64,
+                                             player2_selectivity: f64
+    ) -> f64 {
+        let mut scan_size_reverse = self.unbound_typed_expected_size;
+        if is_player2_bound {
+            scan_size_reverse /= player2_size;
+            if is_player1_bound {
+                scan_size_reverse /= player1_size;
+                if is_relation_bound {
+                    scan_size_reverse = 1.0;
+                }
+            } // Ignore nested selectivities for now
+        } else {
+            scan_size_reverse *= player2_selectivity; // restrictions (like iid) apply if var still unbound
+        }
+        scan_size_reverse.max(MIN_SCAN_SIZE)
     }
 
-    fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
-        // TODO
-        10.0
+    pub(crate) fn output_size_estimate(&self,
+                                       is_relation_bound: bool,
+                                       is_player1_bound: bool,
+                                       player1_size: f64,
+                                       player1_selectivity: f64,
+                                       is_player2_bound: bool,
+                                       player2_size: f64,
+                                       player2_selectivity: f64
+    ) -> f64 {
+        let mut output_size = self.unbound_typed_expected_size;
+        if is_player1_bound {
+            output_size /= player1_size;
+        } else {
+            output_size *= player1_selectivity;
+        }
+        if is_player2_bound {
+            output_size /= player2_size;
+        } else {
+            output_size *= player2_selectivity;
+        }
+        if is_relation_bound {
+            output_size = 1.0;
+        } // Ignore relation selectivity for now
+        output_size
     }
 }
 
 impl Costed for IndexedRelationPlanner<'_> {
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        // TODO: using a random cost
-        (Cost { cost: 10.0, io_ratio: 2.0 }, CostMetaData::None)
+    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        let (is_relation_bound, relation_size, relation_selectivity) = self.relation_estimates(inputs, graph);
+        let (is_player1_bound, player1_size, player1_selectivity) = self.player_estimates(inputs, graph, 1);
+        let (is_player2_bound, player2_size, player2_selectivity) = self.player_estimates(inputs, graph, 2);
+
+        let scan_size_canonical = self.canonical_scan_size_estimate(is_relation_bound, is_player1_bound, player1_size, player1_selectivity, is_player2_bound, player2_size);
+        let scan_size_reverse= self.reverse_scan_size_estimate(is_relation_bound, is_player1_bound, player1_size,is_player2_bound, player2_size, player2_selectivity);
+        let mut io_ratio = self.output_size_estimate(is_relation_bound, is_player1_bound, player1_size, player1_selectivity, is_player2_bound, player2_size, player2_selectivity);
+        let cost: f64;
+        let direction: Direction;
+
+        if scan_size_canonical <= scan_size_reverse {
+            cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
+            direction = Direction::Canonical;
+        } else {
+            cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
+            direction = Direction::Reverse;
+        }
+        (Cost { cost, io_ratio }, CostMetaData::Direction(direction))
     }
 }
 
