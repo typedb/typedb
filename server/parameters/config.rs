@@ -79,6 +79,13 @@ pub(crate) struct ServerConfig {
     pub(crate) is_reporting_enabled: bool,
 }
 
+impl ServerConfig {
+    #[cfg(feature = "published")]
+    pub const IS_DEVELOPMENT_MODE: bool = false;
+    #[cfg(not(feature = "published"))]
+    pub const IS_DEVELOPMENT_MODE: bool = true;
+}
+
 #[derive(Debug)]
 pub struct EncryptionConfig {
     pub enabled: bool,

@@ -28,7 +28,7 @@ use reqwest::{
 };
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
-    diagnostics::{DATABASE_METRICS_UPDATE_INTERVAL, DISABLED_REPORTING_FILE_NAME, REPORT_INTERVAL, REPORT_ONCE_DELAY},
+    diagnostics::{DISABLED_REPORTING_FILE_NAME, REPORT_INTERVAL, REPORT_ONCE_DELAY},
 };
 
 use crate::{hash_string_consistently, Diagnostics};
@@ -81,7 +81,7 @@ impl Reporter {
             REPORT_INTERVAL,
             self.calculate_initial_delay(),
         );
-        *self._reporting_job.lock().expect("Expected reporting job exclusive lock acquision") = Some(reporting_job);
+        *self._reporting_job.lock().expect("Expected reporting job exclusive lock acquisition") = Some(reporting_job);
     }
 
     fn report_once_if_needed(&self) {

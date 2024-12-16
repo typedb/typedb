@@ -16,7 +16,6 @@ rust_library(
         "typedb-ascii.txt",
         "//:VERSION",
     ],
-    deps = [],
 )
 
 filegroup(

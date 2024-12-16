@@ -111,7 +111,7 @@ commands:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt -- release
+          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt --//server:mode=published -- release
 
   deploy-docker-for-arch:
     parameters:

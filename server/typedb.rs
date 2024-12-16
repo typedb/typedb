@@ -12,7 +12,6 @@ use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use rand::Rng;
 use resource::constants::{
-    diagnostics::DATABASE_METRICS_UPDATE_INTERVAL,
     server::{
         DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
         VERSION,
@@ -20,6 +19,7 @@ use resource::constants::{
 };
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
+use resource::constants::server::DATABASE_METRICS_UPDATE_INTERVAL;
 use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{
@@ -104,11 +104,7 @@ impl Server {
             self.diagnostics_manager.clone(),
         );
 
-        print!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}"));
-        // if development_mode { // TODO: Add
-        //     print!(" in development mode");
-        // }
-        println!(".\nReady!");
+        Self::print_hello();
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
@@ -141,7 +137,12 @@ impl Server {
             config.is_reporting_enabled,
         );
 
-        DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled)
+        DiagnosticsManager::new(
+            diagnostics,
+            config.monitoring_port,
+            config.is_monitoring_enabled,
+            ServerConfig::IS_DEVELOPMENT_MODE,
+        )
     }
 
     fn create_tonic_server(encryption_config: &EncryptionConfig) -> tonic::transport::Server {
@@ -203,6 +204,14 @@ impl Server {
                 SERVER_ID_ALPHABET.chars().nth(idx).unwrap()
             })
             .collect()
+    }
+
+    fn print_hello() {
+        print!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}"));
+        if ServerConfig::IS_DEVELOPMENT_MODE {
+            print!(" in development mode");
+        }
+        println!(".\nReady!");
     }
 }
 

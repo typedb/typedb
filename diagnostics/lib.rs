@@ -142,7 +142,7 @@ impl Diagnostics {
     fn to_full_reporting_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_reporting_json();
 
-        diagnostics["server"] = self.server_metrics.to_full_reporting_json();
+        diagnostics["server"] = self.server_metrics.to_json();
 
         let load = self
             .lock_load_metrics()
@@ -181,7 +181,7 @@ impl Diagnostics {
     pub fn to_monitoring_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_monitoring_json();
 
-        diagnostics["server"] = self.server_metrics.to_monitoring_json();
+        diagnostics["server"] = self.server_metrics.to_json();
 
         let load = self
             .lock_load_metrics()

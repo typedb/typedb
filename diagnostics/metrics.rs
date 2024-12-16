@@ -97,32 +97,13 @@ impl ServerMetrics {
         &self.data_directory
     }
 
-    pub fn to_full_reporting_json(&self) -> JSONValue {
-        let memory_info = self.get_memory_info();
-        let disk_info = self.get_disk_info();
-
-        json!({
-            "version": self.version,
-            "uptimeInSeconds": self.get_uptime_in_seconds(),
-            "os": {
-                "name": self.os_name,
-                "arch": self.os_arch,
-                "version": self.os_version
-            },
-            "memoryUsedInBytes": memory_info.total - memory_info.available,
-            "memoryAvailableInBytes": memory_info.available,
-            "diskUsedInBytes": disk_info.total - disk_info.available,
-            "diskAvailableInBytes": disk_info.available,
-        })
-    }
-
     pub fn to_reporting_minimal_json(&self) -> JSONValue {
         json!({
             "version": self.version
         })
     }
 
-    pub fn to_monitoring_json(&self) -> JSONValue {
+    pub fn to_json(&self) -> JSONValue {
         let memory_info = self.get_memory_info();
         let disk_info = self.get_disk_info();
 
@@ -210,7 +191,6 @@ pub(crate) struct LoadMetrics {
 impl LoadMetrics {
     pub fn new() -> Self {
         Self {
-            // TODO: Maybe optionals?
             schema: SchemaLoadMetrics { type_count: 0 },
             data: DataLoadMetrics {
                 entity_count: 0,
@@ -709,7 +689,6 @@ pub enum ActionKind {
 
 impl fmt::Display for ActionKind {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: I guess we want to support all the possible 2.x names?
         match self {
             ActionKind::ConnectionOpen => write!(f, "CONNECTION_OPEN"),
             ActionKind::ServersAll => write!(f, "SERVERS_ALL"),

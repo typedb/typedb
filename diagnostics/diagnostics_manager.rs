@@ -33,19 +33,28 @@ macro_rules! diagnostics_method {
 #[derive(Debug)]
 pub struct DiagnosticsManager {
     diagnostics: Arc<Diagnostics>,
-    reporter: Reporter,
+    reporter: Option<Reporter>,
     monitoring_server: Option<MonitoringServer>,
 }
 
 impl DiagnosticsManager {
-    pub fn new(diagnostics: Diagnostics, monitoring_port: u16, is_monitoring_enabled: bool) -> Self {
+    pub fn new(
+        diagnostics: Diagnostics,
+        monitoring_port: u16,
+        is_monitoring_enabled: bool,
+        is_development_mode: bool,
+    ) -> Self {
         let deployment_id = diagnostics.server_properties.deployment_id().clone().to_owned();
         let data_directory = diagnostics.server_metrics.data_directory().clone();
         let is_reporting_enabled = diagnostics.server_properties.is_reporting_enabled();
         let diagnostics = Arc::new(diagnostics);
 
-        let reporter =
-            Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, is_reporting_enabled);
+        let reporter = if is_development_mode {
+            None
+        } else {
+            Some(Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, is_reporting_enabled))
+        };
+
         let monitoring_server = if is_monitoring_enabled {
             Some(MonitoringServer::new(diagnostics.clone(), monitoring_port))
         } else {
@@ -65,7 +74,9 @@ impl DiagnosticsManager {
     }
 
     pub fn may_start_reporting(&self) {
-        self.reporter.may_start()
+        if let Some(reporter) = &self.reporter {
+            reporter.may_start();
+        }
     }
 
     pub async fn may_start_monitoring(&self) {
@@ -118,25 +129,25 @@ fn submit_result_metrics<T>(
     match result {
         Ok(_) => diagnostics_manager.submit_action_success(database_name, action_kind),
         Err(status) => {
-            let error_code = get_status_error_code(status);
             diagnostics_manager.submit_action_fail(database_name.as_ref(), action_kind);
-            diagnostics_manager.submit_error(database_name, error_code.clone());
+            if let Some(error_code) = get_status_error_code(status) {
+                diagnostics_manager.submit_error(database_name, error_code.clone());
+            }
         }
     }
 }
 
-fn get_status_error_code(status: &Status) -> String {
+fn get_status_error_code(status: &Status) -> Option<String> {
     if let Ok(details) = status.check_error_details() {
         if let Some(error_info) = details.error_info() {
-            return error_info.reason.clone();
+            return Some(error_info.reason.clone());
         }
     }
-    status.code().to_string()
+    None // status.code() can return too long string descriptions from external libraries
 }
 
 fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
-    // TODO: Would be good to reuse DatabaseManager's is_user_database() instead,
-    // maybe move it somewhere?
+    // TODO: Would be good to reuse DatabaseManager's is_user_database() instead
     match database_name {
         Some(database_name) => !database_name.as_ref().starts_with(INTERNAL_DATABASE_PREFIX),
         None => true,
