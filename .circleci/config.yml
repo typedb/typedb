@@ -285,7 +285,7 @@ workflows:
       - test-deploy-snapshot-linux-x86_64:
           filters:
             branches:
-              only: [ "3.0-diagnostics" ]
+              only: [ "3.0" ]
 
       - test-deploy-snapshot-linux-arm64:
           filters:

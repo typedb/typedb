@@ -11,7 +11,7 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
-    deps = [ # TODO: Revisit and clean up
+    deps = [
         "//common/error",
         "//common/concurrency",
         "//common/logger",

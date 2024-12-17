@@ -9,7 +9,6 @@ config:
     typeql: [build, release]
     typedb-protocol: [build, release]
     typedb-behaviour: [build]
-TODO Unbreak me
 
 build:
   quality:
