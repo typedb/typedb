@@ -308,7 +308,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             .map_err(|typedb_source| StatisticsError { typedb_source })?;
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
         thing_statistics
-            .durably_write(&self.database.storage)
+            .durably_write(self.database.storage.durability())
             .map_err(|typedb_source| StatisticsError { typedb_source })?;
 
         let sequence_number = snapshot.commit().map_err(|typedb_source| SnapshotError { typedb_source })?;

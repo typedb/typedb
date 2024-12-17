@@ -135,7 +135,7 @@ impl Statistics {
                     }
                     CommitType::Schema => {
                         self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
-                        self.durably_write(storage)?;
+                        self.durably_write(storage.durability())?;
 
                         data_commits.clear();
 
@@ -157,15 +157,15 @@ impl Statistics {
         if change_since_last_durable_write.abs() / self.last_durable_write_total_count as f64
             > STATISTICS_DURABLE_WRITE_CHANGE_PERCENT
         {
-            self.durably_write(storage)?;
+            self.durably_write(storage.durability())?;
         }
 
         Ok(())
     }
 
-    pub fn durably_write(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
+    pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), StatisticsError> {
         use StatisticsError::DurablyWrite;
-        storage.durability().unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
+        durability.unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
         self.last_durable_write_total_count = self.total_count;
         Ok(())
     }
