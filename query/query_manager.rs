@@ -221,8 +221,8 @@ impl QueryManager {
                 };
 
                 match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
-                    Ok(_) => {},
-                    Err(err) => return Err((snapshot, Box::new(QueryError::Transformation { typedb_source: err })))
+                    Ok(_) => {}
+                    Err(err) => return Err((snapshot, Box::new(QueryError::Transformation { typedb_source: err }))),
                 };
 
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;

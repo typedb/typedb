@@ -7,11 +7,10 @@
 use std::{
     any::type_name_of_val,
     cmp::Ordering,
-    collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
+    collections::{BinaryHeap, HashMap, HashSet},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
-    time::Instant,
 };
 
 use answer::variable::Variable;
