@@ -10,7 +10,7 @@ use std::{
 };
 
 use bytes::Bytes;
-use durability::DurabilityRecordType;
+use durability::{DurabilityRecordType, DurabilitySequenceNumber};
 use encoding::graph::{
     thing::{
         edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
@@ -83,6 +83,7 @@ pub struct Statistics {
 
 impl Statistics {
     const ENCODING_VERSION: StatisticsEncodingVersion = 0;
+    const COMMIT_CONTEXT_SIZE: u64 = 8;
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
@@ -119,10 +120,13 @@ impl Statistics {
             return Ok(());
         }
 
+        // make it a little more likely that we capture concurrent commits
+        let load_start =
+            DurabilitySequenceNumber::new(self.sequence_number.number().saturating_sub(Self::COMMIT_CONTEXT_SIZE));
+
         let mut data_commits = BTreeMap::new();
-        for (seq, status) in load_commit_data_from(self.sequence_number.next(), storage.durability())
+        for (seq, status) in load_commit_data_from(load_start, storage.durability())
             .map_err(|err| ReloadCommitData { typedb_source: err })?
-            .into_iter()
         {
             if let RecoveryCommitStatus::Validated(record) = status {
                 match record.commit_type() {
@@ -176,7 +180,7 @@ impl Statistics {
         storage: &MVCCStorage<D>,
     ) -> Result<(), MVCCReadError> {
         let mut total_delta = 0;
-        for (sequence_number, writes) in commits {
+        for (sequence_number, writes) in commits.range(self.sequence_number.next()..) {
             total_delta += self.update_write(*sequence_number, writes, commits, storage)?;
         }
         if let Some((&last_sequence_number, _)) = commits.last_key_value() {
