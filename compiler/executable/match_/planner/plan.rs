@@ -560,18 +560,18 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
-        let non_restriction_patterns: HashSet<_> = self.graph.pattern_to_variable
+        let search_patterns: HashSet<_> = self.graph.pattern_to_variable
             .keys()
             // .filter(|&&p| { !matches![self.graph.elements[&VertexId::Pattern(p)], PlannerVertex::Comparison(_)] })
             .copied().collect(); // Comparisons are maximally pushed down anyway so no need to sort them
-        let num_patterns = non_restriction_patterns.len();
+        let mut num_patterns = search_patterns.len();
 
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
         let mut extension_width = (num_patterns / 2) + 2; // ensure this is larger than (num_patterns / 2) or change narrowing logic
         let reduction_cycle = 2;
 
         let mut best_partial_plans = Vec::with_capacity(beam_width);
-        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), non_restriction_patterns, self.input_variables()));
+        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), search_patterns.clone(), self.input_variables()));
 
         for i in 0..num_patterns {
             let mut new_plans_heap  = BinaryHeap::with_capacity(beam_width);
@@ -579,7 +579,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             if i % reduction_cycle == 0 && beam_width > MIN_BEAM_WIDTH { extension_width -= 1; beam_width -= 1; } // Narrow the beam until it greedy at the tail (for large queries)
             for plan in best_partial_plans.drain(..) {
                 let mut extension_heap = BinaryHeap::with_capacity(extension_width);
+                let mut min_cost_extension : Option<StepExtension> = None;
                 for extension in plan.extensions_iter(&self.graph) {
+                    match min_cost_extension {
+                        None => min_cost_extension = Some(extension.clone()),
+                        Some(other_extension) if extension < other_extension => min_cost_extension = Some(extension.clone()),
+                        _ => { }
+                    }
+
                     if extension_heap.len() < extension_width {
                         extension_heap.push(extension);
                     } else if let Some(top) = extension_heap.peek() {
@@ -590,30 +597,50 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     }
                 }
 
-                for extension in extension_heap.drain() {
-                    let new_plan = if !extension.is_constraint(&self.graph) {
-                        plan.clone_and_extend_with_new_step(extension, &self.graph)
-                    } else if extension.step_join_var.is_some()
-                        && (plan.ongoing_step_join_var.is_none()
-                            || plan.ongoing_step_join_var == extension.step_join_var)
-                    {
-                        plan.clone_and_extend_with_continued_step(extension, &self.graph)
-                    } else {
-                        plan.clone_and_extend_with_new_step(extension, &self.graph)
-                    };
-
-                    let new_plan_hash = new_plan.hash();
-                    if !new_plans_hashset.contains(&new_plan_hash) {
-                        new_plans_hashset.insert(new_plan_hash);
-                        if new_plans_heap.len() < beam_width {
-                            new_plans_heap.push(new_plan);
-                        } else if let Some(top) = new_plans_heap.peek() {
-                            if new_plan < *top {
-                                new_plans_heap.pop();
+                if let Some(min_ext_inner) = min_cost_extension {
+                    if min_ext_inner.step_cost.is_trivial() {
+                        let new_plan = plan.clone_and_extend_with_new_step(min_ext_inner, &self.graph);
+                        let new_plan_hash = new_plan.hash();
+                        if !new_plans_hashset.contains(&new_plan_hash) {
+                            new_plans_hashset.insert(new_plan_hash);
+                            if new_plans_heap.len() < beam_width {
                                 new_plans_heap.push(new_plan);
+                            } else if let Some(top) = new_plans_heap.peek() {
+                                if new_plan < *top {
+                                    new_plans_heap.pop();
+                                    new_plans_heap.push(new_plan);
+                                }
+                            }
+                        }
+                    } else {
+                        for extension in extension_heap.drain() {
+                            let new_plan = if !extension.is_constraint(&self.graph) {
+                                plan.clone_and_extend_with_new_step(extension, &self.graph)
+                            } else if extension.step_join_var.is_some()
+                                && (plan.ongoing_step_join_var.is_none()
+                                || plan.ongoing_step_join_var == extension.step_join_var)
+                            {
+                                plan.clone_and_extend_with_continued_step(extension, &self.graph)
+                            } else {
+                                plan.clone_and_extend_with_new_step(extension, &self.graph)
+                            };
+
+                            let new_plan_hash = new_plan.hash();
+                            if !new_plans_hashset.contains(&new_plan_hash) {
+                                new_plans_hashset.insert(new_plan_hash);
+                                if new_plans_heap.len() < beam_width {
+                                    new_plans_heap.push(new_plan);
+                                } else if let Some(top) = new_plans_heap.peek() {
+                                    if new_plan < *top {
+                                        new_plans_heap.pop();
+                                        new_plans_heap.push(new_plan);
+                                    }
+                                }
                             }
                         }
                     }
+                } else {
+                    unreachable!("Pattern extensions can never be empty, so a minimum should exist")
                 }
             }
             best_partial_plans = new_plans_heap.into_vec();
@@ -621,13 +648,18 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan(&self.graph);
+        // DEBUG
+        // println!("Inputed graph:\n {:#?}", self.graph);
+        // println!("Complete plan:\n {:#?}", complete_plan);
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         // Beam plan
+        let duration = Instant::now();
         let (ordering, metadata) = self.beam_search_plan();
+        println!("Planning took {:?}", duration.elapsed());
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
@@ -635,7 +667,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .iter()
             .enumerate()
             .map(|(i, idx)| self.graph.elements[idx].cost_and_metadata(&ordering[..i], &self.graph))
-            .fold(Cost::MEM_SIMPLE_BRANCH_1, |acc, (cost, _)| acc.chain(cost));
+            .fold(Cost::MEM_SIMPLE_OUTPUT_1, |acc, (cost, _)| acc.chain(cost));
 
         let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
 
@@ -735,6 +767,7 @@ impl PartialCostPlan {
                 let projected_cost = cost_including_extension
                     .chain(self.heuristic_plan_completion_cost(extension, graph));
 
+                // DEBUG
                 // println!("                Possible choice {:?} = {} join {:?} cost {:?} projected {:?}", extension, graph.elements[&VertexId::Pattern(extension)], join_var, added_cost, projected_cost);
 
                 StepExtension {
@@ -756,14 +789,14 @@ impl PartialCostPlan {
                     constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
                 {
                     if self.ongoing_step_join_var.is_none()
-                        && constraint.can_sort_on(candidate_join_var)
+                        && constraint.can_join_on(candidate_join_var)
                         && graph.elements[&VertexId::Pattern(*prev_constraint)]
                             .as_constraint()
-                            .map_or(false, |c| c.can_sort_on(candidate_join_var))
+                            .map_or(false, |c| c.can_join_on(candidate_join_var))
                     {
                         updated_join_var = Some(candidate_join_var);
                     } else if self.ongoing_step_join_var == Some(candidate_join_var)
-                        && constraint.can_sort_on(candidate_join_var)
+                        && constraint.can_join_on(candidate_join_var)
                     {
                         updated_join_var = self.ongoing_step_join_var;
                     }
@@ -941,7 +974,7 @@ impl PartialCostPlan {
             all_vars: self.remaining_patterns.clone(),
             ongoing_vars: self.ongoing_step.clone(),
             approx_io: (self.cumulative_cost.io_ratio * self.ongoing_step_cost.io_ratio) as u64, // TODO: improve rounding/hashing (make relative)
-            approx_cost: (self.cumulative_cost.cost * self.ongoing_step_cost.cost) as u64, // TODO: improve rounding/hashing (make relative)
+            approx_cost: self.cumulative_cost.chain(self.ongoing_step_cost).cost as u64, // TODO: improve rounding/hashing (make relative)
         }
     }
 }
@@ -1014,7 +1047,10 @@ impl PartialOrd for StepExtension {
 
 impl Ord for StepExtension {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.projected_cost.cost.partial_cmp(&other.projected_cost.cost).unwrap_or(Ordering::Greater)
+        self.projected_cost.cost
+            .partial_cmp(&other.projected_cost.cost)
+            .unwrap_or(Ordering::Greater)
+            .then_with(|| self.pattern_id.cmp(&other.pattern_id))
     }
 }
 

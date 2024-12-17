@@ -71,10 +71,11 @@ impl ConstraintVertex<'_> {
         }
     }
 
-    pub(crate) fn can_sort_on(&self, var: VariableVertexId) -> bool {
+    pub(crate) fn can_join_on(&self, var: VariableVertexId) -> bool {
         match self {
             Self::Links(inner) => inner.relation == var || inner.player == var,
-            _ => self.variables().contains(&var),
+            Self::Has(inner) => true,
+            _ => false
         }
     }
 }

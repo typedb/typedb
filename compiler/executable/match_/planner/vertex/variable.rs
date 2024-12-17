@@ -273,7 +273,7 @@ impl ThingPlanner {
 
     fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // decrease selectivity whenever we have any matching restrictions
-        let bias: f64 = 2.0;
+        let bias: f64 = 1.0; // TODO: why???
         let selectivity = if self
             .restriction_exact
             .iter()

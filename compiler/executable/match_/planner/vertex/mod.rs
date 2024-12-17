@@ -70,6 +70,20 @@ impl PlannerVertex<'_> {
         }
     }
 
+    pub(super) fn is_in_mem(&self) -> bool {
+        match self {
+            Self::Variable(_) => true,
+            Self::Constraint(ConstraintVertex::TypeList(_)) => true,
+            Self::Constraint(_) => false,
+            Self::Is(inner) => true,
+            Self::Comparison(inner) => true,
+            Self::Expression(inner) => true,
+            Self::FunctionCall(inner) => false,
+            Self::Negation(inner) => false,
+            Self::Disjunction(inner) => false,
+        }
+    }
+
     pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
@@ -137,8 +151,10 @@ impl Cost {
     pub const NOOP: Self = Self { cost: 0.0, io_ratio: 1.0 };
     pub const EMPTY: Self = Self { cost: 0.0, io_ratio: 0.0 };
     pub const INFINITY: Self = Self { cost: f64::INFINITY, io_ratio: 0.0 };
-    pub const MEM_SIMPLE_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
-    pub const MEM_COMPLEX_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
+    pub const MEM_SIMPLE_OUTPUT_1: Self = Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
+    pub const MEM_COMPLEX_OUTPUT_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
+    pub const TRIVIAL_COST_THRESHOLD: f64 = 0.05;
+    pub const TRIVIAL_IO_THRESHOLD: f64 = 1.0;
 
     fn in_mem_complex_with_ratio(io_ratio: f64) -> Self {
         Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio }
@@ -157,13 +173,17 @@ impl Cost {
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
         Self {
-            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix cartesian product situation in Rocks
-            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
+            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix missing cartesian product compression when retrieving from Rocks
+            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probability of join = 1 / total_join_size
         }
     }
 
     pub(crate) fn combine_parallel(self, other: Self) -> Self {
         Self { cost: self.cost + other.cost, io_ratio: self.io_ratio + other.io_ratio }
+    }
+
+    pub(crate) fn is_trivial(&self) -> bool {
+        self.cost < Self::TRIVIAL_COST_THRESHOLD && self.io_ratio <= Self::TRIVIAL_IO_THRESHOLD
     }
 }
 
@@ -240,7 +260,7 @@ impl<'a> ExpressionPlanner<'a> {
         inputs: Vec<VariableVertexId>,
         output: VariableVertexId,
     ) -> Self {
-        let cost = Cost::MEM_COMPLEX_BRANCH_1;
+        let cost = Cost::MEM_COMPLEX_OUTPUT_1;
         Self { inputs, output, cost, expression }
     }
 
@@ -322,7 +342,7 @@ impl<'a> IsPlanner<'a> {
 
 impl Costed for IsPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
+        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
 
@@ -372,7 +392,7 @@ impl<'a> ComparisonPlanner<'a> {
 
 impl Costed for ComparisonPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
+        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
 
