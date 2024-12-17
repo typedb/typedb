@@ -660,9 +660,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         // Beam plan
-        let duration = Instant::now();
         let (ordering, metadata) = self.beam_search_plan();
-        println!("Planning took {:?}", duration.elapsed());
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
