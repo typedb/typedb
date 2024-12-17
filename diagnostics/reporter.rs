@@ -23,8 +23,9 @@ use chrono::{DateTime, Timelike, Utc};
 use concurrency::{IntervalRunner, TokioIntervalRunner};
 use hyper::{
     header::{HeaderValue, CONNECTION, CONTENT_TYPE},
-    Body, Client, Request, Uri,
+    Body, Client, Method, Request,
 };
+use hyper_rustls::HttpsConnectorBuilder;
 use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
@@ -123,9 +124,14 @@ impl Reporter {
         let diagnostics_json = diagnostics.to_reporting_json_against_snapshot().to_string();
         diagnostics.take_snapshot();
 
-        let client = Client::new();
-        let uri: Uri = reporting_uri.parse().expect("Expected a valid diagnostics URI");
-        let request = Request::post(uri)
+        let https = HttpsConnectorBuilder::new()
+            .with_native_roots()
+            .expect("No native root CA certificates found")
+            .https_only()
+            .enable_http1()
+            .build();
+        let client = Client::builder().build::<_, Body>(https);
+        let request = hyper::Request::post(reporting_uri)
             .header(CONTENT_TYPE, "application/json")
             .header(CONNECTION, "close")
             .body(Body::from(diagnostics_json))

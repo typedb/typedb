@@ -6,7 +6,6 @@
 
 use std::{collections::HashSet, future::Future, hash::Hash, sync::Arc};
 
-use error::TypeDBError;
 use resource::constants::{database::INTERNAL_DATABASE_PREFIX, diagnostics::REPORTING_URI};
 use tonic::Status;
 use tonic_types::StatusExt;

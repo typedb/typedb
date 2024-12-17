@@ -74,6 +74,11 @@ features = {}
 		version = "0.14.32"
 		default-features = false
 
+	[dependencies.hyper-rustls]
+		features = ["aws-lc-rs", "default", "http1", "log", "logging", "native-tokio", "rustls-native-certs", "tls12"]
+		version = "0.27.3"
+		default-features = false
+
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.133"
