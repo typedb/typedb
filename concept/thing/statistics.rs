@@ -408,23 +408,25 @@ fn write_to_delta<D>(
                 Ok(-1)
             }
         }
-        &Write::Put { known_to_exist, .. } => {
+        Write::Put { reinsert, .. } => {
             // PUT operation which we may have a concurrent commit and may or may not be inserted in the end
             // The easiest way to check whether it was ultimately committed or not is to open the storage at
             // CommitSequenceNumber - 1, and check if it exists. If it exists, we don't count. If it does, we do.
             // However, this induces a read for every PUT, even though 99% of time there is no concurrent put.
 
-            // So, we only read from storage, if :
-            // 1. we can't tell from the current set of commits whether a predecessor could
-            //    have written the same key (open < commits start)
-            // 2. any commit in the set of commits modifies the same key at all
+            // We only read from storage, if we can't tell from the current set of commits whether a predecessor
+            // could have written the same key (open < commits start)
 
-            let check_storage = open_sequence_number < *commits.first_key_value().unwrap().0
-                || (commits.range(concurrent_commit_range).any(|(_, writes)| {
-                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes()).is_some()
-                }));
+            let first_commit_sequence_number = *commits.first_key_value().unwrap().0;
 
-            if check_storage {
+            if let Some(write) = commits.range(concurrent_commit_range).rev().find_map(|(_, writes)| {
+                writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes())
+            }) {
+                match write {
+                    Write::Insert { .. } | Write::Put { .. } => Ok(0),
+                    Write::Delete => Ok(1),
+                }
+            } else if open_sequence_number.next() < first_commit_sequence_number {
                 if storage.get::<0>(&IteratorPool::new(), write_key, commit_sequence_number.previous())?.is_some() {
                     // exists in storage before PUT is committed
                     Ok(0)
@@ -434,10 +436,10 @@ fn write_to_delta<D>(
                 }
             } else {
                 // no concurrent commit could have occurred - fall back to the flag
-                if known_to_exist {
-                    Ok(0)
-                } else {
+                if reinsert.load(std::sync::atomic::Ordering::Relaxed) {
                     Ok(1)
+                } else {
+                    Ok(0)
                 }
             }
         }
