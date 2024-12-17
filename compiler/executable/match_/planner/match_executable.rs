@@ -17,17 +17,18 @@ use ir::{
 
 use crate::{
     annotation::expression::compiled_expression::ExecutableExpression,
-    executable::match_::instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
+    executable::match_::instructions::{
+        CheckInstruction, ConstraintInstruction, VarMappedVariableModes, VariableModes,
+    },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::instructions::VarMappedVariableModes;
 
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
     executable_id: u64,
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
-    variable_reverse_map: HashMap<ExecutorVariable, Variable>
+    variable_reverse_map: HashMap<ExecutorVariable, Variable>,
 }
 
 impl MatchExecutable {
@@ -193,11 +194,11 @@ impl IntersectionStep {
         self.output_width
     }
 
-    pub fn make_var_mapped<'a>(&'a self, map: &'a HashMap<ExecutorVariable, Variable>) -> VarMappedIntersectionStep<'a> {
-        VarMappedIntersectionStep {
-            step: &self,
-            map: map,
-        }
+    pub fn make_var_mapped<'a>(
+        &'a self,
+        map: &'a HashMap<ExecutorVariable, Variable>,
+    ) -> VarMappedIntersectionStep<'a> {
+        VarMappedIntersectionStep { step: &self, map: map }
     }
 }
 
@@ -217,7 +218,7 @@ impl fmt::Display for IntersectionStep {
 
 pub struct VarMappedIntersectionStep<'a> {
     step: &'a IntersectionStep,
-    map: &'a HashMap<ExecutorVariable, Variable>
+    map: &'a HashMap<ExecutorVariable, Variable>,
 }
 
 impl fmt::Display for VarMappedIntersectionStep<'_> {
@@ -367,10 +368,7 @@ impl CheckStep {
     }
 
     pub fn make_var_mapped<'a>(&'a self, map: &'a HashMap<ExecutorVariable, Variable>) -> VarMappedCheckStep<'a> {
-        VarMappedCheckStep {
-            check_instructions: &self.check_instructions,
-            map: map
-        }
+        VarMappedCheckStep { check_instructions: &self.check_instructions, map: map }
     }
 }
 
@@ -386,7 +384,7 @@ impl fmt::Display for CheckStep {
 
 pub struct VarMappedCheckStep<'a> {
     pub check_instructions: &'a Vec<CheckInstruction<ExecutorVariable>>,
-    pub map: &'a HashMap<ExecutorVariable, Variable>
+    pub map: &'a HashMap<ExecutorVariable, Variable>,
 }
 
 impl fmt::Display for VarMappedCheckStep<'_> {

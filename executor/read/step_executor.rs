@@ -3,24 +3,26 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
-use std::fmt;
-use std::sync::Arc;
+use std::{collections::HashMap, fmt, sync::Arc};
 
-use compiler::{executable::{
-    function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
-    match_::planner::{
-        function_plan::ExecutableFunctionRegistry,
-        match_executable::{ExecutionStep, MatchExecutable},
+use answer::variable::Variable;
+use compiler::{
+    executable::{
+        function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
+        match_::planner::{
+            function_plan::ExecutableFunctionRegistry,
+            match_executable::{ExecutionStep, MatchExecutable},
+        },
+        next_executable_id,
+        pipeline::ExecutableStage,
     },
-    next_executable_id,
-    pipeline::ExecutableStage,
-}, ExecutorVariable, VariablePosition};
+    ExecutorVariable, VariablePosition,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
-use answer::variable::Variable;
+
 use crate::{
     profile::QueryProfile,
     read::{

@@ -9,10 +9,11 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
+    hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
+    time::Instant,
 };
-use std::hash::{DefaultHasher, Hash, Hasher};
-use std::time::Instant;
+
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
@@ -52,7 +53,8 @@ use crate::{
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
+                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex, ADVANCE_ITERATOR_RELATIVE_COST,
+                OPEN_ITERATOR_RELATIVE_COST,
             },
             DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
             NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -60,8 +62,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::vertex::ADVANCE_ITERATOR_RELATIVE_COST;
-use crate::executable::match_::planner::vertex::OPEN_ITERATOR_RELATIVE_COST;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -560,10 +560,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
-        let search_patterns: HashSet<_> = self.graph.pattern_to_variable
-            .keys()
-            // .filter(|&&p| { !matches![self.graph.elements[&VertexId::Pattern(p)], PlannerVertex::Comparison(_)] })
-            .copied().collect(); // Comparisons are maximally pushed down anyway so no need to sort them
+        let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect(); // Comparisons are maximally pushed down anyway so no need to sort them
         let mut num_patterns = search_patterns.len();
 
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
@@ -571,20 +568,29 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let reduction_cycle = 2;
 
         let mut best_partial_plans = Vec::with_capacity(beam_width);
-        best_partial_plans.push(PartialCostPlan::new(self.graph.elements.len(), search_patterns.clone(), self.input_variables()));
+        best_partial_plans.push(PartialCostPlan::new(
+            self.graph.elements.len(),
+            search_patterns.clone(),
+            self.input_variables(),
+        ));
 
         for i in 0..num_patterns {
-            let mut new_plans_heap  = BinaryHeap::with_capacity(beam_width);
+            let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset: HashSet<PartialCostHash> = HashSet::with_capacity(beam_width);
-            if i % reduction_cycle == 0 && beam_width > MIN_BEAM_WIDTH { extension_width -= 1; beam_width -= 1; } // Narrow the beam until it greedy at the tail (for large queries)
+            if i % reduction_cycle == 0 && beam_width > MIN_BEAM_WIDTH {
+                extension_width -= 1;
+                beam_width -= 1;
+            } // Narrow the beam until it greedy at the tail (for large queries)
             for plan in best_partial_plans.drain(..) {
                 let mut extension_heap = BinaryHeap::with_capacity(extension_width);
-                let mut min_cost_extension : Option<StepExtension> = None;
+                let mut min_cost_extension: Option<StepExtension> = None;
                 for extension in plan.extensions_iter(&self.graph) {
                     match min_cost_extension {
                         None => min_cost_extension = Some(extension.clone()),
-                        Some(other_extension) if extension < other_extension => min_cost_extension = Some(extension.clone()),
-                        _ => { }
+                        Some(other_extension) if extension < other_extension => {
+                            min_cost_extension = Some(extension.clone())
+                        }
+                        _ => {}
                     }
 
                     if extension_heap.len() < extension_width {
@@ -618,7 +624,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                                 plan.clone_and_extend_with_new_step(extension, &self.graph)
                             } else if extension.step_join_var.is_some()
                                 && (plan.ongoing_step_join_var.is_none()
-                                || plan.ongoing_step_join_var == extension.step_join_var)
+                                    || plan.ongoing_step_join_var == extension.step_join_var)
                             {
                                 plan.clone_and_extend_with_continued_step(extension, &self.graph)
                             } else {
@@ -648,9 +654,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan(&self.graph);
-        // DEBUG
-        // println!("Inputed graph:\n {:#?}", self.graph);
-        // println!("Complete plan:\n {:#?}", complete_plan);
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
@@ -761,14 +764,10 @@ impl PartialCostPlan {
                     cost_before_extension = cost_before_extension.chain(self.ongoing_step_cost);
                 }
 
-                let cost_including_extension = cost_before_extension
-                    .chain(added_cost);
+                let cost_including_extension = cost_before_extension.chain(added_cost);
 
-                let projected_cost = cost_including_extension
-                    .chain(self.heuristic_plan_completion_cost(extension, graph));
-
-                // DEBUG
-                // println!("                Possible choice {:?} = {} join {:?} cost {:?} projected {:?}", extension, graph.elements[&VertexId::Pattern(extension)], join_var, added_cost, projected_cost);
+                let projected_cost =
+                    cost_including_extension.chain(self.heuristic_plan_completion_cost(extension, graph));
 
                 StepExtension {
                     pattern_id: extension,
@@ -820,7 +819,7 @@ impl PartialCostPlan {
                     let total_join_size = graph.elements[&VertexId::Variable(join_var)]
                         .as_variable()
                         .unwrap()
-                        .expected_output_size(&self.vertex_ordering);
+                        .restricted_expected_output_size(&self.vertex_ordering);
                     let (constraint_cost, meta_data) = constraint.cost_and_metadata(input_vars, graph);
                     (self.ongoing_step_cost.join(constraint_cost, total_join_size), meta_data)
                 } else {
@@ -839,9 +838,14 @@ impl PartialCostPlan {
         } else {
             let num_produced_vars = self.all_produced_vars.len()
                 + self.ongoing_step_produced_vars.len()
-                + graph.elements[&VertexId::Pattern(pattern)].variables()
-                    .filter(|v| !self.ongoing_step_produced_vars.contains(v) && !self.all_produced_vars.contains(v)).collect::<Vec<_>>().len();
-            let cost_estimate = AVERAGE_STEP_COST * (num_remaining as f64) * (1.0 - VARIABLE_PRODUCTION_ADVANTAGE).powi(num_produced_vars as i32);
+                + graph.elements[&VertexId::Pattern(pattern)]
+                    .variables()
+                    .filter(|v| !self.ongoing_step_produced_vars.contains(v) && !self.all_produced_vars.contains(v))
+                    .collect::<Vec<_>>()
+                    .len();
+            let cost_estimate = AVERAGE_STEP_COST
+                * (num_remaining as f64)
+                * (1.0 - VARIABLE_PRODUCTION_ADVANTAGE).powi(num_produced_vars as i32);
             Cost { cost: cost_estimate, io_ratio: AVERAGE_QUERY_OUTPUT_SIZE }
         }
     }
@@ -858,7 +862,8 @@ impl PartialCostPlan {
 
         let mut new_ongoing_produced_vars = self.ongoing_step_produced_vars.clone();
         new_ongoing_produced_vars.extend(
-            graph.elements[&VertexId::Pattern(extension.pattern_id)].variables()
+            graph.elements[&VertexId::Pattern(extension.pattern_id)]
+                .variables()
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -913,7 +918,8 @@ impl PartialCostPlan {
 
         let mut new_ongoing_produced_vars = HashSet::new();
         new_ongoing_produced_vars.extend(
-            graph.elements[&VertexId::Pattern(extension.pattern_id)].variables()
+            graph.elements[&VertexId::Pattern(extension.pattern_id)]
+                .variables()
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -936,13 +942,6 @@ impl PartialCostPlan {
 
     fn into_complete_plan(self, graph: &Graph<'_>) -> CompleteCostPlan {
         let mut final_vertex_ordering = self.vertex_ordering.clone();
-        // // This adds all comparisons at the end of the plan (since we don't cost them directly, but use selectivities of vars)
-        // for comparison in graph.pattern_to_variable
-        //     .keys()
-        //     .filter(|&&p| { matches![graph.elements[&VertexId::Pattern(p)], PlannerVertex::Comparison(_)] })
-        //     .copied() {
-        //     final_vertex_ordering.push(VertexId::Pattern(comparison));
-        // }
         for &pattern in self.ongoing_step.iter() {
             final_vertex_ordering.push(VertexId::Pattern(pattern));
             debug_assert!(!self.vertex_ordering.contains(&VertexId::Pattern(pattern)));
@@ -1047,7 +1046,8 @@ impl PartialOrd for StepExtension {
 
 impl Ord for StepExtension {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.projected_cost.cost
+        self.projected_cost
+            .cost
             .partial_cmp(&other.projected_cost.cost)
             .unwrap_or(Ordering::Greater)
             .then_with(|| self.pattern_id.cmp(&other.pattern_id))

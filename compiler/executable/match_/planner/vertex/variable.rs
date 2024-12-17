@@ -32,7 +32,7 @@ impl VariableVertex {
     const SELECTIVITY_MIN: f64 = 0.000001;
     pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0; // TODO: investigate
 
-    pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {
+    pub(crate) fn restricted_expected_output_size(&self, inputs: &[VertexId]) -> f64 {
         let unrestricted_size = match self {
             Self::Input(_) => 1.0,
             Self::Type(inner) => inner.unrestricted_expected_size,

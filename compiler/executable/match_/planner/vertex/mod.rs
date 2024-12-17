@@ -4,8 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::{HashMap, HashSet}, fmt, iter};
-use std::fmt::Formatter;
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    fmt::Formatter,
+    iter,
+};
+
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
@@ -132,14 +137,30 @@ pub(crate) struct Cost {
 impl<'a> fmt::Display for PlannerVertex<'a> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
-            PlannerVertex::Variable(v) => { write!(f, "|Var {}|", v.variable())}
-            PlannerVertex::Constraint(v) => { write!(f, "{}", v) }
-            PlannerVertex::Is(_) => { write!(f, "|Is|") } //TODO
-            PlannerVertex::Comparison(v) => { write!(f, "|{:?} {:?} {:?}|", v.lhs, v.comparison, v.rhs) }
-            PlannerVertex::Expression(v) => { write!(f, "|Expr of {:?}|", v.expression.variables) }
-            PlannerVertex::FunctionCall(_) => { write!(f, "|Fun Call|") } //TODO
-            PlannerVertex::Negation(_) => { write!(f, "|Negation|") } //TODO
-            PlannerVertex::Disjunction(_) => { write!(f, "|Disjunction|") } //TODO
+            PlannerVertex::Variable(v) => {
+                write!(f, "|Var {}|", v.variable())
+            }
+            PlannerVertex::Constraint(v) => {
+                write!(f, "{}", v)
+            }
+            PlannerVertex::Is(_) => {
+                write!(f, "|Is|")
+            } //TODO
+            PlannerVertex::Comparison(v) => {
+                write!(f, "|{:?} {:?} {:?}|", v.lhs, v.comparison, v.rhs)
+            }
+            PlannerVertex::Expression(v) => {
+                write!(f, "|Expr of {:?}|", v.expression.variables)
+            }
+            PlannerVertex::FunctionCall(_) => {
+                write!(f, "|Fun Call|")
+            } //TODO
+            PlannerVertex::Negation(_) => {
+                write!(f, "|Negation|")
+            } //TODO
+            PlannerVertex::Disjunction(_) => {
+                write!(f, "|Disjunction|")
+            } //TODO
         }
     }
 }
