@@ -14,7 +14,7 @@ use logger::initialise_logging_global;
 use resource::constants::server::ASCII_LOGO;
 use server::parameters::{
     cli::CLIArgs,
-    config::{Config, EncryptionConfig},
+    config::{Config, DiagnosticsConfig, EncryptionConfig},
 };
 
 #[tokio::main]
@@ -38,14 +38,19 @@ async fn main() {
 }
 
 fn get_configuration(cli_args: CLIArgs) -> Config {
-    let encryption_config = EncryptionConfig::new(
-        cli_args.server_encryption_enabled,
-        cli_args.server_encryption_cert.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
-        cli_args.server_encryption_cert_key.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
-        cli_args.server_encryption_root_ca.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
-    );
+    let encryption_config = EncryptionConfig {
+        enabled: cli_args.server_encryption_enabled,
+        cert: cli_args.server_encryption_cert.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
+        cert_key: cli_args.server_encryption_cert_key.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
+        root_ca: cli_args.server_encryption_root_ca.map(|path| PathBuf::from_str(path.as_str()).unwrap()),
+    };
+    let diagnostics_config = DiagnosticsConfig {
+        is_monitoring_enabled: cli_args.diagnostics_monitoring_enable,
+        monitoring_port: cli_args.diagnostics_monitoring_port,
+        is_service_reporting_enabled: cli_args.diagnostics_reporting_metrics,
+    };
     let data_dir = cli_args.storage_data.map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
-    Config::customised(Some(encryption_config), data_dir)
+    Config::customised(Some(encryption_config), Some(diagnostics_config), data_dir, cli_args.development_mode_enabled)
 }
 
 fn print_ascii_logo() {

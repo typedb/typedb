@@ -4,7 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use clap::Parser;
+use clap::{ArgAction, Parser};
+use resource::constants::server::MONITORING_DEFAULT_PORT;
 
 /// TypeDB Core usage
 #[derive(Parser, Debug)]
@@ -29,4 +30,22 @@ pub struct CLIArgs {
     /// Path to the data directory
     #[arg(long = "storage.data", value_name = "DIR")]
     pub storage_data: Option<String>,
+
+    /// Enable usage metrics reporting
+    #[arg(long = "diagnostics.reporting.metrics", default_value_t = true, action=ArgAction::Set)]
+    pub diagnostics_reporting_metrics: bool, // used to be `statistics` in 2.x
+
+    /// Enable a diagnostics monitoring HTTP endpoint
+    #[arg(long = "diagnostics.monitoring.enable", default_value_t = true, action=ArgAction::Set)]
+    pub diagnostics_monitoring_enable: bool,
+
+    /// Port on which to expose the diagnostics monitoring endpoint
+    #[arg(long = "diagnostics.monitoring.port", default_value_t = MONITORING_DEFAULT_PORT)]
+    pub diagnostics_monitoring_port: u16,
+
+    /// Enable development mode for testing setups. Note that running TypeDB in development mode
+    /// may result in error reporting limitations (obstructing maintenance and support), additional
+    /// logging, restricted functionalities, and reduced performance
+    #[arg(long = "development-mode.enabled", hide = true)]
+    pub development_mode_enabled: bool,
 }

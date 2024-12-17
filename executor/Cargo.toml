@@ -148,6 +148,10 @@ features = {}
 	name = "test_select"
 
 [[test]]
+	path = "tests/execute_relation_index.rs"
+	name = "test_execute_relation_index"
+
+[[test]]
 	path = "tests/writes.rs"
 	name = "test_writes"
 

@@ -29,10 +29,7 @@ pub mod server {
 
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
-    // TODO: Move these fields to config
-    pub const MONITORING_PORT: u16 = 4104;
-    pub const MONITORING_ENABLED: bool = true;
-    pub const REPORTING_ENABLED: bool = true;
+    pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 
     pub const SERVER_ID_FILE_NAME: &str = "_server_id";
     pub const SERVER_ID_LENGTH: u64 = 16;
@@ -107,7 +104,7 @@ pub mod encoding {
 pub mod diagnostics {
     use std::time::Duration;
 
-    use crate::constants::common::{SECONDS_IN_HOUR};
+    use crate::constants::common::SECONDS_IN_HOUR;
 
     pub const UNKNOWN_STR: &'static str = "Unknown";
 

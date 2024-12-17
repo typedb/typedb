@@ -11,21 +11,18 @@ use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use rand::Rng;
-use resource::constants::{
-    server::{
-        DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH,
-        VERSION,
-    },
+use resource::constants::server::{
+    DATABASE_METRICS_UPDATE_INTERVAL, DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET,
+    SERVER_ID_FILE_NAME, SERVER_ID_LENGTH, VERSION,
 };
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
-use resource::constants::server::DATABASE_METRICS_UPDATE_INTERVAL;
 use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{
     authenticator::Authenticator,
     authenticator_cache::AuthenticatorCache,
-    parameters::config::{Config, EncryptionConfig, ServerConfig},
+    parameters::config::{Config, DiagnosticsConfig, EncryptionConfig, ServerConfig},
     service::typedb_service::TypeDBService,
 };
 
@@ -56,8 +53,9 @@ impl Server {
         let mut diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
-            server_config,
+            &server_config.diagnostics,
             storage_directory.clone(),
+            server_config.is_development_mode,
         ));
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
@@ -105,7 +103,7 @@ impl Server {
             self.diagnostics_manager.clone(),
         );
 
-        Self::print_hello();
+        Self::print_hello(self.config.server.is_development_mode);
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
@@ -126,8 +124,9 @@ impl Server {
     fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
-        config: &ServerConfig,
+        config: &DiagnosticsConfig,
         storage_directory: PathBuf,
+        is_development_mode: bool,
     ) -> DiagnosticsManager {
         let diagnostics = Diagnostics::new(
             deployment_id,
@@ -135,15 +134,10 @@ impl Server {
             DISTRIBUTION_NAME.clone().to_owned(),
             VERSION.clone().to_owned(),
             storage_directory,
-            config.is_reporting_enabled,
+            config.is_service_reporting_enabled,
         );
 
-        DiagnosticsManager::new(
-            diagnostics,
-            config.monitoring_port,
-            config.is_monitoring_enabled,
-            ServerConfig::IS_DEVELOPMENT_MODE,
-        )
+        DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode)
     }
 
     fn create_tonic_server(encryption_config: &EncryptionConfig) -> tonic::transport::Server {
@@ -207,9 +201,9 @@ impl Server {
             .collect()
     }
 
-    fn print_hello() {
+    fn print_hello(is_development_mode_enabled: bool) {
         print!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}"));
-        if ServerConfig::IS_DEVELOPMENT_MODE {
+        if is_development_mode_enabled {
             print!(" in development mode");
         }
         println!(".\nReady!");
