@@ -19,11 +19,6 @@ features = {}
 		version = "1.42.0"
 		default-features = false
 
-	[dependencies.reqwest]
-		features = ["__tls", "blocking", "default", "default-tls", "hyper-tls", "json", "native-tls-crate", "serde_json", "tokio-native-tls"]
-		version = "0.11.27"
-		default-features = false
-
 	[dependencies.resource]
 		path = "../resource"
 		features = []
@@ -76,7 +71,7 @@ features = {}
 
 	[dependencies.hyper]
 		features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
-		version = "0.14.31"
+		version = "0.14.32"
 		default-features = false
 
 	[dependencies.serde_json]

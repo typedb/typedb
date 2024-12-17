@@ -27,14 +27,14 @@ impl IntervalRunner {
         interval: Duration,
         initial_delay: Duration,
     ) -> Self {
-        let (sender, receiver) = sync_channel::<SyncSender<()>>(0);
+        let (shutdown_sender, shutdown_receiver) = sync_channel::<SyncSender<()>>(1);
         thread::spawn(move || {
+            if !initial_delay.is_zero() {
+                thread::sleep(initial_delay);
+            }
             loop {
-                if !initial_delay.is_zero() {
-                    thread::sleep(initial_delay);
-                }
                 action();
-                match receiver.recv_timeout(interval) {
+                match shutdown_receiver.recv_timeout(interval) {
                     Ok(done_sender) => {
                         drop(action);
                         done_sender.send(()).unwrap();
@@ -45,13 +45,13 @@ impl IntervalRunner {
                 }
             }
         });
-        Self { shutdown_sink: sender }
+        Self { shutdown_sink: shutdown_sender }
     }
 }
 
 impl Drop for IntervalRunner {
     fn drop(&mut self) {
-        let (done_sender, done_receiver) = sync_channel(0);
+        let (done_sender, done_receiver) = sync_channel(1);
         self.shutdown_sink.send(done_sender).unwrap();
         done_receiver.recv().unwrap()
     }

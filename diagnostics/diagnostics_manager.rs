@@ -73,9 +73,9 @@ impl DiagnosticsManager {
         pub fn decrement_load_count(&self, database_name: &str, connection_: LoadKind);
     }
 
-    pub fn may_start_reporting(&self) {
+    pub async fn may_start_reporting(&self) {
         if let Some(reporter) = &self.reporter {
-            reporter.may_start();
+            reporter.may_start().await;
         }
     }
 

@@ -20,12 +20,12 @@ use std::{
 };
 
 use chrono::{DateTime, Timelike, Utc};
-use concurrency::IntervalRunner;
-use logger::{debug, trace};
-use reqwest::{
-    blocking::{Client, Response},
+use concurrency::{IntervalRunner, TokioIntervalRunner};
+use hyper::{
     header::{HeaderValue, CONNECTION, CONTENT_TYPE},
+    Body, Client, Request, Uri,
 };
+use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
     diagnostics::{DISABLED_REPORTING_FILE_NAME, REPORT_INTERVAL, REPORT_ONCE_DELAY},
@@ -40,7 +40,7 @@ pub struct Reporter {
     reporting_uri: &'static str,
     data_directory: PathBuf,
     is_enabled: bool,
-    _reporting_job: Arc<Mutex<Option<IntervalRunner>>>,
+    _reporting_job: Arc<Mutex<Option<TokioIntervalRunner>>>,
 }
 
 impl Reporter {
@@ -61,22 +61,25 @@ impl Reporter {
         }
     }
 
-    pub fn may_start(&self) {
+    pub async fn may_start(&self) {
         if self.is_enabled {
             Self::delete_disabled_reporting_file_if_exists(&self.data_directory);
-            self.schedule_reporting();
+            self.schedule_reporting().await;
         } else {
             self.report_once_if_needed();
         }
     }
 
-    fn schedule_reporting(&self) {
+    async fn schedule_reporting(&self) {
         let diagnostics = self.diagnostics.clone();
         let reporting_uri = self.reporting_uri;
 
-        let reporting_job = IntervalRunner::new_with_initial_delay(
+        let reporting_job = TokioIntervalRunner::new_with_initial_delay(
             move || {
-                Self::report(diagnostics.clone(), reporting_uri);
+                let diagnostics = diagnostics.clone();
+                async move {
+                    Self::report(diagnostics, reporting_uri).await;
+                }
             },
             REPORT_INTERVAL,
             self.calculate_initial_delay(),
@@ -90,9 +93,10 @@ impl Reporter {
             let diagnostics = self.diagnostics.clone();
             let reporting_uri = self.reporting_uri;
             let data_directory = self.data_directory.clone();
-            thread::spawn(move || {
-                thread::sleep(REPORT_ONCE_DELAY);
-                if Self::report(diagnostics, reporting_uri) {
+
+            tokio::spawn(async move {
+                tokio::time::sleep(REPORT_ONCE_DELAY).await;
+                if Self::report(diagnostics, reporting_uri).await {
                     Self::save_disabled_reporting_file(&data_directory);
                 }
             });
@@ -115,19 +119,19 @@ impl Reporter {
         Duration::from_secs(delay_secs)
     }
 
-    fn report(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
+    async fn report(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
         let diagnostics_json = diagnostics.to_reporting_json_against_snapshot().to_string();
         diagnostics.take_snapshot();
 
         let client = Client::new();
-        let result = client
-            .post(reporting_uri)
+        let uri: Uri = reporting_uri.parse().expect("Expected a valid diagnostics URI");
+        let request = Request::post(uri)
             .header(CONTENT_TYPE, "application/json")
             .header(CONNECTION, "close")
-            .body(diagnostics_json)
-            .send();
+            .body(Body::from(diagnostics_json))
+            .expect("Failed to construct the request");
 
-        match result {
+        match client.request(request).await {
             Ok(response) => {
                 if response.status().is_success() {
                     true

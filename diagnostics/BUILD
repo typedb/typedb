@@ -20,7 +20,6 @@ rust_library(
         "@crates//:chrono",
         "@crates//:futures",
         "@crates//:hyper",
-        "@crates//:reqwest",
         "@crates//:serde_json",
         "@crates//:sysinfo",
         "@crates//:tokio",

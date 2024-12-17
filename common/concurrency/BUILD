@@ -13,6 +13,9 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
+    deps = [
+        "@crates//:tokio",
+    ],
 )
 
 checkstyle_test(

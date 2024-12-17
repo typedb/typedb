@@ -22,7 +22,7 @@ use user::{initialise_default_user, user_manager::UserManager};
 use crate::{
     authenticator::Authenticator,
     authenticator_cache::AuthenticatorCache,
-    parameters::config::{Config, DiagnosticsConfig, EncryptionConfig, ServerConfig},
+    parameters::config::{Config, DiagnosticsConfig, EncryptionConfig},
     service::typedb_service::TypeDBService,
 };
 
@@ -73,7 +73,7 @@ impl Server {
         );
 
         diagnostics_manager.may_start_monitoring().await;
-        diagnostics_manager.may_start_reporting();
+        diagnostics_manager.may_start_reporting().await;
 
         Ok(Self {
             id: server_id,
