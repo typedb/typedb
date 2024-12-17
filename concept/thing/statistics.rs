@@ -10,7 +10,7 @@ use std::{
 };
 
 use bytes::Bytes;
-use durability::DurabilityRecordType;
+use durability::{DurabilityRecordType, DurabilitySequenceNumber};
 use encoding::graph::{
     thing::{
         edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
@@ -83,6 +83,7 @@ pub struct Statistics {
 
 impl Statistics {
     const ENCODING_VERSION: StatisticsEncodingVersion = 0;
+    const COMMIT_CONTEXT_SIZE: u64 = 8;
 
     pub fn new(sequence_number: SequenceNumber) -> Self {
         Statistics {
@@ -119,10 +120,14 @@ impl Statistics {
             return Ok(());
         }
 
+        // make it a little more likely that we capture concurrent commits
+        let load_start = DurabilitySequenceNumber::new(
+            self.sequence_number.number().saturating_sub(Self::COMMIT_CONTEXT_SIZE).max(1),
+        );
+
         let mut data_commits = BTreeMap::new();
-        for (seq, status) in load_commit_data_from(self.sequence_number.next(), storage.durability())
+        for (seq, status) in load_commit_data_from(load_start, storage.durability())
             .map_err(|err| ReloadCommitData { typedb_source: err })?
-            .into_iter()
         {
             if let RecoveryCommitStatus::Validated(record) = status {
                 match record.commit_type() {
@@ -135,7 +140,7 @@ impl Statistics {
                     }
                     CommitType::Schema => {
                         self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
-                        self.durably_write(storage)?;
+                        self.durably_write(storage.durability())?;
 
                         data_commits.clear();
 
@@ -157,15 +162,15 @@ impl Statistics {
         if change_since_last_durable_write.abs() / self.last_durable_write_total_count as f64
             > STATISTICS_DURABLE_WRITE_CHANGE_PERCENT
         {
-            self.durably_write(storage)?;
+            self.durably_write(storage.durability())?;
         }
 
         Ok(())
     }
 
-    pub fn durably_write(&mut self, storage: &MVCCStorage<impl DurabilityClient>) -> Result<(), StatisticsError> {
+    pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), StatisticsError> {
         use StatisticsError::DurablyWrite;
-        storage.durability().unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
+        durability.unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
         self.last_durable_write_total_count = self.total_count;
         Ok(())
     }
@@ -176,7 +181,7 @@ impl Statistics {
         storage: &MVCCStorage<D>,
     ) -> Result<(), MVCCReadError> {
         let mut total_delta = 0;
-        for (sequence_number, writes) in commits {
+        for (sequence_number, writes) in commits.range(self.sequence_number.next()..) {
             total_delta += self.update_write(*sequence_number, writes, commits, storage)?;
         }
         if let Some((&last_sequence_number, _)) = commits.last_key_value() {
@@ -408,23 +413,25 @@ fn write_to_delta<D>(
                 Ok(-1)
             }
         }
-        &Write::Put { known_to_exist, .. } => {
+        Write::Put { reinsert, .. } => {
             // PUT operation which we may have a concurrent commit and may or may not be inserted in the end
             // The easiest way to check whether it was ultimately committed or not is to open the storage at
             // CommitSequenceNumber - 1, and check if it exists. If it exists, we don't count. If it does, we do.
             // However, this induces a read for every PUT, even though 99% of time there is no concurrent put.
 
-            // So, we only read from storage, if :
-            // 1. we can't tell from the current set of commits whether a predecessor could
-            //    have written the same key (open < commits start)
-            // 2. any commit in the set of commits modifies the same key at all
+            // We only read from storage, if we can't tell from the current set of commits whether a predecessor
+            // could have written the same key (open < commits start)
 
-            let check_storage = open_sequence_number < *commits.first_key_value().unwrap().0
-                || (commits.range(concurrent_commit_range).any(|(_, writes)| {
-                    writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes()).is_some()
-                }));
+            let first_commit_sequence_number = *commits.first_key_value().unwrap().0;
 
-            if check_storage {
+            if let Some(write) = commits.range(concurrent_commit_range).rev().find_map(|(_, writes)| {
+                writes.operations.writes_in(write_key.keyspace_id()).get_write(write_key.bytes())
+            }) {
+                match write {
+                    Write::Insert { .. } | Write::Put { .. } => Ok(0),
+                    Write::Delete => Ok(1),
+                }
+            } else if open_sequence_number.next() < first_commit_sequence_number {
                 if storage.get::<0>(&IteratorPool::new(), write_key, commit_sequence_number.previous())?.is_some() {
                     // exists in storage before PUT is committed
                     Ok(0)
@@ -434,10 +441,10 @@ fn write_to_delta<D>(
                 }
             } else {
                 // no concurrent commit could have occurred - fall back to the flag
-                if known_to_exist {
-                    Ok(0)
-                } else {
+                if reinsert.load(std::sync::atomic::Ordering::Relaxed) {
                     Ok(1)
+                } else {
+                    Ok(0)
                 }
             }
         }
