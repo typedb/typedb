@@ -121,8 +121,9 @@ impl Statistics {
         }
 
         // make it a little more likely that we capture concurrent commits
-        let load_start =
-            DurabilitySequenceNumber::new(self.sequence_number.number().saturating_sub(Self::COMMIT_CONTEXT_SIZE));
+        let load_start = DurabilitySequenceNumber::new(
+            self.sequence_number.number().saturating_sub(Self::COMMIT_CONTEXT_SIZE).max(1),
+        );
 
         let mut data_commits = BTreeMap::new();
         for (seq, status) in load_commit_data_from(load_start, storage.durability())
