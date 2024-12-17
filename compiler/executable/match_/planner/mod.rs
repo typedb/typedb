@@ -62,8 +62,8 @@ pub fn compile(
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
     .finish(variable_registry);
 
-    println!("Variable names:\n {:#?}", variable_registry.variable_names());
-    println!("Variable positions:\n {:#?}", plan.variable_positions());
+    // println!("Variable names:\n {:#?}", variable_registry.variable_names());
+    // println!("Variable positions:\n {:#?}", plan.variable_positions());
 
     plan
 }

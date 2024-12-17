@@ -735,7 +735,7 @@ impl PartialCostPlan {
                 let projected_cost = cost_including_extension
                     .chain(self.heuristic_plan_completion_cost(extension, graph));
 
-                println!("                Possible choice {:?} = {} join {:?} cost {:?} projected {:?}", extension, graph.elements[&VertexId::Pattern(extension)], join_var, added_cost, projected_cost);
+                // println!("                Possible choice {:?} = {} join {:?} cost {:?} projected {:?}", extension, graph.elements[&VertexId::Pattern(extension)], join_var, added_cost, projected_cost);
 
                 StepExtension {
                     pattern_id: extension,
