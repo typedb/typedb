@@ -559,7 +559,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
-        let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect(); // Comparisons are maximally pushed down anyway so no need to sort them
+        let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
         let mut num_patterns = search_patterns.len();
 
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
@@ -652,7 +652,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
-        let complete_plan = best_plan.into_complete_plan(&self.graph);
+        let complete_plan = best_plan.into_complete_plan();
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
@@ -937,7 +937,7 @@ impl PartialCostPlan {
         }
     }
 
-    fn into_complete_plan(self, graph: &Graph<'_>) -> CompleteCostPlan {
+    fn into_complete_plan(self) -> CompleteCostPlan {
         let mut final_vertex_ordering = self.vertex_ordering.clone();
         for &pattern in self.ongoing_step.iter() {
             final_vertex_ordering.push(VertexId::Pattern(pattern));
