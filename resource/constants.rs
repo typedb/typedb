@@ -17,7 +17,11 @@ pub mod server {
 
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 
+    #[cfg(feature = "cloud")]
+    pub const DISTRIBUTION_NAME: &str = "TypeDB";
+    #[cfg(not(feature = "cloud"))]
     pub const DISTRIBUTION_NAME: &str = "TypeDB CE";
+
     pub const VERSION: &str = include_str!("../VERSION");
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * 60 * 60);
