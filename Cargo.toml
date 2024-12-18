@@ -20,7 +20,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.41.1"
+		version = "1.42.0"
 		default-features = false
 
 	[dependencies.server]
@@ -40,7 +40,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.21"
+		version = "4.5.23"
 		default-features = false
 
 	[dependencies.logger]
@@ -191,5 +191,5 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "executor", "resource", "query", "compiler"]
+	members = ["database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 

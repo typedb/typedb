@@ -24,6 +24,7 @@ use concept::{
     },
 };
 use concurrency::IntervalRunner;
+use diagnostics::metrics::{DataLoadMetrics, DatabaseMetrics, SchemaLoadMetrics};
 use durability::wal::{WALError, WAL};
 use encoding::{
     error::EncodingError,
@@ -425,6 +426,24 @@ impl Database<WALClient> {
 
         self.release_schema_transaction();
         Ok(())
+    }
+
+    pub fn get_metrics(&self) -> DatabaseMetrics {
+        let schema = self.schema.read().expect("Expected database schema lock acquisition");
+        DatabaseMetrics {
+            database_name: self.name().to_owned(),
+            schema: SchemaLoadMetrics { type_count: schema.type_cache.get_types_count() },
+            data: DataLoadMetrics {
+                entity_count: schema.thing_statistics.total_entity_count,
+                relation_count: schema.thing_statistics.total_relation_count,
+                attribute_count: schema.thing_statistics.total_attribute_count,
+                has_count: schema.thing_statistics.total_has_count,
+                role_count: schema.thing_statistics.total_role_count,
+                storage_in_bytes: self.storage.estimate_size_in_bytes().expect("Expected storage size in bytes"),
+                storage_key_count: self.storage.estimate_key_count().expect("Expected storage key count"),
+            },
+            is_primary_server: true, // TODO: Should be retrieved differently for Cloud
+        }
     }
 }
 

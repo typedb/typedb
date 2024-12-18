@@ -4,26 +4,37 @@
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
-
-package(default_visibility = ["//visibility:public"])
+package(default_visibility = ["//visibility:public",])
 
 rust_library(
-    name = "concurrency",
-    crate_root = "concurrency.rs",
+    name = "diagnostics",
     srcs = glob([
         "*.rs",
     ]),
     deps = [
+        "//common/error",
+        "//common/concurrency",
+        "//common/logger",
+        "//resource",
+
+        "@crates//:chrono",
+        "@crates//:futures",
+        "@crates//:hyper",
+        "@crates//:hyper-rustls",
+        "@crates//:serde_json",
+        "@crates//:sysinfo",
         "@crates//:tokio",
-    ],
+        "@crates//:tonic",
+        "@crates//:tonic-types",
+        "@crates//:xxhash-rust",
+    ]
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*"]),
     exclude = glob([
         "Cargo.*",
     ]),
     license_type = "mpl-header",
 )
-

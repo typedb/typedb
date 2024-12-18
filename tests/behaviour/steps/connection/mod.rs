@@ -7,30 +7,35 @@
 use std::{
     error::Error,
     fmt,
-    sync::{Arc, Mutex, OnceLock},
+    sync::{Arc, Mutex},
 };
 
 use macro_rules_attribute::apply;
 use server::{parameters::config::Config, typedb};
 use test_utils::{create_tmp_dir, TempDir};
+use tokio::{runtime::Runtime, sync::OnceCell};
 
 use crate::{generic_step, Context};
 
 mod database;
 mod transaction;
 
-static TYPEDB: OnceLock<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceLock::new();
+const DISTRIBUTION: &str = "TypeDB CE TEST";
+static TYPEDB: OnceCell<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceCell::const_new();
 
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
-    let (_, server) = TYPEDB.get_or_init(|| {
-        let server_dir = create_tmp_dir();
-        let config = Config::new_with_data_directory(server_dir.as_ref());
-        let server = typedb::Server::open(config).unwrap();
-        (server_dir, Arc::new(Mutex::new(server)))
-    });
+    TYPEDB
+        .get_or_init(|| async {
+            let server_dir = create_tmp_dir();
+            let config = Config::new_with_data_directory(server_dir.as_ref(), true);
+            let server = typedb::Server::open(config, DISTRIBUTION, None).await.unwrap();
+            (server_dir, Arc::new(Mutex::new(server)))
+        })
+        .await;
 
+    let (_, server) = TYPEDB.get().expect("Expected TypeDB to get or be initialized");
     context.server = Some(server.clone());
 }
 

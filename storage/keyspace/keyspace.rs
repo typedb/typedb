@@ -17,7 +17,7 @@ use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
 
-use super::{iterator, IteratorPool};
+use super::{constants, iterator, IteratorPool};
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -134,6 +134,20 @@ impl Keyspaces {
         }
         Ok(())
     }
+
+    pub fn estimate_size_in_bytes(&self) -> Result<u64, KeyspaceError> {
+        self.keyspaces.iter().try_fold(0, |total, keyspace| {
+            let size = keyspace.estimate_size_in_bytes()?;
+            Ok(total + size)
+        })
+    }
+
+    pub fn estimate_key_count(&self) -> Result<u64, KeyspaceError> {
+        self.keyspaces.iter().try_fold(0, |total, keyspace| {
+            let count = keyspace.estimate_key_count()?;
+            Ok(total + count)
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -179,10 +193,10 @@ impl Keyspace {
         keyspace: impl KeyspaceSet,
         options: &Options,
     ) -> Result<Keyspace, KeyspaceOpenError> {
-        use KeyspaceOpenError::SpeeDB;
+        use KeyspaceOpenError::RocksDB;
         let name = keyspace.name();
         let path = storage_path.join(name);
-        let kv_storage = DB::open(options, &path).map_err(|error| SpeeDB { name, source: error })?;
+        let kv_storage = DB::open(options, &path).map_err(|error| RocksDB { name, source: error })?;
         Ok(Self::new(path, keyspace, kv_storage))
     }
 
@@ -249,7 +263,7 @@ impl Keyspace {
     }
 
     pub(crate) fn checkpoint(&self, checkpoint_dir: &Path) -> Result<(), KeyspaceCheckpointError> {
-        use KeyspaceCheckpointError::{CheckpointExists, CreateSpeeDBCheckpoint};
+        use KeyspaceCheckpointError::{CheckpointExists, CreateRocksDBCheckpoint};
 
         let checkpoint_dir = checkpoint_dir.join(self.name);
         if checkpoint_dir.exists() {
@@ -258,7 +272,7 @@ impl Keyspace {
 
         Checkpoint::new(&self.kv_storage)
             .and_then(|checkpoint| checkpoint.create_checkpoint(&checkpoint_dir))
-            .map_err(|error| CreateSpeeDBCheckpoint { name: self.name, source: error })?;
+            .map_err(|error| CreateRocksDBCheckpoint { name: self.name, source: error })?;
 
         Ok(())
     }
@@ -278,6 +292,22 @@ impl Keyspace {
         }
         Ok(())
     }
+
+    pub fn estimate_size_in_bytes(&self) -> Result<u64, KeyspaceError> {
+        let property_name = constants::rocksdb::PROPERTY_ESTIMATE_LIVE_DATA_SIZE;
+        self.kv_storage
+            .property_int_value(property_name)
+            .map_err(|source| KeyspaceError::Property { name: property_name, source })
+            .map(|result_opt| result_opt.unwrap_or(0))
+    }
+
+    pub fn estimate_key_count(&self) -> Result<u64, KeyspaceError> {
+        let property_name = constants::rocksdb::PROPERTY_ESTIMATE_NUM_KEYS;
+        self.kv_storage
+            .property_int_value(property_name)
+            .map_err(|source| KeyspaceError::Property { name: property_name, source })
+            .map(|result_opt| result_opt.unwrap_or(0))
+    }
 }
 
 impl fmt::Debug for Keyspace {
@@ -288,7 +318,7 @@ impl fmt::Debug for Keyspace {
 
 #[derive(Debug, Clone)]
 pub enum KeyspaceOpenError {
-    SpeeDB { name: &'static str, source: rocksdb::Error },
+    RocksDB { name: &'static str, source: rocksdb::Error },
     Validation { source: KeyspaceValidationError },
 }
 
@@ -301,7 +331,7 @@ impl fmt::Display for KeyspaceOpenError {
 impl Error for KeyspaceOpenError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            Self::SpeeDB { source, .. } => Some(source),
+            Self::RocksDB { source, .. } => Some(source),
             Self::Validation { source, .. } => Some(source),
         }
     }
@@ -310,7 +340,7 @@ impl Error for KeyspaceOpenError {
 #[derive(Debug, Clone)]
 pub enum KeyspaceCheckpointError {
     CheckpointExists { name: &'static str, dir: PathBuf },
-    CreateSpeeDBCheckpoint { name: &'static str, source: rocksdb::Error },
+    CreateRocksDBCheckpoint { name: &'static str, source: rocksdb::Error },
 }
 
 impl fmt::Display for KeyspaceCheckpointError {
@@ -323,7 +353,7 @@ impl Error for KeyspaceCheckpointError {
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
             Self::CheckpointExists { .. } => None,
-            Self::CreateSpeeDBCheckpoint { source, .. } => Some(source),
+            Self::CreateRocksDBCheckpoint { source, .. } => Some(source),
         }
     }
 }
@@ -354,6 +384,7 @@ pub enum KeyspaceError {
     BatchWrite { name: &'static str, source: rocksdb::Error },
     Iterate { name: &'static str, source: rocksdb::Error },
     DeleteRange { name: &'static str, source: rocksdb::Error },
+    Property { name: &'static str, source: rocksdb::Error },
 }
 
 impl fmt::Display for KeyspaceError {
@@ -369,7 +400,8 @@ impl Error for KeyspaceError {
             Self::Put { source, .. } => Some(source),
             Self::BatchWrite { source, .. } => Some(source),
             Self::Iterate { source, .. } => Some(source),
-            KeyspaceError::DeleteRange { source, .. } => Some(source),
+            Self::DeleteRange { source, .. } => Some(source),
+            Self::Property { source, .. } => Some(source),
         }
     }
 }

@@ -449,6 +449,14 @@ impl<Durability> MVCCStorage<Durability> {
             .map_err(|err| StorageResetError::Durability { name: self.name.clone(), typedb_source: err })?;
         Ok(())
     }
+
+    pub fn estimate_size_in_bytes(&self) -> Result<u64, StorageOpenError> {
+        self.keyspaces.estimate_size_in_bytes().map_err(|source| StorageOpenError::Keyspace { source })
+    }
+
+    pub fn estimate_key_count(&self) -> Result<u64, StorageOpenError> {
+        self.keyspaces.estimate_key_count().map_err(|source| StorageOpenError::Keyspace { source })
+    }
 }
 
 typedb_error!(
@@ -462,11 +470,12 @@ typedb_error!(
         DurabilityClientWrite(6, "Failed to write to durability client for database '{name}'.", name: String, (typedb_source: DurabilityClientError)),
 
         KeyspaceOpen(7, "Failed to open keyspace '{name}'.", name: String, (source: KeyspaceOpenError)),
+        Keyspace(8, "Failed to operate with keyspaces.", (source: KeyspaceError)),
 
-        CheckpointCreate(8, "Failed to create checkpoint for database '{name}'.", name: String, (source: CheckpointCreateError)),
+        CheckpointCreate(9, "Failed to create checkpoint for database '{name}'.", name: String, (source: CheckpointCreateError)),
 
-        RecoverFromCheckpoint(9, "Failed to recover from checkpoint for database '{name}'.", name: String, (typedb_source: CheckpointLoadError)),
-        RecoverFromDurability(10, "Failed to recover from durability logs for database '{name}'.", name: String, (typedb_source: StorageRecoveryError)),
+        RecoverFromCheckpoint(10, "Failed to recover from checkpoint for database '{name}'.", name: String, (typedb_source: CheckpointLoadError)),
+        RecoverFromDurability(11, "Failed to recover from durability logs for database '{name}'.", name: String, (typedb_source: StorageRecoveryError)),
     }
 );
 

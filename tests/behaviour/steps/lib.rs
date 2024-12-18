@@ -178,7 +178,7 @@ impl Context {
         self.server.as_deref()
     }
 
-    pub fn database(&self, name: &str) -> Arc<Database<WALClient>> {
+    pub async fn database(&self, name: &str) -> Arc<Database<WALClient>> {
         self.server().unwrap().lock().unwrap().database_manager().database(name).unwrap()
     }
 

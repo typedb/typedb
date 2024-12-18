@@ -8,20 +8,14 @@ use std::{
     collections::HashMap,
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock},
+    sync::{Arc, RwLock, RwLockReadGuard},
 };
 
 use itertools::Itertools;
+use resource::constants::{database::INTERNAL_DATABASE_PREFIX, server::SYSTEM_FILE_PREFIX};
 use storage::durability_client::WALClient;
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
-
-#[macro_export]
-macro_rules! internal_database_prefix {
-    () => {
-        "_"
-    };
-}
 
 #[derive(Debug)]
 pub struct DatabaseManager {
@@ -30,23 +24,32 @@ pub struct DatabaseManager {
 }
 
 impl DatabaseManager {
-    pub fn new(data_directory: &Path) -> Result<Self, DatabaseOpenError> {
-        let databases = fs::read_dir(data_directory)
-            .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
-                path: data_directory.to_owned(),
-                source: Arc::new(error),
-            })?
-            .map(|entry| {
-                let entry = entry.map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+    pub fn new(data_directory: &Path) -> Result<Arc<Self>, DatabaseOpenError> {
+        let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+            path: data_directory.to_owned(),
+            source: Arc::new(error),
+        })?;
+
+        let mut databases: HashMap<String, Arc<Database<WALClient>>> = HashMap::new();
+
+        for entry in entries {
+            let entry_path = entry
+                .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
                     path: data_directory.to_owned(),
                     source: Arc::new(error),
-                })?;
-                let database = Database::<WALClient>::open(&entry.path())?;
-                Ok((database.name().to_owned(), Arc::new(database)))
-            })
-            .try_collect()?;
+                })?
+                .path();
 
-        Ok(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) })
+            if entry_path.file_name().unwrap().to_string_lossy().starts_with(SYSTEM_FILE_PREFIX) {
+                continue;
+            }
+
+            let database = Database::<WALClient>::open(&entry_path)?;
+            assert!(!databases.contains_key(database.name()));
+            databases.insert(database.name().to_owned(), Arc::new(database));
+        }
+
+        Ok(Arc::new(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) }))
     }
 
     pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
@@ -148,11 +151,15 @@ impl DatabaseManager {
         self.databases.read().unwrap().keys().cloned().filter(|db| Self::is_user_database(db)).collect()
     }
 
+    pub fn databases(&self) -> RwLockReadGuard<'_, HashMap<String, Arc<Database<WALClient>>>> {
+        self.databases.read().unwrap()
+    }
+
     pub fn is_user_database(name: &str) -> bool {
         !Self::is_internal_database(name)
     }
 
     pub fn is_internal_database(name: &str) -> bool {
-        name.starts_with(internal_database_prefix!())
+        name.starts_with(INTERNAL_DATABASE_PREFIX)
     }
 }

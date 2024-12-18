@@ -10,17 +10,31 @@ use std::{
     time::Duration,
 };
 
+#[derive(Debug)]
 pub struct IntervalRunner {
     shutdown_sink: SyncSender<SyncSender<()>>,
 }
 
 impl IntervalRunner {
-    pub fn new(mut action: impl FnMut() + Send + 'static, interval: Duration) -> Self {
-        let (sender, receiver) = sync_channel::<SyncSender<()>>(0);
+    const ZERO_DURATION: Duration = Duration::from_secs(0);
+
+    pub fn new(action: impl FnMut() + Send + 'static, interval: Duration) -> Self {
+        Self::new_with_initial_delay(action, interval, Self::ZERO_DURATION)
+    }
+
+    pub fn new_with_initial_delay(
+        mut action: impl FnMut() + Send + 'static,
+        interval: Duration,
+        initial_delay: Duration,
+    ) -> Self {
+        let (shutdown_sender, shutdown_receiver) = sync_channel::<SyncSender<()>>(1);
         thread::spawn(move || {
+            if !initial_delay.is_zero() {
+                thread::sleep(initial_delay);
+            }
             loop {
                 action();
-                match receiver.recv_timeout(interval) {
+                match shutdown_receiver.recv_timeout(interval) {
                     Ok(done_sender) => {
                         drop(action);
                         done_sender.send(()).unwrap();
@@ -31,13 +45,13 @@ impl IntervalRunner {
                 }
             }
         });
-        Self { shutdown_sink: sender }
+        Self { shutdown_sink: shutdown_sender }
     }
 }
 
 impl Drop for IntervalRunner {
     fn drop(&mut self) {
-        let (done_sender, done_receiver) = sync_channel(0);
+        let (done_sender, done_receiver) = sync_channel(1);
         self.shutdown_sink.send(done_sender).unwrap();
         done_receiver.recv().unwrap()
     }

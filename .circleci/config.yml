@@ -111,7 +111,7 @@ commands:
           export DEPLOY_ARTIFACT_USERNAME=$REPO_TYPEDB_USERNAME
           export DEPLOY_ARTIFACT_PASSWORD=$REPO_TYPEDB_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt -- release
+          bazel run --jobs=8 --define version=$(cat VERSION) //:deploy-typedb-server --compilation_mode=opt --//server:mode=published -- release
 
   deploy-docker-for-arch:
     parameters:
@@ -122,7 +122,7 @@ commands:
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
-            //:deploy-docker-release-<<parameters.image-arch>> --compilation_mode=opt
+            //:deploy-docker-release-<<parameters.image-arch>> --compilation_mode=opt --//server:mode=published
           # TODO after beta: bazel run //:deploy-docker-release-overwrite-latest-tag
 
   # TODO: Migrate to bazel sh_binary

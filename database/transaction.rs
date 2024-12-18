@@ -32,7 +32,7 @@ pub struct TransactionRead<D> {
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
     pub query_manager: Arc<QueryManager>,
-    _database: Arc<Database<D>>,
+    pub database: Arc<Database<D>>,
     transaction_options: TransactionOptions,
 }
 
@@ -70,7 +70,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             thing_manager,
             function_manager,
             query_manager,
-            _database: database,
+            database,
             transaction_options,
         })
     }

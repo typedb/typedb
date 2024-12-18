@@ -26,7 +26,7 @@ features = {}
 
 	[dev-dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
 	[dev-dependencies.logger]

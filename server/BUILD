@@ -2,9 +2,31 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library")
 package(default_visibility = ["//visibility:public",])
+
+string_flag(
+    name = "mode",
+    build_setting_default = "development",
+)
+
+config_setting(
+    name = "published_mode",
+    flag_values = {
+        ":mode": "published",
+    },
+    visibility = ["//visibility:public"],
+)
+
+config_setting(
+    name = "development_mode",
+    flag_values = {
+        ":mode": "development",
+    },
+    visibility = ["//visibility:public"],
+)
 
 rust_library(
     name = "server",
@@ -16,12 +38,14 @@ rust_library(
     deps = [
         "//answer",
         "//common/bytes",
+        "//common/concurrency",
         "//common/error",
         "//common/lending_iterator",
         "//common/options",
         "//compiler",
         "//concept",
         "//database",
+        "//diagnostics",
         "//user",
         "//encoding",
         "//executor",
@@ -43,6 +67,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:moka",
         "@crates//:prost",
+        "@crates//:rand",
         "@crates//:tokio",
         "@crates//:tokio-stream",
         "@crates//:tonic",
@@ -51,7 +76,11 @@ rust_library(
         "@crates//:tracing",
         "@crates//:uuid",
         "@crates//:pwhash",
-    ]
+    ],
+    crate_features = select({
+        ":development_mode": [],
+        ":published_mode": ["published"],
+    }),
 )
 
 checkstyle_test(

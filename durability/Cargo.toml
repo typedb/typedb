@@ -38,7 +38,7 @@ features = {}
 
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
 	[dependencies.primitive]
@@ -53,7 +53,7 @@ features = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.215"
+		version = "1.0.216"
 		default-features = false
 
 	[dependencies.logger]

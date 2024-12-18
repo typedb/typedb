@@ -218,6 +218,29 @@ impl TypeCache {
         self.role_types.iter().filter_map(Option::as_ref).map(|cache| cache.common_type_cache().type_).collect()
     }
 
+    pub fn get_entity_types_count(&self) -> u64 {
+        self.entity_types.len() as u64
+    }
+
+    pub fn get_relation_types_count(&self) -> u64 {
+        self.relation_types.len() as u64
+    }
+
+    pub fn get_attribute_types_count(&self) -> u64 {
+        self.attribute_types.len() as u64
+    }
+
+    pub fn get_role_types_count(&self) -> u64 {
+        self.role_types.len() as u64
+    }
+
+    pub fn get_types_count(&self) -> u64 {
+        self.get_entity_types_count()
+            + self.get_relation_types_count()
+            + self.get_attribute_types_count()
+            + self.get_role_types_count()
+    }
+
     pub(crate) fn get_supertype<'a, 'this, T, CACHE>(&'this self, type_: T) -> Option<T>
     where
         T: KindAPI + CacheGetter<CacheType = CACHE>,
