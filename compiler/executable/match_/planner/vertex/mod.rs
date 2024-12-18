@@ -455,7 +455,7 @@ impl<'a> NegationPlanner<'a> {
 
 impl Costed for NegationPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        (self.plan.cost(), CostMetaData::None)
+        (self.plan.planner_statistics.query_cost, CostMetaData::None)
     }
 }
 

@@ -22,6 +22,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::plan::PlannerStatistics;
 
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
@@ -29,6 +30,7 @@ pub struct MatchExecutable {
     pub(crate) steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
     variable_reverse_map: HashMap<ExecutorVariable, Variable>,
+    planner_statistics: PlannerStatistics,
 }
 
 impl MatchExecutable {
@@ -37,8 +39,9 @@ impl MatchExecutable {
         steps: Vec<ExecutionStep>,
         variable_positions: HashMap<Variable, VariablePosition>,
         variable_reverse_map: HashMap<ExecutorVariable, Variable>,
+        planner_statistics: PlannerStatistics,
     ) -> Self {
-        Self { executable_id, steps, variable_positions, variable_reverse_map }
+        Self { executable_id, steps, variable_positions, variable_reverse_map, planner_statistics }
     }
 
     pub fn executable_id(&self) -> u64 {
@@ -59,6 +62,10 @@ impl MatchExecutable {
 
     pub fn variable_reverse_map(&self) -> &HashMap<ExecutorVariable, Variable> {
         &self.variable_reverse_map
+    }
+
+    pub fn planner_statistics(&self) -> &PlannerStatistics {
+        &self.planner_statistics
     }
 }
 

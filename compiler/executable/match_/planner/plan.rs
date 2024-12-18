@@ -12,7 +12,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
 };
-
+use std::time::Instant;
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
@@ -218,6 +218,7 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
+    planner_statistics: PlannerStatistics,
 }
 
 impl fmt::Debug for ConjunctionPlanBuilder<'_> {
@@ -231,7 +232,7 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 
 impl<'a> ConjunctionPlanBuilder<'a> {
     fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
-        Self { shared_variables: Vec::new(), graph: Graph::default(), type_annotations, statistics }
+        Self { shared_variables: Vec::new(), graph: Graph::default(), type_annotations, statistics, planner_statistics: PlannerStatistics::new() }
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
@@ -340,6 +341,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_thing_var(&mut self, variable: Variable) {
         let planner = ThingPlanner::from_variable(variable, self.type_annotations, self.statistics);
+        self.planner_statistics.increment_var(planner.unrestricted_expected_size);
         self.graph.push_variable(variable, VariableVertex::Thing(planner));
     }
 
@@ -445,12 +447,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_has(&mut self, has: &'a Has<Variable>) {
         let planner =
             HasPlanner::from_constraint(has, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.planner_statistics.increment_has(planner.unbound_typed_expected_size);
         self.graph.push_constraint(ConstraintVertex::Has(planner));
     }
 
     fn register_links(&mut self, links: &'a Links<Variable>) {
         let planner =
             LinksPlanner::from_constraint(links, &self.graph.variable_index, self.type_annotations, self.statistics);
+        self.planner_statistics.increment_links(planner.unbound_typed_expected_size);
         self.graph.push_constraint(ConstraintVertex::Links(planner));
     }
 
@@ -559,7 +563,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // (When a step has multiple pattern, the first such produced variable is always the join variable)
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
-    fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>) {
+    fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost) {
         let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
         let mut num_patterns = search_patterns.len();
 
@@ -695,25 +699,72 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             complete_plan.vertex_ordering,
             complete_plan.pattern_metadata
         );
-        (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
+        (complete_plan.vertex_ordering, complete_plan.pattern_metadata, complete_plan.cumulative_cost)
     }
 
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         // Beam plan
-        let (ordering, metadata) = self.beam_search_plan();
+        let duration = Instant::now();
+        let (ordering, metadata, cost) = self.beam_search_plan();
+        println!("Planning took {} us", duration.elapsed().as_micros());
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let cost = ordering
-            .iter()
-            .enumerate()
-            .map(|(i, idx)| self.graph.elements[idx].cost_and_metadata(&ordering[..i], &self.graph))
-            .fold(Cost::MEM_SIMPLE_OUTPUT_1, |acc, (cost, _)| acc.chain(cost));
+        let Self { shared_variables, graph, type_annotations, statistics: _, mut planner_statistics } = self;
 
-        let Self { shared_variables, graph, type_annotations, statistics: _ } = self;
+        planner_statistics.finalize(cost);
+        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, metadata, element_to_order, planner_statistics }
+    }
+}
 
-        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, metadata, element_to_order, cost }
+#[derive(Clone, Copy, Debug)]
+pub struct PlannerStatistics {
+    links_count: (f64, f64), // vertex count, key count
+    has_count: (f64, f64),
+    var_count: (f64, f64),
+    pub(crate) query_cost: Cost,
+    // TODO: pass info about individual steps
+}
+
+impl PlannerStatistics {
+    pub(crate) fn new() -> PlannerStatistics {
+        let statistics = PlannerStatistics {
+            links_count: (0.0, 0.0),
+            has_count: (0.0, 0.0),
+            var_count: (0.0, 0.0),
+            query_cost: Cost::NOOP,
+        };
+        statistics
+    }
+
+    pub(crate) fn increment_var(&mut self, count: f64) {
+        self.var_count.0 += 1.0;
+        self.var_count.1 += count;
+    }
+
+    pub(crate) fn increment_has(&mut self, count: f64) {
+        self.has_count.0 += 1.0;
+        self.has_count.1 += count;
+    }
+
+    pub(crate) fn increment_links(&mut self, count: f64) {
+        self.links_count.0 += 1.0;
+        self.links_count.1 += count;
+    }
+
+    pub fn finalize(&mut self, cost: Cost) {
+        self.query_cost = cost;
+    }
+}
+
+impl fmt::Display for PlannerStatistics {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Cost: {:.2} Size: {:.2} (stats: links {:.2} / {:.2}, has {:.2} / {:.2}, vars {:.2} / {:.2})",
+               self.query_cost.cost, self.query_cost.io_ratio,
+               self.links_count.0, self.links_count.1,
+               self.has_count.0, self.has_count.1,
+               self.var_count.0, self.var_count.1,)
     }
 }
 
@@ -1127,7 +1178,7 @@ pub(super) struct ConjunctionPlan<'a> {
     ordering: Vec<VertexId>,
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
-    cost: Cost,
+    pub(crate) planner_statistics: PlannerStatistics,
 }
 
 impl fmt::Debug for ConjunctionPlan<'_> {
@@ -1136,7 +1187,6 @@ impl fmt::Debug for ConjunctionPlan<'_> {
             .field("shared_variables", &self.shared_variables)
             .field("graph", &self.graph)
             .field("ordering", &self.ordering)
-            .field("cost", &self.cost)
             .finish()
     }
 }
@@ -1153,6 +1203,7 @@ impl ConjunctionPlan<'_> {
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
             input_variables.into_iter().collect(),
+            self.planner_statistics
         );
 
         for &index in &self.ordering {
@@ -1442,16 +1493,10 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    if sort_variable == lhs_var {
-                        Direction::Canonical
-                    } else if sort_variable == rhs_var {
-                        Direction::Reverse
-                    } else {
-                        let CostMetaData::Direction(unbound_direction) = metadata else {
-                            unreachable!("expected metadata for constraint")
-                        };
-                        unbound_direction
-                    }
+                     let CostMetaData::Direction(unbound_direction) = metadata else {
+                         unreachable!("expected metadata for constraint")
+                     };
+                     unbound_direction
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
                 } else {
@@ -1706,12 +1751,12 @@ impl ConjunctionPlan<'_> {
         }
     }
 
-    pub(super) fn cost(&self) -> Cost {
-        self.cost
-    }
-
     pub(super) fn shared_variables(&self) -> &[Variable] {
         &self.shared_variables
+    }
+
+    pub(super) fn cost(&self) -> Cost {
+        self.planner_statistics.query_cost
     }
 }
 

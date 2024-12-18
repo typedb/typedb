@@ -491,8 +491,8 @@ impl<ID: IrID> fmt::Display for IndexedRelationInstruction<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} indexed_relation(role: {} -> relation: {} -> role: {}) to {}",
-            self.player_start, self.role_start, self.relation, self.role_end, self.player_end
+            "Index[{}(r:{}) --{}--> {}(r:{})]",
+            self.player_start, self.role_start, self.relation, self.player_end, self.role_end
         )
     }
 }
