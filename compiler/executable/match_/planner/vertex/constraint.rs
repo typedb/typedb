@@ -396,7 +396,7 @@ impl Costed for IsaPlanner<'_> {
             false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
         };
         let io_ratio = scan_size;
-        (Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Canonical))
+        (Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse))
     }
 }
 

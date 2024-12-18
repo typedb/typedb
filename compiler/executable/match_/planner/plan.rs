@@ -574,6 +574,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
 
         for i in 0..num_patterns {
+            println!("    STEP {}", i);
+
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset: HashSet<PartialCostHash> = HashSet::with_capacity(beam_width);
             if i % reduction_cycle == 0 && beam_width > MIN_BEAM_WIDTH {
@@ -581,15 +583,31 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 beam_width -= 1;
             } // Narrow the beam until it greedy at the tail (for large queries)
             for mut plan in best_partial_plans.drain(..) {
+                println!(
+                    "        PLAN: {:?} ONGOING: {:?} STASH: {:?} COST: {:?} + {:?} = {:?} -> {:?}",
+                    plan.vertex_ordering,
+                    plan.ongoing_step,
+                    plan.ongoing_step_stash,
+                    plan.cumulative_cost,
+                    plan.ongoing_step_cost,
+                    plan.cumulative_cost.chain(plan.ongoing_step_cost),
+                    plan.heuristic
+                );
+
                 let mut extension_heap = BinaryHeap::with_capacity(extension_width);
                 let mut min_cost_extension: Option<StepExtension> = None;
                 for extension in plan.extensions_iter(&self.graph) {
                     match min_cost_extension {
                         None => min_cost_extension = Some(extension.clone()),
-                        Some(existing) if extension.step_cost.cost
-                            .partial_cmp(&existing.step_cost.cost).unwrap_or(Ordering::Greater)
-                            .then_with(|| extension.pattern_id.cmp(&existing.pattern_id))
-                            .is_lt() => {
+                        Some(existing)
+                            if extension
+                                .step_cost
+                                .cost
+                                .partial_cmp(&existing.step_cost.cost)
+                                .unwrap_or(Ordering::Greater)
+                                .then_with(|| extension.pattern_id.cmp(&existing.pattern_id))
+                                .is_lt() =>
+                        {
                             min_cost_extension = Some(extension.clone())
                         }
                         _ => {}
@@ -607,7 +625,13 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 if let Some(ext) = min_cost_extension {
                     if ext.is_trivial(&self.graph) {
-                        // println!("            Stashing trivial {:?} = {}: cost {:?} heuristic {:?}", ext.pattern_id, self.graph.elements[&VertexId::Pattern(ext.pattern_id)], ext.step_cost.cost, ext.heuristic);
+                        println!(
+                            "            Stashing trivial {:?} = {}: cost {:?} heuristic {:?}",
+                            ext.pattern_id,
+                            self.graph.elements[&VertexId::Pattern(ext.pattern_id)],
+                            ext.step_cost.cost,
+                            ext.heuristic
+                        );
                         plan.add_to_stash(ext.pattern_id);
                         if new_plans_heap.len() < beam_width {
                             new_plans_heap.push(plan);
@@ -619,6 +643,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         }
                     } else {
                         for extension in extension_heap.drain() {
+                            println!(
+                                "            Top choice {:?} = {} join {:?} cost {:?} heuristic {:?} meta {:?}",
+                                extension.pattern_id,
+                                self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
+                                extension.step_join_var,
+                                extension.step_cost,
+                                extension.heuristic,
+                                extension.pattern_metadata
+                            );
                             let new_plan = if !extension.is_constraint(&self.graph) {
                                 plan.clone_and_extend_with_new_step(extension, &self.graph)
                             } else if extension.step_join_var.is_some()
@@ -653,6 +686,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan(&self.graph);
+        println!("Inputed graph:\n {:#?}", self.graph);
+        println!("Complete plan:\n {:#?}", complete_plan);
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
@@ -684,17 +719,17 @@ pub(super) struct CompleteCostPlan {
 
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct PartialCostPlan {
-    vertex_ordering: Vec<VertexId>, // the part of the plan that has been decided upon
-    cumulative_cost: Cost, // the cost of the part of the plan that has been decided upon
+    vertex_ordering: Vec<VertexId>,         // the part of the plan that has been decided upon
+    cumulative_cost: Cost,                  // the cost of the part of the plan that has been decided upon
     ongoing_step: HashSet<PatternVertexId>, // the set of non-trivial patterns in the ongoing step
     ongoing_step_stash: Vec<PatternVertexId>, // the set of trivial patterns in the ongoing step
-    ongoing_step_cost: Cost, // the cost of the ongoing step (on top of the cumulative one)
+    ongoing_step_cost: Cost,                // the cost of the ongoing step (on top of the cumulative one)
     ongoing_step_produced_vars: HashSet<VariableVertexId>, // variables produced in this step
     ongoing_step_join_var: Option<VariableVertexId>, // the join variable of the ongoing step
     all_produced_vars: HashSet<VariableVertexId>, // the set of all variables produced (incl. in ongoing step)
     remaining_patterns: HashSet<PatternVertexId>, // the set of remaining patterns to be searched
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>, // metadata, like pattern directions
-    heuristic: Cost, // the heuristic that plans are sorted by
+    heuristic: Cost,                        // the heuristic that plans are sorted by
 }
 
 impl PartialCostPlan {
@@ -765,8 +800,7 @@ impl PartialCostPlan {
 
                 let cost_including_extension = cost_before_extension.chain(added_cost);
 
-                let heuristic =
-                    cost_including_extension.chain(self.heuristic_plan_completion_cost(extension, graph));
+                let heuristic = cost_including_extension.chain(self.heuristic_plan_completion_cost(extension, graph));
 
                 StepExtension {
                     pattern_id: extension,
@@ -930,9 +964,10 @@ impl PartialCostPlan {
         let (current_step, current_stash_produced_vars) = self.finalize_current_step(graph);
         new_vertex_ordering.extend(current_step);
 
-        let new_cumulative_cost = self.cumulative_cost
+        let new_cumulative_cost = self
+            .cumulative_cost
             .chain(self.ongoing_step_cost)
-            .chain(Cost { cost: (self.ongoing_step_stash.len() as f64) * Cost::TRIVIAL_COST, io_ratio: 1.0});
+            .chain(Cost { cost: (self.ongoing_step_stash.len() as f64) * Cost::TRIVIAL_COST, io_ratio: 1.0 });
 
         // Then start a new step with the given plan extension
         let mut new_ongoing_step = HashSet::new();
@@ -975,9 +1010,10 @@ impl PartialCostPlan {
         let (new_step, stash_produced_vars) = self.finalize_current_step(graph);
         final_vertex_ordering.extend(new_step);
 
-        let final_cumulative_cost = self.cumulative_cost
+        let final_cumulative_cost = self
+            .cumulative_cost
             .chain(self.ongoing_step_cost)
-            .chain(Cost { cost: (self.ongoing_step_stash.len() as f64) * Cost::TRIVIAL_COST, io_ratio: 1.0});
+            .chain(Cost { cost: (self.ongoing_step_stash.len() as f64) * Cost::TRIVIAL_COST, io_ratio: 1.0 });
 
         CompleteCostPlan {
             vertex_ordering: final_vertex_ordering,
@@ -1054,8 +1090,7 @@ impl StepExtension {
     }
 
     fn is_trivial(&self, graph: &Graph<'_>) -> bool {
-        graph.elements[&VertexId::Pattern(self.pattern_id)].can_be_trivial()
-        && self.step_cost.is_trivial()
+        graph.elements[&VertexId::Pattern(self.pattern_id)].can_be_trivial() && self.step_cost.is_trivial()
     }
 }
 
@@ -1400,16 +1435,10 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    if sort_variable == lhs_var {
-                        Direction::Canonical
-                    } else if sort_variable == rhs_var {
-                        Direction::Reverse
-                    } else {
-                        let CostMetaData::Direction(unbound_direction) = metadata else {
-                            unreachable!("expected metadata for constraint")
-                        };
-                        unbound_direction
-                    }
+                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                        unreachable!("expected metadata for constraint")
+                    };
+                    unbound_direction
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
                 } else {
