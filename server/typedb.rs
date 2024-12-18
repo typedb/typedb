@@ -12,8 +12,8 @@ use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use rand::Rng;
 use resource::constants::server::{
-    DATABASE_METRICS_UPDATE_INTERVAL, DISTRIBUTION_NAME, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET,
-    SERVER_ID_FILE_NAME, SERVER_ID_LENGTH, VERSION,
+    DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
+    SERVER_ID_LENGTH, VERSION,
 };
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
@@ -30,6 +30,7 @@ use crate::{
 pub struct Server {
     id: String,
     deployment_id: String,
+    distribution: &'static str,
     data_directory: PathBuf,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
@@ -41,7 +42,11 @@ pub struct Server {
 
 impl Server {
     // TODO: passing `deployment_id` as an arg to simply override it in Cloud. Consider refactoring
-    pub async fn open(config: Config, deployment_id: Option<String>) -> Result<Self, ServerOpenError> {
+    pub async fn open(
+        config: Config,
+        distribution: &'static str,
+        deployment_id: Option<String>,
+    ) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
         println!("Storage directory: {:?}", storage_directory);
@@ -53,6 +58,7 @@ impl Server {
         let mut diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
+            distribution,
             &server_config.diagnostics,
             storage_directory.clone(),
             server_config.is_development_mode,
@@ -78,6 +84,7 @@ impl Server {
         Ok(Self {
             id: server_id,
             deployment_id,
+            distribution,
             data_directory: storage_directory.to_owned(),
             user_manager,
             authenticator_cache,
@@ -103,7 +110,7 @@ impl Server {
             self.diagnostics_manager.clone(),
         );
 
-        Self::print_hello(self.config.server.is_development_mode);
+        Self::print_hello(self.distribution, self.config.server.is_development_mode);
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
@@ -124,6 +131,7 @@ impl Server {
     fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
+        distribution: &'static str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
         is_development_mode: bool,
@@ -131,7 +139,7 @@ impl Server {
         let diagnostics = Diagnostics::new(
             deployment_id,
             server_id,
-            DISTRIBUTION_NAME.clone().to_owned(),
+            distribution.to_owned(),
             VERSION.clone().to_owned(),
             storage_directory,
             config.is_service_reporting_enabled,
@@ -201,8 +209,8 @@ impl Server {
             .collect()
     }
 
-    fn print_hello(is_development_mode_enabled: bool) {
-        print!("{}", format!("Running {DISTRIBUTION_NAME} {VERSION}"));
+    fn print_hello(distribution: &'static str, is_development_mode_enabled: bool) {
+        print!("{}", format!("Running {distribution} {VERSION}"));
         if is_development_mode_enabled {
             print!(" in development mode");
         }

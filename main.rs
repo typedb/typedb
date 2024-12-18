@@ -17,6 +17,8 @@ use server::parameters::{
     config::{Config, DiagnosticsConfig, EncryptionConfig},
 };
 
+const DISTRIBUTION: &str = "TypeDB CE";
+
 #[tokio::main]
 async fn main() {
     setup_abort_on_panic();
@@ -28,7 +30,7 @@ async fn main() {
     let deployment_id = None;
     let config = get_configuration(cli_args);
 
-    let open_result = server::typedb::Server::open(config, deployment_id).await;
+    let open_result = server::typedb::Server::open(config, DISTRIBUTION, deployment_id).await;
 
     let result = open_result.unwrap().serve().await;
     match result {
