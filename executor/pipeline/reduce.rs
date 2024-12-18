@@ -47,13 +47,14 @@ where
         let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
 
-        let profile = context.profile.profile_stage(|| String::from("Reduce"), executable.executable_id);
-        let step_profile = profile.extend_or_get(0, || String::from("Reduction"));
-        let measurement = step_profile.start_measurement();
+        let executable_id = executable.executable_id;
         let rows = match reduce_iterator(&context, executable, previous_iterator) {
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),
         };
+        let profile = context.profile.profile_stage(|| String::from("Reduce (no-op)"), executable_id);
+        let step_profile = profile.extend_or_get(0, || String::from("Reduction (no-op)"));
+        let measurement = step_profile.start_measurement();
         measurement.end(&step_profile, 1, rows.len() as u64);
         Ok((WrittenRowsIterator::new(rows), context))
     }
