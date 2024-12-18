@@ -4,7 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, path::PathBuf, time::Instant};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt,
+    path::PathBuf,
+    sync::{
+        atomic::{AtomicU64, Ordering},
+        Mutex, MutexGuard,
+    },
+    time::Instant,
+};
 
 use chrono::Utc;
 use resource::constants::diagnostics::{REPORT_INTERVAL, UNKNOWN_STR};
@@ -216,11 +225,11 @@ impl LoadMetrics {
         self.data = data;
     }
 
-    pub fn increment_connection_count(&mut self, load_kind: LoadKind) {
+    pub fn increment_connection_count(&self, load_kind: LoadKind) {
         self.connection.increment_count(load_kind);
     }
 
-    pub fn decrement_connection_count(&mut self, load_kind: LoadKind) {
+    pub fn decrement_connection_count(&self, load_kind: LoadKind) {
         self.connection.decrement_count(load_kind);
     }
 
@@ -228,7 +237,7 @@ impl LoadMetrics {
         self.is_deleted = true;
     }
 
-    pub fn take_snapshot(&mut self) {
+    pub fn take_snapshot(&self) {
         self.connection.take_snapshot()
     }
 
@@ -332,8 +341,8 @@ impl DataLoadMetrics {
 
 #[derive(Debug)]
 pub(crate) struct ConnectionLoadMetrics {
-    counts: HashMap<LoadKind, u64>,
-    peak_counts: HashMap<LoadKind, u64>,
+    counts: HashMap<LoadKind, AtomicU64>,
+    peak_counts: HashMap<LoadKind, AtomicU64>,
 }
 
 impl ConnectionLoadMetrics {
@@ -341,44 +350,55 @@ impl ConnectionLoadMetrics {
         Self { counts: LoadKind::all_empty_counts_map(), peak_counts: LoadKind::all_empty_counts_map() }
     }
 
-    pub fn increment_count(&mut self, load_kind: LoadKind) {
-        let new_count = {
-            let count = self.counts.entry(load_kind).or_insert(0);
-            *count += 1;
-            *count
-        };
-        self.update_peak_counts(load_kind, new_count);
+    pub fn increment_count(&self, load_kind: LoadKind) {
+        let old_count = self.get_count(&load_kind).fetch_add(1, Ordering::Relaxed);
+        self.update_peak_counts(load_kind, old_count + 1);
     }
 
-    pub fn decrement_count(&mut self, load_kind: LoadKind) {
-        let count = self.counts.entry(load_kind).or_insert(0);
-        assert_ne!(*count, 0u64);
-        *count -= 1;
+    pub fn decrement_count(&self, load_kind: LoadKind) {
+        let old_count = self.get_count(&load_kind).fetch_sub(1, Ordering::Relaxed);
+        assert_ne!(old_count, 0, "Attempted to decrement a zero count");
     }
 
-    pub fn update_peak_counts(&mut self, load_kind: LoadKind, count: u64) {
-        if self.peak_counts.get(&load_kind).unwrap_or(&0u64) < &count {
-            self.peak_counts.insert(load_kind, count);
+    pub fn update_peak_counts(&self, load_kind: LoadKind, count: u64) {
+        let peak_entry = self.get_peak_count(&load_kind);
+        loop {
+            let current_peak_count = peak_entry.load(Ordering::Relaxed);
+            if current_peak_count >= count {
+                break;
+            }
+            if peak_entry.compare_exchange(current_peak_count, count, Ordering::Relaxed, Ordering::Relaxed).is_ok() {
+                break;
+            }
         }
     }
 
     pub fn is_empty(&self) -> bool {
-        self.peak_counts.values().sum::<u64>() == 0u64
+        self.peak_counts.iter().all(|(_, count)| count.load(Ordering::Relaxed) == 0)
     }
 
-    pub fn take_snapshot(&mut self) {
-        let kinds: Vec<_> = self.peak_counts.keys().cloned().collect();
-        for kind in kinds {
-            self.peak_counts.insert(kind, *self.counts.get(&kind).expect("Expected count"));
+    pub fn take_snapshot(&self) {
+        for (kind, peak_count) in &self.peak_counts {
+            let count = self.get_count(kind);
+            let current_count = count.load(Ordering::Relaxed);
+            peak_count.store(current_count, Ordering::Relaxed);
         }
     }
 
     pub fn to_json(&self) -> JSONValue {
-        let mut peak = JSONMap::new();
-        for (kind, &value) in self.peak_counts.iter() {
-            peak.insert(kind.to_string(), json!(value));
+        let mut peaks = JSONMap::new();
+        for (kind, peak_count) in self.peak_counts.iter() {
+            peaks.insert(kind.to_string(), json!(peak_count.load(Ordering::Relaxed)));
         }
-        json!(peak)
+        json!(peaks)
+    }
+
+    fn get_count(&self, load_kind: &LoadKind) -> &AtomicU64 {
+        self.counts.get(load_kind).expect("Load keys should be preinserted")
+    }
+
+    fn get_peak_count(&self, load_kind: &LoadKind) -> &AtomicU64 {
+        self.peak_counts.get(load_kind).expect("Load peak keys should be preinserted")
     }
 }
 
@@ -390,34 +410,34 @@ pub(crate) struct ActionMetrics {
 
 impl ActionMetrics {
     pub fn new() -> Self {
-        Self { actions: HashMap::new(), actions_snapshot: HashMap::new() }
+        Self { actions: ActionKind::all_empty_counts_map(), actions_snapshot: ActionKind::all_empty_counts_map() }
     }
 
-    pub fn submit_success(&mut self, action_kind: ActionKind) {
-        self.actions.entry(action_kind).or_insert(ActionInfo::new()).submit_success();
+    pub fn submit_success(&self, action_kind: ActionKind) {
+        self.get_action(&action_kind).submit_success();
     }
-    pub fn submit_fail(&mut self, action_kind: ActionKind) {
-        self.actions.entry(action_kind).or_insert(ActionInfo::new()).submit_fail();
+    pub fn submit_fail(&self, action_kind: ActionKind) {
+        self.get_action(&action_kind).submit_fail();
     }
 
     fn get_successful_delta(&self, action_kind: &ActionKind) -> i64 {
         get_delta(
-            self.actions.get(action_kind).unwrap_or(&ActionInfo::default()).successful,
-            self.actions_snapshot.get(action_kind).unwrap_or(&ActionInfo::default()).successful,
+            self.get_action(action_kind).successful.load(Ordering::Relaxed),
+            self.get_action_snapshot(action_kind).successful.load(Ordering::Relaxed),
         )
     }
 
     fn get_failed_delta(&self, action_kind: &ActionKind) -> i64 {
         get_delta(
-            self.actions.get(action_kind).unwrap_or(&ActionInfo::default()).failed,
-            self.actions_snapshot.get(action_kind).unwrap_or(&ActionInfo::default()).failed,
+            self.get_action(action_kind).failed.load(Ordering::Relaxed),
+            self.get_action_snapshot(action_kind).failed.load(Ordering::Relaxed),
         )
     }
 
     pub fn take_snapshot(&mut self) {
-        for kind in self.actions.keys() {
-            *self.actions_snapshot.entry(*kind).or_insert(ActionInfo::default()) =
-                self.actions.get(kind).expect("Expected action by kind").clone();
+        let all_kinds: HashSet<ActionKind> = self.actions.keys().cloned().collect();
+        for kind in all_kinds {
+            *self.get_action_snapshot_mut(&kind) = self.get_action(&kind).clone();
         }
     }
 
@@ -492,12 +512,24 @@ impl ActionMetrics {
         }
         buf
     }
+
+    fn get_action(&self, action_kind: &ActionKind) -> &ActionInfo {
+        self.actions.get(action_kind).expect("Action keys should be preinserted")
+    }
+
+    fn get_action_snapshot(&self, action_kind: &ActionKind) -> &ActionInfo {
+        self.actions_snapshot.get(action_kind).expect("Action snapshot keys should be preinserted")
+    }
+
+    fn get_action_snapshot_mut(&mut self, action_kind: &ActionKind) -> &mut ActionInfo {
+        self.actions_snapshot.get_mut(action_kind).expect("Action snapshot keys should be preinserted")
+    }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub(crate) struct ActionInfo {
-    successful: u64,
-    failed: u64,
+    successful: AtomicU64,
+    failed: AtomicU64,
 }
 
 impl ActionInfo {
@@ -506,63 +538,73 @@ impl ActionInfo {
     }
 
     pub const fn default() -> Self {
-        Self { successful: 0, failed: 0 }
+        Self { successful: AtomicU64::new(0), failed: AtomicU64::new(0) }
     }
 
-    pub fn submit_success(&mut self) {
-        self.successful += 1;
+    pub fn submit_success(&self) {
+        self.successful.fetch_add(1, Ordering::Relaxed);
     }
 
-    pub fn submit_fail(&mut self) {
-        self.failed += 1;
+    pub fn submit_fail(&self) {
+        self.failed.fetch_add(1, Ordering::Relaxed);
     }
 
     pub fn get_successful(&self) -> u64 {
-        self.successful
+        self.successful.load(Ordering::Relaxed)
     }
 
     pub fn get_failed(&self) -> u64 {
-        self.failed
+        self.successful.load(Ordering::Relaxed)
     }
 
     pub fn get_attempted(&self) -> u64 {
-        self.successful + self.failed
+        self.get_successful() + self.get_failed()
+    }
+}
+
+impl Clone for ActionInfo {
+    fn clone(&self) -> Self {
+        Self {
+            successful: AtomicU64::from(self.successful.load(Ordering::Relaxed)),
+            failed: AtomicU64::from(self.failed.load(Ordering::Relaxed)),
+        }
     }
 }
 
 #[derive(Debug)]
 pub(crate) struct ErrorMetrics {
-    errors: HashMap<String, ErrorInfo>,
-    errors_snapshot: HashMap<String, ErrorInfo>,
+    errors: Mutex<HashMap<String, ErrorInfo>>,
+    errors_snapshot: Mutex<HashMap<String, ErrorInfo>>,
 }
 
 impl ErrorMetrics {
     pub fn new() -> Self {
-        Self { errors: HashMap::new(), errors_snapshot: HashMap::new() }
+        Self { errors: Mutex::new(HashMap::new()), errors_snapshot: Mutex::new(HashMap::new()) }
     }
 
-    pub fn submit(&mut self, error_code: String) {
-        self.errors.entry(error_code).or_insert(ErrorInfo::new()).submit();
+    pub fn submit(&self, error_code: String) {
+        self.get_errors().entry(error_code).or_insert(ErrorInfo::new()).submit();
     }
 
     fn get_count_delta(&self, error_code: &str) -> i64 {
         get_delta(
-            self.errors.get(error_code).unwrap_or(&ErrorInfo::default()).count,
-            self.errors_snapshot.get(error_code).unwrap_or(&ErrorInfo::default()).count,
+            self.get_errors().get(error_code).unwrap_or(&ErrorInfo::default()).count,
+            self.get_errors_snapshot().get(error_code).unwrap_or(&ErrorInfo::default()).count,
         )
     }
 
     pub fn take_snapshot(&mut self) {
-        for code in self.errors.keys() {
-            *self.errors_snapshot.entry(code.clone()).or_insert(ErrorInfo::default()) =
-                self.errors.get(code).expect("Expected error by code").clone();
+        let errors = self.get_errors();
+        for code in errors.keys() {
+            *self.get_errors_snapshot().entry(code.clone()).or_insert(ErrorInfo::default()) =
+                errors.get(code).expect("Expected error by code").clone();
         }
     }
 
     pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
         let mut errors = vec![];
 
-        for code in self.errors.keys() {
+        for code in self.get_errors().keys() {
             let count_delta = self.get_count_delta(code);
             if count_delta == 0 {
                 continue;
@@ -584,7 +626,7 @@ impl ErrorMetrics {
     pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
         let mut errors = vec![];
 
-        for (code, info) in &self.errors {
+        for (code, info) in self.get_errors().iter() {
             let mut error_object = JSONMap::new();
             error_object.insert("code".to_string(), json!(code));
             if let Some(database_hash) = database_hash {
@@ -604,7 +646,7 @@ impl ErrorMetrics {
 
     pub fn to_prometheus_data(&self, database_hash: &DatabaseHashOpt) -> String {
         let mut buf = String::new();
-        for (code, info) in &self.errors {
+        for (code, info) in self.get_errors().iter() {
             buf.push_str("typedb_error_total{");
 
             if let Some(database_hash) = database_hash {
@@ -613,6 +655,14 @@ impl ErrorMetrics {
             buf.push_str(&format!("code=\"{}\"}} {} \n", code, info.count));
         }
         buf
+    }
+
+    pub fn get_errors(&self) -> MutexGuard<'_, HashMap<String, ErrorInfo>> {
+        self.errors.lock().expect("Expected error metrics lock acquisition")
+    }
+
+    pub fn get_errors_snapshot(&self) -> MutexGuard<'_, HashMap<String, ErrorInfo>> {
+        self.errors_snapshot.lock().expect("Expected error metrics lock acquisition")
     }
 }
 
@@ -640,15 +690,16 @@ pub enum LoadKind {
     SchemaTransactions,
     ReadTransactions,
     WriteTransactions,
+    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
 }
 
-// TODO: Would be great to have a static protection that every kind is covered here
 impl LoadKind {
-    const ALL_EMPTY_COUNTS: [(LoadKind, u64); 3] =
-        [(LoadKind::SchemaTransactions, 0u64), (LoadKind::WriteTransactions, 0u64), (LoadKind::ReadTransactions, 0u64)];
-
-    fn all_empty_counts_map() -> HashMap<LoadKind, u64> {
-        HashMap::from(Self::ALL_EMPTY_COUNTS)
+    fn all_empty_counts_map() -> HashMap<LoadKind, AtomicU64> {
+        HashMap::from([
+            (LoadKind::SchemaTransactions, AtomicU64::new(0)),
+            (LoadKind::WriteTransactions, AtomicU64::new(0)),
+            (LoadKind::ReadTransactions, AtomicU64::new(0)),
+        ])
     }
 }
 
@@ -685,6 +736,35 @@ pub enum ActionKind {
     TransactionCommit,
     TransactionRollback,
     TransactionQuery,
+    // ATTENTION: When adding new Kinds, update all_empty_counts_map()!
+}
+
+impl ActionKind {
+    fn all_empty_counts_map() -> HashMap<Self, ActionInfo> {
+        HashMap::from([
+            (Self::ConnectionOpen, ActionInfo::default()),
+            (Self::ServersAll, ActionInfo::default()),
+            (Self::UsersContains, ActionInfo::default()),
+            (Self::UsersCreate, ActionInfo::default()),
+            (Self::UsersUpdate, ActionInfo::default()),
+            (Self::UsersDelete, ActionInfo::default()),
+            (Self::UsersAll, ActionInfo::default()),
+            (Self::UsersGet, ActionInfo::default()),
+            (Self::Authenticate, ActionInfo::default()),
+            (Self::DatabasesContains, ActionInfo::default()),
+            (Self::DatabasesCreate, ActionInfo::default()),
+            (Self::DatabasesGet, ActionInfo::default()),
+            (Self::DatabasesAll, ActionInfo::default()),
+            (Self::DatabaseSchema, ActionInfo::default()),
+            (Self::DatabaseTypeSchema, ActionInfo::default()),
+            (Self::DatabaseDelete, ActionInfo::default()),
+            (Self::TransactionOpen, ActionInfo::default()),
+            (Self::TransactionClose, ActionInfo::default()),
+            (Self::TransactionCommit, ActionInfo::default()),
+            (Self::TransactionRollback, ActionInfo::default()),
+            (Self::TransactionQuery, ActionInfo::default()),
+        ])
+    }
 }
 
 impl fmt::Display for ActionKind {
