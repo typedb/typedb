@@ -29,6 +29,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
+use tracing::{event, Level};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -61,7 +62,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use tracing::{event, Level};
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -584,7 +584,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 beam_width -= 1;
             } // Narrow the beam until it greedy at the tail (for large queries)
             for mut plan in best_partial_plans.drain(..) {
-                event!(Level::TRACE,
+                event!(
+                    Level::TRACE,
                     "        PLAN: {:?} ONGOING: {:?} STASH: {:?} COST: {:?} + {:?} = {:?} HEURISTIC: {:?}",
                     plan.vertex_ordering,
                     plan.ongoing_step,
@@ -626,7 +627,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 if let Some(ext) = min_cost_extension {
                     if ext.is_trivial(&self.graph) {
-                        event!(Level::TRACE,
+                        event!(
+                            Level::TRACE,
                             "            Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
                             ext.pattern_id,
                             self.graph.elements[&VertexId::Pattern(ext.pattern_id)],
@@ -687,8 +689,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan(&self.graph);
-        event!(Level::TRACE, "\n Final plan (before lowering):\n --> Order: {:?} --> MetaData \n {:?}",
-            complete_plan.vertex_ordering, complete_plan.pattern_metadata);
+        event!(
+            Level::TRACE,
+            "\n Final plan (before lowering):\n --> Order: {:?} --> MetaData \n {:?}",
+            complete_plan.vertex_ordering,
+            complete_plan.pattern_metadata
+        );
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
