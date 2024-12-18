@@ -157,7 +157,7 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
                 write!(f, "|Is|")
             } //TODO
             PlannerVertex::Comparison(v) => {
-                write!(f, "|{:?} {:?} {:?}|", v.lhs, v.comparison, v.rhs)
+                write!(f, "|{:?} comp {:?}|", v.comparison.lhs(), v.comparison.rhs())
             }
             PlannerVertex::Expression(v) => {
                 write!(f, "|Expr of {:?}|", v.expression.variables)

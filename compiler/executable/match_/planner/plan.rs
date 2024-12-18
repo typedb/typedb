@@ -61,6 +61,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use tracing::{event, Level};
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -574,7 +575,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
 
         for i in 0..num_patterns {
-            println!("    STEP {}", i);
+            event!(Level::TRACE, "    PLANNER STEP {}", i);
 
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset: HashSet<PartialCostHash> = HashSet::with_capacity(beam_width);
@@ -583,8 +584,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 beam_width -= 1;
             } // Narrow the beam until it greedy at the tail (for large queries)
             for mut plan in best_partial_plans.drain(..) {
-                println!(
-                    "        PLAN: {:?} ONGOING: {:?} STASH: {:?} COST: {:?} + {:?} = {:?} -> {:?}",
+                event!(Level::TRACE,
+                    "        PLAN: {:?} ONGOING: {:?} STASH: {:?} COST: {:?} + {:?} = {:?} HEURISTIC: {:?}",
                     plan.vertex_ordering,
                     plan.ongoing_step,
                     plan.ongoing_step_stash,
@@ -625,8 +626,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 if let Some(ext) = min_cost_extension {
                     if ext.is_trivial(&self.graph) {
-                        println!(
-                            "            Stashing trivial {:?} = {}: cost {:?} heuristic {:?}",
+                        event!(Level::TRACE,
+                            "            Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
                             ext.pattern_id,
                             self.graph.elements[&VertexId::Pattern(ext.pattern_id)],
                             ext.step_cost.cost,
@@ -643,11 +644,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         }
                     } else {
                         for extension in extension_heap.drain() {
-                            println!(
-                                "            Top choice {:?} = {} join {:?} cost {:?} heuristic {:?} meta {:?}",
+                            event!(Level::TRACE,
+                                "            Choice {:?} = {} <-- join: {:?}, cost: {:?}, heuristic: {:?} metadat: {:?}",
                                 extension.pattern_id,
                                 self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
-                                extension.step_join_var,
+                                extension.step_join_var.map(|v| self.graph.elements[&VertexId::Variable(v)].as_variable().unwrap().variable()),
                                 extension.step_cost,
                                 extension.heuristic,
                                 extension.pattern_metadata
@@ -686,8 +687,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan(&self.graph);
-        println!("Inputed graph:\n {:#?}", self.graph);
-        println!("Complete plan:\n {:#?}", complete_plan);
+        event!(Level::TRACE, "\n Final plan (before lowering):\n --> Order: {:?} --> MetaData \n {:?}",
+            complete_plan.vertex_ordering, complete_plan.pattern_metadata);
         (complete_plan.vertex_ordering, complete_plan.pattern_metadata)
     }
 
@@ -1435,10 +1436,16 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    let CostMetaData::Direction(unbound_direction) = metadata else {
-                        unreachable!("expected metadata for constraint")
-                    };
-                    unbound_direction
+                    if sort_variable == lhs_var {
+                        Direction::Canonical
+                    } else if sort_variable == rhs_var {
+                        Direction::Reverse
+                    } else {
+                        let CostMetaData::Direction(unbound_direction) = metadata else {
+                            unreachable!("expected metadata for constraint")
+                        };
+                        unbound_direction
+                    }
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
                 } else {

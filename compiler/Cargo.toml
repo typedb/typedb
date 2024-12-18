@@ -36,7 +36,12 @@ features = {}
 
 [dependencies]
 
-	[dependencies.answer]
+  [dependencies.tracing]
+		features = ["attributes", "default", "log", "std", "tracing-attributes"]
+		version = "0.1.40"
+		default-features = false
+
+  [dependencies.answer]
 		path = "../answer"
 		features = []
 		default-features = false

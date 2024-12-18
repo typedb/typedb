@@ -20,6 +20,7 @@ pub fn initialise_logging_global() {
         // .add_directive("storage=trace".parse().unwrap())
         // .add_directive("executor=trace".parse().unwrap())
         // .add_directive("query=trace".parse().unwrap())
+        // .add_directive("compiler=trace".parse().unwrap())
         // useful for debugging what tonic is doing:
         // .add_directive("tonic=trace".parse().unwrap());
     ;
