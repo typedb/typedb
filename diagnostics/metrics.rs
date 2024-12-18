@@ -10,7 +10,7 @@ use std::{
     path::PathBuf,
     sync::{
         atomic::{AtomicU64, Ordering},
-        Mutex, MutexGuard,
+        RwLock, RwLockReadGuard, RwLockWriteGuard,
     },
     time::Instant,
 };
@@ -468,13 +468,19 @@ impl ActionMetrics {
         let mut actions = vec![];
 
         for (kind, info) in &self.actions {
+            let attempted = info.get_attempted();
+            if attempted == 0 {
+                continue;
+            }
+            let successful = info.get_successful();
+
             let mut request_object = serde_json::Map::new();
             request_object.insert("name".to_string(), json!(kind.to_string()));
             if let Some(database_hash) = database_hash {
                 request_object.insert("database".to_string(), json!(format!("{:.0}", database_hash)));
             }
-            request_object.insert("attempted".to_string(), json!(info.get_attempted()));
-            request_object.insert("successful".to_string(), json!(info.get_successful()));
+            request_object.insert("attempted".to_string(), json!(attempted));
+            request_object.insert("successful".to_string(), json!(successful));
             actions.push(json!(request_object));
         }
 
@@ -492,11 +498,15 @@ impl ActionMetrics {
     pub fn to_prometheus_data_attempted(&self, database_hash: &DatabaseHashOpt) -> String {
         let mut buf = String::new();
         for (kind, info) in &self.actions {
+            let attempted = info.get_attempted();
+            if attempted == 0 {
+                continue;
+            }
             buf.push_str("typedb_attempted_requests_total{");
             if let Some(database_hash) = database_hash {
                 buf.push_str(&format!("database=\"{}\", ", database_hash));
             }
-            buf.push_str(&format!("kind=\"{}\"}} {}\n", kind, info.get_attempted()));
+            buf.push_str(&format!("kind=\"{}\"}} {}\n", kind, attempted));
         }
         buf
     }
@@ -504,6 +514,9 @@ impl ActionMetrics {
     pub fn to_prometheus_data_successful(&self, database_hash: &DatabaseHashOpt) -> String {
         let mut buf = String::new();
         for (kind, info) in &self.actions {
+            if info.get_attempted() == 0 {
+                continue;
+            }
             buf.push_str("typedb_successful_requests_total{");
             if let Some(database_hash) = database_hash {
                 buf.push_str(&format!("database=\"{}\", ", database_hash));
@@ -554,7 +567,7 @@ impl ActionInfo {
     }
 
     pub fn get_failed(&self) -> u64 {
-        self.successful.load(Ordering::Relaxed)
+        self.failed.load(Ordering::Relaxed)
     }
 
     pub fn get_attempted(&self) -> u64 {
@@ -573,17 +586,17 @@ impl Clone for ActionInfo {
 
 #[derive(Debug)]
 pub(crate) struct ErrorMetrics {
-    errors: Mutex<HashMap<String, ErrorInfo>>,
-    errors_snapshot: Mutex<HashMap<String, ErrorInfo>>,
+    errors: RwLock<HashMap<String, ErrorInfo>>,
+    errors_snapshot: RwLock<HashMap<String, ErrorInfo>>,
 }
 
 impl ErrorMetrics {
     pub fn new() -> Self {
-        Self { errors: Mutex::new(HashMap::new()), errors_snapshot: Mutex::new(HashMap::new()) }
+        Self { errors: RwLock::new(HashMap::new()), errors_snapshot: RwLock::new(HashMap::new()) }
     }
 
     pub fn submit(&self, error_code: String) {
-        self.get_errors().entry(error_code).or_insert(ErrorInfo::new()).submit();
+        self.get_errors_mut().entry(error_code).or_insert(ErrorInfo::new()).submit();
     }
 
     fn get_count_delta(&self, error_code: &str) -> i64 {
@@ -596,7 +609,7 @@ impl ErrorMetrics {
     pub fn take_snapshot(&mut self) {
         let errors = self.get_errors();
         for code in errors.keys() {
-            *self.get_errors_snapshot().entry(code.clone()).or_insert(ErrorInfo::default()) =
+            *self.get_errors_snapshot_mut().entry(code.clone()).or_insert(ErrorInfo::default()) =
                 errors.get(code).expect("Expected error by code").clone();
         }
     }
@@ -627,6 +640,7 @@ impl ErrorMetrics {
         let mut errors = vec![];
 
         for (code, info) in self.get_errors().iter() {
+            assert_ne!(info.count, 0, "Error count cannot be 0");
             let mut error_object = JSONMap::new();
             error_object.insert("code".to_string(), json!(code));
             if let Some(database_hash) = database_hash {
@@ -647,8 +661,8 @@ impl ErrorMetrics {
     pub fn to_prometheus_data(&self, database_hash: &DatabaseHashOpt) -> String {
         let mut buf = String::new();
         for (code, info) in self.get_errors().iter() {
+            assert_ne!(info.count, 0, "Error count cannot be 0");
             buf.push_str("typedb_error_total{");
-
             if let Some(database_hash) = database_hash {
                 buf.push_str(&format!("database=\"{}\", ", database_hash));
             }
@@ -657,12 +671,20 @@ impl ErrorMetrics {
         buf
     }
 
-    pub fn get_errors(&self) -> MutexGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors.lock().expect("Expected error metrics lock acquisition")
+    pub fn get_errors(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
+        self.errors.read().expect("Expected error metrics read lock acquisition")
     }
 
-    pub fn get_errors_snapshot(&self) -> MutexGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors_snapshot.lock().expect("Expected error metrics lock acquisition")
+    pub fn get_errors_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
+        self.errors.write().expect("Expected error metrics read lock acquisition")
+    }
+
+    pub fn get_errors_snapshot(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
+        self.errors_snapshot.read().expect("Expected error metrics snapshot read lock acquisition")
+    }
+
+    pub fn get_errors_snapshot_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
+        self.errors_snapshot.write().expect("Expected error metrics read lock acquisition")
     }
 }
 
