@@ -676,7 +676,7 @@ impl ErrorMetrics {
     }
 
     pub fn get_errors_mut(&self) -> RwLockWriteGuard<'_, HashMap<String, ErrorInfo>> {
-        self.errors.write().expect("Expected error metrics read lock acquisition")
+        self.errors.write().expect("Expected error metrics write lock acquisition")
     }
 
     pub fn get_errors_snapshot(&self) -> RwLockReadGuard<'_, HashMap<String, ErrorInfo>> {
