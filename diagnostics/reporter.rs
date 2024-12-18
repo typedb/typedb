@@ -121,7 +121,6 @@ impl Reporter {
     }
 
     async fn report(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
-        println!("REPORT!"); // TODO: Remove
         let diagnostics_json = diagnostics.to_reporting_json_against_snapshot().to_string();
         diagnostics.take_snapshot();
 
