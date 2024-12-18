@@ -7,8 +7,13 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{collections::HashMap, error::Error, fmt, iter, mem, path::Path, sync::Arc};
-
+use std::{
+    collections::HashMap,
+    error::Error,
+    fmt, iter, mem,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::error::QueryError;
 use cucumber::{gherkin::Feature, StatsWriter, World};
@@ -21,7 +26,6 @@ use itertools::Itertools;
 use server::typedb;
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
-use tokio::sync::Mutex;
 use transaction_context::ActiveTransaction;
 
 use crate::query_answer_context::QueryAnswer;
@@ -148,9 +152,9 @@ impl Context {
         self.close_active_concurrent_transactions();
 
         if clean_databases {
-            let database_names = self.server().unwrap().lock().await.database_manager().database_names();
+            let database_names = self.server().unwrap().lock().unwrap().database_manager().database_names();
             for database_name in database_names {
-                self.server().unwrap().lock().await.database_manager().delete_database(&database_name).unwrap();
+                self.server().unwrap().lock().unwrap().database_manager().delete_database(&database_name).unwrap();
             }
         }
 
@@ -174,7 +178,7 @@ impl Context {
     }
 
     pub async fn database(&self, name: &str) -> Arc<Database<WALClient>> {
-        self.server().unwrap().lock().await.database_manager().database(name).unwrap()
+        self.server().unwrap().lock().unwrap().database_manager().database(name).unwrap()
     }
 
     pub fn set_transaction(&mut self, tx: ActiveTransaction) {
