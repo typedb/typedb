@@ -20,7 +20,7 @@ use crate::{generic_step, Context};
 mod database;
 mod transaction;
 
-const DISTRIBUTION: &str = "TypeDB TEST";
+const DISTRIBUTION: &str = "TypeDB CE TEST";
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceCell::const_new();
 
 #[apply(generic_step)]

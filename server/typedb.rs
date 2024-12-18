@@ -140,7 +140,7 @@ impl Server {
             deployment_id,
             server_id,
             distribution.to_owned(),
-            VERSION.clone().to_owned(),
+            VERSION.to_owned(),
             storage_directory,
             config.is_service_reporting_enabled,
         );
