@@ -113,6 +113,16 @@ impl PlannerVertex<'_> {
         }
     }
 
+    pub(super) fn can_be_trivial(&self) -> bool {
+        match self {
+            Self::Comparison(_) => true,
+            Self::Expression(_) => true,
+            Self::Constraint(ConstraintVertex::TypeList(_)) => true,
+            Self::Constraint(ConstraintVertex::Isa(_)) => true,
+            _ => false,
+        }
+    }
+
     pub(super) fn as_variable_mut(&mut self) -> Option<&mut VariableVertex> {
         match self {
             Self::Variable(var) => Some(var),
@@ -168,7 +178,7 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
 impl Cost {
     const MIN_IO_RATIO: f64 = 0.000000001;
     const IN_MEM_COST_SIMPLE: f64 = 0.02;
-    const IN_MEM_COST_COMPLEX: f64 = Cost::IN_MEM_COST_SIMPLE * 2.0;
+    const IN_MEM_COST_COMPLEX: f64 = Cost::IN_MEM_COST_SIMPLE * 1.0; // TODO: revisit based on final usage of trivial patterns (see TRIVIAL_COST)
     pub const NOOP: Self = Self { cost: 0.0, io_ratio: 1.0 };
     pub const EMPTY: Self = Self { cost: 0.0, io_ratio: 0.0 };
     pub const INFINITY: Self = Self { cost: f64::INFINITY, io_ratio: 0.0 };
@@ -176,6 +186,7 @@ impl Cost {
     pub const MEM_COMPLEX_OUTPUT_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
     pub const TRIVIAL_COST_THRESHOLD: f64 = 0.05;
     pub const TRIVIAL_IO_THRESHOLD: f64 = 1.0;
+    pub const TRIVIAL_COST: f64 = Cost::IN_MEM_COST_SIMPLE;
 
     fn in_mem_complex_with_ratio(io_ratio: f64) -> Self {
         Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio }
