@@ -50,8 +50,9 @@ impl QueryProfile {
 
 impl fmt::Display for QueryProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Query profile[measurements_enabled={}]", self.enabled)?;
         let profiles = self.stage_profiles.read().unwrap();
+        let total_micros = Duration::from_nanos(profiles.values().map(|profile| profile.total_nanos()).sum()).as_micros();
+        writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
         for (id, pattern_profile) in profiles.iter().sorted_by_key(|(id, _)| *id) {
             writeln!(f, "  -----")?;
             writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;
@@ -90,10 +91,19 @@ impl StageProfile {
             Arc::new(StepProfile::new_disabled())
         }
     }
+
+    fn total_nanos(&self) -> u64 {
+        self.step_profiles.read().unwrap()
+            .iter()
+            .map(|profile| profile.nanos())
+            .sum()
+    }
 }
 
 impl fmt::Display for StageProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let total_nanos = self.total_nanos();
+        writeln!(f, "  Micros: {}", Duration::from_nanos(total_nanos).as_micros())?;
         for (i, step_profile) in self.step_profiles.read().unwrap().iter().enumerate() {
             match step_profile.data.as_ref() {
                 None => writeln!(f, "    {}.\n", i)?,
@@ -139,6 +149,10 @@ impl StepProfile {
         } else {
             StepProfileMeasurement::new(None)
         }
+    }
+
+    fn nanos(&self) -> u64 {
+        self.data.as_ref().map(|data| data.nanos.load(Ordering::Relaxed)).unwrap_or(0)
     }
 }
 

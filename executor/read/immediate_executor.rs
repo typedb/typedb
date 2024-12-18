@@ -233,11 +233,12 @@ impl IntersectionExecutor {
             while !batch.is_full() && self.compute_next_row(context)? {
                 batch.append(|mut row| self.write_next_row_into(&mut row));
             }
+            measurement.end(&self.profile, 1, batch.len() as u64);
             Some(batch)
         } else {
+            measurement.end(&self.profile, 0, 0);
             None
         };
-        measurement.end(&self.profile, 1, output.as_ref().map(|batch| batch.len()).unwrap_or(0) as u64);
         Ok(output)
     }
 

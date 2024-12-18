@@ -5,6 +5,7 @@
  */
 
 use std::ops::DerefMut;
+use std::time::Instant;
 
 use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
@@ -67,10 +68,12 @@ impl PatternExecutor {
         tabled_functions: &mut TabledFunctions,
         suspensions: &mut QueryPatternSuspensions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
+        let start = Instant::now();
         let _suspension_count_before = suspensions.record_nested_pattern_entry();
         let result = self.batch_continue(context, interrupt, tabled_functions, suspensions);
         let _suspension_count_after = suspensions.record_nested_pattern_exit();
         // debug_assert!(state_after == state_before); // TODO: Enable once we figure out retries at the calls. // As long as compute_next_batch is only called for the entry.
+        println!("Match executor micros: {}", Instant::now().duration_since(start).as_micros());
         result
     }
 

@@ -52,8 +52,10 @@ where
             Ok(rows) => rows,
             Err(err) => return Err((err, context)),
         };
-        let profile = context.profile.profile_stage(|| String::from("Reduce (no-op)"), executable_id);
-        let step_profile = profile.extend_or_get(0, || String::from("Reduction (no-op)"));
+        // we can't time the reduce over the iterator because we either need to measure an extremely granular operation
+        //  or double count the previous stage's operations
+        let profile = context.profile.profile_stage(|| String::from("Reduce (untimed)"), executable_id);
+        let step_profile = profile.extend_or_get(0, || String::from("Reduction (untimed)"));
         let measurement = step_profile.start_measurement();
         measurement.end(&step_profile, 1, rows.len() as u64);
         Ok((WrittenRowsIterator::new(rows), context))
