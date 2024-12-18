@@ -14,6 +14,7 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
+
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::error::QueryError;
 use cucumber::{gherkin::Feature, StatsWriter, World};
