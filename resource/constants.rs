@@ -108,7 +108,11 @@ pub mod diagnostics {
 
     pub const UNKNOWN_STR: &'static str = "Unknown";
 
-    pub const REPORTING_URI: &str = "https://diagnostics.typedb.com/";
+    pub const SERVICE_REPORTING_URI: &str = "https://diagnostics.typedb.com/";
+    pub const POSTHOG_BATCH_REPORTING_URI: &str = "https://us.i.posthog.com/batch/";
+    // The key is read-only and safe to expose
+    pub const POSTHOG_API_KEY: &str = "phc_kee7J4vlLnef61l6krVU8Fg5B6tYIgSEVOyW7yxwLSk"; // TODO: update to prod
+
     pub const REPORT_INTERVAL: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
     pub const REPORT_ONCE_DELAY: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
     pub const DISABLED_REPORTING_FILE_NAME: &str = "_reporting_disabled";

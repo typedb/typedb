@@ -25,12 +25,14 @@ use hyper::{
     header::{HeaderValue, CONNECTION, CONTENT_TYPE},
     Body, Client, Method, Request,
 };
-use hyper_rustls::HttpsConnectorBuilder;
+use hyper::client::HttpConnector;
+use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
     diagnostics::{DISABLED_REPORTING_FILE_NAME, REPORT_INTERVAL, REPORT_ONCE_DELAY},
 };
+use resource::constants::diagnostics::{POSTHOG_API_KEY, POSTHOG_BATCH_REPORTING_URI, SERVICE_REPORTING_URI};
 
 use crate::{hash_string_consistently, Diagnostics};
 
@@ -38,7 +40,6 @@ use crate::{hash_string_consistently, Diagnostics};
 pub struct Reporter {
     deployment_id: String,
     diagnostics: Arc<Diagnostics>,
-    reporting_uri: &'static str,
     data_directory: PathBuf,
     is_enabled: bool,
     _reporting_job: Arc<Mutex<Option<TokioIntervalRunner>>>,
@@ -48,14 +49,12 @@ impl Reporter {
     pub(crate) fn new(
         deployment_id: String,
         diagnostics: Arc<Diagnostics>,
-        reporting_uri: &'static str,
         data_directory: PathBuf,
         is_enabled: bool,
     ) -> Self {
         Self {
             deployment_id,
             diagnostics,
-            reporting_uri,
             data_directory,
             is_enabled,
             _reporting_job: Arc::new(Mutex::new(None)),
@@ -73,13 +72,12 @@ impl Reporter {
 
     async fn schedule_reporting(&self) {
         let diagnostics = self.diagnostics.clone();
-        let reporting_uri = self.reporting_uri;
 
         let reporting_job = TokioIntervalRunner::new_with_initial_delay(
             move || {
                 let diagnostics = diagnostics.clone();
                 async move {
-                    Self::report(diagnostics, reporting_uri).await;
+                    Self::report(diagnostics).await;
                 }
             },
             REPORT_INTERVAL,
@@ -92,12 +90,11 @@ impl Reporter {
         let disabled_reporting_file = self.data_directory.join(DISABLED_REPORTING_FILE_NAME);
         if !disabled_reporting_file.exists() {
             let diagnostics = self.diagnostics.clone();
-            let reporting_uri = self.reporting_uri;
             let data_directory = self.data_directory.clone();
 
             tokio::spawn(async move {
-                tokio::time::sleep(REPORT_ONCE_DELAY).await;
-                if Self::report(diagnostics, reporting_uri).await {
+                tokio::time::sleep(Duration::from_secs(20)).await;
+                if Self::report(diagnostics).await {
                     Self::save_disabled_reporting_file(&data_directory);
                 }
             });
@@ -120,37 +117,95 @@ impl Reporter {
         Duration::from_secs(delay_secs)
     }
 
-    async fn report(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
-        let diagnostics_json = diagnostics.to_reporting_json_against_snapshot().to_string();
+    async fn report(diagnostics: Arc<Diagnostics>) -> bool {
+        println!("REPORT!"); // TODO: Remove
+        let service_task = Self::report_diagnostics_service(diagnostics.clone(), SERVICE_REPORTING_URI);
+        let posthog_task = Self::report_posthog(diagnostics.clone(), POSTHOG_BATCH_REPORTING_URI, POSTHOG_API_KEY);
+        let (is_service_reported, is_posthog_reported) = tokio::join!(service_task, posthog_task);
+
         diagnostics.take_snapshot();
 
+        // TODO: Redo
+        if !is_service_reported {
+            println!("Service diagnostics not reported, consider additional logic!");
+        }
+        if !is_posthog_reported {
+            println!("Posthog diagnostics not reported, consider additional logic!");
+        }
+        is_posthog_reported && is_service_reported
+    }
+
+    async fn report_diagnostics_service(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str) -> bool {
+        let diagnostics_json = diagnostics.to_service_reporting_json_against_snapshot().to_string();
+
+        // TODO: return
+        // let request = hyper::Request::post(reporting_uri)
+        //     .header(CONTENT_TYPE, "application/json")
+        //     .header(CONNECTION, "close")
+        //     .body(Body::from(diagnostics_json))
+        //     .expect("Failed to construct the request");
+        //
+        // match Self::new_https_client().request(request).await {
+        //     Ok(response) => {
+        //         if response.status().is_success() {
+        //             true
+        //         } else {
+        //             trace!("Failed to push diagnostics to {}: {}", reporting_uri, response.status());
+        //             false
+        //         }
+        //     }
+        //     Err(e) => {
+        //         trace!("Failed to push diagnostics to {}: {}", reporting_uri, e);
+        //         false
+        //     }
+        // }
+        true
+    }
+
+    async fn report_posthog(diagnostics: Arc<Diagnostics>, reporting_uri: &'static str, api_key: &'static str) -> bool {
+        let events_json = diagnostics.to_posthog_reporting_json_against_snapshot(api_key).to_string();
+        println!("Posthog events: {events_json}");
+
+        let request = Request::post(reporting_uri)
+            .header(CONTENT_TYPE, "application/json")
+            .header(CONNECTION, "close")
+            .body(Body::from(events_json.to_string()))
+            .expect("Failed to construct the request");
+
+        match Self::new_https_client().request(request).await {
+            Ok(response) => {
+                if response.status().is_success() {
+                    println!("POSTHOG success!");
+                    true
+                } else {
+                    println!("Failed to send a posthog batch to {}: {}", reporting_uri, response.status());
+                    trace!("Failed to send a posthog batch to {}: {}", reporting_uri, response.status());
+                    false
+                }
+            }
+            Err(e) => {
+                println!("Failed to send a posthog batch to {}: {}", reporting_uri, e);
+                trace!("Failed to send a posthog batch to {}: {}", reporting_uri, e);
+                false
+            }
+        }
+    }
+
+    pub async fn shutdown(&self) {
+        if !self.is_enabled {
+            return;
+        }
+        // TODO: implement final sending on shutdown
+    }
+
+    fn new_https_client() -> Client<HttpsConnector<HttpConnector>> {
         let https = HttpsConnectorBuilder::new()
             .with_native_roots()
             .expect("No native root CA certificates found")
             .https_only()
             .enable_http1()
             .build();
-        let client = Client::builder().build::<_, Body>(https);
-        let request = hyper::Request::post(reporting_uri)
-            .header(CONTENT_TYPE, "application/json")
-            .header(CONNECTION, "close")
-            .body(Body::from(diagnostics_json))
-            .expect("Failed to construct the request");
-
-        match client.request(request).await {
-            Ok(response) => {
-                if response.status().is_success() {
-                    true
-                } else {
-                    trace!("Failed to push diagnostics to {}: {}", reporting_uri, response.status());
-                    false
-                }
-            }
-            Err(e) => {
-                trace!("Failed to push diagnostics to {}: {}", reporting_uri, e);
-                false
-            }
-        }
+        Client::builder().build::<_, Body>(https)
     }
 
     fn save_disabled_reporting_file(data_directory: &PathBuf) {

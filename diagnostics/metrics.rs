@@ -20,11 +20,11 @@ use resource::constants::diagnostics::{REPORT_INTERVAL, UNKNOWN_STR};
 use serde_json::{json, map::Map as JSONMap, Value as JSONValue};
 use sysinfo::{Disks, MemoryRefreshKind, RefreshKind, System};
 
-use crate::{version::JSON_API_VERSION, DatabaseHash, DatabaseHashOpt};
+use crate::{version::SERVICE_API_VERSION, DatabaseHash, DatabaseHashOpt};
 
 #[derive(Debug)]
 pub(crate) struct ServerProperties {
-    json_api_version: u64,
+    service_api_version: u64,
     deployment_id: String,
     server_id: String,
     distribution: String,
@@ -38,7 +38,7 @@ impl ServerProperties {
         distribution: String,
         is_reporting_enabled: bool,
     ) -> ServerProperties {
-        Self { json_api_version: JSON_API_VERSION, deployment_id, server_id, distribution, is_reporting_enabled }
+        Self { service_api_version: SERVICE_API_VERSION, deployment_id, server_id, distribution, is_reporting_enabled }
     }
 
     pub fn deployment_id(&self) -> &str {
@@ -55,7 +55,7 @@ impl ServerProperties {
 
     pub fn to_reporting_json(&self) -> JSONValue {
         json!({
-            "version": self.json_api_version,
+            "version": self.service_api_version,
             "deploymentID": self.deployment_id,
             "serverID": self.server_id,
             "distribution": self.distribution,
@@ -67,7 +67,7 @@ impl ServerProperties {
 
     pub fn to_monitoring_json(&self) -> JSONValue {
         json!({
-            "version": self.json_api_version,
+            "version": self.service_api_version,
             "deploymentID": self.deployment_id,
             "serverID": self.server_id,
             "distribution": self.distribution,
@@ -441,7 +441,7 @@ impl ActionMetrics {
         }
     }
 
-    pub fn to_reporting_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
+    pub fn to_service_reporting_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
         let mut actions = vec![];
 
         for kind in self.actions.keys() {
@@ -462,6 +462,28 @@ impl ActionMetrics {
         }
 
         actions
+    }
+
+    pub fn to_posthog_reporting_json(&self, distinct_id: &str, database_hash: &DatabaseHashOpt) -> JSONValue {
+        let mut event = JSONMap::new();
+        event.insert("event".to_string(), json!("diagnostics_snapshot"));
+
+        let mut properties = JSONMap::new();
+        properties.insert("distinct_id".to_string(), json!(distinct_id));
+        if let Some(database_hash) = database_hash {
+            properties.insert("database".to_string(), json!(database_hash));
+        }
+
+        for kind in self.actions.keys() {
+            let total = self.get_successful_delta(kind) + self.get_failed_delta(kind);
+            if total == 0 {
+                continue;
+            }
+            properties.insert(kind.to_posthog_event_name().to_string(), json!(total));
+        }
+
+        event.insert("properties".to_string(), json!(properties));
+        json!(event)
     }
 
     pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
@@ -786,6 +808,32 @@ impl ActionKind {
             (Self::TransactionRollback, ActionInfo::default()),
             (Self::TransactionQuery, ActionInfo::default()),
         ])
+    }
+
+    pub fn to_posthog_event_name(&self) -> &'static str {
+        match self {
+            ActionKind::ConnectionOpen => "connections_opened",
+            ActionKind::ServersAll => "all_servers_retrieved",
+            ActionKind::UsersContains => "users_presence_checked",
+            ActionKind::UsersCreate => "users_created",
+            ActionKind::UsersUpdate => "users_updated",
+            ActionKind::UsersDelete => "users_deleted",
+            ActionKind::UsersAll => "all_users_retrieved",
+            ActionKind::UsersGet => "users_retrieved",
+            ActionKind::Authenticate => "authentications_performed",
+            ActionKind::DatabasesContains => "databases_presence_checked",
+            ActionKind::DatabasesCreate => "databases_created",
+            ActionKind::DatabasesGet => "databases_retrieved",
+            ActionKind::DatabasesAll => "all_databases_retrieved",
+            ActionKind::DatabaseSchema => "database_schemas_retrieved",
+            ActionKind::DatabaseTypeSchema => "database_type_schemas_retrieved",
+            ActionKind::DatabaseDelete => "databases_deleted",
+            ActionKind::TransactionOpen => "transactions_opened",
+            ActionKind::TransactionClose => "transactions_closed",
+            ActionKind::TransactionCommit => "transactions_committed",
+            ActionKind::TransactionRollback => "transactions_rolled_back",
+            ActionKind::TransactionQuery => "queries_executed",
+        }
     }
 }
 
