@@ -26,6 +26,7 @@ rust_library(
         "@typeql//rust:typeql",
 
         "@crates//:itertools",
+        "@crates//:tracing",
         "@crates//:chrono",
     ],
 )
