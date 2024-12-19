@@ -10,9 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use ir::{
-    pipeline::function_signature::FunctionID,
-};
+use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
     annotation::expression::compiled_expression::ExecutableExpression,
