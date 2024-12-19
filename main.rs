@@ -16,6 +16,7 @@ use server::parameters::{
     cli::CLIArgs,
     config::{Config, DiagnosticsConfig, EncryptionConfig},
 };
+use tokio::net::lookup_host;
 
 const DISTRIBUTION: &str = "TypeDB CE";
 
@@ -28,7 +29,7 @@ async fn main() {
     initialise_logging_global();
 
     let deployment_id = None;
-    let config = get_configuration(cli_args);
+    let config = get_configuration(cli_args).await;
 
     let open_result = server::typedb::Server::open(config, DISTRIBUTION, deployment_id).await;
 
@@ -39,7 +40,7 @@ async fn main() {
     }
 }
 
-fn get_configuration(cli_args: CLIArgs) -> Config {
+async fn get_configuration(cli_args: CLIArgs) -> Config {
     let encryption_config = EncryptionConfig {
         enabled: cli_args.server_encryption_enabled,
         cert: cli_args.server_encryption_cert.map(|path| PathBuf::from_str(path.as_str()).unwrap()),

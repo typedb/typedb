@@ -14,7 +14,7 @@ pub struct CLIArgs {
 
     /// Server host and port, eg., 0.0.0.0:1729
     #[arg(long = "server.address")]
-    pub server_address: Option<SocketAddr>,
+    pub server_address: Option<String>,
 
     /// Enable/disable in-flight encryption. Specify to enable, or leave out to disable
     #[arg(long = "server.encryption.enabled")]

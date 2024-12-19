@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-
+use tokio::net::lookup_host;
 use resource::constants::server::{DEFAULT_ADDRESS, MONITORING_DEFAULT_PORT};
 
 #[derive(Debug)]
@@ -31,7 +31,7 @@ impl Config {
             .unwrap_or(std::env::current_dir().unwrap());
         Self {
             server: ServerConfig {
-                address: SocketAddr::from_str(DEFAULT_ADDRESS).unwrap(),
+                address: DEFAULT_ADDRESS.to_string(),
                 encryption: EncryptionConfig::default(),
                 diagnostics: DiagnosticsConfig::default(),
                 is_development_mode: ServerConfig::IS_DEVELOPMENT_MODE_FORCED,
@@ -53,13 +53,13 @@ impl Config {
     }
 
     pub fn customised(
-        server_address: Option<SocketAddr>,
+        server_address: Option<String>,
         encryption_config: Option<EncryptionConfig>,
         diagnostics_config: Option<DiagnosticsConfig>,
         data_directory: Option<PathBuf>,
         is_development_mode: bool,
     ) -> Self {
-        let server_address = server_address.unwrap_or_else(|| SocketAddr::from_str(DEFAULT_ADDRESS).unwrap());
+        let server_address = server_address.unwrap_or_else(|| DEFAULT_ADDRESS.to_string());
         let encryption_config = encryption_config.unwrap_or_else(|| EncryptionConfig::default());
         let diagnostics_config = diagnostics_config.unwrap_or_else(|| DiagnosticsConfig::default());
         let data_directory = data_directory.map(|dir| dir.to_path_buf()).unwrap_or_else(|| {
@@ -83,7 +83,7 @@ impl Config {
 
 #[derive(Debug)]
 pub(crate) struct ServerConfig {
-    pub(crate) address: SocketAddr,
+    pub(crate) address: String,
     pub(crate) encryption: EncryptionConfig,
     pub(crate) diagnostics: DiagnosticsConfig,
 
