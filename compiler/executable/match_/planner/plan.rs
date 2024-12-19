@@ -609,20 +609,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 let mut extension_heap = BinaryHeap::with_capacity(extension_width);
                 let mut min_cost_extension: Option<StepExtension> = None;
                 for extension in plan.extensions_iter(&self.graph) {
-                    match min_cost_extension {
+                    match &min_cost_extension {
                         None => min_cost_extension = Some(extension.clone()),
-                        Some(existing)
-                            if extension
-                                .step_cost
-                                .cost
-                                .partial_cmp(&existing.step_cost.cost)
-                                .unwrap_or(Ordering::Greater)
-                                .then_with(|| extension.pattern_id.cmp(&existing.pattern_id))
-                                .is_lt() =>
-                        {
-                            min_cost_extension = Some(extension.clone())
+                        Some(existing) => {
+                            if (extension.step_cost.cost, extension.pattern_id)
+                                < (existing.step_cost.cost, existing.pattern_id)
+                            {
+                                min_cost_extension = Some(extension.clone())
+                            }
                         }
-                        _ => {}
                     }
 
                     if extension_heap.len() < extension_width {
