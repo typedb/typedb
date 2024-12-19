@@ -77,6 +77,7 @@ impl ConstraintVertex<'_> {
         match self {
             Self::Links(inner) => inner.relation == var || inner.player == var,
             Self::Has(inner) => true,
+            Self::IndexedRelation(inner) => inner.player_1 == var || inner.player_2 == var,
             _ => false,
         }
     }
@@ -112,8 +113,8 @@ impl<'a> fmt::Display for ConstraintVertex<'a> {
             ConstraintVertex::Plays(_) => {
                 write!(f, "|Plays|")
             } //TODO
-            ConstraintVertex::IndexedRelation(_) => {
-                write!(f, "|Relation Index|")
+            ConstraintVertex::IndexedRelation(p) => {
+                write!(f, "|{} --> {}|", p.indexed_relation.player_1(), p.indexed_relation.player_2())
             }
         }
     }
@@ -320,7 +321,7 @@ impl<'a> IsaPlanner<'a> {
             .map(|thing_types| {
                 thing_types.iter().map(|thing_type| instance_count(thing_type, statistics)).sum::<u64>() as f64
             })
-            .unwrap_or(0.0);
+            .unwrap_or(1.0);
         Self { isa, thing, type_, unrestricted_expected_size }
     }
 
@@ -330,12 +331,6 @@ impl<'a> IsaPlanner<'a> {
 
     pub(crate) fn isa(&self) -> &Isa<Variable> {
         self.isa
-    }
-
-    fn expected_output_size(&self, graph: &Graph<'_>, inputs: &[VertexId]) -> f64 {
-        let thing = graph.elements()[&VertexId::Variable(self.thing)].as_variable().unwrap();
-        let thing_selectivity = thing.restriction_based_selectivity(inputs);
-        f64::max(self.unrestricted_expected_size * thing_selectivity, VariableVertex::OUTPUT_SIZE_MIN)
     }
 
     pub(crate) fn thing_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (bool, f64, f64) {
@@ -371,7 +366,8 @@ impl<'a> IsaPlanner<'a> {
         is_type_bound: bool,
         num_types: f64,
     ) -> f64 {
-        let mut scan_size = self.unrestricted_expected_size;
+        // let mut scan_size = self.unrestricted_expected_size;
+        let mut scan_size = thing_size; // TODO: use previous line once reason for discrepancy established
         if is_type_bound {
             scan_size /= num_types; // account for narrowed prefix
         }
@@ -389,6 +385,7 @@ impl Costed for IsaPlanner<'_> {
     fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let (is_thing_bound, thing_size, thing_selectivity) = self.thing_estimates(inputs, graph);
         let (is_type_bound, num_types) = self.type_estimate(inputs, graph);
+
         let scan_size =
             self.output_size_estimate(is_thing_bound, thing_size, thing_selectivity, is_type_bound, num_types);
         let cost = match is_thing_bound {

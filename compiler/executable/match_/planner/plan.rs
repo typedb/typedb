@@ -568,7 +568,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut num_patterns = search_patterns.len();
 
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
-        let mut extension_width = (num_patterns / 2) + 2; // ensure this is larger than (num_patterns / 2) or change narrowing logic
+        let mut extension_width = (num_patterns / 2) + 5; // ensure this is larger than (num_patterns / 2) or change narrowing logic (note, join options means patterns may appear twice as extensions)
         let reduction_cycle = 2;
 
         let mut best_partial_plans = Vec::with_capacity(beam_width);
@@ -675,12 +675,18 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                                 new_plans_hashset.insert(new_plan_hash);
                                 if new_plans_heap.len() < beam_width {
                                     new_plans_heap.push(new_plan);
+                                    event!(Level::TRACE, "                (added)");
                                 } else if let Some(top) = new_plans_heap.peek() {
                                     if new_plan < *top {
                                         new_plans_heap.pop();
                                         new_plans_heap.push(new_plan);
+                                        event!(Level::TRACE, "                (added)");
+                                    } else {
+                                        event!(Level::TRACE, "                (discarded)");
                                     }
                                 }
+                            } else {
+                                event!(Level::TRACE, "                (hash collision)");
                             }
                         }
                     }
@@ -1086,6 +1092,7 @@ impl PartialCostPlan {
             ongoing_vars: self.ongoing_step.clone(),
             approx_io: (self.cumulative_cost.io_ratio * self.ongoing_step_cost.io_ratio) as u64, // TODO: improve rounding/hashing (make relative)
             approx_cost: self.cumulative_cost.chain(self.ongoing_step_cost).cost as u64, // TODO: improve rounding/hashing (make relative)
+            ongoing_join: if self.ongoing_step_join_var.is_some() { true } else { false }
         }
     }
 }
@@ -1110,6 +1117,7 @@ pub(super) struct PartialCostHash {
     ongoing_vars: HashSet<PatternVertexId>,
     approx_io: u64,
     approx_cost: u64,
+    ongoing_join: bool,
 }
 
 impl Hash for PartialCostHash {
@@ -1130,6 +1138,7 @@ impl Hash for PartialCostHash {
         acc.hash(state);
         self.approx_io.hash(state);
         self.approx_cost.hash(state);
+        self.ongoing_join.hash(state);
     }
 }
 
