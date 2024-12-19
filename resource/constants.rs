@@ -44,6 +44,7 @@ pub mod server {
     pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";
+    pub const DEFAULT_DATA_DIR: &str = "data";
 
     pub const SYSTEM_FILE_PREFIX: &str = "_";
 }
