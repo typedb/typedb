@@ -152,7 +152,7 @@ impl Server {
             distribution.to_owned(),
             version.to_owned(),
             storage_directory,
-            config.is_service_reporting_enabled,
+            config.is_reporting_enabled,
         );
 
         DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode)

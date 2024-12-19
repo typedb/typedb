@@ -50,7 +50,7 @@ fn get_configuration(cli_args: CLIArgs) -> Config {
     let diagnostics_config = DiagnosticsConfig {
         is_monitoring_enabled: cli_args.diagnostics_monitoring_enable,
         monitoring_port: cli_args.diagnostics_monitoring_port,
-        is_service_reporting_enabled: cli_args.diagnostics_reporting_metrics,
+        is_reporting_enabled: cli_args.diagnostics_reporting_metrics,
     };
     let data_dir = cli_args.storage_data.map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
     Config::customised(

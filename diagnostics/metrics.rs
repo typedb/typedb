@@ -531,11 +531,11 @@ impl ActionMetrics {
         let mut any_actions = false;
 
         for kind in self.actions.keys() {
-            let total = self.get_posthog_successful_delta(kind) + self.get_posthog_failed_delta(kind);
-            if total == 0 {
+            let successful = self.get_posthog_successful_delta(kind);
+            if successful == 0 {
                 continue;
             }
-            properties.insert(kind.to_posthog_event_name().to_string(), json!(total));
+            properties.insert(kind.to_posthog_event_name().to_string(), json!(successful));
             any_actions = true;
         }
 
@@ -907,27 +907,27 @@ impl ActionKind {
 
     pub fn to_posthog_event_name(&self) -> &'static str {
         match self {
-            ActionKind::ConnectionOpen => "connections_opened",
-            ActionKind::ServersAll => "all_servers_retrieved",
-            ActionKind::UsersContains => "users_presence_checked",
-            ActionKind::UsersCreate => "users_created",
-            ActionKind::UsersUpdate => "users_updated",
-            ActionKind::UsersDelete => "users_deleted",
-            ActionKind::UsersAll => "all_users_retrieved",
-            ActionKind::UsersGet => "users_retrieved",
-            ActionKind::Authenticate => "authentications_performed",
-            ActionKind::DatabasesContains => "databases_presence_checked",
-            ActionKind::DatabasesCreate => "databases_created",
-            ActionKind::DatabasesGet => "databases_retrieved",
-            ActionKind::DatabasesAll => "all_databases_retrieved",
-            ActionKind::DatabaseSchema => "database_schemas_retrieved",
-            ActionKind::DatabaseTypeSchema => "database_type_schemas_retrieved",
-            ActionKind::DatabaseDelete => "databases_deleted",
-            ActionKind::TransactionOpen => "transactions_opened",
-            ActionKind::TransactionClose => "transactions_closed",
-            ActionKind::TransactionCommit => "transactions_committed",
-            ActionKind::TransactionRollback => "transactions_rolled_back",
-            ActionKind::TransactionQuery => "queries_executed",
+            ActionKind::ConnectionOpen => "connection_opens",
+            ActionKind::ServersAll => "server_alls",
+            ActionKind::UsersContains => "user_containses",
+            ActionKind::UsersCreate => "user_creates",
+            ActionKind::UsersUpdate => "user_updates",
+            ActionKind::UsersDelete => "user_deletes",
+            ActionKind::UsersAll => "user_alls",
+            ActionKind::UsersGet => "user_gets",
+            ActionKind::Authenticate => "authenticates",
+            ActionKind::DatabasesContains => "database_containses",
+            ActionKind::DatabasesCreate => "database_creates",
+            ActionKind::DatabasesGet => "database_gets",
+            ActionKind::DatabasesAll => "database_alls",
+            ActionKind::DatabaseSchema => "database_schemas",
+            ActionKind::DatabaseTypeSchema => "database_type_schemas",
+            ActionKind::DatabaseDelete => "databases_deletes",
+            ActionKind::TransactionOpen => "transaction_opens",
+            ActionKind::TransactionClose => "transaction_closes",
+            ActionKind::TransactionCommit => "transaction_commits",
+            ActionKind::TransactionRollback => "transaction_rollbacks",
+            ActionKind::TransactionQuery => "transaction_queries",
         }
     }
 }
