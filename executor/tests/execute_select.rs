@@ -145,26 +145,26 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     snapshot.commit().unwrap();
 }
 
-fn position_mapping<const N: usize>(
-    vars: [Variable; N],
+fn position_mapping<const N: usize, const M: usize>(
+    row_vars: [Variable; N],
+    internal_vars: [Variable; M],
 ) -> (
     HashMap<ExecutorVariable, Variable>,
     HashMap<Variable, VariablePosition>,
     HashMap<Variable, ExecutorVariable>,
     HashSet<ExecutorVariable>,
 ) {
-    let row_vars: HashMap<_, _> =
-        vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), v)).collect();
-    let variable_positions = HashMap::from_iter(row_vars.iter().map(|(i, var)| (*var, i.as_position().unwrap())));
-    let mapping = HashMap::from(vars.map(|var| {
-        if variable_positions.contains_key(&var) {
-            (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-        } else {
-            (var, ExecutorVariable::Internal(var))
-        }
-    }));
+    let position_to_var: HashMap<_, _> =
+        row_vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), v)).collect();
+    let variable_positions =
+        HashMap::from_iter(position_to_var.iter().map(|(i, var)| (*var, i.as_position().unwrap())));
+    let mapping: HashMap<_, _> = row_vars
+        .into_iter()
+        .map(|var| (var, ExecutorVariable::RowPosition(variable_positions[&var])))
+        .chain(internal_vars.into_iter().map(|var| (var, ExecutorVariable::Internal(var))))
+        .collect();
     let named_variables = mapping.values().copied().collect();
-    (row_vars, variable_positions, mapping, named_variables)
+    (position_to_var, variable_positions, mapping, named_variables)
 }
 
 #[test]
@@ -207,7 +207,8 @@ fn anonymous_vars_not_enumerated_or_counted() {
         .unwrap()
     };
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person]);
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person], [var_person_type, var_attribute, var_attribute_type]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -298,7 +299,8 @@ fn unselected_named_vars_counted() {
         .unwrap()
     };
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person]);
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person], [var_attribute, var_person_type, var_attribute_type]);
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -401,7 +403,10 @@ fn cartesian_named_counted_checked() {
         .unwrap()
     };
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_age]);
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
+        [var_person, var_age],
+        [var_person_type, var_name_type, var_age_type, var_email_type, var_name, var_email],
+    );
 
     // Plan
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
