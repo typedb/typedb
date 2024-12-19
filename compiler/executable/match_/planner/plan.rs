@@ -1001,7 +1001,7 @@ impl PartialCostPlan {
         for &pattern in self.ongoing_step_stash.iter() {
             current_step.push(VertexId::Pattern(pattern));
             for var in graph.elements[&VertexId::Pattern(pattern)].variables() {
-                if !self.all_produced_vars.contains(&var) {
+                if !self.all_produced_vars.contains(&var) && !current_step.contains(&VertexId::Variable(var)) {
                     current_step.push(VertexId::Variable(var));
                     current_stash_produced_vars.insert(var);
                 }
