@@ -18,6 +18,7 @@ use server::parameters::{
 };
 
 const DISTRIBUTION: &str = "TypeDB CE";
+const VERSION: &str = include_str!("VERSION");
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +31,7 @@ async fn main() {
     let deployment_id = None;
     let config = get_configuration(cli_args);
 
-    let open_result = server::typedb::Server::open(config, DISTRIBUTION, deployment_id).await;
+    let open_result = server::typedb::Server::open(config, DISTRIBUTION, VERSION, deployment_id).await;
 
     let result = open_result.unwrap().serve().await;
     match result {
@@ -49,10 +50,16 @@ fn get_configuration(cli_args: CLIArgs) -> Config {
     let diagnostics_config = DiagnosticsConfig {
         is_monitoring_enabled: cli_args.diagnostics_monitoring_enable,
         monitoring_port: cli_args.diagnostics_monitoring_port,
-        is_service_reporting_enabled: cli_args.diagnostics_reporting_metrics,
+        is_reporting_enabled: cli_args.diagnostics_reporting_metrics,
     };
     let data_dir = cli_args.storage_data.map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
-    Config::customised(cli_args.server_address, Some(encryption_config), Some(diagnostics_config), data_dir, cli_args.development_mode_enabled)
+    Config::customised(
+        cli_args.server_address,
+        Some(encryption_config),
+        Some(diagnostics_config),
+        data_dir,
+        cli_args.development_mode_enabled,
+    )
 }
 
 fn print_ascii_logo() {

@@ -4,4 +4,4 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub const JSON_API_VERSION: u64 = 1;
+pub const SERVICE_API_VERSION: u64 = 1;

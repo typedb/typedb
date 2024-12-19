@@ -9,8 +9,9 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use tokio::net::lookup_host;
+
 use resource::constants::server::{DEFAULT_ADDRESS, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT};
+use tokio::net::lookup_host;
 
 #[derive(Debug)]
 pub struct Config {
@@ -126,7 +127,7 @@ pub(crate) struct StorageConfig {
 pub struct DiagnosticsConfig {
     pub is_monitoring_enabled: bool,
     pub monitoring_port: u16,
-    pub is_service_reporting_enabled: bool,
+    pub is_reporting_enabled: bool,
 }
 
 impl DiagnosticsConfig {
@@ -134,7 +135,7 @@ impl DiagnosticsConfig {
         Self {
             is_monitoring_enabled: true,
             monitoring_port: MONITORING_DEFAULT_PORT,
-            is_service_reporting_enabled: true,
+            is_reporting_enabled: true,
         }
     }
 }

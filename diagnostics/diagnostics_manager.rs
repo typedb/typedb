@@ -6,7 +6,7 @@
 
 use std::{collections::HashSet, future::Future, hash::Hash, sync::Arc};
 
-use resource::constants::{database::INTERNAL_DATABASE_PREFIX, diagnostics::REPORTING_URI};
+use resource::constants::database::INTERNAL_DATABASE_PREFIX;
 use tonic::Status;
 use tonic_types::StatusExt;
 
@@ -51,7 +51,7 @@ impl DiagnosticsManager {
         let reporter = if is_development_mode {
             None
         } else {
-            Some(Reporter::new(deployment_id, diagnostics.clone(), REPORTING_URI, data_directory, is_reporting_enabled))
+            Some(Reporter::new(deployment_id, diagnostics.clone(), data_directory, is_reporting_enabled))
         };
 
         let monitoring_server = if is_monitoring_enabled {

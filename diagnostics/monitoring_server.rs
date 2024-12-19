@@ -41,9 +41,13 @@ impl MonitoringServer {
                 }
             });
 
-            let server = Server::bind(&addr).serve(make_svc);
-            if let Err(e) = server.await {
-                eprintln!("Monitoring server error: {}", e);
+            match Server::try_bind(&addr) {
+                Ok(server) => {
+                    if let Err(e) = server.serve(make_svc).await {
+                        eprintln!("Diagnostics monitoring server error: {}", e);
+                    }
+                }
+                Err(e) => eprintln!("Diagnostics monitoring server setup error for {}: {}", addr, e),
             }
         });
     }
