@@ -209,7 +209,7 @@ impl ThingPlanner {
         type_annotations: &TypeAnnotations,
         statistics: &Statistics,
     ) -> Self {
-        let mut unrestricted_expected_size: f64 = 1.0;
+        let mut unrestricted_expected_size: f64 = 0.0;
         let mut unrestricted_expected_attribute_types: usize = 0;
         for type_ in type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))

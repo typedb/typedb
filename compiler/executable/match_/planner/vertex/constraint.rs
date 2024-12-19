@@ -83,7 +83,7 @@ impl ConstraintVertex<'_> {
     }
 }
 
-impl<'a> fmt::Display for ConstraintVertex<'a> {
+impl fmt::Display for ConstraintVertex<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self {
             ConstraintVertex::TypeList(_) => {
@@ -321,7 +321,7 @@ impl<'a> IsaPlanner<'a> {
             .map(|thing_types| {
                 thing_types.iter().map(|thing_type| instance_count(thing_type, statistics)).sum::<u64>() as f64
             })
-            .unwrap_or(1.0);
+            .unwrap_or(0.0);
         Self { isa, thing, type_, unrestricted_expected_size }
     }
 
@@ -366,8 +366,7 @@ impl<'a> IsaPlanner<'a> {
         is_type_bound: bool,
         num_types: f64,
     ) -> f64 {
-        // let mut scan_size = self.unrestricted_expected_size;
-        let mut scan_size = thing_size; // TODO: use previous line once reason for discrepancy established
+        let mut scan_size = self.unrestricted_expected_size;
         if is_type_bound {
             scan_size /= num_types; // account for narrowed prefix
         }
@@ -377,7 +376,7 @@ impl<'a> IsaPlanner<'a> {
             scan_size *= thing_selectivity; // account for restrictions (like iid), which (we assume) can be used to reduce scan size
         }
         scan_size = f64::max(scan_size, VariableVertex::OUTPUT_SIZE_MIN); // TODO: verify if this is useful (part of previous model)
-        scan_size
+        scan_size.max(MIN_SCAN_SIZE)
     }
 }
 
@@ -542,7 +541,7 @@ impl<'a> HasPlanner<'a> {
         } else {
             scan_size *= attribute_selectivity;
         }
-        scan_size
+        scan_size.max(MIN_SCAN_SIZE)
     }
 }
 
@@ -758,7 +757,7 @@ impl<'a> LinksPlanner<'a> {
         } else {
             scan_size *= player_selectivity;
         }
-        scan_size
+        scan_size.max(MIN_SCAN_SIZE)
     }
 }
 
@@ -964,7 +963,7 @@ impl<'a> IndexedRelationPlanner<'a> {
         if is_relation_bound {
             output_size = 1.0;
         } // Ignore relation selectivity for now
-        output_size
+        output_size.max(MIN_SCAN_SIZE)
     }
 }
 
