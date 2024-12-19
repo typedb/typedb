@@ -28,7 +28,7 @@ use ir::{
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
-use itertools::Itertools;
+use itertools::{chain, Itertools};
 use tracing::{event, Level};
 
 use crate::{
@@ -624,7 +624,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                             extension.heuristic
                         );
                         let mut plan = plan.clone();
-                        plan.add_to_stash(extension.pattern_id);
+                        plan.add_to_stash(extension.pattern_id, &self.graph);
                         if new_plans_heap.len() < beam_width {
                             new_plans_heap.push(plan);
                         } else if let Some(top) = new_plans_heap.peek() {
@@ -806,6 +806,7 @@ pub(super) struct PartialCostPlan {
     ongoing_step_stash: Vec<PatternVertexId>, // the set of trivial patterns in the ongoing step
     ongoing_step_cost: Cost,                // the cost of the ongoing step (on top of the cumulative one)
     ongoing_step_produced_vars: HashSet<VariableVertexId>, // variables produced in this step
+    ongoing_step_stash_produced_vars: HashSet<VariableVertexId>, // variables produced in this step
     ongoing_step_join_var: Option<VariableVertexId>, // the join variable of the ongoing step
 
     all_produced_vars: HashSet<VariableVertexId>, // the set of all variables produced (incl. in ongoing step)
@@ -836,6 +837,7 @@ impl PartialCostPlan {
             ongoing_step_stash: Vec::new(),
             ongoing_step_cost: Cost::NOOP,
             ongoing_step_produced_vars: HashSet::new(),
+            ongoing_step_stash_produced_vars: HashSet::new(),
             ongoing_step_join_var: None,
             heuristic: Cost::INFINITY,
         }
@@ -843,7 +845,10 @@ impl PartialCostPlan {
 
     fn extensions_iter<'a>(&'a self, graph: &'a Graph<'_>) -> impl Iterator<Item = StepExtension> + 'a {
         let mut all_available_vars = self.vertex_ordering.clone();
-        all_available_vars.extend(self.ongoing_step_produced_vars.iter().map(|&var| VertexId::Variable(var)));
+        all_available_vars.extend(
+            chain(&self.ongoing_step_produced_vars, &self.ongoing_step_stash_produced_vars)
+                .map(|&var| VertexId::Variable(var)),
+        );
 
         self.remaining_patterns
             .iter()
@@ -965,10 +970,11 @@ impl PartialCostPlan {
         }
     }
 
-    fn add_to_stash(&mut self, pattern: PatternVertexId) {
+    fn add_to_stash(&mut self, pattern: PatternVertexId, graph: &Graph<'_>) {
         self.ongoing_step_stash.push(pattern);
         self.remaining_patterns.remove(&pattern);
         self.pattern_metadata.insert(pattern, CostMetaData::None);
+        self.ongoing_step_stash_produced_vars.extend(graph.elements[&VertexId::Pattern(pattern)].variables());
     }
 
     fn finalize_current_step(&self, graph: &Graph<'_>) -> (Vec<VertexId>, HashSet<VariableVertexId>) {
@@ -1034,6 +1040,7 @@ impl PartialCostPlan {
             ongoing_step_stash: self.ongoing_step_stash.clone(),
             ongoing_step_cost: extension.step_cost,
             ongoing_step_produced_vars: new_ongoing_produced_vars,
+            ongoing_step_stash_produced_vars: self.ongoing_step_stash_produced_vars.clone(),
             ongoing_step_join_var: extension.step_join_var,
             heuristic: extension.heuristic,
             all_produced_vars: new_produced_vars,
@@ -1079,6 +1086,7 @@ impl PartialCostPlan {
             ongoing_step_stash: Vec::new(),
             ongoing_step_cost: extension.step_cost,
             ongoing_step_produced_vars: new_ongoing_produced_vars,
+            ongoing_step_stash_produced_vars: HashSet::new(),
             ongoing_step_join_var: None,
             all_produced_vars: new_produced_vars,
             pattern_metadata: new_pattern_metadata,
