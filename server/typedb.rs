@@ -49,7 +49,6 @@ impl Server {
     ) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
-        println!("Storage directory: {:?}", storage_directory);
 
         let server_config = &config.server;
         let server_id = Self::initialise_server_id(storage_directory)?;
