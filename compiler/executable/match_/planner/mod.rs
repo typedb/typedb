@@ -31,7 +31,7 @@ use crate::{
 
 pub mod function_plan;
 pub mod match_executable;
-mod plan;
+pub mod plan;
 mod vertex;
 
 pub fn compile(

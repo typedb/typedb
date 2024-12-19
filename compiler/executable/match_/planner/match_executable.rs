@@ -202,7 +202,7 @@ impl IntersectionStep {
         &'a self,
         map: &'a HashMap<ExecutorVariable, Variable>,
     ) -> VarMappedIntersectionStep<'a> {
-        VarMappedIntersectionStep { step: &self, map: map }
+        VarMappedIntersectionStep { step: &self, map }
     }
 }
 
@@ -372,7 +372,7 @@ impl CheckStep {
     }
 
     pub fn make_var_mapped<'a>(&'a self, map: &'a HashMap<ExecutorVariable, Variable>) -> VarMappedCheckStep<'a> {
-        VarMappedCheckStep { check_instructions: &self.check_instructions, map: map }
+        VarMappedCheckStep { check_instructions: &self.check_instructions, map }
     }
 }
 

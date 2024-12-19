@@ -749,7 +749,7 @@ pub struct PlannerStatistics {
 }
 
 impl PlannerStatistics {
-    pub(crate) fn new() -> PlannerStatistics {
+    pub fn new() -> PlannerStatistics {
         PlannerStatistics {
             links_count: (0.0, 0.0),
             has_count: (0.0, 0.0),
@@ -775,6 +775,12 @@ impl PlannerStatistics {
 
     pub(super) fn finalize(&mut self, cost: Cost) {
         self.query_cost = cost;
+    }
+}
+
+impl Default for PlannerStatistics {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

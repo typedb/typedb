@@ -5,10 +5,11 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::{BTreeMap, HashMap, HashSet},
     sync::Arc,
 };
 
+use answer::variable::Variable;
 use compiler::{
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
@@ -21,6 +22,7 @@ use compiler::{
             planner::{
                 function_plan::ExecutableFunctionRegistry,
                 match_executable::{CheckStep, ExecutionStep, IntersectionStep, MatchExecutable},
+                plan::PlannerStatistics,
             },
         },
         next_executable_id,
@@ -113,9 +115,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let casting_character_type = relates_character.role();
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
-    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     let id_type = type_manager.create_attribute_type(&mut snapshot, &ID_LABEL).unwrap();
-    id_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+    id_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
     let _person_owns_age =
         person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
@@ -146,12 +148,12 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
          $casting_quaternary_multi_role_player isa casting,
             links (movie: $movie_3, actor: $person_2, character: $character_2, character: $character_3);
     */
-    let age_10 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(10)).unwrap();
-    let age_11 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(11)).unwrap();
+    let age_10 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(10)).unwrap();
+    let age_11 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(11)).unwrap();
 
-    let id_0 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Long(0)).unwrap();
-    let id_1 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Long(1)).unwrap();
-    let id_2 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Long(2)).unwrap();
+    let id_0 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Integer(0)).unwrap();
+    let id_1 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Integer(1)).unwrap();
+    let id_2 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Integer(2)).unwrap();
 
     let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
@@ -201,6 +203,28 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let finalise_result = thing_manager.finalise(&mut snapshot);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
     snapshot.commit().unwrap();
+}
+
+fn position_mapping<const N: usize>(
+    vars: [Variable; N],
+) -> (
+    HashMap<ExecutorVariable, Variable>,
+    HashMap<Variable, VariablePosition>,
+    HashMap<Variable, ExecutorVariable>,
+    HashSet<ExecutorVariable>,
+) {
+    let row_vars: HashMap<_, _> =
+        vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), v)).collect();
+    let variable_positions = HashMap::from_iter(row_vars.iter().map(|(i, var)| (*var, i.as_position().unwrap())));
+    let mapping = HashMap::from(vars.map(|var| {
+        if variable_positions.contains_key(&var) {
+            (var, ExecutorVariable::RowPosition(variable_positions[&var]))
+        } else {
+            (var, ExecutorVariable::Internal(var))
+        }
+    }));
+    let named_variables = mapping.values().copied().collect();
+    (row_vars, variable_positions, mapping, named_variables)
 }
 
 #[test]
@@ -258,28 +282,8 @@ fn traverse_index_from_unbound() {
     )
     .unwrap();
 
-    let row_vars = vec![var_movie, var_character, var_casting];
-    let variable_positions =
-        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let mapping = HashMap::from(
-        [
-            var_movie_type,
-            var_casting_type,
-            var_casting_movie_type,
-            var_casting_character_type,
-            var_movie,
-            var_character,
-            var_casting,
-        ]
-        .map(|var| {
-            if row_vars.contains(&var) {
-                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-            } else {
-                (var, ExecutorVariable::Internal(var))
-            }
-        }),
-    );
-    let named_variables = mapping.values().copied().collect();
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_movie, var_character, var_casting]);
 
     // Plan with unbound movie as the start -- should produce:
 
@@ -342,7 +346,13 @@ fn traverse_index_from_unbound() {
         )),
     ];
 
-    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions.clone(), row_vars.clone());
+    let executable = MatchExecutable::new(
+        next_executable_id(),
+        steps,
+        variable_positions.clone(),
+        row_vars.clone(),
+        PlannerStatistics::new(),
+    );
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -430,7 +440,8 @@ fn traverse_index_from_unbound() {
         )),
     ];
 
-    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
+    let executable =
+        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -471,7 +482,7 @@ fn traverse_index_from_bound() {
     // IR to compute type annotations
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let id_0_parameter = value_parameters.register_value(Value::Long(0));
+    let id_0_parameter = value_parameters.register_value(Value::Integer(0));
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let var_movie_type = conjunction.get_or_declare_variable("movie_type").unwrap();
@@ -520,30 +531,8 @@ fn traverse_index_from_bound() {
     )
     .unwrap();
 
-    let row_vars = vec![var_id, var_movie, var_person, var_casting];
-    let variable_positions =
-        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let mapping = HashMap::from(
-        [
-            var_movie_type,
-            var_casting_type,
-            var_id_type,
-            var_casting_movie_type,
-            var_casting_actor_type,
-            var_movie,
-            var_person,
-            var_casting,
-            var_id,
-        ]
-        .map(|var| {
-            if row_vars.contains(&var) {
-                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-            } else {
-                (var, ExecutorVariable::Internal(var))
-            }
-        }),
-    );
-    let named_variables = mapping.values().copied().collect();
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_id, var_movie, var_person, var_casting]);
 
     // Plan with bound movie
     let steps = vec![
@@ -622,7 +611,8 @@ fn traverse_index_from_bound() {
         )),
     ];
 
-    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
+    let executable =
+        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
@@ -701,28 +691,8 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     )
     .unwrap();
 
-    let row_vars = vec![var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting];
-    let variable_positions =
-        HashMap::from_iter(row_vars.iter().copied().enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))));
-    let mapping = HashMap::from(
-        [
-            var_movie_type,
-            var_casting_type,
-            var_casting_movie_type,
-            var_casting_other_type,
-            var_movie,
-            var_person,
-            var_casting,
-        ]
-        .map(|var| {
-            if row_vars.contains(&var) {
-                (var, ExecutorVariable::RowPosition(variable_positions[&var]))
-            } else {
-                (var, ExecutorVariable::Internal(var))
-            }
-        }),
-    );
-    let named_variables = mapping.values().copied().collect();
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting]);
 
     // Plan with a single bound role, should produce:
 
@@ -806,7 +776,8 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         )),
     ];
 
-    let executable = MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars);
+    let executable =
+        MatchExecutable::new(next_executable_id(), steps, variable_positions, row_vars, PlannerStatistics::new());
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
