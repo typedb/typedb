@@ -4,19 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs, io, path::PathBuf, sync::Arc};
-use std::net::SocketAddr;
+use std::{fs, io, net::SocketAddr, path::PathBuf, sync::Arc};
+
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use rand::Rng;
-use tokio::net::lookup_host;
 use resource::constants::server::{
     DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH,
 };
 use system::initialise_system_database;
+use tokio::net::lookup_host;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use user::{initialise_default_user, user_manager::UserManager};
 

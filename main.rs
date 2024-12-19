@@ -53,7 +53,13 @@ fn get_configuration(cli_args: CLIArgs) -> Config {
         is_service_reporting_enabled: cli_args.diagnostics_reporting_metrics,
     };
     let data_dir = cli_args.storage_data.map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
-    Config::customised(cli_args.server_address, Some(encryption_config), Some(diagnostics_config), data_dir, cli_args.development_mode_enabled)
+    Config::customised(
+        cli_args.server_address,
+        Some(encryption_config),
+        Some(diagnostics_config),
+        data_dir,
+        cli_args.development_mode_enabled,
+    )
 }
 
 fn print_ascii_logo() {

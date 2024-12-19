@@ -9,8 +9,9 @@ use std::{
     path::{Path, PathBuf},
     str::FromStr,
 };
-use tokio::net::lookup_host;
+
 use resource::constants::server::{DEFAULT_ADDRESS, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT};
+use tokio::net::lookup_host;
 
 #[derive(Debug)]
 pub struct Config {
