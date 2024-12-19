@@ -443,12 +443,10 @@ impl<'a> HasPlanner<'a> {
 
         let owner_size = owner_types
             .iter()
-            .filter_map(|type_| {
-                match type_ {
-                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
-                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
-                    _ => None
-                }
+            .filter_map(|type_| match type_ {
+                answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                _ => None,
             })
             .sum::<u64>() as f64;
 
@@ -460,11 +458,9 @@ impl<'a> HasPlanner<'a> {
 
         let attribute_size = attribute_types
             .iter()
-            .filter_map(|type_| {
-                match type_ {
-                    answer::Type::Attribute(type_) => statistics.attribute_counts.get(type_),
-                    _ => None
-                }
+            .filter_map(|type_| match type_ {
+                answer::Type::Attribute(type_) => statistics.attribute_counts.get(type_),
+                _ => None,
             })
             .sum::<u64>() as f64;
 
@@ -674,12 +670,10 @@ impl<'a> LinksPlanner<'a> {
 
         let relation_size = relation_types
             .iter()
-            .filter_map(|type_| {
-                match type_ {
-                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
-                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
-                    _ => None
-                }
+            .filter_map(|type_| match type_ {
+                answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                _ => None,
             })
             .sum::<u64>() as f64;
 
@@ -697,12 +691,10 @@ impl<'a> LinksPlanner<'a> {
 
         let player_size = player_types
             .iter()
-            .filter_map(|type_| {
-                match type_ {
-                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
-                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
-                    _ => None
-                }
+            .filter_map(|type_| match type_ {
+                answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                _ => None,
             })
             .sum::<u64>() as f64;
 
@@ -719,7 +711,7 @@ impl<'a> LinksPlanner<'a> {
             unbound_typed_expected_size_canonical,
             unbound_typed_expected_size_reverse,
             relation_size,
-            player_size
+            player_size,
         }
     }
 
@@ -904,23 +896,19 @@ impl<'a> IndexedRelationPlanner<'a> {
 
         let player_1_size = player_1_types
             .iter()
-            .filter_map(|type_| {
-                match type_ {
-                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
-                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
-                    _ => None
-                }
+            .filter_map(|type_| match type_ {
+                answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                _ => None,
             })
             .sum::<u64>() as f64;
 
         let player_2_size = player_2_types
             .iter()
-            .filter_map(|type_| {
-                match type_ {
-                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
-                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
-                    _ => None
-                }
+            .filter_map(|type_| match type_ {
+                answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                _ => None,
             })
             .sum::<u64>() as f64;
 
@@ -939,7 +927,7 @@ impl<'a> IndexedRelationPlanner<'a> {
             role_2: variable_index[&role_2],
             unbound_typed_expected_size,
             player_1_size,
-            player_2_size
+            player_2_size,
         }
     }
 
@@ -1049,12 +1037,8 @@ impl Costed for IndexedRelationPlanner<'_> {
             player1_selectivity,
             is_player2_bound,
         );
-        let scan_size_reverse = self.reverse_scan_size_estimate(
-            is_relation_bound,
-            is_player1_bound,
-            is_player2_bound,
-            player2_selectivity,
-        );
+        let scan_size_reverse =
+            self.reverse_scan_size_estimate(is_relation_bound, is_player1_bound, is_player2_bound, player2_selectivity);
         let io_ratio = self.output_size_estimate(
             is_relation_bound,
             is_player1_bound,
