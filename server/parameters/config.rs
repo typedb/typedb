@@ -10,7 +10,7 @@ use std::{
     str::FromStr,
 };
 use tokio::net::lookup_host;
-use resource::constants::server::{DEFAULT_ADDRESS, MONITORING_DEFAULT_PORT};
+use resource::constants::server::{DEFAULT_ADDRESS, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT};
 
 #[derive(Debug)]
 pub struct Config {
@@ -36,7 +36,7 @@ impl Config {
                 diagnostics: DiagnosticsConfig::default(),
                 is_development_mode: ServerConfig::IS_DEVELOPMENT_MODE_FORCED,
             },
-            storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap()) },
+            storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str(DEFAULT_DATA_DIR).unwrap()) },
         }
     }
 
@@ -66,7 +66,7 @@ impl Config {
             let typedb_dir_or_current = std::env::current_exe()
                 .map(|path| path.parent().unwrap().to_path_buf())
                 .unwrap_or(std::env::current_dir().unwrap());
-            typedb_dir_or_current.join(PathBuf::from_str("server/data").unwrap())
+            typedb_dir_or_current.join(PathBuf::from_str(DEFAULT_DATA_DIR).unwrap())
         });
         let is_development_mode = ServerConfig::IS_DEVELOPMENT_MODE_FORCED || is_development_mode;
         Self {
