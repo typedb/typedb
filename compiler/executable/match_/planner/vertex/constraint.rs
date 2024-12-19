@@ -781,7 +781,7 @@ impl Costed for LinksPlanner<'_> {
             player_size,
             player_selectivity,
         );
-        let mut io_ratio = self.output_size_estimate(
+        let io_ratio = self.output_size_estimate(
             is_relation_bound,
             relation_size,
             relation_selectivity,
@@ -990,7 +990,7 @@ impl Costed for IndexedRelationPlanner<'_> {
             player2_size,
             player2_selectivity,
         );
-        let mut io_ratio = self.output_size_estimate(
+        let io_ratio = self.output_size_estimate(
             is_relation_bound,
             is_player1_bound,
             player1_size,

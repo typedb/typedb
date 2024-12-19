@@ -244,16 +244,11 @@ impl HasReverseExecutor {
         let iterators: Vec<_> = attribute_type_owner_range
             .iter()
             // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
-            .filter(|(attribute_type, owner_type_range)| {
+            .filter(|(attribute_type, _owner_type_range)| {
                 attribute_type.get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some())
             })
             .map(|(attribute_type, owner_types)| {
-                thing_manager.get_has_reverse_in_range(
-                    snapshot,
-                    attribute_type.clone(),
-                    &attribute_values_range,
-                    owner_types,
-                )
+                thing_manager.get_has_reverse_in_range(snapshot, *attribute_type, &attribute_values_range, owner_types)
             })
             .try_collect()?;
         Ok(iterators.into_iter().flatten())

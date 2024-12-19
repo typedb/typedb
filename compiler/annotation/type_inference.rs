@@ -213,7 +213,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((type_animal, type_cat, type_dog), (type_name, type_catname, _), (type_fears, _, _)) =
+        let ((_, type_cat, type_dog), (_, type_catname, _), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
         let concrete_object_types = [type_cat, type_dog, type_fears];
 
@@ -669,7 +669,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+        let ((_, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let mut translation_context = TranslationContext::new();
@@ -795,7 +795,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+        let ((_, type_cat, type_dog), (_, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         // Case 1: $a has $n;
@@ -989,7 +989,7 @@ pub mod tests {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((type_animal, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
+        let ((_, type_cat, type_dog), (_, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         let all_concrete_animals = BTreeSet::from([type_cat, type_dog]);
