@@ -798,17 +798,19 @@ pub(super) struct CompleteCostPlan {
 
 #[derive(Clone, PartialEq, Debug)]
 pub(super) struct PartialCostPlan {
-    vertex_ordering: Vec<VertexId>,         // the part of the plan that has been decided upon
-    cumulative_cost: Cost,                  // the cost of the part of the plan that has been decided upon
+    vertex_ordering: Vec<VertexId>, // the part of the plan that has been decided upon
+    cumulative_cost: Cost,          // the cost of the part of the plan that has been decided upon
+
     ongoing_step: HashSet<PatternVertexId>, // the set of non-trivial patterns in the ongoing step
     ongoing_step_stash: Vec<PatternVertexId>, // the set of trivial patterns in the ongoing step
     ongoing_step_cost: Cost,                // the cost of the ongoing step (on top of the cumulative one)
     ongoing_step_produced_vars: HashSet<VariableVertexId>, // variables produced in this step
     ongoing_step_join_var: Option<VariableVertexId>, // the join variable of the ongoing step
+
     all_produced_vars: HashSet<VariableVertexId>, // the set of all variables produced (incl. in ongoing step)
     remaining_patterns: HashSet<PatternVertexId>, // the set of remaining patterns to be searched
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>, // metadata, like pattern directions
-    heuristic: Cost,                        // the heuristic that plans are sorted by
+    heuristic: Cost,                              // the heuristic that plans are sorted by
 }
 
 impl PartialCostPlan {
