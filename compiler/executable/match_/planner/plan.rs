@@ -570,6 +570,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost) {
+        const INDENT: &str = "";
+
         let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
         let num_patterns = search_patterns.len();
 
@@ -585,10 +587,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
 
         for i in 0..num_patterns {
-            event!(Level::TRACE, "    PLANNER STEP {}", i);
+            event!(Level::TRACE, "{INDENT:4}PLANNER STEP {}", i);
 
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset: HashSet<PartialCostHash> = HashSet::with_capacity(beam_width);
+
             if i % reduction_cycle == 0 && beam_width > MIN_BEAM_WIDTH {
                 extension_width -= 1;
                 beam_width -= 1;
@@ -596,7 +599,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             for mut plan in best_partial_plans.drain(..) {
                 event!(
                     Level::TRACE,
-                    "        PLAN: {:?} ONGOING: {:?} STASH: {:?} COST: {:?} + {:?} = {:?} HEURISTIC: {:?}",
+                    "{INDENT:8}PLAN: {:?} ONGOING: {:?} STASH: {:?} COST: {:?} + {:?} = {:?} HEURISTIC: {:?}",
                     plan.vertex_ordering,
                     plan.ongoing_step,
                     plan.ongoing_step_stash,
@@ -634,7 +637,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     if ext.is_trivial(&self.graph) {
                         event!(
                             Level::TRACE,
-                            "            Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
+                            "{INDENT:12}Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
                             ext.pattern_id,
                             self.graph.elements[&VertexId::Pattern(ext.pattern_id)],
                             ext.step_cost.cost,
@@ -651,11 +654,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         }
                     } else {
                         for extension in extension_heap.drain() {
-                            event!(Level::TRACE,
-                                "            Choice {:?} = {} <-- join: {:?}, cost: {:?}, heuristic: {:?} metadat: {:?}",
+                            event!(
+                                Level::TRACE,
+                                "{INDENT:12}Choice {:?} = {} <-- join: {:?}, cost: {:?}, heuristic: {:?} metadat: {:?}",
                                 extension.pattern_id,
                                 self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
-                                extension.step_join_var.map(|v| self.graph.elements[&VertexId::Variable(v)].as_variable().unwrap().variable()),
+                                extension.step_join_var.map(|v| self.graph.elements[&VertexId::Variable(v)]
+                                    .as_variable()
+                                    .unwrap()
+                                    .variable()),
                                 extension.step_cost,
                                 extension.heuristic,
                                 extension.pattern_metadata
@@ -673,21 +680,22 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                             let new_plan_hash = new_plan.hash();
                             if !new_plans_hashset.contains(&new_plan_hash) {
-                                new_plans_hashset.insert(new_plan_hash);
                                 if new_plans_heap.len() < beam_width {
                                     new_plans_heap.push(new_plan);
-                                    event!(Level::TRACE, "                (added)");
+                                    new_plans_hashset.insert(new_plan_hash);
+                                    event!(Level::TRACE, "{INDENT:16}(added)");
                                 } else if let Some(top) = new_plans_heap.peek() {
                                     if new_plan < *top {
                                         new_plans_heap.pop();
                                         new_plans_heap.push(new_plan);
-                                        event!(Level::TRACE, "                (added)");
+                                        new_plans_hashset.insert(new_plan_hash);
+                                        event!(Level::TRACE, "{INDENT:16}(added)");
                                     } else {
-                                        event!(Level::TRACE, "                (discarded)");
+                                        event!(Level::TRACE, "{INDENT:16}(discarded)");
                                     }
                                 }
                             } else {
-                                event!(Level::TRACE, "                (hash collision)");
+                                event!(Level::TRACE, "{INDENT:16}(hash collision)");
                             }
                         }
                     }
