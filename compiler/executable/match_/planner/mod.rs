@@ -21,14 +21,13 @@ use crate::{
                     AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
                     MatchExecutable, NegationStep,
                 },
-                plan::plan_conjunction,
+                plan::{plan_conjunction, PlannerStatistics},
             },
         },
         next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::plan::PlannerStatistics;
 
 pub mod function_plan;
 pub mod match_executable;
@@ -252,7 +251,7 @@ impl MatchExecutableBuilder {
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         selected_variables: Vec<Variable>,
         input_variables: Vec<Variable>,
-        planner_statistics: PlannerStatistics
+        planner_statistics: PlannerStatistics,
     ) -> Self {
         let index = assigned_positions.clone();
         let produced_so_far = HashSet::from_iter(input_variables.iter().copied());
@@ -274,7 +273,7 @@ impl MatchExecutableBuilder {
             reverse_index,
             index,
             next_output,
-            planner_statistics
+            planner_statistics,
         }
     }
 
@@ -435,7 +434,7 @@ impl MatchExecutableBuilder {
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
             self.reverse_index,
-            self.planner_statistics
+            self.planner_statistics,
         )
     }
 }

@@ -11,8 +11,9 @@ use std::{
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
+    time::Instant,
 };
-use std::time::Instant;
+
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
@@ -232,7 +233,13 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 
 impl<'a> ConjunctionPlanBuilder<'a> {
     fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
-        Self { shared_variables: Vec::new(), graph: Graph::default(), type_annotations, statistics, planner_statistics: PlannerStatistics::new() }
+        Self {
+            shared_variables: Vec::new(),
+            graph: Graph::default(),
+            type_annotations,
+            statistics,
+            planner_statistics: PlannerStatistics::new(),
+        }
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
@@ -720,7 +727,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let Self { shared_variables, graph, type_annotations, statistics: _, mut planner_statistics } = self;
 
         planner_statistics.finalize(cost);
-        ConjunctionPlan { shared_variables, graph, type_annotations, ordering, metadata, element_to_order, planner_statistics }
+        ConjunctionPlan {
+            shared_variables,
+            graph,
+            type_annotations,
+            ordering,
+            metadata,
+            element_to_order,
+            planner_statistics,
+        }
     }
 }
 
@@ -766,11 +781,18 @@ impl PlannerStatistics {
 
 impl fmt::Display for PlannerStatistics {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Cost: {:.2} Size: {:.2} (stats: links {:.2} / {:.2}, has {:.2} / {:.2}, vars {:.2} / {:.2})",
-               self.query_cost.cost, self.query_cost.io_ratio,
-               self.links_count.0, self.links_count.1,
-               self.has_count.0, self.has_count.1,
-               self.var_count.0, self.var_count.1,)
+        write!(
+            f,
+            "Cost: {:.2} Size: {:.2} (stats: links {:.2} / {:.2}, has {:.2} / {:.2}, vars {:.2} / {:.2})",
+            self.query_cost.cost,
+            self.query_cost.io_ratio,
+            self.links_count.0,
+            self.links_count.1,
+            self.has_count.0,
+            self.has_count.1,
+            self.var_count.0,
+            self.var_count.1,
+        )
     }
 }
 
@@ -1092,7 +1114,7 @@ impl PartialCostPlan {
             ongoing_vars: self.ongoing_step.clone(),
             approx_io: (self.cumulative_cost.io_ratio * self.ongoing_step_cost.io_ratio) as u64, // TODO: improve rounding/hashing (make relative)
             approx_cost: self.cumulative_cost.chain(self.ongoing_step_cost).cost as u64, // TODO: improve rounding/hashing (make relative)
-            ongoing_join: if self.ongoing_step_join_var.is_some() { true } else { false }
+            ongoing_join: if self.ongoing_step_join_var.is_some() { true } else { false },
         }
     }
 }
@@ -1212,7 +1234,7 @@ impl ConjunctionPlan<'_> {
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
             input_variables.into_iter().collect(),
-            self.planner_statistics
+            self.planner_statistics,
         );
 
         for &index in &self.ordering {

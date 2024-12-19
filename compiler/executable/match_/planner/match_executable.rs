@@ -17,12 +17,12 @@ use ir::{
 
 use crate::{
     annotation::expression::compiled_expression::ExecutableExpression,
-    executable::match_::instructions::{
-        CheckInstruction, ConstraintInstruction, VarMappedVariableModes, VariableModes,
+    executable::match_::{
+        instructions::{CheckInstruction, ConstraintInstruction, VarMappedVariableModes, VariableModes},
+        planner::plan::PlannerStatistics,
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::plan::PlannerStatistics;
 
 #[derive(Clone, Debug)]
 pub struct MatchExecutable {
