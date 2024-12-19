@@ -11,7 +11,6 @@ use std::{
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
-    time::Instant,
 };
 
 use answer::variable::Variable;
@@ -587,9 +586,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             self.input_variables(),
         ));
 
-        let mut candidate_count = 1;
-        let mut extension_count = 0;
-
         let mut extension_heap = BinaryHeap::with_capacity(extension_width); // reused
         for i in 0..num_patterns {
             event!(Level::TRACE, "{INDENT:4}PLANNER STEP {}", i);
@@ -619,7 +615,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 );
 
                 for extension in plan.extensions_iter(&self.graph) {
-                    extension_count += 1;
                     if extension.is_trivial(&self.graph) {
                         event!(
                             Level::TRACE,
@@ -699,10 +694,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 }
             }
             best_partial_plans = new_plans_heap.into_vec();
-            candidate_count += best_partial_plans.len();
         }
-
-        println!("considered {extension_count} extensions across {candidate_count} partial plans");
 
         let best_plan = best_partial_plans.into_iter().min().unwrap();
         let complete_plan = best_plan.into_complete_plan(&self.graph);
@@ -718,9 +710,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // Execute plans
     pub(super) fn plan(self) -> ConjunctionPlan<'a> {
         // Beam plan
-        let duration = Instant::now();
         let (ordering, metadata, cost) = self.beam_search_plan();
-        println!("Planning took {} us", duration.elapsed().as_micros());
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
