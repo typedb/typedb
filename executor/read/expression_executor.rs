@@ -13,13 +13,15 @@ use compiler::annotation::expression::{
         binary::{Binary, BinaryExpression, MathRemainderInteger},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDouble, CastRightDecimalToDouble,
-            CastRightIntegerToDouble, CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDouble, ImplicitCast,
-            LoadConstant, LoadVariable,
+            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDouble,
+            CastRightDecimalToDouble, CastRightIntegerToDouble, CastUnary, CastUnaryDecimalToDouble,
+            CastUnaryIntegerToDouble, ImplicitCast, LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
-        unary::{MathAbsDouble, MathAbsInteger, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression},
+        unary::{
+            MathAbsDouble, MathAbsInteger, MathCeilDouble, MathFloorDouble, MathRoundDouble, Unary, UnaryExpression,
+        },
         ExpressionEvaluationError,
     },
 };

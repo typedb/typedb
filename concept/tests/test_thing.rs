@@ -1329,8 +1329,10 @@ fn attribute_struct_write_read() {
 
     let attr_label = Label::build("struct_test_attr");
     let struct_name = "struct_test_test".to_owned();
-    let fields: HashMap<String, (ValueType, bool)> =
-        HashMap::from([("f0l".to_owned(), (ValueType::Integer, false)), ("f1s".to_owned(), (ValueType::String, false))]);
+    let fields: HashMap<String, (ValueType, bool)> = HashMap::from([
+        ("f0l".to_owned(), (ValueType::Integer, false)),
+        ("f1s".to_owned(), (ValueType::String, false)),
+    ]);
 
     let instance_fields = HashMap::from([
         ("f0l".to_owned(), Value::Integer(123)),

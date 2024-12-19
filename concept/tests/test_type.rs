@@ -885,22 +885,19 @@ fn annotations_with_value_arguments() {
         let valid_owns = person_type.get_owns_attribute(&snapshot, &type_manager, valid_type).unwrap().unwrap();
         let empty_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_type).unwrap().unwrap();
 
-        assert!(age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(0), Value::Integer(18)]))));
+        assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(0), Value::Integer(18)]))
+        ));
         assert!(!age_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
             .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
-        assert!(!age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(1), Value::Integer(18)]))));
-        assert!(!age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(18), Value::Integer(0)]))));
+        assert!(!age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(1), Value::Integer(18)]))
+        ));
+        assert!(!age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(18), Value::Integer(0)]))
+        ));
         assert!(age_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(name_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -1026,8 +1023,10 @@ fn test_struct_definition() {
     let type_manager = type_manager_no_cache();
 
     let nested_struct_name = "nested_struct".to_owned();
-    let nested_struct_fields =
-        HashMap::from([("f0_bool".into(), (ValueType::Boolean, false)), ("f1_integer".into(), (ValueType::Integer, false))]);
+    let nested_struct_fields = HashMap::from([
+        ("f0_bool".into(), (ValueType::Boolean, false)),
+        ("f1_integer".into(), (ValueType::Integer, false)),
+    ]);
     let nested_struct_key =
         define_struct(&mut snapshot, &type_manager, nested_struct_name.clone(), nested_struct_fields.clone());
 

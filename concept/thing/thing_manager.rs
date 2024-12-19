@@ -1899,7 +1899,11 @@ impl ThingManager {
             }
             Value::Integer(integer) => {
                 let encoded_integer = IntegerBytes::build(integer);
-                self.vertex_generator.create_attribute_integer(attribute_type.vertex().type_id_(), encoded_integer, snapshot)
+                self.vertex_generator.create_attribute_integer(
+                    attribute_type.vertex().type_id_(),
+                    encoded_integer,
+                    snapshot,
+                )
             }
             Value::Double(double) => {
                 let encoded_double = DoubleBytes::build(double);

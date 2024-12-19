@@ -421,7 +421,10 @@ impl FromStr for KindExtended {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|integer|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
+#[param(
+    name = "value_type",
+    regex = "(boolean|integer|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
+)]
 pub(crate) enum ValueType {
     Boolean,
     Integer,

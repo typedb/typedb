@@ -44,7 +44,8 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value, ValueEncodable,
+        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
+        ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };

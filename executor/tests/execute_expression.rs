@@ -126,8 +126,10 @@ fn test_basic() {
         .unwrap();
         let [a, b] = ["a", "b"].map(|name| *vars.get(name).unwrap());
 
-        let inputs =
-            HashMap::from([(a, ExpressionValue::Single(Value::Integer(2))), (b, ExpressionValue::Single(Value::Integer(5)))]);
+        let inputs = HashMap::from([
+            (a, ExpressionValue::Single(Value::Integer(2))),
+            (b, ExpressionValue::Single(Value::Integer(5))),
+        ]);
         let result = evaluate_expression(&expr, inputs, &params).unwrap();
         assert_eq!(as_value!(result), Value::Integer(7));
     }
@@ -270,13 +272,18 @@ fn list_ops() {
     {
         let (vars, expr, params) = compile_expression_via_match(
             "$y[1]",
-            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Integer.try_into_value_type().unwrap()))]),
+            HashMap::from([(
+                "y",
+                ExpressionValueType::List(ValueTypeCategory::Integer.try_into_value_type().unwrap()),
+            )]),
         )
         .unwrap();
         let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
 
-        let inputs =
-            HashMap::from([(y, ExpressionValue::List([Value::Integer(56), Value::Integer(78), Value::Integer(90)].into()))]);
+        let inputs = HashMap::from([(
+            y,
+            ExpressionValue::List([Value::Integer(56), Value::Integer(78), Value::Integer(90)].into()),
+        )]);
         let result = evaluate_expression(&expr, inputs, &params).unwrap();
         assert_eq!(as_value!(result), Value::Integer(78));
     }
@@ -284,14 +291,19 @@ fn list_ops() {
     {
         let (vars, expr, params) = compile_expression_via_match(
             "$y[1..3]",
-            HashMap::from([("y", ExpressionValueType::List(ValueTypeCategory::Integer.try_into_value_type().unwrap()))]),
+            HashMap::from([(
+                "y",
+                ExpressionValueType::List(ValueTypeCategory::Integer.try_into_value_type().unwrap()),
+            )]),
         )
         .unwrap();
         let y = ["y"].into_iter().map(|name| *vars.get(name).unwrap()).exactly_one().unwrap();
 
         let inputs = HashMap::from([(
             y,
-            ExpressionValue::List([Value::Integer(9), Value::Integer(87), Value::Integer(65), Value::Integer(43)].into()),
+            ExpressionValue::List(
+                [Value::Integer(9), Value::Integer(87), Value::Integer(65), Value::Integer(43)].into(),
+            ),
         )]);
         let result = evaluate_expression(&expr, inputs, &params).unwrap();
         assert_eq!(&*as_list!(result), &[Value::Integer(87), Value::Integer(65)]);

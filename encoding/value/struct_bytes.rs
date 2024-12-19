@@ -144,7 +144,8 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                     .as_bool(),
             ),
             ValueTypeCategory::Integer => Value::Integer(
-                IntegerBytes::new(read_bytes_increment_offset::<{ IntegerBytes::ENCODED_LENGTH }>(offset, buf)?).as_i64(),
+                IntegerBytes::new(read_bytes_increment_offset::<{ IntegerBytes::ENCODED_LENGTH }>(offset, buf)?)
+                    .as_i64(),
             ),
             ValueTypeCategory::Double => Value::Double(
                 DoubleBytes::new(read_bytes_increment_offset::<{ DoubleBytes::ENCODED_LENGTH }>(offset, buf)?).as_f64(),
