@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
+use std::net::SocketAddr;
 use clap::{ArgAction, Parser};
 use resource::constants::server::MONITORING_DEFAULT_PORT;
 
@@ -11,6 +11,11 @@ use resource::constants::server::MONITORING_DEFAULT_PORT;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 pub struct CLIArgs {
+
+    /// Server host and port, eg., 0.0.0.0:1729
+    #[arg(long = "server.address")]
+    pub server_address: Option<SocketAddr>,
+
     /// Enable/disable in-flight encryption. Specify to enable, or leave out to disable
     #[arg(long = "server.encryption.enabled")]
     pub server_encryption_enabled: bool,

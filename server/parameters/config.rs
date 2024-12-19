@@ -41,23 +41,25 @@ impl Config {
     }
 
     pub fn new_with_encryption_config(encryption_config: EncryptionConfig, is_development_mode: bool) -> Self {
-        Self::customised(Some(encryption_config), None, None, is_development_mode)
+        Self::customised(None, Some(encryption_config), None, None, is_development_mode)
     }
 
     pub fn new_with_diagnostics_config(diagnostics_config: DiagnosticsConfig, is_development_mode: bool) -> Self {
-        Self::customised(None, Some(diagnostics_config), None, is_development_mode)
+        Self::customised(None, None, Some(diagnostics_config), None, is_development_mode)
     }
 
     pub fn new_with_data_directory(data_directory: &Path, is_development_mode: bool) -> Self {
-        Self::customised(None, None, Some(data_directory.to_path_buf()), is_development_mode)
+        Self::customised(None, None, None, Some(data_directory.to_path_buf()), is_development_mode)
     }
 
     pub fn customised(
+        server_address: Option<SocketAddr>,
         encryption_config: Option<EncryptionConfig>,
         diagnostics_config: Option<DiagnosticsConfig>,
         data_directory: Option<PathBuf>,
         is_development_mode: bool,
     ) -> Self {
+        let server_address = server_address.unwrap_or_else(|| SocketAddr::from_str(DEFAULT_ADDRESS).unwrap());
         let encryption_config = encryption_config.unwrap_or_else(|| EncryptionConfig::default());
         let diagnostics_config = diagnostics_config.unwrap_or_else(|| DiagnosticsConfig::default());
         let data_directory = data_directory.map(|dir| dir.to_path_buf()).unwrap_or_else(|| {
@@ -69,7 +71,7 @@ impl Config {
         let is_development_mode = ServerConfig::IS_DEVELOPMENT_MODE_FORCED || is_development_mode;
         Self {
             server: ServerConfig {
-                address: SocketAddr::from_str(DEFAULT_ADDRESS).unwrap(),
+                address: server_address,
                 encryption: encryption_config,
                 diagnostics: diagnostics_config,
                 is_development_mode,
