@@ -12,10 +12,7 @@ use std::{
 };
 
 use answer::Type;
-use compiler::{
-    executable::match_::instructions::{thing::LinksReverseInstruction, VariableMode},
-    ExecutorVariable,
-};
+use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -25,7 +22,7 @@ use concept::{
     },
     type_::{object_type::ObjectType, relation_type::RelationType},
 };
-use itertools::{kmerge_by, Itertools, KMergeBy, MinMaxResult};
+use itertools::{kmerge_by, Itertools, KMergeBy};
 use primitive::Bounds;
 use resource::constants::traversal::CONSTANT_CONCEPT_LIMIT;
 use storage::snapshot::ReadableSnapshot;
@@ -34,8 +31,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            may_get_role, verify_role, LinksFilterFn, LinksFilterMapFn, LinksOrderingFn, LinksTupleIterator,
-            LinksTupleIteratorMerged, LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
+            may_get_role, verify_role, LinksFilterFn, LinksFilterMapFn, LinksOrderingFn, LinksTupleIteratorMerged,
+            LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
         min_max_types,
         tuple::{

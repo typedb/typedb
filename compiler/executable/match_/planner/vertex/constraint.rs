@@ -76,7 +76,7 @@ impl ConstraintVertex<'_> {
     pub(crate) fn can_join_on(&self, var: VariableVertexId) -> bool {
         match self {
             Self::Links(inner) => inner.relation == var || inner.player == var,
-            Self::Has(inner) => true,
+            Self::Has(_) => true,
             Self::IndexedRelation(inner) => inner.player_1 == var || inner.player_2 == var,
             _ => false,
         }
@@ -565,7 +565,7 @@ impl Costed for HasPlanner<'_> {
             attribute_size,
             attribute_selectivity,
         );
-        let mut io_ratio = self.output_size_estimate(
+        let io_ratio = self.output_size_estimate(
             is_owner_bound,
             owner_size,
             owner_selectivity,
@@ -835,7 +835,7 @@ impl<'a> IndexedRelationPlanner<'a> {
 
         let player_1_types = &**type_annotations.vertex_annotations_of(player_1).unwrap();
         let player_2_types = &**type_annotations.vertex_annotations_of(player_2).unwrap();
-        let relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
+        let _relation_types = &**type_annotations.vertex_annotations_of(relation).unwrap();
 
         // let constraint_types =
         //     type_annotations.constraint_annotations_of(indexed_relation.clone().into()).unwrap().as_links();
@@ -970,7 +970,7 @@ impl<'a> IndexedRelationPlanner<'a> {
 
 impl Costed for IndexedRelationPlanner<'_> {
     fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        let (is_relation_bound, relation_size, relation_selectivity) = self.relation_estimates(inputs, graph);
+        let (is_relation_bound, _relation_size, _relation_selectivity) = self.relation_estimates(inputs, graph);
         let (is_player1_bound, player1_size, player1_selectivity) = self.player_estimates(inputs, graph, 1);
         let (is_player2_bound, player2_size, player2_selectivity) = self.player_estimates(inputs, graph, 2);
 

@@ -54,8 +54,7 @@ use crate::{
                 },
                 variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                 ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex, ADVANCE_ITERATOR_RELATIVE_COST,
-                OPEN_ITERATOR_RELATIVE_COST,
+                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
             },
             DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
             NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -572,7 +571,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn beam_search_plan(&self) -> (Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost) {
         let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
-        let mut num_patterns = search_patterns.len();
+        let num_patterns = search_patterns.len();
 
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
         let mut extension_width = (num_patterns / 2) + 5; // ensure this is larger than (num_patterns / 2) or change narrowing logic (note, join options means patterns may appear twice as extensions)
@@ -750,13 +749,12 @@ pub struct PlannerStatistics {
 
 impl PlannerStatistics {
     pub(crate) fn new() -> PlannerStatistics {
-        let statistics = PlannerStatistics {
+        PlannerStatistics {
             links_count: (0.0, 0.0),
             has_count: (0.0, 0.0),
             var_count: (0.0, 0.0),
             query_cost: Cost::NOOP,
-        };
-        statistics
+        }
     }
 
     pub(crate) fn increment_var(&mut self, count: f64) {
@@ -774,7 +772,7 @@ impl PlannerStatistics {
         self.links_count.1 += count;
     }
 
-    pub fn finalize(&mut self, cost: Cost) {
+    pub(super) fn finalize(&mut self, cost: Cost) {
         self.query_cost = cost;
     }
 }
@@ -1093,7 +1091,7 @@ impl PartialCostPlan {
 
     fn into_complete_plan(self, graph: &Graph<'_>) -> CompleteCostPlan {
         let mut final_vertex_ordering = self.vertex_ordering.clone();
-        let (new_step, stash_produced_vars) = self.finalize_current_step(graph);
+        let (new_step, _stash_produced_vars) = self.finalize_current_step(graph);
         final_vertex_ordering.extend(new_step);
 
         let final_cumulative_cost = self
@@ -1114,7 +1112,7 @@ impl PartialCostPlan {
             ongoing_vars: self.ongoing_step.clone(),
             approx_io: (self.cumulative_cost.io_ratio * self.ongoing_step_cost.io_ratio) as u64, // TODO: improve rounding/hashing (make relative)
             approx_cost: self.cumulative_cost.chain(self.ongoing_step_cost).cost as u64, // TODO: improve rounding/hashing (make relative)
-            ongoing_join: if self.ongoing_step_join_var.is_some() { true } else { false },
+            ongoing_join: self.ongoing_step_join_var.is_some(),
         }
     }
 }

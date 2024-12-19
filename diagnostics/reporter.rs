@@ -5,26 +5,19 @@
  */
 
 use std::{
-    cell::RefCell,
-    collections::HashMap,
     fs,
-    hash::{DefaultHasher, Hash, Hasher},
-    io::{self, Write},
+    hash::Hash,
     path::{Path, PathBuf},
-    sync::{
-        atomic::{AtomicBool, Ordering},
-        Arc, Mutex,
-    },
-    thread,
-    time::{Duration, Instant, UNIX_EPOCH},
+    sync::{Arc, Mutex},
+    time::Duration,
 };
 
-use chrono::{DateTime, Timelike, Utc};
-use concurrency::{IntervalRunner, TokioIntervalRunner};
+use chrono::{Timelike, Utc};
+use concurrency::TokioIntervalRunner;
 use hyper::{
     client::HttpConnector,
-    header::{HeaderValue, CONNECTION, CONTENT_TYPE},
-    Body, Client, Method, Request,
+    header::{CONNECTION, CONTENT_TYPE},
+    Body, Client, Request,
 };
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
@@ -189,14 +182,14 @@ impl Reporter {
         Client::builder().build::<_, Body>(https)
     }
 
-    fn save_disabled_reporting_file(data_directory: &PathBuf) {
+    fn save_disabled_reporting_file(data_directory: &Path) {
         let disabled_reporting_file = data_directory.join(DISABLED_REPORTING_FILE_NAME);
         if let Err(e) = fs::write(&disabled_reporting_file, Utc::now().to_string()) {
             debug!("Failed to save disabled reporting file: {}", e);
         }
     }
 
-    fn delete_disabled_reporting_file_if_exists(data_directory: &PathBuf) {
+    fn delete_disabled_reporting_file_if_exists(data_directory: &Path) {
         let disabled_reporting_file = data_directory.join(DISABLED_REPORTING_FILE_NAME);
         if fs::exists(&disabled_reporting_file).unwrap_or(false) {
             if let Err(e) = fs::remove_file(&disabled_reporting_file) {

@@ -9,9 +9,9 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    hash::{Hash, Hasher},
+    hash::Hash,
     path::PathBuf,
-    sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard},
+    sync::RwLock,
 };
 
 use error::{typedb_error, TypeDBError};

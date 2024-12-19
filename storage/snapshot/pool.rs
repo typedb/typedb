@@ -12,11 +12,17 @@ use std::{
 pub trait Poolable {}
 
 #[derive(Debug)]
-pub struct SinglePool<T: Poolable> {
+pub struct SinglePool<T> {
     pool: Arc<Mutex<Vec<T>>>,
 }
 
-impl<T: Poolable> Clone for SinglePool<T> {
+impl<T> Default for SinglePool<T> {
+    fn default() -> Self {
+        Self { pool: Default::default() }
+    }
+}
+
+impl<T> Clone for SinglePool<T> {
     fn clone(&self) -> Self {
         Self { pool: self.pool.clone() }
     }
@@ -24,7 +30,7 @@ impl<T: Poolable> Clone for SinglePool<T> {
 
 impl<T: Poolable> SinglePool<T> {
     pub fn new() -> Self {
-        Self { pool: Arc::new(Mutex::new(Vec::new())) }
+        Self::default()
     }
 
     pub fn get_or_create(&self, create_fn: impl FnOnce() -> T) -> PoolRecycleGuard<T> {

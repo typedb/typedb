@@ -11,14 +11,13 @@ use std::{
 
 use answer::variable::Variable;
 use ir::{
-    pattern::{constraint::Constraint, IrID},
     pipeline::function_signature::FunctionID,
 };
 
 use crate::{
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
-        instructions::{CheckInstruction, ConstraintInstruction, VarMappedVariableModes, VariableModes},
+        instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
         planner::plan::PlannerStatistics,
     },
     ExecutorVariable, VariablePosition,

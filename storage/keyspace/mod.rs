@@ -17,14 +17,14 @@ mod raw_iterator;
 
 impl Poolable for DBRawIterator<'static> {}
 
+#[derive(Default)]
 pub struct IteratorPool {
     pools_per_keyspace: [SinglePool<DBRawIterator<'static>>; KEYSPACE_MAXIMUM_COUNT],
 }
 
 impl IteratorPool {
     pub fn new() -> Self {
-        let pools_per_keyspace = std::array::from_fn(|_| SinglePool::new());
-        Self { pools_per_keyspace }
+        Self::default()
     }
 
     fn get_iterator(&self, keyspace: &Keyspace) -> PoolRecycleGuard<DBRawIterator<'static>> {

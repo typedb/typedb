@@ -75,20 +75,6 @@ impl PlannerVertex<'_> {
         }
     }
 
-    pub(super) fn is_in_mem(&self) -> bool {
-        match self {
-            Self::Variable(_) => true,
-            Self::Constraint(ConstraintVertex::TypeList(_)) => true,
-            Self::Constraint(_) => false,
-            Self::Is(inner) => true,
-            Self::Comparison(inner) => true,
-            Self::Expression(inner) => true,
-            Self::FunctionCall(inner) => false,
-            Self::Negation(inner) => false,
-            Self::Disjunction(inner) => false,
-        }
-    }
-
     pub(super) fn variables(&self) -> Box<dyn Iterator<Item = VariableVertexId> + '_> {
         match self {
             Self::Variable(_) => Box::new(iter::empty()),
@@ -114,13 +100,13 @@ impl PlannerVertex<'_> {
     }
 
     pub(super) fn can_be_trivial(&self) -> bool {
-        match self {
-            Self::Comparison(_) => true,
-            Self::Expression(_) => true,
-            Self::Constraint(ConstraintVertex::TypeList(_)) => true,
-            Self::Constraint(ConstraintVertex::Isa(_)) => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Self::Comparison(_)
+                | Self::Expression(_)
+                | Self::Constraint(ConstraintVertex::TypeList(_))
+                | Self::Constraint(ConstraintVertex::Isa(_))
+        )
     }
 
     pub(super) fn as_variable_mut(&mut self) -> Option<&mut VariableVertex> {

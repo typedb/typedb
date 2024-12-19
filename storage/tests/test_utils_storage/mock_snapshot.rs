@@ -17,13 +17,14 @@ use storage::{
     },
 };
 
+#[derive(Default)]
 pub struct MockSnapshot {
     iterator_pool: IteratorPool,
 }
 
 impl MockSnapshot {
     pub fn new() -> Self {
-        Self { iterator_pool: IteratorPool::new() }
+        Self::default()
     }
 }
 
@@ -34,31 +35,27 @@ impl ReadableSnapshot for MockSnapshot {
 
     fn get<const INLINE_BYTES: usize>(
         &self,
-        key: StorageKeyReference<'_>,
+        _: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         Err(SnapshotGetError::MockError {})
     }
 
     fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
-        key: StorageKeyReference<'_>,
+        _: StorageKeyReference<'_>,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         Err(SnapshotGetError::MockError {})
     }
 
-    fn iterate_range<const PS: usize>(&self, range: &KeyRange<StorageKey<'_, PS>>) -> SnapshotRangeIterator {
+    fn iterate_range<const PS: usize>(&self, _: &KeyRange<StorageKey<'_, PS>>) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
     }
 
-    fn any_in_range<'this, const PS: usize>(
-        &'this self,
-        range: &KeyRange<StorageKey<'this, PS>>,
-        buffered_only: bool,
-    ) -> bool {
+    fn any_in_range<'this, const PS: usize>(&'this self, _: &KeyRange<StorageKey<'this, PS>>, _: bool) -> bool {
         false
     }
 
-    fn get_write(&self, key: StorageKeyReference<'_>) -> Option<&Write> {
+    fn get_write(&self, _: StorageKeyReference<'_>) -> Option<&Write> {
         None
     }
 
@@ -70,14 +67,14 @@ impl ReadableSnapshot for MockSnapshot {
 
     fn iterate_writes_range<'this, const PS: usize>(
         &'this self,
-        range: &KeyRange<StorageKey<'this, PS>>,
+        _: &KeyRange<StorageKey<'this, PS>>,
     ) -> BufferRangeIterator {
         BufferRangeIterator::new_empty()
     }
 
     fn iterate_storage_range<'this, const PS: usize>(
         &'this self,
-        range: &KeyRange<StorageKey<'this, PS>>,
+        _: &KeyRange<StorageKey<'this, PS>>,
     ) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
     }

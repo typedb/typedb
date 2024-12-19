@@ -736,7 +736,7 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
                 write!(
                     f,
-                    "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_role}"
+                    "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_player}",
                 )?;
             }
             Self::Is { lhs, rhs } => {

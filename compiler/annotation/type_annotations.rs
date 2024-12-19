@@ -12,8 +12,6 @@ use std::{
 use answer::{variable::Variable, Type};
 use ir::pattern::{constraint::Constraint, Vertex};
 
-use crate::executable::match_::instructions::thing::IndexedRelationInstruction;
-
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {
     vertex: BTreeMap<Vertex<Variable>, Arc<BTreeSet<Type>>>,

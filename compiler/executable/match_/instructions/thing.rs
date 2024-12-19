@@ -13,10 +13,9 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::type_::role_type::RoleType;
 use ir::pattern::{
-    constraint::{Has, Iid, IndexedRelation, Isa, Links},
+    constraint::{Has, Iid, Isa, Links},
     IrID,
 };
-use storage::MVCCKey;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,

@@ -12,10 +12,7 @@ use std::{
 };
 
 use answer::{variable_value::VariableValue, Thing, Type};
-use compiler::{
-    executable::match_::instructions::{thing::LinksInstruction, VariableMode},
-    ExecutorVariable,
-};
+use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
     thing::{
@@ -37,10 +34,10 @@ use crate::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, LinksToTupleFn, TuplePositions,
         },
-        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
+        Checker, FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
-    row::{MaybeOwnedRow, Row},
+    row::MaybeOwnedRow,
 };
 
 pub(crate) struct LinksExecutor {
