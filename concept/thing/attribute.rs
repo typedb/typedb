@@ -124,7 +124,7 @@ impl ThingAPI for Attribute {
         match self.type_().get_value_type_without_source(snapshot, thing_manager.type_manager())? {
             Some(value_type) => match value_type {
                 | ValueType::Boolean
-                | ValueType::Long
+                | ValueType::Integer
                 | ValueType::Double
                 | ValueType::Decimal
                 | ValueType::Date

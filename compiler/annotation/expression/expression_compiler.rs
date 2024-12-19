@@ -27,12 +27,12 @@ use crate::annotation::expression::{
     instructions::{
         list_operations,
         load_cast::{
-            CastLeftDecimalToDouble, CastLeftLongToDouble, CastRightDecimalToDouble, CastRightLongToDouble,
+            CastLeftDecimalToDouble, CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDouble,
             LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
-        unary::{MathAbsDouble, MathAbsLong, MathCeilDouble, MathFloorDouble, MathRoundDouble},
+        unary::{MathAbsDouble, MathAbsInteger, MathCeilDouble, MathFloorDouble, MathRoundDouble},
         CompilableExpression, ExpressionInstruction,
     },
     ExpressionCompileError,
@@ -124,7 +124,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.compile_constant(list_constructor.len_id())?;
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
-        if self.pop_type_single()?.category() != ValueTypeCategory::Long {
+        if self.pop_type_single()?.category() != ValueTypeCategory::Integer {
             Err(ExpressionCompileError::InternalUnexpectedValueType)?;
         }
         let n_elements = list_constructor.item_expression_ids().len();
@@ -153,8 +153,8 @@ impl<'this> ExpressionCompilationContext<'this> {
 
         let list_variable_type = self.pop_type_list()?;
         let index_type = self.pop_type_single()?.category();
-        if index_type != ValueTypeCategory::Long {
-            Err(ExpressionCompileError::ListIndexMustBeLong)?
+        if index_type != ValueTypeCategory::Integer {
+            Err(ExpressionCompileError::ListIndexMustBeInteger)?
         }
         self.push_type_single(list_variable_type); // reuse
         Ok(())
@@ -173,12 +173,12 @@ impl<'this> ExpressionCompilationContext<'this> {
 
         let list_variable_type = self.pop_type_list()?;
         let from_index_type = self.pop_type_single()?.category();
-        if from_index_type != ValueTypeCategory::Long {
-            Err(ExpressionCompileError::ListIndexMustBeLong)?
+        if from_index_type != ValueTypeCategory::Integer {
+            Err(ExpressionCompileError::ListIndexMustBeInteger)?
         }
         let to_index_type = self.pop_type_single()?.category();
-        if to_index_type != ValueTypeCategory::Long {
-            Err(ExpressionCompileError::ListIndexMustBeLong)?
+        if to_index_type != ValueTypeCategory::Integer {
+            Err(ExpressionCompileError::ListIndexMustBeInteger)?
         }
 
         self.push_type_single(list_variable_type);
@@ -192,7 +192,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         let left_category = self.peek_type_single()?.category();
         match left_category {
             ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression),
-            ValueTypeCategory::Long => self.compile_op_long(operator, right_expression),
+            ValueTypeCategory::Integer => self.compile_op_integer(operator, right_expression),
             ValueTypeCategory::Double => self.compile_op_double(operator, right_expression),
             ValueTypeCategory::Decimal => self.compile_op_decimal(operator, right_expression),
             ValueTypeCategory::Date => self.compile_op_date(operator, right_expression),
@@ -218,7 +218,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         }))
     }
 
-    fn compile_op_long(
+    fn compile_op_integer(
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
@@ -226,17 +226,17 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
         match right_category {
-            ValueTypeCategory::Long => {
-                self.compile_op_long_long(op)?;
+            ValueTypeCategory::Integer => {
+                self.compile_op_integer_integer(op)?;
             }
             ValueTypeCategory::Double => {
                 // The left needs to be cast
-                CastLeftLongToDouble::validate_and_append(self)?;
+                CastLeftIntegerToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
             _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
                 op,
-                left_category: ValueTypeCategory::Long,
+                left_category: ValueTypeCategory::Integer,
                 right_category,
             })?,
         }
@@ -251,9 +251,9 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
         match right_category {
-            ValueTypeCategory::Long => {
+            ValueTypeCategory::Integer => {
                 // The right needs to be cast
-                CastRightLongToDouble::validate_and_append(self)?;
+                CastRightIntegerToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
             ValueTypeCategory::Decimal => {
@@ -380,14 +380,14 @@ impl<'this> ExpressionCompilationContext<'this> {
     }
 
     // Ops with Left, Right resolved
-    fn compile_op_long_long(&mut self, op: Operator) -> Result<(), Box<ExpressionCompileError>> {
+    fn compile_op_integer_integer(&mut self, op: Operator) -> Result<(), Box<ExpressionCompileError>> {
         match op {
-            Operator::Add => operators::OpLongAddLong::validate_and_append(self)?,
-            Operator::Subtract => operators::OpLongSubtractLong::validate_and_append(self)?,
-            Operator::Multiply => operators::OpLongMultiplyLong::validate_and_append(self)?,
-            Operator::Divide => operators::OpLongDivideLong::validate_and_append(self)?,
-            Operator::Modulo => operators::OpLongModuloLong::validate_and_append(self)?,
-            Operator::Power => operators::OpLongPowerLong::validate_and_append(self)?,
+            Operator::Add => operators::OpIntegerAddInteger::validate_and_append(self)?,
+            Operator::Subtract => operators::OpIntegerSubtractInteger::validate_and_append(self)?,
+            Operator::Multiply => operators::OpIntegerMultiplyInteger::validate_and_append(self)?,
+            Operator::Divide => operators::OpIntegerDivideInteger::validate_and_append(self)?,
+            Operator::Modulo => operators::OpIntegerModuloInteger::validate_and_append(self)?,
+            Operator::Power => operators::OpIntegerPowerInteger::validate_and_append(self)?,
         }
         Ok(())
     }
@@ -409,7 +409,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             BuiltInFunctionID::Abs => {
                 self.compile_recursive(self.expression_tree.get(builtin.argument_expression_ids()[0]))?;
                 match self.peek_type_single()?.category() {
-                    ValueTypeCategory::Long => MathAbsLong::validate_and_append(self)?,
+                    ValueTypeCategory::Integer => MathAbsInteger::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,

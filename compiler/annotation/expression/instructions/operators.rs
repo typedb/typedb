@@ -12,12 +12,12 @@ use crate::annotation::expression::instructions::{
 };
 
 binary_instruction! {
-    OpLongAddLong = OpLongAddLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2)) }
-    OpLongSubtractLong = OpLongSubtractLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2)) }
-    OpLongMultiplyLong = OpLongMultiplyLongImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2)) }
-    OpLongDivideLong = OpLongDivideLongImpl(a1: i64, a2: i64) -> f64 { Ok(a1 as f64 / a2 as f64) }
-    OpLongModuloLong = OpLongModuloLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem_euclid(a1, a2)) }
-    OpLongPowerLong = OpLongPowerLongImpl(a1: i64, a2: i64) -> f64 { Ok(f64::powf(a1 as f64, a2 as f64)) }
+    OpIntegerAddInteger = OpIntegerAddIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2)) }
+    OpIntegerSubtractInteger = OpIntegerSubtractIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2)) }
+    OpIntegerMultiplyInteger = OpIntegerMultiplyIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2)) }
+    OpIntegerDivideInteger = OpIntegerDivideIntegerImpl(a1: i64, a2: i64) -> f64 { Ok(a1 as f64 / a2 as f64) }
+    OpIntegerModuloInteger = OpIntegerModuloIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem_euclid(a1, a2)) }
+    OpIntegerPowerInteger = OpIntegerPowerIntegerImpl(a1: i64, a2: i64) -> f64 { Ok(f64::powf(a1 as f64, a2 as f64)) }
 
     OpDoubleAddDouble = OpDoubleAddDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(a1 + a2) }
     OpDoubleSubtractDouble = OpDoubleSubtractDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(a1 - a2) }

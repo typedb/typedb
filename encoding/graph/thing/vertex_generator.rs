@@ -25,7 +25,7 @@ use crate::{
     error::EncodingError,
     graph::{
         thing::{
-            vertex_attribute::{AttributeID, AttributeVertex, LongAttributeID, StringAttributeID},
+            vertex_attribute::{AttributeID, AttributeVertex, IntegerAttributeID, StringAttributeID},
             vertex_object::{ObjectID, ObjectVertex},
             ThingVertex,
         },
@@ -36,7 +36,8 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, struct_bytes::StructBytes,
+        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes,
+        struct_bytes::StructBytes,
     },
     AsBytes, Keyable,
 };
@@ -183,17 +184,17 @@ impl ThingVertexGenerator {
         vertex
     }
 
-    pub fn create_attribute_long<Snapshot>(
+    pub fn create_attribute_integer<Snapshot>(
         &self,
         type_id: TypeID,
-        value: LongBytes,
+        value: IntegerBytes,
         snapshot: &mut Snapshot,
     ) -> AttributeVertex
     where
         Snapshot: WritableSnapshot,
     {
-        let long_attribute_id = self.create_attribute_id_long(value);
-        let vertex = AttributeVertex::new(type_id, AttributeID::Long(long_attribute_id));
+        let integer_attribute_id = self.create_attribute_id_integer(value);
+        let vertex = AttributeVertex::new(type_id, AttributeID::Integer(integer_attribute_id));
         snapshot.put(vertex.into_storage_key().into_owned_array());
         vertex
     }
@@ -292,8 +293,8 @@ impl ThingVertexGenerator {
         BooleanAttributeID::build(value)
     }
 
-    pub fn create_attribute_id_long(&self, value: LongBytes) -> LongAttributeID {
-        LongAttributeID::build(value)
+    pub fn create_attribute_id_integer(&self, value: IntegerBytes) -> IntegerAttributeID {
+        IntegerAttributeID::build(value)
     }
 
     pub fn create_attribute_id_double(&self, value: DoubleBytes) -> DoubleAttributeID {

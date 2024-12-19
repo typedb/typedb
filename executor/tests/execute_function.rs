@@ -33,7 +33,7 @@ struct Context {
 
 const COMMON_SCHEMA: &str = r#"
     define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..), plays membership:member;
         entity organisation plays membership:group;
@@ -177,7 +177,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
@@ -194,7 +194,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
@@ -211,7 +211,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
@@ -228,7 +228,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 0);
@@ -245,7 +245,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
@@ -262,7 +262,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 3);
@@ -271,7 +271,7 @@ fn function_compiles() {
     {
         let query = r#"
             with
-            fun get_ages($p_arg: person) -> { long }:
+            fun get_ages($p_arg: person) -> { integer }:
             match
                 $p_arg has age $age_return;
             reduce $age_sum = sum($age_return);
@@ -279,7 +279,7 @@ fn function_compiles() {
 
             match
                 $p isa person;
-                $z in get_ages($p);
+                let $z in get_ages($p);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2);
@@ -311,7 +311,7 @@ fn function_binary() {
                 $p1 isa person; $p2 isa person;
                 $p1 has name $name1; $p2 has name $name2;
                 $name1 != $name2;
-                $same_age in same_age_check($p1, $p2);
+                let $same_age in same_age_check($p1, $p2);
         "#;
         let (rows, _) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 2); // Symmetrically Alice & Charlie
@@ -335,13 +335,13 @@ fn quadratic_reachability_in_tree() {
             fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { (start: $start, end: $middle) isa edge; $indirect in reachable($middle); $indirect has name $name; } or
-                { (start: $start, end: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
+                { edge (start: $start, end: $middle); let $indirect in reachable($middle); $indirect has name $name; } or
+                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             match
                 $start isa node, has name "<<NODE_NAME>>";
-                $to in reachable($start);
+                let $to in reachable($start);
         "#;
     let placeholder_start_node = "<<NODE_NAME>>";
     {
@@ -400,13 +400,13 @@ fn linear_reachability_in_tree() {
             fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { $middle in reachable($start); (start: $middle, end: $indirect) isa edge; $indirect has name $name; } or
-                { (start: $start, end: $direct) isa edge; $direct has name $name; }; # Do we have is yet?
+                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             match
                 $start isa node, has name "<<NODE_NAME>>";
-                $to in reachable($start);
+                let $to in reachable($start);
         "#;
 
     {
@@ -450,25 +450,25 @@ fn linear_reachability_in_tree() {
 #[test]
 fn fibonacci() {
     let custom_schema = r#"define
-        attribute number @independent, value long;
+        attribute number @independent, value integer;
     "#;
     let context = setup_common(custom_schema);
     let insert_query = r#"insert
-        $n1   1 isa number;
-        $n2   2 isa number;
-        $n3   3 isa number;
-        $n4   4 isa number;
-        $n5   5 isa number;
-        $n6   6 isa number;
-        $n7   7 isa number;
-        $n8   8 isa number;
-        $n9   9 isa number;
-        $n10 10 isa number;
-        $n11 11 isa number;
-        $n12 12 isa number;
-        $n13 13 isa number;
-        $n14 14 isa number;
-        $n15 15 isa number;
+        $n1  isa number  1;
+        $n2  isa number  2;
+        $n3  isa number  3;
+        $n4  isa number  4;
+        $n5  isa number  5;
+        $n6  isa number  6;
+        $n7  isa number  7;
+        $n8  isa number  8;
+        $n9  isa number  9;
+        $n10 isa number 10;
+        $n11 isa number 11;
+        $n12 isa number 12;
+        $n13 isa number 13;
+        $n14 isa number 14;
+        $n15 isa number 15;
     "#;
     let (rows, _positions) = run_write_query(&context, insert_query).unwrap();
     assert_eq!(1, rows.len());
@@ -476,27 +476,27 @@ fn fibonacci() {
     {
         let query = r#"
             with
-            fun ith_fibonacci_number($i: long) -> { number }:
+            fun ith_fibonacci_number($i: integer) -> { number }:
             match
                 $ret isa number;
                 { $i == 1; $ret == 1; $ret isa number; } or
                 { $i == 2; $ret == 1; $ret isa number; } or
                 { $i > 2;
-                     $i1 = $i - 1;
-                     $i2 = $i - 2;
-                     $combined = ith_fibonacci_number($i1) +  ith_fibonacci_number($i2);
+                     let $i1 = $i - 1;
+                     let $i2 = $i - 2;
+                     let $combined = ith_fibonacci_number($i1) +  ith_fibonacci_number($i2);
                      $ret == $combined;
                      $ret isa number;
                 };
             return { $ret };
 
             match
-                $f_7 = ith_fibonacci_number(7);
-                $as_value = $f_7;
+                let $f_7 = ith_fibonacci_number(7);
+                let $as_value = $f_7;
         "#;
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
         let answer_position = *positions.get("as_value").unwrap();
-        assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_long(), 13);
+        assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_integer(), 13);
     }
 }

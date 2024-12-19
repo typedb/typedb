@@ -421,10 +421,13 @@ impl FromStr for KindExtended {
 }
 
 #[derive(Debug, Parameter)]
-#[param(name = "value_type", regex = "(boolean|long|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)")]
+#[param(
+    name = "value_type",
+    regex = "(boolean|integer|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
+)]
 pub(crate) enum ValueType {
     Boolean,
-    Long,
+    Integer,
     Double,
     Decimal,
     Date,
@@ -439,7 +442,7 @@ impl ValueType {
     pub fn into_typedb(self, type_manager: &Arc<TypeManager>, snapshot: &impl ReadableSnapshot) -> TypeDBValueType {
         match self {
             ValueType::Boolean => TypeDBValueType::Boolean,
-            ValueType::Long => TypeDBValueType::Long,
+            ValueType::Integer => TypeDBValueType::Integer,
             ValueType::Double => TypeDBValueType::Double,
             ValueType::Decimal => TypeDBValueType::Decimal,
             ValueType::Date => TypeDBValueType::Date,
@@ -462,7 +465,7 @@ impl FromStr for ValueType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Ok(match s {
             "boolean" => Self::Boolean,
-            "long" => Self::Long,
+            "integer" => Self::Integer,
             "double" => Self::Double,
             "decimal" => Self::Decimal,
             "date" => Self::Date,
@@ -499,7 +502,7 @@ impl Value {
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
             TypeDBValueType::Boolean => TypeDBValue::Boolean(self.raw_value.parse().unwrap()),
-            TypeDBValueType::Long => TypeDBValue::Long(self.raw_value.parse().unwrap()),
+            TypeDBValueType::Integer => TypeDBValue::Integer(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
             TypeDBValueType::Decimal => {
                 let (integer, fractional) = if let Some(split) = self.raw_value.split_once(".") {

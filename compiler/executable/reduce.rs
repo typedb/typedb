@@ -42,17 +42,17 @@ pub struct ReduceRowsExecutable {
 pub enum ReduceInstruction<ID: IrID> {
     Count,
     CountVar(ID),
-    SumLong(ID),
+    SumInteger(ID),
     SumDouble(ID),
-    MaxLong(ID),
+    MaxInteger(ID),
     MaxDouble(ID),
-    MinLong(ID),
+    MinInteger(ID),
     MinDouble(ID),
-    MeanLong(ID),
+    MeanInteger(ID),
     MeanDouble(ID),
-    MedianLong(ID),
+    MedianInteger(ID),
     MedianDouble(ID),
-    StdLong(ID),
+    StdInteger(ID),
     StdDouble(ID),
 }
 
@@ -62,36 +62,36 @@ impl<ID: IrID> ReduceInstruction<ID> {
             Self::Count => None,
 
             Self::CountVar(id)
-            | Self::SumLong(id)
+            | Self::SumInteger(id)
             | Self::SumDouble(id)
-            | Self::MaxLong(id)
+            | Self::MaxInteger(id)
             | Self::MaxDouble(id)
-            | Self::MinLong(id)
+            | Self::MinInteger(id)
             | Self::MinDouble(id)
-            | Self::MeanLong(id)
+            | Self::MeanInteger(id)
             | Self::MeanDouble(id)
-            | Self::MedianLong(id)
+            | Self::MedianInteger(id)
             | Self::MedianDouble(id)
-            | Self::StdLong(id)
+            | Self::StdInteger(id)
             | Self::StdDouble(id) => Some(id),
         }
     }
 
     pub fn output_type(&self) -> ValueType {
         match self {
-            Self::Count => ValueType::Long,
-            Self::CountVar(_) => ValueType::Long,
-            Self::SumLong(_) => ValueType::Long,
+            Self::Count => ValueType::Integer,
+            Self::CountVar(_) => ValueType::Integer,
+            Self::SumInteger(_) => ValueType::Integer,
             Self::SumDouble(_) => ValueType::Double,
-            Self::MaxLong(_) => ValueType::Long,
+            Self::MaxInteger(_) => ValueType::Integer,
             Self::MaxDouble(_) => ValueType::Double,
-            Self::MinLong(_) => ValueType::Long,
+            Self::MinInteger(_) => ValueType::Integer,
             Self::MinDouble(_) => ValueType::Double,
-            Self::MeanLong(_) => ValueType::Double,
+            Self::MeanInteger(_) => ValueType::Double,
             Self::MeanDouble(_) => ValueType::Double,
-            Self::MedianLong(_) => ValueType::Double,
+            Self::MedianInteger(_) => ValueType::Double,
             Self::MedianDouble(_) => ValueType::Double,
-            Self::StdLong(_) => ValueType::Double,
+            Self::StdInteger(_) => ValueType::Double,
             Self::StdDouble(_) => ValueType::Double,
         }
     }
@@ -100,17 +100,17 @@ impl<ID: IrID> ReduceInstruction<ID> {
         match self {
             ReduceInstruction::Count => ReduceInstruction::Count,
             ReduceInstruction::CountVar(id) => ReduceInstruction::CountVar(mapping[&id]),
-            ReduceInstruction::SumLong(id) => ReduceInstruction::SumLong(mapping[&id]),
+            ReduceInstruction::SumInteger(id) => ReduceInstruction::SumInteger(mapping[&id]),
             ReduceInstruction::SumDouble(id) => ReduceInstruction::SumDouble(mapping[&id]),
-            ReduceInstruction::MaxLong(id) => ReduceInstruction::MaxLong(mapping[&id]),
+            ReduceInstruction::MaxInteger(id) => ReduceInstruction::MaxInteger(mapping[&id]),
             ReduceInstruction::MaxDouble(id) => ReduceInstruction::MaxDouble(mapping[&id]),
-            ReduceInstruction::MinLong(id) => ReduceInstruction::MinLong(mapping[&id]),
+            ReduceInstruction::MinInteger(id) => ReduceInstruction::MinInteger(mapping[&id]),
             ReduceInstruction::MinDouble(id) => ReduceInstruction::MinDouble(mapping[&id]),
-            ReduceInstruction::MeanLong(id) => ReduceInstruction::MeanLong(mapping[&id]),
+            ReduceInstruction::MeanInteger(id) => ReduceInstruction::MeanInteger(mapping[&id]),
             ReduceInstruction::MeanDouble(id) => ReduceInstruction::MeanDouble(mapping[&id]),
-            ReduceInstruction::MedianLong(id) => ReduceInstruction::MedianLong(mapping[&id]),
+            ReduceInstruction::MedianInteger(id) => ReduceInstruction::MedianInteger(mapping[&id]),
             ReduceInstruction::MedianDouble(id) => ReduceInstruction::MedianDouble(mapping[&id]),
-            ReduceInstruction::StdLong(id) => ReduceInstruction::StdLong(mapping[&id]),
+            ReduceInstruction::StdInteger(id) => ReduceInstruction::StdInteger(mapping[&id]),
             ReduceInstruction::StdDouble(id) => ReduceInstruction::StdDouble(mapping[&id]),
         }
     }

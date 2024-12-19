@@ -88,11 +88,11 @@ fn entity_usage() {
         // --- age sub attribute ---
         let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
         assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
         assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
-        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
 
         // --- person sub entity @abstract ---
         let person_label = Label::build("person");
@@ -170,7 +170,7 @@ fn entity_usage() {
 
         assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
         assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
-        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
 
         // --- person sub entity ---
         let person_label = Label::build("person");
@@ -296,7 +296,7 @@ fn annotations_with_range_arguments() {
 
         let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
         let name_label = Label::build("name");
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
@@ -331,7 +331,7 @@ fn annotations_with_range_arguments() {
         let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
-        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
         assert_eq!(name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
         assert_eq!(
             empty_name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
@@ -396,7 +396,7 @@ fn annotations_with_range_arguments() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Long(0)), Some(Value::Long(18)))),
+                AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Integer(0)), Some(Value::Integer(18)))),
             )
             .unwrap();
         name_owns
@@ -521,12 +521,12 @@ fn annotations_with_range_arguments() {
         let empty_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_type).unwrap().unwrap();
 
         assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
-            &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Long(0)), Some(Value::Long(18))))
+            &AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Integer(0)), Some(Value::Integer(18))))
         ));
         assert!(!age_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
-            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Long(18))))));
+            .contains(&AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Integer(18))))));
         assert!(age_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(name_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -664,7 +664,7 @@ fn annotations_with_value_arguments() {
 
         let age_label = Label::build("age");
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
         let name_label = Label::build("name");
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
@@ -699,7 +699,7 @@ fn annotations_with_value_arguments() {
         let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
-        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Long));
+        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
         assert_eq!(name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::String));
         assert_eq!(
             empty_name_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(),
@@ -764,7 +764,7 @@ fn annotations_with_value_arguments() {
                 &mut snapshot,
                 &type_manager,
                 &thing_manager,
-                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(0), Value::Long(18)])),
+                AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(0), Value::Integer(18)])),
             )
             .unwrap();
         name_owns
@@ -885,22 +885,19 @@ fn annotations_with_value_arguments() {
         let valid_owns = person_type.get_owns_attribute(&snapshot, &type_manager, valid_type).unwrap().unwrap();
         let empty_owns = person_type.get_owns_attribute(&snapshot, &type_manager, empty_type).unwrap().unwrap();
 
-        assert!(age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(0), Value::Long(18)]))));
+        assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(0), Value::Integer(18)]))
+        ));
         assert!(!age_type
             .get_annotations_declared(&snapshot, &type_manager)
             .unwrap()
             .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![]))));
-        assert!(!age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(1), Value::Long(18)]))));
-        assert!(!age_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Long(18), Value::Long(0)]))));
+        assert!(!age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(1), Value::Integer(18)]))
+        ));
+        assert!(!age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().contains(
+            &AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(18), Value::Integer(0)]))
+        ));
         assert!(age_owns.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
 
         assert!(name_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -1026,8 +1023,10 @@ fn test_struct_definition() {
     let type_manager = type_manager_no_cache();
 
     let nested_struct_name = "nested_struct".to_owned();
-    let nested_struct_fields =
-        HashMap::from([("f0_bool".into(), (ValueType::Boolean, false)), ("f1_long".into(), (ValueType::Long, false))]);
+    let nested_struct_fields = HashMap::from([
+        ("f0_bool".into(), (ValueType::Boolean, false)),
+        ("f1_integer".into(), (ValueType::Integer, false)),
+    ]);
     let nested_struct_key =
         define_struct(&mut snapshot, &type_manager, nested_struct_name.clone(), nested_struct_fields.clone());
 
@@ -1135,7 +1134,7 @@ fn test_struct_definition_updates() {
     let thing_manager = thing_manager(type_manager.clone());
 
     // types to add
-    let f_long = ("f_long".to_owned(), (ValueType::Long, false));
+    let f_integer = ("f_integer".to_owned(), (ValueType::Integer, false));
     let f_string = ("f_string".to_owned(), (ValueType::String, false));
 
     let struct_name = "structs_can_be_modified".to_owned();
@@ -1144,10 +1143,10 @@ fn test_struct_definition_updates() {
         let mut snapshot = storage.clone().open_snapshot_write();
         let struct_key = type_manager.create_struct(&mut snapshot, struct_name.clone()).unwrap();
 
-        let (field, (value_type, is_optional)) = f_long.clone();
+        let (field, (value_type, is_optional)) = f_integer.clone();
         type_manager.create_struct_field(&mut snapshot, struct_key.clone(), &field, value_type, is_optional).unwrap();
         assert_eq!(
-            HashMap::from([f_long.clone()]),
+            HashMap::from([f_integer.clone()]),
             remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
         );
 
@@ -1160,12 +1159,12 @@ fn test_struct_definition_updates() {
         let (field, (value_type, is_optional)) = f_string.clone();
         type_manager.create_struct_field(&mut snapshot, struct_key.clone(), &field, value_type, is_optional).unwrap();
         assert_eq!(
-            HashMap::from([f_long.clone(), f_string.clone()]),
+            HashMap::from([f_integer.clone(), f_string.clone()]),
             remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
         );
 
         type_manager
-            .delete_struct_field(&mut snapshot, &thing_manager, struct_key.clone(), f_long.clone().0.as_str())
+            .delete_struct_field(&mut snapshot, &thing_manager, struct_key.clone(), f_integer.clone().0.as_str())
             .unwrap();
         assert_eq!(
             HashMap::from([f_string.clone()]),

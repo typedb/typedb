@@ -328,7 +328,7 @@ impl AnnotationRange {
 
                     match start_inclusive {
                         Value::Boolean(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_boolean(),
-                        Value::Long(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_long(),
+                        Value::Integer(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_integer(),
                         Value::Double(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_double(),
                         Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
                         Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
@@ -353,7 +353,7 @@ impl AnnotationRange {
         match value_type {
             Some(value_type) => match &value_type {
                 | ValueType::Boolean
-                | ValueType::Long
+                | ValueType::Integer
                 | ValueType::Double
                 | ValueType::Decimal
                 | ValueType::Date
@@ -378,7 +378,7 @@ impl AnnotationRange {
                 None => false,
                 Some(value) => match value {
                     Value::Boolean(value) => &start.unwrap_boolean() <= value,
-                    Value::Long(value) => &start.unwrap_long() <= value,
+                    Value::Integer(value) => &start.unwrap_integer() <= value,
                     Value::Double(value) => &start.unwrap_double() <= value,
                     Value::Decimal(value) => &start.unwrap_decimal() <= value,
                     Value::Date(value) => &start.unwrap_date() <= value,
@@ -399,7 +399,7 @@ impl AnnotationRange {
                 None => false,
                 Some(value) => match value {
                     Value::Boolean(value) => &end.unwrap_boolean() >= value,
-                    Value::Long(value) => &end.unwrap_long() >= value,
+                    Value::Integer(value) => &end.unwrap_integer() >= value,
                     Value::Double(value) => &end.unwrap_double() >= value,
                     Value::Decimal(value) => &end.unwrap_decimal() >= value,
                     Value::Date(value) => &end.unwrap_date() >= value,
@@ -484,7 +484,7 @@ impl AnnotationValues {
         match value_type {
             Some(value_type) => match &value_type {
                 | ValueType::Boolean
-                | ValueType::Long
+                | ValueType::Integer
                 | ValueType::Double
                 | ValueType::Decimal
                 | ValueType::Date
@@ -894,7 +894,7 @@ mod serialize_annotation {
     use encoding::value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
+        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
         value_type::ValueTypeCategory, ValueEncodable,
     };
     use resource::constants::encoding::AD_HOC_BYTES_INLINE;
@@ -910,7 +910,7 @@ mod serialize_annotation {
     fn serialize_value(value: Value<'_>) -> Vec<u8> {
         match value.value_type().category() {
             | ValueTypeCategory::Boolean
-            | ValueTypeCategory::Long
+            | ValueTypeCategory::Integer
             | ValueTypeCategory::Double
             | ValueTypeCategory::Decimal
             | ValueTypeCategory::Date
@@ -925,7 +925,7 @@ mod serialize_annotation {
     fn deserialize_value(bytes: &[u8], value_type_category: ValueTypeCategory) -> Value<'static> {
         match value_type_category {
             ValueTypeCategory::Boolean => Value::Boolean(BooleanBytes::new(bytes.try_into().unwrap()).as_bool()),
-            ValueTypeCategory::Long => Value::Long(LongBytes::new(bytes.try_into().unwrap()).as_i64()),
+            ValueTypeCategory::Integer => Value::Integer(IntegerBytes::new(bytes.try_into().unwrap()).as_i64()),
             ValueTypeCategory::Double => Value::Double(DoubleBytes::new(bytes.try_into().unwrap()).as_f64()),
             ValueTypeCategory::Decimal => Value::Decimal(DecimalBytes::new(bytes.try_into().unwrap()).as_decimal()),
             ValueTypeCategory::Date => Value::Date(DateBytes::new(bytes.try_into().unwrap()).as_naive_date()),
@@ -975,7 +975,7 @@ mod serialize_annotation {
         let value = value?;
         match value.value_type().category() {
             | ValueTypeCategory::Boolean
-            | ValueTypeCategory::Long
+            | ValueTypeCategory::Integer
             | ValueTypeCategory::Double
             | ValueTypeCategory::Decimal
             | ValueTypeCategory::Date
@@ -994,7 +994,7 @@ mod serialize_annotation {
         let bytes = bytes_opt?;
         match &value_type_category {
             | ValueTypeCategory::Boolean
-            | ValueTypeCategory::Long
+            | ValueTypeCategory::Integer
             | ValueTypeCategory::Double
             | ValueTypeCategory::Decimal
             | ValueTypeCategory::Date
@@ -1178,7 +1178,7 @@ mod serialize_annotation {
             .iter()
             .map(|value| match value {
                 | Value::Boolean(_)
-                | Value::Long(_)
+                | Value::Integer(_)
                 | Value::Double(_)
                 | Value::Decimal(_)
                 | Value::Date(_)

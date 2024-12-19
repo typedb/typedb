@@ -90,7 +90,7 @@ fn attribute_create() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
         age_type
             .set_annotation(
                 &mut snapshot,
@@ -110,8 +110,8 @@ fn attribute_create() {
             )
             .unwrap();
 
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
-        assert_eq!(age_1.get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age_value)).unwrap();
+        assert_eq!(age_1.get_value(&snapshot, &thing_manager).unwrap(), Value::Integer(age_value));
 
         let name_1 =
             thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name_value))).unwrap();
@@ -131,7 +131,7 @@ fn attribute_create() {
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
         let mut ages: Vec<_> = thing_manager.get_attributes_in(&snapshot, age_type).unwrap().try_collect().unwrap();
         assert_eq!(ages.len(), 1);
-        assert_eq!(ages.first_mut().unwrap().get_value(&snapshot, &thing_manager).unwrap(), Value::Long(age_value));
+        assert_eq!(ages.first_mut().unwrap().get_value(&snapshot, &thing_manager).unwrap(), Value::Integer(age_value));
     }
 }
 
@@ -152,7 +152,7 @@ fn has() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
         age_type
             .set_annotation(
                 &mut snapshot,
@@ -177,7 +177,7 @@ fn has() {
         person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
+        let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age_value)).unwrap();
         let name_1 = thing_manager
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned(String::from(name_value))))
             .unwrap();
@@ -226,7 +226,7 @@ fn get_has_reverse_in_range() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
         age_type
             .set_annotation(
                 &mut snapshot,
@@ -297,9 +297,9 @@ fn get_has_reverse_in_range() {
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
         let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
         let age_10 =
-            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value_10)).unwrap();
+            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Integer(age_value_10)).unwrap();
         let age_11 =
-            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Long(age_value_11)).unwrap();
+            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Integer(age_value_11)).unwrap();
         let name_inline = thing_manager
             .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(inlineable_name)))
             .unwrap();
@@ -333,7 +333,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Included(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
             )
             .unwrap();
@@ -343,7 +343,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Excluded(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
             )
             .unwrap();
@@ -353,7 +353,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Included(Value::Long(age_value_10)), Bound::Excluded(Value::Long(age_value_11))),
+                &(Bound::Included(Value::Integer(age_value_10)), Bound::Excluded(Value::Integer(age_value_11))),
                 &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
             )
             .unwrap();
@@ -363,7 +363,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Excluded(Value::Long(age_value_10)), Bound::Excluded(Value::Long(age_value_11))),
+                &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Excluded(Value::Integer(age_value_11))),
                 &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
             )
             .unwrap();
@@ -373,7 +373,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Included(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Excluded(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
             )
             .unwrap();
@@ -384,7 +384,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Excluded(Value::Long(age_value_10)), Bound::Unbounded),
+                &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
                 &(Bound::Excluded(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
             )
             .unwrap();
@@ -395,7 +395,7 @@ fn get_has_reverse_in_range() {
             .get_has_reverse_in_range(
                 &snapshot,
                 age_type.clone(),
-                &(Bound::Unbounded, Bound::Included(Value::Long(age_value_11))),
+                &(Bound::Unbounded, Bound::Included(Value::Integer(age_value_11))),
                 &(
                     Bound::Excluded(ObjectType::Entity(person_type.clone())),
                     Bound::Excluded(ObjectType::Entity(company_type.clone())),
@@ -424,7 +424,7 @@ fn attribute_cleanup_on_concurrent_detach() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
@@ -441,7 +441,7 @@ fn attribute_cleanup_on_concurrent_detach() {
 
         let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
         let bob = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Long(age_value)).unwrap();
+        let age = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age_value)).unwrap();
         let name_alice = thing_manager
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name_alice_value)))
             .unwrap();
@@ -517,7 +517,7 @@ fn attribute_cleanup_on_concurrent_detach() {
         let mut ages: Vec<_> = thing_manager.get_attributes_in(&snapshot_2, age_type).unwrap().try_collect().unwrap();
         let age_position = ages
             .iter()
-            .position(|attr| attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_long() == age_value)
+            .position(|attr| attr.get_value(&snapshot_2, &thing_manager).unwrap().unwrap_integer() == age_value)
             .unwrap();
         ages.remove(age_position);
         alice.set_has_ordered(&mut snapshot_2, &thing_manager, age_type, ages).unwrap();
@@ -1311,11 +1311,13 @@ fn attribute_struct_write_read() {
 
     let attr_label = Label::build("struct_test_attr");
     let struct_name = "struct_test_test".to_owned();
-    let fields: HashMap<String, (ValueType, bool)> =
-        HashMap::from([("f0l".to_owned(), (ValueType::Long, false)), ("f1s".to_owned(), (ValueType::String, false))]);
+    let fields: HashMap<String, (ValueType, bool)> = HashMap::from([
+        ("f0l".to_owned(), (ValueType::Integer, false)),
+        ("f1s".to_owned(), (ValueType::String, false)),
+    ]);
 
     let instance_fields = HashMap::from([
-        ("f0l".to_owned(), Value::Long(123)),
+        ("f0l".to_owned(), Value::Integer(123)),
         ("f1s".to_owned(), Value::String(Cow::Owned("abc".to_owned()))),
     ]);
     let struct_key = {
@@ -1511,7 +1513,7 @@ fn attribute_struct_errors() {
             let err = StructValue::build(
                 struct_key.clone(),
                 struct_def.clone(),
-                HashMap::from([("f_nested".to_owned(), Value::Long(0))]),
+                HashMap::from([("f_nested".to_owned(), Value::Integer(0))]),
             )
             .unwrap_err();
             assert!(

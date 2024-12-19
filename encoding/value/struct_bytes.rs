@@ -25,7 +25,7 @@ use crate::{
     value::{
         boolean_bytes::BooleanBytes, date_bytes::DateBytes, date_time_bytes::DateTimeBytes,
         date_time_tz_bytes::DateTimeTZBytes, decimal_bytes::DecimalBytes, double_bytes::DoubleBytes,
-        duration_bytes::DurationBytes, long_bytes::LongBytes, string_bytes::StringBytes, value::Value,
+        duration_bytes::DurationBytes, integer_bytes::IntegerBytes, string_bytes::StringBytes, value::Value,
         value_struct::StructValue, value_type::ValueTypeCategory, ValueEncodable,
     },
     AsBytes,
@@ -101,7 +101,7 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
             }
             Value::Struct(value) => encode_struct_into(value.borrow(), buf)?,
             | Value::Boolean(_)
-            | Value::Long(_)
+            | Value::Integer(_)
             | Value::Double(_)
             | Value::Decimal(_)
             | Value::Date(_)
@@ -143,8 +143,9 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                 BooleanBytes::new(read_bytes_increment_offset::<{ BooleanBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_bool(),
             ),
-            ValueTypeCategory::Long => Value::Long(
-                LongBytes::new(read_bytes_increment_offset::<{ LongBytes::ENCODED_LENGTH }>(offset, buf)?).as_i64(),
+            ValueTypeCategory::Integer => Value::Integer(
+                IntegerBytes::new(read_bytes_increment_offset::<{ IntegerBytes::ENCODED_LENGTH }>(offset, buf)?)
+                    .as_i64(),
             ),
             ValueTypeCategory::Double => Value::Double(
                 DoubleBytes::new(read_bytes_increment_offset::<{ DoubleBytes::ENCODED_LENGTH }>(offset, buf)?).as_f64(),
@@ -280,12 +281,12 @@ pub mod test {
     #[test]
     fn encoding_decoding() {
         let test_values = [
-            (Value::String(Cow::Borrowed("abc")), Value::Long(0xbeef)),
-            (Value::String(Cow::Owned(String::from_utf8(vec![b'X'; 512]).unwrap())), Value::Long(0xf00d)), // Bigger than 256 characters
+            (Value::String(Cow::Borrowed("abc")), Value::Integer(0xbeef)),
+            (Value::String(Cow::Owned(String::from_utf8(vec![b'X'; 512]).unwrap())), Value::Integer(0xf00d)), // Bigger than 256 characters
         ];
-        for (string_value, long_value) in test_values {
+        for (string_value, integer_value) in test_values {
             let nested_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));
-            let nested_fields = HashMap::from([(0, string_value), (1, long_value)]);
+            let nested_fields = HashMap::from([(0, string_value), (1, integer_value)]);
             let nested_struct = StructValue::new(nested_key, nested_fields);
 
             let struct_key = DefinitionKey::build(StructDefinition::PREFIX, DefinitionID::build(0));

@@ -13,17 +13,17 @@ use crate::{
 };
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub struct LongBytes {
+pub struct IntegerBytes {
     bytes: [u8; Self::ENCODED_LENGTH],
 }
 
-impl LongBytes {
+impl IntegerBytes {
     pub fn new(bytes: [u8; Self::ENCODED_LENGTH]) -> Self {
         Self { bytes }
     }
 
-    pub fn build(long: i64) -> Self {
-        Self { bytes: encode_i64(long) }
+    pub fn build(integer: i64) -> Self {
+        Self { bytes: encode_i64(integer) }
     }
 
     pub fn as_i64(&self) -> i64 {
@@ -35,9 +35,9 @@ impl LongBytes {
     }
 }
 
-impl InlineEncodableAttributeID for LongBytes {
+impl InlineEncodableAttributeID for IntegerBytes {
     const ENCODED_LENGTH_ID: ValueEncodingLength = ValueEncodingLength::Short;
-    const VALUE_TYPE: ValueType = ValueType::Long;
+    const VALUE_TYPE: ValueType = ValueType::Integer;
 
     fn bytes_ref(&self) -> &[u8] {
         &self.bytes
@@ -45,7 +45,7 @@ impl InlineEncodableAttributeID for LongBytes {
 
     fn read(bytes: &[u8]) -> Self {
         debug_assert!(bytes.len() == Self::ENCODED_LENGTH);
-        LongBytes::new(bytes.try_into().unwrap())
+        IntegerBytes::new(bytes.try_into().unwrap())
     }
 }
 
@@ -53,7 +53,7 @@ impl InlineEncodableAttributeID for LongBytes {
 mod tests {
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
-    use super::LongBytes;
+    use super::IntegerBytes;
 
     #[test]
     fn ordering_is_preserved() {
@@ -64,8 +64,8 @@ mod tests {
             let lhs = rng.gen();
             let rhs = rng.gen();
 
-            let lhs_bytes = LongBytes::build(lhs);
-            let rhs_bytes = LongBytes::build(rhs);
+            let lhs_bytes = IntegerBytes::build(lhs);
+            let rhs_bytes = IntegerBytes::build(rhs);
 
             assert_eq!(
                 lhs < rhs,

@@ -1778,7 +1778,7 @@ pub mod tests {
             let mut snapshot = storage.clone().open_snapshot_write();
             let type_owner = type_manager.create_entity_type(&mut snapshot, &label_owner).unwrap();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();
-            type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Long).unwrap();
+            type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
             type_owner.set_owns(&mut snapshot, &type_manager, &thing_manager, type_age, Ordering::Unordered).unwrap();
             type_owner
                 .set_owns(

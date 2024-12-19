@@ -170,7 +170,7 @@ pub(crate) fn encode_value_type(
 ) -> Result<typedb_protocol::ValueType, Box<ConceptReadError>> {
     let value_type_message = match value_type {
         ValueType::Boolean => typedb_protocol::value_type::ValueType::Boolean(typedb_protocol::value_type::Boolean {}),
-        ValueType::Long => typedb_protocol::value_type::ValueType::Long(typedb_protocol::value_type::Long {}),
+        ValueType::Integer => typedb_protocol::value_type::ValueType::Integer(typedb_protocol::value_type::Integer {}),
         ValueType::Double => typedb_protocol::value_type::ValueType::Double(typedb_protocol::value_type::Double {}),
         ValueType::Decimal => typedb_protocol::value_type::ValueType::Decimal(typedb_protocol::value_type::Decimal {}),
         ValueType::Date => typedb_protocol::value_type::ValueType::Date(typedb_protocol::value_type::Date {}),
@@ -195,7 +195,7 @@ pub(crate) fn encode_value_type(
 pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
     let value_message = match value {
         Value::Boolean(bool) => typedb_protocol::value::Value::Boolean(bool),
-        Value::Long(long) => typedb_protocol::value::Value::Long(long),
+        Value::Integer(integer) => typedb_protocol::value::Value::Integer(integer),
         Value::Double(double) => typedb_protocol::value::Value::Double(double),
         Value::Decimal(decimal) => typedb_protocol::value::Value::Decimal(typedb_protocol::value::Decimal {
             integer: decimal.integer_part(),

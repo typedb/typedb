@@ -386,7 +386,7 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, _context: &Context)
     };
     let (id_type, id_value) = id.split_once(":").unwrap();
     let expected_value_type = match id_type {
-        "long" => ValueType::Long,
+        "integer" => ValueType::Integer,
         "double" => ValueType::Double,
         "string" => ValueType::String,
         _ => todo!(),

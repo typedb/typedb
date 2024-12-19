@@ -79,5 +79,5 @@ macro_rules! binary_instruction {
 pub(crate) use binary_instruction;
 
 binary_instruction! {
-    MathRemainderLong = MathRemainderLongImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
+    MathRemainderInteger = MathRemainderIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem(a1, a2)) }
 }

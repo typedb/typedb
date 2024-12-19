@@ -50,7 +50,7 @@ pub enum ExpressionCompileError {
         actual_category: VariableCategory,
     },
     UnsupportedArgumentsForBuiltin,
-    ListIndexMustBeLong,
+    ListIndexMustBeInteger,
     HeterogenousValuesInList,
     ExpectedSingleWasList,
     ExpectedListWasSingle,
@@ -87,7 +87,7 @@ impl Error for ExpressionCompileError {
             | Self::DerivedConflictingVariableCategory { .. }
             | Self::Representation { .. }
             | Self::UnsupportedArgumentsForBuiltin
-            | Self::ListIndexMustBeLong
+            | Self::ListIndexMustBeInteger
             | Self::HeterogenousValuesInList
             | Self::ExpectedSingleWasList
             | Self::ExpectedListWasSingle

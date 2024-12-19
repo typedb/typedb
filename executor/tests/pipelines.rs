@@ -44,7 +44,7 @@ fn setup_common() -> Context {
     let query_manager = QueryManager::new(None);
     let schema = r#"
     define
-        attribute age value long;
+        attribute age value integer;
         attribute name value string;
         entity person owns age @card(0..), owns name @card(0..), plays membership:member;
         entity organisation plays membership:group;
@@ -88,7 +88,7 @@ fn test_insert() {
     let snapshot = context.storage.clone().open_snapshot_read();
     let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
     let attr_age_10 =
-        context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+        context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Integer(10)).unwrap().unwrap();
     assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
     snapshot.close_resources()
 }
@@ -287,7 +287,7 @@ fn test_match_delete_has() {
         let snapshot = context.storage.clone().open_snapshot_read();
         let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
         let attr_age_10 =
-            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Integer(10)).unwrap().unwrap();
         assert_eq!(1, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
         snapshot.close_resources()
     }
@@ -321,7 +321,7 @@ fn test_match_delete_has() {
         let snapshot = context.storage.clone().open_snapshot_read();
         let age_type = context.type_manager.get_attribute_type(&snapshot, &AGE_LABEL).unwrap().unwrap();
         let attr_age_10 =
-            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Long(10)).unwrap().unwrap();
+            context.thing_manager.get_attribute_with_value(&snapshot, age_type, Value::Integer(10)).unwrap().unwrap();
         assert_eq!(0, attr_age_10.get_owners(&snapshot, &context.thing_manager).count());
         snapshot.close_resources()
     }
@@ -442,7 +442,7 @@ fn test_match_sort() {
                 .get_value(&*snapshot, &context.thing_manager)
                 .clone()
                 .unwrap()
-                .unwrap_long()
+                .unwrap_integer()
         })
         .collect::<Vec<_>>();
     assert_eq!([4, 3, 2, 1], values.as_slice());

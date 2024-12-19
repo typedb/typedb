@@ -24,7 +24,7 @@ use crate::{
 #[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ValueType {
     Boolean,
-    Long,
+    Integer,
     Double,
     Decimal,
 
@@ -42,7 +42,7 @@ impl ValueType {
     pub fn category(&self) -> ValueTypeCategory {
         match self {
             ValueType::Boolean => ValueTypeCategory::Boolean,
-            ValueType::Long => ValueTypeCategory::Long,
+            ValueType::Integer => ValueTypeCategory::Integer,
             ValueType::Double => ValueTypeCategory::Double,
             ValueType::Decimal => ValueTypeCategory::Decimal,
             ValueType::Date => ValueTypeCategory::Date,
@@ -57,7 +57,7 @@ impl ValueType {
     pub fn keyable(&self) -> bool {
         match self {
             | ValueType::Boolean
-            | ValueType::Long
+            | ValueType::Integer
             | ValueType::Decimal
             | ValueType::Date
             | ValueType::DateTime
@@ -72,7 +72,7 @@ impl ValueType {
     fn from_category_and_tail(category: ValueTypeCategory, tail: [u8; ValueTypeBytes::TAIL_LENGTH]) -> Self {
         match category {
             ValueTypeCategory::Boolean => Self::Boolean,
-            ValueTypeCategory::Long => Self::Long,
+            ValueTypeCategory::Integer => Self::Integer,
             ValueTypeCategory::Double => Self::Double,
             ValueTypeCategory::Decimal => Self::Decimal,
             ValueTypeCategory::Date => Self::Date,
@@ -92,7 +92,7 @@ impl ValueType {
             return true;
         }
         match self {
-            ValueType::Long => other == &ValueType::Double || other == &ValueType::Decimal,
+            ValueType::Integer => other == &ValueType::Double || other == &ValueType::Decimal,
             ValueType::Decimal => other == &ValueType::Double,
             ValueType::Date => other == &ValueType::DateTime,
             _ => false,
@@ -105,9 +105,9 @@ impl ValueType {
             return true;
         }
         match self {
-            ValueType::Long => other == &ValueType::Double || other == &ValueType::Decimal,
-            ValueType::Decimal => other == &ValueType::Double || other == &ValueType::Long,
-            ValueType::Double => other == &ValueType::Decimal || other == &ValueType::Long,
+            ValueType::Integer => other == &ValueType::Double || other == &ValueType::Decimal,
+            ValueType::Decimal => other == &ValueType::Double || other == &ValueType::Integer,
+            ValueType::Double => other == &ValueType::Decimal || other == &ValueType::Integer,
             // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
             ValueType::Date => other == &ValueType::DateTime,
             _ => false,
@@ -127,7 +127,7 @@ impl StructuralEquality for ValueType {
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Boolean, Self::Boolean) => true,
-            (Self::Long, Self::Long) => true,
+            (Self::Integer, Self::Integer) => true,
             (Self::Double, Self::Double) => true,
             (Self::Decimal, Self::Decimal) => true,
             (Self::Date, Self::Date) => true,
@@ -140,7 +140,7 @@ impl StructuralEquality for ValueType {
             }
             // note: this style forces updating the match when the variants change
             (Self::Boolean { .. }, _)
-            | (Self::Long { .. }, _)
+            | (Self::Integer { .. }, _)
             | (Self::Double { .. }, _)
             | (Self::Decimal { .. }, _)
             | (Self::Date { .. }, _)
@@ -162,7 +162,7 @@ impl fmt::Display for ValueType {
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub enum ValueTypeCategory {
     Boolean,
-    Long,
+    Integer,
     Double,
     Decimal,
     Date,
@@ -177,7 +177,7 @@ impl ValueTypeCategory {
     pub const fn to_bytes(&self) -> [u8; ValueTypeBytes::CATEGORY_LENGTH] {
         match self {
             Self::Boolean => [0],
-            Self::Long => [1],
+            Self::Integer => [1],
             Self::Double => [2],
             Self::Decimal => [3],
             Self::Date => [4],
@@ -192,7 +192,7 @@ impl ValueTypeCategory {
     pub fn from_bytes(bytes: [u8; ValueTypeBytes::CATEGORY_LENGTH]) -> Self {
         let category = match bytes {
             [0] => ValueTypeCategory::Boolean,
-            [1] => ValueTypeCategory::Long,
+            [1] => ValueTypeCategory::Integer,
             [2] => ValueTypeCategory::Double,
             [3] => ValueTypeCategory::Decimal,
             [4] => ValueTypeCategory::Date,
@@ -210,14 +210,14 @@ impl ValueTypeCategory {
     pub fn comparable_categories(category: ValueTypeCategory) -> &'static [ValueTypeCategory] {
         match category {
             ValueTypeCategory::Boolean => &[ValueTypeCategory::Boolean],
-            ValueTypeCategory::Long => {
-                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+            ValueTypeCategory::Integer => {
+                &[ValueTypeCategory::Integer, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
             }
             ValueTypeCategory::Double => {
-                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+                &[ValueTypeCategory::Integer, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
             }
             ValueTypeCategory::Decimal => {
-                &[ValueTypeCategory::Long, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
+                &[ValueTypeCategory::Integer, ValueTypeCategory::Double, ValueTypeCategory::Decimal]
             }
             ValueTypeCategory::DateTime => &[ValueTypeCategory::DateTime],
             ValueTypeCategory::DateTimeTZ => &[ValueTypeCategory::DateTimeTZ],
@@ -231,7 +231,7 @@ impl ValueTypeCategory {
     pub fn try_into_value_type(self) -> Option<ValueType> {
         match self {
             ValueTypeCategory::Boolean => Some(ValueType::Boolean),
-            ValueTypeCategory::Long => Some(ValueType::Long),
+            ValueTypeCategory::Integer => Some(ValueType::Integer),
             ValueTypeCategory::Double => Some(ValueType::Double),
             ValueTypeCategory::Decimal => Some(ValueType::Decimal),
             ValueTypeCategory::Date => Some(ValueType::Date),
@@ -246,7 +246,7 @@ impl ValueTypeCategory {
     const fn name(&self) -> &'static str {
         match self {
             ValueTypeCategory::Boolean => "boolean",
-            ValueTypeCategory::Long => "long",
+            ValueTypeCategory::Integer => "integer",
             ValueTypeCategory::Double => "double",
             ValueTypeCategory::Decimal => "decimal",
             ValueTypeCategory::Date => "date",

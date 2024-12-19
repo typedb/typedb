@@ -76,7 +76,7 @@ macro_rules! unary_instruction {
 pub(crate) use unary_instruction;
 
 unary_instruction! {
-    MathAbsLong = MathAbsLongImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
+    MathAbsInteger = MathAbsIntegerImpl(a1: i64) -> i64 { Ok(i64::abs(a1)) }
     MathAbsDouble = MathAbsDoubleImpl(a1: f64) -> f64 { Ok(f64::abs(a1)) }
     MathRoundDouble = MathRoundDoubleImpl(a1: f64) -> i64 { Ok(f64::round_ties_even(a1) as i64) } // TODO: Should this be round_ties_even?
     MathCeilDouble = MathCeilDoubleImpl(a1: f64) -> i64 { Ok(f64::ceil(a1) as i64) }

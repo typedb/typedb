@@ -38,7 +38,7 @@ use encoding::{
         decimal_bytes::DecimalBytes,
         double_bytes::DoubleBytes,
         duration_bytes::DurationBytes,
-        long_bytes::LongBytes,
+        integer_bytes::IntegerBytes,
         primitive_encoding::{decode_u64, encode_u64},
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
@@ -234,7 +234,7 @@ impl ThingManager {
         &self,
         snapshot: &Snapshot,
     ) -> Result<impl Iterator<Item = Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
-        Ok(self.get_attributes_short(snapshot)?.chain(self.get_attributes_long(snapshot)?))
+        Ok(self.get_attributes_short(snapshot)?.chain(self.get_attributes_integer(snapshot)?))
     }
 
     pub fn get_attributes_short<Snapshot: ReadableSnapshot>(
@@ -253,7 +253,7 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_attributes_long<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_integer<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
@@ -305,7 +305,7 @@ impl ThingManager {
     ) -> Result<Value<'static>, Box<ConceptReadError>> {
         match attribute.vertex().attribute_id() {
             AttributeID::Boolean(id) => Ok(Value::Boolean(id.read().as_bool())),
-            AttributeID::Long(id) => Ok(Value::Long(id.read().as_i64())),
+            AttributeID::Integer(id) => Ok(Value::Integer(id.read().as_i64())),
             AttributeID::Double(id) => Ok(Value::Double(id.read().as_f64())),
             AttributeID::Decimal(id) => Ok(Value::Decimal(id.read().as_decimal())),
             AttributeID::Date(id) => Ok(Value::Date(id.read().as_naive_date())),
@@ -351,7 +351,7 @@ impl ThingManager {
 
         let attribute = match value_type {
             | ValueType::Boolean
-            | ValueType::Long
+            | ValueType::Integer
             | ValueType::Double
             | ValueType::Decimal
             | ValueType::Date
@@ -2013,9 +2013,13 @@ impl ThingManager {
                     snapshot,
                 )
             }
-            Value::Long(long) => {
-                let encoded_long = LongBytes::build(long);
-                self.vertex_generator.create_attribute_long(attribute_type.vertex().type_id_(), encoded_long, snapshot)
+            Value::Integer(integer) => {
+                let encoded_integer = IntegerBytes::build(integer);
+                self.vertex_generator.create_attribute_integer(
+                    attribute_type.vertex().type_id_(),
+                    encoded_integer,
+                    snapshot,
+                )
             }
             Value::Double(double) => {
                 let encoded_double = DoubleBytes::build(double);
