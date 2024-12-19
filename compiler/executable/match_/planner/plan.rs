@@ -1547,10 +1547,10 @@ impl ConjunctionPlan<'_> {
                 let mut tag: Option<Variable> = None;
                 $(tag = $con.$with().as_variable();)?
 
-                let sort_variable = match direction {
+                let sort_variable = sort_variable.or_else(|| match direction {
                     Direction::Canonical => lhs_produced.or(rhs_produced),
                     Direction::Reverse => rhs_produced.or(lhs_produced),
-                }.or(tag).unwrap();
+                }.or(tag)).unwrap();
 
                 match_builder.push_instruction(sort_variable, instruction);
             }};
