@@ -5,12 +5,13 @@
  */
 
 use std::{fs, io, path::PathBuf, sync::Arc};
-
+use std::net::SocketAddr;
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
 use rand::Rng;
+use tokio::net::lookup_host;
 use resource::constants::server::{
     DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH, VERSION,
@@ -31,6 +32,7 @@ pub struct Server {
     id: String,
     deployment_id: String,
     distribution: &'static str,
+    address: SocketAddr,
     data_directory: PathBuf,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
@@ -53,7 +55,7 @@ impl Server {
         let server_config = &config.server;
         let server_id = Self::initialise_server_id(storage_directory)?;
         let deployment_id = deployment_id.unwrap_or(server_id.clone());
-
+        let server_address = resolve_address(server_config.address.clone()).await;
         let mut diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
@@ -70,7 +72,7 @@ impl Server {
         initialise_default_user(&user_manager);
 
         let typedb_service = TypeDBService::new(
-            &config.server.address,
+            &server_address,
             database_manager.clone(),
             user_manager.clone(),
             authenticator_cache.clone(),
@@ -84,6 +86,7 @@ impl Server {
             id: server_id,
             deployment_id,
             distribution,
+            address: server_address,
             data_directory: storage_directory.to_owned(),
             user_manager,
             authenticator_cache,
@@ -113,7 +116,7 @@ impl Server {
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
-            .serve(self.config.server.address)
+            .serve(self.address)
             .await
     }
 
@@ -225,6 +228,14 @@ fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, da
         .map(|database| database.get_metrics())
         .collect();
     diagnostics_manager.submit_database_metrics(metrics);
+}
+
+async fn resolve_address(address: String) -> SocketAddr {
+    lookup_host(address.clone())
+        .await
+        .unwrap()
+        .next()
+        .expect(format!("Unable to map address '{}' to any IP addresses", address).as_str())
 }
 
 typedb_error!(
