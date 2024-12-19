@@ -525,7 +525,7 @@ impl ActionMetrics {
         &self,
         database_hash: &DatabaseHashOpt,
         mut properties: JSONMap<String, JSONValue>,
-    ) -> JSONValue {
+    ) -> Option<JSONValue> {
         let mut event = JSONMap::new();
 
         let mut any_actions = false;
@@ -548,9 +548,9 @@ impl ActionMetrics {
             }
 
             event.insert("properties".to_string(), json!(properties));
-            json!(event)
+            Some(json!(event))
         } else {
-            json!(event)
+            None
         }
     }
 

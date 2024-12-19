@@ -55,13 +55,7 @@ impl Reporter {
         data_directory: PathBuf,
         is_enabled: bool,
     ) -> Self {
-        Self {
-            deployment_id,
-            diagnostics,
-            data_directory,
-            is_enabled,
-            _reporting_job: Arc::new(Mutex::new(None)),
-        }
+        Self { deployment_id, diagnostics, data_directory, is_enabled, _reporting_job: Arc::new(Mutex::new(None)) }
     }
 
     pub async fn may_start(&self) {
@@ -83,8 +77,8 @@ impl Reporter {
                     Self::report(diagnostics).await;
                 }
             },
-            Duration::from_secs(15),
-            Duration::from_secs(15),
+            REPORT_INTERVAL,
+            self.calculate_initial_delay(),
             true,
         );
         *self._reporting_job.lock().expect("Expected reporting job exclusive lock acquisition") = Some(reporting_job);
@@ -97,7 +91,7 @@ impl Reporter {
             let data_directory = self.data_directory.clone();
 
             tokio::spawn(async move {
-                tokio::time::sleep(Duration::from_secs(20)).await; // TODO: Return constant
+                tokio::time::sleep(REPORT_ONCE_DELAY).await;
                 if Self::report(diagnostics).await {
                     Self::save_disabled_reporting_file(&data_directory);
                 }
@@ -113,26 +107,21 @@ impl Reporter {
     }
 
     async fn report_diagnostics_service(diagnostics: Arc<Diagnostics>) -> bool {
-        // let diagnostics_json = diagnostics.to_service_reporting_json_against_snapshot();
-        // let is_reported = Self::send_request(
-        //     diagnostics_json.to_string(),
-        //     ReportingEndpoint::DiagnosticsService.get_uri(),
-        // ).await;
-        //
-        // // The request is sent once, so it's fine to take a snapshot lossy with a small delay
-        // if is_reported {
-        //     println!("Service reporting is successful. Taking a snapshot...");
-        //     trace!("Service reporting is successful. Taking a snapshot...");
-        //     diagnostics.take_service_snapshot();
-        // }
-        // is_reported
-        true // TODO: return the main code
+        let diagnostics_json = diagnostics.to_service_reporting_json_against_snapshot();
+        let is_reported =
+            Self::send_request(diagnostics_json.to_string(), ReportingEndpoint::DiagnosticsService.get_uri()).await;
+
+        // The request is sent once, so it's fine to take a snapshot lossy with a small delay
+        if is_reported {
+            trace!("Service reporting is successful. Taking a snapshot...");
+            diagnostics.take_service_snapshot();
+        }
+        is_reported
     }
 
     async fn report_posthog(diagnostics: Arc<Diagnostics>) -> bool {
         let events_json = diagnostics.to_posthog_reporting_json_against_snapshot(POSTHOG_API_KEY);
         diagnostics.take_posthog_snapshot();
-        println!("Posthog events: {events_json}");
 
         let is_reported =
             Self::send_request_with_retries(events_json.to_string(), ReportingEndpoint::PostHog.get_uri()).await;
@@ -141,7 +130,6 @@ impl Reporter {
         // is taken right after the json creation, but can be restored to preserve the not sent data
         // for the next reporting action
         if !is_reported {
-            println!("PostHog reporting is not successful. Restoring the snapshot...");
             trace!("PostHog reporting is not successful. Restoring the snapshot...");
             diagnostics.restore_posthog_snapshot();
         }
@@ -157,14 +145,12 @@ impl Reporter {
                 return true;
             }
 
-            println!("Retrying to send diagnostics data to {} after {:?}...", uri, delay);
             trace!("Retrying to send diagnostics data to {} after {:?}...", uri, delay);
             tokio::time::sleep(delay).await;
             retries_num += 1;
             delay *= REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER.pow(retries_num);
         }
 
-        println!("Max reporting retries reached for {}.", uri);
         trace!("Max reporting retries reached for {}.", uri);
         false
     }
@@ -179,17 +165,14 @@ impl Reporter {
         match Self::new_https_client().request(request).await {
             Ok(response) => {
                 if response.status().is_success() {
-                    println!("Successfully sent diagnostics data to {}", uri);
                     trace!("Successfully sent diagnostics data to {}", uri);
                     true
                 } else {
-                    println!("Failed to send diagnostics data to {}: {}", uri, response.status());
                     trace!("Failed to send diagnostics data to {}: {}", uri, response.status());
                     false
                 }
             }
             Err(e) => {
-                println!("Failed to send diagnostics data to {}: {}", uri, e);
                 trace!("Failed to send diagnostics data to {}: {}", uri, e);
                 false
             }

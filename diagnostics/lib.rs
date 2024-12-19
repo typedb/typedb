@@ -14,7 +14,7 @@ use std::{
     sync::{Mutex, MutexGuard, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use error::TypeDBError;
+use error::{typedb_error, TypeDBError};
 use serde_json::{json, Value as JSONValue};
 use xxhash_rust::xxh3::Xxh3;
 
@@ -264,7 +264,9 @@ impl Diagnostics {
         let mut batch: Vec<_> = self
             .lock_action_metrics_read()
             .iter()
-            .map(|(database_hash, metrics)| metrics.to_posthog_reporting_json(database_hash, common_properties.clone()))
+            .filter_map(|(database_hash, metrics)| {
+                metrics.to_posthog_reporting_json(database_hash, common_properties.clone())
+            })
             .collect();
         if batch.is_empty() {
             batch.push(ActionMetrics::empty_posthog_reporting_json(common_properties));

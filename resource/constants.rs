@@ -108,14 +108,14 @@ pub mod diagnostics {
 
     pub const SERVICE_REPORTING_URI: &str = "https://diagnostics.typedb.com/";
     pub const POSTHOG_BATCH_REPORTING_URI: &str = "https://us.i.posthog.com/batch/";
-    // The key is read-only and safe to expose
-    pub const POSTHOG_API_KEY: &str = "phc_kee7J4vlLnef61l6krVU8Fg5B6tYIgSEVOyW7yxwLSk"; // TODO: update to prod
+    // The key is write-only and safe to expose
+    pub const POSTHOG_API_KEY: &str = "phc_pYoyROZCtNDL8obeJfLZ8cP0UKzIAxmd0JcQQ03i07T";
 
     pub const REPORT_INTERVAL: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
     pub const REPORT_ONCE_DELAY: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
 
     pub const REPORT_INITIAL_RETRY_DELAY: Duration = Duration::from_millis(500);
-    pub const REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER: u32 = 3;
+    pub const REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER: u32 = 2;
     pub const REPORT_MAX_RETRY_NUM: u32 = 3;
 
     pub const DISABLED_REPORTING_FILE_NAME: &str = "_reporting_disabled";
