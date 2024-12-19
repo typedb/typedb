@@ -574,10 +574,10 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
         let num_patterns = search_patterns.len();
 
-        const BEAM_REDUCTION_CYCLE: usize = 1;
-        const EXTENSION_REDUCTION_CYCLE: usize = 4;
-        let mut beam_width = num_patterns.clamp(2, MAX_BEAM_WIDTH);
-        let mut extension_width = (num_patterns / EXTENSION_REDUCTION_CYCLE).clamp(2, MAX_BEAM_WIDTH);
+        const BEAM_REDUCTION_CYCLE: usize = 2;
+        const EXTENSION_REDUCTION_CYCLE: usize = 2;
+        let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
+        let mut extension_width = (num_patterns / 2) + 5; // ensure this is larger than (num_patterns / 2) or change narrowing logic (note, join options means patterns may appear twice as extensions)
 
         let mut best_partial_plans = Vec::with_capacity(beam_width);
         best_partial_plans.push(PartialCostPlan::new(
@@ -593,9 +593,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset = HashSet::with_capacity(beam_width);
 
-            #[allow(clippy::modulo_one, reason = "this is a knob we can tune")]
             if i % BEAM_REDUCTION_CYCLE == 0 {
-                beam_width = usize::max(beam_width.saturating_sub(1), 1);
+                beam_width = usize::max(beam_width.saturating_sub(1), 2);
             }
             if i % EXTENSION_REDUCTION_CYCLE == 0 {
                 extension_width = usize::max(extension_width.saturating_sub(1), 2);
