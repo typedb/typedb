@@ -404,6 +404,8 @@ pub(crate) struct HasPlanner<'a> {
     pub unbound_typed_expected_size: f64,
     pub unbound_typed_expected_size_canonical: f64,
     pub unbound_typed_expected_size_reverse: f64,
+    pub owner_size: f64,
+    pub attribute_size: f64,
 }
 
 impl fmt::Debug for HasPlanner<'_> {
@@ -439,10 +441,31 @@ impl<'a> HasPlanner<'a> {
             .flat_map(|counts| counts.values())
             .sum::<u64>() as f64;
 
+        let owner_size = owner_types
+            .iter()
+            .filter_map(|type_| {
+                match type_ {
+                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                    _ => None
+                }
+            })
+            .sum::<u64>() as f64;
+
         let unbound_typed_expected_size_reverse = attribute_types
             .iter()
             .filter_map(|attribute| statistics.attribute_owner_counts.get(&attribute.as_attribute_type()))
             .flat_map(|counts| counts.values())
+            .sum::<u64>() as f64;
+
+        let attribute_size = attribute_types
+            .iter()
+            .filter_map(|type_| {
+                match type_ {
+                    answer::Type::Attribute(type_) => statistics.attribute_counts.get(type_),
+                    _ => None
+                }
+            })
             .sum::<u64>() as f64;
 
         Self {
@@ -452,6 +475,8 @@ impl<'a> HasPlanner<'a> {
             unbound_typed_expected_size,
             unbound_typed_expected_size_canonical,
             unbound_typed_expected_size_reverse,
+            owner_size,
+            attribute_size,
         }
     }
 
@@ -467,7 +492,7 @@ impl<'a> HasPlanner<'a> {
         let owner_id = VertexId::Variable(self.owner);
         let owner = &graph.elements()[&owner_id].as_variable().unwrap();
         let is_owner_bound = inputs.contains(&owner_id);
-        let owner_size = owner.unrestricted_expected_output_size();
+        let owner_size = self.owner_size;
         let owner_selectivity = owner.restriction_based_selectivity(inputs);
         (is_owner_bound, owner_size, owner_selectivity)
     }
@@ -476,7 +501,7 @@ impl<'a> HasPlanner<'a> {
         let attribute_id = VertexId::Variable(self.attribute);
         let attribute = &graph.elements()[&attribute_id].as_variable().unwrap();
         let is_attribute_bound = inputs.contains(&attribute_id);
-        let attribute_size = attribute.unrestricted_expected_output_size();
+        let attribute_size = self.attribute_size;
         let attribute_selectivity = attribute.restriction_based_selectivity(inputs);
         (is_attribute_bound, attribute_size, attribute_selectivity)
     }
@@ -595,6 +620,8 @@ pub(crate) struct LinksPlanner<'a> {
     pub(crate) unbound_typed_expected_size: f64,
     unbound_typed_expected_size_canonical: f64,
     unbound_typed_expected_size_reverse: f64,
+    relation_size: f64,
+    player_size: f64,
 }
 
 impl fmt::Debug for LinksPlanner<'_> {
@@ -645,6 +672,17 @@ impl<'a> LinksPlanner<'a> {
             .flatten()
             .sum::<u64>() as f64;
 
+        let relation_size = relation_types
+            .iter()
+            .filter_map(|type_| {
+                match type_ {
+                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                    _ => None
+                }
+            })
+            .sum::<u64>() as f64;
+
         let unbound_typed_expected_size_reverse = player_types
             .iter()
             .filter_map(|player| {
@@ -656,6 +694,18 @@ impl<'a> LinksPlanner<'a> {
             })
             .flatten()
             .sum::<u64>() as f64;
+
+        let player_size = player_types
+            .iter()
+            .filter_map(|type_| {
+                match type_ {
+                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                    _ => None
+                }
+            })
+            .sum::<u64>() as f64;
+
         let relation = relation.as_variable().unwrap();
         let player = player.as_variable().unwrap();
         let role = role.as_variable().unwrap();
@@ -668,6 +718,8 @@ impl<'a> LinksPlanner<'a> {
             unbound_typed_expected_size,
             unbound_typed_expected_size_canonical,
             unbound_typed_expected_size_reverse,
+            relation_size,
+            player_size
         }
     }
 
@@ -683,7 +735,7 @@ impl<'a> LinksPlanner<'a> {
         let relation_id = VertexId::Variable(self.relation);
         let relation = &graph.elements()[&relation_id].as_variable().unwrap();
         let is_relation_bound = inputs.contains(&relation_id);
-        let relation_size = relation.unrestricted_expected_output_size();
+        let relation_size = self.relation_size;
         let relation_selectivity = relation.restriction_based_selectivity(inputs);
         (is_relation_bound, relation_size, relation_selectivity)
     }
@@ -692,7 +744,7 @@ impl<'a> LinksPlanner<'a> {
         let player_id = VertexId::Variable(self.player);
         let player = &graph.elements()[&player_id].as_variable().unwrap();
         let is_player_bound = inputs.contains(&player_id);
-        let player_size = player.unrestricted_expected_output_size();
+        let player_size = self.player_size;
         let player_selectivity = player.restriction_based_selectivity(inputs);
         (is_player_bound, player_size, player_selectivity)
     }
@@ -811,6 +863,8 @@ pub(crate) struct IndexedRelationPlanner<'a> {
     pub role_1: VariableVertexId,
     pub role_2: VariableVertexId,
     unbound_typed_expected_size: f64,
+    player_1_size: f64,
+    player_2_size: f64,
 }
 
 impl fmt::Debug for IndexedRelationPlanner<'_> {
@@ -848,6 +902,28 @@ impl<'a> IndexedRelationPlanner<'a> {
             })
             .sum::<u64>() as f64;
 
+        let player_1_size = player_1_types
+            .iter()
+            .filter_map(|type_| {
+                match type_ {
+                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                    _ => None
+                }
+            })
+            .sum::<u64>() as f64;
+
+        let player_2_size = player_2_types
+            .iter()
+            .filter_map(|type_| {
+                match type_ {
+                    answer::Type::Entity(type_) => statistics.entity_counts.get(type_),
+                    answer::Type::Relation(type_) => statistics.relation_counts.get(type_),
+                    _ => None
+                }
+            })
+            .sum::<u64>() as f64;
+
         let player_1 = player_1.as_variable().unwrap();
         let player_2 = player_2.as_variable().unwrap();
         let relation = relation.as_variable().unwrap();
@@ -862,6 +938,8 @@ impl<'a> IndexedRelationPlanner<'a> {
             role_1: variable_index[&role_1],
             role_2: variable_index[&role_2],
             unbound_typed_expected_size,
+            player_1_size,
+            player_2_size
         }
     }
 
@@ -873,38 +951,34 @@ impl<'a> IndexedRelationPlanner<'a> {
         self.indexed_relation
     }
 
-    pub(crate) fn relation_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (bool, f64, f64) {
+    pub(crate) fn relation_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (bool, f64) {
         let relation_id = VertexId::Variable(self.relation);
         let relation = &graph.elements()[&relation_id].as_variable().unwrap();
         let is_relation_bound = inputs.contains(&relation_id);
-        let relation_size = relation.unrestricted_expected_output_size();
         let relation_selectivity = relation.restriction_based_selectivity(inputs);
-        (is_relation_bound, relation_size, relation_selectivity)
+        (is_relation_bound, relation_selectivity)
     }
 
-    pub(crate) fn player_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>, id: usize) -> (bool, f64, f64) {
+    pub(crate) fn player_estimates(&self, inputs: &[VertexId], graph: &Graph<'_>, id: usize) -> (bool, f64) {
         let player_id = if id == 1 { VertexId::Variable(self.player_1) } else { VertexId::Variable(self.player_2) };
         let player = &graph.elements()[&player_id].as_variable().unwrap();
         let is_player_bound = inputs.contains(&player_id);
-        let player_size = player.unrestricted_expected_output_size();
         let player_selectivity = player.restriction_based_selectivity(inputs);
-        (is_player_bound, player_size, player_selectivity)
+        (is_player_bound, player_selectivity)
     }
 
     pub(crate) fn canonical_scan_size_estimate(
         &self,
         is_relation_bound: bool,
         is_player1_bound: bool,
-        player1_size: f64,
         player1_selectivity: f64,
         is_player2_bound: bool,
-        player2_size: f64,
     ) -> f64 {
         let mut scan_size_canonical = self.unbound_typed_expected_size;
         if is_player1_bound {
-            scan_size_canonical /= player1_size;
+            scan_size_canonical /= self.player_1_size;
             if is_player2_bound {
-                scan_size_canonical /= player2_size;
+                scan_size_canonical /= self.player_2_size;
                 if is_relation_bound {
                     scan_size_canonical = 1.0;
                 }
@@ -919,16 +993,14 @@ impl<'a> IndexedRelationPlanner<'a> {
         &self,
         is_relation_bound: bool,
         is_player1_bound: bool,
-        player1_size: f64,
         is_player2_bound: bool,
-        player2_size: f64,
         player2_selectivity: f64,
     ) -> f64 {
         let mut scan_size_reverse = self.unbound_typed_expected_size;
         if is_player2_bound {
-            scan_size_reverse /= player2_size;
+            scan_size_reverse /= self.player_2_size;
             if is_player1_bound {
-                scan_size_reverse /= player1_size;
+                scan_size_reverse /= self.player_1_size;
                 if is_relation_bound {
                     scan_size_reverse = 1.0;
                 }
@@ -943,20 +1015,18 @@ impl<'a> IndexedRelationPlanner<'a> {
         &self,
         is_relation_bound: bool,
         is_player1_bound: bool,
-        player1_size: f64,
         player1_selectivity: f64,
         is_player2_bound: bool,
-        player2_size: f64,
         player2_selectivity: f64,
     ) -> f64 {
         let mut output_size = self.unbound_typed_expected_size;
         if is_player1_bound {
-            output_size /= player1_size;
+            output_size /= self.player_1_size;
         } else {
             output_size *= player1_selectivity;
         }
         if is_player2_bound {
-            output_size /= player2_size;
+            output_size /= self.player_2_size;
         } else {
             output_size *= player2_selectivity;
         }
@@ -969,33 +1039,27 @@ impl<'a> IndexedRelationPlanner<'a> {
 
 impl Costed for IndexedRelationPlanner<'_> {
     fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        let (is_relation_bound, _relation_size, _relation_selectivity) = self.relation_estimates(inputs, graph);
-        let (is_player1_bound, player1_size, player1_selectivity) = self.player_estimates(inputs, graph, 1);
-        let (is_player2_bound, player2_size, player2_selectivity) = self.player_estimates(inputs, graph, 2);
+        let (is_relation_bound, _relation_selectivity) = self.relation_estimates(inputs, graph);
+        let (is_player1_bound, player1_selectivity) = self.player_estimates(inputs, graph, 1);
+        let (is_player2_bound, player2_selectivity) = self.player_estimates(inputs, graph, 2);
 
         let scan_size_canonical = self.canonical_scan_size_estimate(
             is_relation_bound,
             is_player1_bound,
-            player1_size,
             player1_selectivity,
             is_player2_bound,
-            player2_size,
         );
         let scan_size_reverse = self.reverse_scan_size_estimate(
             is_relation_bound,
             is_player1_bound,
-            player1_size,
             is_player2_bound,
-            player2_size,
             player2_selectivity,
         );
         let io_ratio = self.output_size_estimate(
             is_relation_bound,
             is_player1_bound,
-            player1_size,
             player1_selectivity,
             is_player2_bound,
-            player2_size,
             player2_selectivity,
         );
         let cost: f64;
