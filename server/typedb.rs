@@ -236,7 +236,7 @@ async fn resolve_address(address: String) -> SocketAddr {
         .await
         .unwrap()
         .next()
-        .expect(format!("Unable to map address '{}' to any IP address", address).as_str())
+        .expect(format!("Unable to map address '{}' to any IP addresses", address).as_str())
 }
 
 typedb_error!(
