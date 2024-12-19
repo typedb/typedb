@@ -49,7 +49,9 @@ empty_directories = [
 ]
 
 binary_permissions = pkg_attributes(mode = "0744")
-other_permissions = {} # These don't seem to work.
+other_permissions = {
+    "server/data": "0755",
+}
 
 alias(
     name = "typedb_console_artifact",
