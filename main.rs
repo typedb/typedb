@@ -18,6 +18,7 @@ use server::parameters::{
 };
 
 const DISTRIBUTION: &str = "TypeDB CE";
+const VERSION: &str = include_str!("VERSION");
 
 #[tokio::main]
 async fn main() {
@@ -30,7 +31,7 @@ async fn main() {
     let deployment_id = None;
     let config = get_configuration(cli_args);
 
-    let open_result = server::typedb::Server::open(config, DISTRIBUTION, deployment_id).await;
+    let open_result = server::typedb::Server::open(config, DISTRIBUTION, VERSION, deployment_id).await;
 
     let result = open_result.unwrap().serve().await;
     match result {

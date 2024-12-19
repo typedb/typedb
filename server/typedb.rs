@@ -14,7 +14,7 @@ use rand::Rng;
 use tokio::net::lookup_host;
 use resource::constants::server::{
     DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
-    SERVER_ID_LENGTH, VERSION,
+    SERVER_ID_LENGTH,
 };
 use system::initialise_system_database;
 use tonic::transport::{Certificate, Identity, ServerTlsConfig};
@@ -32,6 +32,7 @@ pub struct Server {
     id: String,
     deployment_id: String,
     distribution: &'static str,
+    version: &'static str,
     address: SocketAddr,
     data_directory: PathBuf,
     user_manager: Arc<UserManager>,
@@ -47,6 +48,7 @@ impl Server {
     pub async fn open(
         config: Config,
         distribution: &'static str,
+        version: &'static str,
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
@@ -60,6 +62,7 @@ impl Server {
             deployment_id.clone(),
             server_id.clone(),
             distribution,
+            version,
             &server_config.diagnostics,
             storage_directory.clone(),
             server_config.is_development_mode,
@@ -86,6 +89,7 @@ impl Server {
             id: server_id,
             deployment_id,
             distribution,
+            version,
             address: server_address,
             data_directory: storage_directory.to_owned(),
             user_manager,
@@ -112,11 +116,14 @@ impl Server {
             self.diagnostics_manager.clone(),
         );
 
-        Self::print_hello(self.distribution, self.config.server.is_development_mode);
+        Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
         Self::create_tonic_server(&self.config.server.encryption)
             .layer(&authenticator)
             .add_service(service)
-            .serve(self.address)
+            .serve_with_shutdown(self.address, async {
+                tokio::signal::ctrl_c().await.expect("Failed to listen for a CTRL-C signal");
+                println!("\nReceived a CTRL-C signal. Shutting down...");
+            })
             .await
     }
 
@@ -134,6 +141,7 @@ impl Server {
         deployment_id: String,
         server_id: String,
         distribution: &'static str,
+        version: &'static str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
         is_development_mode: bool,
@@ -142,7 +150,7 @@ impl Server {
             deployment_id,
             server_id,
             distribution.to_owned(),
-            VERSION.to_owned(),
+            version.to_owned(),
             storage_directory,
             config.is_service_reporting_enabled,
         );
@@ -211,8 +219,8 @@ impl Server {
             .collect()
     }
 
-    fn print_hello(distribution: &'static str, is_development_mode_enabled: bool) {
-        print!("{}", format!("Running {distribution} {VERSION}"));
+    fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
+        print!("{}", format!("Running {distribution} {version}"));
         if is_development_mode_enabled {
             print!(" in development mode");
         }

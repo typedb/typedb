@@ -65,6 +65,13 @@ impl ServerProperties {
         })
     }
 
+    pub fn to_posthog_reporting_json(&self) -> JSONMap<String, JSONValue> {
+        let mut properties = JSONMap::new();
+        properties.insert("distinct_id".to_string(), json!(self.deployment_id));
+        properties.insert("server_id".to_string(), json!(self.server_id));
+        properties
+    }
+
     pub fn to_monitoring_json(&self) -> JSONValue {
         json!({
             "version": self.service_api_version,
@@ -112,7 +119,7 @@ impl ServerMetrics {
         })
     }
 
-    pub fn to_json(&self) -> JSONValue {
+    pub fn to_full_json(&self) -> JSONValue {
         let memory_info = self.get_memory_info();
         let disk_info = self.get_disk_info();
 
@@ -129,6 +136,12 @@ impl ServerMetrics {
             "diskUsedInBytes": disk_info.total - disk_info.available,
             "diskAvailableInBytes": disk_info.available,
         })
+    }
+
+    pub fn to_posthog_reporting_json(&self) -> JSONMap<String, JSONValue> {
+        let mut properties = JSONMap::new();
+        properties.insert("version".to_string(), json!(self.version));
+        properties
     }
 
     pub fn prometheus_header() -> &'static str {
@@ -379,8 +392,7 @@ impl ConnectionLoadMetrics {
 
     pub fn take_snapshot(&self) {
         for (kind, peak_count) in &self.peak_counts {
-            let count = self.get_count(kind);
-            let current_count = count.load(Ordering::Relaxed);
+            let current_count = self.get_count(kind).load(Ordering::Relaxed);
             peak_count.store(current_count, Ordering::Relaxed);
         }
     }
@@ -405,12 +417,20 @@ impl ConnectionLoadMetrics {
 #[derive(Debug)]
 pub(crate) struct ActionMetrics {
     actions: HashMap<ActionKind, ActionInfo>,
-    actions_snapshot: HashMap<ActionKind, ActionInfo>,
+    actions_service_snapshot: HashMap<ActionKind, ActionInfo>,
+
+    actions_posthog_snapshot: HashMap<ActionKind, ActionInfo>,
+    actions_posthog_snapshot_backup: HashMap<ActionKind, ActionInfo>,
 }
 
 impl ActionMetrics {
     pub fn new() -> Self {
-        Self { actions: ActionKind::all_empty_counts_map(), actions_snapshot: ActionKind::all_empty_counts_map() }
+        Self {
+            actions: ActionKind::all_empty_counts_map(),
+            actions_service_snapshot: ActionKind::all_empty_counts_map(),
+            actions_posthog_snapshot: ActionKind::all_empty_counts_map(),
+            actions_posthog_snapshot_backup: ActionKind::all_empty_counts_map(),
+        }
     }
 
     pub fn submit_success(&self, action_kind: ActionKind) {
@@ -420,24 +440,61 @@ impl ActionMetrics {
         self.get_action(&action_kind).submit_fail();
     }
 
-    fn get_successful_delta(&self, action_kind: &ActionKind) -> i64 {
+    fn get_service_successful_delta(&self, action_kind: &ActionKind) -> i64 {
         get_delta(
             self.get_action(action_kind).successful.load(Ordering::Relaxed),
-            self.get_action_snapshot(action_kind).successful.load(Ordering::Relaxed),
+            self.get_action_service_snapshot(action_kind).successful.load(Ordering::Relaxed),
         )
     }
 
-    fn get_failed_delta(&self, action_kind: &ActionKind) -> i64 {
+    fn get_service_failed_delta(&self, action_kind: &ActionKind) -> i64 {
         get_delta(
             self.get_action(action_kind).failed.load(Ordering::Relaxed),
-            self.get_action_snapshot(action_kind).failed.load(Ordering::Relaxed),
+            self.get_action_service_snapshot(action_kind).failed.load(Ordering::Relaxed),
         )
     }
 
-    pub fn take_snapshot(&mut self) {
+    pub fn take_service_snapshot(&mut self) {
         let all_kinds: HashSet<ActionKind> = self.actions.keys().cloned().collect();
         for kind in all_kinds {
-            *self.get_action_snapshot_mut(&kind) = self.get_action(&kind).clone();
+            *self.get_action_service_snapshot_mut(&kind) = self.get_action(&kind).clone();
+        }
+    }
+
+    fn get_posthog_successful_delta(&self, action_kind: &ActionKind) -> i64 {
+        get_delta(
+            self.get_action(action_kind).successful.load(Ordering::Relaxed),
+            self.get_action_posthog_snapshot(action_kind).successful.load(Ordering::Relaxed),
+        )
+    }
+
+    fn get_posthog_failed_delta(&self, action_kind: &ActionKind) -> i64 {
+        get_delta(
+            self.get_action(action_kind).failed.load(Ordering::Relaxed),
+            self.get_action_posthog_snapshot(action_kind).failed.load(Ordering::Relaxed),
+        )
+    }
+
+    pub fn take_posthog_snapshot(&mut self) {
+        let all_kinds: HashSet<ActionKind> = self.actions.keys().cloned().collect();
+        for kind in all_kinds {
+            let current_value = self.get_action(&kind).clone();
+            {
+                let current_snapshot = self.get_action_posthog_snapshot(&kind).clone();
+                let mut backup = self.get_action_posthog_snapshot_backup_mut(&kind);
+                *backup = current_snapshot;
+            }
+            let mut snapshot = self.get_action_posthog_snapshot_mut(&kind);
+            *snapshot = current_value;
+        }
+    }
+
+    pub fn restore_posthog_snapshot(&mut self) {
+        let all_kinds: HashSet<ActionKind> = self.actions.keys().cloned().collect();
+        for kind in all_kinds {
+            let backup = self.get_action_posthog_snapshot_backup(&kind).clone();
+            let mut snapshot = self.get_action_posthog_snapshot_mut(&kind);
+            *snapshot = backup;
         }
     }
 
@@ -445,8 +502,8 @@ impl ActionMetrics {
         let mut actions = vec![];
 
         for kind in self.actions.keys() {
-            let successful = self.get_successful_delta(kind);
-            let failed = self.get_failed_delta(kind);
+            let successful = self.get_service_successful_delta(kind);
+            let failed = self.get_service_failed_delta(kind);
             if successful == 0 && failed == 0 {
                 continue;
             }
@@ -464,26 +521,44 @@ impl ActionMetrics {
         actions
     }
 
-    pub fn to_posthog_reporting_json(&self, distinct_id: &str, database_hash: &DatabaseHashOpt) -> JSONValue {
+    pub fn to_posthog_reporting_json(
+        &self,
+        database_hash: &DatabaseHashOpt,
+        mut properties: JSONMap<String, JSONValue>,
+    ) -> JSONValue {
         let mut event = JSONMap::new();
-        event.insert("event".to_string(), json!("diagnostics_snapshot"));
 
-        let mut properties = JSONMap::new();
-        properties.insert("distinct_id".to_string(), json!(distinct_id));
-        if let Some(database_hash) = database_hash {
-            properties.insert("database".to_string(), json!(database_hash));
-        }
+        let mut any_actions = false;
 
         for kind in self.actions.keys() {
-            let total = self.get_successful_delta(kind) + self.get_failed_delta(kind);
+            let total = self.get_posthog_successful_delta(kind) + self.get_posthog_failed_delta(kind);
             if total == 0 {
                 continue;
             }
             properties.insert(kind.to_posthog_event_name().to_string(), json!(total));
+            any_actions = true;
         }
 
-        event.insert("properties".to_string(), json!(properties));
-        json!(event)
+        if any_actions {
+            if let Some(database_hash) = database_hash {
+                event.insert("event".to_string(), json!("database_usage"));
+                properties.insert("database".to_string(), json!(database_hash));
+            } else {
+                event.insert("event".to_string(), json!("server_usage"));
+            }
+
+            event.insert("properties".to_string(), json!(properties));
+            json!(event)
+        } else {
+            json!(event)
+        }
+    }
+
+    pub fn empty_posthog_reporting_json(mut properties: JSONMap<String, JSONValue>) -> JSONValue {
+        json!({
+            "event": json!("server_usage"),
+            "properties": json!(properties)
+        })
     }
 
     pub fn to_monitoring_json(&self, database_hash: &DatabaseHashOpt) -> Vec<JSONValue> {
@@ -552,12 +627,32 @@ impl ActionMetrics {
         self.actions.get(action_kind).expect("Action keys should be preinserted")
     }
 
-    fn get_action_snapshot(&self, action_kind: &ActionKind) -> &ActionInfo {
-        self.actions_snapshot.get(action_kind).expect("Action snapshot keys should be preinserted")
+    fn get_action_service_snapshot(&self, action_kind: &ActionKind) -> &ActionInfo {
+        self.actions_service_snapshot.get(action_kind).expect("Action service snapshot keys should be preinserted")
     }
 
-    fn get_action_snapshot_mut(&mut self, action_kind: &ActionKind) -> &mut ActionInfo {
-        self.actions_snapshot.get_mut(action_kind).expect("Action snapshot keys should be preinserted")
+    fn get_action_service_snapshot_mut(&mut self, action_kind: &ActionKind) -> &mut ActionInfo {
+        self.actions_service_snapshot.get_mut(action_kind).expect("Action service snapshot keys should be preinserted")
+    }
+
+    fn get_action_posthog_snapshot(&self, action_kind: &ActionKind) -> &ActionInfo {
+        self.actions_posthog_snapshot.get(action_kind).expect("Action posthog snapshot keys should be preinserted")
+    }
+
+    fn get_action_posthog_snapshot_mut(&mut self, action_kind: &ActionKind) -> &mut ActionInfo {
+        self.actions_posthog_snapshot.get_mut(action_kind).expect("Action posthog snapshot keys should be preinserted")
+    }
+
+    fn get_action_posthog_snapshot_backup(&self, action_kind: &ActionKind) -> &ActionInfo {
+        self.actions_posthog_snapshot_backup
+            .get(action_kind)
+            .expect("Action posthog snapshot backup keys should be preinserted")
+    }
+
+    fn get_action_posthog_snapshot_backup_mut(&mut self, action_kind: &ActionKind) -> &mut ActionInfo {
+        self.actions_posthog_snapshot_backup
+            .get_mut(action_kind)
+            .expect("Action posthog snapshot backup keys should be preinserted")
     }
 }
 

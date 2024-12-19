@@ -114,10 +114,18 @@ impl Diagnostics {
         errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
     }
 
-    pub fn take_snapshot(&self) {
+    pub fn take_service_snapshot(&self) {
         self.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
-        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.take_snapshot());
+        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.take_service_snapshot());
         self.lock_error_metrics_write().values_mut().for_each(|metrics| metrics.take_snapshot());
+    }
+
+    pub fn take_posthog_snapshot(&self) {
+        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.take_posthog_snapshot());
+    }
+
+    pub fn restore_posthog_snapshot(&self) {
+        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.restore_posthog_snapshot());
     }
 
     pub fn to_service_reporting_json_against_snapshot(&self) -> JSONValue {
@@ -130,7 +138,7 @@ impl Diagnostics {
     fn to_full_service_reporting_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_reporting_json();
 
-        diagnostics["server"] = self.server_metrics.to_json();
+        diagnostics["server"] = self.server_metrics.to_full_json();
 
         let load = self
             .lock_load_metrics_read()
@@ -169,7 +177,7 @@ impl Diagnostics {
     pub fn to_monitoring_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_monitoring_json();
 
-        diagnostics["server"] = self.server_metrics.to_json();
+        diagnostics["server"] = self.server_metrics.to_full_json();
 
         let load = self
             .lock_load_metrics_read()
@@ -250,12 +258,18 @@ impl Diagnostics {
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
-        let deployment_id = self.server_properties.deployment_id();
-        let batch: Vec<_> = self
+        let mut common_properties = self.server_properties.to_posthog_reporting_json();
+        common_properties.extend(self.server_metrics.to_posthog_reporting_json().into_iter());
+
+        let mut batch: Vec<_> = self
             .lock_action_metrics_read()
             .iter()
-            .map(|(database_hash, metrics)| metrics.to_posthog_reporting_json(deployment_id, database_hash))
+            .map(|(database_hash, metrics)| metrics.to_posthog_reporting_json(database_hash, common_properties.clone()))
             .collect();
+        if batch.is_empty() {
+            batch.push(ActionMetrics::empty_posthog_reporting_json(common_properties));
+        }
+
         json!({
             "api_key": api_key,
             "batch": batch,

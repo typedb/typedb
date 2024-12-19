@@ -17,17 +17,18 @@ pub struct TokioIntervalRunner {
 }
 
 impl TokioIntervalRunner {
-    pub fn new<F>(action: impl 'static + Send + FnMut() -> F, interval: Duration) -> Self
+    pub fn new<F>(action: impl 'static + Send + FnMut() -> F, interval: Duration, act_on_destroy: bool) -> Self
     where
         F: Future<Output = ()> + Sync + Send + 'static,
     {
-        Self::new_with_initial_delay(action, interval, Duration::ZERO)
+        Self::new_with_initial_delay(action, interval, Duration::ZERO, act_on_destroy)
     }
 
     pub fn new_with_initial_delay<F>(
         mut action: impl 'static + Send + FnMut() -> F,
         interval: Duration,
         initial_delay: Duration,
+        act_on_destroy: bool,
     ) -> Self
     where
         F: Future<Output = ()> + Sync + Send + 'static,
@@ -35,7 +36,14 @@ impl TokioIntervalRunner {
         let (shutdown_sender, mut shutdown_receiver) = tokio_mpsc::unbounded_channel::<std_mpsc::SyncSender<()>>();
         tokio::spawn(async move {
             if !initial_delay.is_zero() {
-                tokio::time::sleep(initial_delay).await;
+                tokio::select! {
+                    _ = tokio::time::sleep(initial_delay) => (),
+                    done_sender = shutdown_receiver.recv() => {
+                        drop(action);
+                        done_sender.unwrap().send(()).unwrap();
+                        return;
+                    }
+                }
             }
             let mut interval_timer = time::interval(interval);
             loop {
@@ -44,6 +52,9 @@ impl TokioIntervalRunner {
                         action().await;
                     }
                     done_sender = shutdown_receiver.recv() => {
+                        if act_on_destroy {
+                            action().await;
+                        }
                         drop(action);
                         done_sender.unwrap().send(()).unwrap();
                         break;

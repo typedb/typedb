@@ -17,8 +17,6 @@ pub mod server {
 
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 
-    pub const VERSION: &str = include_str!("../VERSION");
-
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
 
     pub const DEFAULT_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(5 * SECONDS_IN_MINUTE).as_millis() as u64;
@@ -115,5 +113,10 @@ pub mod diagnostics {
 
     pub const REPORT_INTERVAL: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
     pub const REPORT_ONCE_DELAY: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+
+    pub const REPORT_INITIAL_RETRY_DELAY: Duration = Duration::from_millis(500);
+    pub const REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER: u32 = 3;
+    pub const REPORT_MAX_RETRY_NUM: u32 = 3;
+
     pub const DISABLED_REPORTING_FILE_NAME: &str = "_reporting_disabled";
 }
