@@ -1188,10 +1188,7 @@ impl PartialOrd for StepExtension {
 
 impl Ord for StepExtension {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.heuristic
-            .cost
-            .partial_cmp(&other.heuristic.cost)
-            .unwrap_or(Ordering::Greater)
+        (self.heuristic.cost.partial_cmp(&other.heuristic.cost).unwrap_or(Ordering::Equal))
             .then_with(|| self.pattern_id.cmp(&other.pattern_id))
     }
 }

@@ -11,7 +11,7 @@ use std::{
     collections::{HashMap, HashSet},
     hash::Hash,
     path::PathBuf,
-    sync::RwLock,
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
 use error::{typedb_error, TypeDBError};
