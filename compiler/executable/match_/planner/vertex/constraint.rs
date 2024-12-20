@@ -337,7 +337,7 @@ impl<'a> IsaPlanner<'a> {
         let thing_id = VertexId::Variable(self.thing);
         let thing = graph.elements()[&thing_id].as_variable().unwrap();
         let is_thing_bound = inputs.contains(&thing_id);
-        let thing_size = thing.unrestricted_expected_output_size();
+        let thing_size = self.unrestricted_expected_size;
         let thing_selectivity = thing.restriction_based_selectivity(inputs);
         (is_thing_bound, thing_size, thing_selectivity)
     }
