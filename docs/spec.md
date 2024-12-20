@@ -55,12 +55,15 @@
     * [Delete semantics](#delete-semantics)
     * [Update behavior](#update-behavior)
     * [Put behavior](#put-behavior)
-* [Query execution principles](#query-execution-principles)
+* [Pipeline semantics](#pipeline-semantics)
     * [Basics: Pipelines, clauses, operators, branches](#basics-pipelines-clauses-operators-branches)
     * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
     * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
     * [Branches](#branches)
-    * [Transactions](#transactions)
+* [Pipeline execution](#pipeline-execution)
+    * [Executables](#executables)
+    * [Query plans](#query-plans)
+    * [Transactions and isolation](#transactions-and-isolation)
 * [Glossary](#glossary)
     * [Type system](#type-system)
     * [TypeQL syntax](#typeql-syntax)
@@ -216,8 +219,8 @@
         * [**Case REL_PATT**](#case-rel_patt)
         * [**Case DIRECT_REL_PATT**](#case-direct_rel_patt)
         * [**Case PLAYS_PATT**](#case-plays_patt)
-        * [**Case VALUE_PATT**](#case-value_patt)
         * [**Case DIRECT_PLAYS_PATT**](#case-direct_plays_patt)
+        * [**Case VALUE_PATT**](#case-value_patt)
         * [**Case OWNS_PATT**](#case-owns_patt)
         * [**Case DIRECT_OWNS_PATT**](#case-direct_owns_patt)
         * [**Cases TYP_IS_PATT and LABEL_PATT**](#cases-typ_is_patt-and-label_patt)
@@ -233,20 +236,22 @@
             * [**Case PLAYS_ABSTRACT_PATT**](#case-plays_abstract_patt)
             * [**Case OWNS_ABSTRACT_PATT**](#case-owns_abstract_patt)
             * [**Case DISTINCT_PATT**](#case-distinct_patt)
-        * [Values](#values-3)
+        * [Values constraints](#values-constraints)
             * [**Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**](#cases-value_values_patt-and-owns_values_patt)
     * [... Element statements](#-element-statements)
         * [**Case ISA_PATT**](#case-isa_patt)
         * [**Case ANON_ISA_PATT**](#case-anon_isa_patt)
         * [**Case DIRECT_ISA_PATT**](#case-direct_isa_patt)
         * [**Case LINKS_PATT**](#case-links_patt)
+        * [**Case LINKS_LIST_PATT**](#case-links_list_patt)
         * [**Case DIRECT_LINKS_PATT**](#case-direct_links_patt)
         * [**Case HAS_PATT**](#case-has_patt)
+        * [**Case HAS_LIST_PATT**](#case-has_list_patt)
         * [**Case DIRECT_HAS_PATT**](#case-direct_has_patt)
         * [**Case IS_PATT**](#case-is_patt)
     * [... Expression and list statements](#-expression-and-list-statements)
-        * [Grammar](#grammar)
-        * [(Theory) Typed evaluation of expressions](#theory-typed-evaluation-of-expressions)
+        * [Expressions grammar](#expressions-grammar)
+        * [Expression evaluation](#expression-evaluation)
             * [Value expressions](#value-expressions)
             * [List expressions](#list-expressions)
         * [(Feature) Boundedness of variables in expressions](#feature-boundedness-of-variables-in-expressions)
@@ -261,12 +266,15 @@
 * [Data manipulation language](#data-manipulation-language)
     * [Match semantics](#match-semantics)
     * [Function semantics](#function-semantics)
-        * [Function signature, body, operators](#function-signature-body-operators)
+        * [Function signature](#function-signature)
             * [**Case SIGNATURE_STREAM_FUN**](#case-signature_stream_fun)
             * [**Case SIGNATURE_SINGLE_FUN**](#case-signature_single_fun)
-            * [**Case PIPELINE_FUN**](#case-pipeline_fun)
-            * [**Case STREAM_RETURN_FUN**](#case-stream_return_fun)
-            * [**Case SINGLE_RETURN_FUN**](#case-single_return_fun)
+        * [Function body](#function-body)
+            * [**Case READ_PIPELINE_FUN**](#case-read_pipeline_fun)
+        * [Function return](#function-return)
+            * [**Case RETURN_STREAM_FUN**](#case-return_stream_fun)
+            * [**Case RETURN_SINGLE_FUN**](#case-return_single_fun)
+            * [**Case RETURN_AGG_SINGLE_FUN**](#case-return_agg_single_fun)
         * [(Theory) Function semantics](#theory-function-semantics)
         * [(Theory) Order of execution (and recursion)](#theory-order-of-execution-and-recursion)
     * [Insert behavior](#insert-behavior)
@@ -306,7 +314,7 @@
             * [**Case HAS_LIST_UP**](#case-has_list_up)
         * [Clean-up](#clean-up-1)
     * [Put behavior](#put-behavior)
-* [Query execution principles](#query-execution-principles)
+* [Pipeline semantics](#pipeline-semantics)
     * [Basics: Pipelines, clauses, operators, branches](#basics-pipelines-clauses-operators-branches)
     * [Clauses (match, insert, delete, update, put, fetch)](#clauses-match-insert-delete-update-put-fetch)
         * [Match](#match)
@@ -320,11 +328,13 @@
             * [**Case FETCH_ATTR**](#case-fetch_attr)
             * [**Case FETCH_MULTI_ATTR**](#case-fetch_multi_attr)
             * [**Case FETCH_LIST_ATTR**](#case-fetch_list_attr)
+            * [**Case FETCH_ALL_ATTR**](#case-fetch_all_attr)
             * [**Case FETCH_SNGL_FUN**](#case-fetch_sngl_fun)
             * [**Case FETCH_STREAM_FUN**](#case-fetch_stream_fun)
             * [**Case FETCH_FETCH**](#case-fetch_fetch)
             * [**Case FETCH_RETURN_VAL**](#case-fetch_return_val)
-            * [**Case FETCH_REDUCE_LIST_VAL**](#case-fetch_reduce_list_val)
+            * [**Case FETCH_RETURN_STREAM**](#case-fetch_return_stream)
+            * [**Case FETCH_RETURN_AGG**](#case-fetch_return_agg)
             * [**Case FETCH_NESTED**](#case-fetch_nested)
     * [Operators (select, distinct, sort, limit, offset, reduce)](#operators-select-distinct-sort-limit-offset-reduce)
         * [Select](#select)
@@ -338,7 +348,16 @@
             * [**Case SIMPLE_RED**](#case-simple_red)
             * [**Case GROUP_RED**](#case-group_red)
     * [Branches](#branches)
-    * [Transactions](#transactions)
+* [Pipeline execution](#pipeline-execution)
+    * [Executables](#executables)
+        * [Terminology](#terminology)
+        * [Match Executable](#match-executable)
+        * [Function Executable](#function-executable)
+            * [Non-recursive execution](#non-recursive-execution)
+            * [Recursive execution](#recursive-execution)
+        * [Query Executable](#query-executable)
+    * [Query plans](#query-plans)
+    * [Transactions and isolation](#transactions-and-isolation)
         * [Basics](#basics)
         * [Snapshots](#snapshots)
         * [Concurrency](#concurrency)
@@ -419,9 +438,9 @@ We discuss the grammar for statements relating to types, and explain them in nat
 
 * **Combined kinds notation**. The following are useful abbreviations:
   * $`\mathbf{Obj} = \mathbf{Ent} + \mathbf{Rel}`$ (collection of **object types**)
-  * $`\mathbf{ERA} = \mathbf{Obj} + \mathbf{Att}`$ (collection of **ERA types**)
-  * $`\mathbf{Schema} = \mathbf{ERA} + \mathbf{Itf}`$ (collection of **schema types**)
-  * $`\mathbf{Label} = \mathbf{Schema} + \mathbf{Value}`$ (collection of all **labeled types**, i.e. types refered to by a single label)
+  * $`\mathbf{Dep} = \mathbf{Rel} + \mathbf{Att}`$ (collection of **dependent types**)
+  * $`\mathbf{ERA} = \mathbf{Ent} + \mathbf{Rel} + \mathbf{Att}`$ (collection of **ERA types**)
+  * $`\mathbf{Label} = \mathbf{ERA} + \mathbf{Itf} + \mathbf{Value}`$ (collection of all **labeled types**)
   * $`\mathbf{Alg} = \mathbf{Op}^*(\mathbf{Label})`$ (collection of all **algebraic types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below) *[USE-CASE: type-inference]*
   * $`\mathbf{Type} = \mathbf{Alg} + \mathbf{List}`$ (collection of all **types**)
 
@@ -457,16 +476,16 @@ We discuss the grammar for statements relating to dependent types, and explain t
 * **Dependency deduplication (+set notation)**:  Our type system rewrites dependencies by removing duplicates in the same interface, i.e. $`a : A(x : I, y : I, y : I)`$ is rewritten to (and identified $`a : A(x : I, y : I)`$. In other words:
   > We **deduplicate** dependencies on the same element in the same interface.
   
-  It is therefore convenient to use _set notation_, writing $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I^2)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, we would write $`\{x_1, ..., x_k\} : I^k`$) 
+  It is therefore convenient to use _set notation_, writing $`a : A(x : I, y : I)`$ as $`A : A(\{x,y\}:I)`$. (Similarly, when $`I`$ appears $`k`$ times in $`A(...)`$, we would write $`\{x_1, ..., x_k\} : I`$) 
 
 * **Interface specialization notation**:  If $`A : \mathbf{Kind}(J)`$, $`B : \mathbf{Kind}(I)`$, $`A \lneq B`$ and $`J \lneq I`$, then we say:
   > The interface $`J`$ of $`A`$ **specializes** the interface $`I`$ of $`B`$
 
   We write this as $`A(J) \leq B(I)`$. 
 
-* **Role cardinality notation**: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I^k`$
+* **Role cardinality notation**: $`|a|_I`$ counts elements in $`\{x_1,...,x_k\} :I`$
 
-  _Example_: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
+  _Example_: $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse})`$. Then $`|m|_{\mathsf{Spouse}} = 2`$.
 
 ### Subtypes and castings
 
@@ -569,7 +588,7 @@ This section describes the **rules** that govern the interaction of statements.
 
   _Remark_: This applies recursively to types with $`k`$ interfaces.
 
-  _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse^2})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
+  _Example_: $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ implies $`\mathsf{Marriage} : \mathbf{Rel}(\mathsf{Spouse})`$ and also $`\mathsf{Marriage} : \mathbf{Rel}`$ (we identify the empty brackets "$`()`$" with no brackets).
 
 * **Auto-inheritance rule**: If $`A : \mathbf{Kind}`$, $`B : \mathbf{Kind}(I)`$, $`A \leq B`$ and $`A`$ has no interface strictly specializing $`I`$ then $`A : \mathbf{Kind}(I)`$ ("strictly" meaning "not equal to $`I`$"). In words:
 
@@ -589,14 +608,14 @@ Beside the rules below, subtyping ($`\leq`$) is transitive and reflexive.
     > Elements in $`A(I,J)`$ casts into elements of $`A(I)`$.
 
     * _Remark_: More generally, this applies for types with $k \leq 0$ interfaces. (In particular, $`A(x:I) \leq A() = A`$)
-    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
+    * _Example_: If $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse})`$ then both $`m : \mathsf{Marriage}(x:\mathsf{Spouse})`$ and $`m : \mathsf{Marriage}(y:\mathsf{Spouse})`$
 
 * **"Covariance of dependencies" rule**: If $`A(J) \leq B(I)`$ (see "interface specialization" in "Grammar and notation" above) and $`a : A(x:I)`$ then this _implies_ $`a : B(x:J)`$. In other words:
     > When $`A`$ casts to $`B`$, and $`I`$ to $`J`$, then $`A(x : I)`$ casts to $`B(x : J)`$.
 
     _Remark_: This applies recursively for types with $`k`$ interfaces.
 
-    _Example_: If $`r : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse}^2)`$
+    _Example_: If $`r : \mathsf{HeteroMarriage}(x:\mathsf{Husband}, y:\mathsf{Wife})`$ then $`m : \mathsf{Marriage}(\{x,y\} :\mathsf{Spouse})`$
 
 The next rule is special to attributes, describing their interactions with value types.
 
@@ -726,7 +745,7 @@ _System property_:
 * ✅ `(attribute) A value V` adds $`\mathsf{val} : A \to V`$, where $`V`$ is a primitive or a user-defined struct value type
 * ✅ `(attribute) A sub B` adds
     * $`A : \mathbf{Att}(O_A)`$, $`A <_! B`$ and $`O_A <_! O_B`$ where $`B : \mathbf{Att}(O_B)`$
-    * $`[A] : \mathbf{List}(O_{[A]})`$, $`[A] <_! [B]`$ and $`O_{A[]} <_! O_{B[]}`$ where $`B : \mathbf{Att}(O_B)`$
+    * $`[A] : \mathbf{List}(O_{A[]})`$, $`[A] <_! [B]`$ and $`O_{A[]} <_! O_{B[]}`$ where $`B : \mathbf{Att}(O_B)`$
 
 _Remark_ Here $`O_X`$ is an automatically generated interface in our type system (and $`O_{X[]}`$ is its list version, see "Type System").
 
@@ -764,7 +783,7 @@ _System property_:
 #### Cardinality
 
 ##### **Case CARD_DEF**
-* ✅ `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{...\} : I^k)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
+* ✅ `A relates I @card(n..m)` postulates $n \leq k \leq m$ whenever $`a :_! A'(\{x_1, ..., x_k\} : I)`$, $`A' \leq A`$, $`A' : \mathbf{Rel}(I)`$.
   * **defaults** to `@card(1..1)` if omitted ("one")
 * 🔶 `A plays B:I @card(n..m)` postulates $n \leq |B(a:I)| \leq m$ for all $`a : A`$
   * **defaults** to `@card(0..)` if omitted ("many")
@@ -806,7 +825,7 @@ _Note_. This is "keyness by value" (not keyqueness by direct-typed attribute).
 
 _Key principle_: If $`\diamond(A : K)`$ can be inferred in the type system, then we say "$`A : K`$ holds abstractly". 
 
-* In all cases, the purposse of abstractness is to ***contrain `insert` behavior.***
+* In all cases, the purposse of abstractness is to ***constrain `insert` behavior.***
 * In a commited schema, it is never possible that both $`\diamond(A : K)`$ and $`A : K`$ are both true the same time (and _neither implies the other_).
 
 _System property_
@@ -828,8 +847,8 @@ _System property_
 
 _System property_
 
-1. 🔶 _Abstract interface inheritance_. Abstract interfaces are inherited if not specialized just like non-abstract interfaces. In math: if $`\diamond(B : \mathbf{Rel}(J))`$ and $`A \lneq B`$ without specializing $I$ (i.e. $`\not \exists I. A(I) \leq B(J)`$) then the type system will infer $`\diamond(B : \mathbf{Rel}(J))`$.
-1. 🔶 _Upwards closure_. When `A relates I @abstract` and $`I \lneq J`$ then `A` also relates `J` abstractly.
+1. 🔶 _Abstract interface inheritance_. Abstract interfaces are inherited if not specialized just like non-abstract interfaces. In math: if $`\diamond(B : \mathbf{Rel}(J))`$ and $`A \lneq B`$ without specializing $J$ (i.e. $`\not \exists I. A(I) \leq B(J)`$) then the type system will infer $`\diamond(A : \mathbf{Rel}(J))`$.
+1. 🔶 _Upwards closure_. When $`\diamond(A : \mathbf{Rel}(I))`$ and $`A(I) \leq B(J)`$ then $`\diamond(B : \mathbf{Rel}(J))`$
 
 _Remark_: In addition to user declarations, let's also recall the **three cases** in which `relates @abstract` gets implicitly inferred by the type system:
 * Un-specialization: if a relation type relates a specialized interface, _then_ it abstractly relates the unspecialized versions of the interface.
@@ -1129,11 +1148,11 @@ _System property_:
   * or $`A`$ has no direct super-type
 * ✅ `(relation) A relates I` redefines $`A : \mathbf{Rel}(I)`$, ***requiring*** that $`A : \mathbf{Rel}([I])`$ (to be redefined)
   * _Inherited cardinality_: inherits card (default: `@card(0..)`) 
-  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
+  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I`$
 * ✅ `(relation) A relates I as J` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 * 🔶 `(relation) A relates I[]` redefines $`A : \mathbf{Rel}([I])`$, ***requiring*** that $`A : \mathbf{Rel}(I)`$ (to be redefined)
   * _Inherited cardinality_: inherits card (default: `@card(1..1)`) (STICKY)
-  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I^k`$
+  * _Data transformation_: moves any $`a : A(l : [I])`$ with $`l = [l_0, l_1, ..., l_{k-1}]`$ to $`a : A(\{l_0,l_1,...,l_{k-1}\} : I`$
 * 🔶 `(relation) A relates I[] as J[]` redefines $`I <_! J`$, ***requiring*** that either $`I <_! J' \neq J`$ or $`I`$ has no direct super-role
 
 #### **Case ATT_REDEF**
@@ -1315,13 +1334,12 @@ Variables appear in statements. They fall in different categories, which can be 
     * Any variable used in a type position in a statement
 
   * **Value variables** (**vvar**, lowercase convention in this spec)
-    * Any variable which are typed with non-comparable attribute types is a value variables (**#BDD**)
-    * Any variable assigned to the output of an non-list expression 
-    * Any variable derived from the output of a function (with value output type) is a value variable
+    * Any variable assigned (with `=`) to the output of an non-list expression 
+    * Any variable assigned (with `=` or `in`) to the output of a function in a position with value output type is a value variable
 
   * **List variables** (**lvar**, lowercase convention in this spec)
-    * Any variable typed with a list type
-    * Any variable assigned to a list expression.
+    * Any variable assigned (with `=`) to a list expression.
+    * Any variable typed with a list type (e.g., `... has name[] $l`)
 
   * **Instance variables** (**ivar**, lowercase convention in this spec)
     * Any remaining variable must be an instance var.
@@ -1768,8 +1786,12 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 ### **Case LINKS_PATT**
 * ✅ `$x links ($I: $y)` is satisfied if $`r(x) : A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
-* 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
 * ✅ `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
+
+
+### **Case LINKS_LIST_PATT**
+* 🔶 `$x links ($I[]: $y)` is satisfied if $`r(x) : A(r(y):[r(I)])`$ for some $`A : \mathbf{Rel}([r(I)])`$.
+* 🔶 `$x links ($I[]: <LIST_EXPR>)` is equivalent to `$x links ($I[]: $_y); $_y == <LIST_EXPR>;` for anonymous `$_y`
 
 ### **Case DIRECT_LINKS_PATT**
 * 🔮 `$x links! ($I: $y)` is satisfied if $`r(x) :_! A(r(y):r(I))`$ for some $`A : \mathbf{Rel}(r(I))`$.
@@ -1777,10 +1799,17 @@ _To discuss: the usefulness of constraint patterns seems overall low, could thin
 
 ### **Case HAS_PATT**
 * ✅ `$x has $B $y` is satisfied if $`r(y) : r(B)(r(x):O_{r(B)})`$ for some $`r(B) : \mathbf{Att}`$.
-* 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
+* ✅ `$x has $B == <VAL_EXPR>` is equivalent to `$x has $B $_y; $_y == <VAL_EXPR>` for anonymous `$_y` (see "Expressions")
+* ✅ `$x has $B <NV_VAL_EXPR>` is equivalent to  `$x has $B == <NV_VAL_EXPR>` (see "Expressions"; `NV_EXPR` is a "non-variable expression")
 * ✅ `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
 _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when $`r(x) : A`$ and $`A <_! O_B`$).
+
+### **Case HAS_LIST_PATT**
+
+* 🔶 `$x has $B[] $y` is satisfied if $`r(y) : [r(B)](r(x):O_{r(B[])})`$ for some $`r(B) : \mathbf{Att}`$.
+* 🔶 `$x has $B[] == <LIST_EXPR>` is equivalent to `$x has $B[] $_y; $_y == <LIST_EXPR>` for anonymous `$_y`
+* 🔶 `$x has $B[] <NV_LIST_EXPR>`is equivalent to  `$x has $B[] == <NV_VAL_EXPR>`.
 
 ### **Case DIRECT_HAS_PATT**
 
@@ -1801,44 +1830,51 @@ _Remark_: In the `is` pattern we cannot syntactically distinguish whether we are
 
 ## ... Expression and list statements
 
-### Grammar
+### Expressions grammar
+
+_Expression composition_
 
 ```javascript
-BOOL       ::= VAR | bool                                     // VAR = variable
-INT        ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
-               | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
-               | (max|min) ( INT ,..., INT )
-DBL        ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL 
-               | (max|min) ( DBL ,..., DBL ) |                
-DEC        ::= ...                                            // similar to DBL
-STRING     ::= VAR | string | string + string
-DUR        ::= VAR | time | DUR (+|-) DUR 
-DATE       ::= VAR | datetime | DATETIME (+|-) DUR 
-DATETIME   ::= VAR | datetime | DATETIME (+|-) DUR 
-PRIM       ::= <any-expr-above>
-STRUCT     ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
-               | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
-DESTRUCT   ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
-VAL        ::= PRIM | STRUCT |                   
-<T>        ::= <T> | <T>_LIST [ INT ]                         // T : Val
-               | <T_FCALL>                                    // fun call returning T/T?
-               | STRUCT.<T_COMP>                              // component of type T/T?
-<T>_LIST   ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
-               T_LIST [ INT .. INT ]
-INT_LIST   ::= INT_LIST | [ INT .. INT ]
-VAL_EXPR   ::= <T> | STRUCT                                   // "value expression"
-LIST_EXPR  ::= <T>_LIST | INT_LIST                            // "list expression"
-EXPR       ::=  VAL_EXPR | LIST_EXPR
+BOOL        ::= VAR | bool                                     // VAR = variable
+INT         ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
+                | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
+                | (max|min) ( INT ,..., INT )
+DBL         ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL 
+                | (max|min) ( DBL ,..., DBL ) |                
+DEC         ::= VAR | dec | ...                                // similar to DBL
+STRING      ::= VAR | string | string + string
+DUR         ::= VAR | time | DUR (+|-) DUR 
+DATE        ::= VAR | datetime | DATETIME (+|-) DUR 
+DATETIME    ::= VAR | datetime | DATETIME (+|-) DUR 
+PRIM        ::= <any-expr-above>
+STRUCT      ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
+                | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
+DESTRUCT    ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
+VAL         ::= PRIM | STRUCT |                   
+<T>         ::= <T> | <T>_LIST [ INT ]                         // T : Val
+                | <T_FCALL>                                    // fun call returning T/T?
+                | STRUCT.<T_COMP>                              // component of type T/T?
+<T>_LIST    ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
+                T_LIST [ INT .. INT ]
+INT_LIST    ::= INT_LIST | [ INT .. INT ]
+VAL_EXPR    ::= <T> | STRUCT                                   // "value expression"
+LIST_EXPR   ::= <T>_LIST | INT_LIST                            // "list expression"
+EXPR        ::= VAL_EXPR | LIST_EXPR
 ```
 
-***Selected details***
+As a special case, consider expression that are not single variables (i.e., exclude `$x` but allow `($x + 1)` or even `($x)`)
+```
+NV_VAL_EXPR ::= VAL_EXPR - VAR                                 // exclude sole variable
+NV_LIST_EXPR::= LIST_EXPR - VAR                                // exclude sole variable
+NV_EXPR     ::= EXPR - VAR                                     
+```
 
-* Careful: the generic case `<T>` modify earlier parts of the 
-* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
-* Datetime and time formats
-  ```
+_Value formats_
+
+```
   long       ::=   (0..9)*
   double     ::=   (0..9)*\.(0..9)+
+  dec        ::=   (0..9)*\.(0..9)+dec
   date       ::=   ___Y__M__D
   datetime   ::=   ___Y__M__DT__h__m__s
                  | ___Y__M__DT__h__m__s:___
@@ -1846,19 +1882,24 @@ EXPR       ::=  VAL_EXPR | LIST_EXPR
   duration   ::=   P___Y__M__D              
                  | P___Y__M__DT__h__m__s
                  | P___Y__M__DT__h__m__s:___
-  ```
+```
 
-_Remark_. 🔮 Introduce explicit castings between types to our grammar. For example:
+_Remarks_
+
+* Careful: the generic case `<T>` modify earlier parts of the 
+* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
+
+_Explicit casts_. 🔮 Introduce explicit castings between types to our grammar. For example:
 * `long(1.0) == 1` 
 * `double(10) / double(3) == 3.3333`)
 
-### (Theory) Typed evaluation of expressions
+### Expression evaluation
 
 Given a crow `r` that assign all vars in an `<EXPR>` we define
 * value evaluation `vev@r(<EXPR>)` (math. notation $`v_r(expr)`$)
 * type evaluation `Tev@r(<EXPR>)` (math. notation $`T_r(expr)`$)]
 
-as follows:
+as follows. First note that we can unambiguously distinguish **value** from **list** expressions in our grammar. We evaluate each of those as follows.
 
 #### Value expressions
 
@@ -1868,12 +1909,13 @@ as follows:
     * $`v_r(expr)`$ is the result of evaluating all operations with their **usual semantics** 
         * `1 + 1 == 2` 
         * `10 / 3 == 3` (integer division satisfies `p/q + p%q = p`)
-    * $`T_r(expr)`$ is the type of the **substituted expression**, noting:
+    * $`T_r(expr)`$ is the **unique type** of the substituted expression, noting:
+        * We allow **implicit casts** of `long -> dec -> double`. 
         * This is always unique except possibly for the `STRUCT` case (see property below)!
 
 _System property_.
 
-* 🔶 If $`T_r(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error.
+* 🔶 If $`T_r(expr)`$ is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error (***see Grammar above***, case `STRUCT`).
 
 _Remark_. Struct values are semantically considered up to reordering their components.
 
@@ -1885,7 +1927,7 @@ _Remark_. Struct values are semantically considered up to reordering their compo
     * $`v_r(expr)`$ is the result of concatenation and sublist operations with their **usual semantics**
         * e.g. `[a] + [a,b,c][1..2] = [a,b,c]` (`[1..2]` includes indices `[1,2]`)
         * or `([a] + [a,b,c])[1..2] = [a,b]`
-    * $`T_r(expr)`$ is the **minimal type** of all the list elements
+    * $`T_r(expr)`$ is the **minimal type** of all the list elements (usually some sum type)
 
 **Note**: While the type checker cannot statically determine $`T_r(expr)`$, it can statically construct an upper bound of that type.
 
@@ -1981,7 +2023,7 @@ _System property_
 
 ## Function semantics
 
-### Function signature, body, operators
+### Function signature
 
 #### **Case SIGNATURE_STREAM_FUN**
 
@@ -2010,6 +2052,8 @@ _STICKY: allow types to be optional in args (this extends types to sum types, in
 
 _Terminology_ If the function returns a single types (`C`) then we call it a **singleton** function.
 
+### Function body
+
 #### **Case READ_PIPELINE_FUN**
 
 * 🔶 Function body syntax:
@@ -2023,20 +2067,24 @@ _System property_
 * 🔶 _Read only_. Pipeline must be read-only, i.e. cannot use write clauses (`insert`, `delete`, `update`, `put`)
 * 🔶 _Require crow stream output_ Pipeline must be non-terminal (e.g. cannot end in `fetch`).
 
+### Function return
+
 #### **Case RETURN_STREAM_FUN**
 
-* 🔶 Function return syntax:
-    _Syntax_:
+The return clause corresponds to its output type signature.
+
+* 🔶 When function output type is `{ A, B, ... }` then return clause of the form:
     ```
-    return { $x, $y, ... };
+    return { $a, $b, ... };
     ```
+
 _System property_
 
 * 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
 
 #### **Case RETURN_SINGLE_FUN**
 
-* 🔶 Function body syntax:
+* 🔶 When function output type is `A, B?, ... ` then return clause of the form: 
     _Syntax_:
     ```
     return <SINGLE> $x, $y, ...;
@@ -2046,22 +2094,25 @@ _System property_
     * `last`
     * `random`
 
-_System property_
+_System property_.
 
-* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
+* 🔶 `?` on output types correspond exactly to those variables in the return clause that are optional in the function body.
+* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the read pipeline of the function body (taken into account any variable selections through `select` and `reduce` operators).
 
-#### **Case AGG_RETURN_FUN**
+#### **Case RETURN_AGG_SINGLE_FUN**
 
-* 🔶 The syntax 
-    _Syntax_:
+* 🔶 When function output type is `A?, B?, ... ` then return clause of the form:
     ```
-    return <AGG>, ..., <AGG>;
+    return <AGG>, <AGG>, ...;
     ```
     is short-hand for:
     ```
-    return $_1 = <AGG>, ..., $_n = <AGG>;
-    return first $_1, ..., $_n;
+    reduce $_1? = <AGG>, $_2? = <AGG>, ... ;
+    return first $_1, $_2, ... ;
     ```
+
+_Remark_
+Note the optionality `?`, which ensures that the reduce step will not yield an empty crow stream.
 
 ### (Theory) Function semantics
 
@@ -2204,29 +2255,32 @@ _System property_:
 * ✅ `$x has $A $y` adds new $`a :_! r(A)(r(x) : O_{r(A)})`$ and
     * If `$y` is instance add the new cast $`\mathsf{val}(a) = \mathsf{val}(y)`$
     * If `$y` is value var set $`\mathsf{val}(a) = r(a)`$
-* 🔷 `$x has $A <VAL_EXPR>` adds new element $`a :_! r(A)(r(x) : O_{r(A)})`$ and add cast $`\mathsf{val}(a) = v_r(val\_expr)`$
+* 🔷 `$x has $A == <VAL_EXPR>` adds new element $`a :_! r(A)(r(x) : O_{r(A)})`$ and add cast $`\mathsf{val}(a) = v_r(val\_expr)`$
+* 🔷 `$x has $A <NV_VAL_EXPR>` is shorthand for `$x has $A == <NV_VAL_EXPR>` (recall `NV_VAL_EXPR` is an expression that's not a sole variable)
 
 _System property_:
 
 1. ✅ _Idempotency_. If $`a :_! r(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying  $`T(x) \leq B <_! O_{r(A)}`$
-1. 🔶 _Type check_. Must have $`T(y) \leq r(A)`$ **or** $`T(y) = V`$ where $`\mathsf{val} : r(A) \to V`$ (similarly for `<EXPR>`)
+1. 🔶 _Type check_. Value $`v`$ of newly inserted attribute must be of right value type (up to implicit casts, see "Expression evaluation"). Also must have $`T(y) \leq r(A)`$ if $`y`$ is given.
 
 _Remark_: ⛔ Previously we had the constraint that we cannot add $`r(y) :_! A(r(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
 
 #### **Case HAS_LIST_INS**
-* 🔶 `$x has $A[] <LIST_EXPR>` adds new list $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ **and** new attributes $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
+* 🔶 `$x has $A[] == <LIST_EXPR>` adds new list $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ **and** new attributes $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
     * denote by $`[v_1,v_2, ...] = v_r(list\_expr)`$ the evaluation of the list expression (relative to crow $`r`$)
-    * the list $`l`$ has the same length as $`[v_1,v_2, ...] = v_r(list\_expr)`$
-        * if $`v_i`$ is an attribute instance, we add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
-        * if $`v_i`$ is a value, we add new cast $`\mathsf{val}(l_i) = v_i`$ 
+    * the list $`l`$ has the same length as $`[x_1,x_2, ...] = v_r(list\_expr)`$
+        * if $`y_i = x_i`$ is an attribute instance, we add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$ 
+        * if $`v_i = x_i`$ is a value, we add new cast $`\mathsf{val}(l_i) = v_i`$ 
+* 🔶 `$x has $A[] <NV_LIST_EXPR>` is shorthand for `$x has $A == <NV_LIST_EXPR>` (recall `NV_LIST_EXPR` is an expression that's not a sole variable)
+* 🔶 `$x has $A[] $y` is shorthand for `$x has $A == $y` but infers that the type of `$y` is a subtype of $`[r(A)]`$ (and thus we must have $`y_i = x_i`$ for all $`i`$ above)
 
 _System property_:
 
 1. ✅ _Idempotency_. Idempotency is automatic for (since lists are identified by their list elements) and enforced for new attributes as before.
 1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have any $`k : [r(A)](r(x) : O_{r(A)[]})`$ with $`k \neq l`$. (Users should use "Update" instead!)
 1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)[]}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)[]})`$ is not true for the minimal choice of $`B`$ satisfying $`T(x) \leq B <_! O_{r(A)[]}`$
-1. 🔶 _Type check_. For each list element, must have $`T(v_i) \leq r(A)`$ or $`T(v_i) = V`$ where $`\mathsf{val} : A \to V`$
+1. 🔶 _Type check_. For each list element, must have either $`T(v_i) : V`$ (up implicit casts) or $`T(y) \leq r(A)`$.
 
 ### Optional inserts
 
@@ -2421,7 +2475,7 @@ Orphaned relation and attribute instance (i.e. those with insufficient dependenc
   ```
   In particular, `<PUT>` needs to be an `insert` compatible set of statements. 
 
-# Query execution principles
+# Pipeline semantics
 
 ## Basics: Pipelines, clauses, operators, branches
 
@@ -2492,7 +2546,7 @@ _Note_. `<EXPR>` can, in particuar, be `T_LIST` expression (see "Expressions").
 
 _System property_
 
-1. 🔶 fails transaction if $`T_r(x)`$ does not own $`A`$ with `card(0,1)`.
+1. 🔶 fails transaction if $`T_r(x)`$ does not own $`A`$ with `card(x..1)`.
 
 #### **Case FETCH_MULTI_ATTR**
 * 🔶 `"key": [ $x.A ]` where $`A : \mathbf{Att}`$
@@ -2520,8 +2574,12 @@ _System property_
 #### **Case FETCH_SNGL_FUN**
 * 🔶 `"key": fun(...)` where `fun` is **scalar** (i.e. non-tuple) single-return.
 
+_System property_
+
+1. 🔶 Fails if `fun` is not .
+
 #### **Case FETCH_STREAM_FUN**
-* 🔶 `"key": [ fun(...) ]` where `fun` is **scalar** (i.e. non-tuple) stream-return.
+* 🔶 `"key": [ fun(...) ]` where `fun` is **scalar** (i.e. non-tuple) row-option or row-stream return
 
 _Note_: (STICKY:) what to do if type inference for function args fails based on previous pipeline stages?
 
@@ -2564,8 +2622,8 @@ _Note_: (STICKY:) what to do if type inference for function args fails based on 
 This is short hand for:
 ```
 "key": [ 
-  <PIPELINE>
-  reduce $_1 = <AGG>, ... , $_n = <AGG>; 
+  <READ_PIPELINE>
+  reduce $_1? = <AGG>, ... , $_n? = <AGG>; 
   return first $_1, ..., $_n; 
 ]
 ``` 
@@ -2646,11 +2704,12 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 #### **Case SIMPLE_RED**
 * 🔶 Default reduce syntax
     ```
-    reduce $x_1=<AGG>, ... , $x_k=<AGG>;
-    ``` 
+    reduce $x_1(?)=<AGG>, ... , $x_k(?)=<AGG>;
+    ```
 
-    In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
+**TODO**: require `?` wherever optionality may occur? Otherwise, must account for zero (not one) rows being returned.
 
+In this case, we output a ***single concept*** row `($x_1 -> <EL>, $x_2 -> <EL>, ...)`, where `<EL>` is a output element (i.e. instance, value, or list, but _never_ type) constructed as follows:
 
 * 🔶 `<AGG>` is one of the following **aggregate functions**:
   * 🔶 `check`:
@@ -2713,7 +2772,112 @@ _Remark_: Offset is only useful when streams (and the order of answers) are full
 
 (to be written)
 
-## Transactions
+
+# Pipeline execution
+
+## Executables
+
+### Terminology
+
+* **Steps** = a unit in our execution plans: 
+    * can itself comprise multiple *instructions* to be executed, 
+    * has information about *inputs* and *outputs*.
+* **Executable** = mainly a list of steps (plus, again, info about inputs and outputs)
+* **Executor** = Executable + state of execution
+
+(Note on input and outputs: we distinguish "ID and positions". **Variable IDs** (like $3) are *global*, **positions** are *local* to steps and executables)
+
+### Match Executable
+
+```
+MatchExecutable { 
+    Steps,
+    VariableID -> Position 
+    Position -> VariableID
+}
+```
+
+An **step** in a match executable may be:
+* **Immediate** step: a step that can be executed
+    * Intersection (retrieves new data by doing vertex/edge lookups on a single "sort variable")
+    * Check (filters existing data by appropriate lookups)
+    * Unsorted join ...
+    * ...
+* **Nested** step: a step that contains a nested executable
+    * Assignment (contains expression executable to be assigned to var)
+    * Function call (contains function executable to be assigned to var)
+    * Negation (contains subquery executable)
+    * Disjunction (contains subquery executable)
+    * ...
+
+### Function Executable
+
+A function executable comprises steps organized into a stack.
+
+* during execution, **steps** with given inputs will become the *frames* in that stack
+* each step (i.e. frame) passes its *output* as *inputs* to its descendants
+    * no information is ever passed the other way, i.e. from descendants to ancestors
+* a step (i.e., frame) may be either **immediate** or **nested**: in the latter case it spawns a **substack** when it is executed
+    * as a consequence: our execution looks like a "stack of stacks"
+    * when a substack completes execution, it passes execution results to its **superstack**, where execution continues
+    * the first stack in our stack of stack is called the **entry stack** (it has no superstack)
+* in contrast to match executables (at present), nested steps in function executables include **modifier steps**:
+    * for example, we could have a `sum($x in PATT)` step, which executes a sum computation over a variable after executing a nested match (spawned in a substack)
+
+***Remark***. At present not all steps are **batch executable** (i.e., not all steps can be executed in batch). Therefore, the current design includes a `BatchToRow` step, which converts batches to single rows. Non-batch-executable steps include function calls. In the future everything should be batch executable, and leverage vectorization if possible:
+* SIMD for batched expression assignment?
+* SIMD for batched modifiers (e.g. sums)?
+
+#### Non-recursive execution
+
+In the non-recursive case, to execute a function (or, really, *any pattern* in a match clause, since patterns can be thought of simply as a functions without arguments), we run the steps on the entry stack to completion (which may spawn substacks on the way) returning completed results of the entry stack.
+
+To allow for partial results, the function executor can keep track of their machine state, and resume only when a request for more results is given.
+
+#### Recursive execution
+
+The recursive case is more difficult due to the presence of **cyclic call**: a cycle call is stack machine state in which a the (sub)stack evaluating a function call `G(z)` contains (itself or in an iterated subframe) a step calling `G(z)` (with the *same* input `z` as argument for `G`).
+
+In the recursive case, we provide **tabled executors** for all functions that may be recursive:
+* a tabled executor `Tab(F,x)` records
+    * a table of **output rows** `y` of the function `F` for the fixed input argument `x`
+    * an **executor** state of the stack evaluating `F(x)`.
+* each tabled executor `Tab(F,x)` also has an associated *set* of **suspension points**; these points comprise:
+    * an **step number** (referring to a step in the stack of `F`)
+        * this step will always be a function call, say to `G(z)`
+    * the **inputs** `u,z,v,...` to the function call step (calling `G(z)`) at the time of suspension
+    * a **table state index** indicating how many output rows were present in `Tab(G,z)` at the time of suspension
+
+Execution now proceeds in execution **super-steps**.
+* Before the **first** execution super-step, tables are initialized to be *empty* and associated suspension point sets are *empty* too
+* In the **n**th super-step, we run our entry stack of steps with the following modifications:
+    * ***Advancing state***: whenever a stack evaluating a function call `F(x)` completes a result
+        * add the result to `Tab(F,x)` if it is not yet a row in that table.
+        * advance its executor so that it can resume execution from the last result
+    * ***Suspending cycles***: whenever, while executing the stack for `F(x)`, we reach a cyclic call `G(z)` with input `u,z,v,...` then
+        * we continue execution with the existing `i` output rows in `Tab(G,z)` (note: therefore, no need to open a substack—just read from table!)
+        * afterwards, record a suspension point in `Tab(F,x)` with input `u,z,v,...` at the step calling `G(z)` and table state index `i`.
+    * ***Propagating suspensions***: whenever the super-stack (from which the function call `F(x)` originates) itself evaluates a function call `H(p)` then:
+        * when we backtrack through the step calling `F(x)` (since all results to this call have been exhausted), then add a suspension point in `Tab(H,p)` with the calls inputs, the call step, and the table size index of `F(x)` at the time of backtracking.
+    * ***Evaluating functions*** *(in the presence of suspensions points)*: whenever we open a stack for the evaluation of `F(x)` do the following:
+        * if the previous (i.e. (**n-1**)th) super-step has recorded no suspension points in `Tab(F,x)` then start evaluating the stack of `F(x)`: first, return existing output results in `Tab(F,x)` and, then, continue the executor (until completion or suspension; if either are reached already then this last step does nothing)
+        * if the previous super-step has set suspension points in `Tab(F,x)`, then we restore execution as follows (note: this in particular applies to the entry stack): *for each suspension point* run the stack evaluating `F(x)` to completion, starting from the *given step* (calling `G(z)`) with the *given inputs* by the suspension point, and only return outputs of `G(z)` after the *given table state index*. As before, make use of existing output results in `Tab(G,z)` and then continue the executor (until completion or suspension).
+    * ***Key property***; for each table `Tab(F,x)`, stack step, and step input, there is at most one suspension point set by the previous super-step
+* ***Execution completes*** after the **n**th super-step if the step either produces no suspension points (and thus no way to start the (**n+1**)th step), or if no new output rows were written to the tabled executors during step.
+
+*Remark*: Tabling may also be employed in the non-recursive case if the query planner deems this improves performance (without tabling, a lot of work may be replicated).
+
+### Query Executable
+
+(Future, inspired by functions, generalization of match executable ... these make sense as the query planner may have to work across different matches eventually, *for example to parallelize independent writes and reads*)
+
+Query Executable, in contrast to Function executable, should include not only read steps but also write steps.
+
+## Query plans
+
+(to be written)
+
+## Transactions and isolation
 
 (to be written)
 
