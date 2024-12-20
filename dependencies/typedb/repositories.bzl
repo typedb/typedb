@@ -22,7 +22,7 @@ def typeql():
     git_repository(
         name = "typeql",
         remote = "https://github.com/typedb/typeql",
-        commit = "8acf8f2164181874d33915573f5dc09f4ab46a9e",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
+        tag = "3.0.0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
     )
 
 def typedb_common():
