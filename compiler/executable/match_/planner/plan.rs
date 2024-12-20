@@ -1421,7 +1421,7 @@ impl ConjunctionPlan<'_> {
             }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
-                    match_builder.produced_so_far.iter().copied(),
+                    match_builder.current_outputs.iter().copied(),
                     match_builder.current_outputs.iter().copied(),
                     match_builder.position_mapping(),
                     variable_registry,
