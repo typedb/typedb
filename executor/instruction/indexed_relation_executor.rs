@@ -144,10 +144,7 @@ impl IndexedRelationExecutor {
             } else {
                 variable_modes.get(preceding_variable).unwrap()
             };
-            'mode: for mode_index in
-                MODE_PRIORITY.iter().position(|mode| *mode == preceding_variable_mode).unwrap()..MODE_PRIORITY.len()
-            {
-                let mode = MODE_PRIORITY[mode_index];
+            'mode: for &mode in MODE_PRIORITY.iter().skip_while(|&&mode| mode != preceding_variable_mode) {
                 // find first unused variable with this mode (else, try the next mode)
                 for variable in variables_lexicographically_ordered {
                     let variable_mode = variable_modes.get(variable).unwrap();
