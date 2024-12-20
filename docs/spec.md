@@ -267,7 +267,7 @@
             * [**Case PIPELINE_FUN**](#case-pipeline_fun)
             * [**Case STREAM_RETURN_FUN**](#case-stream_return_fun)
             * [**Case SINGLE_RETURN_FUN**](#case-single_return_fun)
-        * [(Theory) Function evaluation](#theory-function-evaluation)
+        * [(Theory) Function semantics](#theory-function-semantics)
         * [(Theory) Order of execution (and recursion)](#theory-order-of-execution-and-recursion)
     * [Insert behavior](#insert-behavior)
         * [Basics of inserting](#basics-of-inserting)
@@ -943,7 +943,7 @@ _System property_
     <RETURN_STREAM_FUN> 
     ```
 
-_Note_ See "Function behavior" for details on this syntax.
+_Note_ See "Function semantics" for details on this syntax.
 
 #### **Case SINGLE_RET_FUN_DEF**
 * 🔷 _single-return function_ definition takes the form: 
@@ -953,7 +953,7 @@ _Note_ See "Function behavior" for details on this syntax.
     <RETURN_SINGLE_FUN> 
     ```
 
-_Note_ See "Function behavior" for details.
+_Note_ See "Function semantics" for details.
 
 ## Undefine semantics
 
@@ -2063,13 +2063,30 @@ _System property_
     return first $_1, ..., $_n;
     ```
 
-### (Theory) Function evaluation
+### (Theory) Function semantics
+
+***Typing***
+
+* `?` marks variables in the row that can be optional
+  * this applies both to output types: `{ A?, B }` and `A?, B`
+  * and it applies to variables assignments: `$x?, $y in ...` and `$x?, $y = ...`
+* **single-row returning** functions return 0 or 1 rows
+* **multi-row returning** ("stream-returning") functions return 0 or more rows.
+
+***Matching***
+
+* single row assignment `$x, $y = ...`  fails if no row is assigned
+* single row assignment `$x?, $y = ...`  succeeds if a row is assigned, even if it may be missing the optional variables
+* multi row assignment `$x, $y in ...`  fails if no row is assigned
+* multi row assignment `$x?, $y in ...`  succeeds if one or more row are assigned, even if they may be missing the optional variables
+
+***Evaluation***
 
 * A function `F` counts as ***evaluated*** on a call `F_CALL` when we completely computed its output stream as follows:
     1. provide input arguments from the call `F_CALL` as a single crow, which is the starting point of the body `READ_PIPELINE`
     2. Then act like an ordinary pipeline, outputting a stream (see "Pipelines")
     3. perform `return` transformation outlined below for final output which is effectively a `select`.
-        4. For **single-return** functions we first pick the **first**, **last** or a **random** crow in the stream, making the final output an at-most-single-row output
+        4. For **single(-row) return** functions we first pick the **first**, **last** or a **random** crow in the stream, making the final output an at-most-single-row output
     4. Denote the output stream by `ev(F_CALL)`
 * When negations are use, function in lower strata must be evaluated (on all relevant calls) before function in higher strata (see below)
 
