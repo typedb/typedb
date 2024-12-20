@@ -29,6 +29,7 @@ use diagnostics::{
 use error::typedb_error;
 use executor::{
     batch::Batch,
+    document::ConceptDocument,
     pipeline::{
         pipeline::Pipeline,
         stage::{ExecutionContext, ReadPipelineStage, StageIterator},
@@ -37,14 +38,15 @@ use executor::{
     ExecutionInterrupt, InterruptType,
 };
 use function::function_manager::FunctionManager;
-use itertools::Itertools;
+use ir::pipeline::ParameterRegistry;
+use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::TransactionOptions;
 use query::{error::QueryError, query_manager::QueryManager};
 use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::{
     durability_client::WALClient,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
+    snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot},
 };
 use tokio::{
     sync::{
@@ -131,8 +133,10 @@ pub(crate) struct TransactionService {
     transaction: Option<Transaction>,
     request_queue: VecDeque<(Uuid, typeql::query::Pipeline)>,
     responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
-    running_write_query:
-        Option<(Uuid, JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>)>)>,
+    running_write_query: Option<(
+        Uuid,
+        JoinHandle<(Transaction, Result<Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>, Box<QueryError>>)>,
+    )>,
 }
 
 macro_rules! unwrap_or_execute_and_return {
@@ -172,6 +176,8 @@ impl ImmediateQueryResponse {
 }
 
 type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
+type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch);
+type WriteQueryDocumentsAnswer = (Arc<ParameterRegistry>, Vec<ConceptDocument>);
 
 enum StreamQueryResponse {
     // initial open response
@@ -683,11 +689,11 @@ impl TransactionService {
     fn transmit_write_results(
         &mut self,
         req_id: Uuid,
-        result: Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>,
+        result: Result<Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>, Box<QueryError>>,
     ) -> Result<(), Status> {
         match result {
-            Ok((output_descriptor, batch)) => {
-                self.activate_write_transmitter(req_id, output_descriptor, batch);
+            Ok(answer) => {
+                self.activate_write_transmitter(req_id, answer);
                 Ok(())
             }
             Err(err) => {
@@ -867,12 +873,11 @@ impl TransactionService {
     fn activate_write_transmitter(
         &mut self,
         req_id: Uuid,
-        output_descriptor: StreamQueryOutputDescriptor,
-        batch: Batch,
+        answer: Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>,
     ) {
         let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
         let interrupt = self.query_interrupt_receiver.clone();
-        let batch_reader = self.write_query_batch_reader(output_descriptor, batch, sender, interrupt);
+        let answer_reader = self.write_query_answer_reader(answer, sender, interrupt);
         let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
@@ -880,7 +885,7 @@ impl TransactionService {
             self.prefetch_size.unwrap() as usize,
             self.network_latency_millis.unwrap() as usize,
         );
-        self.responders.insert(req_id, (batch_reader, stream_transmitter));
+        self.responders.insert(req_id, (answer_reader, stream_transmitter));
     }
 
     fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline) {
@@ -900,7 +905,7 @@ impl TransactionService {
         &mut self,
         pipeline: typeql::query::Pipeline,
     ) -> Result<
-        JoinHandle<(Transaction, Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>)>,
+        JoinHandle<(Transaction, Result<Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>, Box<QueryError>>)>,
         TransactionServiceError,
     > {
         debug_assert!(self.running_write_query.is_none());
@@ -987,87 +992,191 @@ impl TransactionService {
         query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
         interrupt: ExecutionInterrupt,
-    ) -> (Snapshot, Result<(StreamQueryOutputDescriptor, Batch), Box<QueryError>>) {
+    ) -> (Snapshot, Result<Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>, Box<QueryError>>) {
         let result =
             query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline);
-        let (query_output_descriptor, pipeline) = match result {
-            Ok(pipeline) => {
-                let named_outputs = pipeline.rows_positions().unwrap();
-                let named_outputs: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-                (named_outputs, pipeline)
-            }
+        let pipeline = match result {
+            Ok(pipeline) => pipeline,
             Err((snapshot, err)) => return (snapshot, Err(err)),
         };
 
-        let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
-            Err((err, ExecutionContext { snapshot, .. })) => {
-                return (
+        if pipeline.has_fetch() {
+            let (iterator, parameters, snapshot, query_profile) = match pipeline.into_documents_iterator(interrupt) {
+                Ok((iterator, ExecutionContext { snapshot, profile, parameters, .. })) => {
+                    (iterator, parameters, snapshot, profile)
+                }
+                Err((err, ExecutionContext { snapshot, .. })) => {
+                    return (
+                        Arc::into_inner(snapshot).unwrap(),
+                        Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
+                    );
+                }
+            };
+
+            let mut documents = Vec::new();
+            for next in iterator {
+                match next {
+                    Ok(document) => documents.push(document),
+                    Err(typedb_source) => {
+                        return (
+                            Arc::into_inner(snapshot).unwrap(),
+                            Err(Box::new(QueryError::WritePipelineExecution { typedb_source })),
+                        )
+                    }
+                }
+            }
+            if query_profile.is_enabled() {
+                event!(Level::INFO, "Write query completed.\n{}", query_profile);
+            }
+            (Arc::into_inner(snapshot).unwrap(), Ok(Either::Right((parameters, documents))))
+        } else {
+            let named_outputs = pipeline.rows_positions().unwrap();
+            let query_output_descriptor: StreamQueryOutputDescriptor =
+                named_outputs.clone().into_iter().sorted().collect();
+            let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
+                Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
+                Err((err, ExecutionContext { snapshot, .. })) => {
+                    return (
+                        Arc::into_inner(snapshot).unwrap(),
+                        Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
+                    );
+                }
+            };
+
+            let result = match iterator.collect_owned() {
+                Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(Either::Left((query_output_descriptor, batch)))),
+                Err(err) => (
                     Arc::into_inner(snapshot).unwrap(),
                     Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
-                );
+                ),
+            };
+            if query_profile.is_enabled() {
+                event!(Level::INFO, "Write query completed.\n{}", query_profile);
             }
-        };
-
-        let result = match iterator.collect_owned() {
-            Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok((query_output_descriptor, batch))),
-            Err(err) => (
-                Arc::into_inner(snapshot).unwrap(),
-                Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
-            ),
-        };
-        if query_profile.is_enabled() {
-            event!(Level::INFO, "Write query completed.\n{}", query_profile);
+            result
         }
-        result
     }
 
     // Write query is already executed, but for simplicity, we convert it to something that conform to the same API as the read path
-    fn write_query_batch_reader(
+    fn write_query_answer_reader(
         &self,
-        output_descriptor: StreamQueryOutputDescriptor,
-        batch: Batch,
+        answer: Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>,
         sender: Sender<StreamQueryResponse>,
-        mut interrupt: ExecutionInterrupt,
+        interrupt: ExecutionInterrupt,
     ) -> JoinHandle<()> {
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
             let snapshot = transaction.snapshot.clone();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             tokio::spawn(async move {
-                let mut as_lending_iter = batch.into_iterator();
-                Self::submit_response_async(&sender, StreamQueryResponse::init_ok_rows(&output_descriptor, Write))
-                    .await;
-
-                while let Some(row) = as_lending_iter.next() {
-                    if let Some(interrupt) = interrupt.check() {
-                        Self::submit_response_async(
-                            &sender,
-                            StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                match answer {
+                    Either::Left((output_descriptor, batch)) => {
+                        Self::submit_write_query_batch_answer(
+                            snapshot,
+                            type_manager,
+                            thing_manager,
+                            output_descriptor,
+                            batch,
+                            sender,
+                            interrupt,
                         )
-                        .await;
-                        return;
+                        .await
                     }
-
-                    let encoded_row =
-                        encode_row(row, &output_descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
-                    match encoded_row {
-                        Ok(encoded_row) => {
-                            Self::submit_response_async(&sender, StreamQueryResponse::next_row(encoded_row)).await;
-                        }
-                        Err(err) => {
-                            Self::submit_response_async(
-                                &sender,
-                                StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
-                            )
-                            .await;
-                            return;
-                        }
+                    Either::Right((parameters, documents)) => {
+                        Self::submit_write_query_documents_answer(
+                            snapshot,
+                            type_manager,
+                            thing_manager,
+                            parameters,
+                            documents,
+                            sender,
+                            interrupt,
+                        )
+                        .await
                     }
                 }
-                Self::submit_response_async(&sender, StreamQueryResponse::done_ok()).await
             })
         })
+    }
+
+    async fn submit_write_query_batch_answer(
+        snapshot: Arc<impl ReadableSnapshot>,
+        type_manager: Arc<TypeManager>,
+        thing_manager: Arc<ThingManager>,
+        output_descriptor: StreamQueryOutputDescriptor,
+        batch: Batch,
+        sender: Sender<StreamQueryResponse>,
+        mut interrupt: ExecutionInterrupt,
+    ) {
+        let mut as_lending_iter = batch.into_iterator();
+        Self::submit_response_async(&sender, StreamQueryResponse::init_ok_rows(&output_descriptor, Write)).await;
+
+        while let Some(row) = as_lending_iter.next() {
+            if let Some(interrupt) = interrupt.check() {
+                Self::submit_response_async(
+                    &sender,
+                    StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                )
+                .await;
+                return;
+            }
+
+            let encoded_row = encode_row(row, &output_descriptor, snapshot.as_ref(), &type_manager, &thing_manager);
+            match encoded_row {
+                Ok(encoded_row) => {
+                    Self::submit_response_async(&sender, StreamQueryResponse::next_row(encoded_row)).await;
+                }
+                Err(err) => {
+                    Self::submit_response_async(
+                        &sender,
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                    )
+                    .await;
+                    return;
+                }
+            }
+        }
+        Self::submit_response_async(&sender, StreamQueryResponse::done_ok()).await
+    }
+
+    async fn submit_write_query_documents_answer(
+        snapshot: Arc<impl ReadableSnapshot>,
+        type_manager: Arc<TypeManager>,
+        thing_manager: Arc<ThingManager>,
+        parameters: Arc<ParameterRegistry>,
+        documents: Vec<ConceptDocument>,
+        sender: Sender<StreamQueryResponse>,
+        mut interrupt: ExecutionInterrupt,
+    ) {
+        Self::submit_response_async(&sender, StreamQueryResponse::init_ok_documents(Write)).await;
+
+        for document in documents {
+            if let Some(interrupt) = interrupt.check() {
+                Self::submit_response_async(
+                    &sender,
+                    StreamQueryResponse::done_err(TransactionServiceError::QueryInterrupted { interrupt }),
+                )
+                .await;
+                return;
+            }
+
+            let encoded_document =
+                encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+            match encoded_document {
+                Ok(encoded_document) => {
+                    Self::submit_response_async(&sender, StreamQueryResponse::next_document(encoded_document)).await;
+                }
+                Err(err) => {
+                    Self::submit_response_async(
+                        &sender,
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                    )
+                    .await;
+                    return;
+                }
+            }
+        }
+        Self::submit_response_async(&sender, StreamQueryResponse::done_ok()).await
     }
 
     fn blocking_read_query_worker(
