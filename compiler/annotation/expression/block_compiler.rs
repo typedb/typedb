@@ -79,7 +79,6 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
             ExpressionValueType::Single(_) => VariableCategory::Value,
             ExpressionValueType::List(_) => VariableCategory::ValueList,
         };
-        let existing_category = variable_registry.get_variable_category(var);
         let source = Constraint::ExpressionBinding((*expression_index.get(&var).unwrap()).clone());
         variable_registry
             .set_assigned_value_variable_category(var, category, source)

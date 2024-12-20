@@ -108,9 +108,34 @@ impl VariableModes {
     pub fn none_inputs(&self) -> bool {
         self.modes.values().all(|mode| mode != &VariableMode::Input)
     }
+
+    pub fn make_var_mapped(&self, mapping: &HashMap<ExecutorVariable, Variable>) -> VarMappedVariableModes {
+        let mut var_mapped_modes = HashMap::new();
+        for (var, mode) in &self.modes {
+            var_mapped_modes.insert(mapping[var], *mode);
+        }
+        VarMappedVariableModes { modes: var_mapped_modes }
+    }
 }
 
 impl fmt::Display for VariableModes {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
+            write!(f, "{key}s=")?;
+            for (var, _) in group {
+                write!(f, "{}, ", var)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct VarMappedVariableModes {
+    modes: HashMap<Variable, VariableMode>,
+}
+
+impl fmt::Display for VarMappedVariableModes {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         for (key, group) in &self.modes.iter().sorted_by_key(|(_, value)| *value).group_by(|(_, value)| *value) {
             write!(f, "{key}s=")?;
@@ -201,25 +226,23 @@ impl<ID: IrID> ConstraintInstruction<ID> {
 
     pub fn used_variables_foreach(&self, mut apply: impl FnMut(ID)) {
         match self {
-            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(|var| apply(var)),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var| apply(var)),
+            Self::Is(IsInstruction { is, .. }) => is.ids_foreach(apply),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(apply),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, .. })
-            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(|var| apply(var)),
+            | Self::SubReverse(type_::SubReverseInstruction { sub, .. }) => sub.ids_foreach(apply),
             Self::Owns(type_::OwnsInstruction { owns, .. })
-            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(|var| apply(var)),
+            | Self::OwnsReverse(type_::OwnsReverseInstruction { owns, .. }) => owns.ids_foreach(apply),
             Self::Relates(type_::RelatesInstruction { relates, .. })
-            | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => {
-                relates.ids_foreach(|var| apply(var))
-            }
+            | Self::RelatesReverse(type_::RelatesReverseInstruction { relates, .. }) => relates.ids_foreach(apply),
             Self::Plays(type_::PlaysInstruction { plays, .. })
-            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.ids_foreach(|var| apply(var)),
+            | Self::PlaysReverse(type_::PlaysReverseInstruction { plays, .. }) => plays.ids_foreach(apply),
             Self::Isa(thing::IsaInstruction { isa, .. })
-            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(|var| apply(var)),
+            | Self::IsaReverse(thing::IsaReverseInstruction { isa, .. }) => isa.ids_foreach(apply),
             Self::Has(thing::HasInstruction { has, .. })
-            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(|var| apply(var)),
+            | Self::HasReverse(thing::HasReverseInstruction { has, .. }) => has.ids_foreach(apply),
             Self::Links(thing::LinksInstruction { links, .. })
-            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.ids_foreach(|var| apply(var)),
+            | Self::LinksReverse(thing::LinksReverseInstruction { links, .. }) => links.ids_foreach(apply),
             Self::IndexedRelation(thing::IndexedRelationInstruction {
                 player_start,
                 player_end,
@@ -280,7 +303,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     apply(var)
                 }
             }),
-            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(|var| apply(var)),
+            Self::Iid(thing::IidInstruction { iid, .. }) => iid.ids_foreach(apply),
             &Self::TypeList(type_::TypeListInstruction { type_var, .. }) => apply(type_var),
             Self::Sub(type_::SubInstruction { sub, inputs, .. })
             | Self::SubReverse(type_::SubReverseInstruction { sub, inputs, .. }) => sub.ids_foreach(|var| {
@@ -711,7 +734,7 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
                 write!(
                     f,
-                    "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_role}"
+                    "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_player}",
                 )?;
             }
             Self::Is { lhs, rhs } => {

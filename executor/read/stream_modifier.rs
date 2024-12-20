@@ -12,7 +12,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-pub(super) enum StreamModifierExecutor {
+pub(crate) enum StreamModifierExecutor {
     Offset { inner: PatternExecutor, offset: u64 },
     Limit { inner: PatternExecutor, limit: u64 },
     Distinct { inner: PatternExecutor, output_width: u32 },

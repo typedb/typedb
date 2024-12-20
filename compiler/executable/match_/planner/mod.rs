@@ -21,7 +21,7 @@ use crate::{
                     AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
                     MatchExecutable, NegationStep,
                 },
-                plan::plan_conjunction,
+                plan::{plan_conjunction, PlannerStatistics},
             },
         },
         next_executable_id,
@@ -31,7 +31,7 @@ use crate::{
 
 pub mod function_plan;
 pub mod match_executable;
-mod plan;
+pub mod plan;
 mod vertex;
 
 pub fn compile(
@@ -242,6 +242,8 @@ struct MatchExecutableBuilder {
     reverse_index: HashMap<ExecutorVariable, Variable>,
     index: HashMap<Variable, ExecutorVariable>,
     next_output: VariablePosition,
+
+    planner_statistics: PlannerStatistics,
 }
 
 impl MatchExecutableBuilder {
@@ -249,6 +251,7 @@ impl MatchExecutableBuilder {
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         selected_variables: Vec<Variable>,
         input_variables: Vec<Variable>,
+        planner_statistics: PlannerStatistics,
     ) -> Self {
         let index = assigned_positions.clone();
         let produced_so_far = HashSet::from_iter(input_variables.iter().copied());
@@ -270,6 +273,7 @@ impl MatchExecutableBuilder {
             reverse_index,
             index,
             next_output,
+            planner_statistics,
         }
     }
 
@@ -425,18 +429,12 @@ impl MatchExecutableBuilder {
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
             .collect();
-        let variable_positions_index = self
-            .reverse_index
-            .iter()
-            .filter(|(&var, _)| var.is_output())
-            .sorted_by_key(|(&k, _)| k)
-            .map(|(_, &v)| v)
-            .collect();
         MatchExecutable::new(
             next_executable_id(),
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),
-            variable_positions_index,
+            self.reverse_index,
+            self.planner_statistics,
         )
     }
 }

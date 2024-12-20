@@ -30,9 +30,9 @@ pub(crate) enum VariableVertex {
 impl VariableVertex {
     const RESTRICTION_NONE: f64 = 1.0;
     const SELECTIVITY_MIN: f64 = 0.000001;
-    pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0;
+    pub(crate) const OUTPUT_SIZE_MIN: f64 = 1.0; // TODO: investigate
 
-    pub(crate) fn expected_output_size(&self, inputs: &[VertexId]) -> f64 {
+    pub(crate) fn restricted_expected_output_size(&self, inputs: &[VertexId]) -> f64 {
         let unrestricted_size = match self {
             Self::Input(_) => 1.0,
             Self::Type(inner) => inner.unrestricted_expected_size,
@@ -40,6 +40,16 @@ impl VariableVertex {
             Self::Value(_) => 1.0,
         };
         f64::max(unrestricted_size * self.restriction_based_selectivity(inputs), Self::OUTPUT_SIZE_MIN)
+    }
+
+    pub(crate) fn unrestricted_expected_output_size(&self) -> f64 {
+        let unrestricted_size = match self {
+            Self::Input(_) => 1.0,
+            Self::Type(inner) => inner.unrestricted_expected_size,
+            Self::Thing(inner) => inner.unrestricted_expected_size,
+            Self::Value(_) => 1.0,
+        };
+        f64::max(unrestricted_size, Self::OUTPUT_SIZE_MIN)
     }
 
     pub(crate) fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
@@ -174,7 +184,7 @@ impl TypePlanner {
 pub(crate) struct ThingPlanner {
     variable: Variable,
     binding: Option<PatternVertexId>,
-    unrestricted_expected_size: f64,
+    pub unrestricted_expected_size: f64,
     unrestricted_expected_attribute_types: usize,
 
     restriction_exact: HashSet<VariableVertexId>, // IID or exact Type + Value
@@ -263,7 +273,7 @@ impl ThingPlanner {
 
     fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
         // decrease selectivity whenever we have any matching restrictions
-        let bias: f64 = 2.0;
+        let bias: f64 = 1.0; // TODO: revisit and tune
         let selectivity = if self
             .restriction_exact
             .iter()

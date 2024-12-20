@@ -138,7 +138,7 @@ impl<T1: GetAnnotatedSignature, T2: GetAnnotatedSignature> AnnotatedFunctionSign
     }
 }
 
-pub fn annotate_stored_functions<'a>(
+pub fn annotate_stored_functions(
     functions: &mut HashMap<DefinitionKey, Function>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,

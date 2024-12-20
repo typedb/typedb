@@ -247,9 +247,8 @@ fn get_has_reverse_in_range() {
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let person_owns_age = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-            .unwrap();
+        let person_owns_age =
+            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
         person_owns_age
             .set_annotation(
                 &mut snapshot,
@@ -258,9 +257,8 @@ fn get_has_reverse_in_range() {
                 OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
             )
             .unwrap();
-        let person_owns_name = person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
-            .unwrap();
+        let person_owns_name =
+            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
         person_owns_name
             .set_annotation(
                 &mut snapshot,
@@ -271,9 +269,8 @@ fn get_has_reverse_in_range() {
             .unwrap();
 
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
-        let company_owns_age = company_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, age_type.clone(), Ordering::Unordered)
-            .unwrap();
+        let company_owns_age =
+            company_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
         company_owns_age
             .set_annotation(
                 &mut snapshot,
@@ -283,7 +280,7 @@ fn get_has_reverse_in_range() {
             )
             .unwrap();
         let company_owns_name = company_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type.clone(), Ordering::Unordered)
+            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered)
             .unwrap();
         company_owns_name
             .set_annotation(
@@ -294,17 +291,15 @@ fn get_has_reverse_in_range() {
             )
             .unwrap();
 
-        let person_1 = thing_manager.create_entity(&mut snapshot, person_type.clone()).unwrap();
-        let company_1 = thing_manager.create_entity(&mut snapshot, company_type.clone()).unwrap();
-        let age_10 =
-            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Integer(age_value_10)).unwrap();
-        let age_11 =
-            thing_manager.create_attribute(&mut snapshot, age_type.clone(), Value::Integer(age_value_11)).unwrap();
+        let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+        let company_1 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
+        let age_10 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age_value_10)).unwrap();
+        let age_11 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age_value_11)).unwrap();
         let name_inline = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(inlineable_name)))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(inlineable_name)))
             .unwrap();
         let name_hashed = thing_manager
-            .create_attribute(&mut snapshot, name_type.clone(), Value::String(Cow::Borrowed(uninlinable_name)))
+            .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(uninlinable_name)))
             .unwrap();
 
         person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
@@ -327,14 +322,13 @@ fn get_has_reverse_in_range() {
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
         let company_type = type_manager.get_entity_type(&snapshot, &company_label).unwrap().unwrap();
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
-        let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
 
         let age_owners_start_value_inclusive = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
-                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+                &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
             )
             .unwrap();
         assert_eq!(age_owners_start_value_inclusive.count(), 4);
@@ -342,9 +336,9 @@ fn get_has_reverse_in_range() {
         let age_owners_start_value_exclusive = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
-                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+                &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
             )
             .unwrap();
         assert_eq!(age_owners_start_value_exclusive.count(), 2);
@@ -352,9 +346,9 @@ fn get_has_reverse_in_range() {
         let age_owners_start_value_inclusive_end_value_exclusive = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Included(Value::Integer(age_value_10)), Bound::Excluded(Value::Integer(age_value_11))),
-                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+                &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
             )
             .unwrap();
         assert_eq!(age_owners_start_value_inclusive_end_value_exclusive.count(), 2);
@@ -362,9 +356,9 @@ fn get_has_reverse_in_range() {
         let age_owners_start_value_excluded_end_value_exclusive = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Excluded(Value::Integer(age_value_11))),
-                &(Bound::Included(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+                &(Bound::Included(ObjectType::Entity(person_type)), Bound::Unbounded),
             )
             .unwrap();
         assert_eq!(age_owners_start_value_excluded_end_value_exclusive.count(), 0);
@@ -372,9 +366,9 @@ fn get_has_reverse_in_range() {
         let age_owners_start_value_included_start_type_excluded = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Included(Value::Integer(age_value_10)), Bound::Unbounded),
-                &(Bound::Excluded(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+                &(Bound::Excluded(ObjectType::Entity(person_type)), Bound::Unbounded),
             )
             .unwrap();
         // should skip age10-person, and return age10-company + age11-person + age11-company
@@ -383,9 +377,9 @@ fn get_has_reverse_in_range() {
         let age_owners_start_value_excluded_start_type_excluded = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Excluded(Value::Integer(age_value_10)), Bound::Unbounded),
-                &(Bound::Excluded(ObjectType::Entity(person_type.clone())), Bound::Unbounded),
+                &(Bound::Excluded(ObjectType::Entity(person_type)), Bound::Unbounded),
             )
             .unwrap();
         // should skip age10-person, age10-company, and the impl should be able to work out the next prefix is age(10+1)-(person+1), and return only age11-company
@@ -394,12 +388,9 @@ fn get_has_reverse_in_range() {
         let age_owners_end_value_included_end_type_excluded = thing_manager
             .get_has_reverse_in_range(
                 &snapshot,
-                age_type.clone(),
+                age_type,
                 &(Bound::Unbounded, Bound::Included(Value::Integer(age_value_11))),
-                &(
-                    Bound::Excluded(ObjectType::Entity(person_type.clone())),
-                    Bound::Excluded(ObjectType::Entity(company_type.clone())),
-                ),
+                &(Bound::Excluded(ObjectType::Entity(person_type)), Bound::Excluded(ObjectType::Entity(company_type))),
             )
             .unwrap();
         // should construct open start age* (making Excluded person type irrelevant), and end before age11-company, returning only age10-person + age10-company + age11-person

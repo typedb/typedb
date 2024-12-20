@@ -6,6 +6,8 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt,
+    fmt::Formatter,
     iter,
 };
 
@@ -28,8 +30,8 @@ use crate::{
 pub(super) mod constraint;
 pub(super) mod variable;
 
-const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
-const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
+pub(super) const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
+pub(super) const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 
 const _REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
 const _CONTAINS_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
@@ -97,6 +99,16 @@ impl PlannerVertex<'_> {
         }
     }
 
+    pub(super) fn can_be_trivial(&self) -> bool {
+        matches!(
+            self,
+            Self::Comparison(_)
+                | Self::Expression(_)
+                | Self::Constraint(ConstraintVertex::TypeList(_))
+                | Self::Constraint(ConstraintVertex::Isa(_))
+        )
+    }
+
     pub(super) fn as_variable_mut(&mut self) -> Option<&mut VariableVertex> {
         match self {
             Self::Variable(var) => Some(var),
@@ -118,15 +130,49 @@ pub(crate) struct Cost {
     pub io_ratio: f64,
 }
 
+impl<'a> fmt::Display for PlannerVertex<'a> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self {
+            PlannerVertex::Variable(v) => {
+                write!(f, "|Var {}|", v.variable())
+            }
+            PlannerVertex::Constraint(v) => {
+                write!(f, "{}", v)
+            }
+            PlannerVertex::Is(_) => {
+                write!(f, "|Is|")
+            } //TODO
+            PlannerVertex::Comparison(v) => {
+                write!(f, "|{:?} comp {:?}|", v.comparison.lhs(), v.comparison.rhs())
+            }
+            PlannerVertex::Expression(v) => {
+                write!(f, "|Expr of {:?}|", v.expression.variables)
+            }
+            PlannerVertex::FunctionCall(_) => {
+                write!(f, "|Fun Call|")
+            } //TODO
+            PlannerVertex::Negation(_) => {
+                write!(f, "|Negation|")
+            } //TODO
+            PlannerVertex::Disjunction(_) => {
+                write!(f, "|Disjunction|")
+            } //TODO
+        }
+    }
+}
+
 impl Cost {
     const MIN_IO_RATIO: f64 = 0.000000001;
     const IN_MEM_COST_SIMPLE: f64 = 0.02;
-    const IN_MEM_COST_COMPLEX: f64 = Cost::IN_MEM_COST_SIMPLE * 2.0;
+    const IN_MEM_COST_COMPLEX: f64 = Cost::IN_MEM_COST_SIMPLE * 1.0; // TODO: revisit based on final usage of trivial patterns (see TRIVIAL_COST)
     pub const NOOP: Self = Self { cost: 0.0, io_ratio: 1.0 };
     pub const EMPTY: Self = Self { cost: 0.0, io_ratio: 0.0 };
     pub const INFINITY: Self = Self { cost: f64::INFINITY, io_ratio: 0.0 };
-    pub const MEM_SIMPLE_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
-    pub const MEM_COMPLEX_BRANCH_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
+    pub const MEM_SIMPLE_OUTPUT_1: Self = Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio: 1.0 };
+    pub const MEM_COMPLEX_OUTPUT_1: Self = Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio: 1.0 };
+    pub const TRIVIAL_COST_THRESHOLD: f64 = 0.05;
+    pub const TRIVIAL_IO_THRESHOLD: f64 = 1.0;
+    pub const TRIVIAL_COST: f64 = Cost::IN_MEM_COST_SIMPLE;
 
     fn in_mem_complex_with_ratio(io_ratio: f64) -> Self {
         Self { cost: Cost::IN_MEM_COST_COMPLEX, io_ratio }
@@ -145,13 +191,17 @@ impl Cost {
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
         Self {
-            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix cartesian product situation in Rocks
-            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probabilty of join = 1 / total_join_size
+            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix missing cartesian product compression when retrieving from Rocks
+            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probability of join = 1 / total_join_size
         }
     }
 
     pub(crate) fn combine_parallel(self, other: Self) -> Self {
         Self { cost: self.cost + other.cost, io_ratio: self.io_ratio + other.io_ratio }
+    }
+
+    pub(crate) fn is_trivial(&self) -> bool {
+        self.cost < Self::TRIVIAL_COST_THRESHOLD && self.io_ratio <= Self::TRIVIAL_IO_THRESHOLD
     }
 }
 
@@ -228,7 +278,7 @@ impl<'a> ExpressionPlanner<'a> {
         inputs: Vec<VariableVertexId>,
         output: VariableVertexId,
     ) -> Self {
-        let cost = Cost::MEM_COMPLEX_BRANCH_1;
+        let cost = Cost::MEM_COMPLEX_OUTPUT_1;
         Self { inputs, output, cost, expression }
     }
 
@@ -310,7 +360,7 @@ impl<'a> IsPlanner<'a> {
 
 impl Costed for IsPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
+        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
 
@@ -360,7 +410,7 @@ impl<'a> ComparisonPlanner<'a> {
 
 impl Costed for ComparisonPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_BRANCH_1, CostMetaData::None)
+        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
 
@@ -391,7 +441,7 @@ impl<'a> NegationPlanner<'a> {
 
 impl Costed for NegationPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
-        (self.plan.cost(), CostMetaData::None)
+        (self.plan.planner_statistics.query_cost, CostMetaData::None)
     }
 }
 

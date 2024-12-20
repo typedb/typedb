@@ -46,7 +46,7 @@ pub fn relation_index_transformation(
             let relation_variable = links.relation();
             candidates
                 .entry(relation_variable.clone())
-                .and_modify(|(first_index, other_indices)| other_indices.push(index))
+                .and_modify(|(_first_index, other_indices)| other_indices.push(index))
                 .or_insert((index, Vec::new()));
         }
     }

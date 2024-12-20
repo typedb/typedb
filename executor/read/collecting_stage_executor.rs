@@ -19,7 +19,7 @@ use crate::{
     reduce_executor::GroupedReducer,
 };
 
-pub(super) struct CollectingStageExecutor {
+pub(crate) struct CollectingStageExecutor {
     pattern: PatternExecutor,
     collector: CollectorEnum,
 }
@@ -37,7 +37,7 @@ impl CollectorEnum {
         }
     }
 
-    pub(crate) fn into_iterator(&mut self) -> CollectedStageIterator {
+    pub(crate) fn collected_to_iterator(&mut self) -> CollectedStageIterator {
         match self {
             CollectorEnum::Reduce(collector) => collector.collected_to_iterator(),
             CollectorEnum::Sort(collector) => collector.collected_to_iterator(),
@@ -149,7 +149,7 @@ impl CollectorTrait for ReduceCollector {
     }
 }
 
-struct ReduceStageIterator {
+pub(super) struct ReduceStageIterator {
     batch_row_iterator: BatchRowIterator,
     output_width: u32,
 }

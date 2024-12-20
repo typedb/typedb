@@ -249,7 +249,7 @@ impl PatternExecutor {
                             self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index }))
                         }
                         None => {
-                            let iterator = collector.into_iterator();
+                            let iterator = collector.collected_to_iterator();
                             self.control_stack
                                 .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }))
                         }

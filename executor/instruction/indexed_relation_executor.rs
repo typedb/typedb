@@ -31,7 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{IndexedRelationToTupleFn, Tuple, TuplePositions, TupleResult},
+        tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapFn,
     },
     pipeline::stage::ExecutionContext,
@@ -144,10 +144,7 @@ impl IndexedRelationExecutor {
             } else {
                 variable_modes.get(preceding_variable).unwrap()
             };
-            'mode: for mode_index in
-                MODE_PRIORITY.iter().position(|mode| *mode == preceding_variable_mode).unwrap()..MODE_PRIORITY.len()
-            {
-                let mode = MODE_PRIORITY[mode_index];
+            'mode: for &mode in MODE_PRIORITY.iter().skip_while(|&&mode| mode != preceding_variable_mode) {
                 // find first unused variable with this mode (else, try the next mode)
                 for variable in variables_lexicographically_ordered {
                     let variable_mode = variable_modes.get(variable).unwrap();
@@ -473,7 +470,7 @@ fn create_indexed_players_filter(
 ) -> Arc<IndexedRelationFilterFn> {
     Arc::new(move |result| {
         let (player_start, player_end, role_start, role_end) = match result {
-            Ok(((player_start, player_end, relation, role_start, role_end), _)) => {
+            Ok(((player_start, player_end, _relation, role_start, role_end), _)) => {
                 (player_start, player_end, role_start, role_end)
             }
             Err(err) => return Err(err.clone()),
@@ -482,8 +479,8 @@ fn create_indexed_players_filter(
             return Ok(false);
         };
         Ok(end_player_types.contains(&Type::from(player_end.type_()))
-            && start_role_types.contains(&role_start)
-            && end_role_types.contains(&role_end))
+            && start_role_types.contains(role_start)
+            && end_role_types.contains(role_end))
     })
 }
 
