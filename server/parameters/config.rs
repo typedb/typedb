@@ -132,11 +132,7 @@ pub struct DiagnosticsConfig {
 
 impl DiagnosticsConfig {
     pub fn enabled() -> Self {
-        Self {
-            is_monitoring_enabled: true,
-            monitoring_port: MONITORING_DEFAULT_PORT,
-            is_reporting_enabled: true,
-        }
+        Self { is_monitoring_enabled: true, monitoring_port: MONITORING_DEFAULT_PORT, is_reporting_enabled: true }
     }
 }
 
