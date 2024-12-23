@@ -95,7 +95,7 @@ pub fn equals_approximate(first: f64, second: f64) -> bool {
 }
 
 #[apply(generic_step)]
-#[step(expr = "set time zone: {word}")]
+#[step(expr = "set time-zone: {word}")]
 async fn set_time_zone(_: &mut Context, time_zone: String) {
     unsafe {
         // SAFETY: must ensure that there are no other threads concurrently writing or

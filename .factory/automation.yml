@@ -106,12 +106,12 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //tests/behaviour/connection/... --test_output=streamed
 
-#    test-behaviour-concept:
-#      image: typedb-ubuntu-22.04
-#      dependencies: [build]
-#      command: |
-#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //tests/behaviour/concept/... --test_output=errors
+    test-behaviour-concept:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/concept/... --test_output=errors
 
     test-behaviour-query-read:
       image: typedb-ubuntu-22.04
