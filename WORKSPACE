@@ -141,12 +141,9 @@ docker_base_images()
 # Load @typedb/typedb dependencies #
 #####################################
 
-# We don't load Maven artifacts for @typedb_common as they are only needed
-# if you depend on @typedb_common//test/server
-load("//dependencies/typedb:repositories.bzl", "typedb_common", "typeql", "typedb_protocol", "typedb_behaviour")
+load("//dependencies/typedb:repositories.bzl", "typeql", "typedb_protocol", "typedb_behaviour")
 typedb_behaviour()
 load("@typedb_dependencies//tool/common:deps.bzl", "typedb_dependencies_ci_pip", typedb_dependencies_tool_maven_artifacts = "maven_artifacts")
-typedb_common()
 
 typeql()
 
