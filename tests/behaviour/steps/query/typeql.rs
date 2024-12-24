@@ -386,10 +386,16 @@ fn does_value_match(id: &str, var_value: &VariableValue<'_>, _context: &Context)
     };
     let (id_type, id_value) = id.split_once(":").unwrap();
     let expected_value_type = match id_type {
+        "boolean" => ValueType::Boolean,
         "integer" => ValueType::Integer,
         "double" => ValueType::Double,
+        "decimal" => ValueType::Decimal,
+        "date" => ValueType::Date,
+        "datetime" => ValueType::DateTime,
+        "datetime-tz" => ValueType::DateTimeTZ,
+        "duration" => ValueType::Duration,
         "string" => ValueType::String,
-        _ => todo!(),
+        _ => todo!("TypeQL test value type is not covered"),
     };
     let expected = params::Value::from_str(id_value).unwrap().into_typedb(expected_value_type);
     if expected.value_type() == ValueType::Double {
