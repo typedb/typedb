@@ -110,9 +110,17 @@ fn compile_return_operation(
 
 pub fn determine_tabling_requirements(
     functions: &HashMap<FunctionID, &AnnotatedFunction>,
+    existing_requirements: &HashMap<FunctionID, FunctionTablingType>,
 ) -> HashMap<FunctionID, FunctionTablingType> {
     let mut cycle_detection: HashMap<FunctionID, TablingRequirement> =
-        functions.keys().map(|function_id| (function_id.clone(), TablingRequirement::Unexplored)).collect();
+        existing_requirements.iter().map(|(id, req)| {
+            (id.clone(), match req {
+                FunctionTablingType::Tabled => TablingRequirement::KnownTabled,
+                FunctionTablingType::Untabled => TablingRequirement::KnownUntabled,
+            })
+        }).chain(
+            functions.keys().map(|function_id| (function_id.clone(), TablingRequirement::Unexplored))
+        ).collect();
     for function_id in functions.keys() {
         if cycle_detection[function_id] == TablingRequirement::Unexplored {
             determine_tabling_requirements_impl(functions, &mut cycle_detection, function_id)

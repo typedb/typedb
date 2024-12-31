@@ -95,6 +95,7 @@ pub fn compile_pipeline(
     let mut executable_schema_functions = HashMap::new();
     let schema_tabling_requirements = determine_tabling_requirements(
         &annotated_schema_functions.iter().map(|(id, function)| (FunctionID::Schema(id.clone()), function)).collect(),
+        &HashMap::new(),
     );
     for (id, function) in annotated_schema_functions.iter() {
         // TODO: We could save cloning the whole function and only clone the stages.
@@ -112,6 +113,7 @@ pub fn compile_pipeline(
 
     let preamble_tabling_requirements = determine_tabling_requirements(
         &annotated_preamble.iter().enumerate().map(|(id, function)| (FunctionID::Preamble(id), function)).collect(),
+        &schema_tabling_requirements
     );
     let mut executable_preamble_functions = HashMap::new();
     for (id, function) in annotated_preamble.into_iter().enumerate() {
