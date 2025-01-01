@@ -9,7 +9,10 @@ use std::{collections::HashMap, fmt, sync::Arc};
 use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::pipeline::function_signature::FunctionID;
 
-use crate::executable::function::ExecutableFunction;
+use crate::executable::{
+    function::{ExecutableFunction, FunctionCallCostProvider},
+    match_::planner::vertex::Cost,
+};
 
 #[derive(Clone)]
 pub struct ExecutableFunctionRegistry {
@@ -36,10 +39,20 @@ impl ExecutableFunctionRegistry {
         Self::new(Arc::new(HashMap::new()), HashMap::new())
     }
 
-    pub fn get(&self, function_id: FunctionID) -> &ExecutableFunction {
-        match &function_id {
-            FunctionID::Schema(id) => self.schema_functions.get(id).unwrap(),
-            FunctionID::Preamble(id) => self.preamble_functions.get(id).unwrap(),
+    pub fn get(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {
+        match function_id {
+            FunctionID::Schema(id) => self.schema_functions.get(id),
+            FunctionID::Preamble(id) => self.preamble_functions.get(id),
         }
+    }
+
+    pub(crate) fn schema_functions(&self) -> Arc<HashMap<DefinitionKey, ExecutableFunction>> {
+        self.schema_functions.clone()
+    }
+}
+
+impl FunctionCallCostProvider for ExecutableFunctionRegistry {
+    fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
+        self.get(function_id).unwrap().single_call_cost
     }
 }

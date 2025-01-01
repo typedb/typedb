@@ -14,6 +14,7 @@ use itertools::Itertools;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::{
+        function::FunctionCallCostProvider,
         match_::{
             instructions::{CheckInstruction, ConstraintInstruction},
             planner::{
@@ -32,7 +33,7 @@ use crate::{
 pub mod function_plan;
 pub mod match_executable;
 pub mod plan;
-mod vertex;
+pub mod vertex; // TODO: pub(crate)
 
 pub fn compile(
     block: &Block,
@@ -42,6 +43,7 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
+    todo__per_call_costs: &impl FunctionCallCostProvider,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();

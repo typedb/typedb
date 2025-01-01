@@ -14,7 +14,7 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::match_::planner::function_plan::ExecutableFunctionRegistry,
+    executable::{function::FunctionCallCostProvider, match_::planner::function_plan::ExecutableFunctionRegistry},
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -27,7 +27,10 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use ir::{
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{
+        function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+        ParameterRegistry,
+    },
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -39,6 +42,13 @@ use storage::{
 use test_utils::assert_matches;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
+
+struct DummyFunctionCallProvider;
+impl FunctionCallCostProvider for DummyFunctionCallProvider {
+    fn get_call_cost(&self, _: &FunctionID) -> compiler::executable::match_::planner::vertex::Cost {
+        unreachable!()
+    }
+}
 
 fn setup(
     storage: &Arc<MVCCStorage<WALClient>>,
@@ -131,6 +141,7 @@ fn test_has_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -228,6 +239,7 @@ fn test_expression_planning_traversal() {
         &translation_context.variable_registry,
         &compiled_expressions,
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -313,6 +325,7 @@ fn test_links_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -405,6 +418,7 @@ fn test_links_intersection() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -488,6 +502,7 @@ fn test_negation_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -592,6 +607,7 @@ fn test_forall_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -682,6 +698,7 @@ fn test_named_var_select() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -772,6 +789,7 @@ fn test_disjunction_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -866,6 +884,7 @@ fn test_disjunction_planning_nested_negations() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &DummyFunctionCallProvider,
     );
     let executor = MatchExecutor::new(
         &match_executable,

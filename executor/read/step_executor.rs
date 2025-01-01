@@ -146,7 +146,7 @@ pub(crate) fn create_executors_for_match(
                 // NOTE: still create the profile so each step has an entry in the profile, even if unused
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
 
-                let function = function_registry.get(function_call.function_id.clone());
+                let function = function_registry.get(&function_call.function_id).unwrap();
                 if function.is_tabled == FunctionTablingType::Tabled {
                     let executor = TabledCallExecutor::new(
                         function_call.function_id.clone(),

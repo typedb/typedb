@@ -14,7 +14,7 @@ use ir::{pattern::ParameterID, pipeline::VariableRegistry};
 use crate::{
     annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},
     executable::{
-        function::{compile_function, ExecutableFunction, FunctionTablingType},
+        function::{compile_function, compile_single_untabled_function, ExecutableFunction, FunctionTablingType},
         match_::planner::function_plan::ExecutableFunctionRegistry,
         next_executable_id,
         pipeline::{compile_stages_and_fetch, ExecutableStage},
@@ -117,10 +117,8 @@ fn compile_some(
             Ok(FetchSomeInstruction::SingleAttribute(*position, attribute_type))
         }
         AnnotatedFetchSome::SingleFunction(function) => {
-            let compiled = compile_function(statistics, available_functions, function, FunctionTablingType::Untabled)
-                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
-                typedb_source: Box::new(err),
-            })?;
+            let compiled = compile_single_untabled_function(statistics, available_functions, function)
+                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::SingleFunction(compiled, variable_positions.clone()))
         }
         AnnotatedFetchSome::Object(object) => {
@@ -128,10 +126,8 @@ fn compile_some(
             Ok(FetchSomeInstruction::Object(Box::new(compiled)))
         }
         AnnotatedFetchSome::ListFunction(function) => {
-            let compiled = compile_function(statistics, available_functions, function, FunctionTablingType::Untabled)
-                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation {
-                typedb_source: Box::new(err),
-            })?;
+            let compiled = compile_single_untabled_function(statistics, available_functions, function)
+                .map_err(|err| FetchCompilationError::AnonymousFunctionCompilation { typedb_source: Box::new(err) })?;
             Ok(FetchSomeInstruction::ListFunction(compiled, variable_positions.clone()))
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {

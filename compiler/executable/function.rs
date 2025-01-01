@@ -13,8 +13,12 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
-    pipeline::{function_signature::FunctionID, ParameterRegistry},
+    pipeline::{
+        function_signature::{FunctionID, FunctionIDAPI},
+        ParameterRegistry,
+    },
 };
+use itertools::Itertools;
 use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
@@ -23,7 +27,7 @@ use crate::{
         pipeline::AnnotatedStage,
     },
     executable::{
-        match_::planner::function_plan::ExecutableFunctionRegistry,
+        match_::planner::{function_plan::ExecutableFunctionRegistry, vertex::Cost},
         next_executable_id,
         pipeline::{compile_pipeline_stages, ExecutableStage},
         reduce::ReduceRowsExecutable,
@@ -40,7 +44,7 @@ pub struct ExecutableFunction {
     pub returns: ExecutableReturn,
     pub is_tabled: FunctionTablingType,
     pub parameter_registry: Arc<ParameterRegistry>,
-    // pub plan_cost: f64, // TODO: Where do we fit this in?
+    pub single_call_cost: Cost, // TODO: Where do we fit this in?
 }
 
 #[derive(Debug, Clone)]
@@ -57,23 +61,136 @@ pub enum FunctionTablingType {
     Untabled,
 }
 
+pub trait FunctionCallCostProvider {
+    fn get_call_cost(&self, function_id: &FunctionID) -> Cost;
+}
+
+struct FunctionPlanner<'a, FIDType: FunctionIDAPI> {
+    cached_plans: &'a ExecutableFunctionRegistry,
+    to_compile: HashMap<FIDType, AnnotatedFunction>,
+    completed: HashMap<FIDType, ExecutableFunction>,
+    must_table: HashSet<FIDType>,
+}
+
+impl<'a, FIDType: FunctionIDAPI> FunctionPlanner<'a, FIDType> {
+    fn new(cached_plans: &'a ExecutableFunctionRegistry, to_compile: HashMap<FIDType, AnnotatedFunction>) -> Self {
+        FunctionPlanner { cached_plans, to_compile, completed: HashMap::new(), must_table: HashSet::new() }
+    }
+
+    pub(crate) fn get_executable_function(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {
+        if let Some(plan) = self.cached_plans.get(function_id) {
+            Some(plan)
+        } else if let Ok(key) = &FIDType::try_from(function_id.clone()) {
+            self.completed.get(&key)
+        } else {
+            None
+        }
+    }
+
+    fn cycle_breaking_cost(&self) -> Cost {
+        Cost { cost: 1.0, io_ratio: 1.0 } // TODO
+    }
+}
+
+impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionPlanner<'a, FIDType> {
+    fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
+        if let Some(function) = self.get_executable_function(function_id) {
+            function.single_call_cost.clone()
+        } else {
+            debug_assert!(matches!(
+                FIDType::try_from(function_id.clone()).map(|id| self.must_table.contains(&id)),
+                Ok(true)
+            ));
+            self.cycle_breaking_cost()
+        }
+    }
+}
+
+pub(crate) fn compile_functions<FIDType: FunctionIDAPI>(
+    statistics: &Statistics,
+    cached_plans: &ExecutableFunctionRegistry,
+    mut to_compile: HashMap<FIDType, AnnotatedFunction>,
+) -> Result<HashMap<FIDType, ExecutableFunction>, ExecutableCompilationError> {
+    // TODO: Cache compiled schema functions?
+    #[cfg(debug_assertions)]
+    let debug__to_compile_count = to_compile.len();
+    let mut planner = FunctionPlanner::new(cached_plans, to_compile);
+    let mut cycle_detection = HashSet::new();
+    while !planner.to_compile.is_empty() {
+        let id = planner.to_compile.keys().find_or_first(|_| true).unwrap().clone();
+        compile_functions_impl(statistics, &mut planner, &mut cycle_detection, id)?;
+    }
+    #[cfg(debug_assertions)]
+    debug_assert!(planner.completed.len() == debug__to_compile_count);
+
+    Ok(planner.completed)
+}
+
+fn compile_functions_impl<'a, FIDType: FunctionIDAPI>(
+    statistics: &Statistics,
+    planner: &mut FunctionPlanner<'a, FIDType>,
+    cycle_detection: &mut HashSet<FIDType>,
+    current: FIDType,
+) -> Result<(), ExecutableCompilationError> {
+    let function = planner.to_compile.remove(&current).unwrap();
+    cycle_detection.insert(current.clone());
+    let all_calls = all_calls_in_pipeline(function.stages.as_slice());
+    // Plan all dependencies or cycle break.
+    for called_fid in all_calls {
+        if planner.get_executable_function(&called_fid).is_some() {
+            continue;
+        } else {
+            let Ok(as_id) = FIDType::try_from(called_fid) else { unreachable!("Has to be in get_executable_function") };
+            if cycle_detection.contains(&as_id) {
+                planner.must_table.insert(as_id);
+                // We compile this when we return all the way. The FunctionCostProvider should return a default cost for any uncompiled in must_table
+            } else {
+                debug_assert!(planner.to_compile.contains_key(&as_id));
+                compile_functions_impl(statistics, planner, cycle_detection, as_id.clone())?;
+            }
+        }
+    }
+    cycle_detection.remove(&current); // I don't think we have to remove from cycle detection for correctness.
+
+    // Now plan & compile this function.
+    let must_table =
+        if planner.must_table.contains(&current) { FunctionTablingType::Tabled } else { FunctionTablingType::Untabled };
+    let compiled_function = compile_function(statistics, function, planner, must_table)?;
+    planner.completed.insert(current.clone(), compiled_function);
+    Ok(())
+}
+
+pub(crate) fn compile_single_untabled_function(
+    statistics: &Statistics,
+    cached_plans: &ExecutableFunctionRegistry,
+    to_compile: AnnotatedFunction,
+) -> Result<ExecutableFunction, ExecutableCompilationError> {
+    let planner = FunctionPlanner::new(cached_plans, HashMap::<usize, _>::new());
+    compile_function(statistics, to_compile, &planner, FunctionTablingType::Untabled)
+}
+
 pub(crate) fn compile_function(
     statistics: &Statistics,
-    schema_functions: &ExecutableFunctionRegistry, // Can't have preamble in them when you're compiling functions
     function: AnnotatedFunction,
+    per_call_costs: &impl FunctionCallCostProvider,
     is_tabled: FunctionTablingType,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
+    debug_assert!(all_calls_in_pipeline(function.stages.as_slice()).iter().all(|f| {
+        per_call_costs.get_call_cost(f);
+        true
+    })); // Will crash
     let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_, .. } = function;
-    let (argument_positions, executable_stages) = compile_pipeline_stages(
+    let (argument_positions, executable_stages, _) = compile_pipeline_stages(
         statistics,
         &variable_registry,
-        schema_functions,
+        per_call_costs,
         stages,
         arguments.into_iter(),
         &return_.referenced_variables(),
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
+    let single_call_cost = Cost { cost: 1.0, io_ratio: 1.0 }; // TODO
     Ok(ExecutableFunction {
         executable_id: next_executable_id(),
         executable_stages,
@@ -81,6 +198,7 @@ pub(crate) fn compile_function(
         returns,
         parameter_registry: Arc::new(parameter_registry),
         is_tabled,
+        single_call_cost,
     })
 }
 
@@ -104,73 +222,6 @@ fn compile_return_operation(
                 reductions,
                 input_group_positions: Vec::new(),
             })))
-        }
-    }
-}
-
-pub fn determine_tabling_requirements(
-    functions: &HashMap<FunctionID, &AnnotatedFunction>,
-    existing_requirements: &HashMap<FunctionID, FunctionTablingType>,
-) -> HashMap<FunctionID, FunctionTablingType> {
-    let mut cycle_detection: HashMap<FunctionID, TablingRequirement> =
-        existing_requirements.iter().map(|(id, req)| {
-            (id.clone(), match req {
-                FunctionTablingType::Tabled => TablingRequirement::KnownTabled,
-                FunctionTablingType::Untabled => TablingRequirement::KnownUntabled,
-            })
-        }).chain(
-            functions.keys().map(|function_id| (function_id.clone(), TablingRequirement::Unexplored))
-        ).collect();
-    for function_id in functions.keys() {
-        if cycle_detection[function_id] == TablingRequirement::Unexplored {
-            determine_tabling_requirements_impl(functions, &mut cycle_detection, function_id)
-        }
-    }
-    cycle_detection
-        .into_iter()
-        .map(|(function_id, tabling_requirement)| match tabling_requirement {
-            TablingRequirement::KnownTabled => (function_id, FunctionTablingType::Tabled),
-            TablingRequirement::KnownUntabled => (function_id, FunctionTablingType::Untabled),
-            TablingRequirement::Unexplored | TablingRequirement::UnknownInStack => unreachable!(),
-        })
-        .collect()
-}
-
-#[derive(PartialEq, Eq)]
-enum TablingRequirement {
-    Unexplored,
-    UnknownInStack,
-    KnownTabled,
-    KnownUntabled,
-}
-
-pub fn determine_tabling_requirements_impl(
-    to_compile: &HashMap<FunctionID, &AnnotatedFunction>,
-    cycle_detection: &mut HashMap<FunctionID, TablingRequirement>,
-    function_id: &FunctionID,
-) {
-    // Recurse, and compile on our way out.
-    match cycle_detection[function_id] {
-        TablingRequirement::KnownTabled | TablingRequirement::KnownUntabled => {}
-        TablingRequirement::UnknownInStack => {
-            // We should only need to table these, and not other ones in the cycle.
-            cycle_detection.insert(function_id.clone(), TablingRequirement::KnownTabled);
-        }
-        TablingRequirement::Unexplored => {
-            cycle_detection.insert(function_id.clone(), TablingRequirement::UnknownInStack);
-            let function = to_compile.get(function_id).unwrap();
-            for called_id in all_calls_in_pipeline(&function.stages) {
-                if to_compile.contains_key(&called_id) {
-                    determine_tabling_requirements_impl(to_compile, cycle_detection, &called_id);
-                }
-            }
-            match cycle_detection[function_id] {
-                TablingRequirement::UnknownInStack => {
-                    cycle_detection.insert(function_id.clone(), TablingRequirement::KnownUntabled);
-                }
-                TablingRequirement::KnownTabled => {}
-                TablingRequirement::Unexplored | TablingRequirement::KnownUntabled => unreachable!(),
-            }
         }
     }
 }
