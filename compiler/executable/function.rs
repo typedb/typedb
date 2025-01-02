@@ -88,7 +88,7 @@ impl<'a, FIDType: FunctionIDAPI> FunctionPlanner<'a, FIDType> {
     }
 
     fn cycle_breaking_cost(&self) -> Cost {
-        Cost { cost: 1.0, io_ratio: 1.0 } // TODO
+        Cost { cost: 1.0, io_ratio: 1.0 } // TODO: This should simulate depth 1 recursion.
     }
 }
 
