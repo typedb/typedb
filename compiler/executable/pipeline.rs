@@ -184,7 +184,18 @@ pub(crate) fn compile_pipeline_stages(
         };
         executable_stages.push(executable_stage);
     }
-    let total_cost = Cost { cost: 1.0, io_ratio: 1.0 }; // TODO
+    let total_cost =
+        executable_stages
+            .iter()
+            .filter_map(|stage| {
+                if let ExecutableStage::Match(m) = stage {
+                    Some(m.planner_statistics().query_cost)
+                } else {
+                    None
+                }
+            })
+            .reduce(|x, y| x.chain(y))
+            .unwrap_or(Cost { cost: 1.0, io_ratio: 1.0 });
     Ok((input_variable_positions, executable_stages, total_cost))
 }
 

@@ -43,7 +43,7 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
-    todo__per_call_costs: &impl FunctionCallCostProvider,
+    per_call_costs: &impl FunctionCallCostProvider,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
@@ -60,6 +60,7 @@ pub fn compile(
         variable_registry,
         expressions,
         statistics,
+        per_call_costs,
     )
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
     .finish(variable_registry)

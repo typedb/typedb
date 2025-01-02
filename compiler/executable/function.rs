@@ -190,7 +190,19 @@ pub(crate) fn compile_function(
     )?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
-    let single_call_cost = Cost { cost: 1.0, io_ratio: 1.0 }; // TODO
+    debug_assert!(executable_stages.iter().any(|stage| matches!(stage, ExecutableStage::Match(_))));
+    let single_call_cost =
+        executable_stages
+            .iter()
+            .filter_map(|stage| {
+                if let ExecutableStage::Match(m) = stage {
+                    Some(m.planner_statistics().query_cost)
+                } else {
+                    None
+                }
+            })
+            .reduce(|x, y| x.chain(y))
+            .unwrap();
     Ok(ExecutableFunction {
         executable_id: next_executable_id(),
         executable_stages,
