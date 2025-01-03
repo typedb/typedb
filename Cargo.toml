@@ -11,6 +11,11 @@ features = {}
 
 [dev-dependencies]
 
+	[dev-dependencies.test_utils]
+		path = "util/test"
+		features = []
+		default-features = false
+
 	[dev-dependencies.test_utils_encoding]
 		path = "encoding/tests"
 		features = []
@@ -59,6 +64,11 @@ features = {}
 
 	[dev-dependencies.steps]
 		path = "tests/behaviour/steps"
+		features = []
+		default-features = false
+
+	[dev-dependencies.lending_iterator]
+		path = "common/lending_iterator"
 		features = []
 		default-features = false
 

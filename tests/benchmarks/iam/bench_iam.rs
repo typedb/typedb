@@ -4,20 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{fs::File, io::Read, path::Path, sync::Arc};
 
-use std::fs::File;
-use std::io::Read;
-use std::path::Path;
-use std::sync::Arc;
-use database::Database;
-use database::transaction::{TransactionSchema, TransactionWrite};
-use executor::ExecutionInterrupt;
-use function::function_manager::FunctionManager;
+use database::{
+    database_manager::DatabaseManager,
+    transaction::{TransactionSchema, TransactionWrite},
+    Database,
+};
+use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
+use lending_iterator::LendingIterator;
 use options::TransactionOptions;
-use query::query_manager::QueryManager;
-use storage::durability_client::WALClient;
-use storage::snapshot::CommittableSnapshot;
-use test_utils_encoding::create_core_storage;
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, SchemaSnapshot},
+};
+use test_utils::create_tmp_dir;
+
+const DB_NAME: &str = "benchmark-iam";
+const RESOURCE_PATH: &str = "tests/benchmarks/iam";
+const SCHEMA_FILENAME: &str = "schema.tql";
+const DATA_FILENAME: &str = "data.tql";
 
 fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let mut contents = Vec::new();
@@ -26,8 +32,29 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let schema_query = typeql::parse_query(schema_str.as_str()).unwrap().into_schema();
 
     let mut tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
-    let TransactionSchema { query_manager, mut snapshot, type_manager, thing_manager, function_manager, .. } = &mut tx;
-    query_manager.execute_schema(&mut snapshot, type_manager, thing_manager, &function_manager, schema_query).unwrap()
+    let TransactionSchema {
+        snapshot,
+        type_manager,
+        thing_manager,
+        function_manager,
+        query_manager,
+        database,
+        transaction_options,
+    } = tx;
+    let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
+    query_manager
+        .execute_schema(&mut inner_snapshot, &type_manager, &thing_manager, &function_manager, schema_query)
+        .unwrap();
+    let tx = TransactionSchema::from(
+        inner_snapshot,
+        type_manager,
+        thing_manager,
+        function_manager,
+        query_manager,
+        database,
+        transaction_options,
+    );
+    tx.commit().unwrap();
 }
 
 fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
@@ -37,21 +64,61 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
     let data_str = String::from_utf8(contents).unwrap();
     let data_query = typeql::parse_query(data_str.as_str()).unwrap().into_pipeline();
     let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-    let TransactionWrite { query_manager, mut snapshot, type_manager, thing_manager, function_manager, .. } = &mut tx;
-    let write_pipeline = query_manager.prepare_write_pipeline(&mut snapshot, type_manager, thing_manager.clone(), &function_manager, &data_query).unwrap();
-    let (output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    context.snapshot.commit().unwrap();
+    let TransactionWrite {
+        snapshot,
+        type_manager,
+        thing_manager,
+        function_manager,
+        query_manager,
+        database,
+        transaction_options,
+    } = tx;
+    let write_pipeline = query_manager
+        .prepare_write_pipeline(
+            Arc::into_inner(snapshot).unwrap(),
+            &type_manager,
+            thing_manager.clone(),
+            &function_manager,
+            &data_query,
+        )
+        .unwrap();
+    let (mut output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let tx = TransactionWrite::from(
+        context.snapshot,
+        type_manager,
+        thing_manager,
+        function_manager,
+        query_manager,
+        database,
+        transaction_options,
+    );
+    tx.commit().unwrap();
 }
 
+fn setup() -> Arc<Database<WALClient>> {
+    let tmp_dir = create_tmp_dir();
+    let dbm = DatabaseManager::new(&tmp_dir).unwrap();
+    dbm.create_database(DB_NAME).unwrap();
+    let database = dbm.database(DB_NAME).unwrap();
+    let schema_path = Path::new(RESOURCE_PATH).join(Path::new(SCHEMA_FILENAME));
+    let data_path = Path::new(RESOURCE_PATH).join(Path::new(DATA_FILENAME));
 
-fn setup() {
-    let (_tmp_dir, mut storage) = create_core_storage();
-    setup_concept_storage(&mut storage);
+    load_schema_tql(database.clone(), &schema_path);
+    load_data_tql(database.clone(), &data_path);
+    database
+}
 
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
-    let query_manager = QueryManager::new(None);
-
-
-    load_schema_tql(database, )
+#[test]
+fn run_me() {
+    let database = setup();
+    let write_tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+    let TransactionWrite { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = write_tx;
+    let query = typeql::parse_query("match $x isa! $t; reduce $c = count($x) within ($t);").unwrap().into_pipeline();
+    let pipeline =
+        query_manager.prepare_read_pipeline(snapshot, &type_manager, thing_manager, &function_manager, &query).unwrap();
+    let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let mut row_iterator = rows.collect_owned().unwrap().into_iterator();
+    while let Some(row) = row_iterator.next() {
+        println!("{row:?}");
+    }
 }

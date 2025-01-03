@@ -10,6 +10,7 @@ rust_test(
     srcs = ["bench_iam.rs"],
     deps = [
         "//answer",
+        "//common/lending_iterator",
         "//common/options",
         "//database",
         "//executor",
@@ -22,6 +23,7 @@ rust_test(
 
         "//concept/tests:test_utils_concept",
         "//encoding/tests:test_utils_encoding",
+        "//util/test:test_utils",
 
         "@typeql//rust:typeql",
     ],

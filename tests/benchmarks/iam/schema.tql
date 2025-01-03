@@ -1,100 +1,91 @@
 define
-credential sub attribute,
+attribute credential,
     value string;
-full-name sub attribute,
+attribute full-name,
     value string;
-id sub attribute,
-    abstract,
+attribute id @abstract;
+attribute email sub id,
     value string;
-email sub id,
+attribute name sub id,
     value string;
-name sub id,
+attribute number sub id,
     value string;
-number sub id,
+attribute path sub id,
     value string;
-path sub id,
+attribute object-type,
     value string;
-object-type sub attribute,
+attribute ownership-type,
     value string;
-ownership-type sub attribute,
+attribute parent-company-name,
     value string;
-parent-company-name sub attribute,
-    value string;
-review-date sub attribute,
+attribute review-date,
     value datetime;
-root-collection sub attribute,
+attribute root-collection,
     value boolean;
-size-kb sub attribute,
-    value long;
-validity sub attribute,
+attribute size-kb,
+    value integer;
+attribute validity,
     value boolean;
-warm-up-attribute sub attribute,
-    value string,
-    plays warm-up-relation:warm-up;
-access sub relation,
+
+relation access,
     relates action,
     relates object,
     plays change-request:change,
     plays permission:access;
-change-request sub relation,
+relation change-request,
     relates change,
     relates requestee,
     relates requester;
-company-membership sub relation,
+relation company-membership,
     relates company,
     relates member;
-membership sub relation,
+relation membership,
     relates base-member,
     relates base-parent;
-collection-membership sub membership,
+relation collection-membership sub membership,
     relates collection as base-parent,
     relates member as base-member;
-group-membership sub membership,
+relation group-membership sub membership,
     relates group as base-parent,
     relates member as base-member;
-set-membership sub membership,
+relation set-membership sub membership,
     relates member as base-member,
     relates set as base-parent;
-ownership sub relation,
+relation ownership,
     relates base-owned,
     relates base-owner;
-group-ownership sub ownership,
+relation group-ownership sub ownership,
     owns ownership-type,
     relates group as base-owned,
     relates owner as base-owner;
-object-ownership sub ownership,
+relation object-ownership sub ownership,
     owns ownership-type,
     relates object as base-owned,
     relates owner as base-owner;
-permission sub relation,
+relation permission,
     owns review-date,
     owns validity,
     relates access,
     relates subject,
     plays permission-maximisation-violation:permission;
-direct-permission sub permission;
-inherited-permission sub permission;
-segregation-policy sub relation,
+relation direct-permission sub permission;
+relation inherited-permission sub permission;
+relation segregation-policy,
     owns name,
     relates action,
     plays segregation-violation:policy;
-violation sub relation,
-    abstract;
-maximization-violation sub violation,
-    abstract;
-group-maximisation-violation sub maximization-violation,
+relation violation @abstract,
+    relates dummy_unused;
+relation maximization-violation @abstract, sub violation;
+relation group-maximisation-violation sub maximization-violation,
     relates group;
-permission-maximisation-violation sub maximization-violation,
+relation permission-maximisation-violation sub maximization-violation,
     relates permission;
-segregation-violation sub violation,
+relation segregation-violation sub violation,
     relates object,
     relates policy,
     relates subject;
-warm-up-relation sub relation,
-    owns warm-up-attribute,
-    relates warm-up;
-action sub entity,
-    abstract,
+entity action @abstract,
     owns name,
     owns object-type,
     owns parent-company-name,
@@ -102,14 +93,13 @@ action sub entity,
     plays company-membership:member,
     plays segregation-policy:action,
     plays set-membership:member;
-operation sub action;
-operation-set sub action,
+entity operation sub action;
+entity operation-set sub action,
     plays set-membership:set;
-company sub entity,
+entity company,
     owns name,
     plays company-membership:company;
-object sub entity,
-    abstract,
+entity object @abstract,
     owns object-type,
     owns parent-company-name,
     plays access:object,
@@ -117,30 +107,27 @@ object sub entity,
     plays company-membership:member,
     plays object-ownership:object,
     plays segregation-violation:object;
-resource sub object,
-    abstract;
-file sub resource,
+entity resource @abstract, sub object;
+entity file sub resource,
     owns path,
     owns size-kb;
-interface sub resource,
+entity interface sub resource,
     owns name;
-record sub resource,
+entity record sub resource,
     owns number;
-resource-collection sub object,
-    abstract,
+entity resource-collection @abstract, sub object,
     owns root-collection,
     plays collection-membership:collection;
-application sub resource-collection,
+entity application sub resource-collection,
     owns name;
-database sub resource-collection,
+entity database sub resource-collection,
     owns name;
-directory sub resource-collection,
+entity directory sub resource-collection,
     owns path,
     owns size-kb;
-table sub resource-collection,
+entity table sub resource-collection,
     owns name;
-subject sub entity,
-    abstract,
+entity subject @abstract,
     owns credential,
     owns parent-company-name,
     plays change-request:requestee,
@@ -151,33 +138,17 @@ subject sub entity,
     plays object-ownership:owner,
     plays permission:subject,
     plays segregation-violation:subject;
-user sub subject,
-    abstract;
-person sub user,
+entity user  @abstract, sub subject;
+entity person sub user,
     owns email,
     owns full-name;
-user-group sub subject,
-    abstract,
+entity user-group @abstract, sub subject,
     plays group-maximisation-violation:group,
     plays group-membership:group,
     plays group-ownership:group;
-business-unit sub user-group,
+entity business-unit sub user-group,
     owns name;
-user-account sub user-group,
+entity user-account sub user-group,
     owns email;
-user-role sub user-group,
+entity user-role sub user-group,
     owns name;
-define
-rule warm-up-rule-1: when {
-    $wr isa warm-up-relation,
-        has warm-up-attribute $wa;
-} then {
-    (warm-up: $wa) isa warm-up-relation;
-};
-rule warm-up-rule-2: when {
-    $wr isa warm-up-relation;
-    $wa isa warm-up-attribute;
-} then {
-    $wr has $wa;
-};
-
