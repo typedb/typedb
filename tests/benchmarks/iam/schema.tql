@@ -72,7 +72,7 @@ relation direct-permission sub permission;
 relation inherited-permission sub permission;
 relation segregation-policy,
     owns name,
-    relates action,
+    relates action @card(2..2),
     plays segregation-violation:policy;
 relation violation @abstract,
     relates dummy_unused;
@@ -87,7 +87,7 @@ relation segregation-violation sub violation,
     relates subject;
 entity action @abstract,
     owns name,
-    owns object-type,
+    owns object-type @card(0..), # Is the card constraint correct?
     owns parent-company-name,
     plays access:action,
     plays company-membership:member,
@@ -100,8 +100,8 @@ entity company,
     owns name,
     plays company-membership:company;
 entity object @abstract,
-    owns object-type,
-    owns parent-company-name,
+    owns object-type @card(0..),
+    owns parent-company-name ,
     plays access:object,
     plays collection-membership:member,
     plays company-membership:member,

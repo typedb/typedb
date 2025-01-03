@@ -113,7 +113,7 @@ fn run_me() {
     let database = setup();
     let write_tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionWrite { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = write_tx;
-    let query = typeql::parse_query("match $x isa! $t; reduce $c = count($x) within ($t);").unwrap().into_pipeline();
+    let query = typeql::parse_query("match $x isa! $t; reduce $c = count($x) within $t;").unwrap().into_pipeline();
     let pipeline =
         query_manager.prepare_read_pipeline(snapshot, &type_manager, thing_manager, &function_manager, &query).unwrap();
     let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
