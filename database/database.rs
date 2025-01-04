@@ -322,7 +322,7 @@ impl Database<WALClient> {
             FunctionCache::new(
                 storage.clone(),
                 &TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), None),
-                SequenceNumber::MIN,
+                wal_last_sequence_number,
             )
             .map_err(|error| FunctionCacheInitialise { typedb_source: error })?,
         );
