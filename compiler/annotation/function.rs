@@ -507,7 +507,7 @@ fn get_annotations_from_labels(
     match inner_type {
         NamedType::Label(label) => {
             // TODO: could be a struct value type in the future!
-            let types = type_seeder::get_type_annotation_and_subtypes_from_label(
+            let mut types = type_seeder::get_type_annotation_and_subtypes_from_label(
                 snapshot,
                 type_manager,
                 &Label::build(label.ident.as_str_unchecked()),

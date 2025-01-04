@@ -115,15 +115,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
 
         // Prune abstract types from type annotations of thing variables
-        for annotated_vertex in &mut graph.vertices {
-            let (Vertex::Variable(id), annotations) = annotated_vertex else {
-                continue;
-            };
-            if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
-                TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))
-                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-            }
-        }
+        self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph);
 
         // Seed edges in root & disjunctions
         self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { source })?;
@@ -184,7 +176,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             .iter()
             .flat_map(|nested_graph| {
                 Iterator::chain(
-                    self.local_variables(context, nested_graph.conjunction.scope_id()),
+                    nested_graph.conjunction.constraints().iter().flat_map(|c| c.vertices())
+                        .filter_map(|v| v.as_variable()),
                     nested_graph.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
                 )
                 .filter(|variable| context.is_variable_available(parent_conjunction.scope_id(), *variable))
@@ -489,6 +482,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     // Phase 3: seed edges
     fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), Box<ConceptReadError>> {
+        debug_assert!(
+            graph.vertices.iter()
+                .filter(|(v, _)| v.is_variable() && self.variable_registry.get_variable_category(v.as_variable().unwrap()).unwrap().is_category_thing())
+                .flat_map(|(_, types)| types)
+                .all(|t| self.is_not_abstract(t).unwrap())
+        );
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
             match constraint {
@@ -548,6 +547,27 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     fn is_not_abstract(&self, type_: &TypeAnnotation) -> Result<bool, Box<ConceptReadError>> {
         type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
+    }
+    fn prune_abstract_types_from_thing_vertex_annotations_recursive(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+        for annotated_vertex in &mut graph.vertices {
+            let (Vertex::Variable(id), annotations) = annotated_vertex else {
+                continue;
+            };
+            if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
+                TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))
+                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+            }
+        }
+        for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
+            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
+        }
+        for nested in &mut graph.nested_negations {
+            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
+        }
+        for nested in &mut graph.nested_optionals {
+            self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
+        }
+        Ok(())
     }
 }
 
