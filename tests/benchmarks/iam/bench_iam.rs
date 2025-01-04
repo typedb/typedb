@@ -11,18 +11,20 @@ use database::{
     transaction::{TransactionSchema, TransactionWrite},
     Database,
 };
+use database::transaction::TransactionRead;
 use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
-use lending_iterator::LendingIterator;
+use executor::batch::Batch;
 use options::TransactionOptions;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, SchemaSnapshot},
+    snapshot::CommittableSnapshot,
 };
 use test_utils::create_tmp_dir;
 
 const DB_NAME: &str = "benchmark-iam";
 const RESOURCE_PATH: &str = "tests/benchmarks/iam";
 const SCHEMA_FILENAME: &str = "schema.tql";
+const FUNCTIONS_FILENAME: &str = "functions.tql";
 const DATA_FILENAME: &str = "data.tql";
 
 fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
@@ -101,24 +103,40 @@ fn setup() -> Arc<Database<WALClient>> {
     dbm.create_database(DB_NAME).unwrap();
     let database = dbm.database(DB_NAME).unwrap();
     let schema_path = Path::new(RESOURCE_PATH).join(Path::new(SCHEMA_FILENAME));
+    let functions_path = Path::new(RESOURCE_PATH).join(Path::new(FUNCTIONS_FILENAME));
     let data_path = Path::new(RESOURCE_PATH).join(Path::new(DATA_FILENAME));
 
     load_schema_tql(database.clone(), &schema_path);
+    load_schema_tql(database.clone(), &functions_path);
     load_data_tql(database.clone(), &data_path);
     database
 }
 
-#[test]
-fn run_me() {
-    let database = setup();
-    let write_tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
-    let TransactionWrite { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = write_tx;
-    let query = typeql::parse_query("match $x isa! $t; reduce $c = count($x) within $t;").unwrap().into_pipeline();
+fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
+    let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
+    let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
+    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
     let pipeline =
-        query_manager.prepare_read_pipeline(snapshot, &type_manager, thing_manager, &function_manager, &query).unwrap();
+        query_manager.prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &query).unwrap();
     let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    let mut row_iterator = rows.collect_owned().unwrap().into_iterator();
-    while let Some(row) = row_iterator.next() {
-        println!("{row:?}");
-    }
+    let batch = rows.collect_owned().unwrap();
+    batch
+}
+
+#[test]
+fn check_permission(){
+    let email = "douglas.schmidt@vaticle.com";
+    let path = "root/engineering/typedb-studio/src/README.md";
+    let operation  = "edit file";
+    let query = format!(r#"
+    match
+        $p isa person, has email "{email}";
+        $f isa file, has path "{path}";
+        $o isa operation, has name "{operation}";
+        let $permission = has_permission($p, $f, $o); # TODO: This used to have a validity true check
+    "#);
+
+    let database = setup();
+    let answers = run_query(database.clone(), query.as_str());
+    assert_eq!(1, answers.len());
 }

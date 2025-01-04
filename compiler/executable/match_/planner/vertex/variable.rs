@@ -82,7 +82,7 @@ impl VariableVertex {
 
     pub(crate) fn add_is(&mut self, other: VariableVertexId) {
         match self {
-            Self::Input(_inner) => todo!(),
+            Self::Input(_inner) => (), // TODO: Get Dmitrii to check this
             Self::Type(_inner) => todo!(),
             Self::Thing(inner) => inner.add_is(other),
             Self::Value(_inner) => unreachable!(),

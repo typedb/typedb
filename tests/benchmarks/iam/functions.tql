@@ -1,7 +1,61 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-#
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+define
+
+fun has_group_membership($member: subject) -> { user-group }:
+match
+    $group isa user-group;
+    {
+        $m isa group-membership, links (group: $group, member: $member);
+    } or {
+        $m1 isa group-membership, links (group: $group, member: $intermediate);
+        $m2 isa group-membership, links (group: $intermediate, member: $member);
+    };
+return { $group };
+
+
+fun has_collection_membership($member: object) -> { resource-collection }:
+match
+    $collection isa resource-collection;
+    {
+        $m isa collection-membership, links (collection: $collection, member: $member);
+    } or {
+        $m1 isa collection-membership, links (collection: $collection, member: $intermediate);
+        $m2 isa collection-membership, links (collection: $intermediate, member: $member);
+    };
+return { $collection };
+
+fun has_set_membership($member: action) -> { operation-set }:
+match
+    $set isa action;
+    {
+        $m isa set-membership, links (set: $set, member: $member);
+    } or {
+        $m1 isa set-membership, links (set: $set, member: $intermediate);
+        $m2 isa set-membership, links (set: $intermediate, member: $member);
+    };
+return { $set };
+
+
+fun has_permission($subject: subject, $object: object, $action: action) -> { direct-permission }:
+match
+    let $granting-subject in noop_bind_subject($granting-subject-inner);
+    let $granting-action in noop_bind_action($granting-action-inner);
+    let $granting-object in noop_bind_object($granting-object-inner);
+    $access (object: $object, action: $action) isa access;
+    {let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
+    {let $granting-action-inner in has_set_membership($action); } or { $granting-action-inner is $action; };
+    {let $granting-object-inner in has_collection_membership($object); } or { $granting-object-inner is $object; };
+    $granting-access isa access (object: $granting-object, action: $granting-action);
+    $granting-permission isa direct-permission (subject: $granting-subject, access: $granting-access);
+return { $granting-permission };
+
+fun noop_bind_subject($s: subject) -> {subject}:
+match $s isa subject;
+return { $s };
+
+fun noop_bind_object($o: object) -> {object}:
+match $o isa object;
+return { $o };
+
+fun noop_bind_action($a: action) -> {action}:
+match $a isa action;
+return { $a };
