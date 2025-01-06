@@ -109,6 +109,10 @@ fn setup() -> Arc<Database<WALClient>> {
     load_schema_tql(database.clone(), &schema_path);
     load_schema_tql(database.clone(), &functions_path);
     load_data_tql(database.clone(), &data_path);
+
+    // Debug:
+    load_schema_tql(database.clone(), &Path::new(RESOURCE_PATH).join(Path::new("debug_schema.tql")));
+
     database
 }
 
@@ -147,11 +151,11 @@ fn list_permissions(){
     let query = format!(r#"
     match
         $p isa person, has email "{email}";
-        # let $ac in list_permissions($p); #, has validity $v;
-        #$ac isa access (object: $o, action: $a);
+        let $ac in list_permissions($p); #, has validity $v;
+        $ac isa access (object: $o, action: $a);
         #$o isa object, has id $id;
         #$a isa action, has name $n;
-        let $o, $a in list_permissions($p); #, has validity $v;
+
     "#);
 
     let database = setup();

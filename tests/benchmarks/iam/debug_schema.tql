@@ -1,0 +1,17 @@
+define
+
+fun list_permissions($subject: subject) -> { access }:
+match
+    let $granting-subject in noop_bind_subject($granting-subject-inner);
+    { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
+#
+    $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
+    $granting-access isa access, links (object: $granting-object, action: $granting-action);
+
+    let $action in noop_bind_action($action-inner);
+    let $object in noop_bind_object($object-inner);
+    { let $action-inner in set_members($granting-action); } or { $action-inner is $granting-action; };
+    { let $object-inner in collection_members($granting-object); } or { $object-inner is $granting-object ; };
+
+    $access isa access, links (object: $object, action: $action);
+return { $access };

@@ -27,7 +27,7 @@ rust_test(
 
         "@typeql//rust:typeql",
     ],
-    data = [":functions.tql", ":schema.tql", ":data.tql"],
+    data = [":functions.tql", ":schema.tql", ":data.tql", ":debug_schema.tql"],
 )
 
 checkstyle_test(
