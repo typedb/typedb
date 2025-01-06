@@ -492,8 +492,8 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Links(rp) => Box::new(rp.ids()),
             Constraint::IndexedRelation(indexed) => Box::new(indexed.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
-            Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
@@ -1604,6 +1604,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         self.left.as_variable().into_iter()
+    }
+
+    pub(crate) fn ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.ids_assigned().chain(self.expression().variables())
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
