@@ -15,12 +15,12 @@ use structural_equality::StructuralEquality;
 #[derive(Debug, Clone)]
 pub struct Reduce {
     pub assigned_reductions: Vec<AssignedReduction>,
-    pub within_group: Vec<Variable>,
+    pub groupby: Vec<Variable>,
 }
 
 impl Reduce {
-    pub(crate) fn new(assigned_reductions: Vec<AssignedReduction>, within_group: Vec<Variable>) -> Self {
-        Self { assigned_reductions, within_group }
+    pub(crate) fn new(assigned_reductions: Vec<AssignedReduction>, groupby: Vec<Variable>) -> Self {
+        Self { assigned_reductions, groupby }
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -28,7 +28,7 @@ impl Reduce {
             .iter()
             .map(|assign_reduction| &assign_reduction.assigned)
             .cloned()
-            .chain(self.within_group.iter().cloned())
+            .chain(self.groupby.iter().cloned())
     }
 }
 
@@ -37,13 +37,13 @@ impl StructuralEquality for Reduce {
         // TODO: these really could be order-free
         let mut hasher = DefaultHasher::new();
         hasher.write_u64(self.assigned_reductions.hash());
-        hasher.write_u64(self.within_group.hash());
+        hasher.write_u64(self.groupby.hash());
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
         // TODO: these really could be order-free
-        self.assigned_reductions.equals(&other.assigned_reductions) && self.within_group.equals(&other.within_group)
+        self.assigned_reductions.equals(&other.assigned_reductions) && self.groupby.equals(&other.groupby)
     }
 }
 

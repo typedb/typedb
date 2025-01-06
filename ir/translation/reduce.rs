@@ -32,7 +32,7 @@ pub fn translate_reduce(
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
-    let group = match &typeql_reduce.within_group {
+    let group = match &typeql_reduce.groupby {
         None => Vec::new(),
         Some(group) => group
             .iter()
