@@ -222,7 +222,7 @@ macro_rules! get_annotations_declared_methods {
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$annotation_type>>, Box<ConceptReadError>> {
-                 if let Some(cache) = &self.type_cache {
+                if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let annotations = TypeReader::$reader_method(snapshot, type_)?;
@@ -259,7 +259,7 @@ macro_rules! get_constraints_methods {
             pub(crate) fn $method_name(
                 &self, snapshot: &impl ReadableSnapshot, type_: $type_
             ) -> Result<MaybeOwns<'_, HashSet<$constraint_type<$type_>>>, Box<ConceptReadError>> {
-                 if let Some(cache) = &self.type_cache {
+                if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
                     let constraints = TypeReader::$reader_method(snapshot, type_)?;
@@ -281,13 +281,13 @@ macro_rules! get_type_capability_constraints_methods {
                 $type_: $type_decl,
                 interface_type: <$capability as Capability>::InterfaceType,
             ) -> Result<MaybeOwns<'_, HashSet<CapabilityConstraint<$capability>>>, Box<ConceptReadError>> {
-                 if let Some(cache) = &self.type_cache {
-                     Ok(match cache.$cache_method($type_).get(&interface_type) {
-                         Some(cached) => MaybeOwns::Borrowed(cached),
-                         None => MaybeOwns::Owned(HashSet::new()),
-                     })
+                if let Some(cache) = &self.type_cache {
+                    Ok(match cache.$cache_method($type_).get(&interface_type) {
+                        Some(cached) => MaybeOwns::Borrowed(cached),
+                        None => MaybeOwns::Owned(HashSet::new()),
+                    })
                 } else {
-                     let $type_ = $reader_convert;
+                    let $type_ = $reader_convert;
                     let constraints = TypeReader::$reader_method(snapshot, $type_, interface_type)?;
                     Ok(MaybeOwns::Owned(constraints))
                 }

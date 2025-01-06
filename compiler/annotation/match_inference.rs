@@ -122,7 +122,9 @@ pub fn infer_types(
     let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
     debug_assert!(block.block_context().referenced_variables().all(|var| {
         match variable_registry.get_variable_category(var) {
-            None => todo!("Safe to ignore. But can we know the ValueTypeCategory of an assignment at translation?"),
+            None => {
+                unreachable!("Safe to ignore. But can we know the ValueTypeCategory of an assignment at translation?")
+            }
             Some(VariableCategory::Value) | Some(VariableCategory::ValueList) => true,
             Some(_) => type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some(),
         }

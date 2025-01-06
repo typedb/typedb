@@ -618,7 +618,7 @@ fn variable_value_to_document(variable_value: VariableValue<'_>) -> Result<Docum
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub FetchExecutionError(component = "Fetch execution", prefix = "FEX") {
         Unimplemented(0, "Unimplemented: {description}.", description: &'static str),
 
@@ -633,10 +633,10 @@ typedb_error!(
         FetchSingleFunctionNotScalar(7, "Fetching results of a function call '{func_name}()' expected a scalar return, got a tuple instead.", func_name: String),
         FetchSingleFunctionNotSingle(8, "Fetching results of a function call '{func_name}()' expected a single return, got a stream instead. It must be wrapped in `[]` to collect into a list.", func_name: String),
 
-        SubFetch(10, "Error executing sub fetch.", ( typedb_source : Box<PipelineExecutionError>)),
+        SubFetch(10, "Error executing sub fetch.", typedb_source: Box<PipelineExecutionError>),
 
-        ConceptRead(30, "Unexpected failed to read concept.", ( source: Box<ConceptReadError>)),
-        ReadExecution(31, "Unexpected failed to execute read.", ( typedb_source: Box<ReadExecutionError> )),
-        Pipeline(32, "Pipeline error.", ( typedb_source: Box<PipelineError> )),
+        ConceptRead(30, "Unexpected failed to read concept.", source: Box<ConceptReadError>),
+        ReadExecution(31, "Unexpected failed to execute read.", typedb_source: Box<ReadExecutionError>),
+        Pipeline(32, "Pipeline error.", typedb_source: Box<PipelineError>),
     }
-);
+}

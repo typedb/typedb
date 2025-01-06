@@ -9,8 +9,8 @@ use error::typedb_error;
 
 pub(crate) mod write_instruction;
 
-typedb_error!(
+typedb_error! {
     pub WriteError(component = "Write execution", prefix = "WEX") {
-        ConceptWrite(1, "Write execution failed due to a concept write error.", (typedb_source : Box<ConceptWriteError>)),
+        ConceptWrite(1, "Write execution failed due to a concept write error.", typedb_source: Box<ConceptWriteError>),
     }
-);
+}

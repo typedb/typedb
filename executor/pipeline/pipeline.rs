@@ -246,8 +246,8 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub PipelineError(component = "Pipeline", prefix = "PIP") {
-        InvalidReadPipelineStage(1, "{stage} clause cannot exist in a read pipeline.", stage : String),
+        InvalidReadPipelineStage(1, "{stage} clause cannot exist in a read pipeline.", stage: String),
     }
-);
+}

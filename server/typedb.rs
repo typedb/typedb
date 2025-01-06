@@ -247,13 +247,13 @@ async fn resolve_address(address: String) -> SocketAddr {
         .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
 }
 
-typedb_error!(
+typedb_error! {
     pub ServerOpenError(component = "Server open", prefix = "SRO") {
         NotADirectory(1, "Invalid path '{path}': not a directory.", path: String),
-        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: String, ( source: Arc<io::Error> )),
-        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: String, ( source: Arc<io::Error> )),
-        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: String, ( source: Arc<io::Error> )),
+        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: String, source: Arc<io::Error>),
         InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: String),
-        DatabaseOpen(6, "Could not open database.", ( typedb_source: DatabaseOpenError )),
+        DatabaseOpen(6, "Could not open database.", typedb_source: DatabaseOpenError),
     }
-);
+}

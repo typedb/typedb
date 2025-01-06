@@ -250,9 +250,10 @@ pub(super) fn annotate_named_function(
     let mut argument_concept_variable_types = BTreeMap::new();
     let mut argument_value_variable_types = BTreeMap::new();
     for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
-        let argument_annotations = get_annotations_from_labels(snapshot, type_manager, label).map_err(|source| {
-            Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source })
-        })?;
+        let argument_annotations =
+            get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, typedb_source })
+            })?;
         match argument_annotations {
             FunctionParameterAnnotation::Concept(concept_annotation) => {
                 argument_concept_variable_types.insert(*var, Arc::new(concept_annotation));
@@ -337,8 +338,9 @@ fn validate_return_against_signature(
         .iter()
         .enumerate()
         .map(|(index, label)| {
-            get_annotations_from_labels(snapshot, type_manager, label)
-                .map_err(|source| Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, source }))
+            get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
+                Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
+            })
         })
         .collect::<Result<Vec<_>, Box<FunctionAnnotationError>>>()?;
 
@@ -378,8 +380,9 @@ fn annotate_signature_based_on_labels(
         .iter()
         .enumerate()
         .map(|(index, label)| {
-            get_annotations_from_labels(snapshot, type_manager, label)
-                .map_err(|source| Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, source }))
+            get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, typedb_source })
+            })
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
     let returned = match function.output.as_ref().unwrap() {
@@ -388,8 +391,9 @@ fn annotate_signature_based_on_labels(
     }
     .enumerate()
     .map(|(index, label)| {
-        get_annotations_from_labels(snapshot, type_manager, label)
-            .map_err(|source| Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, source }))
+        get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
+            Box::new(FunctionAnnotationError::CouldNotResolveReturnType { index, typedb_source })
+        })
     })
     .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
 
@@ -492,13 +496,14 @@ fn get_annotations_from_labels(
     type_manager: &TypeManager,
     typeql_label: &TypeRefAny,
 ) -> Result<FunctionParameterAnnotation, TypeInferenceError> {
-    let TypeRef::Named(inner_type) = (match typeql_label {
+    let type_ref = match typeql_label {
         TypeRefAny::Type(inner) => inner,
-        TypeRefAny::Optional(typeql::type_::Optional { inner: _inner, .. }) => todo!(),
-        TypeRefAny::List(typeql::type_::List { inner: _inner, .. }) => todo!(),
-    }) else {
-        unreachable!("Function return labels cannot be variable.");
+        TypeRefAny::Optional(typeql::type_::Optional { .. }) => {
+            return Err(TypeInferenceError::OptionalTypesUnsupported {})
+        }
+        TypeRefAny::List(typeql::type_::List { .. }) => return Err(TypeInferenceError::ListTypesUnsupported {}),
     };
+    let TypeRef::Named(inner_type) = type_ref else { unreachable!("Function return labels cannot be variable.") };
     match inner_type {
         NamedType::Label(label) => {
             // TODO: could be a struct value type in the future!

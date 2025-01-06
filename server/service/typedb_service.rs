@@ -345,11 +345,11 @@ fn extract_username_field(metadata: &MetadataMap) -> String {
         .to_string()
 }
 
-typedb_error!(
+typedb_error! {
     ServiceError(component = "Server", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
         UserDoesNotExist(4, "User does not exist"),
     }
-);
+}

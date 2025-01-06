@@ -459,51 +459,51 @@ impl<Durability> MVCCStorage<Durability> {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub StorageOpenError(component = "Storage open", prefix = "STO") {
         StorageDirectoryExists(1, "Failed to open database '{name}' in directory '{path:?}'", name: String, path: PathBuf),
-        StorageDirectoryCreate(2, "Failed to create database '{name}'.", name: String, ( source: Arc<io::Error> )),
-        StorageDirectoryRecreate(3, "Failed to recreate database '{name}'.", name: String, ( source: Arc<io::Error> )),
+        StorageDirectoryCreate(2, "Failed to create database '{name}'.", name: String, source: Arc<io::Error>),
+        StorageDirectoryRecreate(3, "Failed to recreate database '{name}'.", name: String, source: Arc<io::Error>),
 
-        DurabilityClientOpen(4, "Failed to open durability client for database '{name}'.", name: String, (source: Arc<io::Error>)),
-        DurabilityClientRead(5, "Failed to read from durability client for database '{name}'.", name: String, (typedb_source: DurabilityClientError)),
-        DurabilityClientWrite(6, "Failed to write to durability client for database '{name}'.", name: String, (typedb_source: DurabilityClientError)),
+        DurabilityClientOpen(4, "Failed to open durability client for database '{name}'.", name: String, source: Arc<io::Error>),
+        DurabilityClientRead(5, "Failed to read from durability client for database '{name}'.", name: String, typedb_source: DurabilityClientError),
+        DurabilityClientWrite(6, "Failed to write to durability client for database '{name}'.", name: String, typedb_source: DurabilityClientError),
 
-        KeyspaceOpen(7, "Failed to open keyspace '{name}'.", name: String, (source: KeyspaceOpenError)),
-        Keyspace(8, "Failed to operate with keyspaces.", (source: KeyspaceError)),
+        KeyspaceOpen(7, "Failed to open keyspace '{name}'.", name: String, source: KeyspaceOpenError),
+        Keyspace(8, "Failed to operate with keyspaces.", source: KeyspaceError),
 
-        CheckpointCreate(9, "Failed to create checkpoint for database '{name}'.", name: String, (source: CheckpointCreateError)),
+        CheckpointCreate(9, "Failed to create checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),
 
-        RecoverFromCheckpoint(10, "Failed to recover from checkpoint for database '{name}'.", name: String, (typedb_source: CheckpointLoadError)),
-        RecoverFromDurability(11, "Failed to recover from durability logs for database '{name}'.", name: String, (typedb_source: StorageRecoveryError)),
+        RecoverFromCheckpoint(10, "Failed to recover from checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
+        RecoverFromDurability(11, "Failed to recover from durability logs for database '{name}'.", name: String, typedb_source: StorageRecoveryError),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub StorageCommitError(component = "Storage commit", prefix = "STC") {
-        Internal(1, "Commit in database '{name}' failed with internal error.", name: Arc<String>, (source: Arc<dyn Error + Send + Sync + 'static>)),
+        Internal(1, "Commit in database '{name}' failed with internal error.", name: Arc<String>, source: Arc<dyn Error + Send + Sync + 'static>),
         Isolation(2, "Commit in database '{name}' failed with isolation conflict: {conflict}", name: Arc<String>, conflict: IsolationConflict),
-        IO(3, "Commit in database '{name}' failed with I/O error'.", name: Arc<String>, ( source: Arc<io::Error> )),
-        MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<String>, ( source: MVCCReadError )),
-        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<String>, ( source: Arc<KeyspaceError> )),
-        Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<String>, ( typedb_source: DurabilityClientError )),
+        IO(3, "Commit in database '{name}' failed with I/O error'.", name: Arc<String>, source: Arc<io::Error>),
+        MVCCRead(4, "Commit in database '{name}' failed due to failed read from MVCC storage layer.", name: Arc<String>, source: MVCCReadError),
+        Keyspace(5, "Commit in database '{name}' failed due to a storage keyspace error.", name: Arc<String>, source: Arc<KeyspaceError>),
+        Durability(6, "Commit in database '{name}' failed due to error in durability client.", name: Arc<String>, typedb_source: DurabilityClientError),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub StorageDeleteError(component = "Storage delete", prefix = "STD") {
-        DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<String>,  (typedb_source : DurabilityClientError )),
-        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<String>, errors: Vec<KeyspaceDeleteError> ),
-        DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<String>, ( source: Arc<io::Error> )),
+        DurabilityDelete(1, "Deleting storage of database '{name}' failed partway while deleting durability records.", name: Arc<String>, typedb_source: DurabilityClientError),
+        KeyspaceDelete(2, "Deleting storage of database '{name}' failed partway while deleting keyspaces: {errors:?}", name: Arc<String>, errors: Vec<KeyspaceDeleteError>),
+        DirectoryDelete(3, "Deleting storage of database '{name}' failed partway while deleting directory.", name: Arc<String>, source: Arc<io::Error>),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub StorageResetError(component = "Storage reset", prefix = "STR") {
-        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<String>, ( source: KeyspaceError )),
-        Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<String>, ( typedb_source : DurabilityClientError )),
+        KeyspaceError(1, "Resetting storage of database '{name}' failed partway while resetting keyspace.", name: Arc<String>, source: KeyspaceError),
+        Durability(2, "Resetting storage of database '{name}' failed partway while resetting durability records.", name: Arc<String>, typedb_source: DurabilityClientError),
     }
-);
+}
 
 /// MVCC keys are made of three parts: the [KEY][SEQ][OP]
 pub struct MVCCKey<'bytes> {

@@ -237,13 +237,13 @@ impl DurabilityClient for WALClient {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub DurabilityClientError(component = "Durability client", prefix = "DUC") {
-        SerializeError(1, "Durability client failed to serialise/deserialise durability record", ( source: Arc<bincode::Error> )),
-        ServiceError(2, "Error from durability service.", ( source: DurabilityServiceError )),
-        CompressionError(3, "Error while compressing durability record.", ( source: Arc<io::Error> )),
+        SerializeError(1, "Durability client failed to serialise/deserialise durability record", source: Arc<bincode::Error>),
+        ServiceError(2, "Error from durability service.", source: DurabilityServiceError),
+        CompressionError(3, "Error while compressing durability record.", source: Arc<io::Error>),
     }
-);
+}
 
 impl From<bincode::Error> for DurabilityClientError {
     fn from(source: bincode::Error) -> Self {

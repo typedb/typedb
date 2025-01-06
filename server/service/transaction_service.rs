@@ -91,7 +91,7 @@ pub enum Transaction {
 }
 
 macro_rules! with_readable_transaction {
-    ($match_:expr, |$transaction: ident| $block: block ) => {{
+    ($match_:expr, |$transaction:ident| $block:block) => {{
         match $match_ {
             Transaction::Read($transaction) => $block
             Transaction::Write($transaction) => $block
@@ -1634,18 +1634,18 @@ impl<T, E> ResultControlFlowExt<T, E> for ControlFlow<Result<T, E>> {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub(crate) TransactionServiceError(component = "Transaction service", prefix = "TSV") {
         DatabaseNotFound(1, "Database '{name}' not found.", name: String),
         CannotCommitReadTransaction(2, "Read transactions cannot be committed."),
         CannotRollbackReadTransaction(3, "Read transactions cannot be rolled back, since they never contain writes."),
-        TransactionFailed(4, "Transaction failed.", ( typedb_source: TransactionError )),
-        DataCommitFailed(5, "Data transaction commit failed.", ( typedb_source: DataCommitError )),
-        SchemaCommitFailed(6, "Schema transaction commit failed.", ( typedb_source : SchemaCommitError )),
-        QueryParseFailed(7, "Query parsing failed.", ( typedb_source: typeql::Error )),
+        TransactionFailed(4, "Transaction failed.", typedb_source: TransactionError),
+        DataCommitFailed(5, "Data transaction commit failed.", typedb_source: DataCommitError),
+        SchemaCommitFailed(6, "Schema transaction commit failed.", typedb_source: SchemaCommitError),
+        QueryParseFailed(7, "Query parsing failed.", typedb_source: typeql::Error),
         SchemaQueryRequiresSchemaTransaction(8, "Schema modification queries require schema transactions."),
         WriteQueryRequiresSchemaOrWriteTransaction(9, "Data modification queries require either write or schema transactions."),
-        TxnAbortSchemaQueryFailed(10, "Aborting transaction due to failed schema query.", ( typedb_source : QueryError )),
+        TxnAbortSchemaQueryFailed(10, "Aborting transaction due to failed schema query.", typedb_source: QueryError),
         NoOpenTransaction(11, "Operation failed - no open transaction."),
         QueryInterrupted(12, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         QueryStreamNotFound(
@@ -1658,4 +1658,4 @@ typedb_error!(
         ),
         ServiceClosingFailedQueueCleanup(14, "The operation failed since the service is closing."),
     }
-);
+}

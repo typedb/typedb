@@ -489,8 +489,8 @@ impl TypeCache {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub TypeCacheCreateError(component = "TypeCache create", prefix = "TCC") {
         Empty(1, ""),
     }
-);
+}

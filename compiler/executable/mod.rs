@@ -25,10 +25,10 @@ pub fn next_executable_id() -> u64 {
     EXECUTABLE_ID.fetch_add(1, Ordering::Relaxed)
 }
 
-typedb_error!(
+typedb_error! {
     pub ExecutableCompilationError(component = "Query executable", prefix = "QEE") {
-        InsertExecutableCompilation(1, "Error compiling insert clause into executable.", (source : Box<WriteCompilationError>)),
-        DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", (source : Box<WriteCompilationError>)),
-        FetchCompliation(3, "Error compiling fetch clause into executable.", (typedb_source : FetchCompilationError)),
+        InsertExecutableCompilation(1, "Error compiling insert clause into executable.", source: Box<WriteCompilationError>),
+        DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", source: Box<WriteCompilationError>),
+        FetchCompliation(3, "Error compiling fetch clause into executable.", typedb_source: FetchCompilationError),
     }
-);
+}

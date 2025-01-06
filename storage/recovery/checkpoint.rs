@@ -251,17 +251,17 @@ impl Error for CheckpointCreateError {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub CheckpointLoadError(component = "Checkpoint load.", prefix = "CLO") {
-        CheckpointRead(1, "Error to reading checkpoint directory '{dir:?}'.", dir: PathBuf, ( source: Arc<io::Error> )),
-        MetadataRead(2, "Error reading checkpoint metadata file in directory '{dir:?}.", dir: PathBuf, ( source: Arc<io::Error> )),
+        CheckpointRead(1, "Error to reading checkpoint directory '{dir:?}'.", dir: PathBuf, source: Arc<io::Error>),
+        MetadataRead(2, "Error reading checkpoint metadata file in directory '{dir:?}.", dir: PathBuf, source: Arc<io::Error>),
         CheckpointNotFound(3, "No checkpoints found in directory '{dir:?}.", dir: PathBuf),
-        CommitRecoveryFailed(4, "Failed to recover commits that are in the WAL but not in the storage layer.", ( typedb_source : StorageRecoveryError )),
-        CheckpointRestore(5, "Error restoring checkpoint in directory '{dir:?}'.)", dir: PathBuf, ( source: Arc<io::Error> )),
-        KeyspaceOpen(7, "Error while opening storage keyspaces.", ( source: KeyspaceOpenError )),
+        CommitRecoveryFailed(4, "Failed to recover commits that are in the WAL but not in the storage layer.", typedb_source: StorageRecoveryError),
+        CheckpointRestore(5, "Error restoring checkpoint in directory '{dir:?}'.)", dir: PathBuf, source: Arc<io::Error>),
+        KeyspaceOpen(7, "Error while opening storage keyspaces.", source: KeyspaceOpenError),
 
-        AdditionalDataNotFound(8, "Checkpoint additional data with identifier '{name}' not found.", name: String ),
-        AdditionalDataIO(9, "Error accessing checkpoint additional data with identifier '{name}'.", name: String, ( source: Arc<io::Error> )),
-        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, ( source: Arc<bincode::Error> )),
+        AdditionalDataNotFound(8, "Checkpoint additional data with identifier '{name}' not found.", name: String),
+        AdditionalDataIO(9, "Error accessing checkpoint additional data with identifier '{name}'.", name: String, source: Arc<io::Error>),
+        AdditionalDataDeserialise(10, "Error deserialising checkpoint additional data with identifier '{name}'.", name: String, source: Arc<bincode::Error>),
     }
-);
+}

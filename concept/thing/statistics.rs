@@ -458,9 +458,9 @@ struct CommittedWrites {
 
 typedb_error!(
     pub StatisticsError(component = "Statistics", prefix = "STA") {
-        DurablyWrite(1, "Error writing statistics summary WAL record.", ( typedb_source : DurabilityClientError )),
-        ReloadCommitData(2, "Failed to update statistics due to error reading commit records.", ( typedb_source: StorageRecoveryError )),
-        DataRead(3, "Error updating statistics due error reading MVCC storage layer.", ( source: MVCCReadError )),
+        DurablyWrite(1, "Error writing statistics summary WAL record.", typedb_source: DurabilityClientError),
+        ReloadCommitData(2, "Failed to update statistics due to error reading commit records.", typedb_source: StorageRecoveryError),
+        DataRead(3, "Error updating statistics due error reading MVCC storage layer.", source: MVCCReadError),
     }
 );
 

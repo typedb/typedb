@@ -60,16 +60,16 @@ impl StageIterator for WrittenRowsIterator {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub PipelineExecutionError(component = "Pipeline execution", prefix = "PEX") {
         // TODO: migrate to `typedb_error` once they are typedb errors
         Interrupted(1, "Execution interrupted by to a concurrent {interrupt}.", interrupt: InterruptType),
         FetchUsedAsRows(2, "Cannot use a Fetch query to return ConceptRows"),
         RowsUsedAsFetch(3, "Cannot use query returning ConceptRows as a Fetch query."),
-        ConceptRead(4, "Error reading concept.", ( source: Box<ConceptReadError> )),
-        InitialisingMatchIterator(5, "Error initialising Match clause iterator.", ( source: Box<ConceptReadError> )),
-        WriteError(6, "Error executing write operation.", ( typedb_source: Box<WriteError> )),
-        ReadPatternExecution(7, "Error executing a read pattern.", ( typedb_source : ReadExecutionError )),
-        FetchError(8, "Error executing fetch operation.", ( typedb_source: FetchExecutionError )),
+        ConceptRead(4, "Error reading concept.", source: Box<ConceptReadError>),
+        InitialisingMatchIterator(5, "Error initialising Match clause iterator.", source: Box<ConceptReadError>),
+        WriteError(6, "Error executing write operation.", typedb_source: Box<WriteError>),
+        ReadPatternExecution(7, "Error executing a read pattern.", typedb_source: ReadExecutionError),
+        FetchError(8, "Error executing fetch operation.", typedb_source: FetchExecutionError),
     }
-);
+}

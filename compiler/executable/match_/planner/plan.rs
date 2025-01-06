@@ -1203,7 +1203,7 @@ impl Ord for StepExtension {
 }
 
 #[derive(Clone)]
-pub(super) struct ConjunctionPlan<'a> {
+pub(crate) struct ConjunctionPlan<'a> {
     shared_variables: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
@@ -1224,7 +1224,7 @@ impl fmt::Debug for ConjunctionPlan<'_> {
 }
 
 impl ConjunctionPlan<'_> {
-    pub(crate) fn lower(
+    pub(super) fn lower(
         &self,
         input_variables: impl IntoIterator<Item = Variable> + Clone,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
@@ -1525,10 +1525,10 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                     let CostMetaData::Direction(unbound_direction) = metadata else {
-                         unreachable!("expected metadata for constraint")
-                     };
-                     unbound_direction
+                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                        unreachable!("expected metadata for constraint")
+                    };
+                    unbound_direction
                 } else if rhs_var.is_some_and(|rhs| inputs.contains(rhs)) {
                     Direction::Reverse
                 } else {

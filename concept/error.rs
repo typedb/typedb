@@ -47,13 +47,13 @@ impl Error for ConceptError {
 
 typedb_error!(
     pub ConceptWriteError(component = "Concept write", prefix = "COW") {
-        SnapshotGet(1, "Concept write failed due to a snapshot read error.", (source: SnapshotGetError)),
-        SnapshotIterate(2, "Concept write failed due to a snapshot iteration error.", (source: Arc<SnapshotIteratorError>)),
-        ConceptRead(3, "Concept write failed due to a concept read error.", (source: Box<ConceptReadError>)),
-        SchemaValidation(4, "Concept write failed due to a schema validation error.", (typedb_source: Box<SchemaValidationError>)),
-        DataValidation(5, "Concept write failed due to a data validation error.", (typedb_source: Box<DataValidationError> )),
-        Encoding(6, "Concept write failed due to an encoding error.", (source: EncodingError)),
-        Annotation(7, "Concept write failed due to an annotation error.", (source: AnnotationError)),
+        SnapshotGet(1, "Concept write failed due to a snapshot read error.", source: SnapshotGetError),
+        SnapshotIterate(2, "Concept write failed due to a snapshot iteration error.", source: Arc<SnapshotIteratorError>),
+        ConceptRead(3, "Concept write failed due to a concept read error.", source: Box<ConceptReadError>),
+        SchemaValidation(4, "Concept write failed due to a schema validation error.", typedb_source: Box<SchemaValidationError>),
+        DataValidation(5, "Concept write failed due to a data validation error.", typedb_source: Box<DataValidationError>),
+        Encoding(6, "Concept write failed due to an encoding error.", source: EncodingError),
+        Annotation(7, "Concept write failed due to an annotation error.", source: AnnotationError),
 
         // TODO: Might refactor these to "InvalidOperationError", or just use unreachable! instead of it.
         SetHasOrderedOwnsUnordered(8, "Concept write failed, due to setting ordered owns as unordered."),

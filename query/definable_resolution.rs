@@ -462,7 +462,7 @@ pub(crate) fn try_resolve_plays_role_label(
 }
 
 // TODO: ideally these all have TypeQL declarations, so we can pinpoint line number in these errors!
-typedb_error!(
+typedb_error! {
     pub(crate) SymbolResolutionError(component = "Symbol resolution", prefix = "SYR") {
         TypeNotFound(1, "The type '{label}' was not found.", label: Label),
         StructNotFound(2, "The struct value type '{name}' was not found.", name: String),
@@ -475,12 +475,12 @@ typedb_error!(
         AttributeTypeNotFound(9, "The attribute type '{label}' was not found.", label: Label),
         RoleTypeNotFound(10, "The role type '{label}' was not found.", label: Label),
         RelatesNotFound(11, "The relation type '{label}' does not relate role '{role_name}'", label: Label, role_name: String),
-        OwnsNotFound(12, "The type '{owner_label}' does not own attribute type '{attribute_label}'.", owner_label: Label, attribute_label: Label ),
+        OwnsNotFound(12, "The type '{owner_label}' does not own attribute type '{attribute_label}'.", owner_label: Label, attribute_label: Label),
         PlaysNotFound(13, "The type '{player_label}' does not play the role '{role_label}'.", player_label: Label, role_label: Label),
         ScopedValueTypeName(14, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
-        ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny ),
+        ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny),
         ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
-        UnexpectedConceptRead(17, "Unexpected concept read error.", ( source: Box<ConceptReadError> ) ),
+        UnexpectedConceptRead(17, "Unexpected concept read error.", source: Box<ConceptReadError>),
         IllegalKeywordAsIdentifier(18, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
     }
-);
+}

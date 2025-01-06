@@ -14,7 +14,6 @@ use std::{
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use error::{typedb_error, TypeDBError};
 use serde_json::{json, Value as JSONValue};
 use xxhash_rust::xxh3::Xxh3;
 

@@ -465,52 +465,52 @@ fn make_update_statistics_fn(
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub DatabaseOpenError(component = "Database open", prefix = "DBO") {
-        InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString ),
-        CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, ( source: Arc<io::Error> )),
-        DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, ( source: Arc<io::Error> )),
-        StorageOpen(4, "Error opening storage layer.", ( typedb_source: StorageOpenError )),
-        WALOpen(5, "Error opening WAL.", ( source: WALError )),
-        DurabilityClientOpen(6, "Error opening durability client.", ( typedb_source:DurabilityClientError )),
-        DurabilityClientRead(7, "Error reading from durability client.", ( typedb_source: DurabilityClientError )),
-        CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, ( typedb_source: CheckpointLoadError )),
-        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, ( source: CheckpointCreateError )),
-        Encoding(10, "Data encoding error.", ( source: EncodingError )),
-        StatisticsInitialise(11, "Error initialising statistics manager.", ( typedb_source: StatisticsError )),
-        TypeCacheInitialise(12, "Error initialising type cache.", ( typedb_source : TypeCacheCreateError )),
-        FunctionCacheInitialise(13, "Error initialising function cache", ( typedb_source : FunctionError )),
+        InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString),
+        CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
+        DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, source: Arc<io::Error>),
+        StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
+        WALOpen(5, "Error opening WAL.", source: WALError),
+        DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
+        DurabilityClientRead(7, "Error reading from durability client.", typedb_source: DurabilityClientError),
+        CheckpointLoad(8, "Error loading checkpoint for database '{name}'.", name: String, typedb_source: CheckpointLoadError),
+        CheckpointCreate(9, "Error creating checkpoint for database '{name}'.", name: String, source: CheckpointCreateError),
+        Encoding(10, "Data encoding error.", source: EncodingError),
+        StatisticsInitialise(11, "Error initialising statistics manager.", typedb_source: StatisticsError),
+        TypeCacheInitialise(12, "Error initialising type cache.", typedb_source: TypeCacheCreateError),
+        FunctionCacheInitialise(13, "Error initialising function cache", typedb_source: FunctionError),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub DatabaseCreateError(component = "Database create", prefix = "DBC") {
         InvalidName(1, "Cannot create database since '{name}' is not a valid database name.", name: String),
         InternalDatabaseCreationProhibited(2, "Creating an internal database is prohibited"),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub DatabaseDeleteError(component = "Database delete", prefix = "DBD") {
         DoesNotExist(1, "Cannot delete database since it does not exist."),
         InUse(2, "Cannot delete database since it is in use."),
-        StorageDelete(3, "Error while deleting storage resources.", ( typedb_source: StorageDeleteError )),
-        DirectoryDelete(4, "Error deleting directory.", ( source: Arc<io::Error> )),
+        StorageDelete(3, "Error while deleting storage resources.", typedb_source: StorageDeleteError),
+        DirectoryDelete(4, "Error deleting directory.", source: Arc<io::Error>),
         InternalDatabaseDeletionProhibited(5, "Deleting an internal database is prohibited"),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub DatabaseResetError(component = "Database reset", prefix = "DBR") {
-        DatabaseDelete(1, "Cannot delete database.", ( typedb_source: DatabaseDeleteError )),
-        DatabaseCreate(2, "Cannot create database.", ( typedb_source: DatabaseCreateError )),
-        Transaction(3, "Transaction error.", ( typedb_source: TransactionError )),
+        DatabaseDelete(1, "Cannot delete database.", typedb_source: DatabaseDeleteError),
+        DatabaseCreate(2, "Cannot create database.", typedb_source: DatabaseCreateError),
+        Transaction(3, "Transaction error.", typedb_source: TransactionError),
         InUse(4, "Database cannot be reset since it is in use."),
         StorageInUse(5, "Database cannot be reset since the storage is in use."),
         CorruptionPartialResetStorageInUse(
             6,
             "Corruption warning: database reset failed partway because the storage is still in use.",
-            ( typedb_source: StorageResetError )
+            typedb_source: StorageResetError
         ),
         CorruptionPartialResetKeyGeneratorInUse(
             7,
@@ -529,4 +529,4 @@ typedb_error!(
             "Corruption warning: Database reset failed partway because the query cache is still in use."
         ),
     }
-);
+}

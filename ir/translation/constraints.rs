@@ -190,8 +190,12 @@ fn register_typeql_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
-        typeql::TypeRefAny::Optional(_) => todo!(),
-        typeql::TypeRefAny::List(_) => todo!(),
+        typeql::TypeRefAny::Optional(optional) => {
+            Err(Box::new(RepresentationError::UnimplementedOptionalType { declaration: optional.clone() }))
+        }
+        typeql::TypeRefAny::List(list) => {
+            Err(Box::new(RepresentationError::UnimplementedListType { declaration: list.clone() }))
+        }
     }
 }
 
