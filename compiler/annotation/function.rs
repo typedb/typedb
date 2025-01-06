@@ -487,7 +487,7 @@ fn get_function_parameter<V: From<Variable> + Ord>(
     } else if let Some(expression_value_type) = body_variable_value_types.get(&variable) {
         FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
     } else {
-        unreachable!("Could not find annotations for a function return variable.")
+        unreachable!("Could not find annotations for a function argument or return variable.")
     }
 }
 
