@@ -22,7 +22,7 @@ def typeql():
     git_repository(
         name = "typeql",
         remote = "https://github.com/typedb/typeql",
-        commit = "804d937b3f76383aa60df2909517ea6e90f2dabf",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
+        commit = "059c0332e33a892e6a04bbf83df5634d3d5df249",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typeql
     )
 
 def typedb_common():
@@ -43,5 +43,5 @@ def typedb_behaviour():
     git_repository(
         name = "typedb_behaviour",
         remote = "https://github.com/typedb/typedb-behaviour",
-        commit = "5a89a6c2862ad51cc09e7ebc67103301cffc35f6",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
+        commit = "0dcd9887f3145e28658aa1dc30eebfd65dbd93e6",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
     )
