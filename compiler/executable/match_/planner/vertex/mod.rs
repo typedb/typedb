@@ -460,7 +460,8 @@ impl<'a> DisjunctionPlanner<'a> {
     ) -> Self {
         let shared_variables =
             builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
-        Self { input_variables: Vec::new(), shared_variables, builder }
+        let input_variables = todo!(); // Used to be: Vec::new(), but needs to be unproducable  RHS of expr, args of fn, etc.
+        Self { input_variables, shared_variables, builder }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
