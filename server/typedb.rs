@@ -10,7 +10,7 @@ use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
-use rand::Rng;
+use rand::seq::SliceRandom;
 use resource::constants::server::{
     DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH,
@@ -211,12 +211,7 @@ impl Server {
 
     fn generate_server_id() -> String {
         let mut rng = rand::thread_rng();
-        (0..SERVER_ID_LENGTH)
-            .map(|_| {
-                let idx = rng.gen_range(0..SERVER_ID_ALPHABET.len());
-                SERVER_ID_ALPHABET.chars().nth(idx).unwrap()
-            })
-            .collect()
+        (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
     }
 
     fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
