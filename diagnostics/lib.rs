@@ -168,7 +168,7 @@ impl Diagnostics {
 
     fn to_minimal_service_reporting_json(&self) -> JSONValue {
         let mut diagnostics = self.server_properties.to_reporting_json();
-        diagnostics["server"] = self.server_metrics.to_reporting_minimal_json();
+        diagnostics["server"] = self.server_metrics.to_minimal_reporting_json();
         diagnostics
     }
 
@@ -253,8 +253,15 @@ impl Diagnostics {
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
+        match self.is_full_reporting {
+            true => self.to_full_posthog_reporting_json(api_key),
+            false => self.to_minimal_posthog_reporting_json(api_key),
+        }
+    }
+
+    fn to_full_posthog_reporting_json(&self, api_key: &str) -> JSONValue {
         let mut common_properties = self.server_properties.to_posthog_reporting_json();
-        common_properties.extend(self.server_metrics.to_posthog_reporting_json().into_iter());
+        common_properties.extend(self.server_metrics.to_posthog_full_reporting_json().into_iter());
 
         let mut batch: Vec<_> = self
             .lock_action_metrics_read()
@@ -270,6 +277,15 @@ impl Diagnostics {
         json!({
             "api_key": api_key,
             "batch": batch,
+        })
+    }
+
+    fn to_minimal_posthog_reporting_json(&self, api_key: &str) -> JSONValue {
+        let mut common_properties = self.server_properties.to_posthog_reporting_json();
+        common_properties.extend(self.server_metrics.to_posthog_minimal_reporting_json().into_iter());
+        json!({
+            "api_key": api_key,
+            "batch": vec![ActionMetrics::empty_posthog_reporting_json(common_properties)],
         })
     }
 

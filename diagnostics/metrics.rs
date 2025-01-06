@@ -69,6 +69,7 @@ impl ServerProperties {
         let mut properties = JSONMap::new();
         properties.insert("distinct_id".to_string(), json!(self.deployment_id));
         properties.insert("server_id".to_string(), json!(self.server_id));
+        properties.insert("enabled".to_string(), json!(self.is_reporting_enabled));
         properties
     }
 
@@ -113,7 +114,7 @@ impl ServerMetrics {
         &self.data_directory
     }
 
-    pub fn to_reporting_minimal_json(&self) -> JSONValue {
+    pub fn to_minimal_reporting_json(&self) -> JSONValue {
         json!({
             "version": self.version
         })
@@ -138,7 +139,13 @@ impl ServerMetrics {
         })
     }
 
-    pub fn to_posthog_reporting_json(&self) -> JSONMap<String, JSONValue> {
+    pub fn to_posthog_full_reporting_json(&self) -> JSONMap<String, JSONValue> {
+        let mut properties = JSONMap::new();
+        properties.insert("version".to_string(), json!(self.version));
+        properties
+    }
+
+    pub fn to_posthog_minimal_reporting_json(&self) -> JSONMap<String, JSONValue> {
         let mut properties = JSONMap::new();
         properties.insert("version".to_string(), json!(self.version));
         properties
