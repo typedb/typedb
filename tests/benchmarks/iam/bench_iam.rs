@@ -140,3 +140,21 @@ fn check_permission(){
     let answers = run_query(database.clone(), query.as_str());
     assert_eq!(1, answers.len());
 }
+
+#[test]
+fn list_permissions(){
+    let email = "douglas.schmidt@vaticle.com";
+    let query = format!(r#"
+    match
+        $p isa person, has email "{email}";
+        # let $ac in list_permissions($p); #, has validity $v;
+        #$ac isa access (object: $o, action: $a);
+        #$o isa object, has id $id;
+        #$a isa action, has name $n;
+        let $o, $a in list_permissions($p); #, has validity $v;
+    "#);
+
+    let database = setup();
+    let answers = run_query(database.clone(), query.as_str());
+    assert_eq!(67, answers.len());
+}

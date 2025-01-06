@@ -1,55 +1,6 @@
 define
+# utils
 
-fun has_group_membership($member: subject) -> { user-group }:
-match
-    $group isa user-group;
-    {
-        $m isa group-membership, links (group: $group, member: $member);
-    } or {
-        $m1 isa group-membership, links (group: $group, member: $intermediate);
-        let $intermediate in has_group_membership($member);
-    };
-return { $group };
-
-
-fun has_collection_membership($member: object) -> { resource-collection }:
-match
-    $collection isa resource-collection;
-    {
-        $m isa collection-membership, links (collection: $collection, member: $member);
-    } or {
-        $m1 isa collection-membership, links (collection: $collection, member: $intermediate);
-        let $intermediate in has_collection_membership($member);
-    };
-return { $collection };
-
-fun has_set_membership($member: action) -> { operation-set }:
-match
-    $set isa action;
-    {
-        $m isa set-membership, links (set: $set, member: $member);
-    } or {
-        $m1 isa set-membership, links (set: $set, member: $intermediate);
-        let $intermediate in has_set_membership($member);
-    };
-return { $set };
-
-
-fun has_permission($subject: subject, $object: object, $action: action) -> { direct-permission }:
-match
-    $subject isa subject;
-    $object isa object;
-    $action isa action;
-    let $granting-subject in noop_bind_subject($granting-subject-inner);
-    let $granting-action in noop_bind_action($granting-action-inner);
-    let $granting-object in noop_bind_object($granting-object-inner);
-#    $access isa access, links (object: $object, action: $action); # Idk what this does
-    { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
-    { let $granting-action-inner in has_set_membership($action); } or { $granting-action-inner is $action; };
-    { let $granting-object-inner in has_collection_membership($object); } or { $granting-object-inner is $object; };
-    $granting-access isa access (object: $granting-object, action: $granting-action);
-    $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
-return { $granting-permission };
 
 fun noop_bind_subject($s: subject) -> {subject}:
 match $s isa subject;
@@ -62,3 +13,109 @@ return { $o };
 fun noop_bind_action($a: action) -> {action}:
 match $a isa action;
 return { $a };
+
+
+# memberships
+fun has_group_membership($member: subject) -> { user-group }:
+match
+    let $group in noop_bind_subject($group-inner);
+    $group isa user-group;
+    {
+        $m isa group-membership, links (group: $group-inner, member: $member);
+    } or {
+        $m1 isa group-membership, links (group: $group-inner, member: $intermediate);
+        let $intermediate in has_group_membership($member);
+    };
+return { $group };
+
+
+fun has_collection_membership($member: object) -> { resource-collection }:
+match
+    let $collection in noop_bind_object($collection-inner);
+    $collection isa resource-collection;
+    {
+        $m isa collection-membership, links (collection: $collection-inner, member: $member);
+    } or {
+        $m1 isa collection-membership, links (collection: $collection-inner, member: $intermediate);
+        let $intermediate in has_collection_membership($member);
+    };
+return { $collection };
+
+fun has_set_membership($member: action) -> { operation-set }:
+match
+    let $set in noop_bind_action($set-inner);
+    $set isa operation-set;
+    {
+        $m isa set-membership, links (set: $set-inner, member: $member);
+    } or {
+        $m1 isa set-membership, links (set: $set-inner, member: $intermediate);
+        let $intermediate in has_set_membership($member);
+    };
+return { $set };
+
+# members
+fun group_members($group: user-group) -> { subject }:
+match
+    let $member in noop_bind_subject($member-inner);
+    {
+        $m isa group-membership, links (group: $group, member: $member-inner);
+    } or {
+        let $intermediate in group_members($group);
+        $m1 isa group-membership, links (group: $intermediate, member: $member-inner);
+    };
+return { $member };
+
+fun set_members($set: operation-set) -> { action }:
+match
+    let $member in noop_bind_action($member-inner);
+    {
+        $m isa set-membership, links (set: $set, member: $member-inner);
+    } or {
+        let $intermediate in set_members($set);
+        $m1 isa set-membership, links (set: $intermediate, member: $member-inner);
+    };
+return { $member };
+
+fun collection_members($collection: resource-collection) -> { object }:
+match
+    let $member in noop_bind_object($member-inner);
+    {
+        $m isa collection-membership, links (collection: $collection, member: $member-inner);
+    } or {
+        let $intermediate in collection_members($collection);
+        $m1 isa collection-membership, links (collection: $intermediate, member: $member-inner);
+    };
+return { $member };
+
+# permissions
+fun has_permission($subject: subject, $object: object, $action: action) -> { direct-permission }:
+match
+    $subject isa subject;
+    $object isa object;
+    $action isa action;
+    let $granting-subject in noop_bind_subject($granting-subject-inner);
+    let $granting-action in noop_bind_action($granting-action-inner);
+    let $granting-object in noop_bind_object($granting-object-inner);
+    $access isa access, links (object: $object, action: $action);
+    { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
+    { let $granting-action-inner in has_set_membership($action); } or { $granting-action-inner is $action; };
+    { let $granting-object-inner in has_collection_membership($object); } or { $granting-object-inner is $object; };
+    $granting-access isa access (object: $granting-object, action: $granting-action);
+    $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
+return { $granting-permission };
+
+fun list_permissions($subject: subject) -> { object, action }: # -> { access }:
+match
+    let $granting-subject in noop_bind_subject($granting-subject-inner);
+    { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
+
+    $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
+    $granting-access isa access, links (object: $granting-object, action: $granting-action);
+
+    let $action in noop_bind_action($action-inner);
+    let $object in noop_bind_object($object-inner);
+
+    { let $action-inner in set_members($granting-action); } or { $action-inner is $granting-action; };
+    { let $object-inner in collection_members($granting-object); } or { $object-inner is $granting-object ; };
+    $access isa access, links (object: $object, action: $action);
+return { $access };
