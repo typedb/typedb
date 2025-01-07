@@ -278,8 +278,8 @@ fn compile_stage(
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
             let mut output_row_mapping = HashMap::new();
-            let mut input_group_positions = Vec::with_capacity(reduce.within_group.len());
-            for variable in reduce.within_group.iter() {
+            let mut input_group_positions = Vec::with_capacity(reduce.groupby.len());
+            for variable in reduce.groupby.iter() {
                 output_row_mapping.insert(*variable, VariablePosition::new(input_group_positions.len() as u32));
                 input_group_positions.push(input_variables[variable]);
             }

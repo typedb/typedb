@@ -85,7 +85,7 @@ impl TranslatedStage {
             Self::Offset(_) => Box::new(empty()),
             Self::Limit(_) => Box::new(empty()),
             Self::Require(require) => Box::new(require.variables.iter().cloned()),
-            Self::Reduce(reduce) => Box::new(reduce.within_group.iter().cloned()),
+            Self::Reduce(reduce) => Box::new(reduce.groupby.iter().cloned()),
         }
     }
 }

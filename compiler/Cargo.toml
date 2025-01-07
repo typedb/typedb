@@ -36,12 +36,12 @@ features = {}
 
 [dependencies]
 
-  [dependencies.tracing]
+	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.40"
+		version = "0.1.41"
 		default-features = false
 
-  [dependencies.answer]
+	[dependencies.answer]
 		path = "../answer"
 		features = []
 		default-features = false
@@ -58,7 +58,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "8acf8f2164181874d33915573f5dc09f4ab46a9e"
+		rev = "059c0332e33a892e6a04bbf83df5634d3d5df249"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
