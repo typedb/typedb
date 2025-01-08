@@ -207,7 +207,7 @@ impl Reporter {
             hash_string_consistently(&self.deployment_id) % (report_interval_secs / SECONDS_IN_MINUTE);
 
         let delay_secs = if current_minute > scheduled_minute {
-            report_interval_secs - (current_minute + scheduled_minute) * SECONDS_IN_MINUTE
+            report_interval_secs - current_minute * SECONDS_IN_MINUTE + scheduled_minute * SECONDS_IN_MINUTE
         } else {
             (scheduled_minute - current_minute) * SECONDS_IN_MINUTE
         };
