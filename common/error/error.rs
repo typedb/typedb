@@ -104,41 +104,24 @@ impl<T: TypeDBError> TypeDBError for Box<T> {
 // ***USAGE WARNING***: We should not set both Source and TypeDBSource, TypeDBSource has precedence!
 #[macro_export]
 macro_rules! typedb_error {
-    ( $vis: vis $name:ident(component = $component: literal, prefix = $prefix: literal) { $(
-        $variant: ident (
-            $number: literal,
-            $description: literal
-            $(, $payload_name: ident : $payload_type: ty )*
-            $(, ( source : $source: ty ) )?
-            $(, ( typedb_source : $typedb_source: ty ) )?
-        ),
+    ($vis:vis $name:ident(component = $component:literal, prefix = $prefix:literal) { $(
+        $variant:ident($number:literal, $description:literal $(, $($arg:tt)*)?),
     )*}) => {
         #[derive(Clone)]
         $vis enum $name {
-            $(
-                $variant { $(source: $source, )? $(typedb_source: $typedb_source, )? $($payload_name: $payload_type, )* },
-            )*
-
+            $($variant { $($($arg)*)? }),*
         }
 
-        impl $name {
-            const _VALIDATE_NUMBERS: () = {
-                #[deny(unreachable_patterns)] // fail to compile if any Numbers are the same
-                match 0 {
-                    $(
-                        $number => (),
-                    )*
-                    _ => (),
-               }
-           };
-        }
+        const _: () = {
+            // fail to compile if any Numbers are the same
+            trait Assert {}
+            $(impl Assert for [(); $number ] {})*
+        };
 
         impl $crate::TypeDBError for $name {
             fn variant_name(&self) -> &'static str {
                 match self {
-                    $(
-                        Self::$variant { .. } => &stringify!($variant),
-                    )*
+                    $(Self::$variant { .. } => stringify!($variant),)*
                 }
             }
 
@@ -148,9 +131,7 @@ macro_rules! typedb_error {
 
             fn code(&self) -> &'static str {
                 match self {
-                    $(
-                        Self::$variant { .. } => & concat!($prefix, stringify!($number)),
-                    )*
+                    $(Self::$variant { .. } => concat!($prefix, stringify!($number)),)*
                 }
             }
 
@@ -160,51 +141,81 @@ macro_rules! typedb_error {
 
             fn code_number(&self) -> usize {
                 match self {
-                    $(
-                        Self::$variant { .. } => $number,
-                    )*
+                    $(Self::$variant { .. } => $number,)*
                 }
             }
 
             fn format_description(&self) -> String {
                 match self {
-                    $(
-                        Self::$variant { $( $payload_name, )* .. } => format!($description),
-                    )*
+                    $(typedb_error!(@args $variant { $($($arg)*)? }) => format!($description),)*
                 }
             }
 
             fn source(&self) -> Option<&(dyn ::std::error::Error + Sync + 'static)> {
-                let error = match self {
-                    $(
-                        $(Self::$variant { source, .. } => {
-                            let source: &$source = source;
-                            Some(source as &(dyn ::std::error::Error + Sync))
-                        })?
-                    )*
-                    _ => None
-                };
-                error
+                match self {
+                    $(typedb_error!(@source source from $variant { $($($arg)*)? })=> {
+                        typedb_error!(@source source { $($($arg)*)? })
+                    })*
+                }
             }
 
             fn source_typedb_error(&self) -> Option<&(dyn $crate::TypeDBError + Sync + 'static)> {
-                let error = match self {
-                    $(
-                        $(Self::$variant { typedb_source, .. } => {
-                            let typedb_source: &$typedb_source = typedb_source;
-                            Some(typedb_source as &(dyn $crate::TypeDBError + Sync))
-                        })?
-                    )*
-                    _ => None
-                };
-                error
+                match self {
+                    $(typedb_error!(@typedb_source typedb_source from $variant { $($($arg)*)? })=> {
+                        typedb_error!(@typedb_source typedb_source { $($($arg)*)? })
+                    })*
+                }
             }
         }
 
         impl ::std::fmt::Debug for $name {
-           fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
                 ::std::fmt::Debug::fmt(self as &dyn $crate::TypeDBError, f)
             }
         }
+    };
+
+    (@args $variant:ident { $($arg:ident : $ty:ty),* $(,)? }) => {
+        Self::$variant { $($arg),* }
+    };
+
+    (@source $ts:ident from $variant:ident { source : $argty:ty $(, $($rest:tt)*)? }) => {
+        Self::$variant { source: $ts, .. }
+    };
+    (@source $ts:ident from $variant:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@source $ts from $variant { $($($rest)*)? })
+    };
+    (@source $ts:ident from $variant:ident { $(,)? }) => {
+        Self::$variant { .. }
+    };
+
+    (@source $ts:ident { source: $_:ty $(, $($rest:tt)*)? }) => {
+        Some($ts as &(dyn ::std::error::Error + Sync + 'static))
+    };
+    (@source $ts:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@source $ts { $($($rest)*)? })
+    };
+    (@source $ts:ident { $(,)? }) => {
+        None
+    };
+
+    (@typedb_source $ts:ident from $variant:ident { typedb_source : $argty:ty $(, $($rest:tt)*)? }) => {
+        Self::$variant { typedb_source: $ts, .. }
+    };
+    (@typedb_source $ts:ident from $variant:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@typedb_source $ts from $variant { $($($rest)*)? })
+    };
+    (@typedb_source $ts:ident from $variant:ident { $(,)? }) => {
+        Self::$variant { .. }
+    };
+
+    (@typedb_source $ts:ident { typedb_source: $_:ty $(, $($rest:tt)*)? }) => {
+        Some($ts as &(dyn $crate::TypeDBError + Sync + 'static))
+    };
+    (@typedb_source $ts:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@typedb_source $ts { $($($rest)*)? })
+    };
+    (@typedb_source $ts:ident { $(,)? }) => {
+        None
     };
 }

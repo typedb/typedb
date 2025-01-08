@@ -49,7 +49,7 @@ impl Optional {
 
 impl Scope for Optional {
     fn scope_id(&self) -> ScopeId {
-        todo!()
+        self.conjunction.scope_id()
     }
 }
 

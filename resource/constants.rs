@@ -30,7 +30,10 @@ pub mod server {
 
     pub const SERVER_ID_FILE_NAME: &str = "_server_id";
     pub const SERVER_ID_LENGTH: u64 = 16;
-    pub const SERVER_ID_ALPHABET: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    pub const SERVER_ID_ALPHABET: [char; 36] = [
+        'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
+        'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+    ];
 
     pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
     pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";

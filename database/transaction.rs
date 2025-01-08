@@ -175,14 +175,14 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub DataCommitError(component = "Data commit", prefix = "DCT") {
         SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
-        ConceptWriteErrors(2, "Data commit error.", source: Vec<ConceptWriteError> ),
-        ConceptWriteErrorsFirst(3, "Data commit error.", ( typedb_source : Box<ConceptWriteError> )),
-        SnapshotError(4, "Snapshot error.", ( typedb_source: SnapshotError )),
+        ConceptWriteErrors(2, "Data commit error.", write_errors: Vec<ConceptWriteError>),
+        ConceptWriteErrorsFirst(3, "Data commit error.", typedb_source: Box<ConceptWriteError>),
+        SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
     }
-);
+}
 
 // #[derive(Debug, Clone)]
 // pub enum DataCommitError {
@@ -357,20 +357,20 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 }
 
 // TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
-typedb_error!(
+typedb_error! {
     pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {
-        ConceptWriteErrors(1, "Schema commit error.", source: Vec<ConceptWriteError> ),
-        ConceptWriteErrorsFirst(2, "Schema commit error.", ( typedb_source : Box<ConceptWriteError> )),
-        TypeCacheUpdateError(3, "TypeCache update error.", ( typedb_source: TypeCacheCreateError )),
-        StatisticsError(4, "Statistics error.", ( typedb_source: StatisticsError )),
-        FunctionError(5, "Function error.", ( typedb_source: FunctionError )),
-        SnapshotError(6, "Snapshot error.", ( typedb_source: SnapshotError )),
+        ConceptWriteErrors(1, "Schema commit error.", write_errors: Vec<ConceptWriteError>),
+        ConceptWriteErrorsFirst(2, "Schema commit error.", typedb_source: Box<ConceptWriteError>),
+        TypeCacheUpdateError(3, "TypeCache update error.", typedb_source: TypeCacheCreateError),
+        StatisticsError(4, "Statistics error.", typedb_source: StatisticsError),
+        FunctionError(5, "Function error.", typedb_source: FunctionError),
+        SnapshotError(6, "Snapshot error.", typedb_source: SnapshotError),
     }
-);
+}
 
-typedb_error!(
+typedb_error! {
     pub TransactionError(component = "Transaction", prefix = "TXN") {
         Timeout(1, "Transaction timeout.", source: RecvTimeoutError),
         WriteExclusivityTimeout(2, "Transaction timeout due to an exclusive write access requested by this or a concurrent transaction."),
     }
-);
+}

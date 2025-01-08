@@ -576,7 +576,7 @@ pub(crate) fn type_get_constraints_closest_source<'a, T: KindAPI>(
         .next()
 }
 
-typedb_error!(
+typedb_error! {
     pub ConstraintError(component = "Constraint", prefix = "CNT") {
         CannotUnwrap(1, "Error getting mandatory constraint of type {type_}.", type_: &'static str),
         CorruptConstraintIsNotApplicableToValue(2, "Reached an invalid state: constraint {description} cannot be applied to value {value}.", description: ConstraintDescription, value: Value<'static>),
@@ -589,4 +589,4 @@ typedb_error!(
         ViolatedUnique(9, "Constraint '@unique' has been violated: there is a conflict for value '{value}'.", value: Value<'static>),
         ViolatedDistinct(10, "Constraint '@distinct' has been violated: found {count} instances", count: u64),
     }
-);
+}

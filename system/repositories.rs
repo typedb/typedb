@@ -178,10 +178,10 @@ pub mod user_repository {
         is_valid_identifier(value)
     }
 
-    typedb_error!(
+    typedb_error! {
         pub SystemDBError(component = "System database", prefix = "SDB") {
             EmptyUpdate(1, "There is nothing to update"),
             IllegalQueryInput(2, "The specified input contains one or more illegal character(s)"),
         }
-    );
+    }
 }

@@ -979,17 +979,17 @@ fn err_unsupported_capability(label: &Label, kind: Kind, capability: &TypeQLCapa
     DefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, capability: capability.clone() }
 }
 
-typedb_error!(
+typedb_error! {
     pub DefineError(component = "Define execution", prefix = "DEX") {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error. ", ( source: Box<ConceptReadError> )),
-        SymbolResolution(3, "Failed to find symbol.", ( typedb_source: Box<SymbolResolutionError> )),
-        LiteralParseError(4, "Failed to parse literal.", ( source: LiteralParseError )),
+        UnexpectedConceptRead(2, "Concept read error. ", source: Box<ConceptReadError>),
+        SymbolResolution(3, "Failed to find symbol.", typedb_source: Box<SymbolResolutionError>),
+        LiteralParseError(4, "Failed to parse literal.", source: LiteralParseError),
         TypeCreateError(
             5,
             "Failed to create type.\nSource:\n{type_declaration}",
             type_declaration: Type,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         RoleTypeDirectCreate(
             6,
@@ -1000,14 +1000,14 @@ typedb_error!(
             7,
             "Failed to create struct.\nSource:\n{struct_declaration}",
             struct_declaration: Struct,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         StructFieldCreateError(
             8,
             "Failed to create struct field '{struct_field}' in struct type '{struct_name}'.",
             struct_field: Field,
             struct_name: String,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         StructFieldAlreadyDefinedButDifferent(
             9,
@@ -1020,7 +1020,7 @@ typedb_error!(
             10,
             "Setting supertype failed.\nSource: {sub}",
             sub: typeql::schema::definable::type_::capability::Sub,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         TypeCannotHaveCapability(
             11,
@@ -1032,7 +1032,7 @@ typedb_error!(
         ValueTypeSymbolResolution(
             12,
             "Error resolving value type in define query.",
-            ( typedb_source: Box<SymbolResolutionError> )
+            typedb_source: Box<SymbolResolutionError>
         ),
         TypeSubAlreadyDefinedButDifferent(
             13,
@@ -1103,46 +1103,46 @@ typedb_error!(
             "Defining '{type_}' to have value type '{value_type}' failed.",
             type_: Label,
             value_type: ValueType,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         CreateRelates(
             21,
             "Defining new '{key}' failed.\nSource:\n{relates}",
             relates: TypeQLRelates,
             key: Keyword,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         CreatePlays(
             22,
             "Defining new '{key}' failed.\nSource:\n{plays}",
             plays: TypeQLPlays,
             key: Keyword,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         CreateOwns(
             23,
             "Defining new '{key}' failed.\nSource:\n{owns}",
             owns: TypeQLOwns,
             key: Keyword,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         IllegalAnnotation(
             24,
             "Illegal annotation",
-            ( source: AnnotationError )
+            source: AnnotationError
         ),
         SetAnnotation(
             25,
             "Defining annotation failed for type '{type_}'.\nSource:\n{annotation_declaration}",
             type_: Label,
             annotation_declaration: typeql::annotation::Annotation,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         SetSpecialise(
             26,
             "Defining specialise failed for type '{type_}'.",
             type_: Label,
-            ( typedb_source: Box<ConceptWriteError> )
+            typedb_source: Box<ConceptWriteError>
         ),
         CapabilityKindMismatch(
             27,
@@ -1156,8 +1156,8 @@ typedb_error!(
         FunctionDefinition(
             28,
             "An error occurred by defining the function",
-            ( typedb_source: FunctionError )
+            typedb_source: FunctionError
         ),
         IllegalKeywordAsIdentifier(29, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
     }
-);
+}

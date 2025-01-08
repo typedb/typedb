@@ -80,13 +80,13 @@ typedb_error! {
             4,
             "Function pattern contains an error.\nSource:\n{declaration}",
             declaration: FunctionBlock,
-            ( typedb_source : Box<RepresentationError>)
+            typedb_source: Box<RepresentationError>,
         ),
         ReturnReduction(
             5,
             "Error building representation of the return reduction.\nSource:\n{declaration}",
             declaration: ReturnReduction,
-            ( typedb_source : Box<RepresentationError>)
+            typedb_source: Box<RepresentationError>,
         ),
         IllegalFetch(
             6,

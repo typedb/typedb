@@ -43,7 +43,7 @@ impl DiagnosticsManager {
         is_monitoring_enabled: bool,
         is_development_mode: bool,
     ) -> Self {
-        let deployment_id = diagnostics.server_properties.deployment_id().clone().to_owned();
+        let deployment_id = diagnostics.server_properties.deployment_id().to_owned();
         let data_directory = diagnostics.server_metrics.data_directory().clone();
         let is_reporting_enabled = diagnostics.server_properties.is_reporting_enabled();
         let diagnostics = Arc::new(diagnostics);

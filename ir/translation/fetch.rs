@@ -530,7 +530,7 @@ fn register_key(parameters: &mut ParameterRegistry, key: &StringLiteral) -> Para
     parameters.register_fetch_key(String::from_typeql_literal(key).unwrap())
 }
 
-typedb_error!(
+typedb_error! {
     pub FetchRepresentationError(component = "Fetch representation", prefix = "FER") {
         Unimplemented(
             0,
@@ -566,18 +566,18 @@ typedb_error!(
         ExpressionRepresentation(
             6,
             "Error building representation of expression.",
-            ( typedb_source : Box<RepresentationError> )
+            typedb_source: Box<RepresentationError>
         ),
         ExpressionAsMatchRepresentation(
             7,
             "Failed to convert fetch-expression ('key': <expression>) into full match-return ('key': (match $anon = <expression>; return first $anon;)) failed.",
-            ( typedb_source : Box<RepresentationError> )
+            typedb_source: Box<RepresentationError>
         ),
         FunctionRetrieval(
             8,
             "Error while retrieving function '{name}'.",
             name: String,
-            ( source : FunctionReadError )
+            source: FunctionReadError
         ),
         FunctionNotFound(
             9,
@@ -634,7 +634,7 @@ typedb_error!(
         SubFetchRepresentation(
             19,
             "Error building representation of fetch sub-query.",
-            (typedb_source : Box<RepresentationError>)
+            typedb_source: Box<RepresentationError>
         ),
         SubQueryIsNotFetch(
             20,
@@ -648,4 +648,4 @@ typedb_error!(
             declaration: TypeQLFetchObject
         ),
     }
-);
+}

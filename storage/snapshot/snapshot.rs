@@ -554,11 +554,11 @@ impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     }
 }
 
-typedb_error!(
+typedb_error! {
     pub SnapshotError(component = "Snapshot error", prefix = "SST") {
-        Commit(1, "Snapshot commit failed due to storage commit error.", (typedb_source : StorageCommitError )),
+        Commit(1, "Snapshot commit failed due to storage commit error.", typedb_source: StorageCommitError),
     }
-);
+}
 
 #[derive(Debug, Clone)]
 pub enum SnapshotGetError {

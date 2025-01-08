@@ -49,7 +49,7 @@ impl Negation {
 
 impl Scope for Negation {
     fn scope_id(&self) -> ScopeId {
-        todo!()
+        self.conjunction.scope_id()
     }
 }
 

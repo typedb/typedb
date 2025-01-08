@@ -131,16 +131,16 @@ pub enum RecoveryCommitStatus {
     Rejected,
 }
 
-typedb_error!(
+typedb_error! {
     pub StorageRecoveryError(component = "Storage recovery", prefix = "REC") {
-        DurabilityRecordDeserialize(1, "Failed to deserialise WAL record.", ( source: Arc<bincode::Error> )),
-        DurabilityClientRead(2, "Durability client read error.", (typedb_source : DurabilityClientError )),
-        DurabilityClientWrite(3, "Durability client write error.", (typedb_source : DurabilityClientError )),
+        DurabilityRecordDeserialize(1, "Failed to deserialise WAL record.", source: Arc<bincode::Error>),
+        DurabilityClientRead(2, "Durability client read error.", typedb_source: DurabilityClientError),
+        DurabilityClientWrite(3, "Durability client write error.", typedb_source: DurabilityClientError),
         DurabilityRecordsMissing(
             4,
             "Missing initial WAL records - expected first record number '{expected_sequence_number}', but found '{first_record_sequence_number}'.",
             expected_sequence_number: SequenceNumber, first_record_sequence_number: SequenceNumber
         ),
-        KeyspaceWrite(5, "Error writing recovered commits to keyspace.", ( source: KeyspaceError )),
+        KeyspaceWrite(5, "Error writing recovered commits to keyspace.", source: KeyspaceError),
     }
-);
+}

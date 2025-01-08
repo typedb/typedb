@@ -4,13 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs, io, net::SocketAddr, path::PathBuf, sync::Arc};
+use std::{
+    fs, io,
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
 
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
-use rand::Rng;
+use rand::seq::SliceRandom;
 use resource::constants::server::{
     DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH,
@@ -58,7 +63,7 @@ impl Server {
         let server_id = Self::initialise_server_id(storage_directory)?;
         let deployment_id = deployment_id.unwrap_or(server_id.clone());
         let server_address = resolve_address(server_config.address.clone()).await;
-        let mut diagnostics_manager = Arc::new(Self::initialise_diagnostics(
+        let diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
             distribution,
@@ -127,7 +132,7 @@ impl Server {
             .await
     }
 
-    fn initialise_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
+    fn initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)
         } else if !storage_directory.is_dir() {
@@ -173,7 +178,7 @@ impl Server {
         tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
     }
 
-    fn create_storage_directory(storage_directory: &PathBuf) -> Result<(), ServerOpenError> {
+    fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
         fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
             path: storage_directory.to_str().unwrap_or("").to_owned(),
             source: Arc::new(source),
@@ -181,7 +186,7 @@ impl Server {
         Ok(())
     }
 
-    fn initialise_server_id(storage_directory: &PathBuf) -> Result<String, ServerOpenError> {
+    fn initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
         let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
         if server_id_file.exists() {
             let server_id = fs::read_to_string(&server_id_file)
@@ -211,20 +216,16 @@ impl Server {
 
     fn generate_server_id() -> String {
         let mut rng = rand::thread_rng();
-        (0..SERVER_ID_LENGTH)
-            .map(|_| {
-                let idx = rng.gen_range(0..SERVER_ID_ALPHABET.len());
-                SERVER_ID_ALPHABET.chars().nth(idx).unwrap()
-            })
-            .collect()
+        (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
     }
 
     fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
-        print!("{}", format!("Running {distribution} {version}"));
         if is_development_mode_enabled {
-            print!(" in development mode");
+            println!("Running {distribution} {version} in development mode.");
+        } else {
+            println!("Running {distribution} {version}.");
         }
-        println!(".\nReady!");
+        println!("Ready!");
     }
 }
 
@@ -243,16 +244,16 @@ async fn resolve_address(address: String) -> SocketAddr {
         .await
         .unwrap()
         .next()
-        .expect(format!("Unable to map address '{}' to any IP addresses", address).as_str())
+        .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
 }
 
-typedb_error!(
+typedb_error! {
     pub ServerOpenError(component = "Server open", prefix = "SRO") {
         NotADirectory(1, "Invalid path '{path}': not a directory.", path: String),
-        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: String, ( source: Arc<io::Error> )),
-        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: String, ( source: Arc<io::Error> )),
-        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: String, ( source: Arc<io::Error> )),
+        CouldNotReadServerIDFile(2, "Could not read data from server ID file '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotCreateServerIDFile(3, "Could not write data to server ID file '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: String, source: Arc<io::Error>),
         InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: String),
-        DatabaseOpen(6, "Could not open database.", ( typedb_source: DatabaseOpenError )),
+        DatabaseOpen(6, "Could not open database.", typedb_source: DatabaseOpenError),
     }
-);
+}

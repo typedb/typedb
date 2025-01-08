@@ -23,34 +23,85 @@ mod type_seeder;
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
         Unimplemented(0, "Unimplemented: {description}", description: String),
-        TypeInference(1, "Type inference error while compiling query annotations.", ( typedb_source : TypeInferenceError )),
-        PreambleTypeInference(2, "Type inference error while compiling query preamble functions.", ( typedb_source : Box<FunctionAnnotationError> )),
-        ExpressionCompilation(3, "Error inferring correct expression types.", ( source : Box<ExpressionCompileError> )),
-        FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, (typedb_source : Box<AnnotationError> )),
-        FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", (typedb_source : Box<FunctionAnnotationError> )),
-        ConceptRead(6, "Error while retrieving concept.", (source: Box<ConceptReadError> )),
+        TypeInference(1, "Type inference error while compiling query annotations.", typedb_source: TypeInferenceError),
+        PreambleTypeInference(2, "Type inference error while compiling query preamble functions.", typedb_source: Box<FunctionAnnotationError>),
+        ExpressionCompilation(3, "Error inferring correct expression types.", source: Box<ExpressionCompileError>),
+        FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, typedb_source: Box<AnnotationError>),
+        FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", typedb_source: Box<FunctionAnnotationError>),
+        ConceptRead(6, "Error while retrieving concept.", source: Box<ConceptReadError>),
         FetchAttributeNotFound(7, "Fetching '${var}.{name}' failed since the attribute type is not defined.", var: String, name: String),
-        FetchSingleAttributeNotOwned(8, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
-        FetchAttributesNotOwned(9, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.", var: String, owner: String, attribute: String),
-        FetchSingleAttributeCannotBeOwnedByKind(10, "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.", var: String, kind: String, attribute: String),
-        FetchAttributesCannotBeOwnedByKind(11, "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.", var: String, kind: String, attribute: String),
-        AttributeFetchCardTooHigh(12, "Fetch attribute '${var}.{attribute}' must be wrapped in '[]', since this attribute can be owned more than 1 time when '${var}' has type '{owner}', according to the schema's cardinality constraints.", var: String, owner: String, attribute: String),
-        CouldNotDetermineValueTypeForReducerInput(13, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String),
-        ReducerInputVariableDidNotHaveSingleValueType(14, "The reducer input variable '{variable}' had multiple value-types.", variable: String),
-        UnsupportedValueTypeForReducer(15, "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'", reducer: String, variable: String, value_type: ValueTypeCategory),
-        UncomparableValueTypesForSortVariable(16, "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.", variable: String, category1: ValueTypeCategory, category2: ValueTypeCategory),
-        ReducerInputVariableIsList(17, "The input variable '{variable}' to the reducer '{reducer}' was a list.", reducer: String, variable: String),
+        FetchSingleAttributeNotOwned(
+            8,
+            "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.",
+            var: String,
+            owner: String,
+            attribute: String,
+        ),
+        FetchAttributesNotOwned(
+            9,
+            "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.",
+            var: String,
+            owner: String,
+            attribute: String,
+        ),
+        FetchSingleAttributeCannotBeOwnedByKind(
+            10,
+            "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.",
+            var: String,
+            kind: String,
+            attribute: String,
+        ),
+        FetchAttributesCannotBeOwnedByKind(
+            11,
+            "Type checking '[${var}.{attribute}]' failed, since attribute '{attribute}' cannot be when '${var}' has kind '{kind}'.",
+            var: String,
+            kind: String,
+            attribute: String,
+        ),
+        AttributeFetchCardTooHigh(
+            12,
+            "Fetch attribute '${var}.{attribute}' must be wrapped in '[]', since this attribute can be owned more than 1 time when '${var}' has type '{owner}', according to the schema's cardinality constraints.",
+            var: String,
+            owner: String,
+            attribute: String,
+        ),
+        CouldNotDetermineValueTypeForReducerInput(
+            13, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String,
+        ),
+        ReducerInputVariableDidNotHaveSingleValueType(
+            14, "The reducer input variable '{variable}' had multiple value-types.", variable: String,
+        ),
+        UnsupportedValueTypeForReducer(
+            15,
+            "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'",
+            reducer: String,
+            variable: String,
+            value_type: ValueTypeCategory,
+        ),
+        UncomparableValueTypesForSortVariable(
+            16,
+            "The sort variable '{variable}' could return incomparable value-types '{category1}' & '{category2}'.",
+            variable: String,
+            category1: ValueTypeCategory,
+            category2: ValueTypeCategory,
+        ),
+        ReducerInputVariableIsList(
+            17,
+            "The input variable '{variable}' to the reducer '{reducer}' was a list.",
+            reducer: String,
+            variable: String,
+        ),
     }
 );
 
 typedb_error!(
     pub FunctionAnnotationError(component = "Function type inference", prefix = "FIN") {
-        TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, ( typedb_source : Box<AnnotationError> )),
+        TypeInference(0, "Type inference error while type checking function '{name}'.", name: String, typedb_source: Box<AnnotationError>),
         CouldNotResolveArgumentType(
             1,
             "An error occurred when trying to resolve the type of the argument at index: {index}.",
             index: usize,
-            source: TypeInferenceError
+            typedb_source: TypeInferenceError
         ),
         CallerSignatureTypeMismatch(
             2,
@@ -77,25 +128,25 @@ typedb_error!(
             5,
             "An error occurred when trying to resolve the type at return index: {index}.",
             index: usize,
-            source: TypeInferenceError
+            typedb_source: TypeInferenceError
         ),
         ReturnReduce(
             6,
             "Error analysing return reduction.",
-            ( typedb_source : Box<AnnotationError> )
+            typedb_source: Box<AnnotationError>,
         ),
         SignatureReturnMismatch(
             7,
             "The types inferred for the return statement of function \"{function_name}\" did not match those declared in the signature. Mismatching index: {mismatching_index}",
             function_name: String,
-            mismatching_index: usize
+            mismatching_index: usize,
         ),
     }
 );
 
 typedb_error!(
     pub TypeInferenceError(component = "Type inference", prefix = "INF") {
-        ConceptRead(1, "Concept read error.", ( source: Box<ConceptReadError> )),
+        ConceptRead(1, "Concept read error.", source: Box<ConceptReadError>),
         LabelNotResolved(2, "Type label '{name}' not found.", name: String),
         RoleNameNotResolved(3, "Role label not found '{name}'.", name: String),
         IllegalInsertTypes(
@@ -117,6 +168,8 @@ typedb_error!(
             label: String
         ),
         ValueTypeNotFound(8, "Value type '{name}' was not found.", name: String),
+        OptionalTypesUnsupported(255, "Optional types are not yet supported."),
+        ListTypesUnsupported(256, "List types are not yet supported."),
     }
 );
 
