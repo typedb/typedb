@@ -121,6 +121,8 @@ pub struct VariableRegistry {
 }
 
 impl VariableRegistry {
+    pub const UNNAMED_VARIABLE_DISPLAY_NAME: &'static str = "_anonymous";
+    
     pub(crate) fn new() -> VariableRegistry {
         Self {
             variable_names: HashMap::new(),

@@ -260,7 +260,7 @@ fn annotate_stage(
                 &block_annotations,
                 running_value_variable_assigned_types,
             )
-            .map_err(|source| AnnotationError::ExpressionCompilation { source })?;
+            .map_err(|typedb_source| AnnotationError::ExpressionCompilation { typedb_source })?;
             compiled_expressions.iter().for_each(|(&variable, expr)| {
                 running_value_variable_assigned_types.insert(variable, expr.return_type().clone());
             });
@@ -540,10 +540,11 @@ fn collect_value_types_of_function_call_assignments(
             zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
                     if value_type_annotations.contains_key(&var.as_variable().unwrap()) {
-                        let assign_variable = variable_registry.get_variable_name(var.as_variable().unwrap()).cloned();
+                        let assign_variable = variable_registry.get_variable_name(var.as_variable().unwrap()).cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
                         return Err(AnnotationError::ExpressionCompilation {
-                            source: Box::new(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
-                                assign_variable,
+                            typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
+                                variable: assign_variable
                             }),
                         });
                     }

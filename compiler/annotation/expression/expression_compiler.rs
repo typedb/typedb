@@ -125,19 +125,19 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.append_instruction(list_operations::ListConstructor::OP_CODE);
 
         if self.pop_type_single()?.category() != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::InternalUnexpectedValueType)?;
+            Err(ExpressionCompileError::InternalListLengthMustBeInteger { })?;
         }
         let n_elements = list_constructor.item_expression_ids().len();
         if n_elements > 0 {
             let element_type = self.pop_type_single()?;
             for _ in 1..list_constructor.item_expression_ids().len() {
                 if self.pop_type_single()? != element_type {
-                    Err(ExpressionCompileError::HeterogenousValuesInList)?;
+                    Err(ExpressionCompileError::HeterogeneusListConstructor {})?;
                 }
             }
             self.push_type_list(element_type)
         } else {
-            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType)?;
+            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType {})?;
         }
 
         Ok(())
@@ -154,7 +154,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         let list_variable_type = self.pop_type_list()?;
         let index_type = self.pop_type_single()?.category();
         if index_type != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::ListIndexMustBeInteger)?
+            Err(ExpressionCompileError::ListIndexMustBeInteger {})?
         }
         self.push_type_single(list_variable_type); // reuse
         Ok(())
@@ -174,11 +174,11 @@ impl<'this> ExpressionCompilationContext<'this> {
         let list_variable_type = self.pop_type_list()?;
         let from_index_type = self.pop_type_single()?.category();
         if from_index_type != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::ListIndexMustBeInteger)?
+            Err(ExpressionCompileError::ListIndexMustBeInteger {})?
         }
         let to_index_type = self.pop_type_single()?.category();
         if to_index_type != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::ListIndexMustBeInteger)?
+            Err(ExpressionCompileError::ListIndexMustBeInteger {})?
         }
 
         self.push_type_single(list_variable_type);
@@ -458,7 +458,10 @@ impl<'this> ExpressionCompilationContext<'this> {
                     ValueTypeCategory::Integer => MathAbsInteger::validate_and_append(self)?,
                     ValueTypeCategory::Double => MathAbsDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: self.peek_type_single()?.category()
+                    })?,
                 }
             }
             BuiltInFunctionID::Ceil => {
@@ -466,7 +469,10 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Double => MathCeilDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: self.peek_type_single()?.category()
+                    })?,
                 }
             }
             BuiltInFunctionID::Floor => {
@@ -474,7 +480,10 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Double => MathFloorDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: self.peek_type_single()?.category()
+                    })?,
                 }
             }
             BuiltInFunctionID::Round => {
@@ -482,7 +491,10 @@ impl<'this> ExpressionCompilationContext<'this> {
                 match self.peek_type_single()?.category() {
                     ValueTypeCategory::Double => MathRoundDouble::validate_and_append(self)?,
                     // TODO: ValueTypeCategory::Decimal ?
-                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin)?,
+                    _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
+                        function: builtin.builtin_id(),
+                        category: self.peek_type_single()?.category()
+                    })?,
                 }
             }
         }
@@ -492,23 +504,23 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn pop_type(&mut self) -> Result<ExpressionValueType, Box<ExpressionCompileError>> {
         match self.type_stack.pop() {
             Some(value) => Ok(value),
-            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
+            None => Err(ExpressionCompileError::InternalStackWasEmpty {})?,
         }
     }
 
     pub(crate) fn pop_type_single(&mut self) -> Result<ValueType, Box<ExpressionCompileError>> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::Single(value)) => Ok(value),
-            Some(ExpressionValueType::List(_)) => Err(Box::new(ExpressionCompileError::ExpectedSingleWasList)),
-            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::List(_)) => Err(Box::new(ExpressionCompileError::InternalExpectedSingleWasList {})),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty {})?,
         }
     }
 
     pub(crate) fn pop_type_list(&mut self) -> Result<ValueType, Box<ExpressionCompileError>> {
         match self.type_stack.pop() {
             Some(ExpressionValueType::List(value)) => Ok(value),
-            Some(ExpressionValueType::Single(_)) => Err(Box::new(ExpressionCompileError::ExpectedListWasSingle)),
-            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::Single(_)) => Err(Box::new(ExpressionCompileError::InternalExpectedListWasSingle {})),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty {})?,
         }
     }
 
@@ -523,16 +535,16 @@ impl<'this> ExpressionCompilationContext<'this> {
     fn peek_type_single(&self) -> Result<&ValueType, Box<ExpressionCompileError>> {
         match self.type_stack.last() {
             Some(ExpressionValueType::Single(value)) => Ok(value),
-            Some(ExpressionValueType::List(_)) => Err(Box::new(ExpressionCompileError::ExpectedSingleWasList)),
-            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::List(_)) => Err(Box::new(ExpressionCompileError::InternalExpectedSingleWasList {})),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty {})?,
         }
     }
 
     pub(crate) fn peek_type_list(&mut self) -> Result<&ValueType, Box<ExpressionCompileError>> {
         match self.type_stack.last() {
             Some(ExpressionValueType::List(value)) => Ok(value),
-            Some(ExpressionValueType::Single(_)) => Err(Box::new(ExpressionCompileError::ExpectedListWasSingle)),
-            None => Err(ExpressionCompileError::InternalStackWasEmpty)?,
+            Some(ExpressionValueType::Single(_)) => Err(Box::new(ExpressionCompileError::InternalExpectedListWasSingle {})),
+            None => Err(ExpressionCompileError::InternalStackWasEmpty {})?,
         }
     }
 

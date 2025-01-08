@@ -82,7 +82,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         let source = Constraint::ExpressionBinding((*expression_index.get(&var).unwrap()).clone());
         variable_registry
             .set_assigned_value_variable_category(var, category, source)
-            .map_err(|source| Box::new(ExpressionCompileError::Representation { source }))?;
+            .map_err(|typedb_source| Box::new(ExpressionCompileError::Representation { typedb_source }))?;
     }
     Ok(compiled_expressions)
 }
@@ -96,8 +96,9 @@ fn index_expressions<'block, Snapshot: ReadableSnapshot>(
         if let Some(expression_binding) = constraint.as_expression_binding() {
             let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
             if index.contains_key(&left) {
-                Err(Box::new(ExpressionCompileError::MultipleAssignmentsForSingleVariable {
-                    assign_variable: context.variable_registry.variable_names().get(&left).cloned(),
+                Err(Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
+                    variable: context.variable_registry.variable_names().get(&left).cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }))?;
             }
             index.insert(left, expression_binding);
@@ -147,9 +148,9 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     if expression_assignments.contains_key(&variable) {
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
-                // TODO: Do we catch double assignments?
-                Err(Box::new(ExpressionCompileError::CircularDependencyInExpressions {
-                    assign_variable: context.variable_registry.variable_names().get(&variable).cloned(),
+                Err(Box::new(ExpressionCompileError::CircularDependency {
+                    variable: context.variable_registry.variable_names().get(&variable).cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }))
             } else {
                 compile_expressions_recursive(context, variable, expression_assignments)?;
@@ -167,12 +168,15 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|_source| {
             Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-                variable: context.variable_registry.variable_names().get(&variable).cloned(),
+                variable: context.variable_registry.variable_names().get(&variable).cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             })
         })?;
         if value_types.len() != 1 {
-            Err(Box::new(ExpressionCompileError::VariableDidNotHaveSingleValueType {
-                variable: context.variable_registry.variable_names().get(&variable).cloned(),
+            Err(Box::new(ExpressionCompileError::VariableMultipleValueTypes {
+                variable: context.variable_registry.variable_names().get(&variable).cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                value_types: value_types.iter().join(", "),
             }))
         } else {
             let value_type = value_types.iter().find(|_| true).unwrap();
@@ -189,14 +193,16 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     Ok(())
                 }
                 _ => Err(Box::new(ExpressionCompileError::VariableMustBeValueOrAttribute {
-                    variable: context.variable_registry.variable_names().get(&variable).cloned(),
-                    actual_category: variable_category,
+                    variable: context.variable_registry.variable_names().get(&variable).cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    category: variable_category,
                 }))?, // TODO: I think this is practically unreachable?
             }
         }
     } else {
         Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-            variable: context.variable_registry.variable_names().get(&variable).cloned(),
+            variable: context.variable_registry.variable_names().get(&variable).cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
         }))
     }
 }

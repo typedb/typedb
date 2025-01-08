@@ -11,6 +11,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
+use std::fmt::{Display, Formatter};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
@@ -254,6 +255,17 @@ impl StructuralEquality for BuiltInFunctionID {
     }
 }
 
+impl Display for BuiltInFunctionID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            BuiltInFunctionID::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
+            BuiltInFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
+            BuiltInFunctionID::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
+            BuiltInFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndex<ID> {
     list_variable: ID,
@@ -394,6 +406,19 @@ impl StructuralEquality for Operator {
 
     fn equals(&self, other: &Self) -> bool {
         self == other
+    }
+}
+
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Operator::Add => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Add, f),
+            Operator::Subtract =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Subtract, f),
+            Operator::Multiply =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Multiply, f),
+            Operator::Divide =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Divide, f),
+            Operator::Modulo =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Modulo, f),
+            Operator::Power =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Power, f),
+        }
     }
 }
 

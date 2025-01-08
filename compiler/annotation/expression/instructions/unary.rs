@@ -52,7 +52,11 @@ where
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let a1 = builder.pop_type_single()?.category();
         if a1 != T1::VALUE_TYPE_CATEGORY {
-            Err(Box::new(ExpressionCompileError::InternalUnexpectedValueType))?;
+            Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
+                op_code: F::OP_CODE,
+                expected: T1::VALUE_TYPE_CATEGORY,
+                actual: a1,
+            }))?;
         }
         builder.push_type_single(R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
         builder.append_instruction(Self::OP_CODE);
