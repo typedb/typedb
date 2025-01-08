@@ -81,7 +81,7 @@ impl Config {
         }
     }
 
-    pub fn get_server_config(&self) -> &ServerConfig {
+    pub fn server_config(&self) -> &ServerConfig {
         &self.server
     }
 }

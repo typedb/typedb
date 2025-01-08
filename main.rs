@@ -31,7 +31,7 @@ fn main() {
     let deployment_id = None;
     let is_error_reporting_enabled = cli_args.diagnostics_reporting_errors;
     let config = get_configuration(cli_args);
-    let _error_reporting_guard = setup_error_reporting(config.get_server_config(), is_error_reporting_enabled);
+    let _error_reporting_guard = setup_error_reporting(config.server_config(), is_error_reporting_enabled);
 
     tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Expected a main tokio runtime").block_on(
         async {
