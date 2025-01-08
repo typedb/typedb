@@ -123,7 +123,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
         ActiveTransaction::Write(tx) => {
             if let Some(error) = may_error.check(tx.commit()) {
                 match error {
-                    DataCommitError::ConceptWriteErrors { source: errors, .. } => {
+                    DataCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
                         for error in errors {
                             may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
@@ -140,7 +140,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
         ActiveTransaction::Schema(tx) => {
             if let Some(error) = may_error.check(tx.commit()) {
                 match error {
-                    SchemaCommitError::ConceptWriteErrors { source: errors, .. } => {
+                    SchemaCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
                         for error in errors {
                             may_error.check_concept_write_without_read_errors::<()>(&Err(Box::new(error)));
                         }
