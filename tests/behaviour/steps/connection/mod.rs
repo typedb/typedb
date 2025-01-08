@@ -36,7 +36,7 @@ pub async fn typedb_starts(context: &mut Context) {
         })
         .await;
 
-    let (_, server) = TYPEDB.get().expect("Expected TypeDB to get or be initialized");
+    let (_, server) = TYPEDB.get().expect("Expected TypeDB to get or be initialised");
     context.server = Some(server.clone());
 }
 

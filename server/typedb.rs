@@ -113,7 +113,7 @@ impl Server {
         self.typedb_service.as_ref().unwrap().database_manager()
     }
 
-    pub async fn serve(mut self) -> Result<(), tonic::transport::Error> {
+    pub async fn serve(mut self) -> Result<(), ServerOpenError> {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
         let authenticator = Authenticator::new(
             self.user_manager.clone(),
@@ -130,6 +130,7 @@ impl Server {
                 println!("\nReceived a CTRL-C signal. Shutting down...");
             })
             .await
+            .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
     }
 
     fn initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
@@ -255,5 +256,6 @@ typedb_error! {
         CouldNotCreateDataDirectory(4, "Could not create data directory in '{path}'.", path: String, source: Arc<io::Error>),
         InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: String),
         DatabaseOpen(6, "Could not open database.", typedb_source: DatabaseOpenError),
+        Serve(7, "Could not serve on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
     }
 }
