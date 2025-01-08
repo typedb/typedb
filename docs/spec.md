@@ -2849,7 +2849,7 @@ In the recursive case, we provide **tabled executors** for all functions that ma
     * a **table state index** indicating how many output rows were present in `Tab(G,z)` at the time of suspension
 
 Execution now proceeds in execution **super-steps**.
-* Before the **first** execution super-step, tables are initialized to be *empty* and associated suspension point sets are *empty* too
+* Before the **first** execution super-step, tables are initialised to be *empty* and associated suspension point sets are *empty* too
 * In the **n**th super-step, we run our entry stack of steps with the following modifications:
     * ***Advancing state***: whenever a stack evaluating a function call `F(x)` completes a result
         * add the result to `Tab(F,x)` if it is not yet a row in that table.

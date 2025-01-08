@@ -44,10 +44,12 @@ impl MonitoringServer {
             match Server::try_bind(&addr) {
                 Ok(server) => {
                     if let Err(e) = server.serve(make_svc).await {
-                        eprintln!("Diagnostics monitoring server error: {}", e);
+                        eprintln!("WARNING: Diagnostics monitoring server error: '{}'", e);
                     }
                 }
-                Err(e) => eprintln!("Diagnostics monitoring server setup error for {}: {}", addr, e),
+                Err(e) => {
+                    eprintln!("WARNING: Diagnostics monitoring server could not get initialised on {}: '{}'", addr, e)
+                }
             }
         });
     }
