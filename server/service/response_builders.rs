@@ -269,6 +269,13 @@ pub(crate) mod transaction {
     ) -> typedb_protocol::transaction::Server {
         transaction_server_res_part(req_id, transaction_res_part_res_part_stream_signal_error(error))
     }
+
+    pub(crate) fn transaction_server_res_rollback_res(
+        req_id: Uuid,
+        message: typedb_protocol::transaction::rollback::Res,
+    ) -> typedb_protocol::transaction::Server {
+        transaction_server_res(req_id, typedb_protocol::transaction::res::Res::RollbackRes(message))
+    }
 }
 
 pub(crate) mod user_manager {

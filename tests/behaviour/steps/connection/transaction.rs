@@ -169,8 +169,14 @@ pub async fn transaction_rollbacks(context: &mut Context, may_error: params::May
                 BehaviourConnectionTestExecutionError::CannotRollbackReadTransaction,
             ));
         }
-        ActiveTransaction::Write(mut tx) => tx.rollback(),
-        ActiveTransaction::Schema(mut tx) => tx.rollback(),
+        ActiveTransaction::Write(mut tx) => {
+            tx.rollback();
+            context.set_transaction(ActiveTransaction::Write(tx))
+        }
+        ActiveTransaction::Schema(mut tx) => {
+            tx.rollback();
+            context.set_transaction(ActiveTransaction::Schema(tx))
+        }
     }
 }
 

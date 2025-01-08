@@ -78,7 +78,7 @@ use crate::service::{
         query_res_part_from_concept_documents, query_res_part_from_concept_rows, transaction_open_res,
         transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
         transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
-        transaction_server_res_query_res,
+        transaction_server_res_query_res, transaction_server_res_rollback_res,
     },
     row::encode_row,
 };
@@ -412,7 +412,7 @@ impl TransactionService {
                     self.diagnostics_manager.clone(),
                     self.get_database_name().map(|name| name.to_owned()),
                     ActionKind::TransactionRollback,
-                    || async { self.handle_rollback(rollback_req).await },
+                    || async { self.handle_rollback(request_id, rollback_req).await },
                 )
                 .await
             }
@@ -572,6 +572,7 @@ impl TransactionService {
 
     async fn handle_rollback(
         &mut self,
+        req_id: Uuid,
         _rollback_req: typedb_protocol::transaction::rollback::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         // interrupt all queries, cancel writes, then rollback
@@ -586,14 +587,27 @@ impl TransactionService {
         }
 
         match self.transaction.take().unwrap() {
-            Transaction::Read(_) => {
+            Transaction::Read(transaction) => {
+                self.transaction = Some(Transaction::Read(transaction));
                 return Err(TransactionServiceError::CannotRollbackReadTransaction {}
                     .into_error_message()
                     .into_status());
             }
-            Transaction::Write(mut transaction) => transaction.rollback(),
-            Transaction::Schema(mut transaction) => transaction.rollback(),
+            Transaction::Write(mut transaction) => {
+                transaction.rollback();
+                self.transaction = Some(Transaction::Write(transaction));
+            }
+            Transaction::Schema(mut transaction) => {
+                transaction.rollback();
+                self.transaction = Some(Transaction::Schema(transaction));
+            }
         };
+
+        let res = transaction_server_res_rollback_res(req_id, typedb_protocol::transaction::rollback::Res {});
+        if let Err(err) = self.response_sender.send(Ok(res)).await {
+            event!(Level::TRACE, "Submit message failed: {:?}", err);
+            return Ok(Break(()));
+        }
         Ok(Continue(()))
     }
 
