@@ -121,7 +121,7 @@ macro_rules! typedb_error {
         impl $crate::TypeDBError for $name {
             fn variant_name(&self) -> &'static str {
                 match self {
-                    $(Self::$variant { .. } => &stringify!($variant),)*
+                    $(Self::$variant { .. } => stringify!($variant),)*
                 }
             }
 
@@ -131,7 +131,7 @@ macro_rules! typedb_error {
 
             fn code(&self) -> &'static str {
                 match self {
-                    $(Self::$variant { .. } => & concat!($prefix, stringify!($number)),)*
+                    $(Self::$variant { .. } => concat!($prefix, stringify!($number)),)*
                 }
             }
 
