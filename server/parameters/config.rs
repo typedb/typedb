@@ -80,15 +80,19 @@ impl Config {
             storage: StorageConfig { data: data_directory.to_owned() },
         }
     }
+
+    pub fn get_server_config(&self) -> &ServerConfig {
+        &self.server
+    }
 }
 
 #[derive(Debug)]
-pub(crate) struct ServerConfig {
+pub struct ServerConfig {
     pub(crate) address: String,
     pub(crate) encryption: EncryptionConfig,
     pub(crate) diagnostics: DiagnosticsConfig,
 
-    pub(crate) is_development_mode: bool,
+    pub is_development_mode: bool,
 }
 
 impl ServerConfig {

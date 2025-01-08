@@ -25,8 +25,8 @@ features = {}
 		default-features = false
 
 	[dependencies.moka]
-		features = ["atomic64", "default", "quanta", "sync"]
-		version = "0.12.8"
+		features = ["default", "sync"]
+		version = "0.12.10"
 		default-features = false
 
 	[dependencies.storage]
@@ -173,7 +173,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.23"
+		version = "4.5.24"
 		default-features = false
 
 	[dependencies.bytes]

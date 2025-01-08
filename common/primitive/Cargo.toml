@@ -16,6 +16,6 @@ features = {}
 
 	[dependencies.serde]
 		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
-		version = "1.0.216"
+		version = "1.0.217"
 		default-features = false
 
