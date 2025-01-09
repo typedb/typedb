@@ -40,6 +40,10 @@ pub struct CLIArgs {
     #[arg(long = "diagnostics.reporting.metrics", default_value_t = true, action=ArgAction::Set)]
     pub diagnostics_reporting_metrics: bool, // used to be `statistics` in 2.x
 
+    /// Enable critical error reporting
+    #[arg(long = "diagnostics.reporting.errors", default_value_t = true, action=ArgAction::Set)]
+    pub diagnostics_reporting_errors: bool,
+
     /// Enable a diagnostics monitoring HTTP endpoint
     #[arg(long = "diagnostics.monitoring.enable", default_value_t = true, action=ArgAction::Set)]
     pub diagnostics_monitoring_enable: bool,

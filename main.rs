@@ -11,33 +11,38 @@ use std::{path::PathBuf, str::FromStr};
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::ASCII_LOGO;
+use resource::constants::server::{ASCII_LOGO, SENTRY_REPORTING_URI};
+use sentry::ClientInitGuard as SentryGuard;
 use server::parameters::{
     cli::CLIArgs,
-    config::{Config, DiagnosticsConfig, EncryptionConfig},
+    config::{Config, DiagnosticsConfig, EncryptionConfig, ServerConfig},
 };
 
 const DISTRIBUTION: &str = "TypeDB CE";
 const VERSION: &str = include_str!("VERSION");
 
-#[tokio::main]
-async fn main() {
+fn main() {
     setup_abort_on_panic();
-    let cli_args = server::parameters::cli::CLIArgs::parse();
-
-    print_ascii_logo(); // very important
     initialise_logging_global();
 
+    let cli_args = server::parameters::cli::CLIArgs::parse();
+    print_ascii_logo(); // very important
+
     let deployment_id = None;
+    let is_error_reporting_enabled = cli_args.diagnostics_reporting_errors;
     let config = get_configuration(cli_args);
+    let _error_reporting_guard = setup_error_reporting(config.server_config(), is_error_reporting_enabled);
 
-    let open_result = server::typedb::Server::open(config, DISTRIBUTION, VERSION, deployment_id).await;
-
-    let result = open_result.unwrap().serve().await;
-    match result {
-        Ok(_) => println!("Exited."),
-        Err(err) => println!("Exited with error: {:?}", err),
-    }
+    tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Expected a main tokio runtime").block_on(
+        async {
+            let open_result = server::typedb::Server::open(config, DISTRIBUTION, VERSION, deployment_id).await;
+            let result = open_result.unwrap().serve().await;
+            match result {
+                Ok(_) => println!("Exited."),
+                Err(err) => println!("Exited with error: {:?}", err),
+            }
+        },
+    );
 }
 
 fn get_configuration(cli_args: CLIArgs) -> Config {
@@ -74,4 +79,15 @@ fn setup_abort_on_panic() {
             std::process::exit(1);
         })
     });
+}
+
+fn setup_error_reporting(server_config: &ServerConfig, is_error_reporting_enabled: bool) -> Option<SentryGuard> {
+    if is_error_reporting_enabled && !server_config.is_development_mode {
+        Some(sentry::init((
+            SENTRY_REPORTING_URI,
+            sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() },
+        )))
+    } else {
+        None
+    }
 }

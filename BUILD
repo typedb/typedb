@@ -36,6 +36,7 @@ rust_binary(
         "//server",
 
         "@crates//:clap",
+        "@crates//:sentry",
         "@crates//:tokio",
     ],
     compile_data = [

@@ -40,12 +40,17 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.23"
+		version = "4.5.24"
 		default-features = false
 
 	[dependencies.logger]
 		path = "./common/logger"
 		features = []
+		default-features = false
+
+	[dependencies.sentry]
+		features = ["backtrace", "contexts", "httpdate", "panic", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq"]
+		version = "0.36.0"
 		default-features = false
 
 [[test]]

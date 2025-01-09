@@ -51,12 +51,12 @@ features = {}
 
 	[dependencies.sysinfo]
 		features = ["component", "default", "disk", "multithread", "network", "system", "user"]
-		version = "0.33.0"
+		version = "0.33.1"
 		default-features = false
 
 	[dependencies.xxhash-rust]
 		features = ["xxh3"]
-		version = "0.8.12"
+		version = "0.8.15"
 		default-features = false
 
 	[dependencies.tonic]
@@ -81,6 +81,6 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.133"
+		version = "1.0.135"
 		default-features = false
 

@@ -87,8 +87,8 @@ features = {}
 		default-features = false
 
 	[dependencies.moka]
-		features = ["atomic64", "default", "quanta", "sync"]
-		version = "0.12.8"
+		features = ["default", "sync"]
+		version = "0.12.10"
 		default-features = false
 
 	[dependencies.storage]

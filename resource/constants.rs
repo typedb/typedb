@@ -48,6 +48,9 @@ pub mod server {
     pub const DEFAULT_DATA_DIR: &str = "data";
 
     pub const SYSTEM_FILE_PREFIX: &str = "_";
+
+    pub const SENTRY_REPORTING_URI: &str =
+        "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";
 }
 
 pub mod database {
