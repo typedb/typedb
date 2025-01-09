@@ -7,6 +7,7 @@
 use std::{error::Error, fmt};
 
 use encoding::value::value_type::ValueTypeCategory;
+use error::typedb_error;
 
 use crate::annotation::expression::{
     expression_compiler::ExpressionCompilationContext, instructions::op_codes::ExpressionOpCode, ExpressionCompileError,
@@ -74,3 +75,11 @@ impl Error for ExpressionEvaluationError {
         }
     }
 }
+
+typedb_error!(
+    pub ExpressionEvaluationError2(component = "Expression evaluation", prefix = "EEV") {
+        CheckedOperationFailed,
+        CastFailed,
+        ListIndexOutOfRange, 
+    }
+)
