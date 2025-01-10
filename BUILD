@@ -68,10 +68,10 @@ alias(
 )
 
 # The directory structure for distribution
+exports_files(["typedb_server_bin.exe"])
 pkg_files(
     name = "package-layout-server",
-    srcs = ["//:typedb_server_bin", "//binary:typedb"],
-    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
+    srcs = ["//:typedb_server_bin.exe", "//binary:typedb.bat"],
     attributes = binary_permissions,
 )
 
