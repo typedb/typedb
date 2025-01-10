@@ -29,12 +29,3 @@ index 0cbdcc5da..c363ea01c 100644
  )
  
  # Assembly
-@@ -71,7 +58,7 @@ alias(
- pkg_files(
-     name = "package-layout-server",
-     srcs = ["//:typedb_server_bin", "//binary:typedb"],
--    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
-+    renames = {"//:typedb_server_bin" : "server/typedb_server_bin.exe"},
-     attributes = binary_permissions,
- )
- 
