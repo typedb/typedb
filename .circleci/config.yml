@@ -177,6 +177,15 @@ jobs:
       - test-assembly-unix
       - deploy-snapshot-unix
 
+  test-deploy-snapshot-windows-x86_64:
+    executor: win-x86_64
+    working_directory: ~/typedb-driver
+    steps:
+      - checkout
+      - run: .circleci\windows\prepare.bat
+      - run: REM "Restore .circleci\windows\test_assembly.bat"
+      - run: .circleci\windows\deploy_snapshot.bat
+
   # per platform release deployment
   deploy-release-linux-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -211,6 +220,13 @@ jobs:
       - install-deps-brew:
           bazel-arch: arm64
       - deploy-release-unix
+
+  deploy-release-windows-x86_64:
+    executor: win-x86_64
+    steps:
+      - checkout
+      - run: .circleci\windows\prepare.bat
+      - run: .circleci\windows\deploy_release.bat
 
   deploy-docker-release-x86_64:
     executor: linux-x86_64-amazonlinux-2
@@ -302,6 +318,11 @@ workflows:
             branches:
               only: [ "3.0" ]
 
+      - test-deploy-snapshot-windows-x86_64:
+          filters:
+            branches:
+              only: [ "3.0" ]
+
       - sync-to-typedb-benchmark:
           filters:
             branches:
@@ -326,6 +347,11 @@ workflows:
               only: [ release ]
 
       - deploy-release-mac-arm64:
+          filters:
+            branches:
+              only: [ release ]
+
+      - deploy-release-windows-x86_64:
           filters:
             branches:
               only: [ release ]
@@ -357,6 +383,7 @@ workflows:
             - deploy-release-linux-arm64
             - deploy-release-mac-x86_64
             - deploy-release-mac-arm64
+            - deploy-release-windows-x86_64
             - deploy-docker-release-multiarch
 
       - release-cleanup:
