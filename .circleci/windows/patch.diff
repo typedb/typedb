@@ -1,0 +1,40 @@
+diff --git a/BUILD b/BUILD
+index 0cbdcc5da..c363ea01c 100644
+--- a/BUILD
++++ b/BUILD
+@@ -24,23 +24,10 @@ exports_files(
+     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
+ )
+ 
+-rust_binary(
++exports_files(["typedb_server_bin.exe"])
++alias(
+     name = "typedb_server_bin",
+-    srcs = [
+-        "main.rs",
+-    ],
+-    deps = [
+-        "//common/logger",
+-        "//database",
+-        "//resource",
+-        "//server",
+-
+-        "@crates//:clap",
+-        "@crates//:tokio",
+-    ],
+-    compile_data = [
+-        ":VERSION",
+-    ],
++    actual = ":typedb_server_bin.exe",
+ )
+ 
+ # Assembly
+@@ -71,7 +58,7 @@ alias(
+ pkg_files(
+     name = "package-layout-server",
+     srcs = ["//:typedb_server_bin", "//binary:typedb"],
+-    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
++    renames = {"//:typedb_server_bin" : "server/typedb_server_bin.exe"},
+     attributes = binary_permissions,
+ )
+ 
