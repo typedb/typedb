@@ -124,6 +124,17 @@ assemble_targz(
     target_compatible_with = constraint_linux_arm64,
 )
 
+assemble_zip(
+    name = "assemble-server-windows-x86_64-zip",
+    additional_files = assemble_files,
+    empty_directories = empty_directories,
+    output_filename = "typedb-server-windows-x86_64",
+    permissions = other_permissions,
+    targets = ["//:package-typedb-server-only"],
+    visibility = ["//tests/assembly:__subpackages__"],
+    target_compatible_with = constraint_win_x86_64,
+)
+
 # Package TypeDB & console together
 artifact_repackage(
     name = "console-repackaged",
@@ -189,7 +200,7 @@ assemble_zip(
     permissions = other_permissions,
     targets = ["//:package-typedb-all"],
     visibility = ["//tests/assembly:__subpackages__"],
-    target_compatible_with = constraint_mac_arm64,
+    target_compatible_with = constraint_win_x86_64,
 )
 
 deploy_artifact(
