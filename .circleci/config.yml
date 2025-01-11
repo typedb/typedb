@@ -179,7 +179,7 @@ jobs:
 
   test-deploy-snapshot-windows-x86_64:
     executor: win-x86_64
-    working_directory: ~/typedb-driver
+    working_directory: ~/typedb
     steps:
       - checkout
       - run: .circleci\windows\prepare.bat
