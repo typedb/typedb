@@ -31,21 +31,11 @@ goto print_usage
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
 
 set "G_CP=%TYPEDB_HOME%\console\conf\;%TYPEDB_HOME%\console\lib\*"
-java %CONSOLE_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.console.TypeDBConsole %ARGS%
+java %CONSOLE_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.typedb.console.TypeDBConsole %ARGS%
 goto exit
 
 :startserver
-for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
-
-set "G_CP=%TYPEDB_HOME%\server\conf\;%TYPEDB_HOME%\server\lib\*"
-echo "%G_CP%"
-echo "%TYPEDB_HOME%"
-
-if "%2"=="--help" (
-  java %SERVER_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.core.server.TypeDBServer %ARGS%
-) else (
-  start cmd /c java %SERVER_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.vaticle.typedb.core.server.TypeDBServer %ARGS% ^|^| pause
-)
+.\typedb_server_bin.exe
 goto exit
 
 :exit
