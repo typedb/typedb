@@ -4164,11 +4164,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-<<<<<<< HEAD
 source = "git+https://github.com/typedb/typeql?rev=059c0332e33a892e6a04bbf83df5634d3d5df249#059c0332e33a892e6a04bbf83df5634d3d5df249"
-=======
-source = "git+https://github.com/typedb/typeql?tag=3.0.0#5d77665821f81beb8c24a8e4698bd2b67208d5a1"
->>>>>>> cdd835eaf (Try introducing iam schema & data as tql)
 dependencies = [
  "chrono",
  "itertools 0.10.5",
