@@ -176,7 +176,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             .iter()
             .flat_map(|nested_graph| {
                 Iterator::chain(
-                    nested_graph.conjunction.constraints().iter().flat_map(|c| c.vertices())
+                    nested_graph
+                        .conjunction
+                        .constraints()
+                        .iter()
+                        .flat_map(|c| c.vertices())
                         .filter_map(|v| v.as_variable()),
                     nested_graph.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
                 )
@@ -482,12 +486,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
 
     // Phase 3: seed edges
     fn seed_edges(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), Box<ConceptReadError>> {
-        debug_assert!(
-            graph.vertices.iter()
-                .filter(|(v, _)| v.is_variable() && self.variable_registry.get_variable_category(v.as_variable().unwrap()).unwrap().is_category_thing())
-                .flat_map(|(_, types)| types)
-                .all(|t| self.is_not_abstract(t).unwrap())
-        );
+        debug_assert!(graph
+            .vertices
+            .iter()
+            .filter(|(v, _)| v.is_variable()
+                && self.variable_registry.get_variable_category(v.as_variable().unwrap()).unwrap().is_category_thing())
+            .flat_map(|(_, types)| types)
+            .all(|t| self.is_not_abstract(t).unwrap()));
         let TypeInferenceGraph { conjunction, edges, vertices, .. } = graph;
         for constraint in conjunction.constraints() {
             match constraint {
@@ -549,7 +554,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
     }
 
-    fn prune_abstract_types_from_thing_vertex_annotations_recursive(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
+    fn prune_abstract_types_from_thing_vertex_annotations_recursive(
+        &self,
+        graph: &mut TypeInferenceGraph<'_>,
+    ) -> Result<(), TypeInferenceError> {
         for annotated_vertex in &mut graph.vertices {
             let (Vertex::Variable(id), annotations) = annotated_vertex else {
                 continue;

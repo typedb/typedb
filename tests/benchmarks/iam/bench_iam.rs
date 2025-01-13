@@ -8,17 +8,12 @@ use std::{fs::File, io::Read, path::Path, sync::Arc};
 
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionSchema, TransactionWrite},
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
-use database::transaction::TransactionRead;
-use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
-use executor::batch::Batch;
+use executor::{batch::Batch, pipeline::stage::StageIterator, ExecutionInterrupt};
 use options::TransactionOptions;
-use storage::{
-    durability_client::WALClient,
-    snapshot::CommittableSnapshot,
-};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
 use test_utils::create_tmp_dir;
 
 const DB_NAME: &str = "benchmark-iam";
@@ -117,25 +112,28 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
-    let pipeline =
-        query_manager.prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &query).unwrap();
+    let pipeline = query_manager
+        .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &query)
+        .unwrap();
     let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = rows.collect_owned().unwrap();
     batch
 }
 
 #[test]
-fn check_permission(){
+fn check_permission() {
     let email = "douglas.schmidt@vaticle.com";
     let path = "root/engineering/typedb-studio/src/README.md";
-    let operation  = "edit file";
-    let query = format!(r#"
+    let operation = "edit file";
+    let query = format!(
+        r#"
     match
         $p isa person, has email "{email}";
         $f isa file, has path "{path}";
         $o isa operation, has name "{operation}";
         let $permission = has_permission($p, $f, $o); # TODO: This used to have a validity true check
-    "#);
+    "#
+    );
 
     let database = setup();
     let answers = run_query(database.clone(), query.as_str());
@@ -143,17 +141,17 @@ fn check_permission(){
 }
 
 #[test]
-fn list_permissions(){
+fn list_permissions() {
     let email = "douglas.schmidt@vaticle.com";
     let query = format!(r#"
     match
         $p isa person, has email "{email}";
         let $ac in list_permissions($p); #, has validity $v;
         $ac isa access (object: $o, action: $a);
-        #$o isa object, has id $id;
-        #$a isa action, has name $n;
-
-    "#);
+        # $o isa object, has id $id;
+        # $a isa action, has name $n;
+    "#
+    );
 
     let database = setup();
     let answers = run_query(database.clone(), query.as_str());

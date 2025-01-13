@@ -459,7 +459,9 @@ impl<'a> DisjunctionPlanner<'a> {
     ) -> Self {
         let shared_variables =
             builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
-        let input_variables = builder.branches().iter()
+        let input_variables = builder
+            .branches()
+            .iter()
             .flat_map(|branch| branch.required_inputs().iter().map(|v| variable_index[v]))
             .dedup()
             .collect();
