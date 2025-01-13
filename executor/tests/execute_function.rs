@@ -502,3 +502,34 @@ fn fibonacci() {
         assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_integer(), 13);
     }
 }
+
+// TODO: This is out of place.
+#[test]
+fn disjunction_emulating_optional() {
+    let custom_schema = r#"define
+        attribute age, value integer;
+        attribute name, value string;
+        entity person, owns name, owns age;
+    "#;
+    let context = setup_common(custom_schema);
+    let insert_query = r#"insert
+    $p isa person, has name "Jeff";
+
+    "#;
+    let (rows, _positions) = run_write_query(&context, insert_query).unwrap();
+    assert_eq!(1, rows.len());
+
+    {
+        let query = r#"
+match
+  $p isa person, has name $name;
+  { let $ignored = true; }
+  or
+  { $p has age $age; };
+select $name, $age;
+"#;
+        let (rows, _positions) = run_read_query(&context, query).unwrap();
+        assert_eq!(rows.len(), 1);
+        println!("{rows:?}");
+    }
+}
