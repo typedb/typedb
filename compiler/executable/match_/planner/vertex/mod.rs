@@ -17,7 +17,7 @@ use ir::pattern::{
     constraint::{Comparison, FunctionCallBinding, Is},
     Vertex,
 };
-use itertools::chain;
+use itertools::{chain, Itertools};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -460,7 +460,10 @@ impl<'a> DisjunctionPlanner<'a> {
     ) -> Self {
         let shared_variables =
             builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
-        let input_variables = todo!(); // Used to be: Vec::new(), but needs to be unproducable  RHS of expr, args of fn, etc.
+        let input_variables = builder.branches().iter()
+            .flat_map(|branch| branch.required_inputs().iter().map(|v| variable_index[v]))
+            .dedup()
+            .collect();
         Self { input_variables, shared_variables, builder }
     }
 

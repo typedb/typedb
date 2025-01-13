@@ -30,6 +30,7 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
+use ir::pattern::Scope;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -137,14 +138,26 @@ fn make_builder<'a>(
                     statistics,
                     per_call_costs,
                 )
-                .with_inputs(negation.conjunction().captured_variables(block_context))
-                .plan(),
+                    .with_inputs(negation.conjunction().captured_variables(block_context))
+                    .plan(),
             ),
             NestedPattern::Optional(_) => todo!(),
         }
     }
+    // Compute variables which must be bound from a parent scope.
+    let mut available_referenced_variables: HashSet<Variable> = conjunction.referenced_variables()
+        .filter(|v| block_context.is_variable_available(conjunction.scope_id(), *v))
+        .collect();
+    let mut produced_variables: HashSet<Variable> = conjunction.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
+    available_referenced_variables.iter().filter(|v| { // TODO: Exclude branch local variables
+        disjunction_planners.iter().any(|disjunction| { // Is this right?
+            disjunction.branches.iter().all(|b| b.produced_variables.contains(v))
+        })
+    }).copied().for_each(|v| {produced_variables.insert(v);});
 
-    let mut plan_builder = ConjunctionPlanBuilder::new(type_annotations, statistics);
+    let required_inputs = { available_referenced_variables.retain(|v| !produced_variables.contains(v)); available_referenced_variables };
+
+    let mut plan_builder = ConjunctionPlanBuilder::new(Vec::from_iter(required_inputs.into_iter()), Vec::from_iter(produced_variables.into_iter()), type_annotations, statistics);
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
@@ -222,6 +235,8 @@ impl VertexId {
 #[derive(Clone)]
 pub(super) struct ConjunctionPlanBuilder<'a> {
     shared_variables: Vec<Variable>,
+    required_inputs: Vec<Variable>,
+    produced_variables: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
@@ -238,18 +253,24 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
-    fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
+    fn new(required_inputs: Vec<Variable>, produced_variables: Vec<Variable>, type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self {
             shared_variables: Vec::new(),
             graph: Graph::default(),
             type_annotations,
             statistics,
             planner_statistics: PlannerStatistics::new(),
+            required_inputs,
+            produced_variables
         }
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
         &self.shared_variables
+    }
+
+    pub(super) fn required_inputs(&self) -> &[Variable] {
+        self.required_inputs.as_slice()
     }
 
     fn input_variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
@@ -728,7 +749,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { shared_variables, graph, type_annotations, statistics: _, mut planner_statistics } = self;
+        let Self { required_inputs: _, produced_variables: _, shared_variables, graph, type_annotations, statistics: _, mut planner_statistics } = self;
 
         planner_statistics.finalize(cost);
         ConjunctionPlan {
@@ -961,7 +982,7 @@ impl PartialCostPlan {
                     constraint.cost_and_metadata(input_vars, graph)
                 }
             }
-            planner_vertex => planner_vertex.cost_and_metadata(&self.vertex_ordering, graph),
+            planner_vertex => planner_vertex.cost_and_metadata(input_vars, graph),
         };
         (updated_cost, extension_metadata)
     }
