@@ -548,6 +548,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn is_not_abstract(&self, type_: &TypeAnnotation) -> Result<bool, Box<ConceptReadError>> {
         type_.is_abstract(self.snapshot, self.type_manager).map(|b| !b)
     }
+
     fn prune_abstract_types_from_thing_vertex_annotations_recursive(&self, graph: &mut TypeInferenceGraph<'_>) -> Result<(), TypeInferenceError> {
         for annotated_vertex in &mut graph.vertices {
             let (Vertex::Variable(id), annotations) = annotated_vertex else {

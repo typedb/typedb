@@ -33,7 +33,7 @@ use crate::{
 pub mod function_plan;
 pub mod match_executable;
 pub mod plan;
-pub mod vertex; // TODO: pub(crate)
+pub(crate) mod vertex;
 
 pub fn compile(
     block: &Block,

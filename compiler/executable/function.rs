@@ -44,7 +44,7 @@ pub struct ExecutableFunction {
     pub returns: ExecutableReturn,
     pub is_tabled: FunctionTablingType,
     pub parameter_registry: Arc<ParameterRegistry>,
-    pub single_call_cost: Cost, // TODO: Where do we fit this in?
+    pub single_call_cost: Cost,
 }
 
 #[derive(Debug, Clone)]
@@ -88,7 +88,7 @@ impl<'a, FIDType: FunctionIDAPI> FunctionPlanner<'a, FIDType> {
     }
 
     fn cycle_breaking_cost(&self) -> Cost {
-        Cost { cost: 1.0, io_ratio: 1.0 } // TODO: This should simulate depth 1 recursion.
+        Cost { cost: 1.0, io_ratio: 1.0 } // TODO: Improve. This should simulate depth 1 recursion.
     }
 }
 
@@ -112,16 +112,12 @@ pub(crate) fn compile_functions<FIDType: FunctionIDAPI>(
     mut to_compile: HashMap<FIDType, AnnotatedFunction>,
 ) -> Result<HashMap<FIDType, ExecutableFunction>, ExecutableCompilationError> {
     // TODO: Cache compiled schema functions?
-    #[cfg(debug_assertions)]
-    let debug__to_compile_count = to_compile.len();
     let mut planner = FunctionPlanner::new(cached_plans, to_compile);
     let mut cycle_detection = HashSet::new();
     while !planner.to_compile.is_empty() {
         let id = planner.to_compile.keys().find_or_first(|_| true).unwrap().clone();
         compile_functions_impl(statistics, &mut planner, &mut cycle_detection, id)?;
     }
-    #[cfg(debug_assertions)]
-    debug_assert!(planner.completed.len() == debug__to_compile_count);
 
     Ok(planner.completed)
 }
@@ -177,8 +173,8 @@ pub(crate) fn compile_function(
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
     debug_assert!(all_calls_in_pipeline(function.stages.as_slice()).iter().all(|f| {
         per_call_costs.get_call_cost(f);
-        true
-    })); // Will crash
+        true // The call above will crash if the assertion fails.
+    }));
     let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_, .. } = function;
     let (argument_positions, executable_stages, _) = compile_pipeline_stages(
         statistics,

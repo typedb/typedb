@@ -110,9 +110,6 @@ fn setup() -> Arc<Database<WALClient>> {
     load_schema_tql(database.clone(), &functions_path);
     load_data_tql(database.clone(), &data_path);
 
-    // Debug:
-    load_schema_tql(database.clone(), &Path::new(RESOURCE_PATH).join(Path::new("debug_schema.tql")));
-
     database
 }
 

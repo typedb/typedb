@@ -15,11 +15,8 @@ rust_test(
         "//database",
         "//executor",
         "//function",
-#        "//ir",
         "//query",
-#        "//resource",
         "//storage",
-#        "//system",
 
         "//concept/tests:test_utils_concept",
         "//encoding/tests:test_utils_encoding",
@@ -27,7 +24,7 @@ rust_test(
 
         "@typeql//rust:typeql",
     ],
-    data = [":functions.tql", ":schema.tql", ":data.tql", ":debug_schema.tql"],
+    data = [":functions.tql", ":schema.tql", ":data.tql"],
 )
 
 checkstyle_test(

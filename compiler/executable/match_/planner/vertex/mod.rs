@@ -125,8 +125,7 @@ impl PlannerVertex<'_> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Cost {
-    // TODO: pub(crate)
+pub(crate) struct Cost {
     pub cost: f64, // per input
     pub io_ratio: f64,
 }
