@@ -6,9 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::match_::planner::{
-    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
-};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
 use storage::snapshot::ReadableSnapshot;

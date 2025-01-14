@@ -24,9 +24,9 @@ use crate::{
     executable::{
         delete::executable::DeleteExecutable,
         fetch::executable::{compile_fetch, ExecutableFetch},
-        function::{compile_functions, FunctionCallCostProvider},
+        function::{compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::executable::InsertExecutable,
-        match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable, vertex::Cost},
+        match_::planner::{match_executable::MatchExecutable, vertex::Cost},
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         ExecutableCompilationError,
@@ -152,7 +152,7 @@ pub fn compile_stages_and_fetch(
 pub(crate) fn compile_pipeline_stages(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
-    per_call_costs: &impl FunctionCallCostProvider,
+    call_cost_provider: &impl FunctionCallCostProvider,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
     selected_variables: &[Variable],
@@ -170,13 +170,18 @@ pub(crate) fn compile_pipeline_stages(
             .unique()
             .collect_vec();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => {
-                compile_stage(statistics, variable_registry, per_call_costs, &row_mapping, &selected_variables, stage)?
-            }
+            Some(row_mapping) => compile_stage(
+                statistics,
+                variable_registry,
+                call_cost_provider,
+                &row_mapping,
+                &selected_variables,
+                stage,
+            )?,
             None => compile_stage(
                 statistics,
                 variable_registry,
-                per_call_costs,
+                call_cost_provider,
                 &input_variable_positions,
                 &selected_variables,
                 stage,
@@ -202,7 +207,7 @@ pub(crate) fn compile_pipeline_stages(
 fn compile_stage(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
-    per_call_costs: &impl FunctionCallCostProvider,
+    call_cost_provider: &impl FunctionCallCostProvider,
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &[Variable],
     annotated_stage: AnnotatedStage,
@@ -217,7 +222,7 @@ fn compile_stage(
                 variable_registry,
                 executable_expressions,
                 statistics,
-                per_call_costs,
+                call_cost_provider,
             );
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }

@@ -79,7 +79,7 @@ pub(crate) fn plan_conjunction<'a>(
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
-    per_call_costs: &'a impl FunctionCallCostProvider,
+    call_cost_provider: &'a impl FunctionCallCostProvider,
 ) -> ConjunctionPlan<'a> {
     make_builder(
         conjunction,
@@ -89,7 +89,7 @@ pub(crate) fn plan_conjunction<'a>(
         variable_registry,
         expressions,
         statistics,
-        per_call_costs,
+        call_cost_provider,
     )
     .plan()
 }
@@ -102,7 +102,7 @@ fn make_builder<'a>(
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
-    per_call_costs: &impl FunctionCallCostProvider,
+    call_cost_provider: &impl FunctionCallCostProvider,
 ) -> ConjunctionPlanBuilder<'a> {
     let mut negation_subplans = Vec::new();
     let mut disjunction_planners = Vec::new();
@@ -121,7 +121,7 @@ fn make_builder<'a>(
                             variable_registry,
                             expressions,
                             statistics,
-                            per_call_costs,
+                            call_cost_provider,
                         )
                     })
                     .collect_vec(),
@@ -135,7 +135,7 @@ fn make_builder<'a>(
                     variable_registry,
                     expressions,
                     statistics,
-                    per_call_costs,
+                    call_cost_provider,
                 )
                 .with_inputs(negation.conjunction().captured_variables(block_context))
                 .plan(),
@@ -179,7 +179,7 @@ fn make_builder<'a>(
         conjunction.declared_variables(block_context),
         variable_registry,
     );
-    plan_builder.register_constraints(conjunction, expressions, per_call_costs);
+    plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
     plan_builder.register_negations(negation_subplans);
     plan_builder.register_disjunctions(disjunction_planners);
     plan_builder
@@ -408,7 +408,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         &mut self,
         conjunction: &'a Conjunction,
         expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
-        per_call_costs: &impl FunctionCallCostProvider,
+        call_cost_provider: &impl FunctionCallCostProvider,
     ) {
         for constraint in conjunction.constraints() {
             match constraint {
@@ -429,7 +429,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::IndexedRelation(indexed_relation) => self.register_indexed_relation(indexed_relation),
 
                 Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
-                Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call, per_call_costs),
+                Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call, call_cost_provider),
 
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
@@ -538,7 +538,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_function_call_binding(
         &mut self,
         call_binding: &'a FunctionCallBinding<Variable>,
-        per_call_costs: &impl FunctionCallCostProvider,
+        call_cost_provider: &impl FunctionCallCostProvider,
     ) {
         let arguments =
             call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
@@ -551,7 +551,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         // TODO: Use the real cost when we have function planning
-        let cost = per_call_costs.get_call_cost(&call_binding.function_call().function_id());
+        let cost = call_cost_provider.get_call_cost(&call_binding.function_call().function_id());
         self.graph.push_function_call(FunctionCallPlanner::from_constraint(call_binding, arguments, return_vars, cost));
     }
 

@@ -8,11 +8,8 @@ use std::sync::Arc;
 
 use compiler::{
     executable::{
-        function::{ExecutableFunction, ExecutableReturn, FunctionTablingType},
-        match_::planner::{
-            function_plan::ExecutableFunctionRegistry,
-            match_executable::{ExecutionStep, MatchExecutable},
-        },
+        function::{ExecutableFunction, ExecutableFunctionRegistry, ExecutableReturn, FunctionTablingType},
+        match_::planner::match_executable::{ExecutionStep, MatchExecutable},
         next_executable_id,
         pipeline::ExecutableStage,
     },

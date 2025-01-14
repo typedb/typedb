@@ -30,7 +30,6 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 
-pub mod function_plan;
 pub mod match_executable;
 pub mod plan;
 pub(crate) mod vertex;
@@ -43,7 +42,7 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
-    per_call_costs: &impl FunctionCallCostProvider,
+    call_cost_provider: &impl FunctionCallCostProvider,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
@@ -60,7 +59,7 @@ pub fn compile(
         variable_registry,
         expressions,
         statistics,
-        per_call_costs,
+        call_cost_provider,
     )
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
     .finish(variable_registry)

@@ -17,7 +17,6 @@ use compiler::{
         match_::{
             instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
             planner::{
-                function_plan::ExecutableFunctionRegistry,
                 match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
                 plan::PlannerStatistics,
             },
@@ -26,6 +25,7 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
+use compiler::executable::function::ExecutableFunctionRegistry;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{

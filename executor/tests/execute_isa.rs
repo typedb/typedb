@@ -14,13 +14,13 @@ use compiler::{
     self,
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
+        function::ExecutableFunctionRegistry,
         match_::{
             instructions::{
                 thing::{IsaInstruction, IsaReverseInstruction},
                 ConstraintInstruction, Inputs,
             },
             planner::{
-                function_plan::ExecutableFunctionRegistry,
                 match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
                 plan::PlannerStatistics,
             },

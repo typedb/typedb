@@ -14,7 +14,7 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::{function::FunctionCallCostProvider, match_::planner::function_plan::ExecutableFunctionRegistry},
+    executable::function::{ExecutableFunctionRegistry, FunctionCallCostProvider},
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},

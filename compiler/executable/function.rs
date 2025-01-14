@@ -6,11 +6,13 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt,
     sync::Arc,
 };
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
+use encoding::graph::definition::definition_key::DefinitionKey;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
@@ -27,7 +29,7 @@ use crate::{
         pipeline::AnnotatedStage,
     },
     executable::{
-        match_::planner::{function_plan::ExecutableFunctionRegistry, vertex::Cost},
+        match_::planner::vertex::Cost,
         next_executable_id,
         pipeline::{compile_pipeline_stages, ExecutableStage},
         reduce::ReduceRowsExecutable,
@@ -63,6 +65,49 @@ pub enum FunctionTablingType {
 
 pub trait FunctionCallCostProvider {
     fn get_call_cost(&self, function_id: &FunctionID) -> Cost;
+}
+
+#[derive(Clone)]
+pub struct ExecutableFunctionRegistry {
+    // Keep this abstraction in case we introduce function plan caching.
+    schema_functions: Arc<HashMap<DefinitionKey, ExecutableFunction>>,
+    preamble_functions: HashMap<usize, ExecutableFunction>,
+}
+
+impl fmt::Debug for ExecutableFunctionRegistry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str("ExecutableFunctionRegistry { omitted }")
+    }
+}
+
+impl ExecutableFunctionRegistry {
+    pub(crate) fn new(
+        schema_functions: Arc<HashMap<DefinitionKey, ExecutableFunction>>,
+        preamble_functions: HashMap<usize, ExecutableFunction>,
+    ) -> Self {
+        Self { schema_functions, preamble_functions }
+    }
+
+    pub fn empty() -> Self {
+        Self::new(Arc::new(HashMap::new()), HashMap::new())
+    }
+
+    pub fn get(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {
+        match function_id {
+            FunctionID::Schema(id) => self.schema_functions.get(id),
+            FunctionID::Preamble(id) => self.preamble_functions.get(id),
+        }
+    }
+
+    pub(crate) fn schema_functions(&self) -> Arc<HashMap<DefinitionKey, ExecutableFunction>> {
+        self.schema_functions.clone()
+    }
+}
+
+impl FunctionCallCostProvider for ExecutableFunctionRegistry {
+    fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
+        self.get(function_id).unwrap().single_call_cost
+    }
 }
 
 struct FunctionPlanner<'a, FIDType: FunctionIDAPI> {
@@ -168,18 +213,18 @@ pub(crate) fn compile_single_untabled_function(
 pub(crate) fn compile_function(
     statistics: &Statistics,
     function: AnnotatedFunction,
-    per_call_costs: &impl FunctionCallCostProvider,
+    call_cost_provider: &impl FunctionCallCostProvider,
     is_tabled: FunctionTablingType,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
     debug_assert!(all_calls_in_pipeline(function.stages.as_slice()).iter().all(|f| {
-        per_call_costs.get_call_cost(f);
+        call_cost_provider.get_call_cost(f);
         true // The call above will crash if the assertion fails.
     }));
     let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_, .. } = function;
     let (argument_positions, executable_stages, _) = compile_pipeline_stages(
         statistics,
         &variable_registry,
-        per_call_costs,
+        call_cost_provider,
         stages,
         arguments.into_iter(),
         &return_.referenced_variables(),

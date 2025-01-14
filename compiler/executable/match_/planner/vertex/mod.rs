@@ -457,7 +457,7 @@ impl<'a> DisjunctionPlanner<'a> {
         builder: DisjunctionPlanBuilder<'a>,
         variable_index: &HashMap<Variable, VariableVertexId>,
     ) -> Self {
-        let shared_variables =
+        let shared_variables: HashSet<_> =
             builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
         let input_variables = builder
             .branches()
