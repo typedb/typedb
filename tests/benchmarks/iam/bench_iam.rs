@@ -5,6 +5,7 @@
  */
 
 use std::{fs::File, io::Read, path::Path, sync::Arc};
+use std::time::Instant;
 
 use database::{
     database_manager::DatabaseManager,
@@ -140,8 +141,11 @@ fn check_permission() {
     );
 
     let database = setup();
+    let start_time = Instant::now();
     let answers = run_query(database.clone(), query.as_str());
+    let time_taken = start_time.elapsed();
     assert_eq!(1, answers.len());
+    println!("Completed successfully in: {} ms", time_taken.as_millis())
 }
 
 #[test]
@@ -158,6 +162,10 @@ fn list_permissions() {
     );
 
     let database = setup();
+
+    let start_time = Instant::now();
     let answers = run_query(database.clone(), query.as_str());
+    let time_taken = start_time.elapsed();
     assert_eq!(67, answers.len());
+    println!("Completed successfully in: {} ms", time_taken.as_millis())
 }
