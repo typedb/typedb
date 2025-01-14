@@ -1479,7 +1479,7 @@ impl ConjunctionPlan<'_> {
         match &self.graph.elements()[&VertexId::Pattern(pattern)] {
             PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
             PlannerVertex::FunctionCall(_) => {
-                unreachable!("variable assigned to from functions cannot be produced by other instructions")
+                todo!()
             }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
