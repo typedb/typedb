@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fs::File, io::Read, path::Path, sync::Arc};
-use std::time::Instant;
+use std::{fs::File, io::Read, path::Path, sync::Arc, time::Instant};
 
 use database::{
     database_manager::DatabaseManager,
@@ -151,7 +150,8 @@ fn check_permission() {
 #[test]
 fn list_permissions() {
     let email = "douglas.schmidt@vaticle.com";
-    let query = format!(r#"
+    let query = format!(
+        r#"
     match
         $p isa person, has email "{email}";
         let $ac in list_permissions($p); #, has validity $v;
