@@ -144,35 +144,10 @@ fn make_builder<'a>(
         }
     }
     // Compute variables which must be bound from a parent scope.
-    let mut available_referenced_variables: HashSet<Variable> = conjunction
-        .referenced_variables()
-        .filter(|v| block_context.is_variable_available(conjunction.scope_id(), *v))
-        .collect();
-    let mut produced_variables: HashSet<Variable> =
-        conjunction.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
-    available_referenced_variables
-        .iter()
-        .filter(|v| {
-            disjunction_planners
-                .iter()
-                .any(|disjunction| disjunction.branches.iter().all(|b| b.produced_variables.contains(v)))
-        })
-        .copied()
-        .for_each(|v| {
-            produced_variables.insert(v);
-        });
-
-    let required_inputs = {
-        available_referenced_variables.retain(|v| !produced_variables.contains(v));
-        available_referenced_variables
-    };
-
-    let mut plan_builder = ConjunctionPlanBuilder::new(
-        Vec::from_iter(required_inputs.into_iter()),
-        Vec::from_iter(produced_variables.into_iter()),
-        type_annotations,
-        statistics,
-    );
+    let required_inputs = conjunction.required_inputs(block_context);
+    let produced_variables = conjunction.produced_variables(block_context);
+    let mut plan_builder =
+        ConjunctionPlanBuilder::new(Vec::from_iter(required_inputs.into_iter()), type_annotations, statistics);
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
@@ -251,7 +226,6 @@ impl VertexId {
 pub(super) struct ConjunctionPlanBuilder<'a> {
     shared_variables: Vec<Variable>,
     required_inputs: Vec<Variable>,
-    produced_variables: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
@@ -268,12 +242,7 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
-    fn new(
-        required_inputs: Vec<Variable>,
-        produced_variables: Vec<Variable>,
-        type_annotations: &'a TypeAnnotations,
-        statistics: &'a Statistics,
-    ) -> Self {
+    fn new(required_inputs: Vec<Variable>, type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self {
             shared_variables: Vec::new(),
             graph: Graph::default(),
@@ -281,7 +250,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             statistics,
             planner_statistics: PlannerStatistics::new(),
             required_inputs,
-            produced_variables,
         }
     }
 
@@ -769,7 +737,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let Self {
             required_inputs: _,
-            produced_variables: _,
             shared_variables,
             graph,
             type_annotations,
