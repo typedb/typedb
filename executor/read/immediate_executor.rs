@@ -555,6 +555,8 @@ impl CartesianIterator {
                                     .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
                                 debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
                                 iter
+                            } else if value == source_intersection_value {
+                                iter
                             } else {
                                 self.reopen_iterator(context, &iterator_executors[index])?
                             }
