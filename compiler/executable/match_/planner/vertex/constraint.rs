@@ -512,7 +512,7 @@ impl<'a> HasPlanner<'a> {
     ) -> f64 {
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
         if is_owner_bound {
-            scan_size_canonical /= owner_size;
+            scan_size_canonical = self.unbound_typed_expected_size / owner_size; // If owner is bound, assume we only scan correct attribute types
             if is_attribute_bound {
                 scan_size_canonical /= attribute_size;
             }
@@ -532,7 +532,7 @@ impl<'a> HasPlanner<'a> {
     ) -> f64 {
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
         if is_attribute_bound {
-            scan_size_reverse /= attribute_size;
+            scan_size_reverse = self.unbound_typed_expected_size / attribute_size; // If attribute is bound, assume we only scan correct owner types
             if is_owner_bound {
                 scan_size_reverse /= owner_size;
             }
@@ -751,7 +751,7 @@ impl<'a> LinksPlanner<'a> {
     ) -> f64 {
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
         if is_relation_bound {
-            scan_size_canonical /= relation_size;
+            scan_size_canonical = self.unbound_typed_expected_size / relation_size;  // If relation is bound, assume we only scan correct player types
             if is_player_bound {
                 scan_size_canonical /= player_size;
             } // Ignore nested selectivity for now
@@ -771,7 +771,7 @@ impl<'a> LinksPlanner<'a> {
     ) -> f64 {
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
         if is_player_bound {
-            scan_size_reverse /= player_size;
+            scan_size_reverse = self.unbound_typed_expected_size / player_size;  // If player is bound, assume we only scan correct relation types
             if is_relation_bound {
                 scan_size_reverse /= relation_size;
             } // Ignore nested selectivity for now
