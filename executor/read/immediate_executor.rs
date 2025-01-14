@@ -464,11 +464,15 @@ impl IntersectionExecutor {
                 break;
             }
         }
+        let Some(Ok(input_row)) = self.input.as_mut().unwrap().peek() else {
+            unreachable!("We had to get the input row to get to this point")
+        };
         if cartesian {
             self.cartesian_iterator.activate(
                 context,
                 &self.instruction_executors,
                 &self.intersection_value,
+                input_row,
                 &self.intersection_row,
                 self.intersection_multiplicity,
                 &mut self.iterators,
@@ -481,6 +485,7 @@ impl IntersectionExecutor {
 struct CartesianIterator {
     is_active: bool,
     intersection_value: VariableValue<'static>,
+    input_row: Vec<VariableValue<'static>>,
     intersection_source: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
     cartesian_executor_indices: Vec<usize>,
@@ -492,6 +497,7 @@ impl CartesianIterator {
         CartesianIterator {
             is_active: false,
             intersection_value: VariableValue::Empty,
+            input_row: vec![VariableValue::Empty; width],
             intersection_source: vec![VariableValue::Empty; width],
             intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
@@ -512,12 +518,14 @@ impl CartesianIterator {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         iterator_executors: &[InstructionExecutor],
         source_intersection_value: &VariableValue<'static>,
+        input_row: &[VariableValue<'static>],
         source_intersection: &[VariableValue<'static>],
         source_multiplicity: u64,
         intersection_iterators: &mut [TupleIterator],
     ) -> Result<(), ReadExecutionError> {
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
+        self.input_row[..input_row.len()].clone_from_slice(input_row);
         self.intersection_source.clone_from_slice(source_intersection);
         self.intersection_value = source_intersection_value.clone();
         self.intersection_multiplicity = source_multiplicity;
@@ -601,10 +609,7 @@ impl CartesianIterator {
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ReadExecutionError> {
         let mut reopened = executor
-            .get_iterator(
-                context,
-                MaybeOwnedRow::new_borrowed(&self.intersection_source, &self.intersection_multiplicity),
-            )
+            .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1))
             .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
         // TODO: use seek()
         reopened
