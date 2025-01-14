@@ -1278,15 +1278,12 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
-        if !self.type_manager.relation_index_available(snapshot, relation_type)? {
-            Err(ConceptReadError::RelationIndexNotAvailable {
-                relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
-            })?;
-        }
         let prefix = ThingEdgeIndexedRelation::prefix_relation_type(relation_type.vertex().type_id_());
-        Ok(IndexedRelationsIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING)),
-        ))
+        self.iterate_indexed_relations(
+            snapshot,
+            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
+            relation_type,
+        )
     }
 
     pub(crate) fn has_indexed_relation_player(
