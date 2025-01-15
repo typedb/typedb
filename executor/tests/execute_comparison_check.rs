@@ -14,6 +14,7 @@ use answer::variable::Variable;
 use compiler::{
     annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
     executable::{
+        function::ExecutableFunctionRegistry,
         match_::{
             instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
             planner::{
@@ -25,7 +26,6 @@ use compiler::{
     },
     ExecutorVariable, VariablePosition,
 };
-use compiler::executable::function::ExecutableFunctionRegistry;
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
