@@ -21,30 +21,6 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
-pub struct ConceptError {
-    pub kind: ConceptErrorKind,
-}
-
-#[derive(Debug)]
-pub enum ConceptErrorKind {
-    AttributeValueTypeMismatch { attribute_type_value_type: Option<ValueType>, provided_value_type: ValueType },
-}
-
-impl fmt::Display for ConceptError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
-    }
-}
-
-impl Error for ConceptError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match &self.kind {
-            ConceptErrorKind::AttributeValueTypeMismatch { .. } => None,
-        }
-    }
-}
-
 typedb_error!(
     pub ConceptWriteError(component = "Concept write", prefix = "COW") {
         SnapshotGet(1, "Concept write failed due to a snapshot read error.", source: SnapshotGetError),

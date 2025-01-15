@@ -93,7 +93,7 @@ impl ExecutionStep {
         match self {
             ExecutionStep::Intersection(step) => &step.selected_variables,
             ExecutionStep::UnsortedJoin(step) => &step.selected_variables,
-            ExecutionStep::Assignment(_) => todo!(),
+            ExecutionStep::Assignment(step) => &step.selected_variables,
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
@@ -464,9 +464,9 @@ pub struct OptionalStep {
 impl fmt::Display for OptionalStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Optional")?;
-        write!(f, "\n      --- Start negation ---")?;
+        write!(f, "\n      --- Start optional ---")?;
         write!(f, "\n {}", &self.optional)?;
-        write!(f, "\n      --- End negation ---")
+        write!(f, "\n      --- End optional ---")
     }
 }
 
