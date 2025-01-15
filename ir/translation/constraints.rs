@@ -7,7 +7,7 @@
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
-use error::{todo_lists, todo_optional};
+use error::unimplemented_feature;
 use itertools::Itertools;
 use typeql::{
     expression::{FunctionCall, FunctionName},
@@ -212,7 +212,9 @@ fn register_typeql_type(
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
-        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
+            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName { value_type: value_type.clone() }))
+        }
         typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -223,8 +225,12 @@ fn register_typeql_role_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
-        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType { declaration: optional.clone() })),
-        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType { declaration: list.clone() })),
+        typeql::TypeRefAny::Optional(optional) => {
+            Err(Box::new(RepresentationError::UnimplementedOptionalType { declaration: optional.clone() }))
+        }
+        typeql::TypeRefAny::List(list) => {
+            Err(Box::new(RepresentationError::UnimplementedListType { declaration: list.clone() }))
+        }
     }
 }
 
@@ -391,7 +397,10 @@ fn add_typeql_isa(
                 add_typeql_isa(function_index, constraints, thing, isa)?;
                 let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
                 let comparator = comparison.comparator.try_into().map_err(|source| {
-                    Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+                    Box::new(RepresentationError::LiteralParseError {
+                        literal: comparison.comparator.to_string(),
+                        source,
+                    })
                 })?;
                 constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator)?;
             }
@@ -483,11 +492,11 @@ pub(super) fn add_typeql_relation(
                             declaration: role_player.clone(),
                         }));
                     }
-                    TypeRefAny::Optional(_) => todo_optional!(),
-                    TypeRefAny::List(_) => todo_lists!(),
-                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(_))) => {
-                        return Err(Box::new(RepresentationError::ReservedKeywordAsTypeName {
-                            name: type_ref.clone(),
+                    TypeRefAny::Optional(_) => unimplemented_feature!(Optionals),
+                    TypeRefAny::List(_) => unimplemented_feature!(Lists),
+                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(value_type))) => {
+                        return Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
+                            value_type: value_type.clone(),
                         }));
                     }
                 };
@@ -517,7 +526,9 @@ fn add_typeql_iterable_binding(
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             todo!("builtin function returning list (e.g. list(stream_func()))")
         }
-        typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => todo_lists!("iter in list or range slice"),
+        typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => {
+            unimplemented_feature!(Lists, "iter in list or range slice")
+        }
         | typeql::Expression::Variable(_)
         | typeql::Expression::ListIndex(_)
         | typeql::Expression::Value(_)

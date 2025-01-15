@@ -179,10 +179,15 @@ typedb_error! {
             "A reserved keyword \"{identifier}\" was used as identifier",
             identifier: typeql::Identifier,
         ),
-        ReservedKeywordAsTypeName(
+        ReservedValueTypeAsTypeName(
             28,
-            "A reserved keyword \"{name}\" was used as type name",
-            name: typeql::TypeRefAny,
+            "A reserved value-type name \"{value_type}\" was used as type name",
+            value_type: typeql::type_::BuiltinValueType,
+        ),
+        UnimplementedBuiltinFunction(
+            254,
+            "The built in function is not yet implemented: {builtin}",
+            builtin: token::Function,
         ),
         UnimplementedOptionalType(
             255,

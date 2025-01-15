@@ -50,7 +50,9 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
     })
 }
 
-pub fn translate_annotation_category(annotation_category: token::Annotation) -> Result<AnnotationCategory, LiteralParseError> {
+pub fn translate_annotation_category(
+    annotation_category: token::Annotation,
+) -> Result<AnnotationCategory, LiteralParseError> {
     Ok(match annotation_category {
         token::Annotation::Abstract => AnnotationCategory::Abstract,
         token::Annotation::Cardinality => AnnotationCategory::Cardinality,

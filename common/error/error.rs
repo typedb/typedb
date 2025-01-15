@@ -220,42 +220,27 @@ macro_rules! typedb_error {
     };
 }
 
-
+// Check for usages
+#[derive(Debug)]
 pub enum UnimplementedFeature {
     Optionals,
     Lists,
     Structs,
 
-}
+    QueryResPartFromConceptDocument,
+    IteratorSeek,
 
-
-#[macro_export]
-macro_rules! todo_optional {
-    () => {
-        todo!("TODO: Implement optionals")
-    };
-    ($msg:literal) => {
-        todo!(concat!("TODO: Implement optionals: ", $msg))
-    };
+    ComparatorContains,
+    ComparatorLike,
 }
 
 #[macro_export]
-macro_rules! todo_structs {
-    () => {
-        todo!("TODO: Implement structs")
+macro_rules! unimplemented_feature {
+    ($feature:ident) => {
+        unreachable!("TODO: Implement feature: {:?}", error::UnimplementedFeature::$feature)
     };
-    ($msg:literal) => {
-        todo!(concat!("TODO: Implement structs: ", $msg))
-    };
-}
-
-#[macro_export]
-macro_rules! todo_lists {
-    () => {
-        todo!("TODO: Implement lists")
-    };
-    ($msg:literal) => {
-        todo!(concat!("TODO: Implement lists: ", $msg))
+    ($feature:ident, $msg:literal) => {
+        unreachable!("TODO: Implement feature: {:?} {}", error::UnimplementedFeature::$feature, $msg)
     };
 }
 
@@ -272,4 +257,9 @@ macro_rules! todo_display_for_error {
     ($f:ident) => {
         write!($f, "fmt::Display has not yet been implemented for {}.", std::any::type_name::<Self>())
     };
+}
+
+#[macro_export]
+macro_rules! ensure_unimplemented_unused {
+    () => {};
 }

@@ -845,7 +845,11 @@ fn redefine_plays_annotations(
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             plays.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation { declaration: typeql_capability.clone(), annotation, typedb_source: source }
+                RedefineError::SetCapabilityAnnotation {
+                    declaration: typeql_capability.clone(),
+                    annotation,
+                    typedb_source: source,
+                }
             })?;
         }
     }

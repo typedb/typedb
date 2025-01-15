@@ -151,13 +151,14 @@ impl PatternExecutor {
                     negation_suspensions.record_nested_pattern_entry();
                     match inner.batch_continue(context, interrupt, tabled_functions, &mut negation_suspensions)? {
                         None => {
+                            debug_assert!(negation_suspensions.is_empty()); // TODO: I don't think I've handled this case
                             self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
                         }
                         Some(_) => inner.reset(), // fail
                     };
                     negation_suspensions.record_nested_pattern_exit();
                     if !negation_suspensions.is_empty() {
-                        // todo!("A negated pattern encountered a cycle (lasso). Retries aren't done at the right place yet. - The results may be unsound.")
+                        // TODO: I'm not sure this is right. Shouldn't this be done before the match on batch_continue?
                         for function_state in tabled_functions.iterate_states() {
                             let mut guard = function_state.executor_state.try_lock().unwrap();
                             if guard.pattern_executor.has_empty_control_stack() {

@@ -202,7 +202,7 @@ fn to_builtin_id(
             check_builtin_arg_count(token, args.len(), 1)?;
             Ok(BuiltInFunctionID::Round)
         }
-        _ => todo!(),
+        _ => Err(Box::new(RepresentationError::UnimplementedBuiltinFunction { builtin: token.clone() })),
     }
 }
 

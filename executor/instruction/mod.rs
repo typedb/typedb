@@ -22,7 +22,7 @@ use encoding::{
     value::{value::Value, ValueEncodable},
     AsBytes,
 };
-use error::todo_lists;
+use error::unimplemented_feature;
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},
@@ -526,7 +526,7 @@ impl<T> Checker<T> {
                             VariableValue::Empty => Ok(false),
                             VariableValue::Type(_) => Ok(false),
                             VariableValue::Value(_) => Ok(false), // or unreachable?
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo_lists!(),
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                         }
                     }))
                 }
@@ -821,7 +821,7 @@ impl<T> Checker<T> {
                             attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
                         }
                         VariableValue::Value(value) => Ok(value.into_owned()),
-                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo_lists!(),
+                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                         VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                     };
                     let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
@@ -831,8 +831,8 @@ impl<T> Checker<T> {
                         Comparator::Greater => |a, b| a > b,
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
-                        Comparator::Like => todo!("like"),
-                        Comparator::Contains => todo!("contains"),// |a,b| a.unwrap_string_ref().contains(b.unwrap_string_ref()),
+                        Comparator::Like => unimplemented_feature!(ComparatorLike),
+                        Comparator::Contains => unimplemented_feature!(ComparatorContains), // |a,b| a.unwrap_string_ref().contains(b.unwrap_string_ref()),
                     };
                     filters.push(Box::new(move |value| {
                         let lhs = lhs(value);
@@ -841,7 +841,7 @@ impl<T> Checker<T> {
                                 attr.get_value(&*snapshot, &thing_manager)?.into_owned()
                             }
                             VariableValue::Value(value) => value,
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo_lists!(),
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                             VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                         };
                         let rhs = rhs.clone()?;

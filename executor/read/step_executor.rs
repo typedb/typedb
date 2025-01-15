@@ -16,7 +16,7 @@ use compiler::{
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use error::todo_optional;
+use error::unimplemented_feature;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
@@ -202,7 +202,7 @@ pub(crate) fn create_executors_for_match(
                 ));
                 steps.push(step);
             }
-            ExecutionStep::Optional(_) => todo_optional!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
         };
     }
     Ok(steps)

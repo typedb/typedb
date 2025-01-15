@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::todo_optional;
+use error::unimplemented_feature;
 use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
@@ -98,7 +98,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
-            ExecutionStep::Optional(_) => todo_optional!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
@@ -111,7 +111,7 @@ impl ExecutionStep {
             ExecutionStep::Check(_) => &[],
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
-            ExecutionStep::Optional(_) => todo_optional!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
@@ -124,7 +124,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
-            ExecutionStep::Optional(_) => todo_optional!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }

@@ -10,6 +10,7 @@
 use std::marker::PhantomData;
 
 use encoding::graph::thing::ThingVertex;
+use error::unimplemented_feature;
 use lending_iterator::LendingIterator;
 
 use crate::{
@@ -69,8 +70,9 @@ macro_rules! concept_iterator {
                 $name { snapshot_iterator: None }
             }
 
+            #[cfg(unused_unimplemented_function)]
             pub fn seek(&mut self) {
-                todo!()
+                unimplemented_feature!(IteratorSeek)
             }
         }
 
@@ -119,8 +121,9 @@ macro_rules! edge_iterator {
                 })
             }
 
+            #[cfg(unused_unimplemented_function)]
             pub fn seek(&mut self) {
-                todo!()
+                unimplemented_feature!(IteratorSeek)
             }
         }
 

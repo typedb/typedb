@@ -38,12 +38,6 @@ impl Disjunction {
     }
 }
 
-impl Scope for Disjunction {
-    fn scope_id(&self) -> ScopeId {
-        todo!()
-    }
-}
-
 impl StructuralEquality for Disjunction {
     fn hash(&self) -> u64 {
         self.conjunctions().hash()

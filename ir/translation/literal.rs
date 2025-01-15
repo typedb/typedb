@@ -15,7 +15,7 @@ use encoding::value::{
     timezone::TimeZone,
     value::Value,
 };
-use error::todo_structs;
+use error::unimplemented_feature;
 use typeql::{
     annotation::Regex,
     value::{
@@ -58,7 +58,7 @@ impl FromTypeQLLiteral for Value<'static> {
             }
             ValueLiteral::Duration(duration) => Ok(Value::Duration(Duration::from_typeql_literal(duration)?)),
             ValueLiteral::String(string) => Ok(Value::String(Cow::Owned(String::from_typeql_literal(string)?))),
-            ValueLiteral::Struct(_) => todo_structs!(),
+            ValueLiteral::Struct(_) => unimplemented_feature!(Structs),
         }
     }
 }

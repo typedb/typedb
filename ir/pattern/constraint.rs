@@ -16,12 +16,16 @@ use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
-use crate::{LiteralParseError, pattern::{
-    expression::{ExpressionDefinitionError, ExpressionTree},
-    function_call::FunctionCall,
-    variable_category::VariableCategory,
-    IrID, ParameterID, ScopeId, ValueType, Vertex,
-}, pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry}, RepresentationError};
+use crate::{
+    pattern::{
+        expression::{ExpressionDefinitionError, ExpressionTree},
+        function_call::FunctionCall,
+        variable_category::VariableCategory,
+        IrID, ParameterID, ScopeId, ValueType, Vertex,
+    },
+    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
+    LiteralParseError, RepresentationError,
+};
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -1787,8 +1791,8 @@ impl TryFrom<typeql::token::Comparator> for Comparator {
             typeql::token::Comparator::Gte => Self::GreaterOrEqual,
             typeql::token::Comparator::Lt => Self::Less,
             typeql::token::Comparator::Lte => Self::LessOrEqual,
-            typeql::token::Comparator::Contains => return Err(LiteralParseError::UnimplementedComparator),//Self::Contains,
-            typeql::token::Comparator::Like => return Err(LiteralParseError::UnimplementedComparator), //Self::Like,
+            typeql::token::Comparator::Contains => return Err(LiteralParseError::UnimplementedComparator), //Self::Contains,
+            typeql::token::Comparator::Like => return Err(LiteralParseError::UnimplementedComparator),     //Self::Like,
         })
     }
 }

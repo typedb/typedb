@@ -16,8 +16,8 @@ use compiler::{
     ExecutorVariable, VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use itertools::Itertools;
 use error::todo_must_implement;
+use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 

@@ -26,7 +26,7 @@ use compiler::annotation::expression::{
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};
-use error::todo_lists;
+use error::unimplemented_feature;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
@@ -52,16 +52,18 @@ impl ExpressionValue {
                     .into_owned(),
             )),
             VariableValue::ThingList(things) => {
-                let as_value_list = things.iter().map(|thing| match thing {
-                    Thing::Attribute(attr) => {
-                        Ok(attr.get_value(&**context.snapshot(), context.thing_manager())
+                let as_value_list = things
+                    .iter()
+                    .map(|thing| match thing {
+                        Thing::Attribute(attr) => Ok(attr
+                            .get_value(&**context.snapshot(), context.thing_manager())
                             .map_err(|_| ExpressionEvaluationError::CastFailed)?
-                            .into_owned())
-                    }
-                    _ => Err(ExpressionEvaluationError::CastFailed)
-                }).collect::<Result<Vec<_>,_>>()?;
+                            .into_owned()),
+                        _ => Err(ExpressionEvaluationError::CastFailed),
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
                 Ok(ExpressionValue::List(as_value_list.into()))
-            },
+            }
             _ => Err(ExpressionEvaluationError::CastFailed),
         }
     }

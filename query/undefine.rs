@@ -254,7 +254,7 @@ fn undefine_capability_annotation(
 ) -> Result<(), UndefineError> {
     let label = Label::parse_from(checked_identifier(&annotation_undefinable.type_.ident)?);
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category)
-        .map_err(|source | UndefineError::LiteralParseError { source })?;
+        .map_err(|source| UndefineError::LiteralParseError { source })?;
 
     match &annotation_undefinable.capability {
         CapabilityBase::Sub(_) => {
