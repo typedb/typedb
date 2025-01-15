@@ -151,8 +151,8 @@ impl RelatesExecutor {
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
                 return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-                    message: concat!("UnboundInverted mode was not expected in file: ", file!())
-                } ));
+                    message: concat!("UnboundInverted mode was not expected in file: ", file!()),
+                }));
             }
 
             BinaryIterateMode::BoundFrom => {

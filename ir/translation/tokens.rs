@@ -41,7 +41,7 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
         )),
         typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex)?),
         typeql::Annotation::Subkey(_) => {
-            todo!()
+            return Err(LiteralParseError::UnimplementedSubkey);
         }
         typeql::Annotation::Unique(_) => Annotation::Unique(AnnotationUnique),
         typeql::Annotation::Values(values) => Annotation::Values(AnnotationValues::new(

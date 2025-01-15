@@ -179,7 +179,11 @@ typedb_error! {
             "A reserved keyword \"{identifier}\" was used as identifier",
             identifier: typeql::Identifier,
         ),
-
+        ReservedKeywordAsTypeName(
+            28,
+            "A reserved keyword \"{name}\" was used as type name",
+            name: typeql::TypeRefAny,
+        ),
         UnimplementedOptionalType(
             255,
             "Optional types are not yet implemented.\nSource:\n{declaration}",
@@ -203,6 +207,7 @@ pub enum LiteralParseError {
     CannotUnescapeRegexString { literal: StringLiteral, source: typeql::Error },
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
+    UnimplementedSubkey,
 }
 
 impl fmt::Display for LiteralParseError {
@@ -222,6 +227,7 @@ impl Error for LiteralParseError {
             LiteralParseError::CannotUnescapeRegexString { source, .. } => Some(source),
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
+            LiteralParseError::UnimplementedSubkey => None,
         }
     }
 }

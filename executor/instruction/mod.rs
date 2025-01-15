@@ -22,6 +22,7 @@ use encoding::{
     value::{value::Value, ValueEncodable},
     AsBytes,
 };
+use error::todo_lists;
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},
@@ -34,8 +35,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
+        has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
         indexed_relation_executor::IndexedRelationExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
         isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
         links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
@@ -48,7 +48,6 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
 mod iid_executor;
@@ -99,8 +98,6 @@ pub(crate) enum InstructionExecutor {
     LinksReverse(LinksReverseExecutor),
 
     IndexedRelation(IndexedRelationExecutor),
-
-    FunctionCallBinding(FunctionCallBindingIteratorExecutor),
 }
 
 impl InstructionExecutor {
@@ -191,7 +188,6 @@ impl InstructionExecutor {
             Self::Links(executor) => executor.get_iterator(context, row),
             Self::LinksReverse(executor) => executor.get_iterator(context, row),
             Self::IndexedRelation(executor) => executor.get_iterator(context, row),
-            Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 
@@ -205,7 +201,6 @@ impl InstructionExecutor {
             Self::HasReverse(_) => "has_reverse",
             Self::Links(_) => "links",
             Self::LinksReverse(_) => "links_reverse",
-            Self::FunctionCallBinding(_) => "fn_call_binding",
             Self::TypeList(_) => "[internal]type_list",
             Self::Sub(_) => "sub",
             Self::SubReverse(_) => "sub_reverse",
@@ -241,7 +236,6 @@ impl fmt::Display for InstructionExecutor {
             InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::LinksReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::IndexedRelation(inner) => fmt::Display::fmt(inner, f),
-            InstructionExecutor::FunctionCallBinding(inner) => fmt::Display::fmt(inner, f),
         }
     }
 }
@@ -532,7 +526,7 @@ impl<T> Checker<T> {
                             VariableValue::Empty => Ok(false),
                             VariableValue::Type(_) => Ok(false),
                             VariableValue::Value(_) => Ok(false), // or unreachable?
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo_lists!(),
                         }
                     }))
                 }

@@ -7,6 +7,7 @@
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
+use error::{todo_lists, todo_optional};
 use itertools::Itertools;
 use typeql::{
     expression::{FunctionCall, FunctionName},
@@ -473,10 +474,12 @@ pub(super) fn add_typeql_relation(
                             declaration: role_player.clone(),
                         }));
                     }
-                    TypeRefAny::Optional(_) => todo!(),
-                    TypeRefAny::List(_) => todo!(),
+                    TypeRefAny::Optional(_) => todo_optional!(),
+                    TypeRefAny::List(_) => todo_lists!(),
                     TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(_))) => {
-                        todo!("throw error")
+                        return Err(Box::new(RepresentationError::ReservedKeywordAsTypeName {
+                            name: type_ref.clone(),
+                        }));
                     }
                 };
                 let player = register_typeql_var(constraints, player_var)?;
