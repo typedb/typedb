@@ -482,6 +482,7 @@ impl IntersectionExecutor {
     }
 }
 
+// TODO: prefetch all data involved in the cartesian instead of pinging Rocks
 struct CartesianIterator {
     is_active: bool,
     intersection_value: VariableValue<'static>,
