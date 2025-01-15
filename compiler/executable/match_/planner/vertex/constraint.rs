@@ -751,7 +751,7 @@ impl<'a> LinksPlanner<'a> {
     ) -> f64 {
         let mut scan_size_canonical = self.unbound_typed_expected_size_canonical;
         if is_relation_bound {
-            scan_size_canonical = self.unbound_typed_expected_size / relation_size;  // If relation is bound, assume we only scan correct player types
+            scan_size_canonical = self.unbound_typed_expected_size / relation_size; // If relation is bound, assume we only scan correct player types
             if is_player_bound {
                 scan_size_canonical /= player_size;
             } // Ignore nested selectivity for now
@@ -771,7 +771,7 @@ impl<'a> LinksPlanner<'a> {
     ) -> f64 {
         let mut scan_size_reverse = self.unbound_typed_expected_size_reverse;
         if is_player_bound {
-            scan_size_reverse = self.unbound_typed_expected_size / player_size;  // If player is bound, assume we only scan correct relation types
+            scan_size_reverse = self.unbound_typed_expected_size / player_size; // If player is bound, assume we only scan correct relation types
             if is_relation_bound {
                 scan_size_reverse /= relation_size;
             } // Ignore nested selectivity for now
