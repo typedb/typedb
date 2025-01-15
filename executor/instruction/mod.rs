@@ -821,7 +821,7 @@ impl<T> Checker<T> {
                             attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
                         }
                         VariableValue::Value(value) => Ok(value.into_owned()),
-                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo_lists!(),
                         VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                     };
                     let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
@@ -841,7 +841,7 @@ impl<T> Checker<T> {
                                 attr.get_value(&*snapshot, &thing_manager)?.into_owned()
                             }
                             VariableValue::Value(value) => value,
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo_lists!(),
                             VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                         };
                         let rhs = rhs.clone()?;

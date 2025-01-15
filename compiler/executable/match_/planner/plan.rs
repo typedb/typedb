@@ -345,7 +345,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!("list variable planning"),
+                | VariableCategory::ValueList => todo_lists!(),
                 VariableCategory::AttributeOrValue => {
                     unreachable!("Insufficiently bound variable would have been flagged earlier")
                 }

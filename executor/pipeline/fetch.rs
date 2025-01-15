@@ -26,7 +26,7 @@ use concept::{
     type_::{attribute_type::AttributeType, OwnerAPI, TypeAPI},
 };
 use encoding::value::label::Label;
-use error::typedb_error;
+use error::{todo_lists, typedb_error};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
@@ -609,10 +609,10 @@ fn variable_value_to_document(variable_value: VariableValue<'_>) -> Result<Docum
         },
         VariableValue::Value(value) => Ok(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Value(value)))),
         VariableValue::ThingList(_) => {
-            todo!()
+            todo_lists!()
         }
         VariableValue::ValueList(_) => {
-            todo!()
+            todo_lists!()
         }
     }
 }

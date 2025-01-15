@@ -17,6 +17,7 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use itertools::Itertools;
+use error::todo_must_implement;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
@@ -136,7 +137,7 @@ impl ImmediateExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ImmediateExecutor::SortedJoin(sorted) => sorted.batch_continue(context, interrupt),
-            ImmediateExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(context, interrupt),
+            ImmediateExecutor::UnsortedJoin(unsorted) => unsorted.batch_continue(context, interrupt),
             ImmediateExecutor::Assignment(assignment) => assignment.batch_continue(context, interrupt),
             ImmediateExecutor::Check(check) => check.batch_continue(context, interrupt),
         }
@@ -661,7 +662,7 @@ impl UnsortedJoinExecutor {
     }
 
     fn reset(&mut self) {
-        todo!()
+        todo_must_implement!("UnsortedJoinExecutor::prepare")
     }
 
     fn prepare(
@@ -669,14 +670,15 @@ impl UnsortedJoinExecutor {
         _input_batch: FixedBatch,
         _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<(), ReadExecutionError> {
-        todo!()
+        todo_must_implement!("UnsortedJoinExecutor::prepare")
     }
 
     fn batch_continue(
         &mut self,
         _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
+        todo_must_implement!("UnsortedJoinExecutor::batch_continue")
     }
 }
 

@@ -226,6 +226,9 @@ macro_rules! todo_optional {
     () => {
         todo!("TODO: Implement optionals")
     };
+    ($msg:literal) => {
+        todo!(concat!("TODO: Implement optionals: ", $msg))
+    };
 }
 
 #[macro_export]
@@ -234,6 +237,9 @@ macro_rules! todo_structs {
     () => {
         todo!("TODO: Implement structs")
     };
+    ($msg:literal) => {
+        todo!(concat!("TODO: Implement structs: ", $msg))
+    };
 }
 
 #[macro_export]
@@ -241,6 +247,16 @@ macro_rules! todo_lists {
     // () => {  compile_error!("TODO: Implement lists")};
     () => {
         todo!("TODO: Implement lists")
+    };
+    ($msg:literal) => {
+        todo!(concat!("TODO: Implement lists: ", $msg))
+    };
+}
+
+#[macro_export]
+macro_rules! todo_must_implement {
+    ($msg:literal) => {
+        compile_error!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
     };
 }
 

@@ -7,6 +7,7 @@
 use std::fmt;
 
 use answer::variable::Variable;
+use error::todo_optional;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -43,7 +44,7 @@ impl Optional {
     }
 
     pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
-        todo!()
+        todo_optional!()
     }
 }
 
