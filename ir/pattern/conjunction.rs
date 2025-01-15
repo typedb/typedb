@@ -81,7 +81,7 @@ impl Conjunction {
         ))
     }
 
-    pub fn captured_producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
+    fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
         let mut produced_variables: HashSet<Variable> =
             self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
         let mut available_referenced_variables: HashSet<Variable> =
@@ -90,10 +90,7 @@ impl Conjunction {
             .iter()
             .filter(|v| {
                 self.nested_patterns.iter().filter_map(|nested| nested.as_disjunction()).any(|disjunction| {
-                    disjunction
-                        .conjunctions()
-                        .iter()
-                        .all(|b| b.captured_producible_variables(block_context).contains(v))
+                    disjunction.conjunctions().iter().all(|b| b.producible_variables(block_context).contains(v))
                 })
             })
             .copied()
@@ -103,12 +100,14 @@ impl Conjunction {
         produced_variables
     }
 
-    pub fn captured_required_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
-        let mut available_referenced_variables: HashSet<Variable> =
-            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v)).collect();
-        let produced_variables: HashSet<_> = self.captured_producible_variables(block_context);
-        available_referenced_variables.retain(|v| !produced_variables.contains(v));
-        available_referenced_variables
+    pub fn captured_required_variables<'a>(
+        &'a self,
+        block_context: &'a BlockContext,
+    ) -> impl Iterator<Item = Variable> + 'a {
+        let mut available_referenced_variables =
+            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v));
+        let producible_variables: HashSet<_> = self.producible_variables(block_context);
+        available_referenced_variables.filter(move |v| !producible_variables.contains(v))
     }
 }
 
