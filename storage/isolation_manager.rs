@@ -178,8 +178,10 @@ impl IsolationManager {
                 if let Some(conflict) = handle_dependency(commit_dependency) {
                     return Ok(Some(conflict));
                 }
+            } else if let Err(err) = commit_status_result {
+                return Err(err);
             } else {
-                todo!()
+                unreachable!()
             }
         }
         Ok(None)
