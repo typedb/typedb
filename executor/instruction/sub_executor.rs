@@ -133,7 +133,7 @@ impl SubExecutor {
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
                 return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-                    message: "UnboundInverted mode was not expected"
+                    message: concat!("UnboundInverted mode was not expected in file: ", file!())
                 } ));
             }
 
