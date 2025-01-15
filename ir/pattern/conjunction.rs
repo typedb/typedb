@@ -5,11 +5,13 @@
  */
 
 use std::{
+    collections::HashSet,
     fmt,
     hash::{DefaultHasher, Hasher},
 };
 
 use answer::variable::Variable;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -77,6 +79,35 @@ impl Conjunction {
                 }
             },
         ))
+    }
+
+    fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
+        let mut produced_variables: HashSet<Variable> =
+            self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
+        let mut available_referenced_variables: HashSet<Variable> =
+            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v)).collect();
+        available_referenced_variables
+            .iter()
+            .filter(|v| {
+                self.nested_patterns.iter().filter_map(|nested| nested.as_disjunction()).any(|disjunction| {
+                    disjunction.conjunctions().iter().all(|b| b.producible_variables(block_context).contains(v))
+                })
+            })
+            .copied()
+            .for_each(|v| {
+                produced_variables.insert(v);
+            });
+        produced_variables
+    }
+
+    pub fn captured_required_variables<'a>(
+        &'a self,
+        block_context: &'a BlockContext,
+    ) -> impl Iterator<Item = Variable> + 'a {
+        let mut available_referenced_variables =
+            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v));
+        let producible_variables: HashSet<_> = self.producible_variables(block_context);
+        available_referenced_variables.filter(move |v| !producible_variables.contains(v))
     }
 }
 

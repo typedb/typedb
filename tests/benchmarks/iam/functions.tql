@@ -1,0 +1,108 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+define
+
+# memberships
+fun has_group_membership($member: subject) -> { user-group }:
+match
+    $group isa user-group;
+    {
+        $m isa group-membership, links (group: $group, member: $member);
+    } or {
+        $m1 isa group-membership, links (group: $group, member: $intermediate);
+        let $intermediate in has_group_membership($member);
+    };
+return { $group };
+
+
+fun has_collection_membership($member: object) -> { resource-collection }:
+match
+    $collection isa resource-collection;
+    {
+        $m isa collection-membership, links (collection: $collection, member: $member);
+    } or {
+        $m1 isa collection-membership, links (collection: $collection, member: $intermediate);
+        let $intermediate in has_collection_membership($member);
+    };
+return { $collection };
+
+fun has_set_membership($member: action) -> { operation-set }:
+match
+    $set isa operation-set;
+    {
+        $m isa set-membership, links (set: $set, member: $member);
+    } or {
+        $m1 isa set-membership, links (set: $set, member: $intermediate);
+        let $intermediate in has_set_membership($member);
+    };
+return { $set };
+
+# members
+fun group_members($group: user-group) -> { subject }:
+match
+#    $group isa user-group;
+    $member isa subject;
+    {
+        $m isa group-membership, links (group: $group, member: $member);
+    } or {
+        let $intermediate in group_members($group);
+        $m1 isa group-membership, links (group: $intermediate, member: $member);
+    };
+return { $member };
+
+fun set_members($set: operation-set) -> { action }:
+match
+    $member isa action;
+    {
+        $m isa set-membership, links (set: $set, member: $member);
+    } or {
+        let $intermediate in set_members($set);
+        $m1 isa set-membership, links (set: $intermediate, member: $member);
+    };
+return { $member };
+
+fun collection_members($collection: resource-collection) -> { object }:
+match
+    $member isa object;
+    {
+        $m isa collection-membership, links (collection: $collection, member: $member);
+    } or {
+        let $intermediate in collection_members($collection);
+        $m1 isa collection-membership, links (collection: $intermediate, member: $member);
+    };
+return { $member };
+
+# permissions
+fun has_permission($subject: subject, $object: object, $action: action) -> { direct-permission }:
+match
+    $subject isa subject;
+    $object isa object;
+    $action isa action;
+    $granting-subject isa subject;
+    $granting-object isa object;
+    $granting-action isa action;
+    $access isa access, links (object: $object, action: $action);
+    { let $granting-subject in has_group_membership($subject); }  or { $granting-subject is $subject; };
+    { let $granting-action in has_set_membership($action); } or { $granting-action is $action; };
+    { let $granting-object in has_collection_membership($object); } or { $granting-object is $object; };
+    $granting-access isa access (object: $granting-object, action: $granting-action);
+    $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
+return { $granting-permission };
+
+fun list_permissions($subject: subject) -> { access }:
+match
+    $granting-subject isa subject;
+    { let $granting-subject in has_group_membership($subject); }  or { $granting-subject is $subject; };
+
+    $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
+    $granting-access isa access, links (object: $granting-object, action: $granting-action);
+
+    $action isa action;
+    $object isa object;
+    { let $action in set_members($granting-action); } or { $action is $granting-action; };
+    { let $object in collection_members($granting-object); } or { $object is $granting-object ; };
+
+    $access isa access, links (object: $object, action: $action);
+return { $access };

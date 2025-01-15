@@ -14,6 +14,7 @@ use itertools::Itertools;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::{
+        function::FunctionCallCostProvider,
         match_::{
             instructions::{CheckInstruction, ConstraintInstruction},
             planner::{
@@ -29,10 +30,9 @@ use crate::{
     ExecutorVariable, VariablePosition,
 };
 
-pub mod function_plan;
 pub mod match_executable;
 pub mod plan;
-mod vertex;
+pub(crate) mod vertex;
 
 pub fn compile(
     block: &Block,
@@ -42,6 +42,7 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
+    call_cost_provider: &impl FunctionCallCostProvider,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
@@ -58,6 +59,7 @@ pub fn compile(
         variable_registry,
         expressions,
         statistics,
+        call_cost_provider,
     )
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
     .finish(variable_registry)

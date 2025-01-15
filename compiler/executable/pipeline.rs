@@ -24,9 +24,9 @@ use crate::{
     executable::{
         delete::executable::DeleteExecutable,
         fetch::executable::{compile_fetch, ExecutableFetch},
-        function::{compile_function, determine_tabling_requirements},
+        function::{compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::executable::InsertExecutable,
-        match_::planner::{function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable},
+        match_::planner::{match_executable::MatchExecutable, vertex::Cost},
         modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         ExecutableCompilationError,
@@ -82,7 +82,7 @@ impl ExecutableStage {
     }
 }
 
-pub fn compile_pipeline(
+pub fn compile_pipeline_and_functions(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
     annotated_schema_functions: &AnnotatedSchemaFunctions,
@@ -91,38 +91,17 @@ pub fn compile_pipeline(
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
-    // TODO: Cache compiled schema functions?
-    let mut executable_schema_functions = HashMap::new();
-    let schema_tabling_requirements = determine_tabling_requirements(
-        &annotated_schema_functions.iter().map(|(id, function)| (FunctionID::Schema(id.clone()), function)).collect(),
-    );
-    for (id, function) in annotated_schema_functions.iter() {
-        // TODO: We could save cloning the whole function and only clone the stages.
-        let compiled = compile_function(
-            statistics,
-            &ExecutableFunctionRegistry::empty(),
-            function.clone(),
-            schema_tabling_requirements[&FunctionID::Schema(id.clone())],
-        )?;
-        executable_schema_functions.insert(id.clone(), compiled);
-    }
-    let arced_executable_schema_functions = Arc::new(executable_schema_functions);
+    // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
+    let arced_executable_schema_functions = Arc::new(compile_functions(
+        statistics,
+        &ExecutableFunctionRegistry::empty(),
+        annotated_schema_functions.clone(),
+    )?);
     let schema_function_registry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions.clone(), HashMap::new());
 
-    let preamble_tabling_requirements = determine_tabling_requirements(
-        &annotated_preamble.iter().enumerate().map(|(id, function)| (FunctionID::Preamble(id), function)).collect(),
-    );
-    let mut executable_preamble_functions = HashMap::new();
-    for (id, function) in annotated_preamble.into_iter().enumerate() {
-        let compiled = compile_function(
-            statistics,
-            &schema_function_registry,
-            function,
-            preamble_tabling_requirements[&FunctionID::Preamble(id)],
-        )?;
-        executable_preamble_functions.insert(id, compiled);
-    }
+    let executable_preamble_functions =
+        compile_functions(statistics, &schema_function_registry, annotated_preamble.into_iter().enumerate().collect())?;
 
     let schema_and_preamble_functions: ExecutableFunctionRegistry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions, executable_preamble_functions);
@@ -149,7 +128,7 @@ pub fn compile_stages_and_fetch(
     ExecutableCompilationError,
 > {
     let selected_variables = variable_registry.variable_names().keys().copied().collect_vec();
-    let (input_positions, executable_stages) = compile_pipeline_stages(
+    let (input_positions, executable_stages, _) = compile_pipeline_stages(
         statistics,
         variable_registry,
         available_functions,
@@ -173,11 +152,11 @@ pub fn compile_stages_and_fetch(
 pub(crate) fn compile_pipeline_stages(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
-    functions: &ExecutableFunctionRegistry,
+    call_cost_provider: &impl FunctionCallCostProvider,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
     selected_variables: &[Variable],
-) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>), ExecutableCompilationError> {
+) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Cost), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
@@ -191,13 +170,18 @@ pub(crate) fn compile_pipeline_stages(
             .unique()
             .collect_vec();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => {
-                compile_stage(statistics, variable_registry, functions, &row_mapping, &selected_variables, stage)?
-            }
+            Some(row_mapping) => compile_stage(
+                statistics,
+                variable_registry,
+                call_cost_provider,
+                &row_mapping,
+                &selected_variables,
+                stage,
+            )?,
             None => compile_stage(
                 statistics,
                 variable_registry,
-                functions,
+                call_cost_provider,
                 &input_variable_positions,
                 &selected_variables,
                 stage,
@@ -205,13 +189,25 @@ pub(crate) fn compile_pipeline_stages(
         };
         executable_stages.push(executable_stage);
     }
-    Ok((input_variable_positions, executable_stages))
+    let total_cost =
+        executable_stages
+            .iter()
+            .filter_map(|stage| {
+                if let ExecutableStage::Match(m) = stage {
+                    Some(m.planner_statistics().query_cost)
+                } else {
+                    None
+                }
+            })
+            .reduce(|x, y| x.chain(y))
+            .unwrap_or(Cost { cost: 1.0, io_ratio: 1.0 });
+    Ok((input_variable_positions, executable_stages, total_cost))
 }
 
 fn compile_stage(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
-    _functions: &ExecutableFunctionRegistry,
+    call_cost_provider: &impl FunctionCallCostProvider,
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &[Variable],
     annotated_stage: AnnotatedStage,
@@ -226,6 +222,7 @@ fn compile_stage(
                 variable_registry,
                 executable_expressions,
                 statistics,
+                call_cost_provider,
             );
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }

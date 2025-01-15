@@ -17,7 +17,7 @@ use ir::pattern::{
     constraint::{Comparison, FunctionCallBinding, Is},
     Vertex,
 };
-use itertools::chain;
+use itertools::{chain, Itertools};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -457,9 +457,15 @@ impl<'a> DisjunctionPlanner<'a> {
         builder: DisjunctionPlanBuilder<'a>,
         variable_index: &HashMap<Variable, VariableVertexId>,
     ) -> Self {
-        let shared_variables =
+        let shared_variables: HashSet<_> =
             builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
-        Self { input_variables: Vec::new(), shared_variables, builder }
+        let input_variables = builder
+            .branches()
+            .iter()
+            .flat_map(|branch| branch.required_inputs().iter().map(|v| variable_index[v]))
+            .dedup()
+            .collect();
+        Self { input_variables, shared_variables, builder }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {

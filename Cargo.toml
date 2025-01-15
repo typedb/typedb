@@ -11,8 +11,64 @@ features = {}
 
 [dev-dependencies]
 
+	[dev-dependencies.test_utils]
+		path = "util/test"
+		features = []
+		default-features = false
+
+	[dev-dependencies.test_utils_encoding]
+		path = "encoding/tests"
+		features = []
+		default-features = false
+
+	[dev-dependencies.answer]
+		path = "answer"
+		features = []
+		default-features = false
+
+	[dev-dependencies.executor]
+		path = "executor"
+		features = []
+		default-features = false
+
+	[dev-dependencies.function]
+		path = "function"
+		features = []
+		default-features = false
+
+	[dev-dependencies.query]
+		path = "query"
+		features = []
+		default-features = false
+
+	[dev-dependencies.options]
+		path = "common/options"
+		features = []
+		default-features = false
+
+	[dev-dependencies.typeql]
+		features = []
+		rev = "059c0332e33a892e6a04bbf83df5634d3d5df249"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
+
+	[dev-dependencies.test_utils_concept]
+		path = "concept/tests"
+		features = []
+		default-features = false
+
+	[dev-dependencies.storage]
+		path = "storage"
+		features = []
+		default-features = false
+
 	[dev-dependencies.steps]
 		path = "tests/behaviour/steps"
+		features = []
+		default-features = false
+
+	[dev-dependencies.lending_iterator]
+		path = "common/lending_iterator"
 		features = []
 		default-features = false
 
@@ -56,6 +112,10 @@ features = {}
 [[test]]
 	path = "tests/assembly/assembly.rs"
 	name = "test_assembly"
+
+[[test]]
+	path = "tests/benchmarks/iam/bench_iam.rs"
+	name = "bench_iam"
 
 [[test]]
 	path = "tests/behaviour/connection/database.rs"

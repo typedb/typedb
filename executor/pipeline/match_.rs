@@ -6,9 +6,7 @@
 
 use std::{iter::Peekable, sync::Arc};
 
-use compiler::executable::match_::planner::{
-    function_plan::ExecutableFunctionRegistry, match_executable::MatchExecutable,
-};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use itertools::{Itertools, UniqueBy};
 use lending_iterator::{adaptors::Map, IntoIter, LendingIterator};
 use storage::snapshot::ReadableSnapshot;

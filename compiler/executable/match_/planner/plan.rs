@@ -24,7 +24,7 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
+        Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -33,30 +33,33 @@ use tracing::{event, Level};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
-    executable::match_::{
-        instructions::{
-            thing::{
-                HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
-                IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
-            },
-            type_::{
-                OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction, RelatesInstruction,
-                RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
-            },
-            CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
-        },
-        planner::{
-            vertex::{
-                constraint::{
-                    ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
-                    OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
+    executable::{
+        function::FunctionCallCostProvider,
+        match_::{
+            instructions::{
+                thing::{
+                    HasInstruction, HasReverseInstruction, IidInstruction, IndexedRelationInstruction, IsaInstruction,
+                    IsaReverseInstruction, LinksInstruction, LinksReverseInstruction,
                 },
-                variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
+                type_::{
+                    OwnsInstruction, OwnsReverseInstruction, PlaysInstruction, PlaysReverseInstruction,
+                    RelatesInstruction, RelatesReverseInstruction, SubInstruction, SubReverseInstruction,
+                },
+                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, IsInstruction,
             },
-            DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder, MatchExecutableBuilder,
-            NegationBuilder, StepBuilder, StepInstructionsBuilder,
+            planner::{
+                vertex::{
+                    constraint::{
+                        ConstraintVertex, HasPlanner, IidPlanner, IndexedRelationPlanner, IsaPlanner, LinksPlanner,
+                        OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
+                    },
+                    variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
+                    ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
+                    FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
+                },
+                DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
+                MatchExecutableBuilder, NegationBuilder, StepBuilder, StepInstructionsBuilder,
+            },
         },
     },
     ExecutorVariable, VariablePosition,
@@ -76,6 +79,7 @@ pub(crate) fn plan_conjunction<'a>(
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
+    call_cost_provider: &'a impl FunctionCallCostProvider,
 ) -> ConjunctionPlan<'a> {
     make_builder(
         conjunction,
@@ -85,6 +89,7 @@ pub(crate) fn plan_conjunction<'a>(
         variable_registry,
         expressions,
         statistics,
+        call_cost_provider,
     )
     .plan()
 }
@@ -97,6 +102,7 @@ fn make_builder<'a>(
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
+    call_cost_provider: &impl FunctionCallCostProvider,
 ) -> ConjunctionPlanBuilder<'a> {
     let mut negation_subplans = Vec::new();
     let mut disjunction_planners = Vec::new();
@@ -115,6 +121,7 @@ fn make_builder<'a>(
                             variable_registry,
                             expressions,
                             statistics,
+                            call_cost_provider,
                         )
                     })
                     .collect_vec(),
@@ -128,6 +135,7 @@ fn make_builder<'a>(
                     variable_registry,
                     expressions,
                     statistics,
+                    call_cost_provider,
                 )
                 .with_inputs(negation.conjunction().captured_variables(block_context))
                 .plan(),
@@ -135,15 +143,20 @@ fn make_builder<'a>(
             NestedPattern::Optional(_) => todo!(),
         }
     }
+    // Compute variables which must be bound from a parent scope.
 
-    let mut plan_builder = ConjunctionPlanBuilder::new(type_annotations, statistics);
+    let mut plan_builder = ConjunctionPlanBuilder::new(
+        Vec::from_iter(conjunction.captured_required_variables(block_context)),
+        type_annotations,
+        statistics,
+    );
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
         conjunction.declared_variables(block_context),
         variable_registry,
     );
-    plan_builder.register_constraints(conjunction, expressions);
+    plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
     plan_builder.register_negations(negation_subplans);
     plan_builder.register_disjunctions(disjunction_planners);
     plan_builder
@@ -214,6 +227,7 @@ impl VertexId {
 #[derive(Clone)]
 pub(super) struct ConjunctionPlanBuilder<'a> {
     shared_variables: Vec<Variable>,
+    required_inputs: Vec<Variable>,
     graph: Graph<'a>,
     type_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
@@ -230,18 +244,23 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
-    fn new(type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
+    fn new(required_inputs: Vec<Variable>, type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self {
             shared_variables: Vec::new(),
             graph: Graph::default(),
             type_annotations,
             statistics,
             planner_statistics: PlannerStatistics::new(),
+            required_inputs,
         }
     }
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
         &self.shared_variables
+    }
+
+    pub(super) fn required_inputs(&self) -> &[Variable] {
+        self.required_inputs.as_slice()
     }
 
     fn input_variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
@@ -359,6 +378,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         &mut self,
         conjunction: &'a Conjunction,
         expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
+        call_cost_provider: &impl FunctionCallCostProvider,
     ) {
         for constraint in conjunction.constraints() {
             match constraint {
@@ -379,7 +399,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::IndexedRelation(indexed_relation) => self.register_indexed_relation(indexed_relation),
 
                 Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
-                Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call),
+                Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call, call_cost_provider),
 
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
@@ -485,7 +505,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.push_expression(output, ExpressionPlanner::from_expression(expression, inputs, output));
     }
 
-    fn register_function_call_binding(&mut self, call_binding: &'a FunctionCallBinding<Variable>) {
+    fn register_function_call_binding(
+        &mut self,
+        call_binding: &'a FunctionCallBinding<Variable>,
+        call_cost_provider: &impl FunctionCallCostProvider,
+    ) {
         let arguments =
             call_binding.function_call().argument_ids().map(|variable| self.graph.variable_index[&variable]).collect();
         let return_vars = call_binding
@@ -497,7 +521,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             })
             .collect();
         // TODO: Use the real cost when we have function planning
-        let cost = Cost { cost: 1.0, io_ratio: 1.0 };
+        let cost = call_cost_provider.get_call_cost(&call_binding.function_call().function_id());
         self.graph.push_function_call(FunctionCallPlanner::from_constraint(call_binding, arguments, return_vars, cost));
     }
 
@@ -713,7 +737,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { shared_variables, graph, type_annotations, statistics: _, mut planner_statistics } = self;
+        let Self {
+            required_inputs: _,
+            shared_variables,
+            graph,
+            type_annotations,
+            statistics: _,
+            mut planner_statistics,
+        } = self;
 
         planner_statistics.finalize(cost);
         ConjunctionPlan {
@@ -946,7 +977,7 @@ impl PartialCostPlan {
                     constraint.cost_and_metadata(input_vars, graph)
                 }
             }
-            planner_vertex => planner_vertex.cost_and_metadata(&self.vertex_ordering, graph),
+            planner_vertex => planner_vertex.cost_and_metadata(input_vars, graph),
         };
         (updated_cost, extension_metadata)
     }
@@ -1416,8 +1447,34 @@ impl ConjunctionPlan<'_> {
     ) {
         match &self.graph.elements()[&VertexId::Pattern(pattern)] {
             PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
-            PlannerVertex::FunctionCall(_) => {
-                unreachable!("variable assigned to from functions cannot be produced by other instructions")
+            PlannerVertex::FunctionCall(call_planner) => {
+                // We push exactly the same as if it weren't a check.
+                let call_binding = call_planner.call_binding;
+                let assigned = call_binding
+                    .assigned()
+                    .iter()
+                    .map(|variable| {
+                        match_builder
+                            .index
+                            .get(&variable.as_variable().unwrap())
+                            .unwrap()
+                            .clone()
+                            .as_position()
+                            .unwrap()
+                    })
+                    .collect();
+                let arguments = call_binding
+                    .function_call()
+                    .argument_ids()
+                    .map(|variable| match_builder.index.get(&variable).unwrap().clone().as_position().unwrap())
+                    .collect();
+                let step_builder = StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
+                    function_id: call_binding.function_call().function_id(),
+                    arguments,
+                    assigned,
+                    output_width: match_builder.next_output.position,
+                });
+                match_builder.push_step(&HashMap::new(), step_builder.into())
             }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(

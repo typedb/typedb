@@ -6,6 +6,7 @@
 
 use std::sync::{MutexGuard, TryLockError};
 
+use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use ir::pipeline::function_signature::FunctionID;
 
@@ -71,18 +72,29 @@ impl TabledCallExecutor {
     }
 
     pub(crate) fn map_output(&self, returned_batch: FixedBatch) -> FixedBatch {
+        let input = &self.active_executor.as_ref().unwrap().input;
         let mut output_batch = FixedBatch::new(self.output_width);
+        let check_indices: Vec<_> = self
+            .assignment_positions
+            .iter()
+            .enumerate()
+            .map(|(src, &dst)| (VariablePosition::new(src as u32), dst))
+            .filter(|(src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
+            .collect(); // TODO: Can we move this to compilation?
+
         for return_index in 0..returned_batch.len() {
             // TODO: Deduplicate?
             let returned_row = returned_batch.get_row(return_index);
-            output_batch.append(|mut output_row| {
-                for (i, element) in self.active_executor.as_ref().unwrap().input.iter().enumerate() {
-                    output_row.set(VariablePosition::new(i as u32), element.clone());
-                }
-                for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
-                    output_row.set(*output_position, returned_row[returned_index].clone().into_owned());
-                }
-            });
+            if check_indices.iter().all(|(src, dst)| returned_row.get(*src) == input.get(*dst)) {
+                output_batch.append(|mut output_row| {
+                    for (i, element) in input.iter().enumerate() {
+                        output_row.set(VariablePosition::new(i as u32), element.clone());
+                    }
+                    for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
+                        output_row.set(*output_position, returned_row[returned_index].clone().into_owned());
+                    }
+                });
+            }
         }
         output_batch
     }

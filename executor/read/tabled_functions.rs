@@ -9,7 +9,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use compiler::executable::{function::ExecutableReturn, match_::planner::function_plan::ExecutableFunctionRegistry};
+use compiler::executable::function::{ExecutableFunctionRegistry, ExecutableReturn};
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
@@ -37,7 +37,7 @@ impl TabledFunctions {
         call_key: &CallKey,
     ) -> Result<Arc<TabledFunctionState>, ReadExecutionError> {
         if !self.state.contains_key(call_key) {
-            let function = &self.function_registry.get(call_key.function_id.clone());
+            let function = &self.function_registry.get(&call_key.function_id).unwrap();
             let executors = create_executors_for_function(
                 &context.snapshot,
                 &context.thing_manager,

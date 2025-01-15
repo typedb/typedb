@@ -8,10 +8,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
-    executable::{
-        fetch::executable::ExecutableFetch, match_::planner::function_plan::ExecutableFunctionRegistry,
-        pipeline::ExecutableStage,
-    },
+    executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;

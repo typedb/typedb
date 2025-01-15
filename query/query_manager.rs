@@ -8,7 +8,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline, ExecutablePipeline},
+    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
     transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -120,7 +120,7 @@ impl QueryManager {
 
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
                 // 3: Compile
-                let executable_pipeline = compile_pipeline(
+                let executable_pipeline = compile_pipeline_and_functions(
                     thing_manager.statistics(),
                     &variable_registry,
                     &annotated_schema_functions,
@@ -228,7 +228,7 @@ impl QueryManager {
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
 
                 // 3: Compile
-                let executable_pipeline = match compile_pipeline(
+                let executable_pipeline = match compile_pipeline_and_functions(
                     thing_manager.statistics(),
                     &variable_registry,
                     &annotated_schema_functions,

@@ -14,7 +14,7 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::match_::planner::function_plan::ExecutableFunctionRegistry,
+    executable::function::{ExecutableFunctionRegistry, FunctionCallCostProvider},
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -27,7 +27,10 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use ir::{
-    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
+    pipeline::{
+        function_signature::{FunctionID, HashMapFunctionSignatureIndex},
+        ParameterRegistry,
+    },
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -131,6 +134,7 @@ fn test_has_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -228,6 +232,7 @@ fn test_expression_planning_traversal() {
         &translation_context.variable_registry,
         &compiled_expressions,
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -313,6 +318,7 @@ fn test_links_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -405,6 +411,7 @@ fn test_links_intersection() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -488,6 +495,7 @@ fn test_negation_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -592,6 +600,7 @@ fn test_forall_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -682,6 +691,7 @@ fn test_named_var_select() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -772,6 +782,7 @@ fn test_disjunction_planning_traversal() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -866,6 +877,7 @@ fn test_disjunction_planning_nested_negations() {
         &translation_context.variable_registry,
         &HashMap::new(),
         &statistics,
+        &ExecutableFunctionRegistry::empty(),
     );
     let executor = MatchExecutor::new(
         &match_executable,
@@ -895,4 +907,100 @@ fn test_disjunction_planning_nested_negations() {
     }
 
     assert_eq!(rows.len(), 2);
+}
+
+#[test]
+fn disjunction_emulating_optional() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let schema = r#"define
+        attribute age, value integer;
+        attribute name, value string;
+        entity person, owns name, owns age;
+    "#;
+    let data = r#"insert
+    $p isa person, has name "Jeff";
+    "#;
+
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+
+    let query = r#"
+match
+  $p isa person, has name $name;
+  { let $ignored = true; }
+  or
+  { $p has age $age; };
+select $name, $age;
+"#;
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
+    let block = builder.finish().unwrap();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let entry_annotations = infer_types(
+        &*snapshot,
+        &block,
+        &translation_context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &EmptyAnnotatedFunctionSignatures,
+    )
+    .unwrap();
+    let expressions = compile_expressions(
+        &*snapshot,
+        &type_manager,
+        &block,
+        &mut translation_context.variable_registry,
+        &value_parameters,
+        &entry_annotations,
+        &mut BTreeMap::new(),
+    )
+    .unwrap();
+    let match_executable = compiler::executable::match_::planner::compile(
+        &block,
+        &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
+        &entry_annotations,
+        &translation_context.variable_registry,
+        &expressions,
+        &statistics,
+        &ExecutableFunctionRegistry::empty(),
+    );
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::new(value_parameters));
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    for row in &rows {
+        for value in row {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+
+    assert_eq!(rows.len(), 1);
 }

@@ -492,6 +492,28 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Links(rp) => Box::new(rp.ids()),
             Constraint::IndexedRelation(indexed) => Box::new(indexed.ids()),
             Constraint::Has(has) => Box::new(has.ids()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids()),
+            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
+            Constraint::Owns(owns) => Box::new(owns.ids()),
+            Constraint::Relates(relates) => Box::new(relates.ids()),
+            Constraint::Plays(plays) => Box::new(plays.ids()),
+            Constraint::Value(value) => Box::new(value.ids()),
+        }
+    }
+
+    pub fn produced_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+        match self {
+            Constraint::Is(is) => Box::new(is.ids()),
+            Constraint::Kind(kind) => Box::new(kind.ids()),
+            Constraint::Label(label) => Box::new(label.ids()),
+            Constraint::RoleName(role_name) => Box::new(role_name.ids()),
+            Constraint::Sub(sub) => Box::new(sub.ids()),
+            Constraint::Isa(isa) => Box::new(isa.ids()),
+            Constraint::Iid(iid) => Box::new(iid.ids()),
+            Constraint::Links(rp) => Box::new(rp.ids()),
+            Constraint::IndexedRelation(indexed) => Box::new(indexed.ids()),
+            Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
@@ -1606,6 +1628,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.left.as_variable().into_iter()
     }
 
+    pub(crate) fn ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.ids_assigned().chain(self.expression().variables())
+    }
+
     pub fn ids_foreach<F>(&self, mut function: F)
     where
         F: FnMut(ID),
@@ -1856,7 +1882,7 @@ impl<ID: StructuralEquality> StructuralEquality for Comparison<ID> {
 
 impl<ID: IrID> fmt::Display for Comparison<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        write!(f, "{} {} {}", self.lhs, self.comparator, self.rhs)
     }
 }
 
