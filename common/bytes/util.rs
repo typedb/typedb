@@ -55,8 +55,12 @@ pub enum BytesErrorKind {
 }
 
 impl fmt::Display for BytesError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match &self.kind {
+            BytesErrorKind::IncrementOverflow {} => {
+                write!(f, "BytesError::IncrementOverflow")
+            }
+        }
     }
 }
 

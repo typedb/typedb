@@ -10,6 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use error::todo_optional;
 use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
@@ -97,7 +98,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
-            ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::Optional(_) => todo_optional!(),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
@@ -110,7 +111,7 @@ impl ExecutionStep {
             ExecutionStep::Check(_) => &[],
             ExecutionStep::Disjunction(_) => todo!(),
             ExecutionStep::Negation(_) => &[],
-            ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::Optional(_) => todo_optional!(),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
@@ -123,7 +124,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
-            ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::Optional(_) => todo_optional!(),
             ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
@@ -298,7 +299,7 @@ impl UnsortedJoinStep {
     }
 
     fn output_width(&self) -> u32 {
-        todo!()
+        self.output_width
     }
 }
 

@@ -368,13 +368,13 @@ impl StructuralEquality for Operator {
 // Display traits
 impl<ID: IrID> fmt::Display for ExpressionTree<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 
 impl<ID: IrID> fmt::Display for Expression<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -390,7 +390,7 @@ pub enum ExpressionDefinitionError {
 
 impl fmt::Display for ExpressionDefinitionError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 

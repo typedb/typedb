@@ -15,6 +15,7 @@ use concept::{
     },
 };
 use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};
+use error::todo_struct;
 use storage::snapshot::ReadableSnapshot;
 
 pub(crate) fn encode_thing_concept(
@@ -218,7 +219,7 @@ pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
         }),
         Value::String(string) => typedb_protocol::value::Value::String(string.to_string()),
         Value::Struct(struct_) => {
-            todo!()
+            todo_struct!()
         }
     };
     typedb_protocol::Value { value: Some(value_message) }

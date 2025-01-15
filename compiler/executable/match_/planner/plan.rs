@@ -15,6 +15,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
+use error::todo_optional;
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -140,7 +141,7 @@ fn make_builder<'a>(
                 .with_inputs(negation.conjunction().captured_variables(block_context))
                 .plan(),
             ),
-            NestedPattern::Optional(_) => todo!(),
+            NestedPattern::Optional(_) => todo_optional!(),
         }
     }
     // Compute variables which must be bound from a parent scope.

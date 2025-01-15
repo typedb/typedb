@@ -1947,7 +1947,7 @@ impl<ID: StructuralEquality> StructuralEquality for Owns<ID> {
 
 impl<ID: IrID> fmt::Display for Owns<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -2012,7 +2012,7 @@ impl<ID: StructuralEquality> StructuralEquality for Relates<ID> {
 
 impl<ID: IrID> fmt::Display for Relates<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -2077,7 +2077,7 @@ impl<ID: StructuralEquality> StructuralEquality for Plays<ID> {
 
 impl<ID: IrID> fmt::Display for Plays<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -2141,6 +2141,6 @@ impl<ID: StructuralEquality> StructuralEquality for Value<ID> {
 
 impl<ID: IrID> fmt::Display for Value<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }

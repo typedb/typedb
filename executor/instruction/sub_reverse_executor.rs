@@ -125,7 +125,10 @@ impl SubReverseExecutor {
             }
 
             BinaryIterateMode::UnboundInverted => {
-                todo!() // is this ever relevant?
+                // is this ever relevant?
+                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                    message: "UnboundInverted mode was not expected"
+                } ));
             }
 
             BinaryIterateMode::BoundFrom => {

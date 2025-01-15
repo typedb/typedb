@@ -56,7 +56,12 @@ impl StructuralEquality for Disjunction {
 
 impl fmt::Display for Disjunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        debug_assert!(self.conjunctions.len() > 0);
+        write!(f, "{}", self.conjunctions[0])?;
+        for i in 1..self.conjunctions.len() {
+            write!(f, " or {}", self.conjunctions[i])?;
+        }
+        Ok(())
     }
 }
 

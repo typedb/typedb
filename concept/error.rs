@@ -92,11 +92,14 @@ pub enum ConceptReadError {
     RelationIndexNotAvailable {
         relation_label: Label,
     },
+    UnimplementedFunctionality {
+        message: &'static str,
+    },
 }
 
 impl fmt::Display for ConceptReadError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -126,6 +129,7 @@ impl Error for ConceptReadError {
             Self::Constraint { .. } => None,
             Self::ValueTypeMismatchWithAttributeType { .. } => None,
             Self::RelationIndexNotAvailable { .. } => None,
+            Self::UnimplementedFunctionality { .. } => None,
         }
     }
 }

@@ -323,8 +323,8 @@ pub enum KeyspaceOpenError {
 }
 
 impl fmt::Display for KeyspaceOpenError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -344,8 +344,8 @@ pub enum KeyspaceCheckpointError {
 }
 
 impl fmt::Display for KeyspaceCheckpointError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -364,8 +364,8 @@ pub enum KeyspaceDeleteError {
 }
 
 impl fmt::Display for KeyspaceDeleteError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f)
     }
 }
 
@@ -388,8 +388,8 @@ pub enum KeyspaceError {
 }
 
 impl fmt::Display for KeyspaceError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f)
     }
 }
 

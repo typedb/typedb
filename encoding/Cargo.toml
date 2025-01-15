@@ -36,6 +36,11 @@ features = {}
 
 [dependencies]
 
+	[dependencies.error]
+		path = "../common/error"
+		features = []
+		default-features = false
+
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
 		version = "0.1.41"

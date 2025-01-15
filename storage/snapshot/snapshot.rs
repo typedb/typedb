@@ -569,8 +569,8 @@ pub enum SnapshotGetError {
 }
 
 impl fmt::Display for SnapshotGetError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f)
     }
 }
 

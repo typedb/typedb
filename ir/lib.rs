@@ -207,7 +207,7 @@ pub enum LiteralParseError {
 
 impl fmt::Display for LiteralParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f)
     }
 }
 

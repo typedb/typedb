@@ -241,8 +241,8 @@ typedb_error!(
 // }
 //
 // impl fmt::Display for SchemaValidationError {
-//     fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         todo!()
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         error::todo_display_for_error!(f)
 //     }
 // }
 //

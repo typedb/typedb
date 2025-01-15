@@ -15,6 +15,7 @@ use executor::{
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
+use ir::LiteralParseError;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};

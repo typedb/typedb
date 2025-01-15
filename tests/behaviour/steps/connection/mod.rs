@@ -60,8 +60,8 @@ pub enum BehaviourConnectionTestExecutionError {
 }
 
 impl fmt::Display for BehaviourConnectionTestExecutionError {
-    fn fmt(&self, _f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
     }
 }
 

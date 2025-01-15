@@ -219,3 +219,27 @@ macro_rules! typedb_error {
         None
     };
 }
+
+#[macro_export]
+macro_rules! todo_optional {
+    // () => {  compile_error!("TODO: Implement optionals")};
+    () => {
+        todo!("TODO: Implement optionals")
+    };
+}
+
+#[macro_export]
+macro_rules! todo_struct {
+    // () => {  compile_error!("TODO: Implement structs")};
+    () => {
+        todo!("TODO: Implement structs")
+    };
+}
+
+#[macro_export]
+macro_rules! todo_display_for_error {
+    // () => {  compile_error!("TODO: Implement display for error")};
+    ($f:ident) => {
+        write!($f, "fmt::Display has not yet been implemented for {}.", std::any::type_name::<Self>())
+    };
+}
