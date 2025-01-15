@@ -8,7 +8,7 @@ load("@typedb_bazel_distribution//common:rules.bzl", "assemble_targz")
 load("@typedb_dependencies//distribution:deployment.bzl", "deployment")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
-exports_files(["typedb"])
+exports_files(["typedb", "typedb.bat"])
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),
