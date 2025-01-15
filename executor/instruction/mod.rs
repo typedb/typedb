@@ -832,7 +832,7 @@ impl<T> Checker<T> {
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
                         Comparator::Like => todo!("like"),
-                        Comparator::Contains => todo!("contains"),
+                        Comparator::Contains => todo!("contains"),// |a,b| a.unwrap_string_ref().contains(b.unwrap_string_ref()),
                     };
                     filters.push(Box::new(move |value| {
                         let lhs = lhs(value);

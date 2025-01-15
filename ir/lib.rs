@@ -208,6 +208,7 @@ pub enum LiteralParseError {
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
     UnimplementedSubkey,
+    UnimplementedComparator,
 }
 
 impl fmt::Display for LiteralParseError {
@@ -228,6 +229,7 @@ impl Error for LiteralParseError {
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
             LiteralParseError::UnimplementedSubkey => None,
+            LiteralParseError::UnimplementedComparator => None,
         }
     }
 }

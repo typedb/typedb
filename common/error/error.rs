@@ -220,9 +220,17 @@ macro_rules! typedb_error {
     };
 }
 
+
+pub enum UnimplementedFeature {
+    Optionals,
+    Lists,
+    Structs,
+
+}
+
+
 #[macro_export]
 macro_rules! todo_optional {
-    // () => {  compile_error!("TODO: Implement optionals")};
     () => {
         todo!("TODO: Implement optionals")
     };
@@ -233,7 +241,6 @@ macro_rules! todo_optional {
 
 #[macro_export]
 macro_rules! todo_structs {
-    // () => {  compile_error!("TODO: Implement structs")};
     () => {
         todo!("TODO: Implement structs")
     };
@@ -244,7 +251,6 @@ macro_rules! todo_structs {
 
 #[macro_export]
 macro_rules! todo_lists {
-    // () => {  compile_error!("TODO: Implement lists")};
     () => {
         todo!("TODO: Implement lists")
     };
@@ -256,13 +262,13 @@ macro_rules! todo_lists {
 #[macro_export]
 macro_rules! todo_must_implement {
     ($msg:literal) => {
-        compile_error!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
+        todo!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
+        // compile_error!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
     };
 }
 
 #[macro_export]
 macro_rules! todo_display_for_error {
-    // () => {  compile_error!("TODO: Implement display for error")};
     ($f:ident) => {
         write!($f, "fmt::Display has not yet been implemented for {}.", std::any::type_name::<Self>())
     };

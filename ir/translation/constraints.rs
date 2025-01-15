@@ -54,7 +54,10 @@ pub(super) fn add_statement(
         typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, .. }) => {
             let lhs_var = add_typeql_expression(function_index, constraints, lhs)?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            constraints.add_comparison(lhs_var, rhs_var, comparison.comparator.into())?;
+            let comparator = comparison.comparator.try_into().map_err(|source| {
+                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+            })?;
+            constraints.add_comparison(lhs_var, rhs_var, comparator)?;
         }
         typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
@@ -387,7 +390,10 @@ fn add_typeql_isa(
             IsaInstanceConstraint::Comparison(comparison) => {
                 add_typeql_isa(function_index, constraints, thing, isa)?;
                 let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparison.comparator.into())?;
+                let comparator = comparison.comparator.try_into().map_err(|source| {
+                    Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+                })?;
+                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator)?;
             }
             IsaInstanceConstraint::Struct(_) => todo!(),
         }
@@ -443,7 +449,10 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Comparison(comparison) => {
             let attribute = constraints.create_anonymous_variable()?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparison.comparator.into())?;
+            let comparator = comparison.comparator.try_into().map_err(|source| {
+                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+            })?;
+            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparator)?;
             attribute
         }
     };
