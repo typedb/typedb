@@ -110,23 +110,28 @@ impl FunctionCallCostProvider for ExecutableFunctionRegistry {
     }
 }
 
-struct FunctionPlanner<'a, FIDType: FunctionIDAPI> {
-    cached_plans: &'a ExecutableFunctionRegistry,
+struct FunctionCompiler<'a, FIDType: FunctionIDAPI> {
+    precompiled: &'a ExecutableFunctionRegistry,
     to_compile: HashMap<FIDType, AnnotatedFunction>,
-    completed: HashMap<FIDType, ExecutableFunction>,
+    compiled: HashMap<FIDType, ExecutableFunction>,
     must_table: HashSet<FIDType>,
 }
 
-impl<'a, FIDType: FunctionIDAPI> FunctionPlanner<'a, FIDType> {
+impl<'a, FIDType: FunctionIDAPI> FunctionCompiler<'a, FIDType> {
     fn new(cached_plans: &'a ExecutableFunctionRegistry, to_compile: HashMap<FIDType, AnnotatedFunction>) -> Self {
-        FunctionPlanner { cached_plans, to_compile, completed: HashMap::new(), must_table: HashSet::new() }
+        FunctionCompiler {
+            precompiled: cached_plans,
+            to_compile,
+            compiled: HashMap::new(),
+            must_table: HashSet::new(),
+        }
     }
 
     pub(crate) fn get_executable_function(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {
-        if let Some(plan) = self.cached_plans.get(function_id) {
+        if let Some(plan) = self.precompiled.get(function_id) {
             Some(plan)
         } else if let Ok(key) = &FIDType::try_from(function_id.clone()) {
-            self.completed.get(&key)
+            self.compiled.get(&key)
         } else {
             None
         }
@@ -137,7 +142,7 @@ impl<'a, FIDType: FunctionIDAPI> FunctionPlanner<'a, FIDType> {
     }
 }
 
-impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionPlanner<'a, FIDType> {
+impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompiler<'a, FIDType> {
     fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
         if let Some(function) = self.get_executable_function(function_id) {
             function.single_call_cost.clone()
@@ -157,19 +162,19 @@ pub(crate) fn compile_functions<FIDType: FunctionIDAPI>(
     mut to_compile: HashMap<FIDType, AnnotatedFunction>,
 ) -> Result<HashMap<FIDType, ExecutableFunction>, ExecutableCompilationError> {
     // TODO: Cache compiled schema functions?
-    let mut planner = FunctionPlanner::new(cached_plans, to_compile);
+    let mut planner = FunctionCompiler::new(cached_plans, to_compile);
     let mut cycle_detection = HashSet::new();
     while !planner.to_compile.is_empty() {
         let id = planner.to_compile.keys().find_or_first(|_| true).unwrap().clone();
         compile_functions_impl(statistics, &mut planner, &mut cycle_detection, id)?;
     }
 
-    Ok(planner.completed)
+    Ok(planner.compiled)
 }
 
 fn compile_functions_impl<'a, FIDType: FunctionIDAPI>(
     statistics: &Statistics,
-    planner: &mut FunctionPlanner<'a, FIDType>,
+    planner: &mut FunctionCompiler<'a, FIDType>,
     cycle_detection: &mut HashSet<FIDType>,
     current: FIDType,
 ) -> Result<(), ExecutableCompilationError> {
@@ -197,7 +202,7 @@ fn compile_functions_impl<'a, FIDType: FunctionIDAPI>(
     let must_table =
         if planner.must_table.contains(&current) { FunctionTablingType::Tabled } else { FunctionTablingType::Untabled };
     let compiled_function = compile_function(statistics, function, planner, must_table)?;
-    planner.completed.insert(current.clone(), compiled_function);
+    planner.compiled.insert(current.clone(), compiled_function);
     Ok(())
 }
 
@@ -206,7 +211,7 @@ pub(crate) fn compile_single_untabled_function(
     cached_plans: &ExecutableFunctionRegistry,
     to_compile: AnnotatedFunction,
 ) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let planner = FunctionPlanner::new(cached_plans, HashMap::<usize, _>::new());
+    let planner = FunctionCompiler::new(cached_plans, HashMap::<usize, _>::new());
     compile_function(statistics, to_compile, &planner, FunctionTablingType::Untabled)
 }
 
