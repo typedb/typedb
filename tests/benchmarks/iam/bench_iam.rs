@@ -125,7 +125,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
 }
 
 #[test]
-fn check_permission() {
+fn has_permission() {
     let email = "douglas.schmidt@vaticle.com";
     let path = "root/engineering/typedb-studio/src/README.md";
     let operation = "edit file";

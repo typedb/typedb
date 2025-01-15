@@ -80,29 +80,29 @@ match
     $subject isa subject;
     $object isa object;
     $action isa action;
-    $granting-subject is $granting-subject-inner;
-    $granting-object is $granting-object-inner;
-    $granting-action is $granting-action-inner;
+    $granting-subject isa subject;
+    $granting-object isa object;
+    $granting-action isa action;
     $access isa access, links (object: $object, action: $action);
-    { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
-    { let $granting-action-inner in has_set_membership($action); } or { $granting-action-inner is $action; };
-    { let $granting-object-inner in has_collection_membership($object); } or { $granting-object-inner is $object; };
+    { let $granting-subject in has_group_membership($subject); }  or { $granting-subject is $subject; };
+    { let $granting-action in has_set_membership($action); } or { $granting-action is $action; };
+    { let $granting-object in has_collection_membership($object); } or { $granting-object is $object; };
     $granting-access isa access (object: $granting-object, action: $granting-action);
     $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
 return { $granting-permission };
 
 fun list_permissions($subject: subject) -> { access }:
 match
-    $granting-subject is $granting-subject-inner;
-    { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
+    $granting-subject isa subject;
+    { let $granting-subject in has_group_membership($subject); }  or { $granting-subject is $subject; };
 
     $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
     $granting-access isa access, links (object: $granting-object, action: $granting-action);
 
-    $action is $action-inner;
-    $object is $object-inner;
-    { let $action-inner in set_members($granting-action); } or { $action-inner is $granting-action; };
-    { let $object-inner in collection_members($granting-object); } or { $object-inner is $granting-object ; };
+    $action isa action;
+    $object isa object;
+    { let $action in set_members($granting-action); } or { $action is $granting-action; };
+    { let $object in collection_members($granting-object); } or { $object is $granting-object ; };
 
     $access isa access, links (object: $object, action: $action);
 return { $access };
