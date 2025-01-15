@@ -4,20 +4,6 @@
 
 define
 
-# utils
-fun noop_bind_subject($s: subject) -> {subject}:
-match $s isa subject;
-return { $s };
-
-fun noop_bind_object($o: object) -> {object}:
-match $o isa object;
-return { $o };
-
-fun noop_bind_action($a: action) -> {action}:
-match $a isa action;
-return { $a };
-
-
 # memberships
 fun has_group_membership($member: subject) -> { user-group }:
 match
@@ -94,9 +80,9 @@ match
     $subject isa subject;
     $object isa object;
     $action isa action;
-    let $granting-subject in noop_bind_subject($granting-subject-inner);
-    let $granting-action in noop_bind_action($granting-action-inner);
-    let $granting-object in noop_bind_object($granting-object-inner);
+    $granting-subject is $granting-subject-inner;
+    $granting-object is $granting-object-inner;
+    $granting-action is $granting-action-inner;
     $access isa access, links (object: $object, action: $action);
     { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
     { let $granting-action-inner in has_set_membership($action); } or { $granting-action-inner is $action; };
@@ -107,14 +93,14 @@ return { $granting-permission };
 
 fun list_permissions($subject: subject) -> { access }:
 match
-    let $granting-subject in noop_bind_subject($granting-subject-inner);
+    $granting-subject is $granting-subject-inner;
     { let $granting-subject-inner in has_group_membership($subject); }  or { $granting-subject-inner is $subject; };
 
     $granting-permission isa direct-permission, links (subject: $granting-subject, access: $granting-access);
     $granting-access isa access, links (object: $granting-object, action: $granting-action);
 
-    let $action in noop_bind_action($action-inner);
-    let $object in noop_bind_object($object-inner);
+    $action is $action-inner;
+    $object is $object-inner;
     { let $action-inner in set_members($granting-action); } or { $action-inner is $granting-action; };
     { let $object-inner in collection_members($granting-object); } or { $object-inner is $granting-object ; };
 

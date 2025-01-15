@@ -1445,8 +1445,34 @@ impl ConjunctionPlan<'_> {
     ) {
         match &self.graph.elements()[&VertexId::Pattern(pattern)] {
             PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
-            PlannerVertex::FunctionCall(_) => {
-                todo!()
+            PlannerVertex::FunctionCall(call_planner) => {
+                // We push exactly the same as if it weren't a check.
+                let call_binding = call_planner.call_binding;
+                let assigned = call_binding
+                    .assigned()
+                    .iter()
+                    .map(|variable| {
+                        match_builder
+                            .index
+                            .get(&variable.as_variable().unwrap())
+                            .unwrap()
+                            .clone()
+                            .as_position()
+                            .unwrap()
+                    })
+                    .collect();
+                let arguments = call_binding
+                    .function_call()
+                    .argument_ids()
+                    .map(|variable| match_builder.index.get(&variable).unwrap().clone().as_position().unwrap())
+                    .collect();
+                let step_builder = StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
+                    function_id: call_binding.function_call().function_id(),
+                    arguments,
+                    assigned,
+                    output_width: match_builder.next_output.position,
+                });
+                match_builder.push_step(&HashMap::new(), step_builder.into())
             }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(

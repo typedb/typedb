@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use answer::variable_value::VariableValue;
 
 use compiler::{executable::match_::planner::match_executable::FunctionCallStep, VariablePosition};
 use ir::pipeline::ParameterRegistry;
@@ -48,15 +49,22 @@ pub(super) struct InlinedFunction {
 impl InlinedFunction {
     pub(crate) fn map_output(&self, input: MaybeOwnedRow<'_>, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.output_width);
+        let check_indices: Vec<_> = self.return_mapping.iter().enumerate()
+            .map(|(src, &dst)| (VariablePosition::new(src as u32), dst))
+            .filter(|(src, dst)| {
+                dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty
+            }).collect(); // TODO: Can we move this to compilation?
         for return_index in 0..batch.len() {
             let returned_row = batch.get_row(return_index);
-            output_batch.append(|mut output_row| {
-                output_row.copy_from_row(input.as_reference());
-                output_row.copy_mapped(
-                    returned_row.as_reference(),
-                    self.return_mapping.iter().enumerate().map(|(src, &dst)| (VariablePosition::new(src as u32), dst)),
-                );
-            });
+            if check_indices.iter().all(|(src, dst)| returned_row.get(*src) == input.get(*dst)) {
+                output_batch.append(|mut output_row| {
+                    output_row.copy_from_row(input.as_reference());
+                    output_row.copy_mapped(
+                        returned_row.as_reference(),
+                        self.return_mapping.iter().enumerate().map(|(src, &dst)| (VariablePosition::new(src as u32), dst)),
+                    );
+                });
+            }
         }
         output_batch
     }
