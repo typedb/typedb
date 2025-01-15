@@ -15,7 +15,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use error::todo_optional;
+use error::{todo_lists, todo_optional};
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -318,7 +318,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!("list variable planning"),
+                | VariableCategory::ValueList => todo_lists!(),
                 VariableCategory::AttributeOrValue => {
                     unreachable!("Insufficiently bound variable should have been flagged earlier")
                 }

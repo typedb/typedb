@@ -229,10 +229,18 @@ macro_rules! todo_optional {
 }
 
 #[macro_export]
-macro_rules! todo_struct {
+macro_rules! todo_structs {
     // () => {  compile_error!("TODO: Implement structs")};
     () => {
         todo!("TODO: Implement structs")
+    };
+}
+
+#[macro_export]
+macro_rules! todo_lists {
+    // () => {  compile_error!("TODO: Implement lists")};
+    () => {
+        todo!("TODO: Implement lists")
     };
 }
 
