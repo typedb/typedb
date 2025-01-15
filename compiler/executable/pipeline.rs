@@ -91,7 +91,7 @@ pub fn compile_pipeline_and_functions(
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
-    // TODO: Cache compiled schema functions so we don't have to clone here.
+    // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let arced_executable_schema_functions = Arc::new(compile_functions(
         statistics,
         &ExecutableFunctionRegistry::empty(),

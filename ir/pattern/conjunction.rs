@@ -81,7 +81,7 @@ impl Conjunction {
         ))
     }
 
-    pub fn produced_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
+    pub fn captured_producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
         let mut produced_variables: HashSet<Variable> =
             self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
         let mut available_referenced_variables: HashSet<Variable> =
@@ -90,7 +90,10 @@ impl Conjunction {
             .iter()
             .filter(|v| {
                 self.nested_patterns.iter().filter_map(|nested| nested.as_disjunction()).any(|disjunction| {
-                    disjunction.conjunctions().iter().all(|b| b.produced_variables(block_context).contains(v))
+                    disjunction
+                        .conjunctions()
+                        .iter()
+                        .all(|b| b.captured_producible_variables(block_context).contains(v))
                 })
             })
             .copied()
@@ -100,10 +103,10 @@ impl Conjunction {
         produced_variables
     }
 
-    pub fn required_inputs(&self, block_context: &BlockContext) -> HashSet<Variable> {
+    pub fn captured_required_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
         let mut available_referenced_variables: HashSet<Variable> =
             self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v)).collect();
-        let produced_variables: HashSet<_> = self.produced_variables(block_context);
+        let produced_variables: HashSet<_> = self.captured_producible_variables(block_context);
         available_referenced_variables.retain(|v| !produced_variables.contains(v));
         available_referenced_variables
     }

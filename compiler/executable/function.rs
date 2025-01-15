@@ -119,12 +119,7 @@ struct FunctionCompiler<'a, FIDType: FunctionIDAPI> {
 
 impl<'a, FIDType: FunctionIDAPI> FunctionCompiler<'a, FIDType> {
     fn new(cached_plans: &'a ExecutableFunctionRegistry, to_compile: HashMap<FIDType, AnnotatedFunction>) -> Self {
-        FunctionCompiler {
-            precompiled: cached_plans,
-            to_compile,
-            compiled: HashMap::new(),
-            must_table: HashSet::new(),
-        }
+        FunctionCompiler { precompiled: cached_plans, to_compile, compiled: HashMap::new(), must_table: HashSet::new() }
     }
 
     pub(crate) fn get_executable_function(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {

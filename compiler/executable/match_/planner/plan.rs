@@ -144,8 +144,8 @@ fn make_builder<'a>(
         }
     }
     // Compute variables which must be bound from a parent scope.
-    let required_inputs = conjunction.required_inputs(block_context);
-    let produced_variables = conjunction.produced_variables(block_context);
+    let required_inputs = conjunction.captured_required_variables(block_context);
+    let produced_variables = conjunction.captured_producible_variables(block_context);
     let mut plan_builder =
         ConjunctionPlanBuilder::new(Vec::from_iter(required_inputs.into_iter()), type_annotations, statistics);
     plan_builder.register_variables(
