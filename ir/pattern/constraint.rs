@@ -14,6 +14,7 @@ use std::{
 
 use answer::variable::Variable;
 use itertools::Itertools;
+use error::unimplemented_feature;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -571,6 +572,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
+    #[cfg(unused_unimplemented_function)]
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
         match self {
             Self::Is(inner) => Constraint::Is(inner.map(mapping)),
@@ -583,9 +585,9 @@ impl<ID: IrID> Constraint<ID> {
             Self::Links(inner) => Constraint::Links(inner.map(mapping)),
             Self::IndexedRelation(inner) => Constraint::IndexedRelation(inner.map(mapping)),
             Self::Has(inner) => Constraint::Has(inner.map(mapping)),
-            Self::ExpressionBinding(inner) => todo!(),
-            Self::FunctionCallBinding(inner) => todo!(),
-            Self::Comparison(inner) => todo!(),
+            Self::ExpressionBinding(inner) => unimplemented_feature!(Constraint_Map),
+            Self::FunctionCallBinding(inner) => unimplemented_feature!(Constraint_Map),
+            Self::Comparison(inner) => unimplemented_feature!(Constraint_Map),
             Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),

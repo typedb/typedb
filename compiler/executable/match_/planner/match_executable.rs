@@ -111,7 +111,7 @@ impl ExecutionStep {
             ExecutionStep::UnsortedJoin(step) => step.new_variables(),
             ExecutionStep::Assignment(step) => step.new_variables(),
             ExecutionStep::Check(_) => &[],
-            ExecutionStep::Disjunction(_) => unused_unimplemented_function!(ExecutionStep_NewVariables),
+            ExecutionStep::Disjunction(_) => unimplemented_feature!(ExecutionStep_NewVariables),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
