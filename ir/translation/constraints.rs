@@ -7,7 +7,7 @@
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
-use error::unimplemented_feature;
+use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use typeql::{
     expression::{FunctionCall, FunctionName},
@@ -245,7 +245,9 @@ fn register_typeql_role_type(
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
-        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
+            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName { value_type: value_type.clone() }))
+        }
         typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -528,10 +530,10 @@ fn add_typeql_iterable_binding(
             add_user_defined_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args)
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
-            todo!("builtin function returning list (e.g. list(stream_func()))")
+            Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: UnimplementedFeature::LetInBuiltinCall }))
         }
         typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => {
-            unimplemented_feature!(Lists, "iter in list or range slice")
+            Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: UnimplementedFeature::Lists }))
         }
         | typeql::Expression::Variable(_)
         | typeql::Expression::ListIndex(_)

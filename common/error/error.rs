@@ -234,6 +234,7 @@ pub enum UnimplementedFeature {
     ComparatorLike,
 
     BuiltinFunction(String),
+    LetInBuiltinCall,
 
     // unused because it's in a disabled function
     UnusedFunction_ExecutionStep_NewVariables,
