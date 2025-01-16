@@ -7,13 +7,6 @@ REM file, You can obtain one at https://mozilla.org/MPL/2.0/.
 SET "TYPEDB_HOME=%~dp0"
 IF %TYPEDB_HOME:~-1%==\ SET TYPEDB_HOME=%TYPEDB_HOME:~0,-1%
 
-where java >NUL 2>NUL
-if %ERRORLEVEL% GEQ 1 (
-  echo Java is not installed on this machine. TypeDB needs Java 11+ in order to run.
-  pause
-  exit 1
-)
-
 if "%1" == "" goto missingargument
 
 if "%1" == "console" goto startconsole
@@ -28,6 +21,14 @@ goto print_usage
 goto print_usage
 
 :startconsole
+
+where java >NUL 2>NUL
+if %ERRORLEVEL% GEQ 1 (
+  echo Java is not installed on this machine. TypeDB needs Java 11+ in order to run.
+  pause
+  exit 1
+)
+
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
 
 set "G_CP=%TYPEDB_HOME%\console\conf\;%TYPEDB_HOME%\console\lib\*"
