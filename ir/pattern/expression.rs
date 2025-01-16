@@ -5,6 +5,7 @@
  */
 
 use std::{
+    collections::HashMap,
     error::Error,
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
@@ -73,6 +74,25 @@ impl<ID: IrID> ExpressionTree<ID> {
                 None
             }
         })
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ExpressionTree<T> {
+        let preorder_tree = self
+            .preorder_tree
+            .iter()
+            .map(|node| match node {
+                Expression::Variable(var) => Expression::Variable(var.map(mapping)),
+                Expression::ListIndex(list_index) => Expression::ListIndex(list_index.map(mapping)),
+                Expression::ListIndexRange(list_index_range) => {
+                    Expression::ListIndexRange(list_index_range.map(mapping))
+                }
+                Expression::Constant(inner) => Expression::Constant(inner.clone()),
+                Expression::Operation(inner) => Expression::Operation(inner.clone()),
+                Expression::BuiltInCall(inner) => Expression::BuiltInCall(inner.clone()),
+                Expression::List(inner) => Expression::List(inner.clone()),
+            })
+            .collect::<Vec<Expression<T>>>();
+        ExpressionTree { preorder_tree }
     }
 }
 
@@ -252,6 +272,10 @@ impl<ID: IrID> ListIndex<ID> {
     pub fn index_expression_id(&self) -> ExpressionTreeNodeId {
         self.index_expression_id
     }
+
+    fn map<T: IrID>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
+        ListIndex::new(self.list_variable.map(mapping), self.index_expression_id.clone())
+    }
 }
 
 impl<ID: StructuralEquality> StructuralEquality for ListIndex<ID> {
@@ -326,6 +350,14 @@ impl<ID: IrID> ListIndexRange<ID> {
 
     pub fn to_expression_id(&self) -> ExpressionTreeNodeId {
         self.to_expression_id
+    }
+
+    fn map<T: IrID>(&self, mapping: &HashMap<ID, T>) -> ListIndexRange<T> {
+        ListIndexRange::new(
+            self.list_variable.map(mapping),
+            self.from_expression_id.clone(),
+            self.to_expression_id.clone(),
+        )
     }
 }
 

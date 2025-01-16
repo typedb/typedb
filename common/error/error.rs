@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
-use std::fmt::Formatter;
+use std::{error::Error, fmt, fmt::Formatter};
 
 mod typeql;
 
@@ -234,8 +233,10 @@ pub enum UnimplementedFeature {
     ComparatorContains,
     ComparatorLike,
 
-    ExecutionStep_NewVariables, // unused because it's in a disabled function
     BuiltinFunction(String),
+
+    // unused because it's in a disabled function
+    UnusedFunction_ExecutionStep_NewVariables,
 }
 impl std::fmt::Display for UnimplementedFeature {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

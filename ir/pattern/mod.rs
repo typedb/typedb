@@ -46,7 +46,11 @@ impl fmt::Display for ScopeId {
     }
 }
 
-pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {}
+pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {
+    fn map<T: IrID>(&self, mapping: &HashMap<Self, T>) -> T {
+        mapping.get(self).unwrap().clone()
+    }
+}
 
 impl IrID for Variable {}
 

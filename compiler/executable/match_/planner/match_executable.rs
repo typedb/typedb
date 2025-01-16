@@ -103,7 +103,6 @@ impl ExecutionStep {
         }
     }
 
-
     #[cfg(unused_unimplemented_function)]
     pub fn new_variables(&self) -> &[VariablePosition] {
         match self {
@@ -111,7 +110,7 @@ impl ExecutionStep {
             ExecutionStep::UnsortedJoin(step) => step.new_variables(),
             ExecutionStep::Assignment(step) => step.new_variables(),
             ExecutionStep::Check(_) => &[],
-            ExecutionStep::Disjunction(_) => unimplemented_feature!(ExecutionStep_NewVariables),
+            ExecutionStep::Disjunction(_) => unimplemented_feature!(UnusedFunction_ExecutionStep_NewVariables),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),

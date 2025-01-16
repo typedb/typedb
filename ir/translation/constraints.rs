@@ -405,8 +405,10 @@ fn add_typeql_isa(
                 constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator)?;
             }
             IsaInstanceConstraint::Struct(_) => {
-                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Structs }));
-            },
+                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: error::UnimplementedFeature::Structs,
+                }));
+            }
         }
     }
     Ok(())

@@ -11,8 +11,8 @@ use std::{
 };
 
 use answer::variable::Variable;
-use itertools::Itertools;
 use error::unimplemented_feature;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{

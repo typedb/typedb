@@ -423,8 +423,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
             Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
             Self::IndexedRelation(inner) => ConstraintInstruction::IndexedRelation(inner.map(mapping)),
-            Self::ComparisonCheck(_) => todo!(),
-            Self::ExpressionBinding(_) => todo!(),
+            Self::ComparisonCheck(inner) => ConstraintInstruction::ComparisonCheck(inner.map(mapping)),
+            Self::ExpressionBinding(inner) => ConstraintInstruction::ExpressionBinding(inner.map(mapping)),
         }
     }
 }

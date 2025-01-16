@@ -6,11 +6,11 @@
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
+use error::UnimplementedFeature;
 use typeql::{
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
 };
-use error::UnimplementedFeature;
 
 use crate::{
     pattern::{
