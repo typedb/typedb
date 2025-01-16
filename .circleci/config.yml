@@ -321,7 +321,7 @@ workflows:
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ "3.0" , "fix-windows-directory-structure"]
+              only: [ "3.0" ]
 
       - sync-to-typedb-benchmark:
           filters:
