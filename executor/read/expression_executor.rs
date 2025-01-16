@@ -26,7 +26,6 @@ use compiler::annotation::expression::{
     },
 };
 use encoding::value::value::{NativeValueConvertible, Value};
-use error::unimplemented_feature;
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 

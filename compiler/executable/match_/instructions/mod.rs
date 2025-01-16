@@ -14,9 +14,8 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use error::todo_must_implement;
 use ir::pattern::{
-    constraint::{Comparator, Comparison, ExpressionBinding, Is, IsaKind, SubKind},
+    constraint::{Comparator, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
 };
 use itertools::Itertools;
@@ -194,10 +193,6 @@ pub enum ConstraintInstruction<ID> {
     // $x --> $y
     // RolePlayerIndex(IR, IterateBounds)
     IndexedRelation(thing::IndexedRelationInstruction<ID>),
-
-    // lhs and rhs are known
-    ComparisonCheck(Comparison<ID>),
-
 }
 
 impl<ID: IrID> ConstraintInstruction<ID> {
@@ -254,10 +249,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                 apply(*role_end);
                 apply(*role_start);
             }
-            Self::ComparisonCheck(comparison) => {
-                comparison.lhs().as_variable().map(&mut apply);
-                comparison.rhs().as_variable().map(apply);
-            }
         }
     }
 
@@ -285,7 +276,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             | Self::IndexedRelation(thing::IndexedRelationInstruction { inputs, .. }) => {
                 inputs.iter().cloned().for_each(apply)
             }
-            Self::ComparisonCheck(_) => (),
         }
     }
 
@@ -367,10 +357,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
                     apply(*role_end)
                 }
             }
-            Self::ComparisonCheck(comparison) => {
-                comparison.lhs().as_variable().map(&mut apply);
-                comparison.rhs().as_variable().map(apply);
-            }
         }
     }
 
@@ -394,7 +380,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
             Self::IndexedRelation(inner) => inner.add_check(check),
-            Self::ComparisonCheck(_) => todo_must_implement!("Can add a check to a comparison check?"),
         }
     }
 
@@ -418,7 +403,6 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => ConstraintInstruction::Links(inner.map(mapping)),
             Self::LinksReverse(inner) => ConstraintInstruction::LinksReverse(inner.map(mapping)),
             Self::IndexedRelation(inner) => ConstraintInstruction::IndexedRelation(inner.map(mapping)),
-            Self::ComparisonCheck(inner) => ConstraintInstruction::ComparisonCheck(inner.map(mapping)),
         }
     }
 }
@@ -444,7 +428,6 @@ impl<ID: IrID> fmt::Display for ConstraintInstruction<ID> {
             ConstraintInstruction::Links(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::LinksReverse(instruction) => write!(f, "{instruction}"),
             ConstraintInstruction::IndexedRelation(instruction) => write!(f, "{instruction}"),
-            ConstraintInstruction::ComparisonCheck(instruction) => write!(f, "{instruction}"),
         }
     }
 }
