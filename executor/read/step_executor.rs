@@ -16,7 +16,7 @@ use compiler::{
     VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use error::unimplemented_feature;
+use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
@@ -216,7 +216,7 @@ pub(crate) fn create_executors_for_function(
     executable_function: &ExecutableFunction,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let executable_stages = &executable_function.executable_stages;
-    let mut steps = create_executors_for_pipeline_stages(
+    let mut steps = create_executors_for_function_pipeline_stages(
         snapshot,
         thing_manager,
         function_registry,
@@ -252,7 +252,7 @@ pub(crate) fn create_executors_for_function(
     }
 }
 
-pub(super) fn create_executors_for_pipeline_stages(
+pub(super) fn create_executors_for_function_pipeline_stages(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
@@ -261,7 +261,7 @@ pub(super) fn create_executors_for_pipeline_stages(
     at_index: usize,
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let mut previous_stage_steps = if at_index > 0 {
-        create_executors_for_pipeline_stages(
+        create_executors_for_function_pipeline_stages(
             snapshot,
             thing_manager,
             function_registry,
@@ -285,7 +285,11 @@ pub(super) fn create_executors_for_pipeline_stages(
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)
         }
-        ExecutableStage::Select(_) => todo!(),
+        ExecutableStage::Select(_) => {
+            Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                functionality: UnimplementedFeature::PipelineStageInFunction("select")
+            }))
+        },
         ExecutableStage::Offset(offset_executable) => {
             let step = StreamModifierExecutor::new_offset(
                 // TODO: not sure if these are correct new executable IDs or should be different?
@@ -301,7 +305,11 @@ pub(super) fn create_executors_for_pipeline_stages(
             );
             Ok(vec![step.into()])
         }
-        ExecutableStage::Require(_) => todo!(),
+        ExecutableStage::Require(_) => {
+            Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                functionality: UnimplementedFeature::PipelineStageInFunction("require")
+            }))
+        },
         ExecutableStage::Sort(sort_executable) => {
             let step = CollectingStageExecutor::new_sort(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),
@@ -317,8 +325,8 @@ pub(super) fn create_executors_for_pipeline_stages(
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
         ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => {
-            todo!(
-                "Currently unreachable. Accept flag for whether this is a write pipeline & port the write stages here."
+            unreachable!(
+                "Not allowed in function pipelines. TODO: Accept flag for whether this is a write pipeline & port the write stages here."
             )
         }
     }

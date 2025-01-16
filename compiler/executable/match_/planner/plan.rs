@@ -614,7 +614,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut extension_heap = BinaryHeap::with_capacity(extension_width); // reused
         for i in 0..num_patterns {
             event!(Level::TRACE, "{INDENT:4}PLANNER STEP {}", i);
-
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset = HashSet::with_capacity(beam_width);
 

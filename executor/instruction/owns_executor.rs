@@ -20,6 +20,7 @@ use concept::{
     },
 };
 use itertools::Itertools;
+use error::UnimplementedFeature;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -153,7 +154,7 @@ impl OwnsExecutor {
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
                 return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-                    message: concat!("UnboundInverted mode was not expected in file: ", file!()),
+                    functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
                 }));
             }
 

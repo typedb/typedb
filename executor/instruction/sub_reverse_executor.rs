@@ -15,6 +15,7 @@ use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
+use error::UnimplementedFeature;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -127,7 +128,7 @@ impl SubReverseExecutor {
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
                 return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-                    message: concat!("UnboundInverted mode was not expected in file: ", file!()),
+                    functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
                 }));
             }
 

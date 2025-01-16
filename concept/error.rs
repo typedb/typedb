@@ -93,7 +93,7 @@ pub enum ConceptReadError {
         relation_label: Label,
     },
     UnimplementedFunctionality {
-        message: &'static str,
+        functionality: error::UnimplementedFeature,
     },
 }
 

@@ -476,38 +476,42 @@ fn restore_suspension(
         }
         PatternSuspension::AtNestedPattern(suspended_nested) => {
             let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
-            if let StepExecutors::Nested(nested) = &mut executors[executor_index.0] {
-                match nested {
-                    NestedPatternExecutor::Negation(_) => {
-                        unreachable!("Stratification must have been violated")
-                    }
-                    NestedPatternExecutor::Disjunction(disjunction) => {
-                        disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(depth);
-                        control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
-                            index: executor_index,
-                            branch_index,
-                            input: input_row.into_owned(),
-                        }))
-                    }
-                    NestedPatternExecutor::InlinedFunction(inlined) => {
-                        inlined.inner.prepare_to_restore_from_suspension(depth);
-                        control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
-                            index: executor_index,
-                            input: input_row.into_owned(),
-                        }))
+            match &mut executors[executor_index.0] {
+                StepExecutors::Nested(nested) => {
+                    match nested {
+                        NestedPatternExecutor::Negation(_) => {
+                            unreachable!("Stratification must have been violated")
+                        }
+                        NestedPatternExecutor::Disjunction(disjunction) => {
+                            disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(depth);
+                            control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
+                                index: executor_index,
+                                branch_index,
+                                input: input_row.into_owned(),
+                            }))
+                        }
+                        NestedPatternExecutor::InlinedFunction(inlined) => {
+                            inlined.inner.prepare_to_restore_from_suspension(depth);
+                            control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
+                                index: executor_index,
+                                input: input_row.into_owned(),
+                            }))
+                        }
                     }
                 }
-            } else if let StepExecutors::StreamModifier(StreamModifierExecutor::Distinct { inner, output_width }) =
-                &mut executors[executor_index.0]
-            {
-                inner.prepare_to_restore_from_suspension(depth);
-                control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                    index: executor_index,
-                    mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width)),
-                    input: input_row.into_owned(),
-                }))
-            } else {
-                todo!("Any other modifier should be illegal")
+                StepExecutors::StreamModifier(StreamModifierExecutor::Distinct { inner, output_width }) => {
+                    inner.prepare_to_restore_from_suspension(depth);
+                    control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index: executor_index,
+                        mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width)),
+                        input: input_row.into_owned(),
+                    }))
+                }
+                StepExecutors::StreamModifier(_) => unreachable!("Any other modifier should be illegal"),
+                StepExecutors::Immediate(_)
+                | StepExecutors::CollectingStage(_)
+                | StepExecutors::TabledCall(_)
+                | StepExecutors::ReshapeForReturn(_) => unreachable!("Illegal for AtPattern suspension")
             }
         }
     }

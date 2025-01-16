@@ -236,6 +236,11 @@ pub enum UnimplementedFeature {
     BuiltinFunction(String),
     LetInBuiltinCall,
 
+    PipelineStageInFunction(&'static str),
+
+
+    IrrelevantUnboundInvertedMode(&'static str),
+
     // unused because it's in a disabled function
     UnusedFunction_ExecutionStep_NewVariables,
 }
