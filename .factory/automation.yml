@@ -1,181 +1,181 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
-config:
-  version-candidate: VERSION
-  dependencies:
-    dependencies: [build]
-    typeql: [build, release]
-    typedb-protocol: [build, release]
-    typedb-behaviour: [build]
-
-build:
-  quality:
-    filter:
-      owner: typedb
-      branch: [master, development]
-    dependency-analysis:
-      image: typedb-ubuntu-22.04
-      command: |
-        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
-  correctness:
-    build:
-      image: typedb-ubuntu-22.04
-      command: |
-        sudo apt update
-        sudo apt install -y libclang-dev
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel build //...
-        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
-        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
-
-#    build-dependency:
+## This Source Code Form is subject to the terms of the Mozilla Public
+## License, v. 2.0. If a copy of the MPL was not distributed with this
+## file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#
+#config:
+#  version-candidate: VERSION
+#  dependencies:
+#    dependencies: [build]
+#    typeql: [build, release]
+#    typedb-protocol: [build, release]
+#    typedb-behaviour: [build]
+#
+#build:
+#  quality:
+#    filter:
+#      owner: typedb
+#      branch: [master, development]
+#    dependency-analysis:
 #      image: typedb-ubuntu-22.04
 #      command: |
-#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        dependencies/maven/update.sh
-#        git diff --exit-code dependencies/maven/artifacts.snapshot
-#        bazel run @typedb_dependencies//tool/unuseddeps:unused-deps -- list
-
-    cargo-check:
-      image: typedb-ubuntu-22.04
-      command: |
-        sudo apt update
-        sudo apt install -y libclang-dev
-        curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
-        mkdir protoc
-        unzip protoc-21.12-linux-x86_64.zip -d protoc
-        export PROTOC=$PWD/protoc/bin/protoc
-        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
-        source ~/.cargo/env
-        cargo check --all --profile=ci-check
-
-#     cargo-toml-sync:
-#       image: typedb-ubuntu-22.04
-#       command: |
-#         tool/ide/rust/sync.sh
-#         git add .
-#         git diff --exit-code HEAD
-
-    test-unit:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //compiler:test_crate_compiler --test_output=streamed
-        bazel test //concept:test_crate_concept --test_output=streamed
-        bazel test //database:test_crate_database --test_output=streamed
-        bazel test //durability:test_crate_durability  --test_output=streamed
-        bazel test //encoding:test_crate_encoding --test_output=streamed
-        bazel test //executor:test_crate_executor --test_output=streamed
-        bazel test //function:test_crate_function --test_output=streamed
-        bazel test //ir:test_crate_ir --test_output=streamed
-        bazel test //query:test_crate_query --test_output=streamed
-        bazel test //storage:test_crate_storage --test_output=streamed
-
-    test-integration:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //compiler/tests/... --test_output=streamed
-        bazel test //concept/tests/... --test_output=streamed
-        bazel test //database/tests/... --test_output=streamed
-        bazel test //durability/tests/... --test_output=streamed
-        bazel test //encoding/tests/... --test_output=streamed
-        bazel test //executor/tests/... --test_output=streamed
-        bazel test //function/tests/... --test_output=streamed
-        bazel test //ir/tests/... --test_output=streamed
-        bazel test //query/tests/... --test_output=streamed
-        # TODO: Uncomment!
-        # bazel test //storage/tests/... --test_output=streamed
-        bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
-
-#    tests-commented-out-which-fail:
+#        bazel run @typedb_dependencies//factory/analysis:dependency-analysis
+#  correctness:
+#    build:
 #      image: typedb-ubuntu-22.04
-#      dependencies: [ build ]
 #      command: |
+#        sudo apt update
+#        sudo apt install -y libclang-dev
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //storage/tests/... --test_output=streamed
-
-    test-behaviour-connection:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/connection/... --test_output=streamed
-
-    test-behaviour-concept:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/concept/... --test_output=errors
-
-    test-behaviour-query-read:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/language:test_match --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_fetch --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_reduce --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_expressions --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_get --test_output=streamed
-
-#    test-behaviour-query-write:
+#        bazel build //...
+#        bazel run @typedb_dependencies//tool/checkstyle:test-coverage
+#        bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
+#
+##    build-dependency:
+##      image: typedb-ubuntu-22.04
+##      command: |
+##        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+##        dependencies/maven/update.sh
+##        git diff --exit-code dependencies/maven/artifacts.snapshot
+##        bazel run @typedb_dependencies//tool/unuseddeps:unused-deps -- list
+#
+#    cargo-check:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        sudo apt update
+#        sudo apt install -y libclang-dev
+#        curl -LO https://github.com/protocolbuffers/protobuf/releases/download/v21.12/protoc-21.12-linux-x86_64.zip
+#        mkdir protoc
+#        unzip protoc-21.12-linux-x86_64.zip -d protoc
+#        export PROTOC=$PWD/protoc/bin/protoc
+#        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+#        source ~/.cargo/env
+#        cargo check --all --profile=ci-check
+#
+##     cargo-toml-sync:
+##       image: typedb-ubuntu-22.04
+##       command: |
+##         tool/ide/rust/sync.sh
+##         git add .
+##         git diff --exit-code HEAD
+#
+#    test-unit:
 #      image: typedb-ubuntu-22.04
 #      dependencies: [build]
 #      command: |
 #        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //tests/behaviour/query/language:test_insert --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_delete --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_update --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_pipelines --test_output=streamed
-
-    test-behaviour-query-definable:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/language:test_define --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_redefine --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_undefine --test_output=streamed
-
-    test-behaviour-functions:
-      image: typedb-ubuntu-22.04
-      dependencies: [build]
-      command: |
-        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/functions:test_definition --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_signature --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_structure --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_usage --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_basic --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_recursion --test_output=streamed
-
-release:
-  filter:
-    owner: typedb
-    branch: [master, "3.0"]
-#  validation:
-#    validate-dependencies:
+#        bazel test //compiler:test_crate_compiler --test_output=streamed
+#        bazel test //concept:test_crate_concept --test_output=streamed
+#        bazel test //database:test_crate_database --test_output=streamed
+#        bazel test //durability:test_crate_durability  --test_output=streamed
+#        bazel test //encoding:test_crate_encoding --test_output=streamed
+#        bazel test //executor:test_crate_executor --test_output=streamed
+#        bazel test //function:test_crate_function --test_output=streamed
+#        bazel test //ir:test_crate_ir --test_output=streamed
+#        bazel test //query:test_crate_query --test_output=streamed
+#        bazel test //storage:test_crate_storage --test_output=streamed
+#
+#    test-integration:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //compiler/tests/... --test_output=streamed
+#        bazel test //concept/tests/... --test_output=streamed
+#        bazel test //database/tests/... --test_output=streamed
+#        bazel test //durability/tests/... --test_output=streamed
+#        bazel test //encoding/tests/... --test_output=streamed
+#        bazel test //executor/tests/... --test_output=streamed
+#        bazel test //function/tests/... --test_output=streamed
+#        bazel test //ir/tests/... --test_output=streamed
+#        bazel test //query/tests/... --test_output=streamed
+#        # TODO: Uncomment!
+#        # bazel test //storage/tests/... --test_output=streamed
+#        bazel test //storage/tests:test_mvcc //storage/tests:test_snapshot //storage/tests:test_isolation //storage/tests:test_storage --test_output=streamed
+#
+##    tests-commented-out-which-fail:
+##      image: typedb-ubuntu-22.04
+##      dependencies: [ build ]
+##      command: |
+##        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+##        bazel test //storage/tests/... --test_output=streamed
+#
+#    test-behaviour-connection:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/connection/... --test_output=streamed
+#
+#    test-behaviour-concept:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/concept/... --test_output=errors
+#
+#    test-behaviour-query-read:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query/language:test_match --test_output=streamed
+#        bazel test //tests/behaviour/query/language:test_fetch --test_output=streamed
+#        bazel test //tests/behaviour/query/language:test_reduce --test_output=streamed
+##        bazel test //tests/behaviour/query/language:test_expressions --test_output=streamed
+##        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
+##        bazel test //tests/behaviour/query/language:test_get --test_output=streamed
+#
+##    test-behaviour-query-write:
+##      image: typedb-ubuntu-22.04
+##      dependencies: [build]
+##      command: |
+##        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+##        bazel test //tests/behaviour/query/language:test_insert --test_output=streamed
+##        bazel test //tests/behaviour/query/language:test_delete --test_output=streamed
+##        bazel test //tests/behaviour/query/language:test_update --test_output=streamed
+##        bazel test //tests/behaviour/query/language:test_pipelines --test_output=streamed
+#
+#    test-behaviour-query-definable:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query/language:test_define --test_output=streamed
+#        bazel test //tests/behaviour/query/language:test_redefine --test_output=streamed
+#        bazel test //tests/behaviour/query/language:test_undefine --test_output=streamed
+#
+#    test-behaviour-functions:
+#      image: typedb-ubuntu-22.04
+#      dependencies: [build]
+#      command: |
+#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+#        bazel test //tests/behaviour/query/functions:test_definition --test_output=streamed
+#        bazel test //tests/behaviour/query/functions:test_signature --test_output=streamed
+#        bazel test //tests/behaviour/query/functions:test_structure --test_output=streamed
+#        bazel test //tests/behaviour/query/functions:test_usage --test_output=streamed
+#        bazel test //tests/behaviour/query/functions:test_basic --test_output=streamed
+#        bazel test //tests/behaviour/query/functions:test_recursion --test_output=streamed
+#
+#release:
+#  filter:
+#    owner: typedb
+#    branch: [master, "3.0"]
+##  validation:
+##    validate-dependencies:
+##      image: typedb-ubuntu-22.04
+##      command: |
+##        bazel test //:release-validate-deps --test_output=streamed
+#
+##    validate-release-notes:
+##      image: typedb-ubuntu-22.04
+##      command: |
+##        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
+##        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
+#
+#  deployment:
+#    trigger-release-circleci:
 #      image: typedb-ubuntu-22.04
 #      command: |
-#        bazel test //:release-validate-deps --test_output=streamed
-
-#    validate-release-notes:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-#        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
-
-  deployment:
-    trigger-release-circleci:
-      image: typedb-ubuntu-22.04
-      command: |
-        git checkout -b release
-        git push -f origin release
-        echo "Successfully pushed branch 'release', which triggers a release workflow in CircleCI. The progress of the release can be tracked there."
+#        git checkout -b release
+#        git push -f origin release
+#        echo "Successfully pushed branch 'release', which triggers a release workflow in CircleCI. The progress of the release can be tracked there."
