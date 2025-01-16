@@ -241,7 +241,9 @@ pub(crate) fn create_executors_for_function(
             };
             Ok(vec![step.into()])
         }
-        ExecutableReturn::Check => todo!("ExecutableReturn::Check"),
+        ExecutableReturn::Check => {
+            Err(Box::new(ConceptReadError::UnimplementedFunctionality { functionality: UnimplementedFeature::PipelineStageInFunction("return check") }))
+        },
         ExecutableReturn::Reduce(executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(executable_function.executable_id, steps),

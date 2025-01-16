@@ -48,8 +48,10 @@ impl TabledFunctions {
             .map_err(|source| ReadExecutionError::ConceptRead { source })?;
             let pattern_executor = PatternExecutor::new(function.executable_id, executors);
             let width = match &function.returns {
-                ExecutableReturn::Stream(v) => v.len() as u32,
-                _ => todo!(),
+                ExecutableReturn::Stream(v)
+                | ExecutableReturn::Single(_, v) => v.len() as u32,
+                ExecutableReturn::Check => 1,
+                ExecutableReturn::Reduce(reduce) => reduce.reductions.len() as u32,
             };
             self.state.insert(
                 call_key.clone(),
