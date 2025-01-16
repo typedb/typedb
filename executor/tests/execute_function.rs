@@ -7,8 +7,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use compiler::VariablePosition;
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use concept::error::ConceptReadError;
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
     pipeline::{stage::ExecutionContext, PipelineExecutionError},

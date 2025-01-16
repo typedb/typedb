@@ -202,11 +202,13 @@ typedb_error! {
             255,
             "Optional types are not yet implemented.\nSource:\n{declaration}",
             declaration: typeql::type_::Optional,
+            feature: error::UnimplementedFeature
         ),
         UnimplementedListType(
             256,
             "List types are not yet implemented.\nSource:\n{declaration}",
             declaration: typeql::type_::List,
+            feature: error::UnimplementedFeature
         ),
     }
 }
@@ -222,7 +224,7 @@ pub enum LiteralParseError {
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
     UnimplementedSubkey,
-    UnimplementedComparator,
+    UnimplementedLanguageFeature { feature: error::UnimplementedFeature },
 }
 
 impl fmt::Display for LiteralParseError {
@@ -243,7 +245,7 @@ impl Error for LiteralParseError {
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
             LiteralParseError::UnimplementedSubkey => None,
-            LiteralParseError::UnimplementedComparator => None,
+            LiteralParseError::UnimplementedLanguageFeature { .. } => None,
         }
     }
 }

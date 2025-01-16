@@ -241,9 +241,9 @@ pub(crate) fn create_executors_for_function(
             };
             Ok(vec![step.into()])
         }
-        ExecutableReturn::Check => {
-            Err(Box::new(ConceptReadError::UnimplementedFunctionality { functionality: UnimplementedFeature::PipelineStageInFunction("return check") }))
-        },
+        ExecutableReturn::Check => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+            functionality: UnimplementedFeature::PipelineStageInFunction("return check"),
+        })),
         ExecutableReturn::Reduce(executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(executable_function.executable_id, steps),
@@ -287,11 +287,9 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)
         }
-        ExecutableStage::Select(_) => {
-            Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-                functionality: UnimplementedFeature::PipelineStageInFunction("select")
-            }))
-        },
+        ExecutableStage::Select(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+            functionality: UnimplementedFeature::PipelineStageInFunction("select"),
+        })),
         ExecutableStage::Offset(offset_executable) => {
             let step = StreamModifierExecutor::new_offset(
                 // TODO: not sure if these are correct new executable IDs or should be different?
@@ -307,11 +305,9 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             );
             Ok(vec![step.into()])
         }
-        ExecutableStage::Require(_) => {
-            Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-                functionality: UnimplementedFeature::PipelineStageInFunction("require")
-            }))
-        },
+        ExecutableStage::Require(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+            functionality: UnimplementedFeature::PipelineStageInFunction("require"),
+        })),
         ExecutableStage::Sort(sort_executable) => {
             let step = CollectingStageExecutor::new_sort(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),

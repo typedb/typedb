@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::unimplemented_feature;
+use error::{ensure_unimplemented_unused, unimplemented_feature};
 use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
@@ -110,7 +110,7 @@ impl ExecutionStep {
             ExecutionStep::UnsortedJoin(step) => step.new_variables(),
             ExecutionStep::Assignment(step) => step.new_variables(),
             ExecutionStep::Check(_) => &[],
-            ExecutionStep::Disjunction(_) => unimplemented_feature!(UnusedFunction_ExecutionStep_NewVariables),
+            ExecutionStep::Disjunction(_) => ensure_unimplemented_unused!(),
             ExecutionStep::Negation(_) => &[],
             ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),

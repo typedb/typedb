@@ -230,7 +230,7 @@ where
 
     #[cfg(unused_unimplemented_function)]
     pub fn seek(&mut self) {
-        unimplemented_feature!(IteratorSeek)
+        ensure_unimplemented_unused!()
     }
 
     fn iter_next(&mut self) -> Option<Result<Attribute, Box<ConceptReadError>>> {

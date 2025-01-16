@@ -194,12 +194,14 @@ fn register_typeql_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
-        typeql::TypeRefAny::Optional(optional) => {
-            Err(Box::new(RepresentationError::UnimplementedOptionalType { declaration: optional.clone() }))
-        }
-        typeql::TypeRefAny::List(list) => {
-            Err(Box::new(RepresentationError::UnimplementedListType { declaration: list.clone() }))
-        }
+        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
+            declaration: optional.clone(),
+            feature: UnimplementedFeature::Optionals,
+        })),
+        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
+            declaration: list.clone(),
+            feature: UnimplementedFeature::Lists,
+        })),
     }
 }
 
@@ -225,12 +227,14 @@ fn register_typeql_role_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
-        typeql::TypeRefAny::Optional(optional) => {
-            Err(Box::new(RepresentationError::UnimplementedOptionalType { declaration: optional.clone() }))
-        }
-        typeql::TypeRefAny::List(list) => {
-            Err(Box::new(RepresentationError::UnimplementedListType { declaration: list.clone() }))
-        }
+        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
+            declaration: optional.clone(),
+            feature: UnimplementedFeature::Optionals,
+        })),
+        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
+            declaration: list.clone(),
+            feature: error::UnimplementedFeature::Lists,
+        })),
     }
 }
 
@@ -498,8 +502,16 @@ pub(super) fn add_typeql_relation(
                             declaration: role_player.clone(),
                         }));
                     }
-                    TypeRefAny::Optional(_) => unimplemented_feature!(Optionals),
-                    TypeRefAny::List(_) => unimplemented_feature!(Lists),
+                    TypeRefAny::Optional(_) => {
+                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                            feature: error::UnimplementedFeature::Optionals,
+                        }));
+                    }
+                    TypeRefAny::List(_) => {
+                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                            feature: error::UnimplementedFeature::Lists,
+                        }));
+                    }
                     TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(value_type))) => {
                         return Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
                             value_type: value_type.clone(),

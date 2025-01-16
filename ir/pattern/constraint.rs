@@ -13,6 +13,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
@@ -1804,8 +1805,18 @@ impl TryFrom<typeql::token::Comparator> for Comparator {
             typeql::token::Comparator::Gte => Self::GreaterOrEqual,
             typeql::token::Comparator::Lt => Self::Less,
             typeql::token::Comparator::Lte => Self::LessOrEqual,
-            typeql::token::Comparator::Contains => return Err(LiteralParseError::UnimplementedComparator), //Self::Contains,
-            typeql::token::Comparator::Like => return Err(LiteralParseError::UnimplementedComparator),     //Self::Like,
+            typeql::token::Comparator::Contains => {
+                //Self::Contains,
+                return Err(LiteralParseError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::ComparatorContains,
+                });
+            }
+            typeql::token::Comparator::Like => {
+                //Self::Like,
+                return Err(LiteralParseError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::ComparatorLike,
+                });
+            }
         })
     }
 }

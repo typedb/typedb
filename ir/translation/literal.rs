@@ -58,7 +58,9 @@ impl FromTypeQLLiteral for Value<'static> {
             }
             ValueLiteral::Duration(duration) => Ok(Value::Duration(Duration::from_typeql_literal(duration)?)),
             ValueLiteral::String(string) => Ok(Value::String(Cow::Owned(String::from_typeql_literal(string)?))),
-            ValueLiteral::Struct(_) => unimplemented_feature!(Structs),
+            ValueLiteral::Struct(_) => {
+                Err(LiteralParseError::UnimplementedLanguageFeature { feature: error::UnimplementedFeature::Structs })
+            }
         }
     }
 }

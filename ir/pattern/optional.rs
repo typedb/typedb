@@ -42,10 +42,6 @@ impl Optional {
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
-
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
-        unimplemented_feature!(Optionals)
-    }
 }
 
 impl Scope for Optional {

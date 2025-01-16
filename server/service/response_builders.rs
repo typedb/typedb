@@ -172,7 +172,7 @@ pub(crate) mod transaction {
 
     #[cfg(unused_unimplemented_function)]
     pub(crate) fn query_res_part_from_concept_document() {
-        unimplemented_feature!(QueryResPartFromConceptDocument)
+        ensure_unimplemented_unused!()
     }
 
     // -----------

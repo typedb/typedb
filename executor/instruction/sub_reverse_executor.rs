@@ -14,8 +14,8 @@ use std::{
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
-use itertools::Itertools;
 use error::UnimplementedFeature;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

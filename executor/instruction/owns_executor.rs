@@ -19,8 +19,8 @@ use concept::{
         attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI,
     },
 };
-use itertools::Itertools;
 use error::UnimplementedFeature;
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

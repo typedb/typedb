@@ -40,6 +40,13 @@ rust_test(
     deps = deps,
 )
 
+rust_test(
+    name = "test_unimplemented",
+    crate_root = "unimplemented.rs",
+    srcs = ["unimplemented.rs"],
+    deps = deps,
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

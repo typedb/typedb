@@ -220,15 +220,12 @@ macro_rules! typedb_error {
     };
 }
 
-// Check for usages
+// Check for usages.
 #[derive(Debug, Clone)]
 pub enum UnimplementedFeature {
     Optionals,
     Lists,
     Structs,
-
-    QueryResPartFromConceptDocument,
-    IteratorSeek,
 
     ComparatorContains,
     ComparatorLike,
@@ -238,11 +235,7 @@ pub enum UnimplementedFeature {
 
     PipelineStageInFunction(&'static str),
 
-
     IrrelevantUnboundInvertedMode(&'static str),
-
-    // unused because it's in a disabled function
-    UnusedFunction_ExecutionStep_NewVariables,
 }
 impl std::fmt::Display for UnimplementedFeature {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -277,5 +270,7 @@ macro_rules! todo_display_for_error {
 
 #[macro_export]
 macro_rules! ensure_unimplemented_unused {
-    () => {};
+    () => {
+        compile_error!("Implement this path before making the function usable")
+    };
 }
