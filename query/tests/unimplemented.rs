@@ -5,8 +5,8 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
+use itertools::Either;
 
-use primitive::either::Either;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
@@ -17,6 +17,7 @@ use executor::{
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
+use ir::pipeline::FunctionRepresentationError;
 use ir::RepresentationError;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
@@ -71,7 +72,7 @@ fn run_read_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-        ).map_err(|query_error| Either::First(query_error))?;
+        ).map_err(|query_error| Either::Left(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
@@ -80,7 +81,7 @@ fn run_read_query(
 
     result
         .map(move |rows| (rows, rows_positions))
-        .map_err(|exec_err| Either::Second(exec_err))
+        .map_err(|exec_err| Either::Right(exec_err))
 }
 
 fn run_write_query(
@@ -129,19 +130,17 @@ fn illegal_stages_in_function() {
         match
             let $two in with_select();
         "#;
-        let Either::Second(err) = run_read_query(&context, query).unwrap_err() else { unreachable!(); };
-        let err_ref: &PipelineExecutionError = &err;
-        match &err_ref {
+        let Either::Right(err) = run_read_query(&context, query).unwrap_err() else { unreachable!(); };
+        match &err.as_ref() {
             PipelineExecutionError::InitialisingMatchIterator { source } => {
-                let source_ref: &ConceptReadError = &source;
                 assert!(matches!(
-                    source_ref,
+                    source.as_ref(),
                     ConceptReadError::UnimplementedFunctionality {
                         functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
                     }
                 ))
             }
-            _ => Err(err_ref).unwrap(),
+            _ => Err(err).unwrap(),
         }
     }
 
@@ -158,19 +157,17 @@ fn illegal_stages_in_function() {
         match
             let $two in with_require();
         "#;
-        let Either::Second(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
-        let err_ref: &PipelineExecutionError = &err;
-        match &err_ref {
+        let Either::Right(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
+        match &err.as_ref() {
             PipelineExecutionError::InitialisingMatchIterator { source } => {
-                let source_ref: &ConceptReadError = &source;
                 assert!(matches!(
-                    source_ref,
+                    source.as_ref(),
                     ConceptReadError::UnimplementedFunctionality {
                         functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
                     }
                 ))
             }
-            _ => Err(err_ref).unwrap(),
+            _ => Err(err).unwrap(),
         }
     }
 }
@@ -180,7 +177,9 @@ fn illegal_stages_in_function() {
 fn structs_lists_optionals() {
     let custom_schema = r#"define
         entity person;
-        relation friendship, relates person[];
+        relation friendship, relates persons[], relates person;
+        person plays friendship:person,
+            plays friendship:persons;
     "#;
     let context = setup_common(custom_schema);
 
@@ -195,28 +194,66 @@ fn structs_lists_optionals() {
     {
         let query = r#"
         match
-            $f isa friendship(person[]: $pl);
+            $f isa friendship(persons[]: $pl);
         "#;
-        let Either::First(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
-        check_unimplemented_language_feature(&err, error::UnimplementedFeature::Lists);
+        let Either::Left(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
+        check_unimplemented_language_feature(&err, &error::UnimplementedFeature::Lists);
     }
-}
 
-fn check_unimplemented_language_feature(err: &QueryError, expected: UnimplementedFeature) {
-    let err_ref: &QueryError = &err;
-    match &err_ref {
-        QueryError::Representation { typedb_source } => {
-            let source_ref: &RepresentationError = &typedb_source;
-            assert!(matches!(
-                    source_ref,
-                    RepresentationError::UnimplementedLanguageFeature {
-                        feature: error::UnimplementedFeature::Lists
-                        ,..
+    {
+        let query = r#"
+        match
+            $p isa person;
+            try {
+                $f isa friendship(person: $p);
+            };
+        "#;
+        let Either::Left(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
+        check_unimplemented_language_feature(&err, &error::UnimplementedFeature::Optionals);
+    }
+
+    {
+        let query = r#"
+        with
+        fun return_optional() -> { integer? }:
+        match
+            try {
+                let $x = 5;
+            };
+        return { $x };
+
+        match
+            let $y in return_optional();
+
+        "#;
+        let mut matches = false;
+        let outer_err = run_read_query(&context, query).unwrap_err();
+        if let Either::Left(err) = &outer_err {
+            if let QueryError::Representation { typedb_source: err } = err.as_ref() {
+                if let RepresentationError::FunctionRepresentation { typedb_source: FunctionRepresentationError::BlockDefinition { typedb_source: err, .. } } = err.as_ref() {
+                    if let RepresentationError::UnimplementedLanguageFeature { feature } = err.as_ref() {
+                        matches = (feature == &error::UnimplementedFeature::Optionals)
                     }
-                ))
+                }
+            }
         }
-        _ => Err(err_ref).unwrap(),
+        if !matches {
+            Err::<(),_>(outer_err).unwrap();
+        }
     }
 }
 
-
+fn check_unimplemented_language_feature(err: &QueryError, expected: &UnimplementedFeature) {
+    match &err {
+        QueryError::Representation { typedb_source } => {
+            match typedb_source.as_ref() {
+                RepresentationError::UnimplementedLanguageFeature {
+                    feature: actual,
+                    ..
+                } => assert_eq!(expected, actual),
+                _ => Err(err).unwrap(),
+            }
+        }
+        _ => Err(err).unwrap(),
+    };
+}

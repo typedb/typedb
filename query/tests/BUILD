@@ -11,7 +11,6 @@ deps = [
     "//concept",
     "//common/bytes",
     "//common/lending_iterator",
-    "//common/primitive",
     "//compiler",
     "//durability",
     "//encoding",
@@ -25,6 +24,8 @@ deps = [
     "//concept/tests:test_utils_concept",
     "//encoding/tests:test_utils_encoding",
     "//util/test:test_utils",
+
+    "@crates//:itertools",
 ]
 
 rust_test(
