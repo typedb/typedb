@@ -35,7 +35,7 @@ java %CONSOLE_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.typedb.con
 goto exit
 
 :startserver
-.\typedb_server_bin.exe
+%TYPEDB_HOME%\server\typedb_server_bin.exe
 goto exit
 
 :exit
