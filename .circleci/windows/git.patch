@@ -1,25 +1,3 @@
-diff --git a/.circleci/windows/git.patch b/.circleci/windows/git.patch
-index 65b9f0778..e69de29bb 100644
---- a/.circleci/windows/git.patch
-+++ b/.circleci/windows/git.patch
-@@ -1,17 +0,0 @@
--diff --git a/BUILD b/BUILD
--index 5db777f39..c96edaa49 100644
----- a/BUILD
--+++ b/BUILD
--@@ -68,10 +68,10 @@ alias(
-- )
-- 
-- # The directory structure for distribution
--+exports_files(["typedb_server_bin.exe"])
-- pkg_files(
--     name = "package-layout-server",
---    srcs = ["//:typedb_server_bin", "//binary:typedb"],
---    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
--+    srcs = ["//:typedb_server_bin.exe", "//binary:typedb.bat"],
--     attributes = binary_permissions,
-- )
-- 
 diff --git a/BUILD b/BUILD
 index c1e6757ca..023ec97b5 100644
 --- a/BUILD
