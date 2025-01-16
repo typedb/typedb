@@ -6,17 +6,21 @@
 
 use std::{collections::HashMap, sync::Arc};
 
+use primitive::either::Either;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
+use error::UnimplementedFeature;
 use executor::{
     pipeline::{stage::ExecutionContext, PipelineExecutionError},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
+use ir::RepresentationError;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
+use query::error::QueryError;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -53,7 +57,10 @@ fn setup_common(schema: &str) -> Context {
 fn run_read_query(
     context: &Context,
     query: &str,
-) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
+) -> Result<
+    (Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>),
+    Either<Box<QueryError>, Box<PipelineExecutionError>>
+> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
     let pipeline = context
@@ -64,15 +71,16 @@ fn run_read_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-        )
-        .unwrap();
+        ).map_err(|query_error| Either::First(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
-    result.map(move |rows| (rows, rows_positions))
+    result
+        .map(move |rows| (rows, rows_positions))
+        .map_err(|exec_err| Either::Second(exec_err))
 }
 
 fn run_write_query(
@@ -121,7 +129,7 @@ fn illegal_stages_in_function() {
         match
             let $two in with_select();
         "#;
-        let err = run_read_query(&context, query).unwrap_err();
+        let Either::Second(err) = run_read_query(&context, query).unwrap_err() else { unreachable!(); };
         let err_ref: &PipelineExecutionError = &err;
         match &err_ref {
             PipelineExecutionError::InitialisingMatchIterator { source } => {
@@ -150,7 +158,7 @@ fn illegal_stages_in_function() {
         match
             let $two in with_require();
         "#;
-        let err = run_read_query(&context, query).unwrap_err();
+        let Either::Second(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
         let err_ref: &PipelineExecutionError = &err;
         match &err_ref {
             PipelineExecutionError::InitialisingMatchIterator { source } => {
@@ -166,3 +174,49 @@ fn illegal_stages_in_function() {
         }
     }
 }
+
+
+#[test]
+fn structs_lists_optionals() {
+    let custom_schema = r#"define
+        entity person;
+        relation friendship, relates person[];
+    "#;
+    let context = setup_common(custom_schema);
+
+    {
+        let query = r#"
+        match
+            let $z = [1, 2, 3];
+        "#;
+        run_read_query(&context, query).unwrap_err();
+    }
+
+    {
+        let query = r#"
+        match
+            $f isa friendship(person[]: $pl);
+        "#;
+        let Either::First(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
+        check_unimplemented_language_feature(&err, error::UnimplementedFeature::Lists);
+    }
+}
+
+fn check_unimplemented_language_feature(err: &QueryError, expected: UnimplementedFeature) {
+    let err_ref: &QueryError = &err;
+    match &err_ref {
+        QueryError::Representation { typedb_source } => {
+            let source_ref: &RepresentationError = &typedb_source;
+            assert!(matches!(
+                    source_ref,
+                    RepresentationError::UnimplementedLanguageFeature {
+                        feature: error::UnimplementedFeature::Lists
+                        ,..
+                    }
+                ))
+        }
+        _ => Err(err_ref).unwrap(),
+    }
+}
+
+

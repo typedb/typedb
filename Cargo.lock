@@ -2696,6 +2696,7 @@ dependencies = [
  "lending_iterator",
  "moka",
  "pprof",
+ "primitive",
  "rand 0.8.5",
  "resource",
  "storage",

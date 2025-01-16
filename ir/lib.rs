@@ -195,7 +195,7 @@ typedb_error! {
         ),
         UnimplementedLanguageFeature(
             254,
-            "The built in function is not yet implemented: {feature}",
+            "The language feature is not yet implemented: {feature}",
             feature: error::UnimplementedFeature,
         ),
         UnimplementedOptionalType(

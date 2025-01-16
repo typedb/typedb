@@ -34,6 +34,11 @@ features = {}
 		version = "0.5.1"
 		default-features = false
 
+	[dev-dependencies.primitive]
+		path = "../common/primitive"
+		features = []
+		default-features = false
+
 	[dev-dependencies.bytes]
 		path = "../common/bytes"
 		features = []
