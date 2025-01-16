@@ -83,7 +83,7 @@ impl VariableVertex {
     pub(crate) fn add_is(&mut self, other: VariableVertexId) {
         match self {
             Self::Input(_inner) => (),
-            Self::Type(_inner) => todo!(),
+            Self::Type(inner) => inner.add_is(other),
             Self::Thing(inner) => inner.add_is(other),
             Self::Value(_inner) => unreachable!(),
         }
@@ -155,6 +155,7 @@ impl InputPlanner {
 pub(crate) struct TypePlanner {
     variable: Variable,
     binding: Option<PatternVertexId>,
+    restriction_exact: HashSet<VariableVertexId>, // Is constraint
     unrestricted_expected_size: f64,
 }
 
@@ -167,16 +168,36 @@ impl fmt::Debug for TypePlanner {
 impl TypePlanner {
     pub(crate) fn from_variable(variable: Variable, type_annotations: &TypeAnnotations) -> Self {
         let num_types = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)).unwrap().len();
-        Self { variable, binding: None, unrestricted_expected_size: num_types as f64 }
+        Self {
+            variable,
+            binding: None,
+            restriction_exact: HashSet::new(),
+            unrestricted_expected_size: num_types as f64,
+        }
     }
 
     pub(crate) fn set_binding(&mut self, binding_pattern: PatternVertexId) {
         self.binding = Some(binding_pattern);
     }
 
-    fn restriction_based_selectivity(&self, _inputs: &[VertexId]) -> f64 {
-        // TODO: if we incorporate, say, annotations, we could add some selectivity here
-        VariableVertex::RESTRICTION_NONE
+    pub(crate) fn add_is(&mut self, other: VariableVertexId) {
+        self.restriction_exact.insert(other);
+    }
+
+    fn restriction_based_selectivity(&self, inputs: &[VertexId]) -> f64 {
+        let selectivity = if self
+            .restriction_exact
+            .iter()
+            .any(|restriction| is_input_available(&Input::Variable(*restriction), inputs))
+        {
+            let bias: f64 = 1.0; // TODO: revisit and tune
+                                 // exactly 1 of the full set is selected
+            1.0 / (self.unrestricted_expected_size * bias)
+        } else {
+            // TODO: if we incorporate, say, annotations, we could add some selectivity here
+            VariableVertex::RESTRICTION_NONE
+        };
+        f64::max(selectivity, VariableVertex::SELECTIVITY_MIN)
     }
 }
 

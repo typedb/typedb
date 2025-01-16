@@ -14,6 +14,7 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
+use error::todo_must_implement;
 use ir::pattern::{
     constraint::{Comparator, Comparison, ExpressionBinding, Is, IsaKind, SubKind},
     IrID, ParameterID, Vertex,
@@ -398,8 +399,8 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
             Self::IndexedRelation(inner) => inner.add_check(check),
-            Self::ComparisonCheck(_) => todo!(),
-            Self::ExpressionBinding(_) => todo!(),
+            Self::ComparisonCheck(_) => todo_must_implement!("this might be unreachable"),
+            Self::ExpressionBinding(_) => todo_must_implement!("This looks like it should have checks"),
         }
     }
 

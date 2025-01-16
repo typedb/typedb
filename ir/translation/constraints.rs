@@ -530,7 +530,9 @@ fn add_typeql_iterable_binding(
             add_user_defined_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args)
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
-            Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: UnimplementedFeature::LetInBuiltinCall }))
+            Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                feature: UnimplementedFeature::LetInBuiltinCall,
+            }))
         }
         typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: UnimplementedFeature::Lists }))

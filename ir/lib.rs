@@ -10,6 +10,7 @@
 
 use std::{error::Error, fmt};
 
+use answer::variable::Variable;
 use error::typedb_error;
 use typeql::{
     query::stage::reduce::Reducer,
@@ -19,7 +20,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
+    pattern::{constraint::Is, expression::ExpressionDefinitionError, variable_category::VariableCategory},
     pipeline::{FunctionReadError, FunctionRepresentationError},
     translation::fetch::FetchRepresentationError,
 };
@@ -183,6 +184,14 @@ typedb_error! {
             28,
             "A reserved value-type name \"{value_type}\" was used as type name",
             value_type: typeql::type_::BuiltinValueType,
+        ),
+        VariableCategoryMismatchInIs(
+            29,
+            "The variable categories for the is statement are incompatible",
+            lhs_variable: String,
+            rhs_variable: String,
+            lhs_category: VariableCategory,
+            rhs_category: VariableCategory,
         ),
         UnimplementedLanguageFeature(
             254,

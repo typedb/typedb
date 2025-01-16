@@ -1531,7 +1531,9 @@ impl ConjunctionPlan<'_> {
             PlannerVertex::Constraint(constraint) => {
                 self.lower_constraint_check(match_builder, constraint);
             }
-            PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Expression(_) => {
+                unreachable!("Would require multiple assignments to the same variable and be flagged")
+            }
             PlannerVertex::Disjunction(disjunction) => {
                 let step_builder = disjunction
                     .builder()
