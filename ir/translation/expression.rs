@@ -10,6 +10,7 @@ use typeql::{
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
 };
+use error::UnimplementedFeature;
 
 use crate::{
     pattern::{
@@ -202,7 +203,9 @@ fn to_builtin_id(
             check_builtin_arg_count(token, args.len(), 1)?;
             Ok(BuiltInFunctionID::Round)
         }
-        _ => Err(Box::new(RepresentationError::UnimplementedBuiltinFunction { builtin: token.clone() })),
+        _ => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+            feature: UnimplementedFeature::BuiltinFunction(token.to_string()),
+        })),
     }
 }
 

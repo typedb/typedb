@@ -184,10 +184,10 @@ typedb_error! {
             "A reserved value-type name \"{value_type}\" was used as type name",
             value_type: typeql::type_::BuiltinValueType,
         ),
-        UnimplementedBuiltinFunction(
+        UnimplementedLanguageFeature(
             254,
-            "The built in function is not yet implemented: {builtin}",
-            builtin: token::Function,
+            "The built in function is not yet implemented: {feature}",
+            feature: error::UnimplementedFeature,
         ),
         UnimplementedOptionalType(
             255,

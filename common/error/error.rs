@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt};
+use std::fmt::Formatter;
 
 mod typeql;
 
@@ -221,7 +222,7 @@ macro_rules! typedb_error {
 }
 
 // Check for usages
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum UnimplementedFeature {
     Optionals,
     Lists,
@@ -232,6 +233,14 @@ pub enum UnimplementedFeature {
 
     ComparatorContains,
     ComparatorLike,
+
+    ExecutionStep_NewVariables, // unused because it's in a disabled function
+    BuiltinFunction(String),
+}
+impl std::fmt::Display for UnimplementedFeature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 #[macro_export]
