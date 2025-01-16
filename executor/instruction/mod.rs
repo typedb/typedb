@@ -160,7 +160,6 @@ impl InstructionExecutor {
                 IndexedRelationExecutor::new(indexed_relation, variable_modes, sort_by, snapshot, thing_manager)?,
             )),
             ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
-            ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
         }
     }
 
