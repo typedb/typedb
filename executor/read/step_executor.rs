@@ -17,6 +17,7 @@ use compiler::{
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::{unimplemented_feature, UnimplementedFeature};
+use ir::RepresentationError;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;

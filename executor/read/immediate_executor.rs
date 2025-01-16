@@ -16,7 +16,7 @@ use compiler::{
     ExecutorVariable, VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use error::todo_must_implement;
+use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -73,6 +73,9 @@ impl ImmediateExecutor {
         step: &UnsortedJoinStep,
         step_profile: Arc<StepProfile>,
     ) -> Result<Self, Box<ConceptReadError>> {
+        return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+            functionality: UnimplementedFeature::UnsortedJoin,
+        }));
         let UnsortedJoinStep { iterate_instruction, check_instructions, output_width, .. } = step;
         let executor = UnsortedJoinExecutor::new(
             iterate_instruction.clone(),
@@ -662,7 +665,7 @@ impl UnsortedJoinExecutor {
     }
 
     fn reset(&mut self) {
-        todo_must_implement!("UnsortedJoinExecutor::prepare")
+        unimplemented_feature!(UnsortedJoin)
     }
 
     fn prepare(
@@ -670,7 +673,7 @@ impl UnsortedJoinExecutor {
         _input_batch: FixedBatch,
         _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<(), ReadExecutionError> {
-        todo_must_implement!("UnsortedJoinExecutor::prepare")
+        unimplemented_feature!(UnsortedJoin)
     }
 
     fn batch_continue(
@@ -678,7 +681,7 @@ impl UnsortedJoinExecutor {
         _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
         _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo_must_implement!("UnsortedJoinExecutor::batch_continue")
+        unimplemented_feature!(UnsortedJoin)
     }
 }
 

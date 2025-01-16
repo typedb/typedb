@@ -227,11 +227,12 @@ pub enum UnimplementedFeature {
     Lists,
     Structs,
 
-    ComparatorContains,
-    ComparatorLike,
-
     BuiltinFunction(String),
     LetInBuiltinCall,
+
+    ComparatorContains,
+    ComparatorLike,
+    UnsortedJoin,
 
     PipelineStageInFunction(&'static str),
 
@@ -256,7 +257,7 @@ macro_rules! unimplemented_feature {
 #[macro_export]
 macro_rules! todo_must_implement {
     ($msg:literal) => {
-        // todo!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
+        // todo!(concat!("TODO: Must implement: ", $msg)) // Ensure the below is enabled when checking in.
         compile_error!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
     };
 }
