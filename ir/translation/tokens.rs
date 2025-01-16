@@ -41,7 +41,9 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
         )),
         typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex)?),
         typeql::Annotation::Subkey(_) => {
-            return Err(LiteralParseError::UnimplementedSubkey);
+            return Err(LiteralParseError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Subkey,
+            });
         }
         typeql::Annotation::Unique(_) => Annotation::Unique(AnnotationUnique),
         typeql::Annotation::Values(values) => Annotation::Values(AnnotationValues::new(
@@ -62,7 +64,11 @@ pub fn translate_annotation_category(
         token::Annotation::Key => AnnotationCategory::Key,
         token::Annotation::Range => AnnotationCategory::Range,
         token::Annotation::Regex => AnnotationCategory::Regex,
-        token::Annotation::Subkey => return Err(LiteralParseError::UnimplementedSubkey),
+        token::Annotation::Subkey => {
+            return Err(LiteralParseError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Subkey,
+            })
+        }
         token::Annotation::Unique => AnnotationCategory::Unique,
         token::Annotation::Values => AnnotationCategory::Values,
     })

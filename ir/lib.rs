@@ -223,7 +223,6 @@ pub enum LiteralParseError {
     CannotUnescapeRegexString { literal: StringLiteral, source: typeql::Error },
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
-    UnimplementedSubkey,
     UnimplementedLanguageFeature { feature: error::UnimplementedFeature },
 }
 
@@ -244,7 +243,6 @@ impl Error for LiteralParseError {
             LiteralParseError::CannotUnescapeRegexString { source, .. } => Some(source),
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
-            LiteralParseError::UnimplementedSubkey => None,
             LiteralParseError::UnimplementedLanguageFeature { .. } => None,
         }
     }

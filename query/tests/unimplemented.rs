@@ -5,7 +5,6 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use itertools::Either;
 
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -17,11 +16,10 @@ use executor::{
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
-use ir::pipeline::FunctionRepresentationError;
-use ir::RepresentationError;
+use ir::{pipeline::FunctionRepresentationError, RepresentationError};
+use itertools::Either;
 use lending_iterator::LendingIterator;
-use query::{query_cache::QueryCache, query_manager::QueryManager};
-use query::error::QueryError;
+use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -60,7 +58,7 @@ fn run_read_query(
     query: &str,
 ) -> Result<
     (Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>),
-    Either<Box<QueryError>, Box<PipelineExecutionError>>
+    Either<Box<QueryError>, Box<PipelineExecutionError>>,
 > {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
     let match_ = typeql::parse_query(query).unwrap().into_pipeline();
@@ -72,16 +70,15 @@ fn run_read_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
-        ).map_err(|query_error| Either::Left(query_error))?;
+        )
+        .map_err(|query_error| Either::Left(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
     let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
 
-    result
-        .map(move |rows| (rows, rows_positions))
-        .map_err(|exec_err| Either::Right(exec_err))
+    result.map(move |rows| (rows, rows_positions)).map_err(|exec_err| Either::Right(exec_err))
 }
 
 fn run_write_query(
@@ -130,7 +127,9 @@ fn illegal_stages_in_function() {
         match
             let $two in with_select();
         "#;
-        let Either::Right(err) = run_read_query(&context, query).unwrap_err() else { unreachable!(); };
+        let Either::Right(err) = run_read_query(&context, query).unwrap_err() else {
+            unreachable!();
+        };
         match &err.as_ref() {
             PipelineExecutionError::InitialisingMatchIterator { source } => {
                 assert!(matches!(
@@ -171,7 +170,6 @@ fn illegal_stages_in_function() {
         }
     }
 }
-
 
 #[test]
 fn structs_lists_optionals() {
@@ -230,7 +228,10 @@ fn structs_lists_optionals() {
         let outer_err = run_read_query(&context, query).unwrap_err();
         if let Either::Left(err) = &outer_err {
             if let QueryError::Representation { typedb_source: err } = err.as_ref() {
-                if let RepresentationError::FunctionRepresentation { typedb_source: FunctionRepresentationError::BlockDefinition { typedb_source: err, .. } } = err.as_ref() {
+                if let RepresentationError::FunctionRepresentation {
+                    typedb_source: FunctionRepresentationError::BlockDefinition { typedb_source: err, .. },
+                } = err.as_ref()
+                {
                     if let RepresentationError::UnimplementedLanguageFeature { feature } = err.as_ref() {
                         matches = (feature == &error::UnimplementedFeature::Optionals)
                     }
@@ -238,22 +239,17 @@ fn structs_lists_optionals() {
             }
         }
         if !matches {
-            Err::<(),_>(outer_err).unwrap();
+            Err::<(), _>(outer_err).unwrap();
         }
     }
 }
 
 fn check_unimplemented_language_feature(err: &QueryError, expected: &UnimplementedFeature) {
     match &err {
-        QueryError::Representation { typedb_source } => {
-            match typedb_source.as_ref() {
-                RepresentationError::UnimplementedLanguageFeature {
-                    feature: actual,
-                    ..
-                } => assert_eq!(expected, actual),
-                _ => Err(err).unwrap(),
-            }
-        }
+        QueryError::Representation { typedb_source } => match typedb_source.as_ref() {
+            RepresentationError::UnimplementedLanguageFeature { feature: actual, .. } => assert_eq!(expected, actual),
+            _ => Err(err).unwrap(),
+        },
         _ => Err(err).unwrap(),
     };
 }
