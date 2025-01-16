@@ -22,7 +22,6 @@ pub(crate) enum Tuple<'a> {
     Pair([VariableValue<'a>; 2]),
     Triple([VariableValue<'a>; 3]),
     Quintuple([VariableValue<'a>; 5]),
-    Arbitrary(), // TODO: unknown sized tuples, for functions
 }
 
 impl PartialEq<Tuple<'_>> for Tuple<'_> {
@@ -56,7 +55,6 @@ impl<'a> Tuple<'a> {
             Tuple::Pair(values) => values,
             Tuple::Triple(values) => values,
             Tuple::Quintuple(values) => values,
-            Tuple::Arbitrary() => todo!(),
         }
     }
 
@@ -66,7 +64,6 @@ impl<'a> Tuple<'a> {
             Tuple::Pair(values) => Tuple::Pair(values.map(VariableValue::into_owned)),
             Tuple::Triple(values) => Tuple::Triple(values.map(VariableValue::into_owned)),
             Tuple::Quintuple(values) => Tuple::Quintuple(values.map(VariableValue::into_owned)),
-            Tuple::Arbitrary() => todo!(),
         }
     }
 }
@@ -81,7 +78,6 @@ pub(crate) enum TuplePositions {
     Pair([Option<ExecutorVariable>; 2]),
     Triple([Option<ExecutorVariable>; 3]),
     Quintuple([Option<ExecutorVariable>; 5]),
-    Arbitrary(), // TODO: unknown sized tuples, for functions
 }
 
 impl TuplePositions {
@@ -113,10 +109,6 @@ impl TuplePositions {
         }
     }
 
-    pub(crate) fn as_arbitrary(&self) {
-        todo!()
-    }
-
     pub(crate) fn iter(&self) -> impl Iterator<Item = Option<ExecutorVariable>> + '_ {
         self.positions().iter().copied()
     }
@@ -131,9 +123,6 @@ impl TuplePositions {
             TuplePositions::Pair(positions) => positions,
             TuplePositions::Triple(positions) => positions,
             TuplePositions::Quintuple(positions) => positions,
-            TuplePositions::Arbitrary() => {
-                todo!()
-            }
         }
     }
 }
