@@ -138,6 +138,8 @@ fn validate_links_insertable(
     // TODO: Should we check uniqueness of inferred role-types here instead of at compilation?
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
+
+    // TODO: These should be unreachable
     let Some(input_relation_types) = input_annotations_variables.get(&links.relation().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: links.relation().as_variable().unwrap(),

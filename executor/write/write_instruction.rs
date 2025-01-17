@@ -207,8 +207,8 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Links {
         row: &mut Row<'_>,
     ) -> Result<(), Box<WriteError>> {
         // TODO: Lists
-        let Object::Relation(relation) = get_thing(row, &self.relation).as_object() else { unreachable!() };
-        let player = get_thing(row, &self.relation).as_object();
+        let relation = get_thing(row, &self.relation).as_relation();
+        let player = get_thing(row, &self.player).as_object();
         let answer::Type::RoleType(role_type) = get_type(row, &self.role) else { unreachable!() };
         relation
             .remove_player_single(snapshot, thing_manager, *role_type, player)

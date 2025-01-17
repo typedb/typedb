@@ -6,6 +6,7 @@
 
 use answer::variable::Variable;
 use typeql::query::stage::delete::DeletableKind;
+use typeql::statement::thing::RolePlayer;
 
 use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
@@ -15,6 +16,7 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::pattern::variable_category::VariableCategory;
 
 pub fn translate_insert(
     context: &mut TranslationContext,
@@ -29,11 +31,45 @@ pub fn translate_insert(
     builder.finish()
 }
 
+
+fn verify_deleted_variables_available(context: &mut TranslationContext, delete: &typeql::query::stage::Delete) -> Result<(), Box<RepresentationError>> {
+    fn verify_variable_available(context: &TranslationContext, var: &typeql::Variable) -> Result<Variable, Box<RepresentationError>> {
+        match context.get_variable(var.name().unwrap()) {
+            Some(translated) => Ok(translated),
+            None => Err(Box::new(RepresentationError::DeleteVariableUnavailable {
+                variable: var.name().unwrap().to_owned()
+            }))
+        }
+    }
+    delete.deletables.iter().try_for_each(|deletable| {
+        match &deletable.kind {
+            DeletableKind::Has { owner, attribute } => {
+                verify_variable_available(context, owner)?;
+                verify_variable_available(context, attribute)?;
+            }
+            DeletableKind::Links { relation, players } => {
+                verify_variable_available(context, relation)?;
+                players.role_players.iter().try_for_each(|rp| match rp {
+                    RolePlayer::Typed(_, player) | RolePlayer::Untyped(player) => {
+                        verify_variable_available(context, player).map(|_| ())
+                    }
+                })?;
+            }
+            DeletableKind::Concept { variable } => {
+                let translated = verify_variable_available(context, variable)?;
+                context.variable_registry.set_deleted_variable_category(translated)?;
+            }
+        };
+        Ok(())
+    })
+}
+
 pub fn translate_delete(
     context: &mut TranslationContext,
     value_parameters: &mut ParameterRegistry,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
+    verify_deleted_variables_available(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let mut constraints = conjunction.constraints_mut();
