@@ -4,6 +4,6 @@
 
 **Pull the Docker image:**
 
-```docker pull vaticle/typedb:{version}```
+```docker pull typedb/typedb:{version}```
 
 { release notes }

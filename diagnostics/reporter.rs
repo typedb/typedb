@@ -270,13 +270,12 @@ impl Reporter {
     }
 
     fn report_inner_error(error: DiagnosticsReporterError) {
-        let error_string = <dyn TypeDBError>::to_string(&error).as_str();
-        match error.as_ref() {
+        match error {
             DiagnosticsReporterError::HttpsClientBuilding { .. } => {
-                Self::report_inner_error_message_warning(error_string)
+                Self::report_inner_error_message_warning(<dyn TypeDBError>::to_string(&error).as_str())
             }
             DiagnosticsReporterError::HttpRequestBuilding { .. } => {
-                Self::report_inner_error_message_critical(error_string)
+                Self::report_inner_error_message_critical(<dyn TypeDBError>::to_string(&error).as_str())
             }
         }
     }
@@ -307,7 +306,7 @@ impl ReportingEndpoint {
 
 typedb_error!(
     pub DiagnosticsReporterError(component = "DiagnosticsReporter", prefix = "DIR") {
-        HttpsClientBuilding(1, "Error while building an https client.", source: Arc<std::io::Error>),
-        HttpRequestBuilding(2, "Error while building an http request.", source: Arc<http::Error>),
+        HttpsClientBuilding(1, "Error while building a diagnostics reporting https client.", source: Arc<std::io::Error>),
+        HttpRequestBuilding(2, "Error while building a diagnostics reporting http request.", source: Arc<http::Error>),
     }
 );
