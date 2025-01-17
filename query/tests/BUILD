@@ -10,6 +10,7 @@ deps = [
     "//answer",
     "//concept",
     "//common/bytes",
+    "//common/error",
     "//common/lending_iterator",
     "//compiler",
     "//durability",
