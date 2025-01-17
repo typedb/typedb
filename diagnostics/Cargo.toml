@@ -84,3 +84,8 @@ features = {}
 		version = "1.0.135"
 		default-features = false
 
+	[dependencies.sentry]
+		features = ["backtrace", "contexts", "httpdate", "panic", "sentry-backtrace", "sentry-contexts", "sentry-panic", "ureq"]
+		version = "0.36.0"
+		default-features = false
+

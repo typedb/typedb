@@ -8,18 +8,22 @@ use std::{
     fs,
     hash::Hash,
     path::{Path, PathBuf},
-    sync::{Arc, Mutex},
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc, Mutex,
+    },
     time::Duration,
 };
 
 use chrono::{Timelike, Utc};
 use concurrency::TokioIntervalRunner;
+use error::{typedb_error, TypeDBError};
 use hyper::{
     client::HttpConnector,
     header::{CONNECTION, CONTENT_TYPE},
-    Body, Client, Request,
+    http, Body, Client, Request,
 };
-use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
+use hyper_rustls::{builderstates::WantsSchemes, HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
@@ -37,7 +41,8 @@ pub struct Reporter {
     deployment_id: String,
     diagnostics: Arc<Diagnostics>,
     data_directory: PathBuf,
-    is_enabled: bool,
+    is_service_enabled: Arc<AtomicBool>,
+    is_posthog_enabled: Arc<AtomicBool>,
     _reporting_job: Arc<Mutex<Option<TokioIntervalRunner>>>,
 }
 
@@ -48,11 +53,18 @@ impl Reporter {
         data_directory: PathBuf,
         is_enabled: bool,
     ) -> Self {
-        Self { deployment_id, diagnostics, data_directory, is_enabled, _reporting_job: Arc::new(Mutex::new(None)) }
+        Self {
+            deployment_id,
+            diagnostics,
+            data_directory,
+            is_service_enabled: Arc::new(AtomicBool::new(is_enabled)),
+            is_posthog_enabled: Arc::new(AtomicBool::new(is_enabled)),
+            _reporting_job: Arc::new(Mutex::new(None)),
+        }
     }
 
     pub async fn may_start(&self) {
-        if self.is_enabled {
+        if self.is_service_enabled.load(Ordering::Relaxed) || self.is_posthog_enabled.load(Ordering::Relaxed) {
             Self::delete_disabled_reporting_file_if_exists(&self.data_directory);
             self.schedule_reporting().await;
         } else {
@@ -61,13 +73,17 @@ impl Reporter {
     }
 
     async fn schedule_reporting(&self) {
+        let is_service_enabled = self.is_service_enabled.clone();
+        let is_posthog_enabled = self.is_posthog_enabled.clone();
         let diagnostics = self.diagnostics.clone();
 
         let reporting_job = TokioIntervalRunner::new_with_initial_delay(
             move || {
+                let is_service_enabled = is_service_enabled.clone();
+                let is_posthog_enabled = is_posthog_enabled.clone();
                 let diagnostics = diagnostics.clone();
                 async move {
-                    Self::report(diagnostics).await;
+                    Self::report(is_service_enabled, is_posthog_enabled, diagnostics).await;
                 }
             },
             REPORT_INTERVAL,
@@ -80,29 +96,49 @@ impl Reporter {
     fn report_once_if_needed(&self) {
         let disabled_reporting_file = self.data_directory.join(DISABLED_REPORTING_FILE_NAME);
         if !disabled_reporting_file.exists() {
+            let is_service_enabled = self.is_service_enabled.clone();
+            let is_posthog_enabled = self.is_posthog_enabled.clone();
             let diagnostics = self.diagnostics.clone();
             let data_directory = self.data_directory.clone();
 
             tokio::spawn(async move {
                 tokio::time::sleep(REPORT_ONCE_DELAY).await;
-                if Self::report(diagnostics).await {
+                if Self::report(is_service_enabled, is_posthog_enabled, diagnostics).await {
                     Self::save_disabled_reporting_file(&data_directory);
                 }
             });
         }
     }
 
-    async fn report(diagnostics: Arc<Diagnostics>) -> bool {
-        let service_task = Self::report_diagnostics_service(diagnostics.clone());
-        let posthog_task = Self::report_posthog(diagnostics.clone());
+    async fn report(
+        is_service_enabled: Arc<AtomicBool>,
+        is_posthog_enabled: Arc<AtomicBool>,
+        diagnostics: Arc<Diagnostics>,
+    ) -> bool {
+        let service_task = Self::report_service(is_service_enabled, diagnostics.clone());
+        let posthog_task = Self::report_posthog(is_posthog_enabled, diagnostics.clone());
         let (is_service_reported, is_posthog_reported) = tokio::join!(service_task, posthog_task);
         is_service_reported && is_posthog_reported
     }
 
-    async fn report_diagnostics_service(diagnostics: Arc<Diagnostics>) -> bool {
+    async fn report_service(is_enabled: Arc<AtomicBool>, diagnostics: Arc<Diagnostics>) -> bool {
+        if !is_enabled.load(Ordering::Relaxed) {
+            return false;
+        }
+
         let diagnostics_json = diagnostics.to_service_reporting_json_against_snapshot();
         let is_reported =
-            Self::send_request(diagnostics_json.to_string(), ReportingEndpoint::DiagnosticsService.get_uri()).await;
+            match Self::send_request(diagnostics_json.to_string(), ReportingEndpoint::DiagnosticsService.get_uri())
+                .await
+            {
+                Ok(is_reported) => is_reported,
+                Err(error) => {
+                    trace!("Service reporting got an error. Disabling Service reporting...");
+                    is_enabled.store(false, Ordering::Relaxed);
+                    Self::report_inner_error(error);
+                    false
+                }
+            };
 
         // The request is sent once, so it's fine to take a snapshot lossy with a small delay
         if is_reported {
@@ -112,12 +148,28 @@ impl Reporter {
         is_reported
     }
 
-    async fn report_posthog(diagnostics: Arc<Diagnostics>) -> bool {
+    async fn report_posthog(is_enabled: Arc<AtomicBool>, diagnostics: Arc<Diagnostics>) -> bool {
+        if !is_enabled.load(Ordering::Relaxed) {
+            return false;
+        }
+
         let events_json = diagnostics.to_posthog_reporting_json_against_snapshot(POSTHOG_API_KEY);
         diagnostics.take_posthog_snapshot();
 
-        let is_reported =
-            Self::send_request_with_retries(events_json.to_string(), ReportingEndpoint::PostHog.get_uri()).await;
+        let is_reported = match Self::send_request_with_retries(
+            events_json.to_string(),
+            ReportingEndpoint::PostHog.get_uri(),
+        )
+        .await
+        {
+            Ok(is_reported) => is_reported,
+            Err(error) => {
+                trace!("PostHog reporting got an error. Disabling PostHog reporting...");
+                is_enabled.store(false, Ordering::Relaxed);
+                Self::report_inner_error(error);
+                false
+            }
+        };
 
         // The request is sent with retries, and we don't want to lose posthog data. The snapshot
         // is taken right after the json creation, but can be restored to preserve the not sent data
@@ -129,13 +181,16 @@ impl Reporter {
         is_reported
     }
 
-    async fn send_request_with_retries(request_body: String, uri: &'static str) -> bool {
+    async fn send_request_with_retries(
+        request_body: String,
+        uri: &'static str,
+    ) -> Result<bool, DiagnosticsReporterError> {
         let mut retries_num = 0;
         let mut delay = REPORT_INITIAL_RETRY_DELAY;
 
         while retries_num < REPORT_MAX_RETRY_NUM {
-            if Self::send_request(request_body.clone(), uri).await {
-                return true;
+            if Self::send_request(request_body.clone(), uri).await? {
+                return Ok(true);
             }
 
             trace!("Retrying to send diagnostics data to {} after {:?}...", uri, delay);
@@ -145,17 +200,17 @@ impl Reporter {
         }
 
         trace!("Max reporting retries reached for {}.", uri);
-        false
+        Ok(false)
     }
 
-    async fn send_request(body: String, uri: &'static str) -> bool {
+    async fn send_request(body: String, uri: &'static str) -> Result<bool, DiagnosticsReporterError> {
         let request = Request::post(uri)
             .header(CONTENT_TYPE, "application/json")
             .header(CONNECTION, "close")
             .body(Body::from(body))
-            .expect("Failed to construct the request");
+            .map_err(|source| DiagnosticsReporterError::HttpRequestBuilding { source: Arc::new(source) })?;
 
-        match Self::new_https_client().request(request).await {
+        Ok(match Self::new_https_client()?.request(request).await {
             Ok(response) => {
                 if response.status().is_success() {
                     trace!("Successfully sent diagnostics data to {}", uri);
@@ -169,17 +224,17 @@ impl Reporter {
                 trace!("Failed to send diagnostics data to {}: {}", uri, e);
                 false
             }
-        }
+        })
     }
 
-    fn new_https_client() -> Client<HttpsConnector<HttpConnector>> {
+    fn new_https_client() -> Result<Client<HttpsConnector<HttpConnector>>, DiagnosticsReporterError> {
         let https = HttpsConnectorBuilder::new()
             .with_native_roots()
-            .expect("No native root CA certificates found")
+            .map_err(|source| DiagnosticsReporterError::HttpsClientBuilding { source: Arc::new(source) })?
             .https_only()
             .enable_http1()
             .build();
-        Client::builder().build::<_, Body>(https)
+        Ok(Client::builder().build::<_, Body>(https))
     }
 
     fn save_disabled_reporting_file(data_directory: &Path) {
@@ -213,6 +268,26 @@ impl Reporter {
         };
         Duration::from_secs(delay_secs)
     }
+
+    fn report_inner_error(error: DiagnosticsReporterError) {
+        let error_string = <dyn TypeDBError>::to_string(&error).as_str();
+        match error.as_ref() {
+            DiagnosticsReporterError::HttpsClientBuilding { .. } => {
+                Self::report_inner_error_message_warning(error_string)
+            }
+            DiagnosticsReporterError::HttpRequestBuilding { .. } => {
+                Self::report_inner_error_message_critical(error_string)
+            }
+        }
+    }
+
+    fn report_inner_error_message_critical(message: &str) {
+        sentry::capture_message(message, sentry::Level::Error);
+    }
+
+    fn report_inner_error_message_warning(message: &str) {
+        sentry::capture_message(message, sentry::Level::Warning);
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -229,3 +304,10 @@ impl ReportingEndpoint {
         }
     }
 }
+
+typedb_error!(
+    pub DiagnosticsReporterError(component = "DiagnosticsReporter", prefix = "DIR") {
+        HttpsClientBuilding(1, "Error while building an https client.", source: Arc<std::io::Error>),
+        HttpRequestBuilding(2, "Error while building an http request.", source: Arc<http::Error>),
+    }
+);
