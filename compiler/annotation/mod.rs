@@ -4,10 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use answer::variable::Variable;
 use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use expression::ExpressionCompileError;
+use ir::pattern::constraint::Constraint;
 
 use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
@@ -168,6 +170,11 @@ typedb_error!(
             label: String
         ),
         ValueTypeNotFound(8, "Value type '{name}' was not found.", name: String),
+        AnnotationsUnavailableForVariableInInsert(9,
+            "The annotations for the variable '{variable}' in the inserted constraint {constraint} were not available. Check if the variable is available from a previous stage or is inserted in this stage.",
+            variable: Variable,
+            constraint: Constraint<Variable>,
+        ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),
     }

@@ -8,7 +8,11 @@ use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::pattern::{constraint::Constraint, expression::Expression, ParameterID, Vertex};
+use ir::pattern::{
+    constraint::{Comparator, Constraint},
+    expression::Expression,
+    ParameterID, Vertex,
+};
 use itertools::Itertools;
 
 use crate::{
@@ -203,12 +207,12 @@ fn resolve_value_variable_for_inserted_attribute(
     variable: Variable,
 ) -> Result<&Vertex<Variable>, Box<WriteCompilationError>> {
     // Find the comparison linking thing to value
-    filter_variants!(Constraint::Comparison: constraints)
+    let (comparator, value_variable) = filter_variants!(Constraint::Comparison: constraints)
         .filter_map(|cmp| {
             if cmp.lhs() == &Vertex::Variable(variable) {
-                Some(cmp.rhs())
+                Some((cmp.comparator(), cmp.rhs()))
             } else if cmp.rhs() == &Vertex::Variable(variable) {
-                Some(cmp.lhs())
+                Some((cmp.comparator(), cmp.lhs()))
             } else {
                 None
             }
@@ -217,7 +221,12 @@ fn resolve_value_variable_for_inserted_attribute(
         .map_err(|mut err| {
             debug_assert_eq!(err.next(), None);
             Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
-        })
+        })?;
+    if comparator == Comparator::Equal {
+        Ok(value_variable)
+    } else {
+        Err(Box::new(WriteCompilationError::IllegalPredicateInAttributeInsert { variable, comparator }))
+    }
 }
 
 fn collect_value_bindings(
