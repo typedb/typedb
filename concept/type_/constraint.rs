@@ -252,6 +252,10 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
         self.description().is_checked()
     }
 
+    fn is_operation_time_checked(&self) -> bool {
+        self.description().is_operation_time_checked()
+    }
+
     fn validate_narrowed_by_strictly_same_type(
         &self,
         other: &ConstraintDescription,
