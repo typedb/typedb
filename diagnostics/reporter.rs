@@ -127,18 +127,17 @@ impl Reporter {
         }
 
         let diagnostics_json = diagnostics.to_service_reporting_json_against_snapshot();
-        let is_reported =
-            match Self::send_request(diagnostics_json.to_string(), ReportingEndpoint::DiagnosticsService.get_uri())
-                .await
-            {
-                Ok(is_reported) => is_reported,
-                Err(error) => {
-                    trace!("Service reporting got an error. Disabling Service reporting...");
-                    is_enabled.store(false, Ordering::Relaxed);
-                    Self::report_inner_error(error);
-                    false
-                }
-            };
+
+        let uri = ReportingEndpoint::DiagnosticsService.get_uri();
+        let is_reported = match Self::send_request(diagnostics_json.to_string(), uri).await {
+            Ok(is_reported) => is_reported,
+            Err(error) => {
+                trace!("Service reporting got an error. Disabling Service reporting...");
+                is_enabled.store(false, Ordering::Relaxed);
+                Self::report_inner_error(error);
+                false
+            }
+        };
 
         // The request is sent once, so it's fine to take a snapshot lossy with a small delay
         if is_reported {
@@ -156,12 +155,8 @@ impl Reporter {
         let events_json = diagnostics.to_posthog_reporting_json_against_snapshot(POSTHOG_API_KEY);
         diagnostics.take_posthog_snapshot();
 
-        let is_reported = match Self::send_request_with_retries(
-            events_json.to_string(),
-            ReportingEndpoint::PostHog.get_uri(),
-        )
-        .await
-        {
+        let uri = ReportingEndpoint::PostHog.get_uri();
+        let is_reported = match Self::send_request_with_retries(events_json.to_string(), uri).await {
             Ok(is_reported) => is_reported,
             Err(error) => {
                 trace!("PostHog reporting got an error. Disabling PostHog reporting...");
