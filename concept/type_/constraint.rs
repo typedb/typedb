@@ -146,11 +146,19 @@ impl ConstraintDescription {
         }
     }
 
-    pub(crate) fn unchecked(&self) -> bool {
+    pub(crate) fn is_checked(&self) -> bool {
         match self {
-            ConstraintDescription::Cardinality(cardinality) => cardinality == &AnnotationCardinality::unchecked(),
-            ConstraintDescription::Independent(_) => true,
-            _ => false,
+            ConstraintDescription::Cardinality(cardinality) => cardinality.is_checked(),
+            ConstraintDescription::Independent(_) => false,
+            _ => true,
+        }
+    }
+
+    pub(crate) fn is_operation_time_checked(&self) -> bool {
+        match self {
+            ConstraintDescription::Cardinality(_) => false, // only commit time
+            ConstraintDescription::Independent(_) => false, // never
+            _ => true,
         }
     }
 
@@ -240,8 +248,8 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
         self.description().scope()
     }
 
-    fn unchecked(&self) -> bool {
-        self.description().unchecked()
+    fn is_checked(&self) -> bool {
+        self.description().is_checked()
     }
 
     fn validate_narrowed_by_strictly_same_type(
@@ -411,10 +419,16 @@ pub(crate) use filter_by_scope;
 
 macro_rules! filter_out_unchecked_constraints {
     ($constraints_iter:expr) => {
-        $constraints_iter.filter(|constraint| !constraint.unchecked())
+        $constraints_iter.filter(|constraint| !constraint.is_checked())
     };
 }
-pub(crate) use filter_out_unchecked_constraints;
+
+macro_rules! filter_out_operation_time_unchecked_constraints {
+    ($constraints_iter:expr) => {
+        $constraints_iter.filter(|constraint| !constraint.is_operation_time_checked())
+    };
+}
+pub(crate) use filter_out_operation_time_unchecked_constraints;
 
 pub(crate) fn get_cardinality_constraints<C: Constraint<T>, T: Hash + Eq>(
     constraints: impl IntoIterator<Item = C>,
@@ -510,6 +524,12 @@ pub(crate) fn get_checked_constraints<C: Constraint<T>, T: Hash + Eq>(
     constraints: impl IntoIterator<Item = C>,
 ) -> HashSet<C> {
     filter_out_unchecked_constraints!(constraints.into_iter()).collect()
+}
+
+pub(crate) fn get_operation_time_checked_constraints<C: Constraint<T>, T: Hash + Eq>(
+    constraints: impl IntoIterator<Item = C>,
+) -> HashSet<C> {
+    filter_out_operation_time_unchecked_constraints!(constraints.into_iter()).collect()
 }
 
 pub(crate) fn get_owns_default_constraints<CAP: Capability>(

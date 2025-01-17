@@ -70,12 +70,12 @@ macro_rules! validate_capability_cardinality_constraint {
             }
 
             for constraint in cardinality_constraints {
-                if constraint
+                if !constraint
                     .description()
                     .unwrap_cardinality()
                     .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
-                    .is_unchecked()
+                    .is_checked()
                 {
                     continue;
                 }
