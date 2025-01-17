@@ -22,6 +22,7 @@ rust_library(
         "@crates//:hyper",
         "@crates//:hyper-rustls",
         "@crates//:serde_json",
+        "@crates//:sentry",
         "@crates//:sysinfo",
         "@crates//:tokio",
         "@crates//:tonic",
