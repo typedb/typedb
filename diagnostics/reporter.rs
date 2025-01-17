@@ -205,21 +205,21 @@ impl Reporter {
             .body(Body::from(body))
             .map_err(|source| DiagnosticsReporterError::HttpRequestBuilding { source: Arc::new(source) })?;
 
-        Ok(match Self::new_https_client()?.request(request).await {
+        match Self::new_https_client()?.request(request).await {
             Ok(response) => {
                 if response.status().is_success() {
                     trace!("Successfully sent diagnostics data to {}", uri);
-                    true
+                    Ok(true)
                 } else {
                     trace!("Failed to send diagnostics data to {}: {}", uri, response.status());
-                    false
+                    Ok(false)
                 }
             }
             Err(e) => {
                 trace!("Failed to send diagnostics data to {}: {}", uri, e);
-                false
+                Ok(false)
             }
-        })
+        }
     }
 
     fn new_https_client() -> Result<Client<HttpsConnector<HttpConnector>>, DiagnosticsReporterError> {
