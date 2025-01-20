@@ -132,7 +132,7 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //tests/behaviour/query/language:test_insert --test_output=streamed
         bazel test //tests/behaviour/query/language:test_delete --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_update --test_output=streamed
+        bazel test //tests/behaviour/query/language:test_update --test_output=streamed
         bazel test //tests/behaviour/query/language:test_pipelines --test_output=streamed
 
     test-behaviour-query-definable:
