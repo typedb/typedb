@@ -170,11 +170,6 @@ pub(crate) mod transaction {
         }
     }
 
-    #[cfg(unused_unimplemented_function)]
-    pub(crate) fn query_res_part_from_concept_document() {
-        ensure_unimplemented_unused!()
-    }
-
     // -----------
 
     #[inline]

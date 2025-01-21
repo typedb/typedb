@@ -180,8 +180,6 @@ impl IsolationManager {
                 }
             } else if let Err(err) = commit_status_result {
                 return Err(err);
-            } else {
-                unreachable!()
             }
         }
         Ok(None)

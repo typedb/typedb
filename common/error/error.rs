@@ -248,25 +248,36 @@ impl std::fmt::Display for UnimplementedFeature {
 #[macro_export]
 macro_rules! unimplemented_feature {
     ($feature:ident) => {
-        unreachable!("TODO: Implement feature: {:?}", error::UnimplementedFeature::$feature)
+        unreachable!(
+            "FATAL: entered unreachable code that relies on feature: {}. This is a bug!",
+            error::UnimplementedFeature::$feature
+        )
     };
     ($feature:ident, $msg:literal) => {
-        unreachable!("TODO: Implement feature: {:?} {}", error::UnimplementedFeature::$feature, $msg)
+        unreachable!(
+            "FATAL: entered unreachable code that relies on feature: {}. This is a bug! Details: {}",
+            error::UnimplementedFeature::$feature,
+            $msg
+        )
     };
 }
 
 #[macro_export]
 macro_rules! todo_must_implement {
     ($msg:literal) => {
-        // todo!(concat!("TODO: Must implement: ", $msg)) // Ensure the below is enabled when checking in.
         compile_error!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
     };
 }
 
 #[macro_export]
 macro_rules! todo_display_for_error {
-    ($f:ident) => {
-        write!($f, "fmt::Display has not yet been implemented for {}.", std::any::type_name::<Self>())
+    ($f:ident, $self:ident) => {
+        write!(
+            $f,
+            "(Proper formatting has not yet been implemented for {})\nThe error is: {:?}\n",
+            std::any::type_name::<Self>(),
+            $self
+        )
     };
 }
 

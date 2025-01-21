@@ -213,7 +213,7 @@ pub enum WALError {
 
 impl fmt::Display for WALError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f)
+        error::todo_display_for_error!(f, self)
     }
 }
 
