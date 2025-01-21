@@ -225,6 +225,7 @@ impl CollectorTrait for SortCollector {
             let y_row_as_row = unsorted.get_row(*y);
             let x_row = x_row_as_row.row();
             let y_row = y_row_as_row.row();
+            // TODO: We need to be sorting on values of attributes.
             for (idx, asc) in &self.sort_on {
                 let ord = x_row[*idx]
                     .partial_cmp(&y_row[*idx])

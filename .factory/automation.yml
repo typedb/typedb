@@ -122,7 +122,7 @@ build:
         bazel test //tests/behaviour/query/language:test_fetch --test_output=streamed
         bazel test //tests/behaviour/query/language:test_reduce --test_output=streamed
         bazel test //tests/behaviour/query/language:test_expressions --test_output=streamed
-#        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
+        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
 #        bazel test //tests/behaviour/query/language:test_get --test_output=streamed
 
     test-behaviour-query-write:
