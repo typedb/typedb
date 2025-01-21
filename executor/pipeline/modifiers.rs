@@ -4,10 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{cmp::Ordering, sync::Arc};
+use std::borrow::Cow;
+use answer::Thing;
+use answer::variable_value::VariableValue;
 
 use compiler::executable::modifiers::{
     LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
 };
+use encoding::value::value::Value;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -59,7 +63,7 @@ where
         let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
         let measurement = step_profile.start_measurement();
-        let sorted_iterator = SortStageIterator::from_unsorted(batch, &executable);
+        let sorted_iterator = SortStageIterator::from_unsorted(batch, &executable, &context);
         measurement.end(&step_profile, 1, batch_len as u64);
         Ok((sorted_iterator, context))
     }
@@ -72,7 +76,7 @@ pub struct SortStageIterator {
 }
 
 impl SortStageIterator {
-    fn from_unsorted(unsorted: Batch, sort_executable: &SortExecutable) -> Self {
+    fn from_unsorted(unsorted: Batch, sort_executable: &SortExecutable, context: &ExecutionContext<impl ReadableSnapshot>) -> Self {
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         let sort_by: Vec<(usize, bool)> = sort_executable
             .sort_on
@@ -88,8 +92,8 @@ impl SortStageIterator {
             let x_row = x_row_as_row.row();
             let y_row = y_row_as_row.row();
             for &(idx, asc) in &sort_by {
-                let ord = x_row[idx]
-                    .partial_cmp(&y_row[idx])
+                let ord = Self::get_value(&x_row[idx], context)
+                    .partial_cmp(&Self::get_value(&y_row[idx], context))
                     .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
                 if ord != Ordering::Equal {
                     if asc {
@@ -102,6 +106,22 @@ impl SortStageIterator {
             Ordering::Equal
         });
         Self { unsorted, sorted_indices: indices, next_index_index: 0 }
+    }
+
+    fn get_value<'a, T: ReadableSnapshot>(entry: &'a VariableValue<'a>, context: &'a ExecutionContext<T>) -> Cow<'a, Value<'a>> {
+        let snapshot: &T = &context.snapshot;
+        match entry {
+            VariableValue::Value(value) => Cow::Borrowed(value),
+            VariableValue::Thing(Thing::Attribute(attribute)) => {
+                Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap())
+            }
+            VariableValue::Empty
+            | VariableValue::Type(_)
+            | VariableValue::Thing(_) => unreachable!("Should have been caught earlier"),
+
+            | VariableValue::ThingList(_) => todo!("Implement lists"),
+            | VariableValue::ValueList(_) => todo!("Implement lists"),
+        }
     }
 }
 

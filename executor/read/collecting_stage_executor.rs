@@ -5,8 +5,12 @@
  */
 
 use std::{cmp::Ordering, iter::Peekable, sync::Arc};
+use std::borrow::Cow;
+use answer::Thing;
+use answer::variable_value::VariableValue;
 
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
+use encoding::value::value::Value;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -37,10 +41,10 @@ impl CollectorEnum {
         }
     }
 
-    pub(crate) fn collected_to_iterator(&mut self) -> CollectedStageIterator {
+    pub(crate) fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         match self {
-            CollectorEnum::Reduce(collector) => collector.collected_to_iterator(),
-            CollectorEnum::Sort(collector) => collector.collected_to_iterator(),
+            CollectorEnum::Reduce(collector) => collector.collected_to_iterator(context),
+            CollectorEnum::Sort(collector) => collector.collected_to_iterator(context),
         }
     }
 }
@@ -103,7 +107,7 @@ pub(super) trait CollectorTrait {
     fn prepare(&mut self);
     fn reset(&mut self);
     fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch);
-    fn collected_to_iterator(&mut self) -> CollectedStageIterator;
+    fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator;
 }
 
 pub(super) trait CollectedStageIteratorTrait {
@@ -141,7 +145,7 @@ impl CollectorTrait for ReduceCollector {
         }
     }
 
-    fn collected_to_iterator(&mut self) -> CollectedStageIterator {
+    fn collected_to_iterator(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         CollectedStageIterator::Reduce(ReduceStageIterator::new(
             self.active_reducer.take().unwrap().finalise().into_iterator(),
             self.output_width,
@@ -197,6 +201,22 @@ impl SortCollector {
         // let output_width = sort_executable.output_width;  // TODO: Get this information into the sort_executable.
         Self { sort_on, collector: None }
     }
+
+    fn get_value<'a, T: ReadableSnapshot>(entry: &'a VariableValue<'a>, context: &'a ExecutionContext<T>) -> Cow<'a, Value<'a>> {
+        let snapshot: &T = &context.snapshot;
+         match entry {
+            VariableValue::Value(value) => Cow::Borrowed(value),
+            VariableValue::Thing(Thing::Attribute(attribute)) => {
+                Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap())
+            }
+            VariableValue::Empty
+            | VariableValue::Type(_)
+            | VariableValue::Thing(_) => unreachable!("Should have been caught earlier"),
+
+            | VariableValue::ThingList(_) => todo!("Implement lists"),
+            | VariableValue::ValueList(_) => todo!("Implement lists"),
+        }
+    }
 }
 
 impl CollectorTrait for SortCollector {
@@ -217,7 +237,7 @@ impl CollectorTrait for SortCollector {
         }
     }
 
-    fn collected_to_iterator(&mut self) -> CollectedStageIterator {
+    fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let unsorted = self.collector.take().unwrap();
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         indices.sort_by(|x, y| {
@@ -225,10 +245,9 @@ impl CollectorTrait for SortCollector {
             let y_row_as_row = unsorted.get_row(*y);
             let x_row = x_row_as_row.row();
             let y_row = y_row_as_row.row();
-            // TODO: We need to be sorting on values of attributes.
             for (idx, asc) in &self.sort_on {
-                let ord = x_row[*idx]
-                    .partial_cmp(&y_row[*idx])
+                let ord = Self::get_value(&x_row[*idx], context)
+                    .partial_cmp(&Self::get_value(&y_row[*idx], context))
                     .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
                 match (asc, ord) {
                     (true, Ordering::Less) | (false, Ordering::Greater) => return Ordering::Less,
