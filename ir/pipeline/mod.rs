@@ -159,10 +159,7 @@ impl VariableRegistry {
         self.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
-    pub fn set_deleted_variable_category(
-        &mut self,
-        variable: Variable,
-    ) -> Result<(), Box<RepresentationError>> {
+    pub fn set_deleted_variable_category(&mut self, variable: Variable) -> Result<(), Box<RepresentationError>> {
         self.set_variable_category(variable, VariableCategory::Thing, VariableCategorySource::Delete)
     }
 

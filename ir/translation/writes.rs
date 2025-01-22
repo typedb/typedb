@@ -5,10 +5,10 @@
 */
 
 use answer::variable::Variable;
-use typeql::query::stage::delete::DeletableKind;
-use typeql::statement::thing::RolePlayer;
+use typeql::{query::stage::delete::DeletableKind, statement::thing::RolePlayer};
 
 use crate::{
+    pattern::variable_category::VariableCategory,
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
@@ -16,7 +16,6 @@ use crate::{
     },
     RepresentationError,
 };
-use crate::pattern::variable_category::VariableCategory;
 
 pub fn translate_insert(
     context: &mut TranslationContext,
@@ -31,14 +30,19 @@ pub fn translate_insert(
     builder.finish()
 }
 
-
-fn verify_deleted_variables_available(context: &mut TranslationContext, delete: &typeql::query::stage::Delete) -> Result<(), Box<RepresentationError>> {
-    fn verify_variable_available(context: &TranslationContext, var: &typeql::Variable) -> Result<Variable, Box<RepresentationError>> {
+fn verify_deleted_variables_available(
+    context: &mut TranslationContext,
+    delete: &typeql::query::stage::Delete,
+) -> Result<(), Box<RepresentationError>> {
+    fn verify_variable_available(
+        context: &TranslationContext,
+        var: &typeql::Variable,
+    ) -> Result<Variable, Box<RepresentationError>> {
         match context.get_variable(var.name().unwrap()) {
             Some(translated) => Ok(translated),
             None => Err(Box::new(RepresentationError::DeleteVariableUnavailable {
-                variable: var.name().unwrap().to_owned()
-            }))
+                variable: var.name().unwrap().to_owned(),
+            })),
         }
     }
     delete.deletables.iter().try_for_each(|deletable| {
