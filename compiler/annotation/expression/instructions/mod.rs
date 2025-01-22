@@ -41,6 +41,7 @@ pub enum ExpressionEvaluationError {
     CheckedOperationFailed,
     CastFailed,
     ListIndexOutOfRange,
+    DivisionFailed { dividend: f64, divisor: f64 },
 }
 
 impl fmt::Debug for ExpressionEvaluationError {
@@ -50,6 +51,9 @@ impl fmt::Debug for ExpressionEvaluationError {
             ExpressionEvaluationError::CheckedOperationFailed => f.write_str("CheckedOperationFailed"),
             ExpressionEvaluationError::CastFailed => f.write_str("CastFailed"),
             ExpressionEvaluationError::ListIndexOutOfRange => f.write_str("ListIndexOutOfRange"),
+            ExpressionEvaluationError::DivisionFailed { dividend, divisor } => {
+                f.write_str("DivisionFailed: {dividend} / {divisor}")
+            }
         }
     }
 }
@@ -66,6 +70,7 @@ impl Error for ExpressionEvaluationError {
             Self::CheckedOperationFailed => None,
             Self::CastFailed => None,
             Self::ListIndexOutOfRange => None,
+            Self::DivisionFailed { .. } => None,
         }
     }
 }
