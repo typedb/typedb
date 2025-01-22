@@ -218,8 +218,9 @@ impl FromStr for Decimal {
     type Err = ParseIntError;
 
     fn from_str(mut str: &str) -> Result<Self, Self::Err> {
-        debug_assert!(str.ends_with("dec"));
-        str = str.trim_end_matches("dec");
+        if str.ends_with("dec") {
+            str = str.trim_end_matches("dec");
+        }
         let is_negative = if str.starts_with("-") {
             str = str.trim_start_matches('-');
             true
