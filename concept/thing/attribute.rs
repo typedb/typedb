@@ -24,6 +24,7 @@ use encoding::{
     value::{decode_value_u64, value::Value, value_type::ValueType},
     AsBytes, Keyable,
 };
+use error::unimplemented_feature;
 use iterator::State;
 use itertools::Itertools;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
@@ -227,8 +228,9 @@ where
         }
     }
 
+    #[cfg(unused_unimplemented_function)]
     pub fn seek(&mut self) {
-        todo!()
+        ensure_unimplemented_unused!()
     }
 
     fn iter_next(&mut self) -> Option<Result<Attribute, Box<ConceptReadError>>> {

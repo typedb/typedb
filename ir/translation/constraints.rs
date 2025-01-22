@@ -7,6 +7,7 @@
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
 use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
+use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use typeql::{
     expression::{FunctionCall, FunctionName},
@@ -53,7 +54,10 @@ pub(super) fn add_statement(
         typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, .. }) => {
             let lhs_var = add_typeql_expression(function_index, constraints, lhs)?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            constraints.add_comparison(lhs_var, rhs_var, comparison.comparator.into())?;
+            let comparator = comparison.comparator.try_into().map_err(|source| {
+                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+            })?;
+            constraints.add_comparison(lhs_var, rhs_var, comparator)?;
         }
         typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
@@ -190,12 +194,14 @@ fn register_typeql_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
-        typeql::TypeRefAny::Optional(optional) => {
-            Err(Box::new(RepresentationError::UnimplementedOptionalType { declaration: optional.clone() }))
-        }
-        typeql::TypeRefAny::List(list) => {
-            Err(Box::new(RepresentationError::UnimplementedListType { declaration: list.clone() }))
-        }
+        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
+            declaration: optional.clone(),
+            feature: UnimplementedFeature::Optionals,
+        })),
+        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
+            declaration: list.clone(),
+            feature: UnimplementedFeature::Lists,
+        })),
     }
 }
 
@@ -208,7 +214,9 @@ fn register_typeql_type(
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
-        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
+            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName { value_type: value_type.clone() }))
+        }
         typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -219,8 +227,14 @@ fn register_typeql_role_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         typeql::TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
-        typeql::TypeRefAny::Optional(_) => todo!(),
-        typeql::TypeRefAny::List(_) => todo!(),
+        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
+            declaration: optional.clone(),
+            feature: UnimplementedFeature::Optionals,
+        })),
+        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
+            declaration: list.clone(),
+            feature: error::UnimplementedFeature::Lists,
+        })),
     }
 }
 
@@ -235,7 +249,9 @@ fn register_typeql_role_type(
         typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
-        typeql::TypeRef::Named(NamedType::BuiltinValueType(builtin)) => todo!(),
+        typeql::TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
+            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName { value_type: value_type.clone() }))
+        }
         typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -386,9 +402,19 @@ fn add_typeql_isa(
             IsaInstanceConstraint::Comparison(comparison) => {
                 add_typeql_isa(function_index, constraints, thing, isa)?;
                 let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparison.comparator.into())?;
+                let comparator = comparison.comparator.try_into().map_err(|source| {
+                    Box::new(RepresentationError::LiteralParseError {
+                        literal: comparison.comparator.to_string(),
+                        source,
+                    })
+                })?;
+                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator)?;
             }
-            IsaInstanceConstraint::Struct(_) => todo!(),
+            IsaInstanceConstraint::Struct(_) => {
+                return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                    feature: error::UnimplementedFeature::Structs,
+                }));
+            }
         }
     }
     Ok(())
@@ -442,7 +468,10 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Comparison(comparison) => {
             let attribute = constraints.create_anonymous_variable()?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparison.comparator.into())?;
+            let comparator = comparison.comparator.try_into().map_err(|source| {
+                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+            })?;
+            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparator)?;
             attribute
         }
     };
@@ -473,10 +502,20 @@ pub(super) fn add_typeql_relation(
                             declaration: role_player.clone(),
                         }));
                     }
-                    TypeRefAny::Optional(_) => todo!(),
-                    TypeRefAny::List(_) => todo!(),
-                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(_))) => {
-                        todo!("throw error")
+                    TypeRefAny::Optional(_) => {
+                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                            feature: error::UnimplementedFeature::Optionals,
+                        }));
+                    }
+                    TypeRefAny::List(_) => {
+                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                            feature: error::UnimplementedFeature::Lists,
+                        }));
+                    }
+                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(value_type))) => {
+                        return Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
+                            value_type: value_type.clone(),
+                        }));
                     }
                 };
                 let player = register_typeql_var(constraints, player_var)?;
@@ -503,9 +542,13 @@ fn add_typeql_iterable_binding(
             add_user_defined_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args)
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
-            todo!("builtin function returning list (e.g. list(stream_func()))")
+            Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                feature: UnimplementedFeature::LetInBuiltinCall,
+            }))
         }
-        typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => todo!("iter in list or range slice"),
+        typeql::Expression::List(_) | typeql::Expression::ListIndexRange(_) => {
+            Err(Box::new(RepresentationError::UnimplementedLanguageFeature { feature: UnimplementedFeature::Lists }))
+        }
         | typeql::Expression::Variable(_)
         | typeql::Expression::ListIndex(_)
         | typeql::Expression::Value(_)

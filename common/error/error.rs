@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, fmt::Formatter};
 
 mod typeql;
 
@@ -217,5 +217,73 @@ macro_rules! typedb_error {
     };
     (@typedb_source $ts:ident { $(,)? }) => {
         None
+    };
+}
+
+// Check for usages.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UnimplementedFeature {
+    Optionals,
+    Lists,
+    Structs,
+
+    BuiltinFunction(String),
+    LetInBuiltinCall,
+    Subkey,
+
+    ComparatorContains,
+    ComparatorLike,
+    UnsortedJoin,
+
+    PipelineStageInFunction(&'static str),
+
+    IrrelevantUnboundInvertedMode(&'static str),
+}
+impl std::fmt::Display for UnimplementedFeature {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{self:?}")
+    }
+}
+
+#[macro_export]
+macro_rules! unimplemented_feature {
+    ($feature:ident) => {
+        unreachable!(
+            "FATAL: entered unreachable code that relies on feature: {}. This is a bug!",
+            error::UnimplementedFeature::$feature
+        )
+    };
+    ($feature:ident, $msg:literal) => {
+        unreachable!(
+            "FATAL: entered unreachable code that relies on feature: {}. This is a bug! Details: {}",
+            error::UnimplementedFeature::$feature,
+            $msg
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! todo_must_implement {
+    ($msg:literal) => {
+        compile_error!(concat!("TODO: Must implement: ", $msg)) // Ensure this is enabled when checking in.
+    };
+}
+
+#[macro_export]
+macro_rules! todo_display_for_error {
+    ($f:ident, $self:ident) => {
+        write!(
+            $f,
+            "(Proper formatting has not yet been implemented for {})\nThe error is: {:?}\n",
+            std::any::type_name::<Self>(),
+            $self
+        )
+    };
+}
+
+#[macro_export]
+macro_rules! ensure_unimplemented_unused {
+    () => {
+        compile_error!("Implement this path before making the function usable")
     };
 }

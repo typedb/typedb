@@ -15,6 +15,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
+use error::unimplemented_feature;
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -140,7 +141,7 @@ fn make_builder<'a>(
                 .with_inputs(negation.conjunction().captured_variables(block_context))
                 .plan(),
             ),
-            NestedPattern::Optional(_) => todo!(),
+            NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
         }
     }
     // Compute variables which must be bound from a parent scope.
@@ -317,7 +318,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!("list variable planning"),
+                | VariableCategory::ValueList => unimplemented_feature!(Lists),
                 VariableCategory::AttributeOrValue => {
                     unreachable!("Insufficiently bound variable should have been flagged earlier")
                 }
@@ -344,7 +345,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
-                | VariableCategory::ValueList => todo!("list variable planning"),
+                | VariableCategory::ValueList => unimplemented_feature!(Lists),
                 VariableCategory::AttributeOrValue => {
                     unreachable!("Insufficiently bound variable would have been flagged earlier")
                 }
@@ -548,8 +549,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Comparator::NotEqual => (), // no tangible impact on traversal costs
                 Comparator::Less | Comparator::LessOrEqual => lhs.add_upper_bound(rhs),
                 Comparator::Greater | Comparator::GreaterOrEqual => lhs.add_lower_bound(rhs),
-                Comparator::Like => todo!("like operator"),
-                Comparator::Contains => todo!("contains operator"),
+                Comparator::Like => unimplemented_feature!(ComparatorLike),
+                Comparator::Contains => unimplemented_feature!(ComparatorContains),
             }
         }
         if let Input::Variable(rhs) = rhs {
@@ -559,8 +560,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Comparator::NotEqual => (), // no tangible impact on traversal costs
                 Comparator::Less | Comparator::LessOrEqual => rhs.add_upper_bound(lhs),
                 Comparator::Greater | Comparator::GreaterOrEqual => rhs.add_lower_bound(lhs),
-                Comparator::Like => todo!("like operator"),
-                Comparator::Contains => todo!("contains operator"),
+                Comparator::Like => unimplemented_feature!(ComparatorLike),
+                Comparator::Contains => unimplemented_feature!(ComparatorContains),
             }
         }
         self.graph.push_comparison(ComparisonPlanner::from_constraint(
@@ -613,7 +614,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let mut extension_heap = BinaryHeap::with_capacity(extension_width); // reused
         for i in 0..num_patterns {
             event!(Level::TRACE, "{INDENT:4}PLANNER STEP {}", i);
-
             let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
             let mut new_plans_hashset = HashSet::with_capacity(beam_width);
 
@@ -1530,7 +1530,9 @@ impl ConjunctionPlan<'_> {
             PlannerVertex::Constraint(constraint) => {
                 self.lower_constraint_check(match_builder, constraint);
             }
-            PlannerVertex::Expression(_) => todo!(),
+            PlannerVertex::Expression(_) => {
+                unreachable!("Would require multiple assignments to the same variable and be flagged")
+            }
             PlannerVertex::Disjunction(disjunction) => {
                 let step_builder = disjunction
                     .builder()

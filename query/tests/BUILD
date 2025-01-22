@@ -10,6 +10,7 @@ deps = [
     "//answer",
     "//concept",
     "//common/bytes",
+    "//common/error",
     "//common/lending_iterator",
     "//compiler",
     "//durability",
@@ -24,6 +25,8 @@ deps = [
     "//concept/tests:test_utils_concept",
     "//encoding/tests:test_utils_encoding",
     "//util/test:test_utils",
+
+    "@crates//:itertools",
 ]
 
 rust_test(
@@ -37,6 +40,13 @@ rust_test(
     name = "test_fetch",
     crate_root = "fetch.rs",
     srcs = ["fetch.rs"],
+    deps = deps,
+)
+
+rust_test(
+    name = "test_unimplemented",
+    crate_root = "unimplemented.rs",
+    srcs = ["unimplemented.rs"],
     deps = deps,
 )
 

@@ -151,13 +151,14 @@ impl PatternExecutor {
                     negation_suspensions.record_nested_pattern_entry();
                     match inner.batch_continue(context, interrupt, tabled_functions, &mut negation_suspensions)? {
                         None => {
+                            debug_assert!(negation_suspensions.is_empty()); // TODO: I don't think I've handled this case
                             self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
                         }
                         Some(_) => inner.reset(), // fail
                     };
                     negation_suspensions.record_nested_pattern_exit();
                     if !negation_suspensions.is_empty() {
-                        // todo!("A negated pattern encountered a cycle (lasso). Retries aren't done at the right place yet. - The results may be unsound.")
+                        // TODO: I'm not sure this is right. Shouldn't this be done before the match on batch_continue?
                         for function_state in tabled_functions.iterate_states() {
                             let mut guard = function_state.executor_state.try_lock().unwrap();
                             if guard.pattern_executor.has_empty_control_stack() {
@@ -475,8 +476,8 @@ fn restore_suspension(
         }
         PatternSuspension::AtNestedPattern(suspended_nested) => {
             let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
-            if let StepExecutors::Nested(nested) = &mut executors[executor_index.0] {
-                match nested {
+            match &mut executors[executor_index.0] {
+                StepExecutors::Nested(nested) => match nested {
                     NestedPatternExecutor::Negation(_) => {
                         unreachable!("Stratification must have been violated")
                     }
@@ -495,18 +496,20 @@ fn restore_suspension(
                             input: input_row.into_owned(),
                         }))
                     }
+                },
+                StepExecutors::StreamModifier(StreamModifierExecutor::Distinct { inner, output_width }) => {
+                    inner.prepare_to_restore_from_suspension(depth);
+                    control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index: executor_index,
+                        mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width)),
+                        input: input_row.into_owned(),
+                    }))
                 }
-            } else if let StepExecutors::StreamModifier(StreamModifierExecutor::Distinct { inner, output_width }) =
-                &mut executors[executor_index.0]
-            {
-                inner.prepare_to_restore_from_suspension(depth);
-                control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                    index: executor_index,
-                    mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width)),
-                    input: input_row.into_owned(),
-                }))
-            } else {
-                todo!("Any other modifier should be illegal")
+                StepExecutors::StreamModifier(_) => unreachable!("Any other modifier should be illegal"),
+                StepExecutors::Immediate(_)
+                | StepExecutors::CollectingStage(_)
+                | StepExecutors::TabledCall(_)
+                | StepExecutors::ReshapeForReturn(_) => unreachable!("Illegal for AtPattern suspension"),
             }
         }
     }

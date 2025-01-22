@@ -7,6 +7,7 @@
 use std::{fmt, marker::PhantomData, ops::Range, sync::Arc};
 
 use bytes::{byte_array::ByteArray, util::HexBytesFormatter, Bytes};
+use error::unimplemented_feature;
 use primitive::either::Either;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
 use storage::{
@@ -258,7 +259,7 @@ impl AttributeID {
             ValueType::DateTimeTZ => Self::DateTimeTZ(DateTimeTZAttributeID::build(value.encode_date_time_tz())),
             ValueType::Duration => Self::Duration(DurationAttributeID::build(value.encode_duration())),
             ValueType::String => Self::String(StringAttributeID::build_inline_id(value.encode_string::<256>())),
-            ValueType::Struct(_) => todo!(),
+            ValueType::Struct(_) => unimplemented_feature!(Structs),
         }
     }
 

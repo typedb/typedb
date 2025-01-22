@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::BTreeMap,
+    collections::{BTreeMap, HashMap},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
 };
@@ -37,6 +37,13 @@ impl<ID: IrID> FunctionCall<ID> {
 
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.call_variable_mapping.keys().cloned()
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> FunctionCall<T> {
+        FunctionCall::new(
+            self.function_id.clone(),
+            self.call_variable_mapping.iter().map(|(k, v)| (k.map(mapping), v.clone())).collect(),
+        )
     }
 }
 

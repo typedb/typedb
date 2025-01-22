@@ -149,7 +149,10 @@ impl PlaysReverseExecutor {
             }
 
             BinaryIterateMode::UnboundInverted => {
-                todo!() // is this ever relevant?
+                // is this ever relevant?
+                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                    functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
+                }));
             }
 
             BinaryIterateMode::BoundFrom => {

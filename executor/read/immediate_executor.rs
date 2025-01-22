@@ -16,6 +16,7 @@ use compiler::{
     ExecutorVariable, VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -72,6 +73,9 @@ impl ImmediateExecutor {
         step: &UnsortedJoinStep,
         step_profile: Arc<StepProfile>,
     ) -> Result<Self, Box<ConceptReadError>> {
+        return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+            functionality: UnimplementedFeature::UnsortedJoin,
+        }));
         let UnsortedJoinStep { iterate_instruction, check_instructions, output_width, .. } = step;
         let executor = UnsortedJoinExecutor::new(
             iterate_instruction.clone(),
@@ -136,7 +140,7 @@ impl ImmediateExecutor {
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
         match self {
             ImmediateExecutor::SortedJoin(sorted) => sorted.batch_continue(context, interrupt),
-            ImmediateExecutor::UnsortedJoin(_unsorted) => todo!(), // unsorted.batch_continue(context, interrupt),
+            ImmediateExecutor::UnsortedJoin(unsorted) => unsorted.batch_continue(context, interrupt),
             ImmediateExecutor::Assignment(assignment) => assignment.batch_continue(context, interrupt),
             ImmediateExecutor::Check(check) => check.batch_continue(context, interrupt),
         }
@@ -661,7 +665,7 @@ impl UnsortedJoinExecutor {
     }
 
     fn reset(&mut self) {
-        todo!()
+        unimplemented_feature!(UnsortedJoin)
     }
 
     fn prepare(
@@ -669,14 +673,15 @@ impl UnsortedJoinExecutor {
         _input_batch: FixedBatch,
         _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
     ) -> Result<(), ReadExecutionError> {
-        todo!()
+        unimplemented_feature!(UnsortedJoin)
     }
 
     fn batch_continue(
         &mut self,
         _context: &ExecutionContext<impl ReadableSnapshot + Sized>,
+        _interrupt: &mut ExecutionInterrupt,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        todo!()
+        unimplemented_feature!(UnsortedJoin)
     }
 }
 

@@ -26,6 +26,7 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//common/error",
         "//common/logger",
         "//common/primitive",
         "//resource",

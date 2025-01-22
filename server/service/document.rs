@@ -8,6 +8,7 @@ use std::collections::HashMap;
 
 use answer::{Concept, Thing, Type};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use encoding::graph::type_::Kind;
 use executor::document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode};
 use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
@@ -173,8 +174,17 @@ fn encode_leaf(
                 }
             }),
         }),
-        DocumentLeaf::Kind(_) => {
-            todo!()
-        }
+        DocumentLeaf::Kind(kind) => Ok(typedb_protocol::concept_document::node::Leaf {
+            leaf: Some(typedb_protocol::concept_document::node::leaf::Leaf::Kind(encode_kind(kind).into())),
+        }),
+    }
+}
+
+fn encode_kind(kind: Kind) -> typedb_protocol::concept_document::node::leaf::Kind {
+    match kind {
+        Kind::Entity => typedb_protocol::concept_document::node::leaf::Kind::Entity,
+        Kind::Attribute => typedb_protocol::concept_document::node::leaf::Kind::Attribute,
+        Kind::Relation => typedb_protocol::concept_document::node::leaf::Kind::Relation,
+        Kind::Role => typedb_protocol::concept_document::node::leaf::Kind::Role,
     }
 }

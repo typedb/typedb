@@ -14,6 +14,7 @@ use std::{
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
@@ -125,7 +126,10 @@ impl SubReverseExecutor {
             }
 
             BinaryIterateMode::UnboundInverted => {
-                todo!() // is this ever relevant?
+                // is this ever relevant?
+                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                    functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
+                }));
             }
 
             BinaryIterateMode::BoundFrom => {

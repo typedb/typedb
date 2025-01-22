@@ -174,6 +174,13 @@ impl<'a> Value<'a> {
         }
     }
 
+    pub fn unwrap_string_ref(&self) -> &str {
+        match self {
+            Self::String(string) => string.as_ref(),
+            _ => panic!("Cannot unwrap String if not a string value."),
+        }
+    }
+
     pub fn into_owned(self) -> Value<'static> {
         match self {
             Self::Boolean(bool) => Value::Boolean(bool),

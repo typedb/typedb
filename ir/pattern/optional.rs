@@ -7,6 +7,7 @@
 use std::fmt;
 
 use answer::variable::Variable;
+use error::unimplemented_feature;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -41,10 +42,6 @@ impl Optional {
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
-
-    pub(crate) fn variables(&self) -> Box<dyn Iterator<Item = Variable>> {
-        todo!()
-    }
 }
 
 impl Scope for Optional {
@@ -65,6 +62,6 @@ impl StructuralEquality for Optional {
 
 impl fmt::Display for Optional {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f, self)
     }
 }

@@ -50,7 +50,19 @@ impl ExpressionValue {
                     .map_err(|_| ExpressionEvaluationError::CastFailed)?
                     .into_owned(),
             )),
-            VariableValue::ThingList(_) => todo!(),
+            VariableValue::ThingList(things) => {
+                let as_value_list = things
+                    .iter()
+                    .map(|thing| match thing {
+                        Thing::Attribute(attr) => Ok(attr
+                            .get_value(&**context.snapshot(), context.thing_manager())
+                            .map_err(|_| ExpressionEvaluationError::CastFailed)?
+                            .into_owned()),
+                        _ => Err(ExpressionEvaluationError::CastFailed),
+                    })
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(ExpressionValue::List(as_value_list.into()))
+            }
             _ => Err(ExpressionEvaluationError::CastFailed),
         }
     }

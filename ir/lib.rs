@@ -10,6 +10,7 @@
 
 use std::{error::Error, fmt};
 
+use answer::variable::Variable;
 use error::typedb_error;
 use typeql::{
     query::stage::reduce::Reducer,
@@ -19,7 +20,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{expression::ExpressionDefinitionError, variable_category::VariableCategory},
+    pattern::{constraint::Is, expression::ExpressionDefinitionError, variable_category::VariableCategory},
     pipeline::{FunctionReadError, FunctionRepresentationError},
     translation::fetch::FetchRepresentationError,
 };
@@ -179,16 +180,35 @@ typedb_error! {
             "A reserved keyword \"{identifier}\" was used as identifier",
             identifier: typeql::Identifier,
         ),
-
+        ReservedValueTypeAsTypeName(
+            28,
+            "A reserved value-type name \"{value_type}\" was used as type name",
+            value_type: typeql::type_::BuiltinValueType,
+        ),
+        VariableCategoryMismatchInIs(
+            29,
+            "The variable categories for the is statement are incompatible",
+            lhs_variable: String,
+            rhs_variable: String,
+            lhs_category: VariableCategory,
+            rhs_category: VariableCategory,
+        ),
+        UnimplementedLanguageFeature(
+            254,
+            "The language feature is not yet implemented: {feature}",
+            feature: error::UnimplementedFeature,
+        ),
         UnimplementedOptionalType(
             255,
             "Optional types are not yet implemented.\nSource:\n{declaration}",
             declaration: typeql::type_::Optional,
+            feature: error::UnimplementedFeature
         ),
         UnimplementedListType(
             256,
             "List types are not yet implemented.\nSource:\n{declaration}",
             declaration: typeql::type_::List,
+            feature: error::UnimplementedFeature
         ),
     }
 }
@@ -203,11 +223,12 @@ pub enum LiteralParseError {
     CannotUnescapeRegexString { literal: StringLiteral, source: typeql::Error },
     TimeZoneLookup { name: String },
     FixedOffset { value: String },
+    UnimplementedLanguageFeature { feature: error::UnimplementedFeature },
 }
 
 impl fmt::Display for LiteralParseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f, self)
     }
 }
 
@@ -222,6 +243,7 @@ impl Error for LiteralParseError {
             LiteralParseError::CannotUnescapeRegexString { source, .. } => Some(source),
             LiteralParseError::TimeZoneLookup { .. } => None,
             LiteralParseError::FixedOffset { .. } => None,
+            LiteralParseError::UnimplementedLanguageFeature { .. } => None,
         }
     }
 }

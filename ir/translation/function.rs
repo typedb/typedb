@@ -113,8 +113,9 @@ pub(crate) fn translate_function_block(
             })?;
 
     let mut illegal_stages = stages.iter().filter(|stage| match stage {
-        TranslatedStage::Insert { .. } | TranslatedStage::Delete { .. } | TranslatedStage::Require(_) => true,
+        TranslatedStage::Insert { .. } | TranslatedStage::Delete { .. } => true,
         TranslatedStage::Match { .. }
+        | TranslatedStage::Require(_)
         | TranslatedStage::Select(_)
         | TranslatedStage::Sort(_)
         | TranslatedStage::Offset(_)

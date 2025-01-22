@@ -22,6 +22,7 @@ use encoding::{
     value::{value::Value, ValueEncodable},
     AsBytes,
 };
+use error::unimplemented_feature;
 use ir::{
     pattern::{
         constraint::{Comparator, IsaKind, SubKind},
@@ -34,8 +35,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        function_call_binding_executor::FunctionCallBindingIteratorExecutor, has_executor::HasExecutor,
-        has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
+        has_executor::HasExecutor, has_reverse_executor::HasReverseExecutor, iid_executor::IidExecutor,
         indexed_relation_executor::IndexedRelationExecutor, is_executor::IsExecutor, isa_executor::IsaExecutor,
         isa_reverse_executor::IsaReverseExecutor, iterator::TupleIterator, links_executor::LinksExecutor,
         links_reverse_executor::LinksReverseExecutor, owns_executor::OwnsExecutor,
@@ -48,7 +48,6 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
-mod function_call_binding_executor;
 mod has_executor;
 mod has_reverse_executor;
 mod iid_executor;
@@ -99,8 +98,6 @@ pub(crate) enum InstructionExecutor {
     LinksReverse(LinksReverseExecutor),
 
     IndexedRelation(IndexedRelationExecutor),
-
-    FunctionCallBinding(FunctionCallBindingIteratorExecutor),
 }
 
 impl InstructionExecutor {
@@ -162,9 +159,6 @@ impl InstructionExecutor {
             ConstraintInstruction::IndexedRelation(indexed_relation) => Ok(Self::IndexedRelation(
                 IndexedRelationExecutor::new(indexed_relation, variable_modes, sort_by, snapshot, thing_manager)?,
             )),
-            ConstraintInstruction::FunctionCallBinding(_function_call) => todo!(),
-            ConstraintInstruction::ComparisonCheck(_comparison) => todo!(),
-            ConstraintInstruction::ExpressionBinding(_expression_binding) => todo!(),
         }
     }
 
@@ -192,7 +186,6 @@ impl InstructionExecutor {
             Self::Links(executor) => executor.get_iterator(context, row),
             Self::LinksReverse(executor) => executor.get_iterator(context, row),
             Self::IndexedRelation(executor) => executor.get_iterator(context, row),
-            Self::FunctionCallBinding(_executor) => todo!(),
         }
     }
 
@@ -206,7 +199,6 @@ impl InstructionExecutor {
             Self::HasReverse(_) => "has_reverse",
             Self::Links(_) => "links",
             Self::LinksReverse(_) => "links_reverse",
-            Self::FunctionCallBinding(_) => "fn_call_binding",
             Self::TypeList(_) => "[internal]type_list",
             Self::Sub(_) => "sub",
             Self::SubReverse(_) => "sub_reverse",
@@ -242,7 +234,6 @@ impl fmt::Display for InstructionExecutor {
             InstructionExecutor::Links(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::LinksReverse(inner) => fmt::Display::fmt(inner, f),
             InstructionExecutor::IndexedRelation(inner) => fmt::Display::fmt(inner, f),
-            InstructionExecutor::FunctionCallBinding(inner) => fmt::Display::fmt(inner, f),
         }
     }
 }
@@ -533,7 +524,7 @@ impl<T> Checker<T> {
                             VariableValue::Empty => Ok(false),
                             VariableValue::Type(_) => Ok(false),
                             VariableValue::Value(_) => Ok(false), // or unreachable?
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                         }
                     }))
                 }
@@ -828,7 +819,7 @@ impl<T> Checker<T> {
                             attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
                         }
                         VariableValue::Value(value) => Ok(value.into_owned()),
-                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                         VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                     };
                     let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
@@ -838,8 +829,8 @@ impl<T> Checker<T> {
                         Comparator::Greater => |a, b| a > b,
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
-                        Comparator::Like => todo!("like"),
-                        Comparator::Contains => todo!("contains"),
+                        Comparator::Like => unimplemented_feature!(ComparatorLike),
+                        Comparator::Contains => unimplemented_feature!(ComparatorContains), // |a,b| a.unwrap_string_ref().contains(b.unwrap_string_ref()),
                     };
                     filters.push(Box::new(move |value| {
                         let lhs = lhs(value);
@@ -848,7 +839,7 @@ impl<T> Checker<T> {
                                 attr.get_value(&*snapshot, &thing_manager)?.into_owned()
                             }
                             VariableValue::Value(value) => value,
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => todo!(),
+                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
                             VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
                         };
                         let rhs = rhs.clone()?;

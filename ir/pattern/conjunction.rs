@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use error::unimplemented_feature;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
@@ -75,7 +76,7 @@ impl Conjunction {
                 match nested {
                     NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),
                     NestedPattern::Negation(negation) => Box::new(negation.referenced_variables()),
-                    NestedPattern::Optional(_) => todo!(),
+                    NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
                 }
             },
         ))

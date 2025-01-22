@@ -13,6 +13,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
@@ -24,7 +25,7 @@ use crate::{
         IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
-    RepresentationError,
+    LiteralParseError, RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -583,9 +584,9 @@ impl<ID: IrID> Constraint<ID> {
             Self::Links(inner) => Constraint::Links(inner.map(mapping)),
             Self::IndexedRelation(inner) => Constraint::IndexedRelation(inner.map(mapping)),
             Self::Has(inner) => Constraint::Has(inner.map(mapping)),
-            Self::ExpressionBinding(inner) => todo!(),
-            Self::FunctionCallBinding(inner) => todo!(),
-            Self::Comparison(inner) => todo!(),
+            Self::ExpressionBinding(inner) => Constraint::ExpressionBinding(inner.map(mapping)),
+            Self::FunctionCallBinding(inner) => Constraint::FunctionCallBinding(inner.map(mapping)),
+            Self::Comparison(inner) => Constraint::Comparison(inner.map(mapping)),
             Self::Owns(inner) => Constraint::Owns(inner.map(mapping)),
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
@@ -1647,6 +1648,11 @@ impl<ID: IrID> ExpressionBinding<ID> {
             Ok(())
         }
     }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ExpressionBinding<T> {
+        let expression = self.expression.map(mapping);
+        ExpressionBinding { left: self.left.map(mapping), expression }
+    }
 }
 
 impl<ID: IrID> From<ExpressionBinding<ID>> for Constraint<ID> {
@@ -1717,6 +1723,14 @@ impl<ID: IrID> FunctionCallBinding<ID> {
             function(id)
         }
     }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
+        FunctionCallBinding::new(
+            self.assigned.iter().map(|v| v.as_variable().unwrap().map(mapping)).collect(),
+            self.function_call.map(mapping),
+            self.is_stream,
+        )
+    }
 }
 
 impl<ID: IrID> From<FunctionCallBinding<ID>> for Constraint<ID> {
@@ -1778,9 +1792,12 @@ impl Comparator {
     }
 }
 
-impl From<typeql::token::Comparator> for Comparator {
-    fn from(token: typeql::token::Comparator) -> Self {
-        match token {
+impl TryFrom<typeql::token::Comparator> for Comparator {
+    // TODO: Revert to From<> when we've implemented them all
+    type Error = LiteralParseError;
+
+    fn try_from(token: typeql::token::Comparator) -> Result<Self, Self::Error> {
+        Ok(match token {
             typeql::token::Comparator::Eq => Self::Equal,
             typeql::token::Comparator::EqLegacy => Self::Equal,
             typeql::token::Comparator::Neq => Self::NotEqual,
@@ -1788,9 +1805,19 @@ impl From<typeql::token::Comparator> for Comparator {
             typeql::token::Comparator::Gte => Self::GreaterOrEqual,
             typeql::token::Comparator::Lt => Self::Less,
             typeql::token::Comparator::Lte => Self::LessOrEqual,
-            typeql::token::Comparator::Contains => Self::Contains,
-            typeql::token::Comparator::Like => Self::Like,
-        }
+            typeql::token::Comparator::Contains => {
+                //Self::Contains,
+                return Err(LiteralParseError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::ComparatorContains,
+                });
+            }
+            typeql::token::Comparator::Like => {
+                //Self::Like,
+                return Err(LiteralParseError::UnimplementedLanguageFeature {
+                    feature: UnimplementedFeature::ComparatorLike,
+                });
+            }
+        })
     }
 }
 
@@ -1857,6 +1884,10 @@ impl<ID: IrID> Comparison<ID> {
     {
         self.lhs.as_variable().inspect(|&id| function(id));
         self.rhs.as_variable().inspect(|&id| function(id));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Comparison<T> {
+        Comparison::new(self.lhs.map(mapping), self.rhs.map(mapping), self.comparator)
     }
 }
 
@@ -1947,7 +1978,7 @@ impl<ID: StructuralEquality> StructuralEquality for Owns<ID> {
 
 impl<ID: IrID> fmt::Display for Owns<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f, self)
     }
 }
 
@@ -2012,7 +2043,7 @@ impl<ID: StructuralEquality> StructuralEquality for Relates<ID> {
 
 impl<ID: IrID> fmt::Display for Relates<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f, self)
     }
 }
 
@@ -2077,7 +2108,7 @@ impl<ID: StructuralEquality> StructuralEquality for Plays<ID> {
 
 impl<ID: IrID> fmt::Display for Plays<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f, self)
     }
 }
 
@@ -2141,6 +2172,6 @@ impl<ID: StructuralEquality> StructuralEquality for Value<ID> {
 
 impl<ID: IrID> fmt::Display for Value<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        error::todo_display_for_error!(f, self)
     }
 }

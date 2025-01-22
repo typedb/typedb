@@ -54,6 +54,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dev-dependencies.itertools]
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
+		default-features = false
+
 [dependencies]
 
 	[dependencies.tokio]
@@ -148,6 +153,10 @@ features = {}
 [[test]]
 	path = "tests/fetch.rs"
 	name = "test_fetch"
+
+[[test]]
+	path = "tests/unimplemented.rs"
+	name = "test_unimplemented"
 
 [[test]]
 	path = "tests/define.rs"

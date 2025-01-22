@@ -41,7 +41,9 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
         )),
         typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex)?),
         typeql::Annotation::Subkey(_) => {
-            todo!()
+            return Err(LiteralParseError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Subkey,
+            });
         }
         typeql::Annotation::Unique(_) => Annotation::Unique(AnnotationUnique),
         typeql::Annotation::Values(values) => Annotation::Values(AnnotationValues::new(
@@ -50,8 +52,10 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
     })
 }
 
-pub fn translate_annotation_category(annotation_category: token::Annotation) -> AnnotationCategory {
-    match annotation_category {
+pub fn translate_annotation_category(
+    annotation_category: token::Annotation,
+) -> Result<AnnotationCategory, LiteralParseError> {
+    Ok(match annotation_category {
         token::Annotation::Abstract => AnnotationCategory::Abstract,
         token::Annotation::Cardinality => AnnotationCategory::Cardinality,
         token::Annotation::Cascade => AnnotationCategory::Cascade,
@@ -60,10 +64,14 @@ pub fn translate_annotation_category(annotation_category: token::Annotation) -> 
         token::Annotation::Key => AnnotationCategory::Key,
         token::Annotation::Range => AnnotationCategory::Range,
         token::Annotation::Regex => AnnotationCategory::Regex,
-        token::Annotation::Subkey => todo!("Subkeys are not implemented"),
+        token::Annotation::Subkey => {
+            return Err(LiteralParseError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Subkey,
+            })
+        }
         token::Annotation::Unique => AnnotationCategory::Unique,
         token::Annotation::Values => AnnotationCategory::Values,
-    }
+    })
 }
 
 pub fn translate_kind(typeql_kind: token::Kind) -> Kind {

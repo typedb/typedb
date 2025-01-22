@@ -65,6 +65,6 @@ impl StructuralEquality for Negation {
 
 impl fmt::Display for Negation {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+        write!(f, "not {}", self.conjunction)
     }
 }

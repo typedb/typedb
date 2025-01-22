@@ -7,6 +7,7 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -119,12 +120,31 @@ fn validate_conjunction(
             Some(VariableCategory::AttributeOrValue) | None => true,
             _ => false,
         });
-    match unbound {
-        Some(variable) => Err(Box::new(RepresentationError::UnboundVariable {
+    if let Some(variable) = unbound {
+        return Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
-        })),
-        None => Ok(()),
+        }));
     }
+    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find_or_first(|is| {
+        let lhs_category = variable_registry.get_variable_category(is.lhs().as_variable().unwrap()).unwrap();
+        let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
+        lhs_category.narrowest(rhs_category).is_none()
+    });
+    if let Some(is) = is_with_mismatched_category {
+        let lhs = is.lhs().as_variable().unwrap();
+        let rhs = is.rhs().as_variable().unwrap();
+        let lhs_category = variable_registry.get_variable_category(lhs).unwrap();
+        let rhs_category = variable_registry.get_variable_category(rhs).unwrap();
+        let lhs_variable = variable_registry.get_variable_name(lhs).map_or("_", |s| s.as_str()).to_owned();
+        let rhs_variable = variable_registry.get_variable_name(rhs).map_or("_", |s| s.as_str()).to_owned();
+        return Err(Box::new(RepresentationError::VariableCategoryMismatchInIs {
+            lhs_variable,
+            rhs_variable,
+            lhs_category,
+            rhs_category,
+        }));
+    }
+    Ok(())
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]

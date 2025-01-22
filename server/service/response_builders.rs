@@ -93,6 +93,7 @@ pub(crate) mod database {
 }
 
 pub(crate) mod transaction {
+    use error::unimplemented_feature;
     use uuid::Uuid;
 
     pub(crate) fn transaction_open_res(
@@ -167,10 +168,6 @@ pub(crate) mod transaction {
                 typedb_protocol::query::res_part::ConceptDocumentsRes { documents: messages },
             )),
         }
-    }
-
-    pub(crate) fn query_res_part_from_concept_document() {
-        todo!()
     }
 
     // -----------

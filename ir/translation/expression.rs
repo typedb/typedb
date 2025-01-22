@@ -6,6 +6,7 @@
 
 use answer::variable::Variable;
 use encoding::value::value::Value;
+use error::UnimplementedFeature;
 use typeql::{
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
@@ -202,7 +203,9 @@ fn to_builtin_id(
             check_builtin_arg_count(token, args.len(), 1)?;
             Ok(BuiltInFunctionID::Round)
         }
-        _ => todo!(),
+        _ => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+            feature: UnimplementedFeature::BuiltinFunction(token.to_string()),
+        })),
     }
 }
 

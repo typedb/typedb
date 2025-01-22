@@ -10,6 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use error::{ensure_unimplemented_unused, unimplemented_feature};
 use ir::pipeline::function_signature::FunctionID;
 
 use crate::{
@@ -93,24 +94,25 @@ impl ExecutionStep {
         match self {
             ExecutionStep::Intersection(step) => &step.selected_variables,
             ExecutionStep::UnsortedJoin(step) => &step.selected_variables,
-            ExecutionStep::Assignment(_) => todo!(),
+            ExecutionStep::Assignment(step) => &step.selected_variables,
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
-            ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
 
+    #[cfg(unused_unimplemented_function)]
     pub fn new_variables(&self) -> &[VariablePosition] {
         match self {
             ExecutionStep::Intersection(step) => step.new_variables(),
             ExecutionStep::UnsortedJoin(step) => step.new_variables(),
             ExecutionStep::Assignment(step) => step.new_variables(),
             ExecutionStep::Check(_) => &[],
-            ExecutionStep::Disjunction(_) => todo!(),
+            ExecutionStep::Disjunction(_) => ensure_unimplemented_unused!(),
             ExecutionStep::Negation(_) => &[],
-            ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
         }
     }
@@ -123,7 +125,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
-            ExecutionStep::Optional(_) => todo!(),
+            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
             ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
@@ -298,7 +300,7 @@ impl UnsortedJoinStep {
     }
 
     fn output_width(&self) -> u32 {
-        todo!()
+        self.output_width
     }
 }
 
@@ -464,9 +466,9 @@ pub struct OptionalStep {
 impl fmt::Display for OptionalStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "Optional")?;
-        write!(f, "\n      --- Start negation ---")?;
+        write!(f, "\n      --- Start optional ---")?;
         write!(f, "\n {}", &self.optional)?;
-        write!(f, "\n      --- End negation ---")
+        write!(f, "\n      --- End optional ---")
     }
 }
 

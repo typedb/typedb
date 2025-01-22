@@ -41,8 +41,8 @@ pub enum FunctionReadError {
 }
 
 impl fmt::Display for FunctionReadError {
-    fn fmt(&self, _: &mut fmt::Formatter<'_>) -> fmt::Result {
-        todo!()
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        error::todo_display_for_error!(f, self)
     }
 }
 
