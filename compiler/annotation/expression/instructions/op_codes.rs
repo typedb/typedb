@@ -19,6 +19,10 @@ pub enum ExpressionOpCode {
     CastUnaryIntegerToDouble,
     CastLeftIntegerToDouble,
     CastRightIntegerToDouble,
+    CastUnaryIntegerToDecimal,
+
+    CastLeftIntegerToDecimal,
+    CastRightIntegerToDecimal,
 
     CastUnaryDecimalToDouble,
     CastLeftDecimalToDouble,
@@ -39,6 +43,10 @@ pub enum ExpressionOpCode {
     OpDoubleDivideDouble,
     OpDoubleModuloDouble,
     OpDoublePowerDouble,
+
+    OpDecimalAddDecimal,
+    OpDecimalSubtractDecimal,
+    OpDecimalMultiplyDecimal,
 
     // BuiltIns, maybe by domain?
     MathAbsInteger,

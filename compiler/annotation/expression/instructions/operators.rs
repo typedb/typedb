@@ -4,6 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use encoding::value::decimal_value::Decimal;
+
 use crate::annotation::expression::instructions::{
     binary::{binary_instruction, Binary, BinaryExpression},
     check_operation,
@@ -25,6 +27,10 @@ binary_instruction! {
     OpDoubleDivideDouble = OpDoubleDivideDoubleImpl(a1: f64, a2: f64) -> f64 { checked_div(a1, a2) }
     OpDoubleModuloDouble = OpDoubleModuloDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(f64::rem_euclid(a1, a2)) }
     OpDoublePowerDouble = OpDoublePowerDoubleImpl(a1: f64, a2: f64) -> f64 { Ok(f64::powf(a1, a2)) }
+
+    OpDecimalAddDecimal = OpDecimalAddDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok( a1 + a2) }
+    OpDecimalSubtractDecimal = OpDecimalSubtractDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 - a2) }
+    OpDecimalMultiplyDecimal = OpDecimalMultiplyDecimalImpl(a1: Decimal, a2: Decimal) -> Decimal { Ok(a1 * a2) }
 }
 
 fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
@@ -34,4 +40,4 @@ fn checked_div(a1: f64, a2: f64) -> Result<f64, ExpressionEvaluationError> {
     } else {
         Err(ExpressionEvaluationError::DivisionFailed { dividend: a1 as f64, divisor: a2 })
     }
-    }
+}

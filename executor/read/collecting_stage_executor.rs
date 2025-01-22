@@ -4,11 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, iter::Peekable, sync::Arc};
-use std::borrow::Cow;
-use answer::Thing;
-use answer::variable_value::VariableValue;
+use std::{borrow::Cow, cmp::Ordering, iter::Peekable, sync::Arc};
 
+use answer::{variable_value::VariableValue, Thing};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use encoding::value::value::Value;
 use ir::pipeline::modifier::SortVariable;
@@ -41,7 +39,10 @@ impl CollectorEnum {
         }
     }
 
-    pub(crate) fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
+    pub(crate) fn collected_to_iterator(
+        &mut self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+    ) -> CollectedStageIterator {
         match self {
             CollectorEnum::Reduce(collector) => collector.collected_to_iterator(context),
             CollectorEnum::Sort(collector) => collector.collected_to_iterator(context),
@@ -202,16 +203,19 @@ impl SortCollector {
         Self { sort_on, collector: None }
     }
 
-    fn get_value<'a, T: ReadableSnapshot>(entry: &'a VariableValue<'a>, context: &'a ExecutionContext<T>) -> Cow<'a, Value<'a>> {
+    fn get_value<'a, T: ReadableSnapshot>(
+        entry: &'a VariableValue<'a>,
+        context: &'a ExecutionContext<T>,
+    ) -> Cow<'a, Value<'a>> {
         let snapshot: &T = &context.snapshot;
-         match entry {
+        match entry {
             VariableValue::Value(value) => Cow::Borrowed(value),
             VariableValue::Thing(Thing::Attribute(attribute)) => {
                 Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap())
             }
-            VariableValue::Empty
-            | VariableValue::Type(_)
-            | VariableValue::Thing(_) => unreachable!("Should have been caught earlier"),
+            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => {
+                unreachable!("Should have been caught earlier")
+            }
 
             | VariableValue::ThingList(_) => todo!("Implement lists"),
             | VariableValue::ValueList(_) => todo!("Implement lists"),
