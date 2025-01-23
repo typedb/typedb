@@ -82,6 +82,7 @@ fn validate_has_insertable(
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
+    // TODO: These should be safe to unwrap
     let Some(input_owner_types) = input_annotations_variables.get(&has.owner().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: has.owner().as_variable().unwrap(),
@@ -139,7 +140,7 @@ fn validate_links_insertable(
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
 
-    // TODO: These should be unreachable
+    // TODO: These should be safe to unwrap
     let Some(input_relation_types) = input_annotations_variables.get(&links.relation().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: links.relation().as_variable().unwrap(),

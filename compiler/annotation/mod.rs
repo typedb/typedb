@@ -171,7 +171,7 @@ typedb_error!(
         ),
         ValueTypeNotFound(8, "Value type '{name}' was not found.", name: String),
         AnnotationsUnavailableForVariableInInsert(9,
-            "The annotations for the variable '{variable}' in the inserted constraint {constraint} were not available. Check if the variable is available from a previous stage or is inserted in this stage.",
+            "Typing information for the variable '{variable}' in the inserted statement {constraint} were not available. Check if the variable is available from a previous stage or is inserted in this stage.",
             variable: Variable,
             constraint: Constraint<Variable>,
         ),

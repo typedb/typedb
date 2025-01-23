@@ -194,7 +194,7 @@ typedb_error! {
             rhs_category: VariableCategory,
         ),
         DeleteVariableUnavailable(40,
-            "The variable '{variable}' referenced in the delete stage is unavailable:",
+            "The variable '{variable}' referenced in the delete stage is unavailable",
             variable: String,
         ),
         UnimplementedLanguageFeature(
