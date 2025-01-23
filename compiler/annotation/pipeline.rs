@@ -378,7 +378,7 @@ pub fn validate_sort_variables_comparable(
 ) -> Result<(), AnnotationError> {
     for sort_var in &sort.variables {
         if assigned_value_types.contains_key(&sort_var.variable()) {
-            continue;
+            continue; // Expressions always return the same type.
         } else if let Some(types) = variable_annotations.get(&sort_var.variable()) {
             let value_types = resolve_value_types(types, snapshot, type_manager)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;

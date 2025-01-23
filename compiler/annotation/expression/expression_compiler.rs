@@ -230,7 +230,6 @@ impl<'this> ExpressionCompilationContext<'this> {
                 self.compile_op_integer_integer(op)?;
             }
             ValueTypeCategory::Double => {
-                // The left needs to be cast
                 CastLeftIntegerToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
@@ -320,7 +319,6 @@ impl<'this> ExpressionCompilationContext<'this> {
                 }
             },
             ValueTypeCategory::Double => {
-                // The left needs to be cast
                 CastLeftDecimalToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
