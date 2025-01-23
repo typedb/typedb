@@ -505,10 +505,15 @@ impl Value {
             TypeDBValueType::Integer => TypeDBValue::Integer(self.raw_value.parse().unwrap()),
             TypeDBValueType::Double => TypeDBValue::Double(self.raw_value.parse().unwrap()),
             TypeDBValueType::Decimal => {
-                let (integer, fractional) = if let Some(split) = self.raw_value.split_once(".") {
+                let trimmed_value = if self.raw_value.ends_with("dec") {
+                    self.raw_value.trim_end_matches("dec")
+                } else {
+                    self.raw_value.as_str()
+                };
+                let (integer, fractional) = if let Some(split) = trimmed_value.split_once(".") {
                     split
                 } else {
-                    (self.raw_value.as_str(), "0")
+                    (trimmed_value, "0")
                 };
 
                 let integer_parsed: i64 = integer.trim().parse().unwrap();
