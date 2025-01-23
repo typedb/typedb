@@ -296,9 +296,10 @@ pub mod tests {
         assert_ne!(parse_value_via_typeql_expression("false").unwrap(), Value::Boolean(true));
 
         assert_eq!(
-            parse_value_via_typeql_expression("123.00456").unwrap(),
+            parse_value_via_typeql_expression("123.00456dec").unwrap(),
             Value::Decimal(Decimal::new(123, 456 * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - 5)))
         );
+        assert!(f64::abs(parse_value_via_typeql_expression("123.456").unwrap().unwrap_double() - 123.456) < 1.0e-6);
         assert!(f64::abs(parse_value_via_typeql_expression("123.456e0").unwrap().unwrap_double() - 123.456) < 1.0e-6);
 
         // TODO: Extend
