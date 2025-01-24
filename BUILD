@@ -39,9 +39,6 @@ rust_binary(
         "@crates//:sentry",
         "@crates//:tokio",
     ],
-    compile_data = [
-        ":VERSION",
-    ],
 )
 
 # Assembly

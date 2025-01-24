@@ -122,7 +122,7 @@ impl Server {
         );
 
         Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
-        Self::create_tonic_server(&self.config.server.encryption)
+        Self::create_tonic_server(&self.config.server.encryption)?
             .layer(&authenticator)
             .add_service(service)
             .serve_with_shutdown(self.address, async {
@@ -164,19 +164,43 @@ impl Server {
         DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode)
     }
 
-    fn create_tonic_server(encryption_config: &EncryptionConfig) -> tonic::transport::Server {
-        let mut tonic_server = tonic::transport::Server::builder();
-        if encryption_config.enabled {
-            let cert = fs::read_to_string(encryption_config.cert.clone().unwrap()).unwrap();
-            let cert_key = fs::read_to_string(encryption_config.cert_key.clone().unwrap()).unwrap();
-            let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
-            if encryption_config.root_ca.is_some() {
-                let root_ca = fs::read_to_string(encryption_config.root_ca.clone().unwrap()).unwrap();
-                tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true)
-            }
-            tonic_server = tonic_server.tls_config(tls_config).unwrap();
+    fn create_tonic_server(encryption_config: &EncryptionConfig) -> Result<tonic::transport::Server, ServerOpenError> {
+        let mut tonic_server = Self::configure_server_encryption(tonic::transport::Server::builder(), encryption_config)?;
+        Ok(tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE)))
+    }
+
+    fn configure_server_encryption(
+        server: tonic::transport::Server,
+        encryption_config: &EncryptionConfig,
+    ) -> Result<tonic::transport::Server, ServerOpenError> {
+        if !encryption_config.enabled {
+            return Ok(server);
         }
-        tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE))
+
+        let cert_path = encryption_config.cert.clone().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
+        let cert = fs::read_to_string(cert_path.clone()).map_err(|source| ServerOpenError::CouldNotReadCertificate {
+            path: cert_path.to_string_lossy().to_string(),
+            source: Arc::new(source),
+        })?;
+        let cert_key_path =
+            encryption_config.cert_key.clone().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
+        let cert_key =
+            fs::read_to_string(cert_key_path.clone()).map_err(|source| ServerOpenError::CouldNotReadCertificateKey {
+                path: cert_key_path.to_string_lossy().to_string(),
+                source: Arc::new(source),
+            })?;
+        let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
+
+        if let Some(root_ca_path) = &encryption_config.root_ca {
+            let root_ca = fs::read_to_string(root_ca_path).map_err(|source| ServerOpenError::CouldNotReadRootCA {
+                path: root_ca_path.to_string_lossy().to_string(),
+                source: Arc::new(source),
+            })?;
+            tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true);
+        }
+        Ok(server
+            .tls_config(tls_config)
+            .map_err(|source| ServerOpenError::TLSConfigError { source: Arc::new(source) })?)
     }
 
     fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
@@ -257,5 +281,11 @@ typedb_error! {
         InvalidServerID(5, "Server ID read from '{path}' is invalid. Delete the corrupted file and try again.", path: String),
         DatabaseOpen(6, "Could not open database.", typedb_source: DatabaseOpenError),
         Serve(7, "Could not serve on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
+        MissingTLSCertificate(8, "TLS certificate path must be specified when encryption is enabled."),
+        MissingTLSCertificateKey(9, "TLS certificate key path must be specified when encryption is enabled."),
+        CouldNotReadCertificate(10, "Could not read certificate from '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotReadCertificateKey(11, "Could not read certificate key from '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotReadRootCA(12, "Could not read root CA from '{path}'.", path: String, source: Arc<io::Error>),
+        TLSConfigError(13, "Failed to configure TLS.", source: Arc<tonic::transport::Error>),
     }
 }
