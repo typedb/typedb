@@ -178,14 +178,14 @@ impl Server {
         }
 
         let cert_path = encryption_config.cert.clone().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
-        let cert = fs::read_to_string(cert_path.clone()).map_err(|source| ServerOpenError::CouldNotReadCertificate {
+        let cert = fs::read_to_string(cert_path.clone()).map_err(|source| ServerOpenError::CouldNotReadTLSCertificate {
             path: cert_path.to_string_lossy().to_string(),
             source: Arc::new(source),
         })?;
         let cert_key_path =
             encryption_config.cert_key.clone().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
         let cert_key =
-            fs::read_to_string(cert_key_path.clone()).map_err(|source| ServerOpenError::CouldNotReadCertificateKey {
+            fs::read_to_string(cert_key_path.clone()).map_err(|source| ServerOpenError::CouldNotReadTLSCertificateKey {
                 path: cert_key_path.to_string_lossy().to_string(),
                 source: Arc::new(source),
             })?;
@@ -283,8 +283,8 @@ typedb_error! {
         Serve(7, "Could not serve on {address}.", address: SocketAddr, source: Arc<tonic::transport::Error>),
         MissingTLSCertificate(8, "TLS certificate path must be specified when encryption is enabled."),
         MissingTLSCertificateKey(9, "TLS certificate key path must be specified when encryption is enabled."),
-        CouldNotReadCertificate(10, "Could not read certificate from '{path}'.", path: String, source: Arc<io::Error>),
-        CouldNotReadCertificateKey(11, "Could not read certificate key from '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotReadTLSCertificate(10, "Could not read TLS certificate from '{path}'.", path: String, source: Arc<io::Error>),
+        CouldNotReadTLSCertificateKey(11, "Could not read TLS certificate key from '{path}'.", path: String, source: Arc<io::Error>),
         CouldNotReadRootCA(12, "Could not read root CA from '{path}'.", path: String, source: Arc<io::Error>),
         TLSConfigError(13, "Failed to configure TLS.", source: Arc<tonic::transport::Error>),
     }
