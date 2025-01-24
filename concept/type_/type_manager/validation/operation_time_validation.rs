@@ -964,11 +964,12 @@ impl OperationTimeValidation {
             .get_value_type(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         match value_type_with_source {
-            Some((value_type, source)) => {
-                if source != attribute_type {
+            Some((value_type, source_type)) => {
+                if source_type != attribute_type {
                     return Err(Box::new(SchemaValidationError::CannotUnsetInheritedValueType {
+                        subtype: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                        supertype: get_label_or_schema_err(snapshot, type_manager, source_type)?,
                         value_type,
-                        subtype: get_label_or_schema_err(snapshot, type_manager, source)?,
                     }));
                 }
 
@@ -2381,8 +2382,9 @@ impl OperationTimeValidation {
                     Ok(())
                 } else {
                     Err(Box::new(SchemaValidationError::CannotUnsetInheritedOwns {
-                        subtype: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                        subtype: get_label_or_schema_err(snapshot, type_manager, owner)?,
                         supertype: get_label_or_schema_err(snapshot, type_manager, owns.owner())?,
+                        attribute_type: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
                     }))
                 }
             }
@@ -2407,8 +2409,9 @@ impl OperationTimeValidation {
                     Ok(())
                 } else {
                     Err(Box::new(SchemaValidationError::CannotUnsetInheritedPlays {
-                        subtype: get_label_or_schema_err(snapshot, type_manager, role_type)?,
+                        subtype: get_label_or_schema_err(snapshot, type_manager, player)?,
                         supertype: get_label_or_schema_err(snapshot, type_manager, plays.player())?,
+                        role_type: get_label_or_schema_err(snapshot, type_manager, role_type)?,
                     }))
                 }
             }
