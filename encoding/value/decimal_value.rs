@@ -245,7 +245,7 @@ impl FromStr for Decimal {
 impl fmt::Display for Decimal {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.fractional == 0 {
-            write!(f, "{}.0", self.integer_part())?;
+            write!(f, "{}.0dec", self.integer_part())?;
         } else {
             // count number of tailing 0's that don't have to be represented
             let mut tail_0s = 0;
@@ -256,7 +256,7 @@ impl fmt::Display for Decimal {
             }
 
             let fractional_width = FRACTIONAL_PART_DENOMINATOR_LOG10 - tail_0s;
-            write!(f, "{}.{:0width$}", self.integer_part(), fractional, width = fractional_width as usize)?;
+            write!(f, "{}.{:0width$}dec", self.integer_part(), fractional, width = fractional_width as usize)?;
         }
         Ok(())
     }
