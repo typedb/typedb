@@ -6,11 +6,12 @@
 use std::net::SocketAddr;
 
 use clap::{ArgAction, Parser};
-use resource::constants::server::MONITORING_DEFAULT_PORT;
+use resource::constants::server::{MONITORING_DEFAULT_PORT, VERSION};
 
-/// TypeDB Core usage
+/// TypeDB CE usage
 #[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
+#[command(about, long_about = None)]
+#[clap(version = VERSION)]
 pub struct CLIArgs {
     /// Server host and port, eg., 0.0.0.0:1729
     #[arg(long = "server.address")]

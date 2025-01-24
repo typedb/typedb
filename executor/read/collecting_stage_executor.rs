@@ -219,7 +219,7 @@ impl SortCollector {
             }
 
             | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
-            | VariableValue::ValueList(_) => unimplemented_feature!(Lists)
+            | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
         }
     }
 }

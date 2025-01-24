@@ -510,11 +510,7 @@ impl Value {
                 } else {
                     self.raw_value.as_str()
                 };
-                let (integer, fractional) = if let Some(split) = trimmed_value.split_once(".") {
-                    split
-                } else {
-                    (trimmed_value, "0")
-                };
+                let (integer, fractional) = trimmed_value.split_once(".").unwrap_or((trimmed_value, "0"));
 
                 let integer_parsed: i64 = integer.trim().parse().unwrap();
                 let integer_parsed_abs = integer_parsed.abs();

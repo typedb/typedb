@@ -15,6 +15,8 @@ pub mod server {
 
     use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE};
 
+    pub const DISTRIBUTION: &str = "TypeDB CE";
+    pub const VERSION: &str = include_str!("../VERSION");
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);

@@ -11,15 +11,12 @@ use std::{path::PathBuf, str::FromStr};
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{ASCII_LOGO, SENTRY_REPORTING_URI};
+use resource::constants::server::{ASCII_LOGO, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
 use sentry::ClientInitGuard as SentryGuard;
 use server::parameters::{
     cli::CLIArgs,
     config::{Config, DiagnosticsConfig, EncryptionConfig, ServerConfig},
 };
-
-const DISTRIBUTION: &str = "TypeDB CE";
-const VERSION: &str = include_str!("VERSION");
 
 fn main() {
     setup_abort_on_panic();

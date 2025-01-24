@@ -72,14 +72,26 @@ impl PartialOrd for Value<'_> {
             (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
 
             // Heterogeneous
-            (Self::Integer(self_integer), Self::Double(other_double)) => i64_to_f64_lossy(*self_integer).partial_cmp(other_double),
-            (Self::Double(self_double), Self::Integer(other_integer)) => self_double.partial_cmp(&i64_to_f64_lossy(*other_integer)),
+            (Self::Integer(self_integer), Self::Double(other_double)) => {
+                i64_to_f64_lossy(*self_integer).partial_cmp(other_double)
+            }
+            (Self::Double(self_double), Self::Integer(other_integer)) => {
+                self_double.partial_cmp(&i64_to_f64_lossy(*other_integer))
+            }
 
-            (Self::Integer(self_integer), Self::Decimal(other_decimal)) => Decimal::new(*self_integer, 0).partial_cmp(other_decimal),
-            (Self::Decimal(self_decimal), Self::Integer(other_integer)) => self_decimal.partial_cmp(&Decimal::new(*other_integer, 0)),
+            (Self::Integer(self_integer), Self::Decimal(other_decimal)) => {
+                Decimal::new(*self_integer, 0).partial_cmp(other_decimal)
+            }
+            (Self::Decimal(self_decimal), Self::Integer(other_integer)) => {
+                self_decimal.partial_cmp(&Decimal::new(*other_integer, 0))
+            }
 
-            (Self::Double(self_double), Self::Decimal(other_decimal)) => self_double.partial_cmp(&other_decimal.to_f64()),
-            (Self::Decimal(self_decimal), Self::Double(other_double)) => self_decimal.to_f64().partial_cmp(other_double),
+            (Self::Double(self_double), Self::Decimal(other_decimal)) => {
+                self_double.partial_cmp(&other_decimal.to_f64())
+            }
+            (Self::Decimal(self_decimal), Self::Double(other_double)) => {
+                self_decimal.to_f64().partial_cmp(other_double)
+            }
 
             _ => None,
         }
