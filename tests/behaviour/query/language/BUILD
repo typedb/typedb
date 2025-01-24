@@ -62,6 +62,29 @@ rust_test(
 )
 
 rust_test(
+    name = "test_delete",
+    srcs = ["delete.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@typedb_behaviour//query/language:delete.feature"],
+    crate_features = ["bazel"],
+)
+
+
+rust_test(
+    name = "test_update",
+    srcs = ["update.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@typedb_behaviour//query/language:update.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
     name = "test_match",
     srcs = ["match.rs"],
     deps = [

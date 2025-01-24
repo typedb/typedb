@@ -290,6 +290,18 @@ fn annotate_stage(
                         insert_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
                     );
                 }
+                Constraint::Links(links) => {
+                    if let Some(variable) = links.role_type().as_variable() {
+                        if !running_variable_annotations.contains_key(&variable)
+                            && insert_annotations.vertex_annotations_of(links.role_type()).is_some()
+                        {
+                            running_variable_annotations.insert(
+                                variable,
+                                insert_annotations.vertex_annotations_of(links.role_type()).unwrap().clone(),
+                            );
+                        }
+                    }
+                }
                 _ => (),
             });
             check_annotations(
@@ -366,7 +378,7 @@ pub fn validate_sort_variables_comparable(
 ) -> Result<(), AnnotationError> {
     for sort_var in &sort.variables {
         if assigned_value_types.contains_key(&sort_var.variable()) {
-            continue;
+            continue; // Expressions always return the same type.
         } else if let Some(types) = variable_annotations.get(&sort_var.variable()) {
             let value_types = resolve_value_types(types, snapshot, type_manager)
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;

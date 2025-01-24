@@ -53,6 +53,10 @@ impl Eq for Value<'_> {}
 
 impl PartialOrd for Value<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        fn i64_to_f64_lossy(value: i64) -> f64 {
+            value as f64
+        }
+
         match (self, other) {
             (Self::Boolean(self_bool), Self::Boolean(other_bool)) => self_bool.partial_cmp(other_bool),
             (Self::Integer(self_integer), Self::Integer(other_integer)) => self_integer.partial_cmp(other_integer),
@@ -66,6 +70,17 @@ impl PartialOrd for Value<'_> {
                 self_date_time_tz.partial_cmp(other_date_time_tz)
             }
             (Self::String(self_string), Self::String(other_string)) => self_string.partial_cmp(other_string),
+
+            // Heterogeneous
+            (Self::Integer(self_integer), Self::Double(other_double)) => i64_to_f64_lossy(*self_integer).partial_cmp(other_double),
+            (Self::Double(self_double), Self::Integer(other_integer)) => self_double.partial_cmp(&i64_to_f64_lossy(*other_integer)),
+
+            (Self::Integer(self_integer), Self::Decimal(other_decimal)) => Decimal::new(*self_integer, 0).partial_cmp(other_decimal),
+            (Self::Decimal(self_decimal), Self::Integer(other_integer)) => self_decimal.partial_cmp(&Decimal::new(*other_integer, 0)),
+
+            (Self::Double(self_double), Self::Decimal(other_decimal)) => self_double.partial_cmp(&other_decimal.to_f64()),
+            (Self::Decimal(self_decimal), Self::Double(other_double)) => self_decimal.to_f64().partial_cmp(other_double),
+
             _ => None,
         }
     }

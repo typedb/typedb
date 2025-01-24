@@ -27,8 +27,8 @@ use crate::annotation::expression::{
     instructions::{
         list_operations,
         load_cast::{
-            CastLeftDecimalToDouble, CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDouble,
-            LoadConstant, LoadVariable,
+            CastLeftDecimalToDouble, CastLeftIntegerToDecimal, CastLeftIntegerToDouble, CastRightDecimalToDouble,
+            CastRightIntegerToDecimal, CastRightIntegerToDouble, LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
@@ -230,10 +230,28 @@ impl<'this> ExpressionCompilationContext<'this> {
                 self.compile_op_integer_integer(op)?;
             }
             ValueTypeCategory::Double => {
-                // The left needs to be cast
                 CastLeftIntegerToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
+            ValueTypeCategory::Decimal => match op {
+                Operator::Add => {
+                    CastLeftIntegerToDecimal::validate_and_append(self)?;
+                    operators::OpDecimalAddDecimal::validate_and_append(self)?;
+                }
+                Operator::Subtract => {
+                    CastLeftIntegerToDecimal::validate_and_append(self)?;
+                    operators::OpDecimalSubtractDecimal::validate_and_append(self)?;
+                }
+                Operator::Multiply => {
+                    CastLeftIntegerToDecimal::validate_and_append(self)?;
+                    operators::OpDecimalMultiplyDecimal::validate_and_append(self)?;
+                }
+                other_op => {
+                    CastLeftIntegerToDouble::validate_and_append(self)?;
+                    CastRightDecimalToDouble::validate_and_append(self)?;
+                    self.compile_op_double_double(other_op)?;
+                }
+            },
             _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
                 op,
                 left_category: ValueTypeCategory::Integer,
@@ -281,11 +299,39 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
         match right_category {
+            ValueTypeCategory::Integer => match op {
+                Operator::Add => {
+                    CastRightIntegerToDecimal::validate_and_append(self)?;
+                    operators::OpDecimalAddDecimal::validate_and_append(self)?;
+                }
+                Operator::Subtract => {
+                    CastRightIntegerToDecimal::validate_and_append(self)?;
+                    operators::OpDecimalSubtractDecimal::validate_and_append(self)?;
+                }
+                Operator::Multiply => {
+                    CastRightIntegerToDecimal::validate_and_append(self)?;
+                    operators::OpDecimalMultiplyDecimal::validate_and_append(self)?;
+                }
+                other_op => {
+                    CastLeftDecimalToDouble::validate_and_append(self)?;
+                    CastRightIntegerToDouble::validate_and_append(self)?;
+                    self.compile_op_double_double(other_op)?;
+                }
+            },
             ValueTypeCategory::Double => {
-                // The left needs to be cast
                 CastLeftDecimalToDouble::validate_and_append(self)?;
                 self.compile_op_double_double(op)?;
             }
+            ValueTypeCategory::Decimal => match op {
+                Operator::Add => operators::OpDecimalAddDecimal::validate_and_append(self)?,
+                Operator::Subtract => operators::OpDecimalSubtractDecimal::validate_and_append(self)?,
+                Operator::Multiply => operators::OpDecimalMultiplyDecimal::validate_and_append(self)?,
+                other_op => {
+                    CastLeftDecimalToDouble::validate_and_append(self)?;
+                    CastRightDecimalToDouble::validate_and_append(self)?;
+                    self.compile_op_double_double(other_op)?;
+                }
+            },
             _ => Err(ExpressionCompileError::UnsupportedOperandsForOperation {
                 op,
                 left_category: ValueTypeCategory::Decimal,

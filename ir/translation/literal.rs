@@ -20,7 +20,8 @@ use typeql::{
     annotation::Regex,
     value::{
         BooleanLiteral, DateFragment, DateTimeLiteral, DateTimeTZLiteral, DurationLiteral, IntegerLiteral, Literal,
-        Sign, SignedDecimalLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment, ValueLiteral,
+        Sign, SignedDecimalLiteral, SignedDoubleLiteral, SignedIntegerLiteral, StringLiteral, TimeFragment,
+        ValueLiteral,
     },
 };
 
@@ -47,10 +48,8 @@ impl FromTypeQLLiteral for Value<'static> {
         match &literal.inner {
             ValueLiteral::Boolean(boolean) => Ok(Value::Boolean(bool::from_typeql_literal(boolean)?)),
             ValueLiteral::Integer(integer) => Ok(Value::Integer(i64::from_typeql_literal(integer)?)),
-            ValueLiteral::Decimal(decimal) => match Decimal::from_typeql_literal(decimal) {
-                Ok(decimal) => Ok(Value::Decimal(decimal)),
-                Err(_) => Ok(Value::Double(f64::from_typeql_literal(decimal)?)),
-            },
+            ValueLiteral::Decimal(decimal) => Ok(Value::Decimal(Decimal::from_typeql_literal(decimal)?)),
+            ValueLiteral::Double(double) => Ok(Value::Double(f64::from_typeql_literal(double)?)),
             ValueLiteral::Date(date) => Ok(Value::Date(NaiveDate::from_typeql_literal(&date.date)?)),
             ValueLiteral::DateTime(datetime) => Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime)?)),
             ValueLiteral::DateTimeTz(datetime_tz) => {
@@ -102,9 +101,9 @@ impl FromTypeQLLiteral for u64 {
 }
 
 impl FromTypeQLLiteral for f64 {
-    type TypeQLLiteral = SignedDecimalLiteral;
+    type TypeQLLiteral = SignedDoubleLiteral;
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        let unsigned = parse_primitive::<f64>(literal.decimal.as_str())?;
+        let unsigned = parse_primitive::<f64>(literal.double.as_str())?;
         match &literal.sign.unwrap_or(Sign::Plus) {
             Sign::Plus => Ok(unsigned),
             Sign::Minus => Ok(-unsigned),
@@ -116,10 +115,6 @@ impl FromTypeQLLiteral for Decimal {
     type TypeQLLiteral = SignedDecimalLiteral;
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
-        if literal.decimal.contains("e") {
-            Err(LiteralParseError::ScientificNotationNotAllowedForDecimal { literal: literal.to_string() })?;
-        }
-
         let decimal = parse_primitive::<Decimal>(&literal.decimal)?;
 
         Ok(match literal.sign {
@@ -301,9 +296,10 @@ pub mod tests {
         assert_ne!(parse_value_via_typeql_expression("false").unwrap(), Value::Boolean(true));
 
         assert_eq!(
-            parse_value_via_typeql_expression("123.00456").unwrap(),
+            parse_value_via_typeql_expression("123.00456dec").unwrap(),
             Value::Decimal(Decimal::new(123, 456 * 10u64.pow(FRACTIONAL_PART_DENOMINATOR_LOG10 - 5)))
         );
+        assert!(f64::abs(parse_value_via_typeql_expression("123.456").unwrap().unwrap_double() - 123.456) < 1.0e-6);
         assert!(f64::abs(parse_value_via_typeql_expression("123.456e0").unwrap().unwrap_double() - 123.456) < 1.0e-6);
 
         // TODO: Extend

@@ -251,7 +251,6 @@ match
   $o links (customer: $c), isa ORDER, has O_ID 0, has O_NEW_ORDER $o_new_order;
 delete
   has $o_new_order of $o;
-  has $o_carrier_id of $o;
   has $c_balance of $c;
 insert
   $o has O_NEW_ORDER false, has O_CARRIER_ID 0;

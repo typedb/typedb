@@ -13,9 +13,10 @@ use compiler::annotation::expression::{
         binary::{Binary, BinaryExpression, MathRemainderInteger},
         list_operations::{ListConstructor, ListIndex, ListIndexRange},
         load_cast::{
-            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDouble,
-            CastRightDecimalToDouble, CastRightIntegerToDouble, CastUnary, CastUnaryDecimalToDouble,
-            CastUnaryIntegerToDouble, ImplicitCast, LoadConstant, LoadVariable,
+            CastBinaryLeft, CastBinaryRight, CastLeftDecimalToDouble, CastLeftIntegerToDecimal,
+            CastLeftIntegerToDouble, CastRightDecimalToDouble, CastRightIntegerToDecimal, CastRightIntegerToDouble,
+            CastUnary, CastUnaryDecimalToDouble, CastUnaryIntegerToDecimal, CastUnaryIntegerToDouble, ImplicitCast,
+            LoadConstant, LoadVariable,
         },
         op_codes::ExpressionOpCode,
         operators,
@@ -173,6 +174,10 @@ fn evaluate_instruction(
         ExpressionOpCode::CastLeftDecimalToDouble => CastLeftDecimalToDouble::evaluate(state),
         ExpressionOpCode::CastRightDecimalToDouble => CastRightDecimalToDouble::evaluate(state),
 
+        ExpressionOpCode::CastUnaryIntegerToDecimal => CastUnaryIntegerToDecimal::evaluate(state),
+        ExpressionOpCode::CastLeftIntegerToDecimal => CastLeftIntegerToDecimal::evaluate(state),
+        ExpressionOpCode::CastRightIntegerToDecimal => CastRightIntegerToDecimal::evaluate(state),
+
         ExpressionOpCode::OpIntegerAddInteger => operators::OpIntegerAddInteger::evaluate(state),
         ExpressionOpCode::OpIntegerSubtractInteger => operators::OpIntegerSubtractInteger::evaluate(state),
         ExpressionOpCode::OpIntegerMultiplyInteger => operators::OpIntegerMultiplyInteger::evaluate(state),
@@ -186,6 +191,10 @@ fn evaluate_instruction(
         ExpressionOpCode::OpDoubleDivideDouble => operators::OpDoubleDivideDouble::evaluate(state),
         ExpressionOpCode::OpDoubleModuloDouble => operators::OpDoubleModuloDouble::evaluate(state),
         ExpressionOpCode::OpDoublePowerDouble => operators::OpDoublePowerDouble::evaluate(state),
+
+        ExpressionOpCode::OpDecimalAddDecimal => operators::OpDecimalAddDecimal::evaluate(state),
+        ExpressionOpCode::OpDecimalSubtractDecimal => operators::OpDecimalSubtractDecimal::evaluate(state),
+        ExpressionOpCode::OpDecimalMultiplyDecimal => operators::OpDecimalMultiplyDecimal::evaluate(state),
 
         ExpressionOpCode::MathRemainderInteger => MathRemainderInteger::evaluate(state),
         ExpressionOpCode::MathRoundDouble => MathRoundDouble::evaluate(state),

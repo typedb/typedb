@@ -27,6 +27,10 @@ pub type CastUnaryDecimalToDouble = CastUnary<Decimal, f64>;
 pub type CastLeftDecimalToDouble = CastBinaryLeft<Decimal, f64>;
 pub type CastRightDecimalToDouble = CastBinaryRight<Decimal, f64>;
 
+pub type CastUnaryIntegerToDecimal = CastUnary<i64, Decimal>;
+pub type CastLeftIntegerToDecimal = CastBinaryLeft<i64, Decimal>;
+pub type CastRightIntegerToDecimal = CastBinaryRight<i64, Decimal>;
+
 // Impls
 
 // Load
@@ -140,5 +144,15 @@ impl ImplicitCast<Decimal> for f64 {
 
     fn cast(from: Decimal) -> Result<Self, ExpressionEvaluationError> {
         Ok(from.to_f64())
+    }
+}
+
+impl ImplicitCast<i64> for Decimal {
+    const CAST_UNARY_OPCODE: ExpressionOpCode = ExpressionOpCode::CastUnaryIntegerToDecimal;
+    const CAST_LEFT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastLeftIntegerToDecimal;
+    const CAST_RIGHT_OPCODE: ExpressionOpCode = ExpressionOpCode::CastRightIntegerToDecimal;
+
+    fn cast(from: i64) -> Result<Self, ExpressionEvaluationError> {
+        Ok(Decimal::new(from, 0))
     }
 }

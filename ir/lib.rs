@@ -193,6 +193,10 @@ typedb_error! {
             lhs_category: VariableCategory,
             rhs_category: VariableCategory,
         ),
+        DeleteVariableUnavailable(40,
+            "The variable '{variable}' referenced in the delete stage is unavailable",
+            variable: String,
+        ),
         UnimplementedLanguageFeature(
             254,
             "The language feature is not yet implemented: {feature}",

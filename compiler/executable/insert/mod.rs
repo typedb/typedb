@@ -12,7 +12,10 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
-use ir::pattern::{constraint::Isa, ParameterID};
+use ir::pattern::{
+    constraint::{Comparator, Isa},
+    ParameterID,
+};
 
 use crate::VariablePosition;
 
@@ -61,6 +64,7 @@ pub enum WriteCompilationError {
     IsaTypeMayBeAttributeOrObject { isa: Isa<Variable> },
     CouldNotDetermineTypeOfInsertedVariable { variable: Variable },
     CouldNotDetermineValueOfInsertedAttribute { variable: Variable },
+    IllegalPredicateInAttributeInsert { variable: Variable, comparator: Comparator },
     CouldNotDetermineThingVariableSource { variable: Variable },
     CouldNotUniquelyResolveRoleTypeFromName { variable: Variable },
     CouldNotUniquelyDetermineRoleType { variable: Variable },
