@@ -433,7 +433,7 @@ impl Error for ExpressionDefinitionError {
             Self::ExpectedListArgumentReceivedValue => None,
             Self::ArgumentNotBound => None,
             Self::SubExpressionNotDefined => None,
-            Self::PatternDefinition { source } => todo!(),
+            Self::PatternDefinition { source: _ } => None, // TODO: Handle when migrating to TypeDBError. There is actually a source here.
             Self::EmptyExpressionTree { .. } => None,
         }
     }

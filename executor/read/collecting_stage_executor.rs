@@ -9,6 +9,7 @@ use std::{borrow::Cow, cmp::Ordering, iter::Peekable, sync::Arc};
 use answer::{variable_value::VariableValue, Thing};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use encoding::value::value::Value;
+use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -217,8 +218,8 @@ impl SortCollector {
                 unreachable!("Should have been caught earlier")
             }
 
-            | VariableValue::ThingList(_) => todo!("Implement lists"),
-            | VariableValue::ValueList(_) => todo!("Implement lists"),
+            | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
+            | VariableValue::ValueList(_) => unimplemented_feature!(Lists)
         }
     }
 }

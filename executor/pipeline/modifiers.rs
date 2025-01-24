@@ -10,6 +10,7 @@ use compiler::executable::modifiers::{
     LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
 };
 use encoding::value::value::Value;
+use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -124,8 +125,8 @@ impl SortStageIterator {
                 unreachable!("Should have been caught earlier")
             }
 
-            | VariableValue::ThingList(_) => todo!("Implement lists"),
-            | VariableValue::ValueList(_) => todo!("Implement lists"),
+            | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
+            | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
         }
     }
 }
