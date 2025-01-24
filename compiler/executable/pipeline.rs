@@ -232,7 +232,7 @@ fn compile_stage(
                 input_variables,
                 annotations,
             )
-            .map_err(|source| ExecutableCompilationError::InsertExecutableCompilation { source })?;
+            .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Insert(Arc::new(plan)))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
@@ -242,7 +242,7 @@ fn compile_stage(
                 block.conjunction().constraints(),
                 deleted_variables,
             )
-            .map_err(|source| ExecutableCompilationError::DeleteExecutableCompilation { source })?;
+            .map_err(|typedb_source| ExecutableCompilationError::DeleteExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Delete(Arc::new(plan)))
         }
         AnnotatedStage::Select(select) => {

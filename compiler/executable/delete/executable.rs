@@ -96,7 +96,7 @@ pub fn compile(
     let mut concept_deletes = Vec::new();
     for &variable in deleted_concepts {
         let Some(input_position) = input_variables.get(&variable) else {
-            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput { variable }));
+            return Err(Box::new(WriteCompilationError::DeletedInstanceWasNotInInput { variable }));
         };
         if type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
