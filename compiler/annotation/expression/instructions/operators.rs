@@ -14,9 +14,9 @@ use crate::annotation::expression::instructions::{
 };
 
 binary_instruction! {
-    OpIntegerAddInteger = OpIntegerAddIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2)) }
-    OpIntegerSubtractInteger = OpIntegerSubtractIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2)) }
-    OpIntegerMultiplyInteger = OpIntegerMultiplyIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2)) }
+    OpIntegerAddInteger = OpIntegerAddIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_add(a1, a2), &"add") }
+    OpIntegerSubtractInteger = OpIntegerSubtractIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_sub(a1, a2), &"sub") }
+    OpIntegerMultiplyInteger = OpIntegerMultiplyIntegerImpl(a1: i64, a2: i64) -> i64 { check_operation(i64::checked_mul(a1, a2), &"mul") }
     OpIntegerDivideInteger = OpIntegerDivideIntegerImpl(a1: i64, a2: i64) -> f64 { checked_div(a1 as f64, a2 as f64) }
     OpIntegerModuloInteger = OpIntegerModuloIntegerImpl(a1: i64, a2: i64) -> i64 { Ok(i64::rem_euclid(a1, a2)) }
     OpIntegerPowerInteger = OpIntegerPowerIntegerImpl(a1: i64, a2: i64) -> f64 { Ok(f64::powf(a1 as f64, a2 as f64)) }

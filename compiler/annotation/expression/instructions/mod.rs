@@ -5,6 +5,7 @@
  */
 
 use std::{error::Error, fmt};
+use concept::error::ConceptReadError;
 
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
@@ -30,56 +31,21 @@ pub trait CompilableExpression: ExpressionInstruction {
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>>;
 }
 
-pub(crate) fn check_operation<T>(checked_operation_result: Option<T>) -> Result<T, ExpressionEvaluationError> {
+pub(crate) fn check_operation<T>(checked_operation_result: Option<T>, description: &'static str) -> Result<T, ExpressionEvaluationError> {
     match checked_operation_result {
-        None => Err(ExpressionEvaluationError::CheckedOperationFailed),
+        None => Err(ExpressionEvaluationError::CheckedOperationFailed { description }),
         Some(result) => Ok(result),
     }
 }
 
-#[derive(Clone)]
-pub enum ExpressionEvaluationError {
-    CheckedOperationFailed,
-    CastFailed,
-    ListIndexOutOfRange,
-    DivisionFailed { dividend: f64, divisor: f64 },
-}
-
-impl fmt::Debug for ExpressionEvaluationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // TODO: Convert to `typedb_error!`
-        match self {
-            ExpressionEvaluationError::CheckedOperationFailed => f.write_str("CheckedOperationFailed"),
-            ExpressionEvaluationError::CastFailed => f.write_str("CastFailed"),
-            ExpressionEvaluationError::ListIndexOutOfRange => f.write_str("ListIndexOutOfRange"),
-            ExpressionEvaluationError::DivisionFailed { dividend, divisor } => {
-                f.write_str("DivisionFailed: {dividend} / {divisor}")
-            }
-        }
+typedb_error!{
+    pub ExpressionEvaluationError(component = "Expression evaluation", prefix = "EEV") {
+        ConceptRead(1, "Concept read failed", source: Box<ConceptReadError>),
+        CheckedOperationFailed(2, "Checked operation failed: {description}", description: &'static str),
+        CastFailed(3, "Cast failed due to {description}.", description: String),
+        DivisionFailed(4, "Division failed, dividend: {dividend}, divisor: {divisor}.", dividend: f64, divisor: f64),
+        ListIndexNegative(5, "List index is negative: {index}", index: i64),
+        ListIndexOutOfRange(6, "List index out of range {index}, list length: {length}", index: i64, length: usize),
+        ListRangeOutOfRange(7, "List range out of range {from_index}..{to_index}, list length: {length}", from_index: i64, to_index: i64, length: usize),
     }
 }
-
-impl fmt::Display for ExpressionEvaluationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for ExpressionEvaluationError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::CheckedOperationFailed => None,
-            Self::CastFailed => None,
-            Self::ListIndexOutOfRange => None,
-            Self::DivisionFailed { .. } => None,
-        }
-    }
-}
-
-typedb_error!(
-    pub ExpressionEvaluationError2(component = "Expression evaluation", prefix = "EEV") {
-        CheckedOperationFailed,
-        CastFailed,
-        ListIndexOutOfRange, 
-    }
-)

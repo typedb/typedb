@@ -743,12 +743,12 @@ impl AssignExecutor {
                 .map(|&pos| {
                     let value = input_row.get(pos).to_owned();
                     let expression_value = ExpressionValue::try_from_value(value, context)
-                        .map_err(|source| ReadExecutionError::ExpressionEvaluate { source })?;
+                        .map_err(|typedb_source| ReadExecutionError::ExpressionEvaluate { typedb_source })?;
                     Ok((pos, expression_value))
                 })
                 .try_collect()?;
             let output_value = evaluate_expression(&self.expression, input_variables, &context.parameters)
-                .map_err(|err| ReadExecutionError::ExpressionEvaluate { source: err })?;
+                .map_err(|typedb_source| ReadExecutionError::ExpressionEvaluate { typedb_source })?;
             output.append(|mut row| {
                 row.set_multiplicity(input_row.multiplicity());
                 for &position in &self.selected_variables {
