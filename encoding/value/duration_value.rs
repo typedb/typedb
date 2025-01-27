@@ -261,7 +261,7 @@ mod tests {
     use chrono_tz::Europe::London;
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
-    use super::{Duration, MAX_YEAR, MIN_YEAR};
+    use super::{super::timezone::TimeZone, Duration, MAX_YEAR, MIN_YEAR};
 
     fn random_naive_utc_date_time(rng: &mut impl Rng) -> NaiveDateTime {
         let year = rng.gen_range(MIN_YEAR..=MAX_YEAR);
@@ -335,6 +335,29 @@ mod tests {
             let date_time = random_naive_utc_date_time(&mut rng);
             assert_eq!(date_time + p1d, date_time + pt24h);
         }
+    }
+
+    #[test]
+    fn extreme_timezone_changes_are_respected() {
+        // Samoa switched from -10 to +14 after 29th of December, 2011,
+        // skipping 30th of December.
+        let _2011_12_29__12_00_00__Apia = NaiveDate::from_ymd_opt(2011, 12, 29)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap()
+            .and_local_timezone(TimeZone::IANA(chrono_tz::Tz::Pacific__Apia))
+            .unwrap();
+        let _2011_12_31__12_00_00_Apia = NaiveDate::from_ymd_opt(2011, 12, 31)
+            .unwrap()
+            .and_hms_opt(12, 0, 0)
+            .unwrap()
+            .and_local_timezone(TimeZone::IANA(chrono_tz::Tz::Pacific__Apia))
+            .unwrap();
+
+        // FIXME crashes: `DateTime + Days` out of range
+        // assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(1), _2011_12_31__12_00_00_Apia);
+
+        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::hours(24), _2011_12_31__12_00_00_Apia);
     }
 
     #[test]
