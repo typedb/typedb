@@ -60,10 +60,8 @@ pub(crate) fn get_kinds_from_annotations(annotations: &BTreeSet<Type>) -> HashSe
 
 typedb_error! {
     pub WriteCompilationError(component = "Write Compilation", prefix = "WRC") {
-        // TODO: Update error message to something more understandable
-        IsaStatementForInputVariable(1, "'isa' statement provided for input variable '{variable}'.", variable: Variable),
-        // TODO: Update error message to something more understandable
-        IsaTypeMayBeAttributeOrObject(2, "'isa' type '{isa}' may be an attribute or object.", isa: Isa<Variable>),
+        IsaStatementForBoundedInputVariable(1, "'isa' statement provided for the input variable '{variable}' bound to an existing instance.", variable: Variable),
+        IsaTypeMayBeAttributeOrObject(2, "Type '{isa}' cannot have 'isa' for both an attribute and an object.", isa: Isa<Variable>),
         CouldNotDetermineTypeOfInsertedVariable(3, "Could not determine the type of inserted variable '{variable}'.", variable: Variable),
         CouldNotDetermineValueOfInsertedAttribute(4, "Could not determine the value of inserted attribute '{variable}'.", variable: Variable),
         IllegalPredicateInAttributeInsert(5, "Illegal predicate in attribute insert for variable '{variable}' with comparator '{comparator}'.", variable: Variable, comparator: Comparator),

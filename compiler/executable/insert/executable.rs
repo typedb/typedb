@@ -90,7 +90,7 @@ fn add_inserted_concepts(
         let &Vertex::Variable(thing) = isa.thing() else { unreachable!() };
 
         if input_variables.contains_key(&thing) {
-            return Err(Box::new(WriteCompilationError::IsaStatementForInputVariable { variable: thing }));
+            return Err(Box::new(WriteCompilationError::IsaStatementForBoundedInputVariable { variable: thing }));
         }
 
         let type_ = if let Some(type_) = type_bindings.get(isa.type_()) {
