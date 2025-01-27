@@ -299,7 +299,7 @@ pub(crate) fn try_resolve_relates_declared(
     relation_type: RelationType,
     role_name: &str,
 ) -> Result<Option<Relates>, Box<ConceptReadError>> {
-    relation_type.get_relates_role_name_declared(snapshot, type_manager, role_name)
+    relation_type.get_relates_role_name_non_specialising_declared(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_relates(
@@ -324,7 +324,7 @@ pub(crate) fn try_resolve_relates(
     relation_type: RelationType,
     role_name: &str,
 ) -> Result<Option<Relates>, Box<ConceptReadError>> {
-    relation_type.get_relates_role_name_with_specialised(snapshot, type_manager, role_name)
+    relation_type.get_relates_role_name_non_specialising(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_owns_declared(
@@ -374,7 +374,7 @@ pub(crate) fn try_resolve_owns(
     object_type: ObjectType,
     attribute_type: AttributeType,
 ) -> Result<Option<Owns>, Box<ConceptReadError>> {
-    object_type.get_owns_attribute_with_specialised(snapshot, type_manager, attribute_type)
+    object_type.get_owns_attribute(snapshot, type_manager, attribute_type)
 }
 
 pub(crate) fn resolve_plays_declared(
@@ -424,7 +424,7 @@ pub(crate) fn try_resolve_plays(
     object_type: ObjectType,
     role_type: RoleType,
 ) -> Result<Option<Plays>, Box<ConceptReadError>> {
-    object_type.get_plays_role_with_specialised(snapshot, type_manager, role_type)
+    object_type.get_plays_role(snapshot, type_manager, role_type)
 }
 
 pub(crate) fn resolve_plays_role_label(
@@ -457,7 +457,7 @@ pub(crate) fn try_resolve_plays_role_label(
                 None => Ok(None),
             }
         }
-        None => object_type.get_plays_role_name_with_specialised(snapshot, type_manager, label.name.as_str()),
+        None => object_type.get_plays_role_name(snapshot, type_manager, label.name.as_str()),
     }
 }
 

@@ -37,7 +37,6 @@ use crate::{
         },
         attribute_type::AttributeType,
         constraint::{CapabilityConstraint, Constraint, TypeConstraint},
-        get_with_specialised,
         object_type::ObjectType,
         owns::Owns,
         plays::Plays,
@@ -455,9 +454,66 @@ impl RelationType {
         Ok(None)
     }
 
-    get_with_specialised! {
-        pub fn get_relates_role_with_specialised() -> Relates = RoleType | get_relates_role;
-        pub fn get_relates_role_name_with_specialised() -> Relates = &str | get_relates_role_name;
+    pub fn get_relates_role_non_specialising_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType,
+    ) -> Result<Option<Relates>, Box<ConceptReadError>> {
+        if let Some(relates) = self.get_relates_role_declared(snapshot, type_manager, role_type.clone())? {
+            if !relates.is_specialising(snapshot, type_manager)? {
+                return Ok(Some(relates));
+            }
+        }
+        Ok(None)
+    }
+
+    pub fn get_relates_role_non_specialising(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_type: RoleType,
+    ) -> Result<Option<Relates>, Box<ConceptReadError>> {
+        if let Some(relates) = self.get_relates_role(snapshot, type_manager, role_type)? {
+            if relates.is_specialising(snapshot, type_manager)? {
+                Ok(Some(relates.role().get_relates_root(snapshot, type_manager)?))
+            } else {
+                Ok(Some(relates))
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn get_relates_role_name_non_specialising_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_name: &str,
+    ) -> Result<Option<Relates>, Box<ConceptReadError>> {
+        if let Some(relates) = self.get_relates_role_name_declared(snapshot, type_manager, role_name)? {
+            if !relates.is_specialising(snapshot, type_manager)? {
+                return Ok(Some(relates));
+            }
+        }
+        Ok(None)
+    }
+
+    pub fn get_relates_role_name_non_specialising(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        role_name: &str,
+    ) -> Result<Option<Relates>, Box<ConceptReadError>> {
+        if let Some(relates) = self.get_relates_role_name(snapshot, type_manager, role_name)? {
+            if relates.is_specialising(snapshot, type_manager)? {
+                Ok(Some(relates.role().get_relates_root(snapshot, type_manager)?))
+            } else {
+                Ok(Some(relates))
+            }
+        } else {
+            Ok(None)
+        }
     }
 }
 

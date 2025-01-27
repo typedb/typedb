@@ -2444,8 +2444,13 @@ impl TypeManager {
         relates: Relates,
         specialised: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_relates_is_inherited(snapshot, self, relates.relation(), specialised.role())
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_inherited_for_specialisation(
+            snapshot,
+            self,
+            relates.relation(),
+            specialised,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_specialised_relates_is_not_specialising(
             snapshot,

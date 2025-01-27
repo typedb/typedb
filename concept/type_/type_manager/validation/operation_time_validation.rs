@@ -2039,32 +2039,27 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_is_inherited(
+    pub(crate) fn validate_relates_is_inherited_for_specialisation(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         relation_type: RelationType,
-        role_type: RoleType,
+        relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
-        let super_relation = relation_type
+        let supertype = relation_type
             .get_supertype(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
-        if let Some(super_relation) = super_relation {
-            let is_inherited = super_relation
+        if let Some(supertype) = supertype {
+            let all_supertype_relates = supertype
                 .get_relates(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
-                .iter()
-                .any(|relates| relates.role() == role_type);
-            if is_inherited {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaValidationError::RelatesNotInherited {
-                    relation: relation_type.get_label(snapshot, type_manager).unwrap().clone(),
-                    role: role_type.get_label(snapshot, type_manager).unwrap().clone(),
-                }))
+                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+            if all_supertype_relates.contains(&relates) {
+                return Ok(());
             }
-        } else {
-            Ok(())
         }
+        Err(Box::new(SchemaValidationError::RelatesNotInheritedForSpecialisation {
+            relation: relation_type.get_label(snapshot, type_manager).unwrap().clone(),
+            role: relates.role().get_label(snapshot, type_manager).unwrap().clone(),
+        }))
     }
 
     pub(crate) fn validate_specialised_relates_is_not_specialising(

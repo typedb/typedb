@@ -51,37 +51,6 @@ pub mod role_type;
 pub mod sub;
 pub mod type_manager;
 
-macro_rules! get_with_specialised {
-    ($(
-        $vis:vis fn $method_name:ident() -> $output_type:ident = $input_type:ty | $get_method:ident;
-    )*) => {
-        $(
-            $vis fn $method_name(
-                &self,
-                snapshot: &impl ReadableSnapshot,
-                type_manager: &TypeManager,
-                input_type: $input_type,
-            ) -> Result<Option<$output_type>, Box<ConceptReadError>> {
-                let self_result = self.$get_method(snapshot, type_manager, input_type.clone())?;
-                Ok(match self_result {
-                    Some(owns) => Some(owns),
-                    None => match self.get_supertype(snapshot, type_manager)? {
-                        Some(supertype) => {
-                            let supertype_result = supertype.$get_method(snapshot, type_manager, input_type)?;
-                            match supertype_result {
-                                Some(supertype_result) => Some(supertype_result),
-                                None => None,
-                            }
-                        }
-                        None => None,
-                    },
-                })
-            }
-        )*
-    }
-}
-pub(crate) use get_with_specialised;
-
 pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
     fn new(vertex: TypeVertex) -> Self;
 
@@ -400,10 +369,6 @@ pub trait OwnerAPI: TypeAPI {
         Ok(self.get_owns(snapshot, type_manager)?.iter().find(|owns| owns.attribute() == attribute_type).cloned())
     }
 
-    get_with_specialised! {
-        fn get_owns_attribute_with_specialised() -> Owns = AttributeType | get_owns_attribute;
-    }
-
     fn has_owns_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -574,11 +539,6 @@ pub trait PlayerAPI: TypeAPI {
             }
         }
         Ok(result)
-    }
-
-    get_with_specialised! {
-        fn get_plays_role_with_specialised() -> Plays = RoleType | get_plays_role;
-        fn get_plays_role_name_with_specialised() -> Plays = &str | get_plays_role_name;
     }
 
     fn try_get_plays_role(
