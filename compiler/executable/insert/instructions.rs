@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use super::{ThingSource, TypeSource, ValueSource};
+use super::{ThingPosition, TypeSource, ValueSource};
 
 #[derive(Debug)]
 pub enum ConceptInstruction {
@@ -42,25 +42,25 @@ impl fmt::Display for ConnectionInstruction {
 #[derive(Debug)]
 pub struct PutObject {
     pub type_: TypeSource,
-    pub write_to: ThingSource,
+    pub write_to: ThingPosition,
 }
 
 #[derive(Debug)]
 pub struct PutAttribute {
     pub type_: TypeSource,
     pub value: ValueSource,
-    pub write_to: ThingSource,
+    pub write_to: ThingPosition,
 }
 
 #[derive(Debug)]
 pub struct Has {
-    pub owner: ThingSource,
-    pub attribute: ThingSource,
+    pub owner: ThingPosition,
+    pub attribute: ThingPosition,
 }
 
 #[derive(Debug)]
 pub struct Links {
-    pub relation: ThingSource,
-    pub player: ThingSource,
+    pub relation: ThingPosition,
+    pub player: ThingPosition,
     pub role: TypeSource,
 }

@@ -231,18 +231,20 @@ fn compile_stage(
                 block.conjunction().constraints(),
                 input_variables,
                 annotations,
+                variable_registry,
             )
-            .map_err(|source| ExecutableCompilationError::InsertExecutableCompilation { source })?;
+            .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Insert(Arc::new(plan)))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations } => {
             let plan = crate::executable::delete::executable::compile(
                 input_variables,
                 annotations,
+                variable_registry,
                 block.conjunction().constraints(),
                 deleted_variables,
             )
-            .map_err(|source| ExecutableCompilationError::DeleteExecutableCompilation { source })?;
+            .map_err(|typedb_source| ExecutableCompilationError::DeleteExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Delete(Arc::new(plan)))
         }
         AnnotatedStage::Select(select) => {

@@ -77,7 +77,7 @@ impl<ID: IrID> ExpressionTree<ID> {
         })
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ExpressionTree<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionTree<T> {
         let preorder_tree = self
             .preorder_tree
             .iter()
@@ -272,11 +272,13 @@ pub struct ListIndex<ID> {
     index_expression_id: ExpressionTreeNodeId,
 }
 
-impl<ID: IrID> ListIndex<ID> {
+impl<ID> ListIndex<ID> {
     pub(crate) fn new(list_variable: ID, index_expression_id: ExpressionTreeNodeId) -> ListIndex<ID> {
         Self { list_variable, index_expression_id }
     }
+}
 
+impl<ID: IrID> ListIndex<ID> {
     pub fn list_variable(&self) -> ID {
         self.list_variable
     }
@@ -285,7 +287,7 @@ impl<ID: IrID> ListIndex<ID> {
         self.index_expression_id
     }
 
-    fn map<T: IrID>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
+    fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
         ListIndex::new(self.list_variable.map(mapping), self.index_expression_id.clone())
     }
 }
@@ -343,7 +345,7 @@ pub struct ListIndexRange<ID> {
     to_expression_id: ExpressionTreeNodeId,
 }
 
-impl<ID: IrID> ListIndexRange<ID> {
+impl<ID> ListIndexRange<ID> {
     pub(crate) fn new(
         list_variable: ID,
         from_expression_id: ExpressionTreeNodeId,
@@ -351,7 +353,9 @@ impl<ID: IrID> ListIndexRange<ID> {
     ) -> Self {
         Self { list_variable, from_expression_id, to_expression_id }
     }
+}
 
+impl<ID: IrID> ListIndexRange<ID> {
     pub fn list_variable(&self) -> ID {
         self.list_variable
     }
@@ -364,7 +368,7 @@ impl<ID: IrID> ListIndexRange<ID> {
         self.to_expression_id
     }
 
-    fn map<T: IrID>(&self, mapping: &HashMap<ID, T>) -> ListIndexRange<T> {
+    fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndexRange<T> {
         ListIndexRange::new(
             self.list_variable.map(mapping),
             self.from_expression_id.clone(),

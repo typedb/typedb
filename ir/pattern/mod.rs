@@ -47,7 +47,7 @@ impl fmt::Display for ScopeId {
 }
 
 pub trait IrID: Copy + fmt::Display + fmt::Debug + Hash + Eq + PartialEq + Ord + PartialOrd + 'static {
-    fn map<T: IrID>(&self, mapping: &HashMap<Self, T>) -> T {
+    fn map<T: Clone>(&self, mapping: &HashMap<Self, T>) -> T {
         mapping.get(self).unwrap().clone()
     }
 }
@@ -62,15 +62,17 @@ pub enum Vertex<ID> {
     Parameter(ParameterID),
 }
 
-impl<ID: IrID> Vertex<ID> {
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Vertex<T> {
+impl<ID: Hash + Eq> Vertex<ID> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Vertex<T> {
         match self {
-            Self::Variable(var) => Vertex::Variable(mapping[&var]),
+            Self::Variable(var) => Vertex::Variable(mapping[&var].clone()),
             Self::Label(label) => Vertex::Label(label),
             Self::Parameter(param) => Vertex::Parameter(param),
         }
     }
+}
 
+impl<ID: IrID> Vertex<ID> {
     pub fn as_variable(&self) -> Option<ID> {
         if let &Self::Variable(v) = self {
             Some(v)

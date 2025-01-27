@@ -28,7 +28,7 @@ typedb_error! {
         Annotation(8, "Error analysing query. ", typedb_source: AnnotationError),
         Transformation(9, "Error applying query transformation. ", typedb_source: StaticOptimiserError),
         ExecutableCompilation(10, "Error compiling query. ", typedb_source: ExecutableCompilationError),
-        WriteCompilation(11, "Error while compiling write query.", source: WriteCompilationError),
+        WriteCompilation(11, "Error while compiling write query.", typedb_source: WriteCompilationError),
         ExpressionCompilation(12, "Error while compiling expression.", typedb_source: ExpressionCompileError),
         Pipeline(13, "Pipeline error.", typedb_source: Box<PipelineError>),
         WritePipelineExecution(14, "Error while execution write pipeline.", typedb_source: Box<PipelineExecutionError>),
