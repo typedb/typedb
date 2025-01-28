@@ -96,6 +96,17 @@ rust_test(
 )
 
 rust_test(
+    name = "test_negation",
+    srcs = ["negation.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@typedb_behaviour//query/language:negation.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
     name = "test_fetch",
     srcs = ["fetch.rs"],
     deps = [
