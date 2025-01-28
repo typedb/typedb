@@ -98,7 +98,7 @@ typedb_error! {
             12,
             "Error parsing literal '{literal}'.",
             literal: String,
-            source: LiteralParseError ,
+            typedb_source: LiteralParseError ,
         ),
         ExpressionDefinitionError(
             13,
@@ -217,37 +217,16 @@ typedb_error! {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum LiteralParseError {
-    FragmentParseError { fragment: String },
-    ScientificNotationNotAllowedForDecimal { literal: String },
-    InvalidDate { year: i32, month: u32, day: u32 },
-    InvalidTime { hour: u32, minute: u32, second: u32, nano: u32 },
-    CannotUnescapeString { literal: StringLiteral, source: typeql::Error },
-    CannotUnescapeRegexString { literal: StringLiteral, source: typeql::Error },
-    TimeZoneLookup { name: String },
-    FixedOffset { value: String },
-    UnimplementedLanguageFeature { feature: error::UnimplementedFeature },
-}
-
-impl fmt::Display for LiteralParseError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for LiteralParseError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            LiteralParseError::FragmentParseError { .. } => None,
-            LiteralParseError::ScientificNotationNotAllowedForDecimal { .. } => None,
-            LiteralParseError::InvalidDate { .. } => None,
-            LiteralParseError::InvalidTime { .. } => None,
-            LiteralParseError::CannotUnescapeString { source, .. } => Some(source),
-            LiteralParseError::CannotUnescapeRegexString { source, .. } => Some(source),
-            LiteralParseError::TimeZoneLookup { .. } => None,
-            LiteralParseError::FixedOffset { .. } => None,
-            LiteralParseError::UnimplementedLanguageFeature { .. } => None,
-        }
+typedb_error!{
+    pub LiteralParseError(component = "Literal parse", prefix = "LIT") {
+        FragmentParseError(1, "Failed to parse literal fragment into primitive: {fragment}.", fragment: String),
+        ScientificNotationNotAllowedForDecimal(2, "Fixed-point decimal values cannot use scientific notation: {literal}.", literal: String),
+        InvalidDate(3, "Invalid date with year {year}, month {month}, day {day}", year: i32, month: u32, day: u32),
+        InvalidTime(4, "Invalid time with hour {hour}, minute {minute}, second {second}, nanoseconds {nano}", hour: u32, minute: u32, second: u32, nano: u32),
+        CannotUnescapeString(5, "Cannot unescape string literal: '{literal}'.", literal: StringLiteral, typedb_source: typeql::Error),
+        CannotUnescapeRegexString(6, "Cannot unescape regex string: '{literal}'.", literal: StringLiteral, typedb_source: typeql::Error),
+        InvalidTimezoneNamed(7, "Unrecognised timezone '{name}'.", name: String),
+        InvalidTimezoneFixedOffset(8, "Invalid timezone offset '{offset}'.", offset: String),
+        UnimplementedLanguageFeature(9, "Unimplemented '{feature}'.", feature: error::UnimplementedFeature),
     }
 }

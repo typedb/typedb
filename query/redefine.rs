@@ -59,7 +59,7 @@ macro_rules! verify_no_annotations_for_capability {
     ($capability:ident, $annotation_error:path, $error_arg_name:ident) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
             let annotation = translate_annotation(typeql_annotation)
-                .map_err(|source| RedefineError::LiteralParseError { source })?;
+                .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
             let error = { $annotation_error { $error_arg_name: annotation.category() }};
             Err(RedefineError::IllegalCapabilityAnnotation {
                 declaration: $capability.clone(),
@@ -219,7 +219,7 @@ fn redefine_type_annotations(
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         match type_ {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
@@ -452,7 +452,7 @@ fn redefine_value_type_annotations(
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -571,7 +571,7 @@ fn redefine_relates_annotations(
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -744,7 +744,7 @@ fn redefine_owns_annotations(
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -835,7 +835,7 @@ fn redefine_plays_annotations(
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -1013,7 +1013,7 @@ typedb_error! {
         UnexpectedConceptRead(2, "Concept read error during redefine query execution.", source: Box<ConceptReadError>),
         NothingRedefined(3, "Nothing was redefined."),
         DefinitionResolution(4, "Could not find symbol in redefine query.", typedb_source: Box<SymbolResolutionError>),
-        LiteralParseError(5, "Error parsing literal in redefine query.", source: LiteralParseError),
+        LiteralParseError(5, "Error parsing literal in redefine query.", typedb_source: LiteralParseError),
         CanOnlyRedefineOneThingPerQuery(6, "Redefine queries can currently only mutate exactly one schema element per query."),
         StructFieldDoesNotExist(7, "Struct field used in redefine query does not exist.\nSource:\n{declaration}", declaration: Field),
         StructFieldRemainsSame(8, "Struct field in redefine was not changed. Redefine queries are required to update the schema.\nSource:\n{declaration}", declaration: Field),

@@ -69,7 +69,7 @@ macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path, $error_arg_name:ident) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
             let annotation =
-                translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+                translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
             let error = { $annotation_error { $error_arg_name: annotation.category() } };
             Err(DefineError::IllegalAnnotation { typedb_source: error })
         } else {
@@ -302,7 +302,7 @@ fn define_type_annotations(
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for typeql_annotation in &type_declaration.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         match type_ {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_definition_need(
@@ -529,7 +529,7 @@ fn define_value_type_annotations(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = type_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -621,7 +621,7 @@ fn define_relates_annotations(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -787,7 +787,7 @@ fn define_owns_annotations(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -859,7 +859,7 @@ fn define_plays_annotations(
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| DefineError::LiteralParseError { source })?;
+            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -985,7 +985,7 @@ typedb_error! {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
         UnexpectedConceptRead(2, "Concept read error. ", source: Box<ConceptReadError>),
         SymbolResolution(3, "Failed to find symbol.", typedb_source: Box<SymbolResolutionError>),
-        LiteralParseError(4, "Failed to parse literal.", source: LiteralParseError),
+        LiteralParseError(4, "Failed to parse literal.", typedb_source: LiteralParseError),
         TypeCreateError(
             5,
             "Failed to create type.\nSource:\n{type_declaration}",

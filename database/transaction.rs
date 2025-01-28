@@ -175,6 +175,9 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 }
 
+// TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
+//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
+
 typedb_error! {
     pub DataCommitError(component = "Data commit", prefix = "DCT") {
         SnapshotInUse(1, "Failed to commit since the transaction snapshot is still in use."),
@@ -183,21 +186,6 @@ typedb_error! {
         SnapshotError(4, "Snapshot error.", typedb_source: SnapshotError),
     }
 }
-
-// #[derive(Debug, Clone)]
-// pub enum DataCommitError {
-// }
-//
-// impl fmt::Display for DataCommitError {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         fmt::Debug::fmt(self, f)
-//     }
-// }
-//
-// impl Error for DataCommitError {}
-
-// TODO: when we use typedb_error!, how do we pring stack trace? If we use the stack trace of each of these, we'll end up with a tree!
-//       If there's 1, we can use the stack trace, otherwise, we should list out all the errors?
 
 #[derive(Debug)]
 pub struct TransactionSchema<D> {

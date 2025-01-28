@@ -164,10 +164,10 @@ impl FromTypeQLLiteral for TimeZone {
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         match literal {
             typeql::value::TimeZone::IANA(name) => Ok(TimeZone::IANA(
-                Tz::from_str_insensitive(name).map_err(|_| LiteralParseError::TimeZoneLookup { name: name.clone() })?,
+                Tz::from_str_insensitive(name).map_err(|_| LiteralParseError::InvalidTimezoneNamed { name: name.clone() })?,
             )),
             typeql::value::TimeZone::ISO(value) => Ok(TimeZone::Fixed(
-                FixedOffset::from_str(value).map_err(|_| LiteralParseError::FixedOffset { value: value.clone() })?,
+                FixedOffset::from_str(value).map_err(|_| LiteralParseError::InvalidTimezoneFixedOffset { offset: value.clone() })?,
             )),
         }
     }
@@ -240,7 +240,7 @@ impl FromTypeQLLiteral for String {
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<Self, LiteralParseError> {
         literal
             .unescape()
-            .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), source: err })
+            .map_err(|err| LiteralParseError::CannotUnescapeString { literal: literal.clone(), typedb_source: err })
     }
 }
 
@@ -249,7 +249,7 @@ impl FromTypeQLLiteral for AnnotationRegex {
 
     fn from_typeql_literal(literal: &Self::TypeQLLiteral) -> Result<AnnotationRegex, LiteralParseError> {
         Ok(AnnotationRegex::new(literal.regex.unescape_regex().map_err(|err| {
-            LiteralParseError::CannotUnescapeRegexString { literal: literal.regex.clone(), source: err }
+            LiteralParseError::CannotUnescapeRegexString { literal: literal.regex.clone(), typedb_source: err }
         })?))
     }
 }

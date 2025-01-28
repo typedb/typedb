@@ -110,7 +110,7 @@ fn register_typeql_literal(
     literal: &typeql::Literal,
 ) -> Result<ParameterID, Box<RepresentationError>> {
     let value = translate_literal(literal)
-        .map_err(|source| RepresentationError::LiteralParseError { literal: literal.to_string(), source })?;
+        .map_err(|typedb_source| RepresentationError::LiteralParseError { literal: literal.to_string(), typedb_source })?;
     let id = constraints.parameters().register_value(value);
     Ok(id)
 }

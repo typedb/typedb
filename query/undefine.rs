@@ -254,7 +254,7 @@ fn undefine_capability_annotation(
 ) -> Result<(), UndefineError> {
     let label = Label::parse_from(checked_identifier(&annotation_undefinable.type_.ident)?);
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category)
-        .map_err(|source| UndefineError::LiteralParseError { source })?;
+        .map_err(|typedb_source| UndefineError::LiteralParseError { typedb_source })?;
 
     match &annotation_undefinable.capability {
         CapabilityBase::Sub(_) => {
@@ -743,7 +743,7 @@ fn undefine_type_annotation(
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
     let annotation_category = translate_annotation_category(annotation_undefinable.annotation_category)
-        .map_err(|source| UndefineError::LiteralParseError { source })?;
+        .map_err(|typedb_source| UndefineError::LiteralParseError { typedb_source })?;
     match type_ {
         TypeEnum::Entity(entity_type) => {
             check_can_and_need_undefine_type_annotation(
@@ -936,7 +936,7 @@ typedb_error! {
         Unimplemented(1, "Unimplemented undefine functionality: {description}", description: String),
         UnexpectedConceptRead(2, "Concept read error during undefine query execution.", source: Box<ConceptReadError>),
         DefinitionResolution(3, "Could not find symbol in undefine query.", typedb_source: Box<SymbolResolutionError>),
-        LiteralParseError(4, "Error parsing literal in undefine query.", source: LiteralParseError),
+        LiteralParseError(4, "Error parsing literal in undefine query.", typedb_source: LiteralParseError),
         StructDoesNotExist(5, "Struct used in undefine query does not exist.\nSource:\n{declaration}", declaration: Struct),
         StructDeleteError(
             6,

@@ -54,8 +54,8 @@ pub(super) fn add_statement(
         typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, .. }) => {
             let lhs_var = add_typeql_expression(function_index, constraints, lhs)?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            let comparator = comparison.comparator.try_into().map_err(|source| {
-                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+            let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
+                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), typedb_source })
             })?;
             constraints.add_comparison(lhs_var, rhs_var, comparator)?;
         }
@@ -388,8 +388,8 @@ fn add_typeql_isa(
                 add_typeql_relation(constraints, thing, relation)?;
             }
             IsaInstanceConstraint::Value(value) => {
-                let value = translate_literal(value).map_err(|source| RepresentationError::LiteralParseError {
-                    source,
+                let value = translate_literal(value).map_err(|typedb_source| RepresentationError::LiteralParseError {
+                    typedb_source,
                     literal: value.to_string().clone(),
                 })?;
                 let value_id = constraints.parameters().register_value(value);
@@ -401,10 +401,10 @@ fn add_typeql_isa(
             }
             IsaInstanceConstraint::Comparison(comparison) => {
                 let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-                let comparator = comparison.comparator.try_into().map_err(|source| {
+                let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                     Box::new(RepresentationError::LiteralParseError {
                         literal: comparison.comparator.to_string(),
-                        source,
+                        typedb_source,
                     })
                 })?;
                 constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator)?;
@@ -467,8 +467,8 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Comparison(comparison) => {
             let attribute = constraints.create_anonymous_variable()?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
-            let comparator = comparison.comparator.try_into().map_err(|source| {
-                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), source })
+            let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
+                Box::new(RepresentationError::LiteralParseError { literal: comparison.comparator.to_string(), typedb_source })
             })?;
             constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparator)?;
             attribute
