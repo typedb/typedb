@@ -567,7 +567,7 @@ pub(super) fn add_function_call_binding_user(
 ) -> Result<(), Box<RepresentationError>> {
     let function_opt = function_index
         .get_function_signature(function_name)
-        .map_err(|source| RepresentationError::FunctionReadError { source })?;
+        .map_err(|typedb_source| RepresentationError::FunctionReadError { typedb_source})?;
     if let Some(callee) = function_opt {
         match (must_be_stream, callee.return_is_stream) {
             (true, true) | (false, false) => {}

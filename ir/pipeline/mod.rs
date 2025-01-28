@@ -33,31 +33,16 @@ pub mod function_signature;
 pub mod modifier;
 pub mod reduce;
 
-#[derive(Debug, Clone)]
-pub enum FunctionReadError {
-    FunctionNotFound { function_id: FunctionID },
-    FunctionRetrieval { source: SnapshotGetError },
-    FunctionsScan { source: Arc<SnapshotIteratorError> },
-}
-
-impl fmt::Display for FunctionReadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for FunctionReadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::FunctionRetrieval { source } => Some(source),
-            Self::FunctionsScan { source } => Some(source),
-            Self::FunctionNotFound { .. } => None,
-        }
+typedb_error!{
+    pub FunctionReadError(component = "Function read", prefix = "FNR") {
+        FunctionIDNotFound(1, "Function '{name}' not found by its internal ID '{id}'.", name: String, id: FunctionID),
+        FunctionRetrieval(2, "Error retrieving function.", source: SnapshotGetError),
+        FunctionsScan(3, "Error scanning functions.", source: Arc<SnapshotIteratorError>),
     }
 }
 
 typedb_error! {
-    pub FunctionRepresentationError(component = "Function representation", prefix = "FNR") {
+    pub FunctionRepresentationError(component = "Function representation", prefix = "FRP") {
         FunctionArgumentUnused(
             1,
             "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",

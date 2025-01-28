@@ -87,7 +87,7 @@ typedb_error! {
         FunctionReadError(
             10,
             "Error reading function.",
-            source: FunctionReadError ,
+            typedb_source: FunctionReadError ,
         ),
         ParseError(
             11,
