@@ -37,6 +37,8 @@ rust_library(
         "//resource",
         "//storage",
 
+        "@typeql//rust:typeql",
+
         "@crates//:bincode",
         "@crates//:chrono",
         "@crates//:chrono-tz",

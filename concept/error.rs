@@ -29,7 +29,7 @@ typedb_error!(
         SchemaValidation(4, "Concept write failed due to a schema validation error.", typedb_source: Box<SchemaValidationError>),
         DataValidation(5, "Concept write failed due to a data validation error.", typedb_source: Box<DataValidationError>),
         Encoding(6, "Concept write failed due to an encoding error.", source: EncodingError),
-        Annotation(7, "Concept write failed due to an annotation error.", source: AnnotationError),
+        Annotation(7, "Concept write failed due to an annotation error.", typedb_source: AnnotationError),
 
         // TODO: Might refactor these to "InvalidOperationError", or just use unreachable! instead of it.
         SetHasOrderedOwnsUnordered(8, "Concept write failed, due to setting ordered owns as unordered."),
@@ -79,7 +79,7 @@ pub enum ConceptReadError {
     CannotGetPlaysDoesntExist(Label, Label),
     CannotGetRelatesDoesntExist(Label, Label),
     Annotation {
-        source: AnnotationError,
+        typedb_source: AnnotationError,
     },
     Constraint {
         source: Box<ConstraintError>,

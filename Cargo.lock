@@ -601,6 +601,7 @@ dependencies = [
  "test_utils_concept",
  "test_utils_encoding",
  "tracing",
+ "typeql",
 ]
 
 [[package]]
@@ -4168,7 +4169,7 @@ checksum = "42ff0bf0c66b8238c6f3b578df37d0b7848e55df8577b3f74f92a69acceeb825"
 [[package]]
 name = "typeql"
 version = "0.0.0"
-source = "git+https://github.com/typedb/typeql?rev=918714f620cb1a3b117dc0c0d089e22a12d54675#918714f620cb1a3b117dc0c0d089e22a12d54675"
+source = "git+https://github.com/typedb/typeql?tag=3.0.4#b4310fa778d15007ae3be3b9c986eaba02e1b7ad"
 dependencies = [
  "chrono",
  "itertools 0.10.5",

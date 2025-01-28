@@ -234,7 +234,7 @@ impl EntityType {
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let entity_annotation = EntityTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
+            .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match entity_annotation {
             EntityTypeAnnotation::Abstract(_) => type_manager.unset_entity_type_annotation_abstract(snapshot, *self)?,
         }
@@ -470,7 +470,7 @@ impl TryFrom<Annotation> for EntityTypeAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType(annotation.category())),
+            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType{ category: annotation.category() }),
         }
     }
 }

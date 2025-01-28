@@ -56,13 +56,14 @@ use crate::{
 };
 
 macro_rules! verify_no_annotations_for_capability {
-    ($capability:ident, $annotation_error:path) => {
+    ($capability:ident, $annotation_error:path, $error_arg_name:ident) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
             let annotation = translate_annotation(typeql_annotation)
                 .map_err(|source| RedefineError::LiteralParseError { source })?;
+            let error = { $annotation_error { $error_arg_name: annotation.category() }};
             Err(RedefineError::IllegalCapabilityAnnotation {
                 declaration: $capability.clone(),
-                source: $annotation_error(annotation.category()),
+                typedb_source: error,
                 annotation,
             })
         } else {
@@ -274,7 +275,7 @@ fn redefine_type_annotations(
                             type_: label.to_owned(),
                             annotation: annotation.clone(),
                             declaration: type_declaration.clone(),
-                            source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()),
+                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType { category: annotation.category()},
                         });
                     }
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
@@ -373,7 +374,7 @@ fn redefine_sub(
 }
 
 fn redefine_sub_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
+    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub, category)
 }
 
 fn redefine_value_type(
@@ -463,7 +464,7 @@ fn redefine_value_type_annotations(
             if !converted.is_value_type_annotation() {
                 return Err(RedefineError::IllegalCapabilityAnnotation {
                     declaration: typeql_capability.clone(),
-                    source: AnnotationError::UnsupportedAnnotationForValueType(annotation.category()),
+                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType{ category: annotation.category() },
                     annotation,
                 });
             }
@@ -916,11 +917,11 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
     error_if_not_redefinable(label, annotation.clone())?;
 
     let converted =
-        T::AnnotationType::try_from(annotation.clone()).map_err(|source| RedefineError::IllegalTypeAnnotation {
+        T::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| RedefineError::IllegalTypeAnnotation {
             type_: label.clone(),
             annotation: annotation.clone(),
             declaration: typeql_declaration.clone(),
-            source,
+            typedb_source,
         })?;
 
     let definition_status =
@@ -951,11 +952,11 @@ fn capability_convert_and_validate_annotation_redefinition_need<CAP: concept::ty
 ) -> Result<Option<CAP::AnnotationType>, RedefineError> {
     error_if_not_redefinable(label, annotation.clone())?;
 
-    let converted = CAP::AnnotationType::try_from(annotation.clone()).map_err(|source| {
+    let converted = CAP::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| {
         RedefineError::IllegalCapabilityAnnotation {
             declaration: typeql_capability.clone(),
             annotation: annotation.clone(),
-            source,
+            typedb_source,
         }
     })?;
 
@@ -1179,14 +1180,14 @@ typedb_error! {
             type_: Label,
             annotation: Annotation,
             declaration: Type,
-            source: AnnotationError
+            typedb_source: AnnotationError
         ),
         IllegalCapabilityAnnotation(
             31,
             "Redefining to have annotation '{annotation}' failed.\nSource:\n{declaration}",
             annotation: Annotation,
             declaration: Capability,
-            source: AnnotationError
+            typedb_source: AnnotationError
         ),
         SetTypeAnnotation(
             32,

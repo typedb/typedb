@@ -354,7 +354,7 @@ impl AttributeType {
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let attribute_type_annotation = AttributeTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
+            .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match attribute_type_annotation {
             AttributeTypeAnnotation::Abstract(_) => {
                 type_manager.unset_attribute_type_annotation_abstract(snapshot, *self)?
@@ -457,7 +457,7 @@ impl TryFrom<Annotation> for AttributeTypeAnnotation {
             | Annotation::Key(_)
             | Annotation::Cardinality(_)
             | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()))
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType{ category: annotation.category() })
             }
         }
     }

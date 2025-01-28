@@ -241,7 +241,7 @@ impl RelationType {
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let relation_type_annotation = RelationTypeAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
+            .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match relation_type_annotation {
             RelationTypeAnnotation::Abstract(_) => {
                 type_manager.unset_relation_type_annotation_abstract(snapshot, *self)?
@@ -701,7 +701,7 @@ impl TryFrom<Annotation> for RelationTypeAnnotation {
             | Annotation::Regex(_)
             | Annotation::Range(_)
             | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType(annotation.category()))
+                Err(AnnotationError::UnsupportedAnnotationForRelationType{ category: annotation.category() })
             }
         }
     }
