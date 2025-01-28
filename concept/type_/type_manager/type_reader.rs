@@ -385,7 +385,7 @@ impl TypeReader {
                 root_relates = Some(relates);
             }
         }
-        root_relates.ok_or(Box::new(ConceptReadError::CorruptMissingMandatoryRootRelatesForRole))
+        root_relates.ok_or(Box::new(ConceptReadError::InternalMissingRootRelatesForRole))
     }
 
     pub(crate) fn get_relation_type_relates_root(
@@ -407,11 +407,11 @@ impl TypeReader {
         relates: Relates,
     ) -> Result<bool, Box<ConceptReadError>> {
         let relation_type_label =
-            Self::get_label(snapshot, relates.relation())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
+            Self::get_label(snapshot, relates.relation())?.ok_or(ConceptReadError::InternalMissingLabelOfType)?;
         let role_type_label =
-            Self::get_label(snapshot, relates.role())?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?;
+            Self::get_label(snapshot, relates.role())?.ok_or(ConceptReadError::InternalMissingLabelOfType)?;
         Ok(relation_type_label.name()
-            != role_type_label.scope().ok_or(ConceptReadError::CorruptMissingMandatoryScopeForRoleTypeLabel)?)
+            != role_type_label.scope().ok_or(ConceptReadError::InternalMissingScopeForRoleTypeLabel)?)
     }
 
     pub(crate) fn get_value_type_declared(

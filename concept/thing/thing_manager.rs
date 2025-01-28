@@ -321,7 +321,7 @@ impl ThingManager {
                             String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
                         })
                         .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                        .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?
+                        .ok_or(ConceptReadError::InternalMissingAttributeValue {} )?
                 };
                 Ok(Value::String(Cow::Owned(string)))
             }
@@ -331,7 +331,7 @@ impl ThingManager {
                         StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()
                     })
                     .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                    .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
+                    .ok_or(ConceptReadError::InternalMissingAttributeValue {} )?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
             }
         }
@@ -1492,7 +1492,7 @@ impl ThingManager {
             let attribute_value = snapshot
                 .get_last_existing::<BUFFER_VALUE_INLINE>(attribute_key.into_storage_key().as_reference())
                 .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
-                .ok_or(ConceptReadError::CorruptMissingMandatoryAttributeValue)?;
+                .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
 
             let lock_key = create_custom_lock_key(
                 [
