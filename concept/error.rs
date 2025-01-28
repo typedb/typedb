@@ -51,85 +51,31 @@ impl From<Box<ConceptReadError>> for Box<ConceptWriteError> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ConceptReadError {
-    SnapshotGet {
-        source: SnapshotGetError,
-    },
-    SnapshotIterate {
-        source: Arc<SnapshotIteratorError>,
-    },
-    Encoding {
-        source: EncodingError,
-    },
-    CorruptMissingLabelOfType,
-    CorruptMissingMandatoryCardinality,
-    CorruptMissingCapability,
-    OrderingValueMissing,
-    CorruptMissingMandatoryValueType,
-    CorruptMissingMandatoryAttributeValue,
-    CorruptMissingMandatoryExplicitRelatesForRole,
-    CorruptMissingMandatoryScopeForRoleTypeLabel,
-    CorruptMissingMandatorySpecialisingRelatesForRole,
-    CorruptMissingMandatoryCardinalityForNonSpecialisingCapability,
-    CorruptFoundHasWithoutOwns,
-    CorruptFoundLinksWithoutPlays,
-    CorruptFoundLinksWithoutRelates,
-    CannotGetOwnsDoesntExist(Label, Label),
-    CannotGetPlaysDoesntExist(Label, Label),
-    CannotGetRelatesDoesntExist(Label, Label),
-    Annotation {
-        typedb_source: AnnotationError,
-    },
-    Constraint {
-        source: Box<ConstraintError>,
-    },
-    ValueTypeMismatchWithAttributeType {
-        attribute_type: AttributeType,
-        expected: Option<ValueType>,
-        provided: ValueType,
-    },
-    RelationIndexNotAvailable {
-        relation_label: Label,
-    },
-    UnimplementedFunctionality {
-        functionality: error::UnimplementedFeature,
-    },
-}
-
-impl fmt::Display for ConceptReadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for ConceptReadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::SnapshotGet { source, .. } => Some(source),
-            Self::SnapshotIterate { source, .. } => Some(source),
-            Self::Encoding { source, .. } => Some(source),
-            Self::CorruptMissingLabelOfType => None,
-            Self::CorruptMissingMandatoryCardinality => None,
-            Self::CorruptMissingCapability => None,
-            Self::OrderingValueMissing => None,
-            Self::CorruptMissingMandatoryValueType => None,
-            Self::CorruptMissingMandatoryAttributeValue => None,
-            Self::CorruptMissingMandatoryExplicitRelatesForRole => None,
-            Self::CorruptMissingMandatoryScopeForRoleTypeLabel => None,
-            Self::CorruptMissingMandatorySpecialisingRelatesForRole => None,
-            Self::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability => None,
-            Self::CorruptFoundHasWithoutOwns => None,
-            Self::CorruptFoundLinksWithoutPlays => None,
-            Self::CorruptFoundLinksWithoutRelates => None,
-            Self::CannotGetOwnsDoesntExist(_, _) => None,
-            Self::CannotGetPlaysDoesntExist(_, _) => None,
-            Self::CannotGetRelatesDoesntExist(_, _) => None,
-            Self::Annotation { .. } => None,
-            Self::Constraint { .. } => None,
-            Self::ValueTypeMismatchWithAttributeType { .. } => None,
-            Self::RelationIndexNotAvailable { .. } => None,
-            Self::UnimplementedFunctionality { .. } => None,
-        }
+typedb_error!{
+    pub ConceptReadError(component = "Concept read", prefix ="COR") {
+        SnapshotGet(1, "Failed to read key from storage snapshot.", source: SnapshotGetError),
+        SnapshotIterate(2, "Failed to open iterator on storage snapshot.", source: Arc<SnapshotIteratorError>),
+        Encoding(3, "Concept encoding error.", source: EncodingError),
+        OrderingValueMissing(4, "Ordering type missing."),
+        InternalMissingTypeLabel(5, "Internal error: type is missing a label."),
+        InternalMissingCardinality(6, "Internal error: missing cardinality."),
+        InternalMissingCapability(7, "Internal error: missing trait."),
+        InternalMissingValueType(8, "Internal error: missing value type."),
+        InternalMissingAttributeValue(9, "Internal error: missing attribute value."),
+        InternalMissingRootRelatesForRole(10, "Internal error: root relates missing for role."),
+        InternalMissingScopeForRoleTypeLabel(11, "Internal error: missing scope for role type label."),
+        InternalMissingSpecialisingRelatesForRole(12, "Internal error: missing specialising relates for role."),
+        InternalMissingCardinalityForNonSpecialisingCapability(13, "Internal error: missing cardinality for non-specialising capability."),
+        InternalHasWithoutOwns(14, "Internal error: 'has' operation performed without corresponding schema 'owns'."),
+        InternalLinksWithoutPlays(15, "Internal error: 'links' operation without corresponding schema 'plays'."),
+        InternalLinksWithoutRelates(16, "Internal error: 'links' operation without corresponding 'relates'."),
+        CannotGetOwnsDoesntExist(17, "Cannot get 'owns': relationship does not exist.", Label, Label),
+        CannotGetPlaysDoesntExist(18, "Cannot get 'plays': relationship does not exist.", Label, Label),
+        CannotGetRelatesDoesntExist(19, "Cannot get 'relates': relationship does not exist.", Label, Label),
+        Annotation(20, "Annotation error.", typedb_source: AnnotationError),
+        Constraint(21, "Constraint error.", typedb_source: Box<ConstraintError>),
+        ValueTypeMismatchWithAttributeType(22, "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.", attribute_type: Label, expected: Option<ValueType>, provided: ValueType),
+        RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
+        UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
     }
 }
