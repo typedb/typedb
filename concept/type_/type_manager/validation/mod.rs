@@ -37,7 +37,7 @@ typedb_error!(
         ChangingAttributeTypeSupertypeWillLeadToConflictingValueTypes(9, "Changing supertype of attribute type '{attribute}' will lead to conflicting value types between '{value_type:?}' and '{new_super_value_type}'.", attribute: Label, value_type: Option<ValueType>, new_super_value_type: ValueType),
         CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes(10, "Cannot unset the abstractness of attribute type '{attribute}' as it has subtypes.", attribute: Label),
         CannotDeleteTypeWithExistingSubtypes(11, "Cannot delete type '{label}' as it has existing subtypes.", label: Label),
-        RelatesNotInheritedForSpecialisation(12, "Role type '{role}' should be inherited without specialization by supertypes to be specialized by relation type '{relation}'.", relation: Label, role: Label),
+        RelatesNotInheritedForSpecialisation(12, "Role type '{role}' must be inherited without specialization by supertypes to be specialized by relation type '{relation}'.", relation: Label, role: Label),
         RelatesIsAlreadySpecialisedByASupertype(13, "Role type '{role}' is already specialised by a supertype of relation type '{relation}'.", relation: Label, role: Label),
         CannotManageAnnotationsForSpecialisingRelates(14, "Cannot manage annotations for the specialising relates role '{role}'.", role: Label),
         AttributeTypeSupertypeIsNotAbstract(15, "Supertype of attribute type '{attribute}' is not abstract.", attribute: Label),
