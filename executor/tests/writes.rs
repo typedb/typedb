@@ -176,6 +176,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         block.conjunction().constraints(),
         &input_row_format,
         &entry_annotations,
+        &translation_context.variable_registry,
     )
     .unwrap();
 
@@ -265,6 +266,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let delete_plan = compiler::executable::delete::executable::compile(
         &input_row_format,
         &entry_annotations,
+        &translation_context.variable_registry,
         block.conjunction().constraints(),
         &deleted_concepts,
     )
