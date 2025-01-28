@@ -14,6 +14,7 @@ use std::{
 use std::fmt::{Display, Formatter};
 
 use answer::variable::Variable;
+use error::typedb_error;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -439,31 +440,8 @@ impl<ID: IrID> fmt::Display for Expression<ID> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ExpressionDefinitionError {
-    ExpectedValueArgumentReceivedList,
-    ExpectedListArgumentReceivedValue,
-    ArgumentNotBound,
-    SubExpressionNotDefined,
-    PatternDefinition { source: Box<RepresentationError> },
-    EmptyExpressionTree {},
-}
-
-impl fmt::Display for ExpressionDefinitionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for ExpressionDefinitionError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::ExpectedValueArgumentReceivedList => None,
-            Self::ExpectedListArgumentReceivedValue => None,
-            Self::ArgumentNotBound => None,
-            Self::SubExpressionNotDefined => None,
-            Self::PatternDefinition { source: _ } => None, // TODO: Handle when migrating to TypeDBError. There is actually a source here.
-            Self::EmptyExpressionTree { .. } => None,
-        }
+typedb_error!{
+    pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
+        EmptyExpressionTree(1, "Illegal empty expression."),
     }
 }

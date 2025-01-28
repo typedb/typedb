@@ -19,7 +19,7 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        expression::{ExpressionDefinitionError, ExpressionTree},
+        expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
         IrID, ParameterID, ScopeId, ValueType, Vertex,
@@ -323,7 +323,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding.validate(self.context).map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
+        binding.validate(self.context).map_err(|typedb_source| RepresentationError::ExpressionRepresentationError { typedb_source })?;
 
         let binding = Constraint::from(binding);
         // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
@@ -1643,9 +1643,9 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.expression().variables().for_each(|id| function(id));
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionDefinitionError> {
+    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
         if self.expression().is_empty() {
-            Err(ExpressionDefinitionError::EmptyExpressionTree {})
+            Err(ExpressionRepresentationError::EmptyExpressionTree{})
         } else {
             Ok(())
         }

@@ -20,7 +20,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{constraint::Is, expression::ExpressionDefinitionError, variable_category::VariableCategory},
+    pattern::{constraint::Is, expression::ExpressionRepresentationError, variable_category::VariableCategory},
     pipeline::{FunctionReadError, FunctionRepresentationError},
     translation::fetch::FetchRepresentationError,
 };
@@ -100,10 +100,10 @@ typedb_error! {
             literal: String,
             typedb_source: LiteralParseError ,
         ),
-        ExpressionDefinitionError(
+        ExpressionRepresentationError(
             13,
             "Expression error.",
-            source: ExpressionDefinitionError ,
+            typedb_source: ExpressionRepresentationError ,
         ),
         ExpressionAssignmentMustOneVariable(
             14,
