@@ -457,7 +457,7 @@ impl TryFrom<Annotation> for AttributeTypeAnnotation {
             | Annotation::Key(_)
             | Annotation::Cardinality(_)
             | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForAttributeType{ category: annotation.category() })
+                Err(AnnotationError::UnsupportedAnnotationForAttributeType { category: annotation.category() })
             }
         }
     }

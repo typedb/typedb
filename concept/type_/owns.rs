@@ -304,7 +304,7 @@ impl TryFrom<Annotation> for OwnsAnnotation {
             Annotation::Values(annotation) => Ok(OwnsAnnotation::Values(annotation)),
 
             | Annotation::Abstract(_) | Annotation::Independent(_) | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForOwns{ category: annotation.category() })
+                Err(AnnotationError::UnsupportedAnnotationForOwns { category: annotation.category() })
             }
         }
     }

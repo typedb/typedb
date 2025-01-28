@@ -192,7 +192,9 @@ impl TryFrom<Annotation> for PlaysAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForPlays{ category: annotation.category() }),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForPlays { category: annotation.category() })
+            }
         }
     }
 }

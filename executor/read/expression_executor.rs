@@ -59,12 +59,16 @@ impl ExpressionValue {
                             .get_value(&**context.snapshot(), context.thing_manager())
                             .map_err(|source| ExpressionEvaluationError::ConceptRead { source })?
                             .into_owned()),
-                        _ => Err(ExpressionEvaluationError::CastFailed { description: "list contains elements without values".to_string() }),
+                        _ => Err(ExpressionEvaluationError::CastFailed {
+                            description: "list contains elements without values".to_string(),
+                        }),
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ExpressionValue::List(as_value_list.into()))
             }
-            other => Err(ExpressionEvaluationError::CastFailed { description: format!("can only get values from {}", other.variant_name()) }),
+            other => Err(ExpressionEvaluationError::CastFailed {
+                description: format!("can only get values from {}", other.variant_name()),
+            }),
         }
     }
 }

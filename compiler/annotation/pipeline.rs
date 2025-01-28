@@ -540,11 +540,13 @@ fn collect_value_types_of_function_call_assignments(
             zip(binding.assigned(), return_.iter()).try_for_each(|(var, annotation)| match &annotation {
                 FunctionParameterAnnotation::Value(value_type) => {
                     if value_type_annotations.contains_key(&var.as_variable().unwrap()) {
-                        let assign_variable = variable_registry.get_variable_name(var.as_variable().unwrap()).cloned()
+                        let assign_variable = variable_registry
+                            .get_variable_name(var.as_variable().unwrap())
+                            .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
                         return Err(AnnotationError::ExpressionCompilation {
                             typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
-                                variable: assign_variable
+                                variable: assign_variable,
                             }),
                         });
                     }

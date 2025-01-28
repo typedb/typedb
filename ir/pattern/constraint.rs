@@ -323,7 +323,9 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding.validate(self.context).map_err(|typedb_source| RepresentationError::ExpressionRepresentationError { typedb_source })?;
+        binding
+            .validate(self.context)
+            .map_err(|typedb_source| RepresentationError::ExpressionRepresentationError { typedb_source })?;
 
         let binding = Constraint::from(binding);
         // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
@@ -1645,7 +1647,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
         if self.expression().is_empty() {
-            Err(ExpressionRepresentationError::EmptyExpressionTree{})
+            Err(ExpressionRepresentationError::EmptyExpressionTree {})
         } else {
             Ok(())
         }

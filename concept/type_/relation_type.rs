@@ -701,7 +701,7 @@ impl TryFrom<Annotation> for RelationTypeAnnotation {
             | Annotation::Regex(_)
             | Annotation::Range(_)
             | Annotation::Values(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForRelationType{ category: annotation.category() })
+                Err(AnnotationError::UnsupportedAnnotationForRelationType { category: annotation.category() })
             }
         }
     }

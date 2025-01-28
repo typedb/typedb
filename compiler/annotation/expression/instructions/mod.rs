@@ -5,8 +5,8 @@
  */
 
 use std::{error::Error, fmt};
-use concept::error::ConceptReadError;
 
+use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 
@@ -31,14 +31,17 @@ pub trait CompilableExpression: ExpressionInstruction {
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>>;
 }
 
-pub(crate) fn check_operation<T>(checked_operation_result: Option<T>, description: &'static str) -> Result<T, ExpressionEvaluationError> {
+pub(crate) fn check_operation<T>(
+    checked_operation_result: Option<T>,
+    description: &'static str,
+) -> Result<T, ExpressionEvaluationError> {
     match checked_operation_result {
         None => Err(ExpressionEvaluationError::CheckedOperationFailed { description }),
         Some(result) => Ok(result),
     }
 }
 
-typedb_error!{
+typedb_error! {
     pub ExpressionEvaluationError(component = "Expression evaluation", prefix = "EEV") {
         ConceptRead(1, "Concept read failed", source: Box<ConceptReadError>),
         CheckedOperationFailed(2, "Checked operation failed: {description}", description: &'static str),

@@ -470,7 +470,9 @@ impl TryFrom<Annotation> for EntityTypeAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForEntityType{ category: annotation.category() }),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForEntityType { category: annotation.category() })
+            }
         }
     }
 }

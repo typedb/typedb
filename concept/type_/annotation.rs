@@ -8,7 +8,6 @@ use std::{
     borrow::Cow,
     cmp::{max, min},
     collections::HashSet,
-    error::Error,
     fmt,
     fmt::Formatter,
     hash::Hash,
@@ -22,10 +21,10 @@ use encoding::{
     layout::infix::Infix,
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
+use error::typedb_error;
 use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
-use error::typedb_error;
 
 use crate::type_::{
     constraint::{CapabilityConstraint, ConstraintDescription, TypeConstraint},
@@ -631,7 +630,7 @@ impl AnnotationCategory {
         match self {
             AnnotationCategory::Abstract => typeql::token::Annotation::Abstract.as_str(),
             AnnotationCategory::Distinct => typeql::token::Annotation::Distinct.as_str(),
-            AnnotationCategory::Independent =>typeql::token::Annotation::Independent.as_str(),
+            AnnotationCategory::Independent => typeql::token::Annotation::Independent.as_str(),
             AnnotationCategory::Unique => typeql::token::Annotation::Unique.as_str(),
             AnnotationCategory::Key => typeql::token::Annotation::Key.as_str(),
             AnnotationCategory::Cardinality => typeql::token::Annotation::Cardinality.as_str(),
@@ -850,7 +849,7 @@ impl TypeEdgePropertyEncoding for AnnotationValues {
     }
 }
 
-typedb_error!{
+typedb_error! {
     pub AnnotationError(component = "Annotation", prefix = "ANN") {
         UnsupportedAnnotationForEntityType(1, "Annotation '{category}' is not supported for entity types.", category: AnnotationCategory),
         UnsupportedAnnotationForRelationType(2, "Annotation '{category}' is not supported for relation types.", category: AnnotationCategory),

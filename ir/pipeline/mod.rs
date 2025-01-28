@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, error::Error, fmt, sync::Arc};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
@@ -33,7 +33,7 @@ pub mod function_signature;
 pub mod modifier;
 pub mod reduce;
 
-typedb_error!{
+typedb_error! {
     pub FunctionReadError(component = "Function read", prefix = "FNR") {
         FunctionIDNotFound(1, "Function '{name}' not found by its internal ID '{id}'.", name: String, id: FunctionID),
         FunctionRetrieval(2, "Error retrieving function.", source: SnapshotGetError),
@@ -107,7 +107,7 @@ pub struct VariableRegistry {
 
 impl VariableRegistry {
     pub const UNNAMED_VARIABLE_DISPLAY_NAME: &'static str = "_anonymous";
-    
+
     pub(crate) fn new() -> VariableRegistry {
         Self {
             variable_names: HashMap::new(),

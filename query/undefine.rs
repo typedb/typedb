@@ -259,12 +259,12 @@ fn undefine_capability_annotation(
     match &annotation_undefinable.capability {
         CapabilityBase::Sub(_) => {
             return Err(UndefineError::IllegalAnnotation {
-                typedb_source: AnnotationError::UnsupportedAnnotationForSub{ category: annotation_category },
+                typedb_source: AnnotationError::UnsupportedAnnotationForSub { category: annotation_category },
             })
         }
         CapabilityBase::Alias(_) => {
             return Err(UndefineError::IllegalAnnotation {
-                typedb_source: AnnotationError::UnsupportedAnnotationForAlias{ category: annotation_category },
+                typedb_source: AnnotationError::UnsupportedAnnotationForAlias { category: annotation_category },
             })
         }
         CapabilityBase::Owns(typeql_owns) => {
@@ -378,7 +378,7 @@ fn undefine_capability_annotation(
         CapabilityBase::ValueType(_) => {
             if !AttributeTypeAnnotation::is_value_type_annotation_category(annotation_category) {
                 return Err(UndefineError::IllegalAnnotation {
-                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType{ category: annotation_category },
+                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType { category: annotation_category },
                 });
             }
 
@@ -770,7 +770,9 @@ fn undefine_type_annotation(
         TypeEnum::Attribute(attribute_type) => {
             if AttributeTypeAnnotation::is_value_type_annotation_category(annotation_category) {
                 return Err(UndefineError::IllegalAnnotation {
-                    typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType{ category: annotation_category },
+                    typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
+                        category: annotation_category,
+                    },
                 });
             }
             check_can_and_need_undefine_type_annotation(

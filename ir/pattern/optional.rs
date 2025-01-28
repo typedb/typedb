@@ -6,8 +6,6 @@
 
 use std::fmt;
 
-use answer::variable::Variable;
-use error::unimplemented_feature;
 use structural_equality::StructuralEquality;
 
 use crate::{

@@ -74,9 +74,11 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
     fn validate_and_append(builder: &mut ExpressionCompilationContext<'_>) -> Result<(), Box<ExpressionCompileError>> {
         let value_before = builder.pop_type_single()?.category();
         if value_before != From::VALUE_TYPE_CATEGORY {
-            return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType { 
+            return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: Self::OP_CODE,
-                expected: From::VALUE_TYPE_CATEGORY, actual: value_before }));
+                expected: From::VALUE_TYPE_CATEGORY,
+                actual: value_before,
+            }));
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
 
@@ -100,8 +102,8 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
         if left_before != From::VALUE_TYPE_CATEGORY {
             Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: Self::OP_CODE,
-                expected: From::VALUE_TYPE_CATEGORY, 
-                actual: left_before 
+                expected: From::VALUE_TYPE_CATEGORY,
+                actual: left_before,
             }))?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());
@@ -127,7 +129,7 @@ impl<From: NativeValueConvertible, To: ImplicitCast<From>> CompilableExpression 
             Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: Self::OP_CODE,
                 expected: From::VALUE_TYPE_CATEGORY,
-                actual: right_before 
+                actual: right_before,
             }))?;
         }
         builder.push_type_single(To::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());

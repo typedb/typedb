@@ -8,7 +8,6 @@ use answer::variable::Variable;
 use typeql::{query::stage::delete::DeletableKind, statement::thing::RolePlayer};
 
 use crate::{
-    pattern::variable_category::VariableCategory,
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},

@@ -8,13 +8,15 @@ use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::pattern::{
-    constraint::{Comparator, Constraint},
-    expression::Expression,
-    ParameterID, Vertex,
+use ir::{
+    pattern::{
+        constraint::{Comparator, Constraint},
+        expression::Expression,
+        ParameterID, Vertex,
+    },
+    pipeline::VariableRegistry,
 };
 use itertools::Itertools;
-use ir::pipeline::VariableRegistry;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -56,7 +58,8 @@ pub fn compile(
     variable_registry: &VariableRegistry,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
-    let variables = add_inserted_concepts(constraints, input_variables, type_annotations, variable_registry, &mut concept_inserts)?;
+    let variables =
+        add_inserted_concepts(constraints, input_variables, type_annotations, variable_registry, &mut concept_inserts)?;
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
@@ -94,8 +97,11 @@ fn add_inserted_concepts(
 
         if input_variables.contains_key(&thing) {
             return Err(Box::new(WriteCompilationError::InsertIsaStatementForInputVariable {
-                variable: variable_registry.variable_names().get(&thing).cloned()
-                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
+                variable: variable_registry
+                    .variable_names()
+                    .get(&thing)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             }));
         }
 
@@ -107,9 +113,12 @@ fn add_inserted_concepts(
                     TypeSource::InputVariable(input_variables[var])
                 }
                 _ => {
-                    return Err(Box::new(WriteCompilationError::InsertVariableUnknownType{
-                        variable: variable_registry.variable_names().get(&thing).cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
+                    return Err(Box::new(WriteCompilationError::InsertVariableUnknownType {
+                        variable: variable_registry
+                            .variable_names()
+                            .get(&thing)
+                            .cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     }))
                 }
             }
@@ -122,16 +131,22 @@ fn add_inserted_concepts(
 
         if kinds.contains(&Kind::Role) {
             return Err(Box::new(WriteCompilationError::InsertIllegalRole {
-                variable: variable_registry.variable_names().get(&thing).cloned()
-                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
-            }))
+                variable: variable_registry
+                    .variable_names()
+                    .get(&thing)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            }));
         }
 
         if kinds.contains(&Kind::Relation) || kinds.contains(&Kind::Entity) {
             if kinds.contains(&Kind::Attribute) {
                 return Err(Box::new(WriteCompilationError::InsertVariableAmbiguousAttributeOrObject {
-                    variable: variable_registry.variable_names().get(&thing).cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
+                    variable: variable_registry
+                        .variable_names()
+                        .get(&thing)
+                        .cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }));
             }
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
@@ -151,14 +166,20 @@ fn add_inserted_concepts(
                     ValueSource::Variable(position)
                 } else {
                     return Err(Box::new(WriteCompilationError::MissingExpectedInput {
-                        variable: variable_registry.variable_names().get(&thing).cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
+                        variable: variable_registry
+                            .variable_names()
+                            .get(&thing)
+                            .cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     }));
                 }
             } else {
                 return Err(Box::new(WriteCompilationError::MissingExpectedInput {
-                    variable: variable_registry.variable_names().get(&thing).cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string())
+                    variable: variable_registry
+                        .variable_names()
+                        .get(&thing)
+                        .cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }));
             };
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
@@ -179,7 +200,8 @@ fn add_has(
 ) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
         let owner = get_thing_input_position(input_variables, has.owner().as_variable().unwrap(), variable_registry)?;
-        let attribute = get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry)?;
+        let attribute =
+            get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry)?;
         instructions.push(ConnectionInstruction::Has(Has { owner, attribute }));
         Ok(())
     })
@@ -194,8 +216,13 @@ fn add_role_players(
 ) -> Result<(), Box<WriteCompilationError>> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
     for role_player in filter_variants!(Constraint::Links: constraints) {
-        let relation = get_thing_input_position(input_variables, role_player.relation().as_variable().unwrap(), variable_registry,)?;
-        let player = get_thing_input_position(input_variables, role_player.player().as_variable().unwrap(), variable_registry,)?;
+        let relation = get_thing_input_position(
+            input_variables,
+            role_player.relation().as_variable().unwrap(),
+            variable_registry,
+        )?;
+        let player =
+            get_thing_input_position(input_variables, role_player.player().as_variable().unwrap(), variable_registry)?;
         let &Vertex::Variable(role_variable) = role_player.role_type() else { unreachable!() };
 
         let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
@@ -208,10 +235,12 @@ fn add_role_players(
                     TypeSource::Constant(*annotations.iter().find(|_| true).unwrap())
                 } else {
                     return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
-                        player_variable: variable_registry.variable_names().get(&role_player.relation().as_variable().unwrap())
+                        player_variable: variable_registry
+                            .variable_names()
+                            .get(&role_player.relation().as_variable().unwrap())
                             .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                        role_types: annotations.iter().join(", ")
+                        role_types: annotations.iter().join(", "),
                     }));
                 }
             }
@@ -242,7 +271,10 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
         .map_err(|mut err| {
             debug_assert_eq!(err.next(), None);
             Box::new(WriteCompilationError::InsertAttributeMissingValue {
-                variable: variable_registry.variable_names().get(&variable).cloned()
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             })
         })?;
@@ -250,7 +282,10 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
         Ok(value_variable)
     } else {
         Err(Box::new(WriteCompilationError::InsertIllegalPredicate {
-            variable: variable_registry.variable_names().get(&variable).cloned()
+            variable: variable_registry
+                .variable_names()
+                .get(&variable)
+                .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             comparator,
         }))
@@ -330,9 +365,12 @@ pub(crate) fn collect_role_type_bindings(
                 annotations.iter().find(|_| true).unwrap()
             } else {
                 return Err(Box::new(WriteCompilationError::AmbiguousRoleType {
-                    variable: variable_registry.variable_names().get(&variable).cloned()
+                    variable: variable_registry
+                        .variable_names()
+                        .get(&variable)
+                        .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                    role_types: annotations.iter().join(", ")
+                    role_types: annotations.iter().join(", "),
                 }));
             };
 

@@ -8,9 +8,6 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
 
-use std::{error::Error, fmt};
-
-use answer::variable::Variable;
 use error::typedb_error;
 use typeql::{
     query::stage::reduce::Reducer,
@@ -20,7 +17,7 @@ use typeql::{
 };
 
 use crate::{
-    pattern::{constraint::Is, expression::ExpressionRepresentationError, variable_category::VariableCategory},
+    pattern::{expression::ExpressionRepresentationError, variable_category::VariableCategory},
     pipeline::{FunctionReadError, FunctionRepresentationError},
     translation::fetch::FetchRepresentationError,
 };
@@ -217,7 +214,7 @@ typedb_error! {
     }
 }
 
-typedb_error!{
+typedb_error! {
     pub LiteralParseError(component = "Literal parse", prefix = "LIT") {
         FragmentParseError(1, "Failed to parse literal fragment into primitive: {fragment}.", fragment: String),
         ScientificNotationNotAllowedForDecimal(2, "Fixed-point decimal values cannot use scientific notation: {literal}.", literal: String),

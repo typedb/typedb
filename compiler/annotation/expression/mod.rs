@@ -10,10 +10,13 @@ use concept::error::ConceptReadError;
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
 use ir::{
-    pattern::{expression::Operator, variable_category::VariableCategory},
+    pattern::{
+        expression::{BuiltInFunctionID, Operator},
+        variable_category::VariableCategory,
+    },
     RepresentationError,
 };
-use ir::pattern::expression::BuiltInFunctionID;
+
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
 pub mod block_compiler;

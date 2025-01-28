@@ -5,19 +5,22 @@
  */
 
 use std::collections::HashMap;
-use itertools::Itertools;
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::pattern::{constraint::Constraint, Vertex};
-use ir::pipeline::VariableRegistry;
+use ir::{
+    pattern::{constraint::Constraint, Vertex},
+    pipeline::VariableRegistry,
+};
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
-            executable::collect_role_type_bindings, get_thing_input_position, ThingPosition, TypeSource, WriteCompilationError,
+            executable::collect_role_type_bindings, get_thing_input_position, ThingPosition, TypeSource,
+            WriteCompilationError,
         },
         next_executable_id,
     },
@@ -46,13 +49,29 @@ pub fn compile(
         match constraint {
             Constraint::Has(has) => {
                 connection_deletes.push(ConnectionInstruction::Has(Has {
-                    owner: get_thing_input_position(input_variables, has.owner().as_variable().unwrap(), variable_registry)?,
-                    attribute: get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry)?,
+                    owner: get_thing_input_position(
+                        input_variables,
+                        has.owner().as_variable().unwrap(),
+                        variable_registry,
+                    )?,
+                    attribute: get_thing_input_position(
+                        input_variables,
+                        has.attribute().as_variable().unwrap(),
+                        variable_registry,
+                    )?,
                 }));
             }
             Constraint::Links(links) => {
-                let relation = get_thing_input_position(input_variables, links.relation().as_variable().unwrap(), variable_registry)?;
-                let player = get_thing_input_position(input_variables, links.player().as_variable().unwrap(), variable_registry)?;
+                let relation = get_thing_input_position(
+                    input_variables,
+                    links.relation().as_variable().unwrap(),
+                    variable_registry,
+                )?;
+                let player = get_thing_input_position(
+                    input_variables,
+                    links.player().as_variable().unwrap(),
+                    variable_registry,
+                )?;
                 let role_type = links.role_type();
                 let role = match role_type {
                     &Vertex::Variable(input) => {
@@ -66,7 +85,9 @@ pub fn compile(
                                 TypeSource::Constant(*annotations.iter().next().unwrap())
                             } else {
                                 return Err(WriteCompilationError::InsertLinksAmbiguousRoleType {
-                                    player_variable: variable_registry.variable_names().get(&links.player().as_variable().unwrap())
+                                    player_variable: variable_registry
+                                        .variable_names()
+                                        .get(&links.player().as_variable().unwrap())
                                         .cloned()
                                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                                     role_types: annotations.iter().join(", "),
@@ -103,7 +124,10 @@ pub fn compile(
     for &variable in deleted_concepts {
         let Some(input_position) = input_variables.get(&variable) else {
             return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
-                variable: variable_registry.variable_names().get(&variable).cloned()
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             }));
         };
@@ -113,8 +137,11 @@ pub fn compile(
             .iter()
             .any(|type_| type_.kind() == Kind::Role)
         {
-            return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable { 
-                variable: variable_registry.variable_names().get(&variable).cloned()
+            return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             }));
         } else {

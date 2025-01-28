@@ -55,17 +55,17 @@ where
         let a2 = builder.pop_type_single()?.category();
         let a1 = builder.pop_type_single()?.category();
         if a1 != T1::VALUE_TYPE_CATEGORY {
-            return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType { 
+            return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: F::OP_CODE,
-                expected: T1::VALUE_TYPE_CATEGORY, 
-                actual: a1 
+                expected: T1::VALUE_TYPE_CATEGORY,
+                actual: a1,
             }));
         }
         if a2 != T2::VALUE_TYPE_CATEGORY {
             return Err(Box::new(ExpressionCompileError::ExpressionMismatchedValueType {
                 op_code: F::OP_CODE,
-                expected: T2::VALUE_TYPE_CATEGORY, 
-                actual: a2 
+                expected: T2::VALUE_TYPE_CATEGORY,
+                actual: a2,
             }));
         }
         builder.push_type_single(R::VALUE_TYPE_CATEGORY.try_into_value_type().unwrap());

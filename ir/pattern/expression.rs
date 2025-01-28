@@ -6,21 +6,17 @@
 
 use std::{
     collections::HashMap,
-    error::Error,
     fmt,
+    fmt::{Display, Formatter},
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
-use std::fmt::{Display, Formatter};
 
 use answer::variable::Variable;
 use error::typedb_error;
 use structural_equality::StructuralEquality;
 
-use crate::{
-    pattern::{IrID, ParameterID},
-    RepresentationError,
-};
+use crate::pattern::{IrID, ParameterID};
 
 enum ExpectedArgumentType {
     Single,
@@ -418,11 +414,11 @@ impl Display for Operator {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Operator::Add => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Add, f),
-            Operator::Subtract =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Subtract, f),
-            Operator::Multiply =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Multiply, f),
-            Operator::Divide =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Divide, f),
-            Operator::Modulo =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Modulo, f),
-            Operator::Power =>  fmt::Display::fmt(&typeql::token::ArithmeticOperator::Power, f),
+            Operator::Subtract => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Subtract, f),
+            Operator::Multiply => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Multiply, f),
+            Operator::Divide => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Divide, f),
+            Operator::Modulo => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Modulo, f),
+            Operator::Power => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Power, f),
         }
     }
 }
@@ -440,7 +436,7 @@ impl<ID: IrID> fmt::Display for Expression<ID> {
     }
 }
 
-typedb_error!{
+typedb_error! {
     pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
         EmptyExpressionTree(1, "Illegal empty expression."),
     }

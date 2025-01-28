@@ -258,7 +258,9 @@ impl TryFrom<Annotation> for RelatesAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelates{ category: annotation.category() }),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForRelates { category: annotation.category() })
+            }
         }
     }
 }

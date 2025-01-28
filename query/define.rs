@@ -68,8 +68,8 @@ fn checked_identifier(identifier: &typeql::Identifier) -> Result<&str, DefineErr
 macro_rules! verify_empty_annotations_for_capability {
     ($capability:ident, $annotation_error:path, $error_arg_name:ident) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
-            let annotation =
-                translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
+            let annotation = translate_annotation(typeql_annotation)
+                .map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
             let error = { $annotation_error { $error_arg_name: annotation.category() } };
             Err(DefineError::IllegalAnnotation { typedb_source: error })
         } else {
@@ -301,8 +301,8 @@ fn define_type_annotations(
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
     for typeql_annotation in &type_declaration.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         match type_ {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_definition_need(
@@ -351,7 +351,9 @@ fn define_type_annotations(
                 )? {
                     if converted.is_value_type_annotation() {
                         return Err(DefineError::IllegalAnnotation {
-                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType{ category: annotation.category() },
+                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
+                                category: annotation.category(),
+                            },
                         });
                     }
                     attribute.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
@@ -386,7 +388,11 @@ fn define_alias(
 }
 
 fn define_alias_annotations(typeql_capability: &TypeQLCapability) -> Result<(), DefineError> {
-    verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias, category)
+    verify_empty_annotations_for_capability!(
+        typeql_capability,
+        AnnotationError::UnsupportedAnnotationForAlias,
+        category
+    )
 }
 
 fn define_sub(
@@ -528,8 +534,8 @@ fn define_value_type_annotations(
     typeql_type: &Type,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = type_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -540,7 +546,9 @@ fn define_value_type_annotations(
         )? {
             if !converted.is_value_type_annotation() {
                 return Err(DefineError::IllegalAnnotation {
-                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType{ category: annotation.category() },
+                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType {
+                        category: annotation.category(),
+                    },
                 });
             }
             attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
@@ -620,8 +628,8 @@ fn define_relates_annotations(
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -786,8 +794,8 @@ fn define_owns_annotations(
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -858,8 +866,8 @@ fn define_plays_annotations(
     typeql_capability: &TypeQLCapability,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| DefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_definition_need(
             snapshot,
             type_manager,
@@ -916,8 +924,8 @@ fn type_convert_and_validate_annotation_definition_need<T: KindAPI>(
     annotation: Annotation,
     typeql_declaration: &Type,
 ) -> Result<Option<T::AnnotationType>, DefineError> {
-    let converted =
-        T::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| DefineError::IllegalAnnotation { typedb_source })?;
+    let converted = T::AnnotationType::try_from(annotation.clone())
+        .map_err(|typedb_source| DefineError::IllegalAnnotation { typedb_source })?;
 
     let definition_status =
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())

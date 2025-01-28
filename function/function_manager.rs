@@ -541,7 +541,11 @@ pub mod tests {
             );
             assert_eq!(
                 expected_name,
-                function_manager.get_function(&snapshot, expected_function_id.clone(), expected_name).unwrap().name().as_str()
+                function_manager
+                    .get_function(&snapshot, expected_function_id.clone(), expected_name)
+                    .unwrap()
+                    .name()
+                    .as_str()
             );
             function_manager.finalise(&snapshot, &type_manager).unwrap();
             snapshot.commit().unwrap().unwrap()
@@ -557,7 +561,11 @@ pub mod tests {
             );
             assert_eq!(
                 expected_name,
-                function_manager.get_function(&snapshot, expected_function_id.clone(), expected_name).unwrap().name().as_str()
+                function_manager
+                    .get_function(&snapshot, expected_function_id.clone(), expected_name)
+                    .unwrap()
+                    .name()
+                    .as_str()
             );
             let index = ReadThroughFunctionSignatureIndex::new(
                 &snapshot,

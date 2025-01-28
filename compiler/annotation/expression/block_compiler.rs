@@ -97,7 +97,11 @@ fn index_expressions<'block, Snapshot: ReadableSnapshot>(
             let &Vertex::Variable(left) = expression_binding.left() else { unreachable!() };
             if index.contains_key(&left) {
                 Err(Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
-                    variable: context.variable_registry.variable_names().get(&left).cloned()
+                    variable: context
+                        .variable_registry
+                        .variable_names()
+                        .get(&left)
+                        .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }))?;
             }
@@ -149,7 +153,11 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         if !context.compiled_expressions.contains_key(&variable) {
             if context.visited_expressions.contains(&variable) {
                 Err(Box::new(ExpressionCompileError::CircularDependency {
-                    variable: context.variable_registry.variable_names().get(&variable).cloned()
+                    variable: context
+                        .variable_registry
+                        .variable_names()
+                        .get(&variable)
+                        .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }))
             } else {
@@ -168,13 +176,21 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         // resolve_value_types will error if the type_annotations aren't all attribute(list) types
         let value_types = resolve_value_types(types, context.snapshot, context.type_manager).map_err(|_source| {
             Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-                variable: context.variable_registry.variable_names().get(&variable).cloned()
+                variable: context
+                    .variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             })
         })?;
         if value_types.len() != 1 {
             Err(Box::new(ExpressionCompileError::VariableMultipleValueTypes {
-                variable: context.variable_registry.variable_names().get(&variable).cloned()
+                variable: context
+                    .variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 value_types: value_types.iter().join(", "),
             }))
@@ -193,7 +209,11 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     Ok(())
                 }
                 _ => Err(Box::new(ExpressionCompileError::VariableMustBeValueOrAttribute {
-                    variable: context.variable_registry.variable_names().get(&variable).cloned()
+                    variable: context
+                        .variable_registry
+                        .variable_names()
+                        .get(&variable)
+                        .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     category: variable_category,
                 }))?, // TODO: I think this is practically unreachable?
@@ -201,7 +221,11 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         }
     } else {
         Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-            variable: context.variable_registry.variable_names().get(&variable).cloned()
+            variable: context
+                .variable_registry
+                .variable_names()
+                .get(&variable)
+                .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
         }))
     }

@@ -11,7 +11,7 @@ use structural_equality::StructuralEquality;
 
 use super::conjunction::ConjunctionBuilder;
 use crate::{
-    pattern::{conjunction::Conjunction, Scope, ScopeId},
+    pattern::{conjunction::Conjunction, ScopeId},
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
 

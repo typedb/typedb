@@ -13,11 +13,13 @@ use std::{
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
 use error::typedb_error;
-use ir::pattern::{
-    constraint::{Comparator, Isa},
-    ParameterID,
+use ir::{
+    pattern::{
+        constraint::{Comparator, Isa},
+        ParameterID,
+    },
+    pipeline::VariableRegistry,
 };
-use ir::pipeline::VariableRegistry;
 
 use crate::VariablePosition;
 
@@ -53,7 +55,10 @@ pub(crate) fn get_thing_input_position(
     match input_variables.get(&variable) {
         Some(input) => Ok(ThingPosition(*input)),
         None => Err(Box::new(WriteCompilationError::MissingExpectedInput {
-            variable: variable_registry.variable_names().get(&variable).cloned()
+            variable: variable_registry
+                .variable_names()
+                .get(&variable)
+                .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
         })),
     }
@@ -63,7 +68,7 @@ pub(crate) fn get_kinds_from_types(types: &BTreeSet<Type>) -> HashSet<Kind> {
     types.iter().map(Type::kind).collect()
 }
 
-typedb_error!{
+typedb_error! {
     pub WriteCompilationError(component = "Write compile", prefix = "WCP") {
         InsertIsaStatementForInputVariable(
             1,
