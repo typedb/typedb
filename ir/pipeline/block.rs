@@ -13,7 +13,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        constraint::{Constraint, RolePlayerDeduplication},
+        constraint::Constraint,
         variable_category::VariableCategory,
         Scope, ScopeId,
     },
@@ -97,7 +97,7 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
-        let Self { mut conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
+        let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
         validate_conjunction(&conjunction, variable_registry)?;
         Ok(Block { conjunction, block_context })
     }

@@ -4,12 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-
 use concept::type_::type_manager::TypeManager;
 use ir::pattern::{
     conjunction::Conjunction,
-    constraint::{Constraint, RolePlayerDeduplication},
+    constraint::Constraint,
 };
 use storage::snapshot::ReadableSnapshot;
 
@@ -43,7 +41,6 @@ pub fn apply_transformations(
 }
 
 fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block_annotations: &mut TypeAnnotations) {
-    // TODO: If either the role-players or the players
     conjunction.constraints_mut().constraints_mut().retain(|constraint| {
         if let Constraint::RolePlayerDeduplication(dedup) = constraint {
             let first = block_annotations

@@ -35,6 +35,6 @@ def typedb_protocol():
 def typedb_behaviour():
     git_repository(
         name = "typedb_behaviour",
-        remote = "https://github.com/typedb/typedb-behaviour",
+        remote = "https://github.com/krishnangovindraj/typedb-behaviour",
         commit = "b071bbb05d201f272c070a4317d438d26d56af63",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
     )
