@@ -1483,9 +1483,11 @@ impl ConjunctionPlan<'_> {
                     match_builder.position_mapping(),
                     variable_registry,
                 );
-                let variable_positions = negation.index.clone(); // FIXME needless clone
+                let variable_positions: HashMap<Variable, ExecutorVariable> = negation.index.iter().filter_map(|(k, v)| {
+                    match_builder.current_outputs.get(k).map(|_| (k.clone(), v.clone()))
+                }).collect();
                 match_builder.push_step(
-                    &variable_positions,
+                    &&variable_positions,
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
                 );
             }
