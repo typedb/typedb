@@ -114,7 +114,8 @@ pub fn compile(
             | Constraint::Sub(_)
             | Constraint::Value(_)
             | Constraint::FunctionCallBinding(_)
-            | Constraint::IndexedRelation(_) => {
+            | Constraint::IndexedRelation(_)
+            | Constraint::Different(_) => {
                 unreachable!()
             }
         }

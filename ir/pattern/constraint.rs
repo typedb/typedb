@@ -458,6 +458,8 @@ pub enum Constraint<ID> {
     Relates(Relates<ID>),
     Plays(Plays<ID>),
     Value(Value<ID>),
+
+    Different(Different<ID>)
 }
 
 impl<ID: IrID> Constraint<ID> {
@@ -466,7 +468,6 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Is(_) => typeql::token::Keyword::Is.as_str(),
             Constraint::Kind(kind) => kind.kind.as_str(),
             Constraint::Label(_) => typeql::token::Keyword::Label.as_str(),
-            Constraint::RoleName(_) => "role-name",
             Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
             Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
             Constraint::Iid(_) => typeql::token::Keyword::IID.as_str(),
@@ -480,6 +481,9 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
+
+            Constraint::RoleName(_) => "role-name",
+            Constraint::Different(_) => "different",
         }
     }
 
@@ -502,6 +506,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
+            Constraint::Different(different) => Box::new(different.ids())
         }
     }
 
@@ -524,6 +529,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
+            Constraint::Different(different) => Box::new(different.ids()),
         }
     }
 
@@ -546,6 +552,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
+            Constraint::Different(different) => Box::new(different.vertices()),
         }
     }
 
@@ -571,6 +578,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
+            Self::Different(different) => different.ids_foreach(function),
         }
     }
 
@@ -593,6 +601,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
+            Self::Different(inner) => Constraint::Different(inner.map(mapping)),
         }
     }
 
@@ -737,6 +746,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Relates(inner) => inner.hash(),
                 Self::Plays(inner) => inner.hash(),
                 Self::Value(inner) => inner.hash(),
+                Self::Different(inner) => inner.hash(),
             }
     }
 
@@ -759,6 +769,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Relates(inner), Self::Relates(other_inner)) => inner.equals(other_inner),
             (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
             (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
+            (Self::Different(inner), Self::Different(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
             (Self::Is { .. }, _)
             | (Self::Kind { .. }, _)
@@ -776,7 +787,8 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::Owns { .. }, _)
             | (Self::Relates { .. }, _)
             | (Self::Plays { .. }, _)
-            | (Self::Value { .. }, _) => false,
+            | (Self::Value { .. }, _)
+            | (Self::Different { .. }, _)=> false,
         }
     }
 }
@@ -801,6 +813,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::Relates(constraint) => fmt::Display::fmt(constraint, f),
             Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
             Self::Value(constraint) => fmt::Display::fmt(constraint, f),
+            Self::Different(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -2188,5 +2201,70 @@ impl<ID: StructuralEquality> StructuralEquality for Value<ID> {
 impl<ID: IrID> fmt::Display for Value<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         error::todo_display_for_error!(f, self)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct Different<ID> {
+    lhs: Vertex<ID>,
+    rhs: Vertex<ID>,
+}
+
+impl<ID: IrID> Different<ID> {
+    fn new(lhs: ID, rhs: ID) -> Self {
+        Self { lhs: Vertex::Variable(lhs), rhs: Vertex::Variable(rhs) }
+    }
+
+    pub fn lhs(&self) -> &Vertex<ID> {
+        &self.lhs
+    }
+
+    pub fn rhs(&self) -> &Vertex<ID> {
+        &self.rhs
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.lhs, &self.rhs].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+        where
+            F: FnMut(ID),
+    {
+        self.lhs.as_variable().inspect(|&id| function(id));
+        self.rhs.as_variable().inspect(|&id| function(id));
+    }
+
+    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Different<T> {
+        Different { lhs: self.lhs.map(mapping), rhs: self.rhs.map(mapping) }
+    }
+}
+
+impl<ID: IrID> From<Different<ID>> for Constraint<ID> {
+    fn from(val: Different<ID>) -> Self {
+        Constraint::Different(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for Different<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.lhs.hash_into(&mut hasher);
+        self.rhs.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.lhs.equals(&other.lhs) && self.rhs.equals(&other.rhs)
+    }
+}
+
+impl<ID: IrID> fmt::Display for Different<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} is {}", self.lhs, self.rhs)
     }
 }

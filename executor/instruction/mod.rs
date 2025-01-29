@@ -798,6 +798,29 @@ impl<T> Checker<T> {
                     };
                     filters.push(Box::new(move |value| Ok(lhs(value) == rhs(value))));
                 }
+
+                &CheckInstruction::Different { lhs, rhs } => {
+                    let maybe_lhs_extractor = self.extractors.get(&lhs);
+                    let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
+                        Some(&lhs) => Box::new(lhs),
+                        None => {
+                            let ExecutorVariable::RowPosition(pos) = lhs else { unreachable!() };
+                            let value = row.get(pos).as_reference().into_owned();
+                            Box::new(move |_| value.clone())
+                        }
+                    };
+                    let maybe_rhs_extractor = self.extractors.get(&rhs);
+                    let rhs: BoxExtractor<T> = match maybe_rhs_extractor {
+                        Some(&rhs) => Box::new(rhs),
+                        None => {
+                            let ExecutorVariable::RowPosition(pos) = rhs else { unreachable!() };
+                            let value = row.get(pos).as_reference().into_owned();
+                            Box::new(move |_| value.clone())
+                        }
+                    };
+                    filters.push(Box::new(move |value| Ok(lhs(value) != rhs(value))));
+                }
+
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
                     let lhs: BoxExtractor<T> = match maybe_lhs_extractor {

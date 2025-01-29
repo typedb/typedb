@@ -220,7 +220,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::Comparison(_) => (),
-                | Constraint::IndexedRelation(_) => {
+                | Constraint::IndexedRelation(_)
+                | Constraint::Different(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
                 }
             }
@@ -383,8 +384,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::RoleName(_)
             | Constraint::Label(_)
             | Constraint::Kind(_)
-            | Constraint::Value(_) => false,
-            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference")
+            | Constraint::Value(_)
+            | Constraint::Different(_) => false,
+            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference"),
         };
         Ok(any_modified)
     }
@@ -521,7 +523,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Kind(_)
                 | Constraint::Value(_)
                 | Constraint::ExpressionBinding(_)
-                | Constraint::FunctionCallBinding(_) => (), // Do nothing
+                | Constraint::FunctionCallBinding(_)
+                | Constraint::Different(_) => (), // Do nothing
                 | Constraint::IndexedRelation(_) => {
                     unreachable!("Indexed relations are only generated after type inference")
                 }

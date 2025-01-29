@@ -31,6 +31,7 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
+use ir::pattern::constraint::Different;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -65,6 +66,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::vertex::DifferentPlanner;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -404,6 +406,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
+                Constraint::Different(different) => self.register_different(different),
             }
         }
     }
@@ -533,6 +536,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.elements.get_mut(&VertexId::Variable(rhs)).unwrap().as_variable_mut().unwrap().add_is(lhs);
         self.graph.push_is(IsPlanner::from_constraint(
             is,
+            &self.graph.variable_index,
+            self.type_annotations,
+            self.statistics,
+        ));
+    }
+
+    fn register_different(&mut self, different: &'a Different<Variable>) {
+        self.graph.push_different(DifferentPlanner::from_constraint(
+            different,
             &self.graph.variable_index,
             self.type_annotations,
             self.statistics,
@@ -1358,6 +1370,7 @@ impl ConjunctionPlan<'_> {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
                 PlannerVertex::Negation(_) => unreachable!("encountered negation registered as producing variable"),
+                PlannerVertex::Different(_) => unreachable!("encountered different registered as producing variable"),
                 PlannerVertex::Is(is) => {
                     let input = if var == is.lhs {
                         self.graph.index_to_variable[&is.rhs]
@@ -1495,6 +1508,12 @@ impl ConjunctionPlan<'_> {
                 let lhs = is.is().lhs().as_variable().unwrap();
                 let rhs = is.is().rhs().as_variable().unwrap();
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
+                match_builder.push_check(&[lhs, rhs], check)
+            }
+            PlannerVertex::Different(different) => {
+                let lhs = different.different().lhs().as_variable().unwrap();
+                let rhs = different.different().rhs().as_variable().unwrap();
+                let check = CheckInstruction::Different { lhs, rhs }.map(match_builder.position_mapping());
                 match_builder.push_check(&[lhs, rhs], check)
             }
             PlannerVertex::Comparison(comparison) => {
@@ -1966,6 +1985,15 @@ impl<'a> Graph<'a> {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Is(is));
+    }
+
+    fn push_different(&mut self, different: DifferentPlanner<'a>) {
+        let pattern_index = self.next_pattern_index();
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(different.variables());
+        for var in different.variables() {
+            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        }
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Different(different));
     }
 
     fn push_comparison(&mut self, comparison: ComparisonPlanner<'a>) {

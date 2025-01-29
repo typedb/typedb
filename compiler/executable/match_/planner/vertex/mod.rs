@@ -18,6 +18,7 @@ use ir::pattern::{
     Vertex,
 };
 use itertools::{chain, Itertools};
+use ir::pattern::constraint::Different;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -43,6 +44,7 @@ pub(super) enum PlannerVertex<'a> {
     Constraint(ConstraintVertex<'a>),
 
     Is(IsPlanner<'a>),
+    Different(DifferentPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
@@ -65,6 +67,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => false,
             Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
             Self::Is(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Different(inner) => inner.is_valid(vertex_plan, graph),
             Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
             Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
             Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
@@ -80,6 +83,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
             Self::Is(inner) => Box::new(inner.variables()),
+            Self::Different(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
@@ -142,6 +146,9 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Is(_) => {
                 write!(f, "|Is|")
             } //TODO
+            PlannerVertex::Different(_) => {
+                write!(f, "|Different|")
+            }
             PlannerVertex::Comparison(v) => {
                 write!(f, "|{:?} comp {:?}|", v.comparison.lhs(), v.comparison.rhs())
             }
@@ -216,6 +223,7 @@ impl Costed for PlannerVertex<'_> {
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
 
             Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::Different(planner) => planner.cost_and_metadata(vertex_ordering, graph),
             Self::Comparison(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
             Self::Expression(planner) => planner.cost_and_metadata(vertex_ordering, graph),
@@ -359,6 +367,43 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
+    }
+}
+#[derive(Clone, Debug)]
+pub(super) struct DifferentPlanner<'a> {
+    different: &'a Different<Variable>,
+    pub lhs: VariableVertexId,
+    pub rhs: VariableVertexId,
+}
+
+impl<'a> DifferentPlanner<'a> {
+    pub(crate) fn from_constraint(
+        different: &'a Different<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        let lhs = different.lhs().as_variable().unwrap();
+        let rhs = different.rhs().as_variable().unwrap();
+        Self { different, lhs: variable_index[&lhs], rhs: variable_index[&rhs] }
+    }
+
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        ordered.contains(&VertexId::Variable(self.lhs)) && ordered.contains(&VertexId::Variable(self.rhs))
+    }
+
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        [self.lhs, self.rhs].into_iter()
+    }
+
+    pub(super) fn different(&self) -> &Different<Variable> {
+        self.different
+    }
+}
+
+impl Costed for DifferentPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }

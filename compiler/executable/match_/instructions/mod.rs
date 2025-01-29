@@ -610,6 +610,10 @@ pub enum CheckInstruction<ID> {
         lhs: ID,
         rhs: ID,
     },
+    Different {
+        lhs: ID,
+        rhs: ID,
+    },
     Comparison {
         lhs: CheckVertex<ID>,
         rhs: CheckVertex<ID>,
@@ -657,6 +661,9 @@ impl<ID: IrID> CheckInstruction<ID> {
                 }
             }
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
+            Self::Different { lhs, rhs } => {
+                CheckInstruction::Different { lhs: mapping[&lhs], rhs: mapping[&rhs] }
+            },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
@@ -707,6 +714,9 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
+            }
+            Self::Different { lhs, rhs } => {
+                write!(f, "{lhs} __different__ {rhs}")?;
             }
             Self::Comparison { lhs, rhs, comparator } => {
                 write!(f, "{lhs} {comparator} {rhs}")?;

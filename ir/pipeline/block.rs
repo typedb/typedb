@@ -98,7 +98,6 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
         let Self { mut conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
-        insert_role_player_deduplication(&mut conjunction);
         validate_conjunction(&conjunction, variable_registry)?;
         Ok(Block { conjunction, block_context })
     }
@@ -109,25 +108,6 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn context_mut(&mut self) -> &mut BlockBuilderContext<'reg> {
         &mut self.context
-    }
-}
-
-fn insert_role_player_deduplication(conjunction: &mut Conjunction) {
-    let mut role_player_deduplication = HashMap::new();
-    conjunction.constraints().iter().filter_map(|constraint| constraint.as_links())
-        .map(|links| ((links.relation.clone(), links.player.clone()), links.role_type.clone()))
-        .for_each(|(relation_player, role_type)| {
-            if !role_player_deduplication.contains_key(&relation_player) {
-                role_player_deduplication.insert(relation_player.clone(), Vec::new());
-            }
-            role_player_deduplication.get_mut(&relation_player).unwrap().push(role_type);
-        });
-    for (k, v) in role_player_deduplication {
-        for i in 0..v.len() {
-            for j in (i+1)..v.len() {
-                todo!() // Add Isnt constraint.
-            }
-        }
     }
 }
 
