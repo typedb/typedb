@@ -1674,7 +1674,19 @@ impl ConjunctionPlan<'_> {
                     .unwrap()
                     .as_indexed_relation();
                 let array_inputs = Inputs::build_from(&inputs);
-                let instruction = if inputs.contains(&player_1) {
+
+                let direction = if !inputs.contains(&player_1) && !inputs.contains(&player_2) {
+                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                        unreachable!("expected metadata for constraint")
+                    };
+                    unbound_direction
+                } else if inputs.contains(&player_2) {
+                    Direction::Reverse
+                } else {
+                    Direction::Canonical
+                };
+
+                let instruction = if direction == Direction::Canonical {
                     IndexedRelationInstruction::new(
                         player_1,
                         player_2,
