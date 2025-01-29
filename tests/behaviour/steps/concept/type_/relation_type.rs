@@ -271,8 +271,8 @@ pub async fn relation_role_exists(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation\({type_label}\) get relates\({type_label}\) is specialising: {boolean}")]
-pub async fn relation_role_is_specialising(
+#[step(expr = r"relation\({type_label}\) get relates\({type_label}\) is implicit: {boolean}")]
+pub async fn relation_role_is_implicit(
     context: &mut Context,
     type_label: params::Label,
     role_label: params::Label,
@@ -285,7 +285,7 @@ pub async fn relation_role_is_specialising(
             .get_relates_role_name(tx.snapshot.as_ref(), &tx.type_manager, role_label.into_typedb().name.as_str())
             .unwrap()
             .unwrap();
-        check_boolean!(is, relates.is_specialising(tx.snapshot.as_ref(), &tx.type_manager).unwrap())
+        check_boolean!(is, relates.is_implicit(tx.snapshot.as_ref(), &tx.type_manager).unwrap())
     });
 }
 

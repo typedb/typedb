@@ -93,7 +93,7 @@ impl TypeAPI for RoleType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
-        self.get_relates_root(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
+        self.get_relates_explicit(snapshot, type_manager)?.is_abstract(snapshot, type_manager)
     }
 
     fn delete(
@@ -206,12 +206,12 @@ impl RoleType {
 
 // --- Related API ---
 impl RoleType {
-    pub fn get_relates_root(
+    pub fn get_relates_explicit(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<Relates, Box<ConceptReadError>> {
-        type_manager.get_role_type_relates_root(snapshot, *self)
+        type_manager.get_role_type_relates_explicit(snapshot, *self)
     }
 
     pub fn get_relates<'m>(

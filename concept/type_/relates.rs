@@ -95,12 +95,12 @@ impl Relates {
         type_manager.unset_relates_specialise(snapshot, thing_manager, *self)
     }
 
-    pub fn is_specialising(
+    pub fn is_implicit(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
-        type_manager.get_relates_is_specialising(snapshot, *self)
+        type_manager.get_relates_is_implicit(snapshot, *self)
     }
 
     pub fn set_annotation(
@@ -143,7 +143,7 @@ impl Relates {
         Ok(())
     }
 
-    pub fn get_default_cardinality_for_non_specialising(role_ordering: Ordering) -> AnnotationCardinality {
+    pub fn get_default_cardinality_for_explicit(role_ordering: Ordering) -> AnnotationCardinality {
         match role_ordering {
             Ordering::Unordered => Self::DEFAULT_UNORDERED_CARDINALITY,
             Ordering::Ordered => Self::DEFAULT_ORDERED_CARDINALITY,

@@ -355,8 +355,8 @@ impl TypeCache {
         RoleType::get_cache(self, role_type).ordering
     }
 
-    pub(crate) fn get_role_type_relates_root(&self, role_type: RoleType) -> &Relates {
-        &RoleType::get_cache(self, role_type).relates_root
+    pub(crate) fn get_role_type_relates_explicit(&self, role_type: RoleType) -> &Relates {
+        &RoleType::get_cache(self, role_type).relates_explicit
     }
 
     pub(crate) fn get_role_type_relates(&self, role_type: RoleType) -> &HashSet<Relates> {
@@ -398,8 +398,8 @@ impl TypeCache {
         &self.relates.get(&relates).unwrap().common_capability_cache.constraints
     }
 
-    pub(crate) fn get_relates_is_specialising(&self, relates: Relates) -> bool {
-        self.relates.get(&relates).unwrap().is_specialising
+    pub(crate) fn get_relates_is_implicit(&self, relates: Relates) -> bool {
+        self.relates.get(&relates).unwrap().is_implicit
     }
 
     pub(crate) fn get_role_type_plays(&self, role_type: RoleType) -> &HashSet<Plays> {

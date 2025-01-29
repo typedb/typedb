@@ -373,19 +373,19 @@ impl TypeReader {
         Ok(object_types)
     }
 
-    pub(crate) fn get_role_type_relates_root(
+    pub(crate) fn get_role_type_relates_explicit(
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType,
     ) -> Result<Relates, Box<ConceptReadError>> {
         let mut root_relates = None;
         let all_relates = Self::get_capabilities_for_interface::<Relates>(snapshot, role_type)?;
         for relates in all_relates.into_iter() {
-            if !Self::is_relates_specialising(snapshot, relates)? {
+            if !Self::is_relates_implicit(snapshot, relates)? {
                 debug_assert!(root_relates.is_none());
                 root_relates = Some(relates);
             }
         }
-        root_relates.ok_or(Box::new(ConceptReadError::CorruptMissingMandatoryRootRelatesForRole))
+        root_relates.ok_or(Box::new(ConceptReadError::CorruptMissingMandatoryExplicitRelatesForRole))
     }
 
     pub(crate) fn get_relation_type_relates_root(
@@ -395,14 +395,14 @@ impl TypeReader {
         let mut root_relates = HashSet::new();
         let all_declared_relates = Self::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
         for relates in all_declared_relates.into_iter() {
-            if !Self::is_relates_specialising(snapshot, relates)? {
+            if !Self::is_relates_implicit(snapshot, relates)? {
                 root_relates.insert(relates);
             }
         }
         Ok(root_relates)
     }
 
-    pub(crate) fn is_relates_specialising(
+    pub(crate) fn is_relates_implicit(
         snapshot: &impl ReadableSnapshot,
         relates: Relates,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -750,9 +750,9 @@ impl TypeReader {
                     RoleType::new(capability.canonical_to().into_vertex()),
                 );
                 let role_ordering = Self::get_type_ordering(snapshot, relates.role())?;
-                let is_specialising = Self::is_relates_specialising(snapshot, relates)?;
+                let is_implicit = Self::is_relates_implicit(snapshot, relates)?;
 
-                for default_constraint in get_relates_default_constraints(capability, role_ordering, is_specialising) {
+                for default_constraint in get_relates_default_constraints(capability, role_ordering, is_implicit) {
                     if !out_constraints
                         .iter()
                         .any(|set_constraint| set_constraint.category() == default_constraint.category())

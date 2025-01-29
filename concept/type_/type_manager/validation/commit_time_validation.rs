@@ -179,7 +179,7 @@ impl CommitTimeValidation {
         for relates in relates_declared.into_iter() {
             let role = relates.role();
 
-            if !relates.is_specialising(snapshot, type_manager)? {
+            if !relates.is_implicit(snapshot, type_manager)? {
                 Self::validate_role_is_unique_for_relation_type_hierarchy(
                     snapshot,
                     type_manager,
@@ -278,7 +278,7 @@ impl CommitTimeValidation {
             let relates_root = relation_type.get_relates_root(snapshot, type_manager)?;
             relates_root.into_iter().all(|relates| {
                 relates_declared.contains(relates)
-                    && !relates.is_specialising(snapshot, type_manager).unwrap()
+                    && !relates.is_implicit(snapshot, type_manager).unwrap()
                     && relates.role().get_label(snapshot, type_manager).unwrap().scope().unwrap()
                         == relates.relation().get_label(snapshot, type_manager).unwrap().name()
             })
@@ -299,7 +299,7 @@ impl CommitTimeValidation {
         relates: Relates,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if relates.is_specialising(snapshot, type_manager)? && !relates.is_abstract(snapshot, type_manager)? {
+        if relates.is_implicit(snapshot, type_manager)? && !relates.is_abstract(snapshot, type_manager)? {
             validation_errors.push(Box::new(SchemaValidationError::SpecialisingRelatesIsNotAbstract {
                 relation: get_label_or_concept_read_err(snapshot, type_manager, relates.relation())?,
                 role: get_label_or_concept_read_err(snapshot, type_manager, relates.role())?,

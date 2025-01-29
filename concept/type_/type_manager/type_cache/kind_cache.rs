@@ -59,7 +59,7 @@ pub(crate) struct RelationTypeCache {
 pub(crate) struct RoleTypeCache {
     pub(super) common_type_cache: CommonTypeCache<RoleType>,
     pub(super) ordering: Ordering,
-    pub(super) relates_root: Relates,
+    pub(super) relates_explicit: Relates,
     pub(super) relates: HashSet<Relates>,
     pub(super) relation_types: HashMap<RelationType, Relates>,
     pub(super) plays: HashSet<Plays>,
@@ -88,7 +88,7 @@ pub(crate) struct PlaysCache {
 
 #[derive(Debug)]
 pub(crate) struct RelatesCache {
-    pub(super) is_specialising: bool,
+    pub(super) is_implicit: bool,
     pub(super) common_capability_cache: CommonCapabilityCache<Relates>,
 }
 
@@ -219,7 +219,7 @@ impl RoleTypeCache {
             let cache = RoleTypeCache {
                 common_type_cache: CommonTypeCache::create(snapshot, role_type),
                 ordering,
-                relates_root: TypeReader::get_role_type_relates_root(snapshot, role_type).unwrap(),
+                relates_explicit: TypeReader::get_role_type_relates_explicit(snapshot, role_type).unwrap(),
                 relates: TypeReader::get_capabilities_for_interface::<Relates>(snapshot, role_type).unwrap(),
                 relation_types: TypeReader::get_object_types_with_capabilities_for_interface::<Relates>(
                     snapshot, role_type,
@@ -292,11 +292,9 @@ impl RelatesCache {
             let relation = RelationType::new(edge.from());
             let role = RoleType::new(edge.to());
             let relates = Relates::new(relation, role);
-            let is_specialising = TypeReader::is_relates_specialising(snapshot, relates).unwrap();
-            let cache = RelatesCache {
-                is_specialising,
-                common_capability_cache: CommonCapabilityCache::create(snapshot, relates),
-            };
+            let is_implicit = TypeReader::is_relates_implicit(snapshot, relates).unwrap();
+            let cache =
+                RelatesCache { is_implicit, common_capability_cache: CommonCapabilityCache::create(snapshot, relates) };
             map.insert(relates, cache);
         }
         map

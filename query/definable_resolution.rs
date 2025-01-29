@@ -299,7 +299,7 @@ pub(crate) fn try_resolve_relates_declared(
     relation_type: RelationType,
     role_name: &str,
 ) -> Result<Option<Relates>, Box<ConceptReadError>> {
-    relation_type.get_relates_role_name_non_specialising_declared(snapshot, type_manager, role_name)
+    relation_type.get_relates_role_name_explicit_declared(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_relates(
@@ -324,7 +324,7 @@ pub(crate) fn try_resolve_relates(
     relation_type: RelationType,
     role_name: &str,
 ) -> Result<Option<Relates>, Box<ConceptReadError>> {
-    relation_type.get_relates_role_name_non_specialising(snapshot, type_manager, role_name)
+    relation_type.get_relates_role_name_explicit(snapshot, type_manager, role_name)
 }
 
 pub(crate) fn resolve_owns_declared(

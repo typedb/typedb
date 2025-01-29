@@ -1732,7 +1732,7 @@ impl OperationTimeValidation {
         relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if relates
-            .is_specialising(snapshot, type_manager)
+            .is_implicit(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
             Err(Box::new(SchemaValidationError::CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates {
@@ -1770,7 +1770,7 @@ impl OperationTimeValidation {
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             {
                 let subtype_role_supertype_relates = subtype_role_supertype
-                    .get_relates_root(snapshot, type_manager)
+                    .get_relates_explicit(snapshot, type_manager)
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
                 if !supertype_relates
                     .iter()
@@ -1803,7 +1803,7 @@ impl OperationTimeValidation {
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
                 {
                     let subtype_role_supertype_relates = subtype_role_supertype
-                        .get_relates_root(snapshot, type_manager)
+                        .get_relates_explicit(snapshot, type_manager)
                         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
                     let is_in_subtype = subtype_relates.contains(&subtype_role_supertype_relates);
                     let is_in_subtype_declared = subtype_relates_declared.contains(&subtype_role_supertype_relates);
@@ -2069,7 +2069,7 @@ impl OperationTimeValidation {
         specialised_relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if !specialised_relates
-            .is_specialising(snapshot, type_manager)
+            .is_implicit(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
             Ok(())
@@ -2087,7 +2087,7 @@ impl OperationTimeValidation {
         relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if !relates
-            .is_specialising(snapshot, type_manager)
+            .is_implicit(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
             Ok(())
@@ -2787,7 +2787,7 @@ impl OperationTimeValidation {
             }
             Kind::Role => {
                 let role_type = RoleType::new(type_.vertex());
-                let relation_type = role_type.get_relates_root(snapshot, type_manager)?.relation();
+                let relation_type = role_type.get_relates_explicit(snapshot, type_manager)?.relation();
                 Self::has_instances_of_relates(snapshot, thing_manager, relation_type, role_type)
             }
         }
