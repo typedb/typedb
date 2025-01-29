@@ -33,10 +33,10 @@ use crate::{
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
-            filter_by_constraint_category, filter_by_scope, filter_out_operation_time_unchecked_constraints, get_abstract_constraints,
-            get_operation_time_checked_constraints, get_distinct_constraints, get_range_constraints, get_regex_constraints,
-            get_values_constraints, type_get_constraints_closest_source, CapabilityConstraint, Constraint,
-            ConstraintDescription, ConstraintScope, TypeConstraint,
+            filter_by_constraint_category, filter_by_scope, filter_out_operation_time_unchecked_constraints,
+            get_abstract_constraints, get_distinct_constraints, get_operation_time_checked_constraints,
+            get_range_constraints, get_regex_constraints, get_values_constraints, type_get_constraints_closest_source,
+            CapabilityConstraint, Constraint, ConstraintDescription, ConstraintScope, TypeConstraint,
         },
         entity_type::EntityType,
         object_type::ObjectType,
@@ -290,8 +290,9 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
                     .cloned(),
             )
             .collect();
-            let constraints =
-                get_operation_time_checked_constraints(annotation.to_capability_constraints(capability.clone()).into_iter());
+            let constraints = get_operation_time_checked_constraints(
+                annotation.to_capability_constraints(capability.clone()).into_iter(),
+            );
 
             $validation_func(
                 snapshot,
@@ -589,7 +590,8 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
             type_: $type_,
             annotation: Annotation,
         ) -> Result<(), Box<SchemaValidationError>> {
-            let constraints = get_operation_time_checked_constraints(annotation.to_type_constraints(type_.clone()).into_iter());
+            let constraints =
+                get_operation_time_checked_constraints(annotation.to_type_constraints(type_.clone()).into_iter());
             let affected_types = TypeAPI::chain_types(
                 type_.clone(),
                 type_

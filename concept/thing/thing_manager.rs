@@ -24,7 +24,8 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
+            edge::TypeEdge,
+            property::{TypeEdgeProperty, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
         },
         Typed,
@@ -87,6 +88,9 @@ use crate::{
         constraint::{get_checked_constraints, Constraint},
         entity_type::EntityType,
         object_type::ObjectType,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
@@ -1786,10 +1790,23 @@ impl ThingManager {
             &mut modified_relations_role_types,
         );
         collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
-        res = self.collect_modified_has(snapshot, &mut modified_objects_attribute_types);
+
+        res = self.collect_modified_has_objects(snapshot, &mut modified_objects_attribute_types);
         collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
-        res =
-            self.collect_modified_links(snapshot, &mut modified_relations_role_types, &mut modified_objects_role_types);
+
+        res = self.collect_modified_links_objects(
+            snapshot,
+            &mut modified_relations_role_types,
+            &mut modified_objects_role_types,
+        );
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+
+        res = self.collect_modified_schema_capability_cardinalities_objects(
+            snapshot,
+            &mut modified_objects_attribute_types,
+            &mut modified_objects_role_types,
+            &mut modified_relations_role_types,
+        );
         collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
@@ -1870,7 +1887,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn collect_modified_has(
+    fn collect_modified_has_objects(
         &self,
         snapshot: &impl WritableSnapshot,
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
@@ -1890,7 +1907,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn collect_modified_links(
+    fn collect_modified_links_objects(
         &self,
         snapshot: &impl WritableSnapshot,
         out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
@@ -1912,6 +1929,161 @@ impl ThingManager {
             if self.object_exists(snapshot, player)? {
                 let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn collect_modified_schema_capability_cardinalities_objects(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
+        out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
+        out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let mut modified_owns = HashMap::new();
+        let mut modified_plays = HashMap::new();
+        let mut modified_relates = HashMap::new();
+        self.collect_modified_schema_capability_cardinalities(
+            snapshot,
+            &mut modified_owns,
+            &mut modified_plays,
+            &mut modified_relates,
+        )?;
+
+        for (relation_type, role_types) in modified_relates {
+            let mut it = self.get_relations_in(snapshot, relation_type);
+            while let Some(relation) = it.next().transpose()? {
+                let updated_role_types = out_relation_role_types.entry(relation).or_default();
+                updated_role_types.extend(role_types.iter());
+            }
+        }
+
+        for (object_type, role_types) in modified_plays {
+            let mut it = self.get_objects_in(snapshot, object_type);
+            while let Some(object) = it.next().transpose()? {
+                let updated_role_types = out_object_role_types.entry(object).or_default();
+                updated_role_types.extend(role_types.iter());
+            }
+        }
+
+        for (object_type, attribute_types) in modified_owns {
+            let mut it = self.get_objects_in(snapshot, object_type);
+            while let Some(object) = it.next().transpose()? {
+                let updated_attribute_types = out_object_attribute_types.entry(object).or_default();
+                updated_attribute_types.extend(attribute_types.iter());
+            }
+        }
+
+        Ok(())
+    }
+
+    fn collect_modified_schema_capability_cardinalities(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        modified_owns: &mut HashMap<ObjectType, HashSet<AttributeType>>,
+        modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
+        modified_relates: &mut HashMap<RelationType, HashSet<RoleType>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let mut deleted_owns: HashSet<Owns> = HashSet::new();
+        let mut deleted_plays: HashSet<Plays> = HashSet::new();
+        let mut deleted_relates: HashSet<Relates> = HashSet::new();
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeOwns),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let owner_type = ObjectType::new(edge.from());
+            let attribute_type = AttributeType::new(edge.to());
+            match write {
+                Write::Insert { .. } | Write::Put { .. } => {
+                    let updated_attribute_types = modified_owns.entry(owner_type).or_default();
+                    updated_attribute_types.insert(attribute_type);
+                }
+                Write::Delete => {
+                    deleted_owns.insert(Owns::new(owner_type, attribute_type));
+                }
+            }
+        }
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgePlays),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let player_type = ObjectType::new(edge.from());
+            let role_type = RoleType::new(edge.to());
+            match write {
+                Write::Insert { .. } | Write::Put { .. } => {
+                    let updated_role_types = modified_plays.entry(player_type).or_default();
+                    updated_role_types.insert(role_type);
+                }
+                Write::Delete => {
+                    deleted_plays.insert(Plays::new(player_type, role_type));
+                }
+            }
+        }
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeRelates),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let relation_type = RelationType::new(edge.from());
+            let role_type = RoleType::new(edge.to());
+            match write {
+                Write::Insert { .. } | Write::Put { .. } => {
+                    let updated_role_types = modified_relates.entry(relation_type).or_default();
+                    updated_role_types.insert(role_type);
+                }
+                Write::Delete => {
+                    deleted_relates.insert(Relates::new(relation_type, role_type));
+                }
+            }
+        }
+
+        for (key, _) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::PropertyTypeEdge),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let property = TypeEdgeProperty::decode(Bytes::reference(key.bytes()));
+            match property.infix() {
+                Infix::PropertyAnnotationKey | Infix::PropertyAnnotationCardinality => {
+                    let edge = property.type_edge();
+                    match edge.prefix() {
+                        Prefix::EdgeOwns => {
+                            let owner_type = ObjectType::new(edge.from());
+                            let attribute_type = AttributeType::new(edge.to());
+                            if !deleted_owns.contains(&Owns::new(owner_type, attribute_type)) {
+                                let updated_attribute_types = modified_owns.entry(owner_type).or_default();
+                                updated_attribute_types.insert(attribute_type);
+                            }
+                        }
+                        Prefix::EdgeOwnsReverse => debug_assert!(false, "Unexpected property on reverse owns"),
+                        Prefix::EdgePlays => {
+                            let player_type = ObjectType::new(edge.from());
+                            let role_type = RoleType::new(edge.to());
+                            if !deleted_plays.contains(&Plays::new(player_type, role_type)) {
+                                let updated_role_types = modified_plays.entry(player_type).or_default();
+                                updated_role_types.insert(role_type);
+                            }
+                        }
+                        Prefix::EdgePlaysReverse => debug_assert!(false, "Unexpected property on reverse plays"),
+                        Prefix::EdgeRelates => {
+                            let relation_type = RelationType::new(edge.from());
+                            let role_type = RoleType::new(edge.to());
+                            if !deleted_relates.contains(&Relates::new(relation_type, role_type)) {
+                                let updated_role_types = modified_relates.entry(relation_type).or_default();
+                                updated_role_types.insert(role_type);
+                            }
+                        }
+                        Prefix::EdgeRelatesReverse => debug_assert!(false, "Unexpected property on reverse relates"),
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
         }
 
