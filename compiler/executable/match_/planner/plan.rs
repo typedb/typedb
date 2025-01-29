@@ -21,7 +21,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
+            Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, RolePlayerDeduplication, Sub, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -31,7 +31,6 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
-use ir::pattern::constraint::Different;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -58,6 +57,7 @@ use crate::{
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                     ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
                     FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
+                    RolePlayerDeduplicationPlanner,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
                 MatchExecutableBuilder, NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -66,7 +66,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::vertex::DifferentPlanner;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -406,7 +405,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
-                Constraint::Different(different) => self.register_different(different),
+                Constraint::RolePlayerDeduplication(dedup) => self.register_role_player_deduplication(dedup),
             }
         }
     }
@@ -542,9 +541,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
     }
 
-    fn register_different(&mut self, different: &'a Different<Variable>) {
-        self.graph.push_different(DifferentPlanner::from_constraint(
-            different,
+    fn register_role_player_deduplication(&mut self, role_player_deduplication: &'a RolePlayerDeduplication<Variable>) {
+        self.graph.push_role_player_deduplication(RolePlayerDeduplicationPlanner::from_constraint(
+            role_player_deduplication,
             &self.graph.variable_index,
             self.type_annotations,
             self.statistics,
@@ -1370,7 +1369,9 @@ impl ConjunctionPlan<'_> {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
                 PlannerVertex::Negation(_) => unreachable!("encountered negation registered as producing variable"),
-                PlannerVertex::Different(_) => unreachable!("encountered different registered as producing variable"),
+                PlannerVertex::RolePlayerDeduplication(_) => {
+                    unreachable!("encountered role_player_deduplication registered as producing variable")
+                }
                 PlannerVertex::Is(is) => {
                     let input = if var == is.lhs {
                         self.graph.index_to_variable[&is.rhs]
@@ -1496,9 +1497,11 @@ impl ConjunctionPlan<'_> {
                     match_builder.position_mapping(),
                     variable_registry,
                 );
-                let variable_positions: HashMap<Variable, ExecutorVariable> = negation.index.iter().filter_map(|(k, v)| {
-                    match_builder.current_outputs.get(k).map(|_| (k.clone(), v.clone()))
-                }).collect();
+                let variable_positions: HashMap<Variable, ExecutorVariable> = negation
+                    .index
+                    .iter()
+                    .filter_map(|(k, v)| match_builder.current_outputs.get(k).map(|_| (k.clone(), v.clone())))
+                    .collect();
                 match_builder.push_step(
                     &&variable_positions,
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
@@ -1510,12 +1513,13 @@ impl ConjunctionPlan<'_> {
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
                 match_builder.push_check(&[lhs, rhs], check)
             }
-            PlannerVertex::Different(different) => {
-                let role1 = different.different().role1().as_variable().unwrap();
-                let player1 = different.different().player1().as_variable().unwrap();
-                let role2 = different.different().role2().as_variable().unwrap();
-                let player2 = different.different().player2().as_variable().unwrap();
-                let check = CheckInstruction::Different { role1, player1, role2, player2 }.map(match_builder.position_mapping());
+            PlannerVertex::RolePlayerDeduplication(deduplication) => {
+                let role1 = deduplication.role_player_deduplication().role1().as_variable().unwrap();
+                let player1 = deduplication.role_player_deduplication().player1().as_variable().unwrap();
+                let role2 = deduplication.role_player_deduplication().role2().as_variable().unwrap();
+                let player2 = deduplication.role_player_deduplication().player2().as_variable().unwrap();
+                let check = CheckInstruction::RolePlayerDeduplication { role1, player1, role2, player2 }
+                    .map(match_builder.position_mapping());
                 match_builder.push_check(&[role1, player1, role2, player2], check)
             }
             PlannerVertex::Comparison(comparison) => {
@@ -1989,13 +1993,13 @@ impl<'a> Graph<'a> {
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Is(is));
     }
 
-    fn push_different(&mut self, different: DifferentPlanner<'a>) {
+    fn push_role_player_deduplication(&mut self, deduplication: RolePlayerDeduplicationPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(different.variables());
-        for var in different.variables() {
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(deduplication.variables());
+        for var in deduplication.variables() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
-        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Different(different));
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::RolePlayerDeduplication(deduplication));
     }
 
     fn push_comparison(&mut self, comparison: ComparisonPlanner<'a>) {

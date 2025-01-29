@@ -610,7 +610,7 @@ pub enum CheckInstruction<ID> {
         lhs: ID,
         rhs: ID,
     },
-    Different {
+    RolePlayerDeduplication {
         role1: ID,
         player1: ID,
         role2: ID,
@@ -663,14 +663,14 @@ impl<ID: IrID> CheckInstruction<ID> {
                 }
             }
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
-            Self::Different { role1, player1, role2, player2 } => {
-                CheckInstruction::Different {
+            Self::RolePlayerDeduplication { role1, player1, role2, player2 } => {
+                CheckInstruction::RolePlayerDeduplication {
                     role1: mapping[&role1],
                     player1: mapping[&player1],
                     role2: mapping[&role2],
-                    player2: mapping[&player2]
+                    player2: mapping[&player2],
                 }
-            },
+            }
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
@@ -722,8 +722,8 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
             }
-            Self::Different { role1, player1, role2, player2 } => {
-                write!(f, "({role1},{player1}) __different__ ({role2},{player2})")?;
+            Self::RolePlayerDeduplication { role1, player1, role2, player2 } => {
+                write!(f, "({role1},{player1}) __role_player_deduplication__ ({role2},{player2})")?;
             }
             Self::Comparison { lhs, rhs, comparator } => {
                 write!(f, "{lhs} {comparator} {rhs}")?;

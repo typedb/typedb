@@ -65,9 +65,11 @@ pub fn check_annotations(
             | Constraint::Owns(_)
             | Constraint::Relates(_)
             | Constraint::Plays(_)
-            | Constraint::Value(_) => (),
-            | Constraint::IndexedRelation(_)
-            | Constraint::Different(_) => unreachable!("Indexed relations can only appear after type inference"),
+            | Constraint::Value(_)
+            | Constraint::RolePlayerDeduplication(_) => (),
+            | Constraint::IndexedRelation(_) => {
+                unreachable!("Indexed relations can only appear after type inference")
+            }
         }
     }
     Ok(())

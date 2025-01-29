@@ -13,7 +13,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        constraint::Constraint,
+        constraint::{Constraint, RolePlayerDeduplication},
         variable_category::VariableCategory,
         Scope, ScopeId,
     },

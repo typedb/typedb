@@ -799,7 +799,7 @@ impl<T> Checker<T> {
                     filters.push(Box::new(move |value| Ok(lhs(value) == rhs(value))));
                 }
 
-                &CheckInstruction::Different { role1, player1, role2, player2 } => {
+                &CheckInstruction::RolePlayerDeduplication { role1, player1, role2, player2 } => {
                     let maybe_role1_extractor = self.extractors.get(&role1);
                     let role1: BoxExtractor<T> = match maybe_role1_extractor {
                         Some(&role1) => Box::new(role1),

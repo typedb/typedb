@@ -14,11 +14,10 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is},
+    constraint::{Comparison, FunctionCallBinding, Is, RolePlayerDeduplication},
     Vertex,
 };
 use itertools::{chain, Itertools};
-use ir::pattern::constraint::Different;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -44,7 +43,7 @@ pub(super) enum PlannerVertex<'a> {
     Constraint(ConstraintVertex<'a>),
 
     Is(IsPlanner<'a>),
-    Different(DifferentPlanner<'a>),
+    RolePlayerDeduplication(RolePlayerDeduplicationPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
@@ -67,7 +66,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => false,
             Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
             Self::Is(inner) => inner.is_valid(vertex_plan, graph),
-            Self::Different(inner) => inner.is_valid(vertex_plan, graph),
+            Self::RolePlayerDeduplication(inner) => inner.is_valid(vertex_plan, graph),
             Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
             Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
             Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
@@ -83,7 +82,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
             Self::Is(inner) => Box::new(inner.variables()),
-            Self::Different(inner) => Box::new(inner.variables()),
+            Self::RolePlayerDeduplication(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
@@ -146,8 +145,8 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Is(_) => {
                 write!(f, "|Is|")
             } //TODO
-            PlannerVertex::Different(_) => {
-                write!(f, "|Different|")
+            PlannerVertex::RolePlayerDeduplication(_) => {
+                write!(f, "|RolePlayerDeduplication|")
             }
             PlannerVertex::Comparison(v) => {
                 write!(f, "|{:?} comp {:?}|", v.comparison.lhs(), v.comparison.rhs())
@@ -223,7 +222,7 @@ impl Costed for PlannerVertex<'_> {
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
 
             Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, graph),
-            Self::Different(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::RolePlayerDeduplication(planner) => planner.cost_and_metadata(vertex_ordering, graph),
             Self::Comparison(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
             Self::Expression(planner) => planner.cost_and_metadata(vertex_ordering, graph),
@@ -372,27 +371,27 @@ impl Costed for IsPlanner<'_> {
     }
 }
 #[derive(Clone, Debug)]
-pub(super) struct DifferentPlanner<'a> {
-    different: &'a Different<Variable>,
+pub(super) struct RolePlayerDeduplicationPlanner<'a> {
+    role_player_deduplication: &'a RolePlayerDeduplication<Variable>,
     pub role1: VariableVertexId,
     pub player1: VariableVertexId,
     pub role2: VariableVertexId,
     pub player2: VariableVertexId,
 }
 
-impl<'a> DifferentPlanner<'a> {
+impl<'a> RolePlayerDeduplicationPlanner<'a> {
     pub(crate) fn from_constraint(
-        different: &'a Different<Variable>,
+        role_player_deduplication: &'a RolePlayerDeduplication<Variable>,
         variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        let role1 = different.role1().as_variable().unwrap();
-        let player1 = different.player1().as_variable().unwrap();
-        let role2 = different.role2().as_variable().unwrap();
-        let player2 = different.player2().as_variable().unwrap();
+        let role1 = role_player_deduplication.role1().as_variable().unwrap();
+        let player1 = role_player_deduplication.player1().as_variable().unwrap();
+        let role2 = role_player_deduplication.role2().as_variable().unwrap();
+        let player2 = role_player_deduplication.player2().as_variable().unwrap();
         Self {
-            different,
+            role_player_deduplication,
             role1: variable_index[&role1],
             player1: variable_index[&player1],
             role2: variable_index[&role2],
@@ -408,12 +407,12 @@ impl<'a> DifferentPlanner<'a> {
         [self.role1, self.player1, self.role2, self.player2].into_iter()
     }
 
-    pub(super) fn different(&self) -> &Different<Variable> {
-        self.different
+    pub(super) fn role_player_deduplication(&self) -> &RolePlayerDeduplication<Variable> {
+        self.role_player_deduplication
     }
 }
 
-impl Costed for DifferentPlanner<'_> {
+impl Costed for RolePlayerDeduplicationPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }

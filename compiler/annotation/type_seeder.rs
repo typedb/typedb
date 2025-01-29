@@ -219,9 +219,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Relates(_)
                 | Constraint::Plays(_)
                 | Constraint::ExpressionBinding(_)
-                | Constraint::Comparison(_) => (),
-                | Constraint::IndexedRelation(_)
-                | Constraint::Different(_) => {
+                | Constraint::Comparison(_)
+                | Constraint::RolePlayerDeduplication(_) => (),
+                Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
                 }
             }
@@ -385,8 +385,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::Label(_)
             | Constraint::Kind(_)
             | Constraint::Value(_)
-            | Constraint::Different(_) => false,
-            | Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference"),
+            | Constraint::RolePlayerDeduplication(_) => false,
+            Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference"),
         };
         Ok(any_modified)
     }
@@ -524,8 +524,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::Value(_)
                 | Constraint::ExpressionBinding(_)
                 | Constraint::FunctionCallBinding(_)
-                | Constraint::Different(_) => (), // Do nothing
-                | Constraint::IndexedRelation(_) => {
+                | Constraint::RolePlayerDeduplication(_) => (), // Do nothing
+                Constraint::IndexedRelation(_) => {
                     unreachable!("Indexed relations are only generated after type inference")
                 }
             }

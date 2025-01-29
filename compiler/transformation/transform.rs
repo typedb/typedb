@@ -5,16 +5,21 @@
  */
 
 use std::collections::HashMap;
+
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::{Constraint, Different};
+use ir::pattern::{
+    conjunction::Conjunction,
+    constraint::{Constraint, RolePlayerDeduplication},
+};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    annotation::pipeline::{AnnotatedPipeline, AnnotatedStage},
+    annotation::{
+        pipeline::{AnnotatedPipeline, AnnotatedStage},
+        type_annotations::TypeAnnotations,
+    },
     transformation::{relation_index::relation_index_transformation, StaticOptimiserError},
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 pub fn apply_transformations(
     snapshot: &impl ReadableSnapshot,
@@ -23,8 +28,8 @@ pub fn apply_transformations(
 ) -> Result<(), StaticOptimiserError> {
     for stage in &mut pipeline.annotated_stages {
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
+            prune_redundant_roleplayer_deduplication(block.conjunction_mut(), block_annotations);
             relation_index_transformation(block.conjunction_mut(), block_annotations, type_manager, snapshot)?;
-            insert_role_player_deduplication(block.conjunction_mut(), block_annotations)?;
         }
     }
     Ok(())
@@ -37,29 +42,6 @@ pub fn apply_transformations(
     // - function inlining v3: we could introduce new sub-patterns that include sort/offset/limit that let us more generally inline functions?
 }
 
-
-fn insert_role_player_deduplication(conjunction: &mut Conjunction, block_annotations: &TypeAnnotations) -> Result<(), StaticOptimiserError> {
-    let mut role_player_deduplication = HashMap::new();
-    conjunction.constraints().iter().for_each(|constraint| {
-        if let Constraint::Links(links) = constraint {
-             let relation = links.relation().as_variable().unwrap();
-            if !role_player_deduplication.contains_key(&relation) {
-                role_player_deduplication.insert(relation.clone(), Vec::new());
-            }
-            role_player_deduplication.get_mut(&relation).unwrap().push(
-                (links.player().as_variable().unwrap(), links.role_type().as_variable().unwrap(), block_annotations.constraint_annotations_of(constraint.clone()))
-            );
-        }
-    });
-    for (k, v) in role_player_deduplication {
-        for i in 0..v.len() {
-            for j in (i+1)..v.len() {
-                let annotations_have_some_intersection = true;
-                if annotations_have_some_intersection {
-                    conjunction.constraints_mut().constraints_mut().push(Different::new(v[i].0, v[i].1, v[j].0, v[j].1).into());
-                }
-            }
-        }
-    }
-    Ok(())
+fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block_annotations: &mut TypeAnnotations) {
+    // TODO: If either the role-players or the players
 }
