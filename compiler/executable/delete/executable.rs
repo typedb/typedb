@@ -100,7 +100,8 @@ pub fn compile(
                 };
                 connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
-            Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
+            Constraint::RolePlayerDeduplication(_)
+            | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
             Constraint::Iid(_)
             | Constraint::Isa(_)
             | Constraint::Kind(_)
@@ -114,8 +115,7 @@ pub fn compile(
             | Constraint::Sub(_)
             | Constraint::Value(_)
             | Constraint::FunctionCallBinding(_)
-            | Constraint::IndexedRelation(_)
-            | Constraint::RolePlayerDeduplication(_) => {
+            | Constraint::IndexedRelation(_) => {
                 unreachable!()
             }
         }
