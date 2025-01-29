@@ -391,7 +391,10 @@ fn translate_inline_user_function_call<'a>(
 > {
     let signature = function_index
         .get_function_signature(function_name)
-        .map_err(|err| FetchRepresentationError::FunctionRetrieval { name: function_name.to_owned(), source: err })?
+        .map_err(|err| FetchRepresentationError::FunctionRetrieval {
+            name: function_name.to_owned(),
+            typedb_source: err,
+        })?
         .ok_or_else(|| FetchRepresentationError::FunctionNotFound {
             name: function_name.to_owned(),
             declaration: call.clone(),
@@ -577,7 +580,7 @@ typedb_error! {
             8,
             "Error while retrieving function '{name}'.",
             name: String,
-            source: FunctionReadError
+            typedb_source: FunctionReadError
         ),
         FunctionNotFound(
             9,

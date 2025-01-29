@@ -48,7 +48,7 @@ impl ExpressionValue {
             VariableValue::ValueList(values) => Ok(ExpressionValue::List(values)),
             VariableValue::Thing(Thing::Attribute(attr)) => Ok(ExpressionValue::Single(
                 attr.get_value(&**context.snapshot(), context.thing_manager())
-                    .map_err(|_| ExpressionEvaluationError::CastFailed)?
+                    .map_err(|source| ExpressionEvaluationError::ConceptRead { source })?
                     .into_owned(),
             )),
             VariableValue::ThingList(things) => {
@@ -57,14 +57,18 @@ impl ExpressionValue {
                     .map(|thing| match thing {
                         Thing::Attribute(attr) => Ok(attr
                             .get_value(&**context.snapshot(), context.thing_manager())
-                            .map_err(|_| ExpressionEvaluationError::CastFailed)?
+                            .map_err(|source| ExpressionEvaluationError::ConceptRead { source })?
                             .into_owned()),
-                        _ => Err(ExpressionEvaluationError::CastFailed),
+                        _ => Err(ExpressionEvaluationError::CastFailed {
+                            description: "list contains elements without values".to_string(),
+                        }),
                     })
                     .collect::<Result<Vec<_>, _>>()?;
                 Ok(ExpressionValue::List(as_value_list.into()))
             }
-            _ => Err(ExpressionEvaluationError::CastFailed),
+            other => Err(ExpressionEvaluationError::CastFailed {
+                description: format!("can only get values from {}", other.variant_name()),
+            }),
         }
     }
 }
@@ -237,11 +241,15 @@ impl ExpressionEvaluation for ListIndex {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let list = state.pop_list();
         let index = state.pop_value().unwrap_integer();
-        if let Some(value) = list.get(index as usize) {
-            state.push_value(value.clone()); // Should we avoid cloning?
-            Ok(())
+        if index >= 0 {
+            if let Some(value) = list.get(index as usize) {
+                state.push_value(value.clone()); // Should we avoid cloning?
+                Ok(())
+            } else {
+                Err(ExpressionEvaluationError::ListIndexOutOfRange { index, length: list.len() })
+            }
         } else {
-            Err(ExpressionEvaluationError::ListIndexOutOfRange)
+            Err(ExpressionEvaluationError::ListIndexNegative { index })
         }
     }
 }
@@ -249,13 +257,18 @@ impl ExpressionEvaluation for ListIndex {
 impl ExpressionEvaluation for ListIndexRange {
     fn evaluate(state: &mut ExpressionExecutorState<'_>) -> Result<(), ExpressionEvaluationError> {
         let list = state.pop_list();
-        let to_index = state.pop_value().unwrap_integer() as usize;
-        let from_index = state.pop_value().unwrap_integer() as usize;
-        if let Some(sub_slice) = list.get(from_index..to_index) {
+        let to_index = state.pop_value().unwrap_integer();
+        let from_index = state.pop_value().unwrap_integer();
+        if to_index < 0 {
+            return Err(ExpressionEvaluationError::ListIndexNegative { index: to_index });
+        } else if from_index < 0 {
+            return Err(ExpressionEvaluationError::ListIndexNegative { index: from_index });
+        }
+        if let Some(sub_slice) = list.get(from_index as usize..to_index as usize) {
             state.push_list(sub_slice.into()); // TODO: Should we make this more efficient by storing (Vec, range) ?
             Ok(())
         } else {
-            Err(ExpressionEvaluationError::ListIndexOutOfRange)
+            Err(ExpressionEvaluationError::ListRangeOutOfRange { from_index, to_index, length: list.len() })
         }
     }
 }

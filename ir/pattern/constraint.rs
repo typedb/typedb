@@ -19,7 +19,7 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        expression::{ExpressionDefinitionError, ExpressionTree},
+        expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
         IrID, ParameterID, ScopeId, ValueType, Vertex,
@@ -323,7 +323,9 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let binding = ExpressionBinding::new(variable, expression);
-        binding.validate(self.context).map_err(|source| RepresentationError::ExpressionDefinitionError { source })?;
+        binding
+            .validate(self.context)
+            .map_err(|typedb_source| RepresentationError::ExpressionRepresentationError { typedb_source })?;
 
         let binding = Constraint::from(binding);
         // WARNING: we don't know if the expression will produce a Value, a ValueList, or a ThingList! We will know this at compilation time
@@ -572,7 +574,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
+    pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> Constraint<T> {
         match self {
             Self::Is(inner) => Constraint::Is(inner.map(mapping)),
             Self::Kind(inner) => Constraint::Kind(inner.map(mapping)),
@@ -838,7 +840,7 @@ impl<ID: IrID> Label<ID> {
         self.type_var.as_variable().inspect(|&id| function(id));
     }
 
-    fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Label<T> {
+    fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Label<T> {
         Label { type_var: self.type_var.map(mapping), type_label: self.type_label.map(mapping) }
     }
 }
@@ -904,7 +906,7 @@ impl<ID: IrID> RoleName<ID> {
         self.left.as_variable().inspect(|&id| function(id));
     }
 
-    fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
+    fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
         RoleName { left: self.left.map(mapping), name: self.name }
     }
 }
@@ -968,7 +970,7 @@ impl<ID: IrID> Kind<ID> {
         self.type_.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
         Kind { kind: self.kind, type_: self.type_.map(mapping) }
     }
 }
@@ -1046,11 +1048,13 @@ pub struct Sub<ID> {
     supertype: Vertex<ID>,
 }
 
-impl<ID: IrID> Sub<ID> {
+impl<ID> Sub<ID> {
     fn new(kind: SubKind, subtype: Vertex<ID>, supertype: Vertex<ID>) -> Self {
         Sub { subtype, supertype, kind }
     }
+}
 
+impl<ID: IrID> Sub<ID> {
     pub fn subtype(&self) -> &Vertex<ID> {
         &self.subtype
     }
@@ -1079,7 +1083,7 @@ impl<ID: IrID> Sub<ID> {
         self.supertype.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Sub<T> {
         Sub::new(self.kind, self.subtype.map(mapping), self.supertype.map(mapping))
     }
 }
@@ -1145,7 +1149,7 @@ impl<ID: IrID> Is<ID> {
         self.rhs.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Is<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Is<T> {
         Is { lhs: self.lhs.map(mapping), rhs: self.rhs.map(mapping) }
     }
 }
@@ -1215,7 +1219,7 @@ impl<ID: IrID> Isa<ID> {
         self.type_.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Isa<T> {
         Isa { kind: self.kind, thing: self.thing.map(mapping), type_: self.type_.map(mapping) }
     }
 }
@@ -1315,7 +1319,7 @@ impl<ID: IrID> Iid<ID> {
         self.var.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Iid<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Iid<T> {
         Iid { var: self.var.map(mapping), iid: self.iid.map(mapping) }
     }
 }
@@ -1390,7 +1394,7 @@ impl<ID: IrID> Links<ID> {
         self.role_type.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Links<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Links<T> {
         Links {
             relation: self.relation.map(mapping),
             player: self.player.map(mapping),
@@ -1489,7 +1493,7 @@ impl<ID: IrID> IndexedRelation<ID> {
         self.role_type_2.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> IndexedRelation<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> IndexedRelation<T> {
         IndexedRelation {
             player_1: self.player_1.map(mapping),
             player_2: self.player_2.map(mapping),
@@ -1572,7 +1576,7 @@ impl<ID: IrID> Has<ID> {
         self.attribute.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Has<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Has<T> {
         Has { owner: self.owner.map(mapping), attribute: self.attribute.map(mapping) }
     }
 }
@@ -1641,15 +1645,15 @@ impl<ID: IrID> ExpressionBinding<ID> {
         self.expression().variables().for_each(|id| function(id));
     }
 
-    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionDefinitionError> {
+    pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
         if self.expression().is_empty() {
-            Err(ExpressionDefinitionError::EmptyExpressionTree {})
+            Err(ExpressionRepresentationError::EmptyExpressionTree {})
         } else {
             Ok(())
         }
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ExpressionBinding<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionBinding<T> {
         let expression = self.expression.map(mapping);
         ExpressionBinding { left: self.left.map(mapping), expression }
     }
@@ -1686,12 +1690,13 @@ pub struct FunctionCallBinding<ID> {
     function_call: FunctionCall<ID>,
     is_stream: bool,
 }
-
-impl<ID: IrID> FunctionCallBinding<ID> {
+impl<ID> FunctionCallBinding<ID> {
     fn new(left: Vec<ID>, function_call: FunctionCall<ID>, is_stream: bool) -> Self {
         Self { assigned: left.into_iter().map(Vertex::Variable).collect(), function_call, is_stream }
     }
+}
 
+impl<ID: IrID> FunctionCallBinding<ID> {
     pub fn assigned(&self) -> &[Vertex<ID>] {
         &self.assigned
     }
@@ -1724,7 +1729,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         }
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
+    pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCallBinding<T> {
         FunctionCallBinding::new(
             self.assigned.iter().map(|v| v.as_variable().unwrap().map(mapping)).collect(),
             self.function_call.map(mapping),
@@ -1853,11 +1858,13 @@ pub struct Comparison<ID> {
     comparator: Comparator,
 }
 
-impl<ID: IrID> Comparison<ID> {
+impl<ID> Comparison<ID> {
     fn new(lhs: Vertex<ID>, rhs: Vertex<ID>, comparator: Comparator) -> Self {
         Self { lhs, rhs, comparator }
     }
+}
 
+impl<ID: IrID> Comparison<ID> {
     pub fn lhs(&self) -> &Vertex<ID> {
         &self.lhs
     }
@@ -1886,7 +1893,7 @@ impl<ID: IrID> Comparison<ID> {
         self.rhs.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Comparison<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Comparison<T> {
         Comparison::new(self.lhs.map(mapping), self.rhs.map(mapping), self.comparator)
     }
 }
@@ -1923,11 +1930,13 @@ pub struct Owns<ID> {
     attribute: Vertex<ID>,
 }
 
-impl<ID: IrID> Owns<ID> {
+impl<ID> Owns<ID> {
     fn new(owner: Vertex<ID>, attribute: Vertex<ID>) -> Self {
         Self { owner, attribute }
     }
+}
 
+impl<ID: IrID> Owns<ID> {
     pub fn owner(&self) -> &Vertex<ID> {
         &self.owner
     }
@@ -1952,7 +1961,7 @@ impl<ID: IrID> Owns<ID> {
         self.attribute.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Owns<T> {
         Owns::new(self.owner.map(mapping), self.attribute.map(mapping))
     }
 }
@@ -1988,11 +1997,13 @@ pub struct Relates<ID> {
     role_type: Vertex<ID>,
 }
 
-impl<ID: IrID> Relates<ID> {
+impl<ID> Relates<ID> {
     fn new(relation: Vertex<ID>, role: Vertex<ID>) -> Self {
         Self { relation, role_type: role }
     }
+}
 
+impl<ID: IrID> Relates<ID> {
     pub fn relation(&self) -> &Vertex<ID> {
         &self.relation
     }
@@ -2017,7 +2028,7 @@ impl<ID: IrID> Relates<ID> {
         self.role_type.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Relates<T> {
         Relates::new(self.relation.map(mapping), self.role_type.map(mapping))
     }
 }
@@ -2053,11 +2064,13 @@ pub struct Plays<ID> {
     role_type: Vertex<ID>,
 }
 
-impl<ID: IrID> Plays<ID> {
+impl<ID> Plays<ID> {
     fn new(player: Vertex<ID>, role: Vertex<ID>) -> Self {
         Self { player, role_type: role }
     }
+}
 
+impl<ID: IrID> Plays<ID> {
     pub fn player(&self) -> &Vertex<ID> {
         &self.player
     }
@@ -2082,7 +2095,7 @@ impl<ID: IrID> Plays<ID> {
         self.role_type.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Plays<T> {
         Plays::new(self.player.map(mapping), self.role_type.map(mapping))
     }
 }
@@ -2118,11 +2131,13 @@ pub struct Value<ID> {
     value_type: ValueType,
 }
 
-impl<ID: IrID> Value<ID> {
+impl<ID> Value<ID> {
     fn new(attribute_type: Vertex<ID>, value_type: ValueType) -> Self {
         Self { attribute_type, value_type }
     }
+}
 
+impl<ID: IrID> Value<ID> {
     pub fn attribute_type(&self) -> &Vertex<ID> {
         &self.attribute_type
     }
@@ -2146,7 +2161,7 @@ impl<ID: IrID> Value<ID> {
         self.attribute_type.as_variable().inspect(|&id| function(id));
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Value<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Value<T> {
         Value::new(self.attribute_type.map(mapping), self.value_type)
     }
 }

@@ -8,7 +8,6 @@ use std::{
     borrow::Cow,
     cmp::{max, min},
     collections::HashSet,
-    error::Error,
     fmt,
     fmt::Formatter,
     hash::Hash,
@@ -22,6 +21,7 @@ use encoding::{
     layout::infix::Infix,
     value::{value::Value, value_type::ValueType, ValueEncodable},
 };
+use error::typedb_error;
 use regex::Regex;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
@@ -627,18 +627,17 @@ impl AnnotationCategory {
     }
 
     pub fn name(&self) -> &'static str {
-        // TODO: use TypeQL structures
         match self {
-            AnnotationCategory::Abstract => "@abstract",
-            AnnotationCategory::Distinct => "@distinct",
-            AnnotationCategory::Independent => "@independent",
-            AnnotationCategory::Unique => "@unique",
-            AnnotationCategory::Key => "@key",
-            AnnotationCategory::Cardinality => "@card",
-            AnnotationCategory::Regex => "@regex",
-            AnnotationCategory::Cascade => "@cascade",
-            AnnotationCategory::Range => "@range",
-            AnnotationCategory::Values => "@values",
+            AnnotationCategory::Abstract => typeql::token::Annotation::Abstract.as_str(),
+            AnnotationCategory::Distinct => typeql::token::Annotation::Distinct.as_str(),
+            AnnotationCategory::Independent => typeql::token::Annotation::Independent.as_str(),
+            AnnotationCategory::Unique => typeql::token::Annotation::Unique.as_str(),
+            AnnotationCategory::Key => typeql::token::Annotation::Key.as_str(),
+            AnnotationCategory::Cardinality => typeql::token::Annotation::Cardinality.as_str(),
+            AnnotationCategory::Regex => typeql::token::Annotation::Regex.as_str(),
+            AnnotationCategory::Cascade => typeql::token::Annotation::Cascade.as_str(),
+            AnnotationCategory::Range => typeql::token::Annotation::Range.as_str(),
+            AnnotationCategory::Values => typeql::token::Annotation::Values.as_str(),
         }
     }
 }
@@ -651,7 +650,7 @@ impl fmt::Display for AnnotationCategory {
 
 impl fmt::Debug for AnnotationCategory {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name())
+        write!(f, "@{}", self.name())
     }
 }
 
@@ -850,40 +849,18 @@ impl TypeEdgePropertyEncoding for AnnotationValues {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum AnnotationError {
-    UnsupportedAnnotationForEntityType(AnnotationCategory),
-    UnsupportedAnnotationForRelationType(AnnotationCategory),
-    UnsupportedAnnotationForAttributeType(AnnotationCategory),
-    UnsupportedAnnotationForRoleType(AnnotationCategory),
-    UnsupportedAnnotationForRelates(AnnotationCategory),
-    UnsupportedAnnotationForPlays(AnnotationCategory),
-    UnsupportedAnnotationForOwns(AnnotationCategory),
-    UnsupportedAnnotationForAlias(AnnotationCategory),
-    UnsupportedAnnotationForSub(AnnotationCategory),
-    UnsupportedAnnotationForValueType(AnnotationCategory),
-}
-
-impl fmt::Display for AnnotationError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for AnnotationError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::UnsupportedAnnotationForEntityType(_) => None,
-            Self::UnsupportedAnnotationForRelationType(_) => None,
-            Self::UnsupportedAnnotationForAttributeType(_) => None,
-            Self::UnsupportedAnnotationForRoleType(_) => None,
-            Self::UnsupportedAnnotationForRelates(_) => None,
-            Self::UnsupportedAnnotationForPlays(_) => None,
-            Self::UnsupportedAnnotationForOwns(_) => None,
-            Self::UnsupportedAnnotationForAlias(_) => None,
-            Self::UnsupportedAnnotationForSub(_) => None,
-            Self::UnsupportedAnnotationForValueType(_) => None,
-        }
+typedb_error! {
+    pub AnnotationError(component = "Annotation", prefix = "ANN") {
+        UnsupportedAnnotationForEntityType(1, "Annotation '{category}' is not supported for entity types.", category: AnnotationCategory),
+        UnsupportedAnnotationForRelationType(2, "Annotation '{category}' is not supported for relation types.", category: AnnotationCategory),
+        UnsupportedAnnotationForAttributeType(3, "Annotation '{category}' is not supported for attribute types.", category: AnnotationCategory),
+        UnsupportedAnnotationForRoleType(4, "Annotation '{category}' is not supported for role types.", category: AnnotationCategory),
+        UnsupportedAnnotationForRelates(5, "Annotation '{category}' is not supported for relates.", category: AnnotationCategory),
+        UnsupportedAnnotationForPlays(6, "Annotation '{category}' is not supported for plays.", category: AnnotationCategory),
+        UnsupportedAnnotationForOwns(7, "Annotation '{category}' is not supported for owns.", category: AnnotationCategory),
+        UnsupportedAnnotationForAlias(8, "Annotation '{category}' is not supported for alias.", category: AnnotationCategory),
+        UnsupportedAnnotationForSub(9, "Annotation '{category}' is not supported for sub.", category: AnnotationCategory),
+        UnsupportedAnnotationForValueType(10, "Annotation '{category}' is not supported for value types.", category: AnnotationCategory),
     }
 }
 

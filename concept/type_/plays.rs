@@ -71,7 +71,7 @@ impl Plays {
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let plays_annotation = PlaysAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
+            .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match plays_annotation {
             PlaysAnnotation::Cardinality(_) => {
                 type_manager.unset_plays_annotation_cardinality(snapshot, thing_manager, *self)?
@@ -192,7 +192,9 @@ impl TryFrom<Annotation> for PlaysAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForPlays(annotation.category())),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForPlays { category: annotation.category() })
+            }
         }
     }
 }

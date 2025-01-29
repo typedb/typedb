@@ -42,7 +42,7 @@ impl FunctionCache {
         type_manager: &TypeManager,
     ) -> Result<FunctionCache, FunctionError> {
         let schema_functions = FunctionReader::get_functions_all(snapshot)
-            .map_err(|source| FunctionError::FunctionRetrieval { source })?;
+            .map_err(|typedb_source| FunctionError::FunctionRetrieval { typedb_source })?;
         // Prepare ir
         let function_index = HashMapFunctionSignatureIndex::build(
             schema_functions.iter().map(|f| (f.function_id.clone().into(), &f.parsed)),

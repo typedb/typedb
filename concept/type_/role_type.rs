@@ -297,7 +297,9 @@ impl TryFrom<Annotation> for RoleTypeAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRoleType(annotation.category())),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForRoleType { category: annotation.category() })
+            }
         }
     }
 }

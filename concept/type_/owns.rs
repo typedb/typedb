@@ -151,7 +151,7 @@ impl Owns {
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let owns_annotation = OwnsAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
+            .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match owns_annotation {
             OwnsAnnotation::Distinct(_) => type_manager.unset_owns_annotation_distinct(snapshot, *self)?,
             OwnsAnnotation::Key(_) => type_manager.unset_owns_annotation_key(snapshot, thing_manager, *self)?,
@@ -304,7 +304,7 @@ impl TryFrom<Annotation> for OwnsAnnotation {
             Annotation::Values(annotation) => Ok(OwnsAnnotation::Values(annotation)),
 
             | Annotation::Abstract(_) | Annotation::Independent(_) | Annotation::Cascade(_) => {
-                Err(AnnotationError::UnsupportedAnnotationForOwns(annotation.category()))
+                Err(AnnotationError::UnsupportedAnnotationForOwns { category: annotation.category() })
             }
         }
     }

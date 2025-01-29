@@ -6,19 +6,17 @@
 
 use std::{
     collections::HashMap,
-    error::Error,
     fmt,
+    fmt::{Display, Formatter},
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
 
 use answer::variable::Variable;
+use error::typedb_error;
 use structural_equality::StructuralEquality;
 
-use crate::{
-    pattern::{IrID, ParameterID},
-    RepresentationError,
-};
+use crate::pattern::{IrID, ParameterID};
 
 enum ExpectedArgumentType {
     Single,
@@ -76,7 +74,7 @@ impl<ID: IrID> ExpressionTree<ID> {
         })
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ExpressionTree<T> {
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> ExpressionTree<T> {
         let preorder_tree = self
             .preorder_tree
             .iter()
@@ -254,17 +252,30 @@ impl StructuralEquality for BuiltInFunctionID {
     }
 }
 
+impl Display for BuiltInFunctionID {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            BuiltInFunctionID::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
+            BuiltInFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
+            BuiltInFunctionID::Floor => fmt::Display::fmt(&typeql::token::Function::Floor, f),
+            BuiltInFunctionID::Round => fmt::Display::fmt(&typeql::token::Function::Round, f),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct ListIndex<ID> {
     list_variable: ID,
     index_expression_id: ExpressionTreeNodeId,
 }
 
-impl<ID: IrID> ListIndex<ID> {
+impl<ID> ListIndex<ID> {
     pub(crate) fn new(list_variable: ID, index_expression_id: ExpressionTreeNodeId) -> ListIndex<ID> {
         Self { list_variable, index_expression_id }
     }
+}
 
+impl<ID: IrID> ListIndex<ID> {
     pub fn list_variable(&self) -> ID {
         self.list_variable
     }
@@ -273,7 +284,7 @@ impl<ID: IrID> ListIndex<ID> {
         self.index_expression_id
     }
 
-    fn map<T: IrID>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
+    fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
         ListIndex::new(self.list_variable.map(mapping), self.index_expression_id.clone())
     }
 }
@@ -331,7 +342,7 @@ pub struct ListIndexRange<ID> {
     to_expression_id: ExpressionTreeNodeId,
 }
 
-impl<ID: IrID> ListIndexRange<ID> {
+impl<ID> ListIndexRange<ID> {
     pub(crate) fn new(
         list_variable: ID,
         from_expression_id: ExpressionTreeNodeId,
@@ -339,7 +350,9 @@ impl<ID: IrID> ListIndexRange<ID> {
     ) -> Self {
         Self { list_variable, from_expression_id, to_expression_id }
     }
+}
 
+impl<ID: IrID> ListIndexRange<ID> {
     pub fn list_variable(&self) -> ID {
         self.list_variable
     }
@@ -352,7 +365,7 @@ impl<ID: IrID> ListIndexRange<ID> {
         self.to_expression_id
     }
 
-    fn map<T: IrID>(&self, mapping: &HashMap<ID, T>) -> ListIndexRange<T> {
+    fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndexRange<T> {
         ListIndexRange::new(
             self.list_variable.map(mapping),
             self.from_expression_id.clone(),
@@ -397,6 +410,19 @@ impl StructuralEquality for Operator {
     }
 }
 
+impl Display for Operator {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Operator::Add => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Add, f),
+            Operator::Subtract => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Subtract, f),
+            Operator::Multiply => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Multiply, f),
+            Operator::Divide => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Divide, f),
+            Operator::Modulo => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Modulo, f),
+            Operator::Power => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Power, f),
+        }
+    }
+}
+
 // Display traits
 impl<ID: IrID> fmt::Display for ExpressionTree<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -410,31 +436,8 @@ impl<ID: IrID> fmt::Display for Expression<ID> {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum ExpressionDefinitionError {
-    ExpectedValueArgumentReceivedList,
-    ExpectedListArgumentReceivedValue,
-    ArgumentNotBound,
-    SubExpressionNotDefined,
-    PatternDefinition { source: Box<RepresentationError> },
-    EmptyExpressionTree {},
-}
-
-impl fmt::Display for ExpressionDefinitionError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for ExpressionDefinitionError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::ExpectedValueArgumentReceivedList => None,
-            Self::ExpectedListArgumentReceivedValue => None,
-            Self::ArgumentNotBound => None,
-            Self::SubExpressionNotDefined => None,
-            Self::PatternDefinition { source: _ } => None, // TODO: Handle when migrating to TypeDBError. There is actually a source here.
-            Self::EmptyExpressionTree { .. } => None,
-        }
+typedb_error! {
+    pub ExpressionRepresentationError(component = "Expression representation", prefix = "ERP") {
+        EmptyExpressionTree(1, "Illegal empty expression."),
     }
 }

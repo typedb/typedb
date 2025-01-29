@@ -8,10 +8,13 @@ use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::pattern::{
-    constraint::{Comparator, Constraint},
-    expression::Expression,
-    ParameterID, Vertex,
+use ir::{
+    pattern::{
+        constraint::{Comparator, Constraint},
+        expression::Expression,
+        ParameterID, Vertex,
+    },
+    pipeline::VariableRegistry,
 };
 use itertools::Itertools;
 
@@ -19,9 +22,9 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         insert::{
-            get_kinds_from_annotations, get_thing_source,
+            get_kinds_from_types, get_thing_input_position,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
-            ThingSource, TypeSource, ValueSource, VariableSource, WriteCompilationError,
+            ThingPosition, TypeSource, ValueSource, VariableSource, WriteCompilationError,
         },
         next_executable_id,
     },
@@ -52,13 +55,15 @@ pub fn compile(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
+    variable_registry: &VariableRegistry,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
-    let variables = add_inserted_concepts(constraints, input_variables, type_annotations, &mut concept_inserts)?;
+    let variables =
+        add_inserted_concepts(constraints, input_variables, type_annotations, variable_registry, &mut concept_inserts)?;
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
-    add_has(constraints, &variables, &mut connection_inserts)?;
-    add_role_players(constraints, type_annotations, &variables, &mut connection_inserts)?;
+    add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
+    add_role_players(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
 
     let output_width = variables.values().map(|i| i.position + 1).max().unwrap_or(0);
     let mut output_row_schema = vec![None; output_width as usize];
@@ -78,6 +83,7 @@ fn add_inserted_concepts(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
+    variable_registry: &VariableRegistry,
     vertex_instructions: &mut Vec<ConceptInstruction>,
 ) -> Result<HashMap<Variable, VariablePosition>, Box<WriteCompilationError>> {
     let first_inserted_variable_position =
@@ -90,7 +96,13 @@ fn add_inserted_concepts(
         let &Vertex::Variable(thing) = isa.thing() else { unreachable!() };
 
         if input_variables.contains_key(&thing) {
-            return Err(Box::new(WriteCompilationError::IsaStatementForInputVariable { variable: thing }));
+            return Err(Box::new(WriteCompilationError::InsertIsaStatementForInputVariable {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&thing)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            }));
         }
 
         let type_ = if let Some(type_) = type_bindings.get(isa.type_()) {
@@ -101,33 +113,49 @@ fn add_inserted_concepts(
                     TypeSource::InputVariable(input_variables[var])
                 }
                 _ => {
-                    return Err(Box::new(WriteCompilationError::CouldNotDetermineTypeOfInsertedVariable {
-                        variable: thing,
+                    return Err(Box::new(WriteCompilationError::InsertVariableUnknownType {
+                        variable: variable_registry
+                            .variable_names()
+                            .get(&thing)
+                            .cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     }))
                 }
             }
         };
 
         // Requires variable annotations for this stage to be available.
-        let annotations = type_annotations.vertex_annotations_of(isa.type_()).unwrap();
-        debug_assert!(!annotations.is_empty());
-        let kinds = get_kinds_from_annotations(annotations);
+        let types = type_annotations.vertex_annotations_of(isa.type_()).unwrap();
+        debug_assert!(!types.is_empty());
+        let kinds = get_kinds_from_types(types);
 
         if kinds.contains(&Kind::Role) {
-            return Err(Box::new(WriteCompilationError::IllegalInsertForRole { isa: isa.clone() }));
+            return Err(Box::new(WriteCompilationError::InsertIllegalRole {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&thing)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            }));
         }
 
         if kinds.contains(&Kind::Relation) || kinds.contains(&Kind::Entity) {
             if kinds.contains(&Kind::Attribute) {
-                return Err(Box::new(WriteCompilationError::IsaTypeMayBeAttributeOrObject { isa: isa.clone() }));
+                return Err(Box::new(WriteCompilationError::InsertVariableAmbiguousAttributeOrObject {
+                    variable: variable_registry
+                        .variable_names()
+                        .get(&thing)
+                        .cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                }));
             }
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
-            let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingSource(write_to) });
+            let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingPosition(write_to) });
             vertex_instructions.push(instruction);
         } else {
             debug_assert!(kinds.len() == 1 && kinds.contains(&Kind::Attribute));
-            let value_variable = resolve_value_variable_for_inserted_attribute(constraints, thing)?;
+            let value_variable = resolve_value_variable_for_inserted_attribute(constraints, thing, variable_registry)?;
             let value = if let Some(&constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!value_variable
                     .as_variable()
@@ -137,19 +165,27 @@ fn add_inserted_concepts(
                 if let Some(&position) = input_variables.get(&variable) {
                     ValueSource::Variable(position)
                 } else {
-                    return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
-                        variable: thing,
+                    return Err(Box::new(WriteCompilationError::MissingExpectedInput {
+                        variable: variable_registry
+                            .variable_names()
+                            .get(&thing)
+                            .cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     }));
                 }
             } else {
-                return Err(Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute {
-                    variable: thing,
+                return Err(Box::new(WriteCompilationError::MissingExpectedInput {
+                    variable: variable_registry
+                        .variable_names()
+                        .get(&thing)
+                        .cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 }));
             };
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction =
-                ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingSource(write_to) });
+                ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingPosition(write_to) });
             vertex_instructions.push(instruction);
         };
     }
@@ -159,11 +195,13 @@ fn add_inserted_concepts(
 fn add_has(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
+    variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
-        let owner = get_thing_source(input_variables, has.owner().as_variable().unwrap())?;
-        let attribute = get_thing_source(input_variables, has.attribute().as_variable().unwrap())?;
+        let owner = get_thing_input_position(input_variables, has.owner().as_variable().unwrap(), variable_registry)?;
+        let attribute =
+            get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry)?;
         instructions.push(ConnectionInstruction::Has(Has { owner, attribute }));
         Ok(())
     })
@@ -173,12 +211,18 @@ fn add_role_players(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
+    variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
+    let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
     for role_player in filter_variants!(Constraint::Links: constraints) {
-        let relation = get_thing_source(input_variables, role_player.relation().as_variable().unwrap())?;
-        let player = get_thing_source(input_variables, role_player.player().as_variable().unwrap())?;
+        let relation = get_thing_input_position(
+            input_variables,
+            role_player.relation().as_variable().unwrap(),
+            variable_registry,
+        )?;
+        let player =
+            get_thing_input_position(input_variables, role_player.player().as_variable().unwrap(), variable_registry)?;
         let &Vertex::Variable(role_variable) = role_player.role_type() else { unreachable!() };
 
         let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
@@ -190,8 +234,13 @@ fn add_role_players(
                 if annotations.len() == 1 {
                     TypeSource::Constant(*annotations.iter().find(|_| true).unwrap())
                 } else {
-                    return Err(Box::new(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
-                        variable: role_variable,
+                    return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
+                        player_variable: variable_registry
+                            .variable_names()
+                            .get(&role_player.relation().as_variable().unwrap())
+                            .cloned()
+                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        role_types: annotations.iter().join(", "),
                     }));
                 }
             }
@@ -202,10 +251,11 @@ fn add_role_players(
     Ok(())
 }
 
-fn resolve_value_variable_for_inserted_attribute(
-    constraints: &[Constraint<Variable>],
+fn resolve_value_variable_for_inserted_attribute<'a>(
+    constraints: &'a [Constraint<Variable>],
     variable: Variable,
-) -> Result<&Vertex<Variable>, Box<WriteCompilationError>> {
+    variable_registry: &VariableRegistry,
+) -> Result<&'a Vertex<Variable>, Box<WriteCompilationError>> {
     // Find the comparison linking thing to value
     let (comparator, value_variable) = filter_variants!(Constraint::Comparison: constraints)
         .filter_map(|cmp| {
@@ -220,12 +270,25 @@ fn resolve_value_variable_for_inserted_attribute(
         .exactly_one()
         .map_err(|mut err| {
             debug_assert_eq!(err.next(), None);
-            Box::new(WriteCompilationError::CouldNotDetermineValueOfInsertedAttribute { variable })
+            Box::new(WriteCompilationError::InsertAttributeMissingValue {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            })
         })?;
     if comparator == Comparator::Equal {
         Ok(value_variable)
     } else {
-        Err(Box::new(WriteCompilationError::IllegalPredicateInAttributeInsert { variable, comparator }))
+        Err(Box::new(WriteCompilationError::InsertIllegalPredicate {
+            variable: variable_registry
+                .variable_names()
+                .get(&variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            comparator,
+        }))
     }
 }
 
@@ -289,6 +352,7 @@ fn collect_type_bindings(
 pub(crate) fn collect_role_type_bindings(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
+    variable_registry: &VariableRegistry,
 ) -> Result<HashMap<Variable, answer::Type>, Box<WriteCompilationError>> {
     #[cfg(debug_assertions)]
     let mut seen = HashSet::new();
@@ -300,7 +364,14 @@ pub(crate) fn collect_role_type_bindings(
             let type_ = if annotations.len() == 1 {
                 annotations.iter().find(|_| true).unwrap()
             } else {
-                return Err(Box::new(WriteCompilationError::CouldNotUniquelyResolveRoleTypeFromName { variable }));
+                return Err(Box::new(WriteCompilationError::AmbiguousRoleType {
+                    variable: variable_registry
+                        .variable_names()
+                        .get(&variable)
+                        .cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    role_types: annotations.iter().join(", "),
+                }));
             };
 
             #[cfg(debug_assertions)]

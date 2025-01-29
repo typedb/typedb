@@ -58,9 +58,9 @@ impl fmt::Debug for dyn TypeDBError + '_ {
 impl fmt::Display for dyn TypeDBError + '_ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(source) = self.source_typedb_error() {
-            write!(f, "[{}] {}\nCause: \n\t {:?}", self.code(), self.format_description(), source as &dyn TypeDBError)
+            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), source as &dyn TypeDBError)
         } else if let Some(source) = self.source() {
-            write!(f, "[{}] {}\nCause: \n\t {:?}", self.code(), self.format_description(), source)
+            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), source)
         } else {
             write!(f, "{}", self.format_code_and_description())
         }

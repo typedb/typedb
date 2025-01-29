@@ -16,6 +16,6 @@ typedb_error! {
         ConceptRead(2, "Concept read error.", source: Box<ConceptReadError>),
         CreatingIterator(3, "Error creating iterator from {instruction_name} instruction.", instruction_name: String, source: Box<ConceptReadError>),
         AdvancingIteratorTo(4, "Error moving iterator (by steps or seek) to target value.", source: Box<ConceptReadError>),
-        ExpressionEvaluate(5, "Error evaluating expression", source: ExpressionEvaluationError),
+        ExpressionEvaluate(5, "Error evaluating expression.", typedb_source: ExpressionEvaluationError),
     }
 }

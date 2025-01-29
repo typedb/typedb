@@ -56,13 +56,14 @@ use crate::{
 };
 
 macro_rules! verify_no_annotations_for_capability {
-    ($capability:ident, $annotation_error:path) => {
+    ($capability:ident, $annotation_error:path, $error_arg_name:ident) => {
         if let Some(typeql_annotation) = &$capability.annotations.first() {
             let annotation = translate_annotation(typeql_annotation)
-                .map_err(|source| RedefineError::LiteralParseError { source })?;
+                .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
+            let error = { $annotation_error { $error_arg_name: annotation.category() } };
             Err(RedefineError::IllegalCapabilityAnnotation {
                 declaration: $capability.clone(),
-                source: $annotation_error(annotation.category()),
+                typedb_source: error,
                 annotation,
             })
         } else {
@@ -217,8 +218,8 @@ fn redefine_type_annotations(
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for typeql_annotation in &type_declaration.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         match type_ {
             TypeEnum::Entity(entity) => {
                 if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
@@ -274,7 +275,9 @@ fn redefine_type_annotations(
                             type_: label.to_owned(),
                             annotation: annotation.clone(),
                             declaration: type_declaration.clone(),
-                            source: AnnotationError::UnsupportedAnnotationForAttributeType(annotation.category()),
+                            typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
+                                category: annotation.category(),
+                            },
                         });
                     }
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
@@ -373,7 +376,7 @@ fn redefine_sub(
 }
 
 fn redefine_sub_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
-    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub)
+    verify_no_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForSub, category)
 }
 
 fn redefine_value_type(
@@ -450,8 +453,8 @@ fn redefine_value_type_annotations(
     typeql_type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = type_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -463,7 +466,9 @@ fn redefine_value_type_annotations(
             if !converted.is_value_type_annotation() {
                 return Err(RedefineError::IllegalCapabilityAnnotation {
                     declaration: typeql_capability.clone(),
-                    source: AnnotationError::UnsupportedAnnotationForValueType(annotation.category()),
+                    typedb_source: AnnotationError::UnsupportedAnnotationForValueType {
+                        category: annotation.category(),
+                    },
                     annotation,
                 });
             }
@@ -569,8 +574,8 @@ fn redefine_relates_annotations(
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -742,8 +747,8 @@ fn redefine_owns_annotations(
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -833,8 +838,8 @@ fn redefine_plays_annotations(
     typeql_capability: &Capability,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
-        let annotation =
-            translate_annotation(typeql_annotation).map_err(|source| RedefineError::LiteralParseError { source })?;
+        let annotation = translate_annotation(typeql_annotation)
+            .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
         if let Some(converted) = capability_convert_and_validate_annotation_redefinition_need(
             snapshot,
             type_manager,
@@ -915,13 +920,14 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
 ) -> Result<Option<T::AnnotationType>, RedefineError> {
     error_if_not_redefinable(label, annotation.clone())?;
 
-    let converted =
-        T::AnnotationType::try_from(annotation.clone()).map_err(|source| RedefineError::IllegalTypeAnnotation {
+    let converted = T::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| {
+        RedefineError::IllegalTypeAnnotation {
             type_: label.clone(),
             annotation: annotation.clone(),
             declaration: typeql_declaration.clone(),
-            source,
-        })?;
+            typedb_source,
+        }
+    })?;
 
     let definition_status =
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
@@ -951,11 +957,11 @@ fn capability_convert_and_validate_annotation_redefinition_need<CAP: concept::ty
 ) -> Result<Option<CAP::AnnotationType>, RedefineError> {
     error_if_not_redefinable(label, annotation.clone())?;
 
-    let converted = CAP::AnnotationType::try_from(annotation.clone()).map_err(|source| {
+    let converted = CAP::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| {
         RedefineError::IllegalCapabilityAnnotation {
             declaration: typeql_capability.clone(),
             annotation: annotation.clone(),
-            source,
+            typedb_source,
         }
     })?;
 
@@ -1012,7 +1018,7 @@ typedb_error! {
         UnexpectedConceptRead(2, "Concept read error during redefine query execution.", source: Box<ConceptReadError>),
         NothingRedefined(3, "Nothing was redefined."),
         DefinitionResolution(4, "Could not find symbol in redefine query.", typedb_source: Box<SymbolResolutionError>),
-        LiteralParseError(5, "Error parsing literal in redefine query.", source: LiteralParseError),
+        LiteralParseError(5, "Error parsing literal in redefine query.", typedb_source: LiteralParseError),
         CanOnlyRedefineOneThingPerQuery(6, "Redefine queries can currently only mutate exactly one schema element per query."),
         StructFieldDoesNotExist(7, "Struct field used in redefine query does not exist.\nSource:\n{declaration}", declaration: Field),
         StructFieldRemainsSame(8, "Struct field in redefine was not changed. Redefine queries are required to update the schema.\nSource:\n{declaration}", declaration: Field),
@@ -1179,14 +1185,14 @@ typedb_error! {
             type_: Label,
             annotation: Annotation,
             declaration: Type,
-            source: AnnotationError
+            typedb_source: AnnotationError
         ),
         IllegalCapabilityAnnotation(
             31,
             "Redefining to have annotation '{annotation}' failed.\nSource:\n{declaration}",
             annotation: Annotation,
             declaration: Capability,
-            source: AnnotationError
+            typedb_source: AnnotationError
         ),
         SetTypeAnnotation(
             32,

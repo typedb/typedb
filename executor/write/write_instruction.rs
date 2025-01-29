@@ -6,7 +6,7 @@
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::executable::insert::{
     instructions::{PutAttribute, PutObject},
-    ThingSource, TypeSource, ValueSource,
+    ThingPosition, TypeSource, ValueSource,
 };
 use concept::thing::{
     object::{Object, ObjectAPI},
@@ -36,8 +36,8 @@ fn get_type<'a>(input: &'a Row<'_>, source: &'a TypeSource) -> &'a answer::Type 
     }
 }
 
-fn get_thing<'a>(input: &'a Row<'a>, source: &ThingSource) -> &'a answer::Thing {
-    let ThingSource(position) = source;
+fn get_thing<'a>(input: &'a Row<'a>, source: &ThingPosition) -> &'a answer::Thing {
+    let ThingPosition(position) = source;
     input.get(*position).as_thing()
 }
 
@@ -78,7 +78,7 @@ impl AsWriteInstruction for PutAttribute {
         let inserted = thing_manager
             .create_attribute(snapshot, *attribute_type, get_value(row, parameters, self.value).clone())
             .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
-        let ThingSource(write_to) = &self.write_to;
+        let ThingPosition(write_to) = &self.write_to;
         row.set(*write_to, VariableValue::Thing(Thing::Attribute(inserted)));
         Ok(())
     }
@@ -107,7 +107,7 @@ impl AsWriteInstruction for PutObject {
             }
             Type::Attribute(_) | Type::RoleType(_) => unreachable!(),
         };
-        let ThingSource(write_to) = &self.write_to;
+        let ThingPosition(write_to) = &self.write_to;
         row.set(*write_to, VariableValue::Thing(inserted));
         Ok(())
     }
@@ -175,7 +175,7 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::ThingIns
                     .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
             }
         }
-        let ThingSource(position) = &self.thing;
+        let ThingPosition(position) = &self.thing;
         row.unset(*position);
         Ok(())
     }

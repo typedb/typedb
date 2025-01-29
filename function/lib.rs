@@ -21,7 +21,7 @@ typedb_error! {
         FunctionTranslation(4, "Failed to translate TypeQL function into internal representation", typedb_source: FunctionRepresentationError),
         FunctionAlreadyExists(5, "A function with name '{name}' already exists", name: String),
         CreateFunctionEncoding(6, "Encoding error while trying to create function.", source: EncodingError),
-        FunctionRetrieval(7, "Error retrieving function.", source: FunctionReadError),
+        FunctionRetrieval(7, "Error retrieving function.", typedb_source: FunctionReadError),
         CommittedFunctionParseError(8, "Error while parsing committed.", typedb_source: typeql::Error),
         StratificationViolation(9, "Detected a recursive cycle through a negation or reduction: [{cycle_names}]", cycle_names: String),
     }

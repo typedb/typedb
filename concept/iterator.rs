@@ -10,7 +10,6 @@
 use std::marker::PhantomData;
 
 use encoding::graph::thing::ThingVertex;
-use error::{ensure_unimplemented_unused, unimplemented_feature};
 use lending_iterator::LendingIterator;
 
 use crate::{

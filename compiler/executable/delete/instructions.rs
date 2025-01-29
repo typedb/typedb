@@ -6,7 +6,7 @@
 
 use std::fmt;
 
-use crate::executable::insert::{ThingSource, TypeSource};
+use crate::executable::insert::{ThingPosition, TypeSource};
 
 #[derive(Debug)]
 pub enum ConnectionInstruction {
@@ -25,7 +25,7 @@ impl fmt::Display for ConnectionInstruction {
 
 #[derive(Debug)]
 pub struct ThingInstruction {
-    pub thing: ThingSource,
+    pub thing: ThingPosition,
 }
 
 impl fmt::Display for ThingInstruction {
@@ -36,13 +36,13 @@ impl fmt::Display for ThingInstruction {
 
 #[derive(Debug)]
 pub struct Has {
-    pub owner: ThingSource,
-    pub attribute: ThingSource,
+    pub owner: ThingPosition,
+    pub attribute: ThingPosition,
 }
 
 #[derive(Debug)]
 pub struct Links {
-    pub relation: ThingSource,
-    pub player: ThingSource,
+    pub relation: ThingPosition,
+    pub player: ThingPosition,
     pub role: TypeSource,
 }

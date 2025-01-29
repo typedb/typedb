@@ -132,7 +132,7 @@ impl Relates {
         annotation_category: AnnotationCategory,
     ) -> Result<(), Box<ConceptWriteError>> {
         let relates_annotation = RelatesAnnotation::try_getting_default(annotation_category)
-            .map_err(|source| ConceptWriteError::Annotation { source })?;
+            .map_err(|typedb_source| ConceptWriteError::Annotation { typedb_source })?;
         match relates_annotation {
             RelatesAnnotation::Abstract(_) => type_manager.unset_relates_annotation_abstract(snapshot, *self)?,
             RelatesAnnotation::Distinct(_) => type_manager.unset_relates_annotation_distinct(snapshot, *self)?,
@@ -258,7 +258,9 @@ impl TryFrom<Annotation> for RelatesAnnotation {
             | Annotation::Regex(_)
             | Annotation::Cascade(_)
             | Annotation::Range(_)
-            | Annotation::Values(_) => Err(AnnotationError::UnsupportedAnnotationForRelates(annotation.category())),
+            | Annotation::Values(_) => {
+                Err(AnnotationError::UnsupportedAnnotationForRelates { category: annotation.category() })
+            }
         }
     }
 }

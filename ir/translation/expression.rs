@@ -109,8 +109,10 @@ fn register_typeql_literal(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     literal: &typeql::Literal,
 ) -> Result<ParameterID, Box<RepresentationError>> {
-    let value = translate_literal(literal)
-        .map_err(|source| RepresentationError::LiteralParseError { literal: literal.to_string(), source })?;
+    let value = translate_literal(literal).map_err(|typedb_source| RepresentationError::LiteralParseError {
+        literal: literal.to_string(),
+        typedb_source,
+    })?;
     let id = constraints.parameters().register_value(value);
     Ok(id)
 }
@@ -125,7 +127,7 @@ pub fn add_user_defined_function_call(
     let arguments = split_out_inline_expressions(function_index, constraints, args)?;
     let callee = function_index
         .get_function_signature(function_name)
-        .map_err(|source| RepresentationError::FunctionReadError { source })?;
+        .map_err(|typedb_source| RepresentationError::FunctionReadError { typedb_source })?;
     let Some(callee) = callee else {
         return Err(Box::new(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() }));
     };

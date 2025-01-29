@@ -96,6 +96,17 @@ impl<'a> VariableValue<'a> {
     pub fn is_empty(&self) -> bool {
         matches!(self, Self::Empty)
     }
+
+    pub fn variant_name(&self) -> &'static str {
+        match self {
+            VariableValue::Empty => "empty",
+            VariableValue::Type(_) => "type",
+            VariableValue::Thing(_) => "thing",
+            VariableValue::Value(_) => "value",
+            VariableValue::ThingList(_) => "thing list",
+            VariableValue::ValueList(_) => "value list",
+        }
+    }
 }
 
 impl Hkt for VariableValue<'static> {

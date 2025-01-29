@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, error::Error, fmt, sync::Arc};
+use std::{collections::HashMap, fmt, sync::Arc};
 
 use answer::variable::Variable;
 use bytes::byte_array::ByteArray;
@@ -33,31 +33,16 @@ pub mod function_signature;
 pub mod modifier;
 pub mod reduce;
 
-#[derive(Debug, Clone)]
-pub enum FunctionReadError {
-    FunctionNotFound { function_id: FunctionID },
-    FunctionRetrieval { source: SnapshotGetError },
-    FunctionsScan { source: Arc<SnapshotIteratorError> },
-}
-
-impl fmt::Display for FunctionReadError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        error::todo_display_for_error!(f, self)
-    }
-}
-
-impl Error for FunctionReadError {
-    fn source(&self) -> Option<&(dyn Error + 'static)> {
-        match self {
-            Self::FunctionRetrieval { source } => Some(source),
-            Self::FunctionsScan { source } => Some(source),
-            Self::FunctionNotFound { .. } => None,
-        }
+typedb_error! {
+    pub FunctionReadError(component = "Function read", prefix = "FNR") {
+        FunctionIDNotFound(1, "Function '{name}' not found by its internal ID '{id}'.", name: String, id: FunctionID),
+        FunctionRetrieval(2, "Error retrieving function.", source: SnapshotGetError),
+        FunctionsScan(3, "Error scanning functions.", source: Arc<SnapshotIteratorError>),
     }
 }
 
 typedb_error! {
-    pub FunctionRepresentationError(component = "Function representation", prefix = "FNR") {
+    pub FunctionRepresentationError(component = "Function representation", prefix = "FRP") {
         FunctionArgumentUnused(
             1,
             "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",
@@ -121,6 +106,8 @@ pub struct VariableRegistry {
 }
 
 impl VariableRegistry {
+    pub const UNNAMED_VARIABLE_DISPLAY_NAME: &'static str = "_anonymous";
+
     pub(crate) fn new() -> VariableRegistry {
         Self {
             variable_names: HashMap::new(),

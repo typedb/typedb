@@ -22,11 +22,13 @@ pub struct FunctionCall<ID> {
     call_variable_mapping: BTreeMap<ID, usize>,
 }
 
-impl<ID: IrID> FunctionCall<ID> {
+impl<ID> FunctionCall<ID> {
     pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>) -> Self {
         Self { function_id, call_variable_mapping }
     }
+}
 
+impl<ID: IrID> FunctionCall<ID> {
     pub fn function_id(&self) -> FunctionID {
         self.function_id.clone()
     }
@@ -39,7 +41,7 @@ impl<ID: IrID> FunctionCall<ID> {
         self.call_variable_mapping.keys().cloned()
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> FunctionCall<T> {
+    pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCall<T> {
         FunctionCall::new(
             self.function_id.clone(),
             self.call_variable_mapping.iter().map(|(k, v)| (k.map(mapping), v.clone())).collect(),

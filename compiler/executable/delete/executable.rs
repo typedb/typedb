@@ -8,14 +8,19 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use encoding::graph::type_::Kind;
-use ir::pattern::{constraint::Constraint, Vertex};
+use ir::{
+    pattern::{constraint::Constraint, Vertex},
+    pipeline::VariableRegistry,
+};
+use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
-            executable::collect_role_type_bindings, get_thing_source, ThingSource, TypeSource, WriteCompilationError,
+            executable::collect_role_type_bindings, get_thing_input_position, ThingPosition, TypeSource,
+            WriteCompilationError,
         },
         next_executable_id,
     },
@@ -34,23 +39,40 @@ pub struct DeleteExecutable {
 pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
+    variable_registry: &VariableRegistry,
     constraints: &[Constraint<Variable>],
     deleted_concepts: &[Variable],
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let named_role_types = collect_role_type_bindings(constraints, type_annotations)?;
+    let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
     let mut connection_deletes = Vec::new();
     for constraint in constraints {
         match constraint {
             Constraint::Has(has) => {
                 connection_deletes.push(ConnectionInstruction::Has(Has {
-                    owner: get_thing_source(input_variables, has.owner().as_variable().unwrap())?,
-                    attribute: get_thing_source(input_variables, has.attribute().as_variable().unwrap())?,
+                    owner: get_thing_input_position(
+                        input_variables,
+                        has.owner().as_variable().unwrap(),
+                        variable_registry,
+                    )?,
+                    attribute: get_thing_input_position(
+                        input_variables,
+                        has.attribute().as_variable().unwrap(),
+                        variable_registry,
+                    )?,
                 }));
             }
-            Constraint::Links(role_player) => {
-                let relation = get_thing_source(input_variables, role_player.relation().as_variable().unwrap())?;
-                let player = get_thing_source(input_variables, role_player.player().as_variable().unwrap())?;
-                let role_type = role_player.role_type();
+            Constraint::Links(links) => {
+                let relation = get_thing_input_position(
+                    input_variables,
+                    links.relation().as_variable().unwrap(),
+                    variable_registry,
+                )?;
+                let player = get_thing_input_position(
+                    input_variables,
+                    links.player().as_variable().unwrap(),
+                    variable_registry,
+                )?;
+                let role_type = links.role_type();
                 let role = match role_type {
                     &Vertex::Variable(input) => {
                         if let Some(input) = input_variables.get(&input) {
@@ -62,8 +84,13 @@ pub fn compile(
                             if annotations.len() == 1 {
                                 TypeSource::Constant(*annotations.iter().next().unwrap())
                             } else {
-                                return Err(WriteCompilationError::CouldNotUniquelyDetermineRoleType {
-                                    variable: input,
+                                return Err(WriteCompilationError::InsertLinksAmbiguousRoleType {
+                                    player_variable: variable_registry
+                                        .variable_names()
+                                        .get(&links.player().as_variable().unwrap())
+                                        .cloned()
+                                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                                    role_types: annotations.iter().join(", "),
                                 })?;
                             }
                         }
@@ -96,7 +123,13 @@ pub fn compile(
     let mut concept_deletes = Vec::new();
     for &variable in deleted_concepts {
         let Some(input_position) = input_variables.get(&variable) else {
-            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput { variable }));
+            return Err(Box::new(WriteCompilationError::DeletedThingWasNotInInput {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            }));
         };
         if type_annotations
             .vertex_annotations_of(&Vertex::Variable(variable))
@@ -104,9 +137,15 @@ pub fn compile(
             .iter()
             .any(|type_| type_.kind() == Kind::Role)
         {
-            return Err(Box::new(WriteCompilationError::IllegalRoleDelete { variable }));
+            return Err(Box::new(WriteCompilationError::DeleteIllegalRoleVariable {
+                variable: variable_registry
+                    .variable_names()
+                    .get(&variable)
+                    .cloned()
+                    .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            }));
         } else {
-            concept_deletes.push(ThingInstruction { thing: ThingSource(*input_position) });
+            concept_deletes.push(ThingInstruction { thing: ThingPosition(*input_position) });
         };
     }
 

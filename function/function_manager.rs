@@ -80,7 +80,7 @@ impl FunctionManager {
 
     pub fn finalise(self, snapshot: &impl WritableSnapshot, type_manager: &TypeManager) -> Result<(), FunctionError> {
         let functions = FunctionReader::get_functions_all(snapshot)
-            .map_err(|source| FunctionError::FunctionRetrieval { source })?;
+            .map_err(|typedb_source| FunctionError::FunctionRetrieval { typedb_source })?;
         // TODO: Optimise: We recompile & redo type-inference on all functions here.
         // Prepare ir
         let function_index =
@@ -110,7 +110,7 @@ impl FunctionManager {
                 SchemaFunction::build(definition_key, FunctionDefinition::build_ref(definition.unparsed.as_str()))?;
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
             let existing = snapshot.get::<BUFFER_VALUE_INLINE>(index_key.as_reference()).map_err(|source| {
-                FunctionError::FunctionRetrieval { source: FunctionReadError::FunctionRetrieval { source } }
+                FunctionError::FunctionRetrieval { typedb_source: FunctionReadError::FunctionRetrieval { source } }
             })?;
             if existing.is_some() {
                 Err(FunctionError::FunctionAlreadyExists { name: function.name() })?;
@@ -138,7 +138,7 @@ impl FunctionManager {
 
     pub fn undefine_function(&self, snapshot: &mut impl WritableSnapshot, name: &str) -> Result<(), FunctionError> {
         let definition_key = match self.get_function_key(snapshot, name) {
-            Err(source) => Err(FunctionError::FunctionRetrieval { source }),
+            Err(typedb_source) => Err(FunctionError::FunctionRetrieval { typedb_source }),
             Ok(None) => Err(FunctionError::FunctionNotFound {}),
             Ok(Some(key)) => Ok(key),
         }?;
@@ -156,7 +156,7 @@ impl FunctionManager {
     ) -> Result<SchemaFunction, FunctionError> {
         // TODO: Better query time checking. Maybe redefine all functions at once.
         let definition_key = match self.get_function_key(snapshot, definition.signature.ident.as_str_unchecked()) {
-            Err(source) => Err(FunctionError::FunctionRetrieval { source }),
+            Err(typedb_source) => Err(FunctionError::FunctionRetrieval { typedb_source }),
             Ok(None) => Err(FunctionError::FunctionNotFound {}),
             Ok(Some(key)) => Ok(key),
         }?;
@@ -211,11 +211,12 @@ impl FunctionManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         definition_key: DefinitionKey,
+        name: &str,
     ) -> Result<MaybeOwns<SchemaFunction>, FunctionReadError> {
         if let Some(cache) = &self.function_cache {
             Ok(MaybeOwns::Borrowed(cache.get_function(definition_key).unwrap()))
         } else {
-            Ok(MaybeOwns::Owned(FunctionReader::get_function(snapshot, definition_key)?))
+            Ok(MaybeOwns::Owned(FunctionReader::get_function(snapshot, definition_key, name)?))
         }
     }
 }
@@ -255,12 +256,13 @@ impl FunctionReader {
     pub(crate) fn get_function(
         snapshot: &impl ReadableSnapshot,
         definition_key: DefinitionKey,
+        name: &str,
     ) -> Result<SchemaFunction, FunctionReadError> {
         snapshot
             .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())
             .map_err(|source| FunctionReadError::FunctionRetrieval { source })?
             .map_or(
-                Err(FunctionReadError::FunctionNotFound { function_id: FunctionID::Schema(definition_key.clone()) }),
+                Err(FunctionReadError::FunctionIDNotFound { name: name.to_owned(), id: FunctionID::Schema(definition_key.clone()) }),
                 |bytes| Ok(SchemaFunction::build(definition_key, FunctionDefinition::new(Bytes::Array(bytes))).unwrap()),
             )
     }
@@ -434,7 +436,7 @@ impl<Snapshot: ReadableSnapshot> FunctionSignatureIndex for ReadThroughFunctionS
         Ok(if let Some(signature) = self.buffered.get_function_signature(name)? {
             Some(signature)
         } else if let Some(key) = self.function_manager.get_function_key(self.snapshot, name)? {
-            let function = self.function_manager.get_function(self.snapshot, key)?;
+            let function = self.function_manager.get_function(self.snapshot, key, name)?;
             let signature = build_signature(FunctionID::Schema(function.function_id.clone()), &function.parsed);
             Some(MaybeOwns::Owned(signature))
         } else {
@@ -539,7 +541,11 @@ pub mod tests {
             );
             assert_eq!(
                 expected_name,
-                function_manager.get_function(&snapshot, expected_function_id.clone()).unwrap().name().as_str()
+                function_manager
+                    .get_function(&snapshot, expected_function_id.clone(), expected_name)
+                    .unwrap()
+                    .name()
+                    .as_str()
             );
             function_manager.finalise(&snapshot, &type_manager).unwrap();
             snapshot.commit().unwrap().unwrap()
@@ -555,7 +561,11 @@ pub mod tests {
             );
             assert_eq!(
                 expected_name,
-                function_manager.get_function(&snapshot, expected_function_id.clone()).unwrap().name().as_str()
+                function_manager
+                    .get_function(&snapshot, expected_function_id.clone(), expected_name)
+                    .unwrap()
+                    .name()
+                    .as_str()
             );
             let index = ReadThroughFunctionSignatureIndex::new(
                 &snapshot,
