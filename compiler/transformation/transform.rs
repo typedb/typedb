@@ -44,11 +44,15 @@ pub fn apply_transformations(
 
 fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block_annotations: &mut TypeAnnotations) {
     // TODO: If either the role-players or the players
-    // conjunction.constraints_mut().constraints_mut().retain(|constraint| {
-    //     if let Constraint::RolePlayerDeduplication(dedup) = constraint {
-    //         constraint.links1(), constraints.links2()
-    //     } else {
-    //         true
-    //     }
-    // })
+    conjunction.constraints_mut().constraints_mut().retain(|constraint| {
+        if let Constraint::RolePlayerDeduplication(dedup) = constraint {
+            let first = block_annotations.constraint_annotations_of(Constraint::Links(dedup.links1().clone())).unwrap().as_links().player_to_role();
+            let second = block_annotations.constraint_annotations_of(Constraint::Links(dedup.links2().clone())).unwrap().as_links().player_to_role();
+            first.iter().any(|(player, role_types)| {
+                return second.get(&player).map(|type_set| role_types.iter().any(|role_type| type_set.contains(role_type))).unwrap_or(false)
+            })
+        } else {
+            true
+        }
+    });
 }
