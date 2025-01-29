@@ -59,6 +59,12 @@ features = {}
 		version = "0.8.15"
 		default-features = false
 
+	[dependencies.typeql]
+		features = []
+		git = "https://github.com/typedb/typeql"
+		tag = "3.0.4"
+		default-features = false
+
 	[dependencies.tonic]
 		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
 		version = "0.12.3"
@@ -74,14 +80,14 @@ features = {}
 		version = "0.14.32"
 		default-features = false
 
-	[dependencies.hyper-rustls]
-		features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
-		version = "0.25.0"
-		default-features = false
-
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
 		version = "1.0.135"
+		default-features = false
+
+	[dependencies.hyper-rustls]
+		features = ["acceptor", "default", "http1", "log", "logging", "native-tokio", "ring", "rustls-native-certs", "tls12", "tokio-runtime"]
+		version = "0.25.0"
 		default-features = false
 
 	[dependencies.sentry]

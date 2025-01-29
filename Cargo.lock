@@ -895,6 +895,7 @@ dependencies = [
  "tokio",
  "tonic",
  "tonic-types",
+ "typeql",
  "xxhash-rust",
 ]
 
@@ -3504,6 +3505,7 @@ dependencies = [
  "test_utils",
  "test_utils_storage",
  "tracing",
+ "typeql",
  "xoshiro",
 ]
 

@@ -17,6 +17,8 @@ rust_library(
         "//common/logger",
         "//resource",
 
+        "@typeql//rust:typeql", # leaky but enables generic TypeDBError
+
         "@crates//:chrono",
         "@crates//:futures",
         "@crates//:hyper",
