@@ -34,12 +34,12 @@ def typedb_protocol():
 
 def typedb_behaviour():
     # TODO: Return typedb after merge
-    native.local_repository(
-        name = "typedb_behaviour",
-        path = "../typedb-behaviour",
-    )
-#    git_repository(
+#    native.local_repository(
 #        name = "typedb_behaviour",
-#        remote = "https://github.com/typedb/typedb-behaviour",
-#        commit = "1cef4b5af6599861fb240b722a66dc4383846554",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
+#        path = "../typedb-behaviour",
 #    )
+    git_repository(
+        name = "typedb_behaviour",
+        remote = "https://github.com/typedb/typedb-behaviour",
+        commit = "1cef4b5af6599861fb240b722a66dc4383846554",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
+    )
