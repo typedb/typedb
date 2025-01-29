@@ -1514,10 +1514,10 @@ impl ConjunctionPlan<'_> {
                 match_builder.push_check(&[lhs, rhs], check)
             }
             PlannerVertex::RolePlayerDeduplication(deduplication) => {
-                let role1 = deduplication.role_player_deduplication().role1().as_variable().unwrap();
-                let player1 = deduplication.role_player_deduplication().player1().as_variable().unwrap();
-                let role2 = deduplication.role_player_deduplication().role2().as_variable().unwrap();
-                let player2 = deduplication.role_player_deduplication().player2().as_variable().unwrap();
+                let role1 = deduplication.role_player_deduplication().links1().role_type().as_variable().unwrap();
+                let player1 = deduplication.role_player_deduplication().links1().player().as_variable().unwrap();
+                let role2 = deduplication.role_player_deduplication().links2().role_type().as_variable().unwrap();
+                let player2 = deduplication.role_player_deduplication().links2().player().as_variable().unwrap();
                 let check = CheckInstruction::RolePlayerDeduplication { role1, player1, role2, player2 }
                     .map(match_builder.position_mapping());
                 match_builder.push_check(&[role1, player1, role2, player2], check)

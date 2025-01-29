@@ -2239,20 +2239,12 @@ impl<ID: IrID> RolePlayerDeduplication<ID> {
         Self { links1, links2 }
     }
 
-    pub fn role1(&self) -> &Vertex<ID> {
-        &self.links1.role_type
+    pub fn links1(&self) -> &Links<ID> {
+        &self.links1
     }
 
-    pub fn player1(&self) -> &Vertex<ID> {
-        &self.links1.player
-    }
-
-    pub fn role2(&self) -> &Vertex<ID> {
-        &self.links2.role_type
-    }
-
-    pub fn player2(&self) -> &Vertex<ID> {
-        &self.links2.player
+    pub fn links2(&self) -> &Links<ID> {
+        &self.links2
     }
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {

@@ -44,4 +44,11 @@ pub fn apply_transformations(
 
 fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block_annotations: &mut TypeAnnotations) {
     // TODO: If either the role-players or the players
+    // conjunction.constraints_mut().constraints_mut().retain(|constraint| {
+    //     if let Constraint::RolePlayerDeduplication(dedup) = constraint {
+    //         constraint.links1(), constraints.links2()
+    //     } else {
+    //         true
+    //     }
+    // })
 }

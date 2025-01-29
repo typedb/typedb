@@ -386,10 +386,10 @@ impl<'a> RolePlayerDeduplicationPlanner<'a> {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        let role1 = role_player_deduplication.role1().as_variable().unwrap();
-        let player1 = role_player_deduplication.player1().as_variable().unwrap();
-        let role2 = role_player_deduplication.role2().as_variable().unwrap();
-        let player2 = role_player_deduplication.player2().as_variable().unwrap();
+        let role1 = role_player_deduplication.links1().role_type().as_variable().unwrap();
+        let player1 = role_player_deduplication.links1().player().as_variable().unwrap();
+        let role2 = role_player_deduplication.links2().role_type().as_variable().unwrap();
+        let player2 = role_player_deduplication.links2().player().as_variable().unwrap();
         Self {
             role_player_deduplication,
             role1: variable_index[&role1],
