@@ -2206,41 +2206,65 @@ impl<ID: IrID> fmt::Display for Value<ID> {
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
 pub struct Different<ID> {
-    lhs: Vertex<ID>,
-    rhs: Vertex<ID>,
+    role1: Vertex<ID>,
+    player1: Vertex<ID>,
+    role2: Vertex<ID>,
+    player2: Vertex<ID>,
 }
 
 impl<ID: IrID> Different<ID> {
-    fn new(lhs: ID, rhs: ID) -> Self {
-        Self { lhs: Vertex::Variable(lhs), rhs: Vertex::Variable(rhs) }
+    pub fn new(role1: ID, player1: ID, role2: ID, player2: ID) -> Self {
+        Self {
+            role1: Vertex::Variable(role1),
+            player1: Vertex::Variable(player1),
+            role2: Vertex::Variable(role2),
+            player2: Vertex::Variable(player2),
+        }
     }
 
-    pub fn lhs(&self) -> &Vertex<ID> {
-        &self.lhs
+    pub fn role1(&self) -> &Vertex<ID> {
+        &self.role1
     }
 
-    pub fn rhs(&self) -> &Vertex<ID> {
-        &self.rhs
+    pub fn player1(&self) -> &Vertex<ID> {
+        &self.player1
     }
+
+    pub fn role2(&self) -> &Vertex<ID> {
+        &self.role2
+    }
+
+    pub fn player2(&self) -> &Vertex<ID> {
+        &self.player2
+    }
+
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
-        [self.lhs.as_variable(), self.rhs.as_variable()].into_iter().flatten()
+        [self.role1.as_variable(), self.player1.as_variable(), self.role2.as_variable(), self.player2.as_variable()]
+            .into_iter().flatten()
     }
 
     pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
-        [&self.lhs, &self.rhs].into_iter()
+        [&self.role1, &self.player1, &self.role2, &self.player2].into_iter()
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
         where
             F: FnMut(ID),
     {
-        self.lhs.as_variable().inspect(|&id| function(id));
-        self.rhs.as_variable().inspect(|&id| function(id));
+        self.role1.as_variable().inspect(|&id| function(id));
+        self.player1.as_variable().inspect(|&id| function(id));
+        self.role2.as_variable().inspect(|&id| function(id));
+        self.player2.as_variable().inspect(|&id| function(id));
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> Different<T> {
-        Different { lhs: self.lhs.map(mapping), rhs: self.rhs.map(mapping) }
+        Different {
+            role1: self.role1.map(mapping),
+            player1: self.player1.map(mapping),
+            role2: self.role2.map(mapping),
+            player2: self.player2.map(mapping),
+        }
     }
 }
 
@@ -2253,18 +2277,21 @@ impl<ID: IrID> From<Different<ID>> for Constraint<ID> {
 impl<ID: StructuralEquality> StructuralEquality for Different<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        self.lhs.hash_into(&mut hasher);
-        self.rhs.hash_into(&mut hasher);
+        self.role1.hash_into(&mut hasher);
+        self.player1.hash_into(&mut hasher);
+        self.role2.hash_into(&mut hasher);
+        self.player2.hash_into(&mut hasher);
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.lhs.equals(&other.lhs) && self.rhs.equals(&other.rhs)
+        self.role1.equals(&other.role1) && self.player1.equals(&other.player1) &&
+            self.role2.equals(&other.role2) && self.player2.equals(&other.player2)
     }
 }
 
 impl<ID: IrID> fmt::Display for Different<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{} is {}", self.lhs, self.rhs)
+        write!(f, "Different(({}, {}), ({}, {}))", self.role1, self.player1, self.role2, self.player2)
     }
 }

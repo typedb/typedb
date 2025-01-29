@@ -1511,10 +1511,12 @@ impl ConjunctionPlan<'_> {
                 match_builder.push_check(&[lhs, rhs], check)
             }
             PlannerVertex::Different(different) => {
-                let lhs = different.different().lhs().as_variable().unwrap();
-                let rhs = different.different().rhs().as_variable().unwrap();
-                let check = CheckInstruction::Different { lhs, rhs }.map(match_builder.position_mapping());
-                match_builder.push_check(&[lhs, rhs], check)
+                let role1 = different.different().role1().as_variable().unwrap();
+                let player1 = different.different().player1().as_variable().unwrap();
+                let role2 = different.different().role2().as_variable().unwrap();
+                let player2 = different.different().player2().as_variable().unwrap();
+                let check = CheckInstruction::Different { role1, player1, role2, player2 }.map(match_builder.position_mapping());
+                match_builder.push_check(&[role1, player1, role2, player2], check)
             }
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();

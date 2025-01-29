@@ -799,26 +799,46 @@ impl<T> Checker<T> {
                     filters.push(Box::new(move |value| Ok(lhs(value) == rhs(value))));
                 }
 
-                &CheckInstruction::Different { lhs, rhs } => {
-                    let maybe_lhs_extractor = self.extractors.get(&lhs);
-                    let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
-                        Some(&lhs) => Box::new(lhs),
+                &CheckInstruction::Different { role1, player1, role2, player2 } => {
+                    let maybe_role1_extractor = self.extractors.get(&role1);
+                    let role1: BoxExtractor<T> = match maybe_role1_extractor {
+                        Some(&role1) => Box::new(role1),
                         None => {
-                            let ExecutorVariable::RowPosition(pos) = lhs else { unreachable!() };
+                            let ExecutorVariable::RowPosition(pos) = role1 else { unreachable!() };
                             let value = row.get(pos).as_reference().into_owned();
                             Box::new(move |_| value.clone())
                         }
                     };
-                    let maybe_rhs_extractor = self.extractors.get(&rhs);
-                    let rhs: BoxExtractor<T> = match maybe_rhs_extractor {
-                        Some(&rhs) => Box::new(rhs),
+                    let maybe_player1_extractor = self.extractors.get(&player1);
+                    let player1: BoxExtractor<T> = match maybe_player1_extractor {
+                        Some(&player1) => Box::new(player1),
                         None => {
-                            let ExecutorVariable::RowPosition(pos) = rhs else { unreachable!() };
+                            let ExecutorVariable::RowPosition(pos) = player1 else { unreachable!() };
                             let value = row.get(pos).as_reference().into_owned();
                             Box::new(move |_| value.clone())
                         }
                     };
-                    filters.push(Box::new(move |value| Ok(lhs(value) != rhs(value))));
+                    let maybe_role2_extractor = self.extractors.get(&role2);
+                    let role2: BoxExtractor<T> = match maybe_role2_extractor {
+                        Some(&role2) => Box::new(role2),
+                        None => {
+                            let ExecutorVariable::RowPosition(pos) = role2 else { unreachable!() };
+                            let value = row.get(pos).as_reference().into_owned();
+                            Box::new(move |_| value.clone())
+                        }
+                    };
+                    let maybe_player2_extractor = self.extractors.get(&player2);
+                    let player2: BoxExtractor<T> = match maybe_player2_extractor {
+                        Some(&player2) => Box::new(player2),
+                        None => {
+                            let ExecutorVariable::RowPosition(pos) = player2 else { unreachable!() };
+                            let value = row.get(pos).as_reference().into_owned();
+                            Box::new(move |_| value.clone())
+                        }
+                    };
+                    filters.push(Box::new(move |value| {
+                        Ok(role1(value) != role2(value) || player1(value) != player2(value))
+                    }));
                 }
 
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {

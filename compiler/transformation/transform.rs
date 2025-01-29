@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 use concept::type_::type_manager::TypeManager;
 use ir::pattern::conjunction::Conjunction;
+use ir::pattern::constraint::{Constraint, Different};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -39,18 +40,24 @@ pub fn apply_transformations(
 
 fn insert_role_player_deduplication(conjunction: &mut Conjunction, block_annotations: &TypeAnnotations) -> Result<(), StaticOptimiserError> {
     let mut role_player_deduplication = HashMap::new();
-    conjunction.constraints().iter().filter_map(|constraint| constraint.as_links())
-        .map(|links| ((links.relation().clone(), links.player().clone()), links.role_type().clone()))
-        .for_each(|(relation_player, role_type)| {
-            if !role_player_deduplication.contains_key(&relation_player) {
-                role_player_deduplication.insert(relation_player.clone(), Vec::new());
+    conjunction.constraints().iter().for_each(|constraint| {
+        if let Constraint::Links(links) = constraint {
+             let relation = links.relation().as_variable().unwrap();
+            if !role_player_deduplication.contains_key(&relation) {
+                role_player_deduplication.insert(relation.clone(), Vec::new());
             }
-            role_player_deduplication.get_mut(&relation_player).unwrap().push(role_type);
-        });
+            role_player_deduplication.get_mut(&relation).unwrap().push(
+                (links.player().as_variable().unwrap(), links.role_type().as_variable().unwrap(), block_annotations.constraint_annotations_of(constraint.clone()))
+            );
+        }
+    });
     for (k, v) in role_player_deduplication {
         for i in 0..v.len() {
             for j in (i+1)..v.len() {
-                todo!() // Check annotations overlap & add Isnt constraint.
+                let annotations_have_some_intersection = true;
+                if annotations_have_some_intersection {
+                    conjunction.constraints_mut().constraints_mut().push(Different::new(v[i].0, v[i].1, v[j].0, v[j].1).into());
+                }
             }
         }
     }

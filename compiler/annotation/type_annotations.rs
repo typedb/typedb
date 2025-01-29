@@ -42,6 +42,7 @@ impl TypeAnnotations {
         &mut self.constraints
     }
 
+    // TOOD: Just accept a reference.
     pub fn constraint_annotations_of(&self, constraint: Constraint<Variable>) -> Option<&ConstraintTypeAnnotations> {
         self.constraints.get(&constraint)
     }

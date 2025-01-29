@@ -374,8 +374,10 @@ impl Costed for IsPlanner<'_> {
 #[derive(Clone, Debug)]
 pub(super) struct DifferentPlanner<'a> {
     different: &'a Different<Variable>,
-    pub lhs: VariableVertexId,
-    pub rhs: VariableVertexId,
+    pub role1: VariableVertexId,
+    pub player1: VariableVertexId,
+    pub role2: VariableVertexId,
+    pub player2: VariableVertexId,
 }
 
 impl<'a> DifferentPlanner<'a> {
@@ -385,17 +387,25 @@ impl<'a> DifferentPlanner<'a> {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        let lhs = different.lhs().as_variable().unwrap();
-        let rhs = different.rhs().as_variable().unwrap();
-        Self { different, lhs: variable_index[&lhs], rhs: variable_index[&rhs] }
+        let role1 = different.role1().as_variable().unwrap();
+        let player1 = different.player1().as_variable().unwrap();
+        let role2 = different.role2().as_variable().unwrap();
+        let player2 = different.player2().as_variable().unwrap();
+        Self {
+            different,
+            role1: variable_index[&role1],
+            player1: variable_index[&player1],
+            role2: variable_index[&role2],
+            player2: variable_index[&player2],
+        }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
-        ordered.contains(&VertexId::Variable(self.lhs)) && ordered.contains(&VertexId::Variable(self.rhs))
+        self.variables().all(|v| ordered.contains(&VertexId::Variable(v)))
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
-        [self.lhs, self.rhs].into_iter()
+        [self.role1, self.player1, self.role2, self.player2].into_iter()
     }
 
     pub(super) fn different(&self) -> &Different<Variable> {

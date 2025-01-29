@@ -611,8 +611,10 @@ pub enum CheckInstruction<ID> {
         rhs: ID,
     },
     Different {
-        lhs: ID,
-        rhs: ID,
+        role1: ID,
+        player1: ID,
+        role2: ID,
+        player2: ID,
     },
     Comparison {
         lhs: CheckVertex<ID>,
@@ -661,8 +663,13 @@ impl<ID: IrID> CheckInstruction<ID> {
                 }
             }
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
-            Self::Different { lhs, rhs } => {
-                CheckInstruction::Different { lhs: mapping[&lhs], rhs: mapping[&rhs] }
+            Self::Different { role1, player1, role2, player2 } => {
+                CheckInstruction::Different {
+                    role1: mapping[&role1],
+                    player1: mapping[&player1],
+                    role2: mapping[&role2],
+                    player2: mapping[&player2]
+                }
             },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
@@ -715,8 +722,8 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;
             }
-            Self::Different { lhs, rhs } => {
-                write!(f, "{lhs} __different__ {rhs}")?;
+            Self::Different { role1, player1, role2, player2 } => {
+                write!(f, "({role1},{player1}) __different__ ({role2},{player2})")?;
             }
             Self::Comparison { lhs, rhs, comparator } => {
                 write!(f, "{lhs} {comparator} {rhs}")?;
