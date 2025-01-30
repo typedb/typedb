@@ -238,6 +238,22 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_links().unwrap())
     }
 
+    pub fn as_links_deduplication(
+        &mut self,
+        links1: Links<Variable>,
+        links2: Links<Variable>,
+    ) -> Result<&LinksDeduplication<Variable>, Box<RepresentationError>> {
+        debug_assert!(
+            self.context.is_variable_available(self.constraints.scope, links1.role_type.as_variable().unwrap())
+                && self.context.is_variable_available(self.constraints.scope, links1.player.as_variable().unwrap())
+                && self.context.is_variable_available(self.constraints.scope, links2.role_type.as_variable().unwrap())
+                && self.context.is_variable_available(self.constraints.scope, links2.player.as_variable().unwrap())
+        );
+        let dedup = Constraint::from(LinksDeduplication::new(links1, links2));
+        let constraint = self.constraints.add_constraint(dedup);
+        Ok(constraint.as_links_deduplication().unwrap())
+    }
+
     pub fn add_comparison(
         &mut self,
         lhs: Vertex<Variable>,
@@ -458,6 +474,7 @@ pub enum Constraint<ID> {
     Relates(Relates<ID>),
     Plays(Plays<ID>),
     Value(Value<ID>),
+    LinksDeduplication(LinksDeduplication<ID>),
 }
 
 impl<ID: IrID> Constraint<ID> {
@@ -466,7 +483,6 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Is(_) => typeql::token::Keyword::Is.as_str(),
             Constraint::Kind(kind) => kind.kind.as_str(),
             Constraint::Label(_) => typeql::token::Keyword::Label.as_str(),
-            Constraint::RoleName(_) => "role-name",
             Constraint::Sub(_) => typeql::token::Keyword::Sub.as_str(),
             Constraint::Isa(_) => typeql::token::Keyword::Isa.as_str(),
             Constraint::Iid(_) => typeql::token::Keyword::IID.as_str(),
@@ -480,6 +496,9 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
             Constraint::Plays(_) => typeql::token::Keyword::Plays.as_str(),
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
+
+            Constraint::RoleName(_) => "role-name",
+            Constraint::LinksDeduplication(_) => "role-player-deduplication",
         }
     }
 
@@ -502,6 +521,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
+            Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
         }
     }
 
@@ -524,6 +544,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
+            Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
         }
     }
 
@@ -546,6 +567,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
+            Constraint::LinksDeduplication(dedup) => Box::new(dedup.vertices()),
         }
     }
 
@@ -571,6 +593,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
+            Self::LinksDeduplication(dedup) => dedup.ids_foreach(function),
         }
     }
 
@@ -593,6 +616,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
+            Self::LinksDeduplication(inner) => Constraint::LinksDeduplication(inner.map(mapping)),
         }
     }
 
@@ -648,6 +672,13 @@ impl<ID: IrID> Constraint<ID> {
     pub fn as_links(&self) -> Option<&Links<ID>> {
         match self {
             Constraint::Links(rp) => Some(rp),
+            _ => None,
+        }
+    }
+
+    pub(crate) fn as_links_deduplication(&self) -> Option<&LinksDeduplication<ID>> {
+        match self {
+            Constraint::LinksDeduplication(dedup) => Some(dedup),
             _ => None,
         }
     }
@@ -737,6 +768,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Relates(inner) => inner.hash(),
                 Self::Plays(inner) => inner.hash(),
                 Self::Value(inner) => inner.hash(),
+                Self::LinksDeduplication(inner) => inner.hash(),
             }
     }
 
@@ -759,6 +791,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Relates(inner), Self::Relates(other_inner)) => inner.equals(other_inner),
             (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
             (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
+            (Self::LinksDeduplication(inner), Self::LinksDeduplication(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
             (Self::Is { .. }, _)
             | (Self::Kind { .. }, _)
@@ -776,7 +809,8 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::Owns { .. }, _)
             | (Self::Relates { .. }, _)
             | (Self::Plays { .. }, _)
-            | (Self::Value { .. }, _) => false,
+            | (Self::Value { .. }, _)
+            | (Self::LinksDeduplication { .. }, _) => false,
         }
     }
 }
@@ -801,6 +835,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::Relates(constraint) => fmt::Display::fmt(constraint, f),
             Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
             Self::Value(constraint) => fmt::Display::fmt(constraint, f),
+            Self::LinksDeduplication(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -2188,5 +2223,76 @@ impl<ID: StructuralEquality> StructuralEquality for Value<ID> {
 impl<ID: IrID> fmt::Display for Value<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         error::todo_display_for_error!(f, self)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+pub struct LinksDeduplication<ID> {
+    links1: Links<ID>,
+    links2: Links<ID>,
+}
+
+impl<ID: IrID> LinksDeduplication<ID> {
+    pub fn new(links1: Links<ID>, links2: Links<ID>) -> Self {
+        Self { links1, links2 }
+    }
+
+    pub fn links1(&self) -> &Links<ID> {
+        &self.links1
+    }
+
+    pub fn links2(&self) -> &Links<ID> {
+        &self.links2
+    }
+
+    pub fn ids(&self) -> impl Iterator<Item = ID> + Sized {
+        [
+            self.links1.role_type.as_variable(),
+            self.links1.player.as_variable(),
+            self.links2.role_type.as_variable(),
+            self.links2.player.as_variable(),
+        ]
+        .into_iter()
+        .flatten()
+    }
+
+    pub fn vertices(&self) -> impl Iterator<Item = &Vertex<ID>> + Sized {
+        [&self.links1.role_type, &self.links1.player, &self.links2.role_type, &self.links2.player].into_iter()
+    }
+
+    pub fn ids_foreach<F>(&self, mut function: F)
+    where
+        F: FnMut(ID),
+    {
+        self.ids().for_each(|id| function(id))
+    }
+
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> LinksDeduplication<T> {
+        LinksDeduplication { links1: self.links1.map(mapping), links2: self.links2.map(mapping) }
+    }
+}
+
+impl<ID: IrID> From<LinksDeduplication<ID>> for Constraint<ID> {
+    fn from(val: LinksDeduplication<ID>) -> Self {
+        Constraint::LinksDeduplication(val)
+    }
+}
+
+impl<ID: StructuralEquality> StructuralEquality for LinksDeduplication<ID> {
+    fn hash(&self) -> u64 {
+        let mut hasher = DefaultHasher::new();
+        self.links1.hash_into(&mut hasher);
+        self.links2.hash_into(&mut hasher);
+        hasher.finish()
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        self.links1.equals(&other.links1) && self.links2.equals(&other.links2)
+    }
+}
+
+impl<ID: IrID> fmt::Display for LinksDeduplication<ID> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "LinksDeduplication({}, {}))", self.links1, self.links2)
     }
 }

@@ -14,7 +14,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is},
+    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication},
     Vertex,
 };
 use itertools::{chain, Itertools};
@@ -43,6 +43,7 @@ pub(super) enum PlannerVertex<'a> {
     Constraint(ConstraintVertex<'a>),
 
     Is(IsPlanner<'a>),
+    LinksDeduplication(LinksDeduplicationPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
@@ -65,6 +66,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => false,
             Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
             Self::Is(inner) => inner.is_valid(vertex_plan, graph),
+            Self::LinksDeduplication(inner) => inner.is_valid(vertex_plan, graph),
             Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
             Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
             Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
@@ -80,6 +82,7 @@ impl PlannerVertex<'_> {
             Self::Variable(_) => Box::new(iter::empty()),
             Self::Constraint(inner) => inner.variables(),
             Self::Is(inner) => Box::new(inner.variables()),
+            Self::LinksDeduplication(inner) => Box::new(inner.variables()),
             Self::Comparison(inner) => Box::new(inner.variables()),
             Self::Expression(inner) => Box::new(inner.variables()),
             Self::FunctionCall(inner) => Box::new(inner.variables()),
@@ -142,6 +145,9 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Is(_) => {
                 write!(f, "|Is|")
             } //TODO
+            PlannerVertex::LinksDeduplication(_) => {
+                write!(f, "|LinksDeduplication|")
+            }
             PlannerVertex::Comparison(v) => {
                 write!(f, "|{:?} comp {:?}|", v.comparison.lhs(), v.comparison.rhs())
             }
@@ -216,6 +222,7 @@ impl Costed for PlannerVertex<'_> {
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, graph),
 
             Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, graph),
+            Self::LinksDeduplication(planner) => planner.cost_and_metadata(vertex_ordering, graph),
             Self::Comparison(planner) => planner.cost_and_metadata(vertex_ordering, graph),
 
             Self::Expression(planner) => planner.cost_and_metadata(vertex_ordering, graph),
@@ -359,6 +366,53 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
+    }
+}
+#[derive(Clone, Debug)]
+pub(super) struct LinksDeduplicationPlanner<'a> {
+    links_deduplication: &'a LinksDeduplication<Variable>,
+    pub role1: VariableVertexId,
+    pub player1: VariableVertexId,
+    pub role2: VariableVertexId,
+    pub player2: VariableVertexId,
+}
+
+impl<'a> LinksDeduplicationPlanner<'a> {
+    pub(crate) fn from_constraint(
+        links_deduplication: &'a LinksDeduplication<Variable>,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        let role1 = links_deduplication.links1().role_type().as_variable().unwrap();
+        let player1 = links_deduplication.links1().player().as_variable().unwrap();
+        let role2 = links_deduplication.links2().role_type().as_variable().unwrap();
+        let player2 = links_deduplication.links2().player().as_variable().unwrap();
+        Self {
+            links_deduplication,
+            role1: variable_index[&role1],
+            player1: variable_index[&player1],
+            role2: variable_index[&role2],
+            player2: variable_index[&player2],
+        }
+    }
+
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        self.variables().all(|v| ordered.contains(&VertexId::Variable(v)))
+    }
+
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        [self.role1, self.player1, self.role2, self.player2].into_iter()
+    }
+
+    pub(super) fn links_deduplication(&self) -> &LinksDeduplication<Variable> {
+        self.links_deduplication
+    }
+}
+
+impl Costed for LinksDeduplicationPlanner<'_> {
     fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }

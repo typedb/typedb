@@ -493,6 +493,7 @@ pub(super) fn add_typeql_relation(
     relation: Variable,
     roleplayers: &typeql::statement::thing::Relation,
 ) -> Result<(), Box<RepresentationError>> {
+    let mut links_constraints = Vec::new();
     for role_player in &roleplayers.role_players {
         match role_player {
             typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
@@ -523,15 +524,23 @@ pub(super) fn add_typeql_relation(
                     }
                 };
                 let player = register_typeql_var(constraints, player_var)?;
-                constraints.add_links(relation, player, type_)?;
+                let links = constraints.add_links(relation, player, type_)?;
+                links_constraints.push(links.clone());
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {
                 let player = register_typeql_var(constraints, var)?;
                 let role_type = constraints.create_anonymous_variable()?;
-                constraints.add_links(relation, player, role_type)?;
+                let links = constraints.add_links(relation, player, role_type)?;
+                links_constraints.push(links.clone());
             }
         }
     }
+    for i in 0..links_constraints.len() {
+        for j in (i + 1)..links_constraints.len() {
+            constraints.as_links_deduplication(links_constraints[i].clone(), links_constraints[j].clone())?;
+        }
+    }
+
     Ok(())
 }
 

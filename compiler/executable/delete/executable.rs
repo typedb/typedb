@@ -100,7 +100,7 @@ pub fn compile(
                 };
                 connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
-            Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
+            Constraint::LinksDeduplication(_) | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
             Constraint::Iid(_)
             | Constraint::Isa(_)
             | Constraint::Kind(_)
