@@ -672,15 +672,15 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_role_type_relates_root(
+    pub(crate) fn get_role_type_relates_explicit(
         &self,
         snapshot: &impl ReadableSnapshot,
         role_type: RoleType,
     ) -> Result<Relates, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(*cache.get_role_type_relates_root(role_type))
+            Ok(*cache.get_role_type_relates_explicit(role_type))
         } else {
-            let relates = TypeReader::get_role_type_relates_root(snapshot, role_type)?;
+            let relates = TypeReader::get_role_type_relates_explicit(snapshot, role_type)?;
             Ok(relates)
         }
     }
@@ -895,15 +895,15 @@ impl TypeManager {
         }
     }
 
-    pub(crate) fn get_relates_is_specialising(
+    pub(crate) fn get_relates_is_implicit(
         &self,
         snapshot: &impl ReadableSnapshot,
         relates: Relates,
     ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(cache.get_relates_is_specialising(relates))
+            Ok(cache.get_relates_is_implicit(relates))
         } else {
-            Ok(TypeReader::is_relates_specialising(snapshot, relates)?)
+            Ok(TypeReader::is_relates_implicit(snapshot, relates)?)
         }
     }
 
@@ -1071,10 +1071,10 @@ impl TypeManager {
         snapshot: &impl ReadableSnapshot,
         relates: Relates,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
-        match relates.is_specialising(snapshot, self)? {
+        match relates.is_implicit(snapshot, self)? {
             true => {
                 debug_assert!(self.get_capability_cardinality_constraint(snapshot, relates)?.is_none());
-                self.get_capability_cardinality(snapshot, relates.role().get_relates_root(snapshot, self)?)
+                self.get_capability_cardinality(snapshot, relates.role().get_relates_explicit(snapshot, self)?)
             }
             false => self.get_capability_cardinality(snapshot, relates),
         }
@@ -1292,12 +1292,12 @@ impl TypeManager {
         thing_manager: &ThingManager,
         relation_type: RelationType,
         role_type: RoleType,
-        is_specialising: bool,
+        is_implicit: bool,
     ) -> Result<Relates, Box<ConceptWriteError>> {
         let relates = Relates::new(relation_type, role_type);
         let exists = relation_type.get_relates(snapshot, self)?.contains(&relates);
 
-        if !exists && !is_specialising {
+        if !exists && !is_implicit {
             OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
                 snapshot, self, relates, true, // new relates is set
             )
@@ -1420,7 +1420,7 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, role_type)?;
 
-        let relates = role_type.get_relates_root(snapshot, self)?;
+        let relates = role_type.get_relates_explicit(snapshot, self)?;
 
         OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
             snapshot, self, relates, false,
@@ -1561,7 +1561,7 @@ impl TypeManager {
         debug_assert!(old_label.scope().is_some());
 
         let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
-        let relation_type = role_type.get_relates_root(snapshot, self)?.relation();
+        let relation_type = role_type.get_relates_explicit(snapshot, self)?.relation();
 
         OperationTimeValidation::validate_new_role_name_uniqueness(snapshot, self, relation_type, &new_label)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
@@ -2359,7 +2359,7 @@ impl TypeManager {
 
         self.validate_set_capability_annotation_general(snapshot, relates, annotation.clone())?;
 
-        if !relates.is_specialising(snapshot, self)? {
+        if !relates.is_implicit(snapshot, self)? {
             OperationTimeValidation::validate_type_supertype_abstractness_to_set_abstract_annotation(
                 snapshot,
                 self,
@@ -2444,8 +2444,13 @@ impl TypeManager {
         relates: Relates,
         specialised: Relates,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_relates_is_inherited(snapshot, self, relates.relation(), specialised.role())
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_relates_is_inherited_for_specialisation(
+            snapshot,
+            self,
+            relates.relation(),
+            specialised,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_specialised_relates_is_not_specialising(
             snapshot,
@@ -2916,7 +2921,7 @@ impl TypeManager {
 
         if self.get_relates_annotation_declared_by_category(snapshot, relates, annotation_category)?.is_some() {
             let updated_cardinality =
-                Relates::get_default_cardinality_for_non_specialising(relates.role().get_ordering(snapshot, self)?);
+                Relates::get_default_cardinality_for_explicit(relates.role().get_ordering(snapshot, self)?);
 
             if updated_cardinality != relates.get_cardinality(snapshot, self)? {
                 self.validate_updated_capability_cardinality_against_schema(snapshot, relates, updated_cardinality)?;

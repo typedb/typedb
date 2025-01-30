@@ -654,13 +654,17 @@ fn undefine_type_capability_relates(
         return Err(err_unsupported_capability(type_label, type_.kind(), capability_undefinable));
     };
 
+    // Not Transitive: when deleting owns or plays, we "unset" it, and the TypeManager knows how to
+    // validate this operation against a specific owner / player type. When we delete a role type,
+    // it does not know if this operation is valid for a relation type. So we need to find the declared
+    // role type for the specific relation type here.
     let definition_status = get_relates_status(
         snapshot,
         type_manager,
         *relation_type,
         &role_label,
         ordering,
-        DefinableStatusMode::Transitive,
+        DefinableStatusMode::Declared,
     )
     .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
     match definition_status {

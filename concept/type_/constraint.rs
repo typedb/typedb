@@ -538,13 +538,13 @@ pub(crate) fn get_plays_default_constraints<CAP: Capability>(source: CAP) -> Has
 pub(crate) fn get_relates_default_constraints<CAP: Capability>(
     source: CAP,
     role_ordering: Ordering,
-    is_specialising: bool,
+    is_implicit: bool,
 ) -> HashSet<CapabilityConstraint<CAP>> {
-    let mut constraints = if is_specialising {
+    let mut constraints = if is_implicit {
         HashSet::new()
     } else {
         HashSet::from([CapabilityConstraint::new(
-            ConstraintDescription::Cardinality(Relates::get_default_cardinality_for_non_specialising(role_ordering)),
+            ConstraintDescription::Cardinality(Relates::get_default_cardinality_for_explicit(role_ordering)),
             source,
         )])
     };

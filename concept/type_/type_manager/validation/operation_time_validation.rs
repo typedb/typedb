@@ -964,11 +964,12 @@ impl OperationTimeValidation {
             .get_value_type(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
         match value_type_with_source {
-            Some((value_type, source)) => {
-                if source != attribute_type {
+            Some((value_type, source_type)) => {
+                if source_type != attribute_type {
                     return Err(Box::new(SchemaValidationError::CannotUnsetInheritedValueType {
+                        subtype: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                        supertype: get_label_or_schema_err(snapshot, type_manager, source_type)?,
                         value_type,
-                        subtype: get_label_or_schema_err(snapshot, type_manager, source)?,
                     }));
                 }
 
@@ -1731,7 +1732,7 @@ impl OperationTimeValidation {
         relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if relates
-            .is_specialising(snapshot, type_manager)
+            .is_implicit(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
             Err(Box::new(SchemaValidationError::CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates {
@@ -1769,7 +1770,7 @@ impl OperationTimeValidation {
                 .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             {
                 let subtype_role_supertype_relates = subtype_role_supertype
-                    .get_relates_root(snapshot, type_manager)
+                    .get_relates_explicit(snapshot, type_manager)
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
                 if !supertype_relates
                     .iter()
@@ -1802,7 +1803,7 @@ impl OperationTimeValidation {
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
                 {
                     let subtype_role_supertype_relates = subtype_role_supertype
-                        .get_relates_root(snapshot, type_manager)
+                        .get_relates_explicit(snapshot, type_manager)
                         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
                     let is_in_subtype = subtype_relates.contains(&subtype_role_supertype_relates);
                     let is_in_subtype_declared = subtype_relates_declared.contains(&subtype_role_supertype_relates);
@@ -2038,32 +2039,27 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_relates_is_inherited(
+    pub(crate) fn validate_relates_is_inherited_for_specialisation(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         relation_type: RelationType,
-        role_type: RoleType,
+        relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
-        let super_relation = relation_type
+        let supertype = relation_type
             .get_supertype(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
-        if let Some(super_relation) = super_relation {
-            let is_inherited = super_relation
+        if let Some(supertype) = supertype {
+            let all_supertype_relates = supertype
                 .get_relates(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
-                .iter()
-                .any(|relates| relates.role() == role_type);
-            if is_inherited {
-                Ok(())
-            } else {
-                Err(Box::new(SchemaValidationError::RelatesNotInherited {
-                    relation: relation_type.get_label(snapshot, type_manager).unwrap().clone(),
-                    role: role_type.get_label(snapshot, type_manager).unwrap().clone(),
-                }))
+                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+            if all_supertype_relates.contains(&relates) {
+                return Ok(());
             }
-        } else {
-            Ok(())
         }
+        Err(Box::new(SchemaValidationError::RelatesNotInheritedForSpecialisation {
+            relation: relation_type.get_label(snapshot, type_manager).unwrap().clone(),
+            role: relates.role().get_label(snapshot, type_manager).unwrap().clone(),
+        }))
     }
 
     pub(crate) fn validate_specialised_relates_is_not_specialising(
@@ -2073,7 +2069,7 @@ impl OperationTimeValidation {
         specialised_relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if !specialised_relates
-            .is_specialising(snapshot, type_manager)
+            .is_implicit(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
             Ok(())
@@ -2091,7 +2087,7 @@ impl OperationTimeValidation {
         relates: Relates,
     ) -> Result<(), Box<SchemaValidationError>> {
         if !relates
-            .is_specialising(snapshot, type_manager)
+            .is_implicit(snapshot, type_manager)
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
         {
             Ok(())
@@ -2381,8 +2377,9 @@ impl OperationTimeValidation {
                     Ok(())
                 } else {
                     Err(Box::new(SchemaValidationError::CannotUnsetInheritedOwns {
-                        subtype: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
+                        subtype: get_label_or_schema_err(snapshot, type_manager, owner)?,
                         supertype: get_label_or_schema_err(snapshot, type_manager, owns.owner())?,
+                        attribute_type: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
                     }))
                 }
             }
@@ -2407,8 +2404,9 @@ impl OperationTimeValidation {
                     Ok(())
                 } else {
                     Err(Box::new(SchemaValidationError::CannotUnsetInheritedPlays {
-                        subtype: get_label_or_schema_err(snapshot, type_manager, role_type)?,
+                        subtype: get_label_or_schema_err(snapshot, type_manager, player)?,
                         supertype: get_label_or_schema_err(snapshot, type_manager, plays.player())?,
+                        role_type: get_label_or_schema_err(snapshot, type_manager, role_type)?,
                     }))
                 }
             }
@@ -2789,7 +2787,7 @@ impl OperationTimeValidation {
             }
             Kind::Role => {
                 let role_type = RoleType::new(type_.vertex());
-                let relation_type = role_type.get_relates_root(snapshot, type_manager)?.relation();
+                let relation_type = role_type.get_relates_explicit(snapshot, type_manager)?.relation();
                 Self::has_instances_of_relates(snapshot, thing_manager, relation_type, role_type)
             }
         }
