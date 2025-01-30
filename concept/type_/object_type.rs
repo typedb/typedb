@@ -152,6 +152,7 @@ impl OwnerAPI for ObjectType {
         type_manager: &TypeManager,
         attribute_type: AttributeType,
     ) -> Result<HashSet<CapabilityConstraint<Owns>>, Box<ConceptReadError>> {
+        println!("Get my constraints: {:?}", attribute_type.get_label(snapshot, type_manager)?.scoped_name()); // TODO: remove
         with_object_type!(self, |object| {
             object.get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)
         })

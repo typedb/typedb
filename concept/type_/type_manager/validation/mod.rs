@@ -40,7 +40,7 @@ typedb_error!(
         RelatesNotInheritedForSpecialisation(12, "Role type '{role}' must be inherited without specialization by supertypes to be specialized by relation type '{relation}'.", relation: Label, role: Label),
         RelatesIsAlreadySpecialisedByASupertype(13, "Role type '{role}' is already specialised by a supertype of relation type '{relation}'.", relation: Label, role: Label),
         CannotManageAnnotationsForSpecialisingRelates(14, "Cannot manage annotations for the specialising relates role '{role}'.", role: Label),
-        AttributeTypeSupertypeIsNotAbstract(15, "Supertype of attribute type '{attribute}' is not abstract.", attribute: Label),
+        AttributeTypeMustBeAbstractToHaveSubtypes(15, "Attribute type '{attribute}' must be abstract to have subtypes.", attribute: Label),
         AbstractTypesSupertypeHasToBeAbstract(16, "Abstract type '{attribute}' must have an abstract supertype, but it has '{super_attribute}'.", attribute: Label, super_attribute: Label),
         CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates(17, "Cannot unset the abstractness of relates role '{role}' as it is a specialising relates.", role: Label),
         CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost(18, "Cannot change supertype of relation type '{relation}' as the relates specialisation for roles '{role_1}' and '{role_2}' will be lost.", relation: Label, role_1: Label, role_2: Label),

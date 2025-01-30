@@ -39,3 +39,14 @@ impl<T: Hash + Eq + PartialEq> Collector<T> for HashSet<T> {
         self.insert(element);
     }
 }
+
+#[macro_export]
+macro_rules! minmax_or {
+    ($iter:expr, $no_elements_expr:expr) => {{
+        match $iter.minmax() {
+            MinMaxResult::NoElements => $no_elements_expr,
+            MinMaxResult::OneElement(element) => (element, element),
+            MinMaxResult::MinMax(min, max) => (min, max),
+        }
+    }};
+}

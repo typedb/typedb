@@ -1570,7 +1570,7 @@ impl OperationTimeValidation {
         {
             Ok(())
         } else {
-            Err(Box::new(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract {
+            Err(Box::new(SchemaValidationError::AttributeTypeMustBeAbstractToHaveSubtypes {
                 attribute: get_label_or_schema_err(snapshot, type_manager, type_)?,
             }))
         }
