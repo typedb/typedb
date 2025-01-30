@@ -289,7 +289,7 @@ fn register_type_role_name_var(
     label: &typeql::Label,
 ) -> Result<Variable, Box<RepresentationError>> {
     let variable = constraints.create_anonymous_variable(label.span())?;
-    constraints.add_role_name(variable, checked_identifier(&label.ident)?)?;
+    constraints.add_role_name(variable, checked_identifier(&label.ident)?, label.span())?;
     Ok(variable)
 }
 

@@ -10,6 +10,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use typeql::common::Span;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
@@ -358,6 +359,7 @@ fn annotate_stage(
                     reduction,
                     running_variable_annotations,
                     running_value_variable_assigned_types,
+                    reduce.source_span(),
                 )?;
                 running_value_variable_assigned_types
                     .insert(assigned, ExpressionValueType::Single(typed_reduce.output_type().clone()));
@@ -384,7 +386,10 @@ pub fn validate_sort_variables_comparable(
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             if value_types.is_empty() {
                 let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
-                return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name });
+                return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput {
+                    variable: variable_name ,
+                    source_span: sort.source_span()
+                });
             }
             let first_category = value_types.iter().find(|_| true).unwrap().category();
             let allowed_categories = ValueTypeCategory::comparable_categories(first_category);
@@ -396,6 +401,7 @@ pub fn validate_sort_variables_comparable(
                         variable: variable_name,
                         category1: first_category,
                         category2: other_type,
+                        source_span: sort.source_span()
                     });
                 }
             }
@@ -413,6 +419,7 @@ pub fn resolve_reducer_by_value_type(
     reducer: Reducer,
     variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
+    reduce_source_span: Option<Span>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     match reducer {
         Reducer::Count => Ok(ReduceInstruction::Count),
@@ -431,8 +438,9 @@ pub fn resolve_reducer_by_value_type(
                 snapshot,
                 type_manager,
                 variable_registry,
+                reduce_source_span,
             )?;
-            resolve_reduce_instruction_by_value_type(reducer, value_type, variable_registry)
+            resolve_reduce_instruction_by_value_type(reducer, value_type, variable_registry, reduce_source_span)
         }
     }
 }
@@ -445,13 +453,18 @@ fn determine_value_type_for_reducer(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
+    reduce_source_span: Option<Span>,
 ) -> Result<ValueType, AnnotationError> {
     if let Some(assigned_type) = assigned_value_types.get(&variable) {
         match assigned_type {
             ExpressionValueType::Single(value_type) => Ok(value_type.clone()),
             ExpressionValueType::List(_) => {
                 let variable_name = variable_registry.variable_names()[&variable].clone();
-                Err(AnnotationError::ReducerInputVariableIsList { reducer: reducer.name(), variable: variable_name })
+                Err(AnnotationError::ReducerInputVariableIsList { 
+                    reducer: reducer.name(),
+                    variable: variable_name,
+                    source_span: reduce_source_span,
+                })
             }
         }
     } else if let Some(types) = variable_annotations.get(&variable) {
@@ -459,13 +472,19 @@ fn determine_value_type_for_reducer(
             .map_err(|source| AnnotationError::TypeInference { typedb_source: source })?;
         if value_types.len() != 1 {
             let variable_name = variable_registry.variable_names()[&variable].clone();
-            Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType { variable: variable_name })
+            Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType { 
+                variable: variable_name,
+                source_span: reduce_source_span,
+            })
         } else {
             Ok(value_types.iter().next().unwrap().clone())
         }
     } else {
         let variable_name = variable_registry.variable_names()[&variable].clone();
-        Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name })
+        Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput {
+            variable: variable_name,
+            source_span: reduce_source_span,
+        })
     }
 }
 
@@ -473,6 +492,7 @@ pub fn resolve_reduce_instruction_by_value_type(
     reducer: Reducer,
     value_type: ValueType,
     variable_registry: &VariableRegistry,
+    source_span: Option<Span>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
@@ -514,6 +534,7 @@ pub fn resolve_reduce_instruction_by_value_type(
                 reducer: reducer_name,
                 variable: variable_name,
                 value_type: value_type.category(),
+                source_span,
             })
         }
     }

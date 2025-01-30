@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, mem};
+use typeql::common::Span;
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
@@ -42,10 +43,11 @@ impl StructuralEquality for Select {
 #[derive(Debug, Clone)]
 pub struct Sort {
     pub variables: Vec<SortVariable>,
+    source_span: Option<Span>,
 }
 
 impl Sort {
-    pub(crate) fn new(variables: Vec<(Variable, bool)>) -> Self {
+    pub(crate) fn new(variables: Vec<(Variable, bool)>, source_span: Option<Span>) -> Self {
         let mut sort_variables = Vec::with_capacity(variables.len());
         for (var, is_ascending) in variables {
             if is_ascending {
@@ -54,7 +56,11 @@ impl Sort {
                 sort_variables.push(SortVariable::Descending(var));
             }
         }
-        Self { variables: sort_variables }
+        Self { variables: sort_variables, source_span }
+    }
+    
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 

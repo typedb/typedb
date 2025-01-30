@@ -28,7 +28,7 @@ pub fn resolve_value_types(
                             Ok(label) => label.scoped_name().as_str().to_owned(),
                             Err(_) => format!("could_not_resolve__{type_}"),
                         };
-                        Err(TypeInferenceError::AttemptedToResolveValueTypeOfAttributeWithoutOne { label })
+                        Err(TypeInferenceError::InternalAttributeTypeWithoutValueType { label })
                     }
                     Ok(Some(value_type)) => Ok(value_type),
                     Err(source) => Err(TypeInferenceError::ConceptRead { source }),
@@ -39,7 +39,7 @@ pub fn resolve_value_types(
                     Ok(label) => label.scoped_name().as_str().to_owned(),
                     Err(_) => format!("could_not_resolve__{type_}"),
                 };
-                Err(TypeInferenceError::AttemptedToResolveValueTypeOfNonAttributeType { label })
+                Err(TypeInferenceError::InternalValueTypeOfNonAttributeType { label })
             }
         })
         .collect::<Result<HashSet<_>, TypeInferenceError>>()

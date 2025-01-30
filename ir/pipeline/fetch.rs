@@ -9,6 +9,7 @@ use std::{
     hash::{DefaultHasher, Hasher},
     mem,
 };
+use typeql::common::Span;
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
@@ -26,6 +27,7 @@ pub enum FetchSome {
     SingleAttribute(FetchSingleAttribute),
     SingleFunction(Function),
 
+    // note: all source_spans are contained in FetchObject 
     Object(Box<FetchObject>),
 
     ListFunction(Function),
@@ -126,17 +128,17 @@ impl StructuralEquality for FetchSingleAttribute {
 
 #[derive(Debug, Clone)]
 pub enum FetchObject {
-    Entries(HashMap<ParameterID, FetchSome>),
-    Attributes(Variable),
+    Entries(HashMap<ParameterID, FetchSome>, HashMap<ParameterID, Option<Span>>),
+    Attributes(Variable, Option<Span>),
 }
 
 impl FetchObject {
     pub(crate) fn record_variables_recursive(&self, vars: &mut HashSet<Variable>) {
         match self {
-            FetchObject::Entries(entries) => {
+            FetchObject::Entries(entries, _) => {
                 entries.iter().for_each(|(_, some)| some.record_variables_recursive(vars));
             }
-            FetchObject::Attributes(var) => {
+            FetchObject::Attributes(var, _) => {
                 vars.insert(*var);
             }
         }
@@ -148,17 +150,17 @@ impl StructuralEquality for FetchObject {
         ordered_hash_combine(
             mem::discriminant(self).hash(),
             match self {
-                FetchObject::Entries(entries) => StructuralEquality::hash(entries),
-                FetchObject::Attributes(variable) => variable.hash(),
+                FetchObject::Entries(entries, _) => StructuralEquality::hash(entries),
+                FetchObject::Attributes(variable, _) => variable.hash(),
             },
         )
     }
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Entries(entries), Self::Entries(other_entries)) => entries.equals(other_entries),
-            (Self::Attributes(var), Self::Attributes(other_var)) => var.equals(other_var),
-            (Self::Entries(_), _) | (Self::Attributes(_), _) => false,
+            (Self::Entries(entries, _), Self::Entries(other_entries, _)) => entries.equals(other_entries),
+            (Self::Attributes(var, _), Self::Attributes(other_var, _)) => var.equals(other_var),
+            (Self::Entries(_, _), _) | (Self::Attributes(_, _), _) => false,
         }
     }
 }

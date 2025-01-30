@@ -113,9 +113,10 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         variable: Variable,
         name: &str,
+        source_span: Option<Span>,
     ) -> Result<&RoleName<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
-        let role_name = RoleName::new(variable, name.to_owned());
+        let role_name = RoleName::new(variable, name.to_owned(), source_span);
         self.context.set_variable_category(variable, VariableCategory::RoleType, role_name.clone().into())?;
         let as_ref = self.constraints.add_constraint(role_name);
         Ok(as_ref.as_role_name().unwrap())
@@ -967,17 +968,24 @@ impl<ID: IrID> fmt::Display for Label<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq, Hash)]
+#[derive(Debug, Clone)]
 pub struct RoleName<ID> {
     left: Vertex<ID>,
     name: String,
+    source_span: Option<Span>,
+}
+
+impl<ID> RoleName<ID> {
+    pub fn new(left: ID, name: String, source_span: Option<Span>) -> Self {
+        Self { left: Vertex::Variable(left), name, source_span }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
 }
 
 impl<ID: IrID> RoleName<ID> {
-    pub fn new(left: ID, name: String) -> Self {
-        Self { left: Vertex::Variable(left), name }
-    }
-
     pub fn type_(&self) -> &Vertex<ID> {
         &self.left
     }
@@ -1001,21 +1009,35 @@ impl<ID: IrID> RoleName<ID> {
         self.left.as_variable().inspect(|&id| function(id));
     }
 
-    fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
-        RoleName { left: self.left.map(mapping), name: self.name }
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> RoleName<T> {
+        RoleName { left: self.left.map(mapping), name: self.name, source_span: self.source_span }
     }
 }
 
 impl<ID: IrID> From<RoleName<ID>> for Constraint<ID> {
-    fn from(value: RoleName<ID>) -> Self {
-        Constraint::RoleName(value)
+    fn from(val: RoleName<ID>) -> Self {
+        Constraint::RoleName(val)
     }
 }
+
+impl<ID: Hash> Hash for RoleName<ID> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        Hash::hash(&self.left, state);
+        Hash::hash(&self.name, state);
+    }
+}
+impl<ID: PartialEq> PartialEq for RoleName<ID> {
+    fn eq(&self, other: &Self) -> bool {
+        self.left.eq(&other.left) && self.name.eq(&other.name)
+    }
+}
+
+impl<ID: PartialEq> Eq for RoleName<ID> {}
 
 impl<ID: StructuralEquality> StructuralEquality for RoleName<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
-        hasher.write_u64(StructuralEquality::hash(&self.left));
+        self.left.hash_into(&mut hasher);
         hasher.write_u64(StructuralEquality::hash(self.name.as_str()));
         hasher.finish()
     }
@@ -1030,7 +1052,6 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
         write!(f, "{} role-name {}", self.left, &self.name)
     }
 }
-
 #[derive(Clone, Eq, PartialEq, Hash)]
 pub struct Kind<ID> {
     kind: typeql::token::Kind,

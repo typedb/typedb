@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
+use typeql::common::Span;
 
 use answer::{variable::Variable, Type};
 use concept::type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI};
@@ -99,9 +100,10 @@ fn annotate_object(
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchObject, AnnotationError> {
     match object {
-        FetchObject::Entries(entries) => {
+        FetchObject::Entries(entries, source_spans) => {
             let annotated_entries = annotated_object_entries(
                 entries,
+                source_spans,
                 snapshot,
                 type_manager,
                 variable_registry,
@@ -112,12 +114,13 @@ fn annotate_object(
             )?;
             Ok(AnnotatedFetchObject::Entries(annotated_entries))
         }
-        FetchObject::Attributes(attributes) => Ok(AnnotatedFetchObject::Attributes(attributes)),
+        FetchObject::Attributes(attributes, _source_span) => Ok(AnnotatedFetchObject::Attributes(attributes)),
     }
 }
 
 fn annotated_object_entries(
     entries: HashMap<ParameterID, FetchSome>,
+    entries_spans: HashMap<ParameterID, Option<Span>>,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
@@ -128,6 +131,7 @@ fn annotated_object_entries(
 ) -> Result<HashMap<ParameterID, AnnotatedFetchSome>, AnnotationError> {
     let mut annotated_entries = HashMap::new();
     for (key, value) in entries.into_iter() {
+        let source_span = entries_spans.get(&key).cloned().flatten();
         let annotated_value = annotate_some(
             value,
             snapshot,
@@ -137,6 +141,7 @@ fn annotated_object_entries(
             annotated_function_signatures,
             input_type_annotations,
             input_value_type_annotations,
+            source_span,
         )
         .map_err(|err| AnnotationError::FetchEntry {
             key: parameters.fetch_key(key).unwrap().clone(),
@@ -156,6 +161,7 @@ fn annotate_some(
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     input_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
+    source_span: Option<Span>,
 ) -> Result<AnnotatedFetchSome, AnnotationError> {
     match some {
         FetchSome::SingleVar(var) => Ok(AnnotatedFetchSome::SingleVar(var)),
@@ -166,11 +172,11 @@ fn annotate_some(
                 .map_err(|err| AnnotationError::ConceptRead { source: err })?
                 .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
                     var: variable_name.clone(),
-                    source_span: attribute.source_span(),
+                    source_span,
                     attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
-            validate_attribute_owned_and_scalar(snapshot, type_manager, variable_name, owner_types, attribute_type)?;
+            validate_attribute_owned_and_scalar(snapshot, type_manager, variable_name, owner_types, attribute_type, source_span)?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {
@@ -181,6 +187,7 @@ fn annotate_some(
                 annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
+                source_span,
             )
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::SingleFunction(annotated_function))
@@ -206,6 +213,7 @@ fn annotate_some(
                 annotated_function_signatures,
                 input_type_annotations,
                 input_value_type_annotations,
+                source_span,
             )
             .map_err(|err| AnnotationError::FetchBlockFunctionInferenceError { typedb_source: err })?;
             Ok(AnnotatedFetchSome::ListFunction(annotated_function))
@@ -229,7 +237,7 @@ fn annotate_some(
                 .map_err(|err| AnnotationError::ConceptRead { source: err })?
                 .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
                     var: variable_name.clone(),
-                    source_span: attribute.source_span(),
+                    source_span,
                     attribute,
                 })?;
             for owner_type in input_type_annotations.get(&variable).unwrap().iter() {
@@ -239,6 +247,7 @@ fn annotate_some(
                     variable_name,
                     owner_type,
                     attribute_type,
+                    source_span,
                 )?;
             }
             Ok(AnnotatedFetchSome::ListAttributesAsList(variable, attribute_type))
@@ -259,6 +268,7 @@ fn validate_attribute_owned_and_scalar(
     owner: &str,
     owner_types: &BTreeSet<Type>,
     attribute_type: AttributeType,
+    source_span: Option<Span>,
 ) -> Result<(), AnnotationError> {
     for owner_type in owner_types {
         if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
@@ -266,6 +276,7 @@ fn validate_attribute_owned_and_scalar(
                 var: owner.to_owned(),
                 kind: kind.to_string(),
                 attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                source_span,
             });
         }
         let object_type = owner_type.as_object_type();
@@ -278,6 +289,7 @@ fn validate_attribute_owned_and_scalar(
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
                 attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                source_span,
             });
         }
 
@@ -289,6 +301,7 @@ fn validate_attribute_owned_and_scalar(
                 var: owner.to_owned(),
                 owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
                 attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+                source_span,
             });
         }
     }
@@ -301,12 +314,14 @@ fn validate_attribute_owned_and_streamable(
     owner: &str,
     owner_type: &Type,
     attribute_type: AttributeType,
+    source_span: Option<Span>,
 ) -> Result<(), AnnotationError> {
     if let kind @ (Kind::Attribute | Kind::Role) = owner_type.kind() {
         return Err(AnnotationError::FetchAttributesCannotBeOwnedByKind {
             var: owner.to_owned(),
             kind: kind.to_string(),
             attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            source_span,
         });
     }
 
@@ -318,6 +333,7 @@ fn validate_attribute_owned_and_streamable(
             var: owner.to_owned(),
             owner: owner_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
             attribute: attribute_type.get_label(snapshot, type_manager).unwrap().name().as_str().to_owned(),
+            source_span,
         })?;
     Ok(())
 }

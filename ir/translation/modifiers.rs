@@ -53,7 +53,7 @@ pub fn translate_sort(
             }
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(Sort::new(sort_on))
+    Ok(Sort::new(sort_on, sort.span()))
 }
 
 pub fn translate_offset(

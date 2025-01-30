@@ -8,6 +8,7 @@ use std::{
     hash::{DefaultHasher, Hasher},
     mem,
 };
+use typeql::common::Span;
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
@@ -16,11 +17,12 @@ use structural_equality::StructuralEquality;
 pub struct Reduce {
     pub assigned_reductions: Vec<AssignedReduction>,
     pub groupby: Vec<Variable>,
+    source_span: Option<Span>,
 }
 
 impl Reduce {
-    pub(crate) fn new(assigned_reductions: Vec<AssignedReduction>, groupby: Vec<Variable>) -> Self {
-        Self { assigned_reductions, groupby }
+    pub(crate) fn new(assigned_reductions: Vec<AssignedReduction>, groupby: Vec<Variable>, source_span: Option<Span>) -> Self {
+        Self { assigned_reductions, groupby, source_span }
     }
 
     pub fn variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -29,6 +31,10 @@ impl Reduce {
             .map(|assign_reduction| &assign_reduction.assigned)
             .cloned()
             .chain(self.groupby.iter().cloned())
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 

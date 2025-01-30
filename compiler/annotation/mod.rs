@@ -32,13 +32,20 @@ typedb_error!(
         FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, typedb_source: Box<AnnotationError>),
         FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", typedb_source: Box<FunctionAnnotationError>),
         ConceptRead(6, "Error while retrieving concept.", source: Box<ConceptReadError>),
-        FetchAttributeNotFound(7, "Fetching '${var}.{attribute}' failed since the attribute type is not defined.", var: String, attribute: Label, source_span: Option<Span>),
+        FetchAttributeNotFound(
+            7,
+            "Fetching '${var}.{attribute}' failed since the attribute type is not defined.",
+            var: String,
+            attribute: Label,
+            source_span: Option<Span>
+        ),
         FetchSingleAttributeNotOwned(
             8,
             "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.",
             var: String,
             owner: String,
             attribute: String,
+            source_span: Option<Span>,
         ),
         FetchAttributesNotOwned(
             9,
@@ -46,6 +53,7 @@ typedb_error!(
             var: String,
             owner: String,
             attribute: String,
+            source_span: Option<Span>,
         ),
         FetchSingleAttributeCannotBeOwnedByKind(
             10,
@@ -53,6 +61,7 @@ typedb_error!(
             var: String,
             kind: String,
             attribute: String,
+            source_span: Option<Span>,
         ),
         FetchAttributesCannotBeOwnedByKind(
             11,
@@ -60,6 +69,7 @@ typedb_error!(
             var: String,
             kind: String,
             attribute: String,
+            source_span: Option<Span>,
         ),
         AttributeFetchCardTooHigh(
             12,
@@ -67,19 +77,27 @@ typedb_error!(
             var: String,
             owner: String,
             attribute: String,
+            source_span: Option<Span>,
         ),
         CouldNotDetermineValueTypeForReducerInput(
-            13, "The value-type for the reducer input variable '{variable}' could not be determined.", variable: String,
+            13,
+            "The value-type for the reducer input variable '{variable}' could not be determined.",
+            variable: String,
+            source_span: Option<Span>,
         ),
         ReducerInputVariableDidNotHaveSingleValueType(
-            14, "The reducer input variable '{variable}' had multiple value-types.", variable: String,
+            14,
+            "The reducer input variable '{variable}' had multiple value-types.",
+            variable: String,
+            source_span: Option<Span>,
         ),
         UnsupportedValueTypeForReducer(
             15,
-            "The input variable to the reducer'{reducer}({variable})' reducer had an unsupported value-type: '{value_type}'",
+            "The input variable to the reducer had an unsupported value-type: '{value_type}'",
             reducer: String,
             variable: String,
             value_type: ValueTypeCategory,
+            source_span: Option<Span>,
         ),
         UncomparableValueTypesForSortVariable(
             16,
@@ -87,12 +105,14 @@ typedb_error!(
             variable: String,
             category1: ValueTypeCategory,
             category2: ValueTypeCategory,
+            source_span: Option<Span>,
         ),
         ReducerInputVariableIsList(
             17,
             "The input variable '{variable}' to the reducer '{reducer}' was a list.",
             reducer: String,
             variable: String,
+            source_span: Option<Span>,
         ),
     }
 );
@@ -104,45 +124,26 @@ typedb_error!(
             1,
             "An error occurred when trying to resolve the type of the argument at index: {index}.",
             index: usize,
+            source_span: Option<Span>,
             typedb_source: TypeInferenceError
-        ),
-        CallerSignatureTypeMismatch(
-            2,
-            "Function '{name}' argument at position '{index}' is only invoked with types that not compatible with the argument type '{arg_type}'.",
-            name: String,
-            index: usize,
-            arg_type: String
-        ),
-        CallerSignatureValueTypeMismatch(
-            3,
-            "Function '{name}' argument at position '{index}' expects value type '{expected}' but is only invoked with '{actual}'.",
-            name: String,
-            index: usize,
-            expected: ExpressionValueType,
-            actual: ExpressionValueType
-        ),
-        CouldNotDetermineArgumentType(
-            4,
-            "Failed to infer any argument type for function '{name}' argument at position '{index}'.",
-            name: String,
-            index: usize
         ),
         CouldNotResolveReturnType(
-            5,
+            2,
             "An error occurred when trying to resolve the type at return index: {index}.",
             index: usize,
-            typedb_source: TypeInferenceError
+            typedb_source: TypeInferenceError,
         ),
         ReturnReduce(
-            6,
+            3,
             "Error analysing return reduction.",
             typedb_source: Box<AnnotationError>,
         ),
         SignatureReturnMismatch(
-            7,
+            4,
             "The types inferred for the return statement of function '{function_name}' did not match those declared in the signature. Mismatching index: {mismatching_index}",
             function_name: String,
             mismatching_index: usize,
+            source_span: Option<Span>,
         ),
     }
 );
@@ -150,31 +151,50 @@ typedb_error!(
 typedb_error!(
     pub TypeInferenceError(component = "Type inference", prefix = "INF") {
         ConceptRead(1, "Concept read error.", source: Box<ConceptReadError>),
-        LabelNotResolved(2, "Type label '{name}' not found.", name: String, source_span: Option<Span>),
-        RoleNameNotResolved(3, "Role label not found '{name}'.", name: String),
+        LabelNotResolved(
+            2,
+            "Type label '{name}' not found.",
+            name: String,
+            source_span: Option<Span>
+        ),
+        RoleNameNotResolved(
+            3,
+            "Role label not found '{name}'.",
+            name: String,
+            source_span: Option<Span>,
+        ),
         IllegalInsertTypes(
             4,
             "Left type '{left_type}' across constraint '{constraint_name}' is not compatible with right type '{right_type}'.",
             constraint_name: String,
             left_type: String,
-            right_type: String
+            right_type: String,
+            source_span: Option<Span>,
         ),
-        DetectedUnsatisfiablePattern(5, "Type-inference derived an empty-set for some variable"),
-        AttemptedToResolveValueTypeOfNonAttributeType(
+        DetectedUnsatisfiablePattern(
+            5,
+            "Type-inference derived an empty-set for some variable"
+        ),
+        InternalValueTypeOfNonAttributeType(
             6,
             "Attempted to resolve value type for a non-attribute type: {label}",
             label: String
         ),
-        AttemptedToResolveValueTypeOfAttributeWithoutOne(
+        InternalAttributeTypeWithoutValueType(
             7,
-            "Attempted to resolve value type for an attribute-type without one: {label}",
-            label: String
+            "Attempted to get a value type for an attribute-type without defined value type: {label}",
+            label: String,
         ),
-        ValueTypeNotFound(8, "Value type '{name}' was not found.", name: String),
+        ValueTypeNotFound(
+            8,
+            "Value type '{name}' was not found.",
+            name: String,
+            source_span: Option<Span>,
+        ),
         AnnotationsUnavailableForVariableInInsert(9,
-            "Typing information for the variable '{variable}' in the inserted statement {constraint} were not available. Check if the variable is available from a previous stage or is inserted in this stage.",
+            "Typing information for the variable '{variable}' is not available. Check if the variable is available from a previous stage or is inserted in this stage.",
             variable: Variable,
-            constraint: Constraint<Variable>,
+            source_span: Option<Span>,
         ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),

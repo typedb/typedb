@@ -56,7 +56,7 @@ pub fn translate_reduce(
             })
             .collect::<Result<Vec<_>, _>>()?,
     };
-    Ok(Reduce::new(reductions, group))
+    Ok(Reduce::new(reductions, group, typeql_reduce.span()))
 }
 
 fn resolve_category_optionality(reduce: &Reducer, variable_registry: &VariableRegistry) -> (VariableCategory, bool) {

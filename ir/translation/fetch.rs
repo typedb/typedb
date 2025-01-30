@@ -77,6 +77,7 @@ fn translate_fetch_object(
     match &typeql_object.body {
         TypeQLFetchObjectBody::Entries(entries) => {
             let mut object = HashMap::new();
+            let mut source_spans = HashMap::new();
             let mut unique_keys: HashSet<&str> = HashSet::new();
             for entry in entries {
                 let (key, value) = (&entry.key, &entry.value);
@@ -92,16 +93,17 @@ fn translate_fetch_object(
                     key,
                     entry.span().expect("Parser did not provide Fetch key-value text range."),
                 );
+                source_spans.insert(key_id, entry.span());
                 object.insert(
                     key_id,
                     translate_fetch_some(snapshot, parent_context, value_parameters, function_index, value)?,
                 );
             }
-            Ok(FetchObject::Entries(object))
+            Ok(FetchObject::Entries(object, source_spans))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
             let var = try_get_variable(parent_context, variable)?;
-            Ok(FetchObject::Attributes(var))
+            Ok(FetchObject::Attributes(var, variable.span()))
         }
     }
 }
@@ -186,7 +188,7 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            if !body.return_operation.is_scalar() && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_))
+            if !body.return_operation.is_scalar() && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_, _))
             {
                 return Err(Box::new(FetchRepresentationError::ExpectedScalarOrReduceFunctionBlock {
                     declaration: block.clone(),
@@ -334,7 +336,7 @@ fn translate_inline_expression_single(
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     let match_stage = TranslatedStage::Match { block };
-    let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
+    let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var], expression.span());
     let body = FunctionBody::new(vec![match_stage], return_);
     let args = find_function_body_arguments(context, &body);
     Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, value_parameters.clone(), args, body)))
@@ -353,7 +355,7 @@ fn translate_inline_user_function_call_single(
         Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionCall { declaration: call.clone() }))
     } else {
         let parameters = value_parameters.clone();
-        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
+        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars, call.span());
         let body = FunctionBody::new(vec![stage], return_);
         let args = find_function_body_arguments(context, &body);
         Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, parameters, args, body)))
@@ -370,7 +372,7 @@ fn translate_inline_user_function_call_stream(
     let (local_context, stage, assign_vars, _) =
         translate_inline_user_function_call(context, value_parameters, function_index, call, function_name)?;
     let parameters = value_parameters.clone();
-    let return_ = ReturnOperation::Stream(assign_vars);
+    let return_ = ReturnOperation::Stream(assign_vars, call.span());
     let body = FunctionBody::new(vec![stage], return_);
     let args = find_function_body_arguments(context, &body);
     Ok(FetchSome::ListFunction(create_anonymous_function(local_context, parameters, args, body)))
