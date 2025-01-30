@@ -663,14 +663,12 @@ impl<ID: IrID> CheckInstruction<ID> {
                 }
             }
             Self::Is { lhs, rhs } => CheckInstruction::Is { lhs: mapping[&lhs], rhs: mapping[&rhs] },
-            Self::LinksDeduplication { role1, player1, role2, player2 } => {
-                CheckInstruction::LinksDeduplication {
-                    role1: mapping[&role1],
-                    player1: mapping[&player1],
-                    role2: mapping[&role2],
-                    player2: mapping[&player2],
-                }
-            }
+            Self::LinksDeduplication { role1, player1, role2, player2 } => CheckInstruction::LinksDeduplication {
+                role1: mapping[&role1],
+                player1: mapping[&player1],
+                role2: mapping[&role2],
+                player2: mapping[&player2],
+            },
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }

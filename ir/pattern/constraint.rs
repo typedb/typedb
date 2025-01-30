@@ -791,9 +791,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Relates(inner), Self::Relates(other_inner)) => inner.equals(other_inner),
             (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
             (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
-            (Self::LinksDeduplication(inner), Self::LinksDeduplication(other_inner)) => {
-                inner.equals(other_inner)
-            }
+            (Self::LinksDeduplication(inner), Self::LinksDeduplication(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
             (Self::Is { .. }, _)
             | (Self::Kind { .. }, _)

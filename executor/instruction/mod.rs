@@ -837,7 +837,7 @@ impl<T> Checker<T> {
                         }
                     };
                     filters.push(Box::new(move |value| {
-                        Ok(role1(value) != role2(value) || player1(value) != player2(value))
+                        Ok(!(role1(value) == role2(value) && player1(value) == player2(value)))
                     }));
                 }
 

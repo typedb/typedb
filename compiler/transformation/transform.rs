@@ -5,10 +5,7 @@
  */
 
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::{
-    conjunction::Conjunction,
-    constraint::Constraint,
-};
+use ir::pattern::{conjunction::Conjunction, constraint::Constraint};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
