@@ -537,7 +537,7 @@ pub(super) fn add_typeql_relation(
     }
     for i in 0..links_constraints.len() {
         for j in (i + 1)..links_constraints.len() {
-            constraints.add_role_player_deduplication(links_constraints[i].clone(), links_constraints[j].clone())?;
+            constraints.as_links_deduplication(links_constraints[i].clone(), links_constraints[j].clone())?;
         }
     }
 

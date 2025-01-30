@@ -42,7 +42,7 @@ pub fn apply_transformations(
 
 fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block_annotations: &mut TypeAnnotations) {
     conjunction.constraints_mut().constraints_mut().retain(|constraint| {
-        if let Constraint::RolePlayerDeduplication(dedup) = constraint {
+        if let Constraint::LinksDeduplication(dedup) = constraint {
             let first = block_annotations
                 .constraint_annotations_of(Constraint::Links(dedup.links1().clone()))
                 .unwrap()

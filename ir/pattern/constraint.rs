@@ -238,20 +238,20 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         Ok(constraint.as_links().unwrap())
     }
 
-    pub fn add_role_player_deduplication(
+    pub fn as_links_deduplication(
         &mut self,
         links1: Links<Variable>,
         links2: Links<Variable>,
-    ) -> Result<&RolePlayerDeduplication<Variable>, Box<RepresentationError>> {
+    ) -> Result<&LinksDeduplication<Variable>, Box<RepresentationError>> {
         debug_assert!(
             self.context.is_variable_available(self.constraints.scope, links1.role_type.as_variable().unwrap())
                 && self.context.is_variable_available(self.constraints.scope, links1.player.as_variable().unwrap())
                 && self.context.is_variable_available(self.constraints.scope, links2.role_type.as_variable().unwrap())
                 && self.context.is_variable_available(self.constraints.scope, links2.player.as_variable().unwrap())
         );
-        let dedup = Constraint::from(RolePlayerDeduplication::new(links1, links2));
+        let dedup = Constraint::from(LinksDeduplication::new(links1, links2));
         let constraint = self.constraints.add_constraint(dedup);
-        Ok(constraint.as_role_player_deduplication().unwrap())
+        Ok(constraint.as_links_deduplication().unwrap())
     }
 
     pub fn add_comparison(
@@ -474,7 +474,7 @@ pub enum Constraint<ID> {
     Relates(Relates<ID>),
     Plays(Plays<ID>),
     Value(Value<ID>),
-    RolePlayerDeduplication(RolePlayerDeduplication<ID>),
+    LinksDeduplication(LinksDeduplication<ID>),
 }
 
 impl<ID: IrID> Constraint<ID> {
@@ -498,7 +498,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
 
             Constraint::RoleName(_) => "role-name",
-            Constraint::RolePlayerDeduplication(_) => "role-player-deduplication",
+            Constraint::LinksDeduplication(_) => "role-player-deduplication",
         }
     }
 
@@ -521,7 +521,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
-            Constraint::RolePlayerDeduplication(dedup) => Box::new(dedup.ids()),
+            Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
         }
     }
 
@@ -544,7 +544,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
-            Constraint::RolePlayerDeduplication(dedup) => Box::new(dedup.ids()),
+            Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
         }
     }
 
@@ -567,7 +567,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Relates(relates) => Box::new(relates.vertices()),
             Constraint::Plays(plays) => Box::new(plays.vertices()),
             Constraint::Value(value) => Box::new(value.vertices()),
-            Constraint::RolePlayerDeduplication(dedup) => Box::new(dedup.vertices()),
+            Constraint::LinksDeduplication(dedup) => Box::new(dedup.vertices()),
         }
     }
 
@@ -593,7 +593,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Relates(relates) => relates.ids_foreach(function),
             Self::Plays(plays) => plays.ids_foreach(function),
             Self::Value(value) => value.ids_foreach(function),
-            Self::RolePlayerDeduplication(dedup) => dedup.ids_foreach(function),
+            Self::LinksDeduplication(dedup) => dedup.ids_foreach(function),
         }
     }
 
@@ -616,7 +616,7 @@ impl<ID: IrID> Constraint<ID> {
             Self::Relates(inner) => Constraint::Relates(inner.map(mapping)),
             Self::Plays(inner) => Constraint::Plays(inner.map(mapping)),
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
-            Self::RolePlayerDeduplication(inner) => Constraint::RolePlayerDeduplication(inner.map(mapping)),
+            Self::LinksDeduplication(inner) => Constraint::LinksDeduplication(inner.map(mapping)),
         }
     }
 
@@ -676,9 +676,9 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_role_player_deduplication(&self) -> Option<&RolePlayerDeduplication<ID>> {
+    pub(crate) fn as_links_deduplication(&self) -> Option<&LinksDeduplication<ID>> {
         match self {
-            Constraint::RolePlayerDeduplication(dedup) => Some(dedup),
+            Constraint::LinksDeduplication(dedup) => Some(dedup),
             _ => None,
         }
     }
@@ -768,7 +768,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Relates(inner) => inner.hash(),
                 Self::Plays(inner) => inner.hash(),
                 Self::Value(inner) => inner.hash(),
-                Self::RolePlayerDeduplication(inner) => inner.hash(),
+                Self::LinksDeduplication(inner) => inner.hash(),
             }
     }
 
@@ -791,7 +791,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             (Self::Relates(inner), Self::Relates(other_inner)) => inner.equals(other_inner),
             (Self::Plays(inner), Self::Plays(other_inner)) => inner.equals(other_inner),
             (Self::Value(inner), Self::Value(other_inner)) => inner.equals(other_inner),
-            (Self::RolePlayerDeduplication(inner), Self::RolePlayerDeduplication(other_inner)) => {
+            (Self::LinksDeduplication(inner), Self::LinksDeduplication(other_inner)) => {
                 inner.equals(other_inner)
             }
             // note: this style forces updating the match when the variants change
@@ -812,7 +812,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
             | (Self::Relates { .. }, _)
             | (Self::Plays { .. }, _)
             | (Self::Value { .. }, _)
-            | (Self::RolePlayerDeduplication { .. }, _) => false,
+            | (Self::LinksDeduplication { .. }, _) => false,
         }
     }
 }
@@ -837,7 +837,7 @@ impl<ID: IrID> fmt::Display for Constraint<ID> {
             Self::Relates(constraint) => fmt::Display::fmt(constraint, f),
             Self::Plays(constraint) => fmt::Display::fmt(constraint, f),
             Self::Value(constraint) => fmt::Display::fmt(constraint, f),
-            Self::RolePlayerDeduplication(constraint) => fmt::Display::fmt(constraint, f),
+            Self::LinksDeduplication(constraint) => fmt::Display::fmt(constraint, f),
         }
     }
 }
@@ -2229,12 +2229,12 @@ impl<ID: IrID> fmt::Display for Value<ID> {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Hash)]
-pub struct RolePlayerDeduplication<ID> {
+pub struct LinksDeduplication<ID> {
     links1: Links<ID>,
     links2: Links<ID>,
 }
 
-impl<ID: IrID> RolePlayerDeduplication<ID> {
+impl<ID: IrID> LinksDeduplication<ID> {
     pub fn new(links1: Links<ID>, links2: Links<ID>) -> Self {
         Self { links1, links2 }
     }
@@ -2269,18 +2269,18 @@ impl<ID: IrID> RolePlayerDeduplication<ID> {
         self.ids().for_each(|id| function(id))
     }
 
-    pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> RolePlayerDeduplication<T> {
-        RolePlayerDeduplication { links1: self.links1.map(mapping), links2: self.links2.map(mapping) }
+    pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> LinksDeduplication<T> {
+        LinksDeduplication { links1: self.links1.map(mapping), links2: self.links2.map(mapping) }
     }
 }
 
-impl<ID: IrID> From<RolePlayerDeduplication<ID>> for Constraint<ID> {
-    fn from(val: RolePlayerDeduplication<ID>) -> Self {
-        Constraint::RolePlayerDeduplication(val)
+impl<ID: IrID> From<LinksDeduplication<ID>> for Constraint<ID> {
+    fn from(val: LinksDeduplication<ID>) -> Self {
+        Constraint::LinksDeduplication(val)
     }
 }
 
-impl<ID: StructuralEquality> StructuralEquality for RolePlayerDeduplication<ID> {
+impl<ID: StructuralEquality> StructuralEquality for LinksDeduplication<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.links1.hash_into(&mut hasher);
@@ -2293,8 +2293,8 @@ impl<ID: StructuralEquality> StructuralEquality for RolePlayerDeduplication<ID> 
     }
 }
 
-impl<ID: IrID> fmt::Display for RolePlayerDeduplication<ID> {
+impl<ID: IrID> fmt::Display for LinksDeduplication<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "RolePlayerDeduplication({}, {}))", self.links1, self.links2)
+        write!(f, "LinksDeduplication({}, {}))", self.links1, self.links2)
     }
 }

@@ -21,7 +21,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, RolePlayerDeduplication, Sub, Value,
+            Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, LinksDeduplication, Sub, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -57,7 +57,7 @@ use crate::{
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                     ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
                     FunctionCallPlanner, Input, IsPlanner, NegationPlanner, PlannerVertex,
-                    RolePlayerDeduplicationPlanner,
+                    LinksDeduplicationPlanner,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
                 MatchExecutableBuilder, NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -405,7 +405,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
-                Constraint::RolePlayerDeduplication(dedup) => self.register_role_player_deduplication(dedup),
+                Constraint::LinksDeduplication(dedup) => self.register_links_deduplication(dedup),
             }
         }
     }
@@ -541,9 +541,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
     }
 
-    fn register_role_player_deduplication(&mut self, role_player_deduplication: &'a RolePlayerDeduplication<Variable>) {
-        self.graph.push_role_player_deduplication(RolePlayerDeduplicationPlanner::from_constraint(
-            role_player_deduplication,
+    fn register_links_deduplication(&mut self, links_deduplication: &'a LinksDeduplication<Variable>) {
+        self.graph.push_links_deduplication(LinksDeduplicationPlanner::from_constraint(
+            links_deduplication,
             &self.graph.variable_index,
             self.type_annotations,
             self.statistics,
@@ -1369,8 +1369,8 @@ impl ConjunctionPlan<'_> {
             match &self.graph.elements()[&VertexId::Pattern(producer)] {
                 PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {producer:?}"),
                 PlannerVertex::Negation(_) => unreachable!("encountered negation registered as producing variable"),
-                PlannerVertex::RolePlayerDeduplication(_) => {
-                    unreachable!("encountered role_player_deduplication registered as producing variable")
+                PlannerVertex::LinksDeduplication(_) => {
+                    unreachable!("encountered links_deduplication registered as producing variable")
                 }
                 PlannerVertex::Is(is) => {
                     let input = if var == is.lhs {
@@ -1513,12 +1513,12 @@ impl ConjunctionPlan<'_> {
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
                 match_builder.push_check(&[lhs, rhs], check)
             }
-            PlannerVertex::RolePlayerDeduplication(deduplication) => {
-                let role1 = deduplication.role_player_deduplication().links1().role_type().as_variable().unwrap();
-                let player1 = deduplication.role_player_deduplication().links1().player().as_variable().unwrap();
-                let role2 = deduplication.role_player_deduplication().links2().role_type().as_variable().unwrap();
-                let player2 = deduplication.role_player_deduplication().links2().player().as_variable().unwrap();
-                let check = CheckInstruction::RolePlayerDeduplication { role1, player1, role2, player2 }
+            PlannerVertex::LinksDeduplication(deduplication) => {
+                let role1 = deduplication.links_deduplication().links1().role_type().as_variable().unwrap();
+                let player1 = deduplication.links_deduplication().links1().player().as_variable().unwrap();
+                let role2 = deduplication.links_deduplication().links2().role_type().as_variable().unwrap();
+                let player2 = deduplication.links_deduplication().links2().player().as_variable().unwrap();
+                let check = CheckInstruction::LinksDeduplication { role1, player1, role2, player2 }
                     .map(match_builder.position_mapping());
                 match_builder.push_check(&[role1, player1, role2, player2], check)
             }
@@ -1993,13 +1993,13 @@ impl<'a> Graph<'a> {
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Is(is));
     }
 
-    fn push_role_player_deduplication(&mut self, deduplication: RolePlayerDeduplicationPlanner<'a>) {
+    fn push_links_deduplication(&mut self, deduplication: LinksDeduplicationPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
         self.pattern_to_variable.entry(pattern_index).or_default().extend(deduplication.variables());
         for var in deduplication.variables() {
             self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
         }
-        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::RolePlayerDeduplication(deduplication));
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::LinksDeduplication(deduplication));
     }
 
     fn push_comparison(&mut self, comparison: ComparisonPlanner<'a>) {
