@@ -2132,6 +2132,8 @@ impl ThingManager {
         modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
         modified_relates: &mut HashMap<RelationType, HashSet<RoleType>>,
     ) -> Result<(), Box<ConceptReadError>> {
+        // New / deleted capabilities
+
         for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
             TypeEdge::build_prefix(Prefix::EdgeOwns),
             TypeEdge::FIXED_WIDTH_ENCODING,
@@ -2192,6 +2194,8 @@ impl ThingManager {
             }
         }
 
+        // New / deleted subs between objects and interfaces
+
         for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
             TypeEdge::build_prefix(Prefix::EdgeSub),
             TypeEdge::FIXED_WIDTH_ENCODING,
@@ -2200,6 +2204,7 @@ impl ThingManager {
             let subtype = edge.from();
             let supertype = edge.to();
             match supertype.prefix() {
+                // Interfaces: owns
                 Prefix::VertexAttributeType => match write {
                     Write::Insert { .. } | Write::Put { .. } => {
                         let attribute_subtype = AttributeType::new(subtype);
@@ -2224,6 +2229,7 @@ impl ThingManager {
                         }
                     }
                 },
+                // Interfaces: plays and relates
                 Prefix::VertexRoleType => match write {
                     Write::Insert { .. } | Write::Put { .. } => {
                         let role_subtype = RoleType::new(subtype);
@@ -2256,9 +2262,70 @@ impl ThingManager {
                         }
                     }
                 },
+                // Objects and Relations: owns, plays, and relates
+                Prefix::VertexEntityType | Prefix::VertexRelationType => match write {
+                    Write::Insert { .. } | Write::Put { .. } => {
+                        let object_subtype = ObjectType::new(subtype);
+                        let object_supertype = ObjectType::new(supertype);
+
+                        let supertype_owned_attribute_types =
+                            object_supertype.get_owned_attribute_types(snapshot, self.type_manager())?;
+                        for attribute_type in object_subtype.get_owned_attribute_types(snapshot, self.type_manager())? {
+                            for &supertype_attribute_type in &supertype_owned_attribute_types {
+                                if supertype_attribute_type.is_supertype_transitive_of_or_same(
+                                    snapshot,
+                                    self.type_manager(),
+                                    attribute_type,
+                                )? {
+                                    let updated_attribute_types = modified_owns.entry(object_subtype).or_default();
+                                    updated_attribute_types.insert(attribute_type);
+                                    break;
+                                }
+                            }
+                        }
+
+                        let supertype_played_role_types =
+                            object_supertype.get_played_role_types(snapshot, self.type_manager())?;
+                        for role_type in object_subtype.get_played_role_types(snapshot, self.type_manager())? {
+                            for &supertype_role_type in &supertype_played_role_types {
+                                if supertype_role_type.is_supertype_transitive_of_or_same(
+                                    snapshot,
+                                    self.type_manager(),
+                                    role_type,
+                                )? {
+                                    let updated_role_types = modified_plays.entry(object_subtype).or_default();
+                                    updated_role_types.insert(role_type);
+                                    break;
+                                }
+                            }
+                        }
+
+                        let relation_subtype = RelationType::new(subtype);
+                        let relation_supertype = RelationType::new(supertype);
+
+                        let supertype_related_role_types =
+                            relation_supertype.get_related_role_types(snapshot, self.type_manager())?;
+                        for role_type in relation_subtype.get_related_role_types(snapshot, self.type_manager())? {
+                            for &supertype_role_type in &supertype_related_role_types {
+                                if supertype_role_type.is_supertype_transitive_of_or_same(
+                                    snapshot,
+                                    self.type_manager(),
+                                    role_type,
+                                )? {
+                                    let updated_role_types = modified_relates.entry(relation_subtype).or_default();
+                                    updated_role_types.insert(role_type);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                },
                 _ => {}
             }
         }
+
+        // New / deleted annotations
 
         for (key, _) in snapshot.iterate_writes_range(&KeyRange::new_within(
             TypeEdge::build_prefix(Prefix::PropertyTypeEdge),
