@@ -184,7 +184,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     .get(&variable)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                source_span: None, // TODO: this can be improved
+                source_span: None, // TODO: this can be improved?
             })
         })?;
         if value_types.len() != 1 {
@@ -196,7 +196,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 value_types: value_types.iter().join(", "),
-                source_span: None, // TODO: this can be improved
+                source_span: None, // TODO: this can be improved?
             }))
         } else {
             let value_type = value_types.iter().find(|_| true).unwrap();
@@ -220,7 +220,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     category: variable_category,
-                    source_span: None, // TODO: this can be improved
+                    source_span: None, // TODO: this can be improved?
                 }))?, // TODO: I think this is practically unreachable?
             }
         }
@@ -232,7 +232,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
                 .get(&variable)
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-            source_span: None, // TODO: this can be improved
+            source_span: None, // TODO: this can be improved?
         }))
     }
 }
