@@ -7,6 +7,7 @@
 use std::{error::Error, fmt, fmt::Formatter};
 
 use ::typeql::common::Spannable;
+use resource::constants::common::{ERROR_QUERY_POINTER_LINES_AFTER, ERROR_QUERY_POINTER_LINES_BEFORE};
 
 mod typeql;
 
@@ -44,13 +45,13 @@ pub trait TypeDBError {
 
     fn format_code_and_description(&self) -> String {
         if let Some(query) = self.source_query() {
-            if let Some((line_col, _)) = self.first_source_span().map(|span| query.line_col(span)).flatten() {
+            if let Some((line_col, _)) = self.bottom_source_span().map(|span| query.line_col(span)).flatten() {
                 if let Some(excerpt) = query.extract_annotated_line_col(
                     // note: span line and col are 1-indexed,must adjust to 0-offset
                     line_col.line as usize - 1,
                     line_col.column as usize - 1,
-                    2,
-                    2,
+                    ERROR_QUERY_POINTER_LINES_BEFORE,
+                    ERROR_QUERY_POINTER_LINES_AFTER,
                 ) {
                     return format!(
                         "[{}] {}\nNear {}:{}\n-----\n{}\n-----",
@@ -66,8 +67,9 @@ pub trait TypeDBError {
         format!("[{}] {}", self.code(), self.format_description())
     }
 
-    fn first_source_span(&self) -> Option<::typeql::common::Span> {
-        self.source_span().or_else(|| self.source_typedb_error().map(|err| err.first_source_span()).flatten())
+    // return most-specific span available
+    fn bottom_source_span(&self) -> Option<::typeql::common::Span> {
+        self.source_typedb_error().map(|err| err.bottom_source_span()).flatten().or_else(|| self.source_span())
     }
 }
 
