@@ -530,7 +530,7 @@ fn try_get_variable(
 }
 
 fn register_key(parameters: &mut ParameterRegistry, key: &StringLiteral, span: Span) -> ParameterID {
-    parameters.register_fetch_key(String::from_typeql_literal(key).unwrap(), span)
+    parameters.register_fetch_key(String::from_typeql_literal(key, Some(span)).unwrap(), span)
 }
 
 typedb_error! {

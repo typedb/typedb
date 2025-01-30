@@ -1198,14 +1198,14 @@ typedb_error! {
         ),
         FunctionUndefinition(
             35,
-            "Undefining the function \"{name}\" failed",
+            "Undefining the function '{name}' failed",
             name: String,
             source_span: Option<Span>,
             typedb_source: Box<FunctionError>
         ),
         IllegalKeywordAsIdentifier(
             37,
-            "The reserved keyword \"{identifier}\" cannot be used as an identifier.",
+            "The reserved keyword '{identifier}' cannot be used as an identifier.",
             identifier: typeql::Identifier,
             source_span: Option<Span>,
         ),

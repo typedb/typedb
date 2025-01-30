@@ -94,7 +94,7 @@ typedb_error! {
         ),
         IllegalKeywordAsIdentifier(
             9,
-            "The reserved keyword \"{identifier}\" cannot be used as function name",
+            "The reserved keyword '{identifier}' cannot be used as function name",
             identifier: String
         ),
     }

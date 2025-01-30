@@ -41,7 +41,7 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             range.min.as_ref().map(translate_literal).transpose()?,
             range.max.as_ref().map(translate_literal).transpose()?,
         )),
-        typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex)?),
+        typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex, regex.span())?),
         typeql::Annotation::Subkey(_) => {
             return Err(LiteralParseError::UnimplementedLanguageFeature {
                 feature: error::UnimplementedFeature::Subkey,

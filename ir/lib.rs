@@ -202,13 +202,13 @@ typedb_error! {
         ),
         ReservedKeywordAsIdentifier(
             27,
-            "A reserved keyword \"{identifier}\" was used as identifier",
+            "A reserved keyword '{identifier}' was used as identifier",
             identifier: typeql::Identifier,
             source_span: Option<Span>,
         ),
         ReservedValueTypeAsTypeName(
             28,
-            "A reserved value-type name \"{value_type}\" was used as type name",
+            "A reserved value-type name '{value_type}' was used as type name",
             value_type: typeql::type_::BuiltinValueType,
             source_span: Option<Span>,
         ),
@@ -248,14 +248,61 @@ typedb_error! {
 
 typedb_error! {
     pub LiteralParseError(component = "Literal parse", prefix = "LIT") {
-        FragmentParseError(1, "Failed to parse literal fragment into primitive: {fragment}.", fragment: String),
-        ScientificNotationNotAllowedForDecimal(2, "Fixed-point decimal values cannot use scientific notation: {literal}.", literal: String),
-        InvalidDate(3, "Invalid date with year {year}, month {month}, day {day}", year: i32, month: u32, day: u32),
-        InvalidTime(4, "Invalid time with hour {hour}, minute {minute}, second {second}, nanoseconds {nano}", hour: u32, minute: u32, second: u32, nano: u32),
-        CannotUnescapeString(5, "Cannot unescape string literal: '{literal}'.", literal: StringLiteral, typedb_source: typeql::Error),
-        CannotUnescapeRegexString(6, "Cannot unescape regex string: '{literal}'.", literal: StringLiteral, typedb_source: typeql::Error),
-        InvalidTimezoneNamed(7, "Unrecognised timezone '{name}'.", name: String),
-        InvalidTimezoneFixedOffset(8, "Invalid timezone offset '{offset}'.", offset: String),
+        FragmentParseError(
+            1,
+            "Failed to parse literal fragment into primitive: {fragment}.",
+            fragment: String,
+            source_span: Option<Span>,
+        ),
+        ScientificNotationNotAllowedForDecimal(
+            2,
+            "Fixed-point decimal values cannot use scientific notation: {literal}.",
+            literal: String,
+            source_span: Option<Span>,
+        ),
+        InvalidDate(
+            3,
+            "Invalid date with year {year}, month {month}, day {day}", 
+            year: i32,
+            month: u32,
+            day: u32,
+            source_span: Option<Span>,
+        ),
+        InvalidTime(
+            4,
+            "Invalid time with hour {hour}, minute {minute}, second {second}, nanoseconds {nano}",
+            hour: u32,
+            minute: u32,
+            second: u32,
+            nano: u32,
+            source_span: Option<Span>,
+        ),
+        CannotUnescapeString(
+            5,
+            "Cannot unescape string literal: '{literal}'.",
+            literal: StringLiteral,
+            source_span: Option<Span>,
+            typedb_source: typeql::Error,
+        ),
+        CannotUnescapeRegexString(
+            6,
+            "Cannot unescape regex string: '{literal}'.",
+            literal: StringLiteral,
+            source_span: Option<Span>,
+            typedb_source: typeql::Error
+        ),
+        InvalidTimezoneNamed(
+            7, 
+            "Unrecognised timezone '{name}'.",
+            name: String,
+            source_span: Option<Span>,
+        ),
+        InvalidTimezoneFixedOffset(
+            8,
+            "Invalid timezone offset '{offset}'.", 
+            offset: String,
+            source_span: Option<Span>,
+        ),
         UnimplementedLanguageFeature(9, "Unimplemented '{feature}'.", feature: error::UnimplementedFeature),
     }
 }
