@@ -571,6 +571,7 @@ fn collect_value_types_of_function_call_assignments(
                         return Err(AnnotationError::ExpressionCompilation {
                             typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
                                 variable: assign_variable,
+                                source_span: binding.source_span(),
                             }),
                         });
                     }

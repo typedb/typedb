@@ -74,7 +74,7 @@ fn build_recursive(
         typeql::Expression::ListIndex(list_index) => {
             let variable = register_typeql_var(constraints, &list_index.variable)?;
             let id = build_recursive(function_index, constraints, &list_index.index, tree)?;
-            Expression::ListIndex(ListIndex::new(variable, id))
+            Expression::ListIndex(ListIndex::new(variable, id, list_index.span()))
         }
         typeql::Expression::Value(literal) => {
             let id = register_typeql_literal(constraints, literal)?;
@@ -83,7 +83,7 @@ fn build_recursive(
         typeql::Expression::Operation(operation) => {
             let left_id = build_recursive(function_index, constraints, &operation.left, tree)?;
             let right_id = build_recursive(function_index, constraints, &operation.right, tree)?;
-            Expression::Operation(Operation::new(translate_operator(&operation.op), left_id, right_id))
+            Expression::Operation(Operation::new(translate_operator(&operation.op), left_id, right_id, operation.span()))
         }
         typeql::Expression::Function(function_call) => {
             build_function(function_index, constraints, function_call, tree)?
@@ -98,13 +98,13 @@ fn build_recursive(
                 Value::Integer(items.len() as i64),
                 list.span().expect("Parser did not provide List text range"),
             );
-            Expression::List(ListConstructor::new(items, len_id))
+            Expression::List(ListConstructor::new(items, len_id, list.span()))
         }
         typeql::Expression::ListIndexRange(range) => {
             let list_variable = register_typeql_var(constraints, &range.var)?;
             let left_id = build_recursive(function_index, constraints, &range.from, tree)?;
             let right_id = build_recursive(function_index, constraints, &range.to, tree)?;
-            Expression::ListIndexRange(ListIndexRange::new(list_variable, left_id, right_id))
+            Expression::ListIndexRange(ListIndexRange::new(list_variable, left_id, right_id, range.span()))
         }
     };
     Ok(tree.add(expression))
@@ -160,7 +160,7 @@ fn build_function(
                 .iter()
                 .map(|expr| build_recursive(function_index, constraints, expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, &args)?, args)))
+            Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, &args)?, args, builtin.span())))
         }
         FunctionName::Identifier(identifier) => {
             let assign = constraints.create_anonymous_variable(identifier.span())?;
@@ -281,8 +281,8 @@ pub mod tests {
         assert_eq!(value_parameters.value(id), Some(&Value::Integer(9)));
         let Expression::Constant(id) = rhs[2] else { panic!("Expected Constant, found: {:?}", rhs[2]) };
         assert_eq!(value_parameters.value(id), Some(&Value::Integer(6)));
-        assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2)));
-        assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3)));
+        assert_eq!(rhs[3], Expression::Operation(Operation::new(Operator::Multiply, 1, 2, None)));
+        assert_eq!(rhs[4], Expression::Operation(Operation::new(Operator::Add, 0, 3, None)));
     }
 
     fn get_named_variable(translation_context: &TranslationContext, name: &str) -> Variable {
