@@ -62,15 +62,18 @@ pub enum AnnotatedStage {
         block_annotations: TypeAnnotations,
         // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
         executable_expressions: HashMap<Variable, ExecutableExpression<Variable>>,
+        source_span: Option<Span>,
     },
     Insert {
         block: Block,
         annotations: TypeAnnotations,
+        source_span: Option<Span>,
     },
     Delete {
         block: Block,
         deleted_variables: Vec<Variable>,
         annotations: TypeAnnotations,
+        source_span: Option<Span>,
     },
     // ...
     Select(Select),
@@ -229,7 +232,7 @@ fn annotate_stage(
     stage: TranslatedStage,
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
-        TranslatedStage::Match { block } => {
+        TranslatedStage::Match { block, source_span } => {
             let block_annotations = infer_types(
                 snapshot,
                 &block,
@@ -265,10 +268,10 @@ fn annotate_stage(
             compiled_expressions.iter().for_each(|(&variable, expr)| {
                 running_value_variable_assigned_types.insert(variable, expr.return_type().clone());
             });
-            Ok(AnnotatedStage::Match { block, block_annotations, executable_expressions: compiled_expressions })
+            Ok(AnnotatedStage::Match { block, block_annotations, executable_expressions: compiled_expressions, source_span })
         }
 
-        TranslatedStage::Insert { block } => {
+        TranslatedStage::Insert { block, source_span } => {
             let insert_annotations = infer_types(
                 snapshot,
                 &block,
@@ -314,10 +317,10 @@ fn annotate_stage(
                 &insert_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            Ok(AnnotatedStage::Insert { block, annotations: insert_annotations })
+            Ok(AnnotatedStage::Insert { block, annotations: insert_annotations, source_span })
         }
 
-        TranslatedStage::Delete { block, deleted_variables } => {
+        TranslatedStage::Delete { block, deleted_variables, source_span } => {
             let delete_annotations = infer_types(
                 snapshot,
                 &block,
@@ -331,7 +334,7 @@ fn annotate_stage(
                 running_variable_annotations.remove(v);
             });
             // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
-            Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
+            Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
             validate_sort_variables_comparable(

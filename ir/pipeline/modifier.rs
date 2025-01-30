@@ -22,11 +22,16 @@ pub enum Operator {
 #[derive(Debug, Clone)]
 pub struct Select {
     pub variables: HashSet<Variable>,
+    source_span: Option<Span>,
 }
 
 impl Select {
-    pub(crate) fn new(variables: HashSet<Variable>) -> Self {
-        Self { variables }
+    pub(crate) fn new(variables: HashSet<Variable>, source_span: Option<Span>) -> Self {
+        Self { variables, source_span }
+    }
+    
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -58,7 +63,7 @@ impl Sort {
         }
         Self { variables: sort_variables, source_span }
     }
-    
+
     pub fn source_span(&self) -> Option<Span> {
         self.source_span
     }
@@ -107,15 +112,20 @@ impl StructuralEquality for SortVariable {
 #[derive(Debug, Copy, Clone)]
 pub struct Offset {
     offset: u64,
+    source_span: Option<Span>,
 }
 
 impl Offset {
-    pub(crate) fn new(offset: u64) -> Self {
-        Self { offset }
+    pub(crate) fn new(offset: u64, source_span: Option<Span>) -> Self {
+        Self { offset, source_span }
     }
 
     pub fn offset(&self) -> u64 {
         self.offset
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -132,15 +142,20 @@ impl StructuralEquality for Offset {
 #[derive(Debug, Copy, Clone)]
 pub struct Limit {
     limit: u64,
+    source_span: Option<Span>,
 }
 
 impl Limit {
-    pub(crate) fn new(limit: u64) -> Self {
-        Self { limit }
+    pub(crate) fn new(limit: u64, source_span: Option<Span>) -> Self {
+        Self { limit, source_span }
     }
 
     pub fn limit(&self) -> u64 {
         self.limit
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -157,11 +172,16 @@ impl StructuralEquality for Limit {
 #[derive(Debug, Clone)]
 pub struct Require {
     pub variables: HashSet<Variable>,
+    source_span: Option<Span>,
 }
 
 impl Require {
-    pub(crate) fn new(variables: HashSet<Variable>) -> Self {
-        Self { variables }
+    pub(crate) fn new(variables: HashSet<Variable>, source_span: Option<Span>) -> Self {
+        Self { variables, source_span }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 

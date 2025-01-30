@@ -335,7 +335,7 @@ fn translate_inline_expression_single(
     let block = builder
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let match_stage = TranslatedStage::Match { block };
+    let match_stage = TranslatedStage::Match { block, source_span: expression.span() };
     let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var], expression.span());
     let body = FunctionBody::new(vec![match_stage], return_);
     let args = find_function_body_arguments(context, &body);
@@ -438,7 +438,7 @@ fn translate_inline_user_function_call<'a>(
     let block = builder
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let stage = TranslatedStage::Match { block };
+    let stage = TranslatedStage::Match { block, source_span: call.span()};
 
     Ok((local_context, stage, assign_vars, signature))
 }

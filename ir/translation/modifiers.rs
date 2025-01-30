@@ -30,7 +30,7 @@ pub fn translate_select(
             Some(variable) => Ok(variable),
         })
         .collect::<Result<HashSet<_>, _>>()?;
-    let select = Select::new(selected_variables);
+    let select = Select::new(selected_variables, typeql_select.span() );
     context.visible_variables.retain(|name, var| select.variables.contains(var));
     Ok(select)
 }
@@ -58,26 +58,30 @@ pub fn translate_sort(
 
 pub fn translate_offset(
     context: &mut TranslationContext,
-    offset: &typeql::query::stage::modifier::Offset,
+    typeql_offset: &typeql::query::stage::modifier::Offset,
 ) -> Result<Offset, Box<RepresentationError>> {
-    u64::from_typeql_literal(&offset.offset, offset.span()).map(Offset::new).map_err(|typedb_source| {
-        Box::new(RepresentationError::LiteralParseError {
-            literal: offset.offset.value.clone(),
-            source_span: offset.span(),
-            typedb_source
+    u64::from_typeql_literal(&typeql_offset.offset, typeql_offset.span())
+        .map(|offset| Offset::new(offset, typeql_offset.span()))
+        .map_err(|typedb_source| {
+            Box::new(RepresentationError::LiteralParseError {
+                literal: typeql_offset.offset.value.clone(),
+                source_span: typeql_offset.span(),
+                typedb_source,
         })
     })
 }
 
 pub fn translate_limit(
     context: &mut TranslationContext,
-    limit: &typeql::query::stage::modifier::Limit,
+    typeql_limit: &typeql::query::stage::modifier::Limit,
 ) -> Result<Limit, Box<RepresentationError>> {
-    u64::from_typeql_literal(&limit.limit, limit.span()).map(Limit::new).map_err(|typedb_source| {
-        Box::new(RepresentationError::LiteralParseError {
-            literal: limit.limit.value.clone(),
-            source_span: limit.span(),
-            typedb_source,
+    u64::from_typeql_literal(&typeql_limit.limit, typeql_limit.span())
+        .map(|limit| Limit::new(limit, typeql_limit.span()))
+        .map_err(|typedb_source| {
+            Box::new(RepresentationError::LiteralParseError {
+                literal: typeql_limit.limit.value.clone(),
+                source_span: typeql_limit.span(),
+                typedb_source,
         })
     })
 }
@@ -97,6 +101,6 @@ pub fn translate_require(
             Some(&variable) => Ok(variable),
         })
         .collect::<Result<HashSet<_>, _>>()?;
-    let require = Require::new(required_variables);
+    let require = Require::new(required_variables, typeql_require.span());
     Ok(require)
 }

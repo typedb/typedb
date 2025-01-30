@@ -10,6 +10,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
+use typeql::common::Span;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -43,6 +44,7 @@ pub fn compile(
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
+    // source_span: Option<Span>,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();

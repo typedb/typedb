@@ -213,7 +213,7 @@ fn compile_stage(
     annotated_stage: AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
-        AnnotatedStage::Match { block, block_annotations, executable_expressions } => {
+        AnnotatedStage::Match { block, block_annotations, executable_expressions, source_span } => {
             let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
@@ -223,26 +223,29 @@ fn compile_stage(
                 executable_expressions,
                 statistics,
                 call_cost_provider,
+                // *source_span,
             );
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }
-        AnnotatedStage::Insert { block, annotations } => {
+        AnnotatedStage::Insert { block, annotations, source_span } => {
             let plan = crate::executable::insert::executable::compile(
                 block.conjunction().constraints(),
                 input_variables,
                 annotations,
                 variable_registry,
+                *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Insert(Arc::new(plan)))
         }
-        AnnotatedStage::Delete { block, deleted_variables, annotations } => {
+        AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {
             let plan = crate::executable::delete::executable::compile(
                 input_variables,
                 annotations,
                 variable_registry,
                 block.conjunction().constraints(),
                 deleted_variables,
+                *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::DeleteExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Delete(Arc::new(plan)))

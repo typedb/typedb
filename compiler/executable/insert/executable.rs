@@ -17,6 +17,8 @@ use ir::{
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
+use tracing::Instrument;
+use typeql::common::Span;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -56,10 +58,11 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
+    source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
     let variables =
-        add_inserted_concepts(constraints, input_variables, type_annotations, variable_registry, &mut concept_inserts)?;
+        add_inserted_concepts(constraints, input_variables, type_annotations, variable_registry, &mut concept_inserts, source_span)?;
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
@@ -85,6 +88,7 @@ fn add_inserted_concepts(
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
     vertex_instructions: &mut Vec<ConceptInstruction>,
+    stage_source_span: Option<Span>,
 ) -> Result<HashMap<Variable, VariablePosition>, Box<WriteCompilationError>> {
     let first_inserted_variable_position =
         input_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
@@ -102,6 +106,7 @@ fn add_inserted_concepts(
                     .get(&thing)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                source_span: isa.source_span(),
             }));
         }
 
@@ -119,6 +124,7 @@ fn add_inserted_concepts(
                             .get(&thing)
                             .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        source_span: isa.source_span(),
                     }))
                 }
             }
@@ -136,6 +142,7 @@ fn add_inserted_concepts(
                     .get(&thing)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                source_span: isa.source_span(),
             }));
         }
 
@@ -147,6 +154,7 @@ fn add_inserted_concepts(
                         .get(&thing)
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    source_span: isa.source_span(),
                 }));
             }
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
@@ -155,7 +163,7 @@ fn add_inserted_concepts(
             vertex_instructions.push(instruction);
         } else {
             debug_assert!(kinds.len() == 1 && kinds.contains(&Kind::Attribute));
-            let value_variable = resolve_value_variable_for_inserted_attribute(constraints, thing, variable_registry)?;
+            let value_variable = resolve_value_variable_for_inserted_attribute(constraints, thing, variable_registry, stage_source_span)?;
             let value = if let Some(&constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!value_variable
                     .as_variable()
@@ -171,6 +179,7 @@ fn add_inserted_concepts(
                             .get(&thing)
                             .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                        source_span: isa.source_span(),
                     }));
                 }
             } else {
@@ -180,6 +189,7 @@ fn add_inserted_concepts(
                         .get(&thing)
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    source_span: isa.source_span(),
                 }));
             };
             let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
@@ -199,9 +209,9 @@ fn add_has(
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
-        let owner = get_thing_input_position(input_variables, has.owner().as_variable().unwrap(), variable_registry)?;
+        let owner = get_thing_input_position(input_variables, has.owner().as_variable().unwrap(), variable_registry, has.source_span())?;
         let attribute =
-            get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry)?;
+            get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry, has.source_span())?;
         instructions.push(ConnectionInstruction::Has(Has { owner, attribute }));
         Ok(())
     })
@@ -215,15 +225,16 @@ fn add_role_players(
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
-    for role_player in filter_variants!(Constraint::Links: constraints) {
+    for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_input_position(
             input_variables,
-            role_player.relation().as_variable().unwrap(),
+            links.relation().as_variable().unwrap(),
             variable_registry,
+            links.source_span()
         )?;
         let player =
-            get_thing_input_position(input_variables, role_player.player().as_variable().unwrap(), variable_registry)?;
-        let &Vertex::Variable(role_variable) = role_player.role_type() else { unreachable!() };
+            get_thing_input_position(input_variables, links.player().as_variable().unwrap(), variable_registry, links.source_span())?;
+        let &Vertex::Variable(role_variable) = links.role_type() else { unreachable!() };
 
         let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
             (Some(&input), None) => TypeSource::InputVariable(input),
@@ -237,10 +248,11 @@ fn add_role_players(
                     return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
                         player_variable: variable_registry
                             .variable_names()
-                            .get(&role_player.relation().as_variable().unwrap())
+                            .get(&links.relation().as_variable().unwrap())
                             .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                         role_types: annotations.iter().join(", "),
+                        source_span: links.source_span()
                     }));
                 }
             }
@@ -255,14 +267,15 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
     constraints: &'a [Constraint<Variable>],
     variable: Variable,
     variable_registry: &VariableRegistry,
+    stage_source_span: Option<Span>,
 ) -> Result<&'a Vertex<Variable>, Box<WriteCompilationError>> {
     // Find the comparison linking thing to value
-    let (comparator, value_variable) = filter_variants!(Constraint::Comparison: constraints)
+    let (comparator, value_variable, source_span) = filter_variants!(Constraint::Comparison: constraints)
         .filter_map(|cmp| {
             if cmp.lhs() == &Vertex::Variable(variable) {
-                Some((cmp.comparator(), cmp.rhs()))
+                Some((cmp.comparator(), cmp.rhs(), cmp.source_span()))
             } else if cmp.rhs() == &Vertex::Variable(variable) {
-                Some((cmp.comparator(), cmp.lhs()))
+                Some((cmp.comparator(), cmp.lhs(), cmp.source_span()))
             } else {
                 None
             }
@@ -276,6 +289,8 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
                     .get(&variable)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                // fallback span
+                source_span: stage_source_span
             })
         })?;
     if comparator == Comparator::Equal {
@@ -288,6 +303,7 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
             comparator,
+            source_span,
         }))
     }
 }
@@ -371,6 +387,7 @@ pub(crate) fn collect_role_type_bindings(
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                     role_types: annotations.iter().join(", "),
+                    source_span: role_name.source_span(),
                 }));
             };
 
