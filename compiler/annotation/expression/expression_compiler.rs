@@ -5,7 +5,6 @@
  */
 
 use std::collections::HashMap;
-use typeql::common::Span;
 
 use answer::variable::Variable;
 use encoding::value::{
@@ -22,6 +21,7 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
+use typeql::common::Span;
 
 use crate::annotation::expression::{
     compiled_expression::{ExecutableExpression, ExpressionValueType},
@@ -133,12 +133,16 @@ impl<'this> ExpressionCompilationContext<'this> {
             let element_type = self.pop_type_single()?;
             for _ in 1..list_constructor.item_expression_ids().len() {
                 if self.pop_type_single()? != element_type {
-                    Err(ExpressionCompileError::HeterogeneusListConstructor { source_span: list_constructor.source_span() })?;
+                    Err(ExpressionCompileError::HeterogeneusListConstructor {
+                        source_span: list_constructor.source_span(),
+                    })?;
                 }
             }
             self.push_type_list(element_type)
         } else {
-            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType { source_span: list_constructor.source_span() })?;
+            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType {
+                source_span: list_constructor.source_span(),
+            })?;
         }
 
         Ok(())
@@ -197,9 +201,15 @@ impl<'this> ExpressionCompilationContext<'this> {
             ValueTypeCategory::Double => self.compile_op_double(operator, right_expression, operation.source_span()),
             ValueTypeCategory::Decimal => self.compile_op_decimal(operator, right_expression, operation.source_span()),
             ValueTypeCategory::Date => self.compile_op_date(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::DateTime => self.compile_op_datetime(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::DateTimeTZ => self.compile_op_datetime_tz(operator, right_expression, operation.source_span()),
-            ValueTypeCategory::Duration => self.compile_op_duration(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::DateTime => {
+                self.compile_op_datetime(operator, right_expression, operation.source_span())
+            }
+            ValueTypeCategory::DateTimeTZ => {
+                self.compile_op_datetime_tz(operator, right_expression, operation.source_span())
+            }
+            ValueTypeCategory::Duration => {
+                self.compile_op_duration(operator, right_expression, operation.source_span())
+            }
             ValueTypeCategory::String => self.compile_op_string(operator, right_expression, operation.source_span()),
             ValueTypeCategory::Struct => self.compile_op_struct(operator, right_expression, operation.source_span()),
         }

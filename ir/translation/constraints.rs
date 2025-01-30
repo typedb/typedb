@@ -67,7 +67,14 @@ pub(super) fn add_statement(
         typeql::Statement::Assignment(Assignment { lhs, rhs, span }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
             if let typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(id), args, span }) = rhs {
-                add_user_defined_function_call(function_index, constraints, id.as_str_unchecked(), assigned, args, *span)?;
+                add_user_defined_function_call(
+                    function_index,
+                    constraints,
+                    id.as_str_unchecked(),
+                    assigned,
+                    args,
+                    *span,
+                )?;
             } else {
                 let [assigned] = *assigned else {
                     return Err(Box::new(RepresentationError::ExpressionAssignmentMustOneVariable {
@@ -411,11 +418,21 @@ fn add_typeql_isa(
                 let value_id = constraints
                     .parameters()
                     .register_value(value, literal_value.span().expect("Parser did not provide text range of value"));
-                constraints.add_comparison(Vertex::Variable(thing), Vertex::Parameter(value_id), Comparator::Equal, literal_value.span())?;
+                constraints.add_comparison(
+                    Vertex::Variable(thing),
+                    Vertex::Parameter(value_id),
+                    Comparator::Equal,
+                    literal_value.span(),
+                )?;
             }
             IsaInstanceConstraint::Expression(expression) => {
                 let assigned_to = add_typeql_expression(function_index, constraints, expression)?;
-                constraints.add_comparison(Vertex::Variable(thing), assigned_to, Comparator::Equal, expression.span())?;
+                constraints.add_comparison(
+                    Vertex::Variable(thing),
+                    assigned_to,
+                    Comparator::Equal,
+                    expression.span(),
+                )?;
             }
             IsaInstanceConstraint::Comparison(comparison) => {
                 let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
@@ -482,7 +499,12 @@ fn add_typeql_has(
         typeql::statement::thing::HasValue::Expression(typeql_expression) => {
             let expression = add_typeql_expression(function_index, constraints, typeql_expression)?;
             let attribute = constraints.create_anonymous_variable(typeql_expression.span())?;
-            constraints.add_comparison(Vertex::Variable(attribute), expression, Comparator::Equal, typeql_expression.span())?;
+            constraints.add_comparison(
+                Vertex::Variable(attribute),
+                expression,
+                Comparator::Equal,
+                typeql_expression.span(),
+            )?;
             attribute
         }
         typeql::statement::thing::HasValue::Comparison(comparison) => {
@@ -573,7 +595,14 @@ fn add_typeql_iterable_binding(
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
         typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, span }) => {
-            add_user_defined_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args, *span)
+            add_user_defined_function_call(
+                function_index,
+                constraints,
+                checked_identifier(identifier)?,
+                assigned,
+                args,
+                *span,
+            )
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
@@ -628,9 +657,7 @@ fn assignment_pattern_to_variables(
     match assignment {
         AssignmentPattern::Variables(vars) => assignment_typeql_vars_to_variables(constraints, vars),
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
-            Err(Box::new(RepresentationError::UnimplementedStructAssignment {
-                source_span: struct_deconstruct.span(),
-            }))
+            Err(Box::new(RepresentationError::UnimplementedStructAssignment { source_span: struct_deconstruct.span() }))
         }
     }
 }

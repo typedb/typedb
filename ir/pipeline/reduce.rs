@@ -8,10 +8,10 @@ use std::{
     hash::{DefaultHasher, Hasher},
     mem,
 };
-use typeql::common::Span;
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 #[derive(Debug, Clone)]
 pub struct Reduce {
@@ -21,7 +21,11 @@ pub struct Reduce {
 }
 
 impl Reduce {
-    pub(crate) fn new(assigned_reductions: Vec<AssignedReduction>, groupby: Vec<Variable>, source_span: Option<Span>) -> Self {
+    pub(crate) fn new(
+        assigned_reductions: Vec<AssignedReduction>,
+        groupby: Vec<Variable>,
+        source_span: Option<Span>,
+    ) -> Self {
         Self { assigned_reductions, groupby, source_span }
     }
 

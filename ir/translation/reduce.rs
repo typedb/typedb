@@ -5,9 +5,7 @@
  */
 
 use typeql::{
-    common::Spanned,
-    query::{pipeline::stage::Operator as TypeQLOperator, stage::reduce::Reducer as TypeQLReducer},
-    token::ReduceOperator as TypeQLReduceOperator,
+    common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator,
 };
 
 use crate::{

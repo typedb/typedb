@@ -44,7 +44,6 @@ pub fn compile(
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-    // source_span: Option<Span>,
 ) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();

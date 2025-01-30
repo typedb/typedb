@@ -26,13 +26,12 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
-    common::Spanned,
+    common::{Span, Spanned},
+    parser::Rule::sign,
     schema::definable::function::{Output, SingleSelector},
     type_::NamedType,
     TypeRef, TypeRefAny,
 };
-use typeql::common::Span;
-use typeql::parser::Rule::sign;
 
 use crate::{
     annotation::{
@@ -256,7 +255,11 @@ pub(super) fn annotate_named_function(
     for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
         let argument_annotations =
             get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, source_span: label.span(), typedb_source })
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType {
+                    index: arg_index,
+                    source_span: label.span(),
+                    typedb_source,
+                })
             })?;
         match argument_annotations {
             FunctionParameterAnnotation::Concept(concept_annotation) => {
@@ -386,7 +389,11 @@ fn annotate_signature_based_on_labels(
         .enumerate()
         .map(|(index, label)| {
             get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, source_span: label.span(), typedb_source })
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType {
+                    index,
+                    source_span: label.span(),
+                    typedb_source,
+                })
             })
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
@@ -429,7 +436,7 @@ fn resolve_return_operators(
                     reducer,
                     input_type_annotations,
                     input_value_type_annotations,
-                    *source_span
+                    *source_span,
                 )
                 .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
                 instructions.push(instruction);

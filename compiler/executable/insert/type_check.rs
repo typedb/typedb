@@ -89,7 +89,7 @@ fn validate_has_insertable(
     let Some(input_owner_types) = input_annotations_variables.get(&has.owner().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: has.owner().as_variable().unwrap(),
-            source_span: has.source_span(), 
+            source_span: has.source_span(),
         });
     };
     let Some(input_attr_types) = input_annotations_variables.get(&has.attribute().as_variable().unwrap()) else {

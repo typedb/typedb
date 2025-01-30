@@ -4,14 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::process::id;
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
     AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
-use typeql::{annotation::CardinalityRange, common::error::TypeQLError, token};
-use typeql::common::Spanned;
+use typeql::{
+    annotation::CardinalityRange,
+    common::{error::TypeQLError, Spanned},
+    token,
+};
 
 use crate::{
     translation::literal::{translate_literal, FromTypeQLLiteral},
@@ -41,7 +43,9 @@ pub fn translate_annotation(typeql_kind: &typeql::Annotation) -> Result<Annotati
             range.min.as_ref().map(translate_literal).transpose()?,
             range.max.as_ref().map(translate_literal).transpose()?,
         )),
-        typeql::Annotation::Regex(regex) => Annotation::Regex(AnnotationRegex::from_typeql_literal(regex, regex.span())?),
+        typeql::Annotation::Regex(regex) => {
+            Annotation::Regex(AnnotationRegex::from_typeql_literal(regex, regex.span())?)
+        }
         typeql::Annotation::Subkey(_) => {
             return Err(LiteralParseError::UnimplementedLanguageFeature {
                 feature: error::UnimplementedFeature::Subkey,
@@ -102,6 +106,6 @@ pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
 pub(crate) fn checked_identifier(ident: &typeql::Identifier) -> Result<&str, Box<RepresentationError>> {
     ident.as_str_unreserved().map_err(|_source| {
         let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
-        Box::new(RepresentationError::ReservedKeywordAsIdentifier { source_span: identifier.span(), identifier } )
+        Box::new(RepresentationError::ReservedKeywordAsIdentifier { source_span: identifier.span(), identifier })
     })
 }

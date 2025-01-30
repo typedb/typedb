@@ -734,7 +734,10 @@ impl UnaryConstraint for RoleName<Variable> {
             graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
             Ok(())
         } else {
-            Err(TypeInferenceError::RoleNameNotResolved { name: self.name().to_string(), source_span: self.source_span() })
+            Err(TypeInferenceError::RoleNameNotResolved {
+                name: self.name().to_string(),
+                source_span: self.source_span(),
+            })
         }
     }
 }
@@ -751,7 +754,10 @@ impl UnaryConstraint for Value<Variable> {
                 let pattern_key = seeder.type_manager.get_struct_definition_key(seeder.snapshot, struct_name);
                 match pattern_key {
                     Ok(Some(key)) => Ok(ValueType::Struct(key)),
-                    Ok(None) => Err(TypeInferenceError::ValueTypeNotFound { name: struct_name.clone().to_owned(), source_span: self.source_span() }),
+                    Ok(None) => Err(TypeInferenceError::ValueTypeNotFound {
+                        name: struct_name.clone().to_owned(),
+                        source_span: self.source_span(),
+                    }),
                     Err(source) => Err(TypeInferenceError::ConceptRead { source }),
                 }
             }
@@ -1855,10 +1861,16 @@ pub mod tests {
             let var_b = conjunction.constraints_mut().get_or_declare_variable("b", None).unwrap();
 
             // Try seeding
-            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Label(label_owner.clone()), None).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Exact, var_x, Vertex::Label(label_owner.clone()), None)
+                .unwrap();
             conjunction.constraints_mut().add_has(var_x, var_a, None).unwrap();
             conjunction.constraints_mut().add_has(var_x, var_b, None).unwrap();
-            conjunction.constraints_mut().add_comparison(var_a.into(), var_b.into(), Comparator::Greater, None).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_comparison(var_a.into(), var_b.into(), Comparator::Greater, None)
+                .unwrap();
 
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();

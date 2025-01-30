@@ -5,7 +5,6 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use typeql::common::Span;
 
 use answer::variable::Variable;
 use compiler::{
@@ -16,6 +15,7 @@ use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::common::Span;
 
 use crate::{
     document::ConceptDocument,

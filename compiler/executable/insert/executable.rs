@@ -61,8 +61,14 @@ pub fn compile(
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
     let mut concept_inserts = Vec::with_capacity(constraints.len());
-    let variables =
-        add_inserted_concepts(constraints, input_variables, type_annotations, variable_registry, &mut concept_inserts, source_span)?;
+    let variables = add_inserted_concepts(
+        constraints,
+        input_variables,
+        type_annotations,
+        variable_registry,
+        &mut concept_inserts,
+        source_span,
+    )?;
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
@@ -163,7 +169,12 @@ fn add_inserted_concepts(
             vertex_instructions.push(instruction);
         } else {
             debug_assert!(kinds.len() == 1 && kinds.contains(&Kind::Attribute));
-            let value_variable = resolve_value_variable_for_inserted_attribute(constraints, thing, variable_registry, stage_source_span)?;
+            let value_variable = resolve_value_variable_for_inserted_attribute(
+                constraints,
+                thing,
+                variable_registry,
+                stage_source_span,
+            )?;
             let value = if let Some(&constant) = value_bindings.get(&value_variable) {
                 debug_assert!(!value_variable
                     .as_variable()
@@ -209,9 +220,18 @@ fn add_has(
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
-        let owner = get_thing_input_position(input_variables, has.owner().as_variable().unwrap(), variable_registry, has.source_span())?;
-        let attribute =
-            get_thing_input_position(input_variables, has.attribute().as_variable().unwrap(), variable_registry, has.source_span())?;
+        let owner = get_thing_input_position(
+            input_variables,
+            has.owner().as_variable().unwrap(),
+            variable_registry,
+            has.source_span(),
+        )?;
+        let attribute = get_thing_input_position(
+            input_variables,
+            has.attribute().as_variable().unwrap(),
+            variable_registry,
+            has.source_span(),
+        )?;
         instructions.push(ConnectionInstruction::Has(Has { owner, attribute }));
         Ok(())
     })
@@ -230,10 +250,14 @@ fn add_role_players(
             input_variables,
             links.relation().as_variable().unwrap(),
             variable_registry,
-            links.source_span()
+            links.source_span(),
         )?;
-        let player =
-            get_thing_input_position(input_variables, links.player().as_variable().unwrap(), variable_registry, links.source_span())?;
+        let player = get_thing_input_position(
+            input_variables,
+            links.player().as_variable().unwrap(),
+            variable_registry,
+            links.source_span(),
+        )?;
         let &Vertex::Variable(role_variable) = links.role_type() else { unreachable!() };
 
         let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
@@ -252,7 +276,7 @@ fn add_role_players(
                             .cloned()
                             .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                         role_types: annotations.iter().join(", "),
-                        source_span: links.source_span()
+                        source_span: links.source_span(),
                     }));
                 }
             }
@@ -290,7 +314,7 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                 // fallback span
-                source_span: stage_source_span
+                source_span: stage_source_span,
             })
         })?;
     if comparator == Comparator::Equal {

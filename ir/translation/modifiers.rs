@@ -6,8 +6,7 @@
 
 use std::collections::HashSet;
 
-use typeql::{query::stage::Operator, token::Order};
-use typeql::common::Spanned;
+use typeql::{common::Spanned, token::Order};
 
 use crate::{
     pipeline::modifier::{Limit, Offset, Require, Select, Sort},
@@ -30,7 +29,7 @@ pub fn translate_select(
             Some(variable) => Ok(variable),
         })
         .collect::<Result<HashSet<_>, _>>()?;
-    let select = Select::new(selected_variables, typeql_select.span() );
+    let select = Select::new(selected_variables, typeql_select.span());
     context.visible_variables.retain(|name, var| select.variables.contains(var));
     Ok(select)
 }
@@ -67,8 +66,8 @@ pub fn translate_offset(
                 literal: typeql_offset.offset.value.clone(),
                 source_span: typeql_offset.span(),
                 typedb_source,
+            })
         })
-    })
 }
 
 pub fn translate_limit(
@@ -82,8 +81,8 @@ pub fn translate_limit(
                 literal: typeql_limit.limit.value.clone(),
                 source_span: typeql_limit.span(),
                 typedb_source,
+            })
         })
-    })
 }
 
 pub fn translate_require(

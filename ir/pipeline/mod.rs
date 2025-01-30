@@ -239,7 +239,7 @@ impl VariableRegistry {
     pub fn source_span(&self, variable: Variable) -> Option<Span> {
         self.variable_source_spans.get(&variable).cloned()
     }
-    
+
     pub(crate) fn register_function_argument(
         &mut self,
         name: &str,

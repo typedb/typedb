@@ -11,11 +11,11 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
-use typeql::common::Span;
 
 use answer::variable::Variable;
 use error::typedb_error;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::pattern::{IrID, ParameterID};
 
@@ -195,7 +195,7 @@ impl Hash for Operation {
     }
 }
 
-impl Eq for Operation { }
+impl Eq for Operation {}
 
 impl PartialEq for Operation {
     fn eq(&self, other: &Self) -> bool {
@@ -229,7 +229,7 @@ pub struct BuiltInCall {
 
 impl BuiltInCall {
     pub(crate) fn new(
-        builtin_id: BuiltInFunctionID, 
+        builtin_id: BuiltInFunctionID,
         argument_expression_ids: Vec<ExpressionTreeNodeId>,
         source_span: Option<Span>,
     ) -> Self {
@@ -256,12 +256,11 @@ impl Hash for BuiltInCall {
     }
 }
 
-impl Eq for BuiltInCall { }
+impl Eq for BuiltInCall {}
 
 impl PartialEq for BuiltInCall {
     fn eq(&self, other: &Self) -> bool {
-        self.builtin_id.eq(&other.builtin_id) 
-            && self.argument_expression_ids.eq(&other.argument_expression_ids)
+        self.builtin_id.eq(&other.builtin_id) && self.argument_expression_ids.eq(&other.argument_expression_ids)
     }
 }
 
@@ -274,8 +273,7 @@ impl StructuralEquality for BuiltInCall {
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.builtin_id.equals(&other.builtin_id)
-            && self.argument_expression_ids.equals(&other.argument_expression_ids)
+        self.builtin_id.equals(&other.builtin_id) && self.argument_expression_ids.equals(&other.argument_expression_ids)
     }
 }
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
@@ -320,7 +318,7 @@ pub struct ListIndex<ID> {
 
 impl<ID> ListIndex<ID> {
     pub(crate) fn new(
-        list_variable: ID, 
+        list_variable: ID,
         index_expression_id: ExpressionTreeNodeId,
         source_span: Option<Span>,
     ) -> ListIndex<ID> {
@@ -342,11 +340,7 @@ impl<ID: IrID> ListIndex<ID> {
     }
 
     fn map<T: Clone>(&self, mapping: &HashMap<ID, T>) -> ListIndex<T> {
-        ListIndex::new(
-            self.list_variable.map(mapping), 
-            self.index_expression_id.clone(),
-            self.source_span,
-        )
+        ListIndex::new(self.list_variable.map(mapping), self.index_expression_id.clone(), self.source_span)
     }
 }
 
@@ -356,7 +350,7 @@ impl<ID: Hash> Hash for ListIndex<ID> {
         Hash::hash(&self.index_expression_id, state);
     }
 }
-impl<ID: PartialEq> Eq for ListIndex<ID> { }
+impl<ID: PartialEq> Eq for ListIndex<ID> {}
 
 impl<ID: PartialEq> PartialEq for ListIndex<ID> {
     fn eq(&self, other: &Self) -> bool {
@@ -373,8 +367,7 @@ impl<ID: StructuralEquality> StructuralEquality for ListIndex<ID> {
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.list_variable.equals(&other.list_variable)
-            && self.index_expression_id.equals(&other.index_expression_id)
+        self.list_variable.equals(&other.list_variable) && self.index_expression_id.equals(&other.index_expression_id)
     }
 }
 #[derive(Debug, Clone)]
@@ -396,7 +389,7 @@ impl ListConstructor {
     pub fn len_id(&self) -> ParameterID {
         self.len_id
     }
-    
+
     pub fn source_span(&self) -> Option<Span> {
         self.source_span
     }
@@ -409,12 +402,11 @@ impl Hash for ListConstructor {
     }
 }
 
-impl Eq for ListConstructor { }
+impl Eq for ListConstructor {}
 
 impl PartialEq for ListConstructor {
     fn eq(&self, other: &Self) -> bool {
-        self.item_expression_ids.eq(&other.item_expression_ids) 
-            && self.len_id.eq(&other.len_id)
+        self.item_expression_ids.eq(&other.item_expression_ids) && self.len_id.eq(&other.len_id)
     }
 }
 
@@ -427,8 +419,7 @@ impl StructuralEquality for ListConstructor {
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.item_expression_ids.equals(&other.item_expression_ids)
-            && self.len_id.equals(&other.len_id)
+        self.item_expression_ids.equals(&other.item_expression_ids) && self.len_id.equals(&other.len_id)
     }
 }
 #[derive(Debug, Clone)]
@@ -448,7 +439,7 @@ impl<ID> ListIndexRange<ID> {
     ) -> Self {
         Self { list_variable, from_expression_id, to_expression_id, source_span }
     }
-    
+
     pub fn source_span(&self) -> Option<Span> {
         self.source_span
     }
@@ -485,12 +476,12 @@ impl<ID: Hash> Hash for ListIndexRange<ID> {
     }
 }
 
-impl<ID: PartialEq> Eq for ListIndexRange<ID> { }
+impl<ID: PartialEq> Eq for ListIndexRange<ID> {}
 
 impl<ID: PartialEq> PartialEq for ListIndexRange<ID> {
     fn eq(&self, other: &Self) -> bool {
-        self.list_variable.eq(&other.list_variable) 
-            && self.from_expression_id.eq(&other.from_expression_id) 
+        self.list_variable.eq(&other.list_variable)
+            && self.from_expression_id.eq(&other.from_expression_id)
             && self.to_expression_id.eq(&other.to_expression_id)
     }
 }

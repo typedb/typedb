@@ -5,10 +5,10 @@
  */
 
 use std::{collections::HashSet, mem};
-use typeql::common::Span;
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 #[derive(Debug, Clone)]
 pub enum Operator {
@@ -29,7 +29,7 @@ impl Select {
     pub(crate) fn new(variables: HashSet<Variable>, source_span: Option<Span>) -> Self {
         Self { variables, source_span }
     }
-    
+
     pub fn source_span(&self) -> Option<Span> {
         self.source_span
     }

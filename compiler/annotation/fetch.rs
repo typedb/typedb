@@ -8,7 +8,6 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
-use typeql::common::Span;
 
 use answer::{variable::Variable, Type};
 use concept::type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI};
@@ -25,6 +24,7 @@ use ir::{
     translation::TranslationContext,
 };
 use storage::snapshot::ReadableSnapshot;
+use typeql::common::Span;
 
 use crate::annotation::{
     expression::compiled_expression::ExpressionValueType,
@@ -176,7 +176,14 @@ fn annotate_some(
                     attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
-            validate_attribute_owned_and_scalar(snapshot, type_manager, variable_name, owner_types, attribute_type, source_span)?;
+            validate_attribute_owned_and_scalar(
+                snapshot,
+                type_manager,
+                variable_name,
+                owner_types,
+                attribute_type,
+                source_span,
+            )?;
             Ok(AnnotatedFetchSome::SingleAttribute(variable, attribute_type))
         }
         FetchSome::SingleFunction(mut function) => {

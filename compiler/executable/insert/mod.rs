@@ -8,7 +8,6 @@ use std::{
     collections::{BTreeSet, HashMap, HashSet},
     error::Error,
 };
-use typeql::common::Span;
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
@@ -17,6 +16,7 @@ use ir::{
     pattern::{constraint::Comparator, ParameterID},
     pipeline::VariableRegistry,
 };
+use typeql::common::Span;
 
 use crate::VariablePosition;
 
@@ -58,7 +58,7 @@ pub(crate) fn get_thing_input_position(
                 .get(&variable)
                 .cloned()
                 .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-            source_span
+            source_span,
         })),
     }
 }

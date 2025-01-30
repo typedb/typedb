@@ -13,10 +13,10 @@ use std::{
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 use typeql::{
+    common::Span,
     schema::definable::function::{Output, SingleSelector},
     TypeRefAny,
 };
-use typeql::common::Span;
 
 use crate::{
     pipeline::{reduce::Reducer, ParameterRegistry},
@@ -127,7 +127,7 @@ impl ReturnOperation {
             ReturnOperation::Stream(_, source_span)
             | ReturnOperation::Single(_, _, source_span)
             | ReturnOperation::ReduceCheck(source_span)
-            | ReturnOperation::ReduceReducer(_, source_span) => *source_span
+            | ReturnOperation::ReduceReducer(_, source_span) => *source_span,
         }
     }
 }

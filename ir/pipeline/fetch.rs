@@ -9,11 +9,11 @@ use std::{
     hash::{DefaultHasher, Hasher},
     mem,
 };
-use typeql::common::Span;
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
 use structural_equality::{ordered_hash_combine, StructuralEquality};
+use typeql::common::Span;
 
 use crate::{
     pattern::ParameterID,
@@ -27,7 +27,7 @@ pub enum FetchSome {
     SingleAttribute(FetchSingleAttribute),
     SingleFunction(Function),
 
-    // note: all source_spans are contained in FetchObject 
+    // note: all source_spans are contained in FetchObject
     Object(Box<FetchObject>),
 
     ListFunction(Function),

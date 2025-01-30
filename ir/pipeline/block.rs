@@ -144,7 +144,7 @@ fn validate_conjunction(
             rhs_variable,
             lhs_category,
             rhs_category,
-            source_span: is.source_span()
+            source_span: is.source_span(),
         }));
     }
     Ok(())
@@ -300,7 +300,12 @@ impl<'a> BlockBuilderContext<'a> {
             }
             Some(existing_variable) => self
                 .block_context
-                .may_update_declaration_scope(*existing_variable, name, self.variable_registry.source_span(*existing_variable), scope)
+                .may_update_declaration_scope(
+                    *existing_variable,
+                    name,
+                    self.variable_registry.source_span(*existing_variable),
+                    scope,
+                )
                 .map(|_| *existing_variable),
         }
     }

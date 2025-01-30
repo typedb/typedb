@@ -219,8 +219,11 @@ fn traverse_links_unbounded_sorted_from() {
         .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
-    let links_membership_group =
-        conjunction.constraints_mut().add_links(var_membership, var_group, var_membership_group_type, None).unwrap().clone();
+    let links_membership_group = conjunction
+        .constraints_mut()
+        .add_links(var_membership, var_group, var_membership_group_type, None)
+        .unwrap()
+        .clone();
 
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type.into(), None).unwrap();
@@ -535,8 +538,11 @@ fn traverse_links_bounded_relation_player() {
         .unwrap()
         .clone();
 
-    let isa_person =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
     let isa_membership = conjunction
         .constraints_mut()
         .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)
@@ -857,8 +863,11 @@ fn traverse_links_reverse_bounded_player() {
         .unwrap()
         .clone();
 
-    let isa_person =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
@@ -967,8 +976,11 @@ fn traverse_links_reverse_bounded_player_relation() {
         .unwrap()
         .clone();
 
-    let isa_person =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
     let isa_membership = conjunction
         .constraints_mut()
         .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)

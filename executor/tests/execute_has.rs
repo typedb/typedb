@@ -246,8 +246,11 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let var_person_2 = conjunction.constraints_mut().get_or_declare_variable("person-2", None).unwrap();
     let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
 
-    let isa_person_1 =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into(), None).unwrap().clone();
+    let isa_person_1 = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person_1, var_person_type.into(), None)
+        .unwrap()
+        .clone();
     let has_name_1 = conjunction.constraints_mut().add_has(var_person_1, var_name, None).unwrap().clone();
     let has_name_2 = conjunction.constraints_mut().add_has(var_person_2, var_name, None).unwrap().clone();
 

@@ -235,7 +235,10 @@ pub mod tests {
                 f_conjunction.constraints_mut().get_or_declare_variable("called_animal_type", None).unwrap();
             let f_var_name = f_conjunction.constraints_mut().get_or_declare_variable("called_name", None).unwrap();
             f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
-            f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into(), None).unwrap();
+            f_conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into(), None)
+                .unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name, None).unwrap();
             let function_block = builder.finish().unwrap();
             let f_ir = Function::new(
@@ -1276,7 +1279,10 @@ pub mod tests {
             let [var_animal, var_name] = ["animal", "name"]
                 .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None)
+                .unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
@@ -1335,8 +1341,14 @@ pub mod tests {
             let [var_animal, var_name] = ["animal", "name"]
                 .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None).unwrap();
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_CATNAME), None).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None)
+                .unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_CATNAME), None)
+                .unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
@@ -1392,8 +1404,14 @@ pub mod tests {
             let [var_animal, var_name] = ["animal", "name"]
                 .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None).unwrap();
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_DOGNAME), None).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT), None)
+                .unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_DOGNAME), None)
+                .unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
             let block = builder.finish().unwrap();
@@ -1421,7 +1439,10 @@ pub mod tests {
             let [var_animal, var_name] = ["animal", "name"]
                 .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
-            conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None).unwrap();
+            conjunction
+                .constraints_mut()
+                .add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL), None)
+                .unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME), None).unwrap();
             conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 

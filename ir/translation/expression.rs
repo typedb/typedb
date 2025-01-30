@@ -8,11 +8,10 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 use error::UnimplementedFeature;
 use typeql::{
-    common::Spanned,
+    common::{Span, Spanned},
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
 };
-use typeql::common::Span;
 
 use crate::{
     pattern::{
@@ -83,7 +82,12 @@ fn build_recursive(
         typeql::Expression::Operation(operation) => {
             let left_id = build_recursive(function_index, constraints, &operation.left, tree)?;
             let right_id = build_recursive(function_index, constraints, &operation.right, tree)?;
-            Expression::Operation(Operation::new(translate_operator(&operation.op), left_id, right_id, operation.span()))
+            Expression::Operation(Operation::new(
+                translate_operator(&operation.op),
+                left_id,
+                right_id,
+                operation.span(),
+            ))
         }
         typeql::Expression::Function(function_call) => {
             build_function(function_index, constraints, function_call, tree)?
@@ -139,7 +143,7 @@ pub fn add_user_defined_function_call(
         .map_err(|typedb_source| RepresentationError::FunctionReadError { typedb_source })?;
     let Some(callee) = callee else {
         return Err(Box::new(RepresentationError::UnresolvedFunction {
-            function_name: function_name.to_owned() ,
+            function_name: function_name.to_owned(),
             source_span,
         }));
     };
@@ -192,12 +196,17 @@ fn check_builtin_arg_count(
     builtin: Function,
     actual: usize,
     expected: usize,
-    source_span: Option<Span>
+    source_span: Option<Span>,
 ) -> Result<(), Box<RepresentationError>> {
     if actual == expected {
         Ok(())
     } else {
-        Err(Box::new(RepresentationError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual, source_span }))
+        Err(Box::new(RepresentationError::ExpressionBuiltinArgumentCountMismatch {
+            builtin,
+            expected,
+            actual,
+            source_span,
+        }))
     }
 }
 

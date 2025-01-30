@@ -188,7 +188,8 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            if !body.return_operation.is_scalar() && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_, _))
+            if !body.return_operation.is_scalar()
+                && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_, _))
             {
                 return Err(Box::new(FetchRepresentationError::ExpectedScalarOrReduceFunctionBlock {
                     declaration: block.clone(),
@@ -438,7 +439,7 @@ fn translate_inline_user_function_call<'a>(
     let block = builder
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let stage = TranslatedStage::Match { block, source_span: call.span()};
+    let stage = TranslatedStage::Match { block, source_span: call.span() };
 
     Ok((local_context, stage, assign_vars, signature))
 }

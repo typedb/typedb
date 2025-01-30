@@ -213,7 +213,7 @@ fn compile_stage(
     annotated_stage: AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
-        AnnotatedStage::Match { block, block_annotations, executable_expressions, source_span } => {
+        AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
             let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
@@ -223,7 +223,6 @@ fn compile_stage(
                 executable_expressions,
                 statistics,
                 call_cost_provider,
-                // *source_span,
             );
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }

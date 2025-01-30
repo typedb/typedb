@@ -5,7 +5,6 @@
  */
 
 use std::error::Error;
-use typeql::common::Span;
 
 use encoding::value::value_type::ValueTypeCategory;
 use error::typedb_error;
@@ -16,6 +15,7 @@ use ir::{
     },
     RepresentationError,
 };
+use typeql::common::Span;
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
@@ -59,7 +59,7 @@ typedb_error! {
         ),
         CouldNotDetermineValueTypeForVariable(
             9,
-            "Could not determine a value type for variable '{variable}'.", 
+            "Could not determine a value type for variable '{variable}'.",
             variable: String,
             source_span: Option<Span>,
         ),

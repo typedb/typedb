@@ -9,13 +9,7 @@
 #![allow(unused_variables)]
 
 use error::typedb_error;
-use typeql::{
-    query::stage::reduce::Reducer,
-    statement::{InIterable, StructDeconstruct},
-    token,
-    value::StringLiteral,
-};
-use typeql::common::Span;
+use typeql::{common::Span, statement::InIterable, token, value::StringLiteral};
 
 use crate::{
     pattern::{expression::ExpressionRepresentationError, variable_category::VariableCategory},
@@ -196,7 +190,7 @@ typedb_error! {
         ScopedValueTypeName(
             26,
             "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.",
-            scope: String, 
+            scope: String,
             name: String,
             source_span: Option<Span>,
         ),
@@ -262,7 +256,7 @@ typedb_error! {
         ),
         InvalidDate(
             3,
-            "Invalid date with year {year}, month {month}, day {day}", 
+            "Invalid date with year {year}, month {month}, day {day}",
             year: i32,
             month: u32,
             day: u32,
@@ -292,14 +286,14 @@ typedb_error! {
             typedb_source: typeql::Error
         ),
         InvalidTimezoneNamed(
-            7, 
+            7,
             "Unrecognised timezone '{name}'.",
             name: String,
             source_span: Option<Span>,
         ),
         InvalidTimezoneFixedOffset(
             8,
-            "Invalid timezone offset '{offset}'.", 
+            "Invalid timezone offset '{offset}'.",
             offset: String,
             source_span: Option<Span>,
         ),
