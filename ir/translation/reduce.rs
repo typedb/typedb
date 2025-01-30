@@ -5,6 +5,7 @@
  */
 
 use typeql::{
+    common::Spanned,
     query::{pipeline::stage::Operator as TypeQLOperator, stage::reduce::Reducer as TypeQLReducer},
     token::ReduceOperator as TypeQLReduceOperator,
 };
@@ -27,8 +28,13 @@ pub fn translate_reduce(
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
-        let assigned_var =
-            context.register_reduced_variable(reduce_assign.variable.name().unwrap(), category, is_optional, reducer);
+        let assigned_var = context.register_reduced_variable(
+            reduce_assign.variable.name().unwrap(),
+            category,
+            is_optional,
+            reduce_assign.variable.span(),
+            reducer,
+        );
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
@@ -42,9 +48,7 @@ pub fn translate_reduce(
                     || {
                         Err(RepresentationError::OperatorStageVariableUnavailable {
                             variable_name: var_name.to_owned(),
-                            declaration: typeql::query::pipeline::stage::Stage::Operator(TypeQLOperator::Reduce(
-                                typeql_reduce.clone(),
-                            )),
+                            source_span: typeql_var.span(),
                         })
                     },
                     |&variable| Ok(variable),
@@ -78,7 +82,7 @@ pub(crate) fn build_reducer(
             Some(typeql_var) => match context.get_variable(typeql_var.name().unwrap()) {
                 None => Err(Box::new(RepresentationError::ReduceVariableNotAvailable {
                     variable_name: typeql_var.name().unwrap().to_owned(),
-                    declaration: reduce_value.clone(),
+                    source_span: typeql_var.span(),
                 })),
                 Some(var) => Ok(Reducer::CountVar(var)),
             },
@@ -87,7 +91,7 @@ pub(crate) fn build_reducer(
             let Some(var) = context.get_variable(stat.variable.name().unwrap()) else {
                 return Err(Box::new(RepresentationError::ReduceVariableNotAvailable {
                     variable_name: stat.variable.name().unwrap().to_owned(),
-                    declaration: reduce_value.clone(),
+                    source_span: stat.variable.span(),
                 }));
             };
             match &stat.reduce_operator {

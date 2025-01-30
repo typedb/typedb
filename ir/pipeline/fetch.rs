@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use encoding::value::label::Label;
 use structural_equality::{ordered_hash_combine, StructuralEquality};
 
 use crate::{
@@ -107,7 +108,7 @@ impl StructuralEquality for FetchSome {
 #[derive(Debug, Clone)]
 pub struct FetchSingleAttribute {
     pub variable: Variable,
-    pub attribute: String,
+    pub attribute: Label,
 }
 
 impl StructuralEquality for FetchSingleAttribute {
@@ -183,7 +184,7 @@ impl StructuralEquality for FetchListSubFetch {
 #[derive(Debug, Clone)]
 pub struct FetchListAttributeAsList {
     pub variable: Variable,
-    pub attribute: String,
+    pub attribute: Label,
 }
 
 impl StructuralEquality for FetchListAttributeAsList {
@@ -199,7 +200,7 @@ impl StructuralEquality for FetchListAttributeAsList {
 #[derive(Debug, Clone)]
 pub struct FetchListAttributeFromList {
     pub variable: Variable,
-    pub attribute: String,
+    pub attribute: Label,
 }
 
 impl StructuralEquality for FetchListAttributeFromList {

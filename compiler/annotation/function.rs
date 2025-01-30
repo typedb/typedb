@@ -26,6 +26,7 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
+    common::Spanned,
     schema::definable::function::{Output, SingleSelector},
     type_::NamedType,
     TypeRef, TypeRefAny,
@@ -510,7 +511,7 @@ fn get_annotations_from_labels(
             let types = type_seeder::get_type_annotation_and_subtypes_from_label(
                 snapshot,
                 type_manager,
-                &Label::build(label.ident.as_str_unchecked()),
+                &Label::build(label.ident.as_str_unchecked(), label.span()),
             )?;
             Ok(FunctionParameterAnnotation::Concept(types))
         }

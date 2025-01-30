@@ -12,8 +12,11 @@ use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::value::Value};
 use error::typedb_error;
 use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
-use typeql::schema::definable::function::{
-    Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream, Signature,
+use typeql::{
+    common::Span,
+    schema::definable::function::{
+        Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream, Signature,
+    },
 };
 
 use crate::{
@@ -103,6 +106,7 @@ pub struct VariableRegistry {
     variable_id_allocator: u16,
     variable_categories: HashMap<Variable, (VariableCategory, VariableCategorySource)>,
     variable_optionality: HashMap<Variable, VariableOptionality>,
+    variable_source_spans: HashMap<Variable, Span>,
 }
 
 impl VariableRegistry {
@@ -114,17 +118,21 @@ impl VariableRegistry {
             variable_id_allocator: 0,
             variable_categories: HashMap::new(),
             variable_optionality: HashMap::new(),
+            variable_source_spans: HashMap::new(),
         }
     }
 
-    fn register_variable_named(&mut self, name: String) -> Variable {
+    fn register_variable_named(&mut self, name: String, source_span: Option<Span>) -> Variable {
         let variable = self.allocate_variable(false);
         self.variable_names.insert(variable, name);
+        source_span.map(|span| self.variable_source_spans.entry(variable).or_insert(span));
         variable
     }
 
-    fn register_anonymous_variable(&mut self) -> Variable {
-        self.allocate_variable(true)
+    fn register_anonymous_variable(&mut self, source_span: Option<Span>) -> Variable {
+        let variable = self.allocate_variable(true);
+        source_span.map(|span| self.variable_source_spans.entry(variable).or_insert(span));
+        variable
     }
 
     fn allocate_variable(&mut self, anonymous: bool) -> Variable {
@@ -228,8 +236,17 @@ impl VariableRegistry {
         self.variable_names.contains_key(variable)
     }
 
-    pub(crate) fn register_function_argument(&mut self, name: &str, category: VariableCategory) -> Variable {
-        let variable = self.register_variable_named(name.to_owned());
+    pub fn source_span(&self, variable: Variable) -> Option<Span> {
+        self.variable_source_spans.get(&variable).cloned()
+    }
+    
+    pub(crate) fn register_function_argument(
+        &mut self,
+        name: &str,
+        category: VariableCategory,
+        source_span: Option<Span>,
+    ) -> Variable {
+        let variable = self.register_variable_named(name.to_owned(), source_span);
         self.set_variable_category(variable, category, VariableCategorySource::Argument).unwrap(); // We just created the variable. It cannot error
         self.set_variable_is_optional(variable, false);
         variable
@@ -240,9 +257,10 @@ impl VariableRegistry {
         name: String,
         category: VariableCategory,
         is_optional: bool,
+        source_span: Option<Span>,
         reducer: Reducer,
     ) -> Variable {
-        let variable = self.register_variable_named(name);
+        let variable = self.register_variable_named(name, source_span);
         self.set_variable_category(variable, category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
         self.set_variable_is_optional(variable, is_optional);
         variable
@@ -287,22 +305,22 @@ impl ParameterRegistry {
         Self::default()
     }
 
-    pub fn register_value(&mut self, value: Value<'static>) -> ParameterID {
-        let id = ParameterID::Value(self.value_registry.len());
+    pub fn register_value(&mut self, value: Value<'static>, source_span: Span) -> ParameterID {
+        let id = ParameterID::Value(self.value_registry.len(), source_span);
         let _prev = self.value_registry.insert(id, value);
         debug_assert_eq!(_prev, None);
         id
     }
 
-    pub(crate) fn register_iid(&mut self, iid: ByteArray<THING_VERTEX_MAX_LENGTH>) -> ParameterID {
-        let id = ParameterID::Iid(self.iid_registry.len());
+    pub(crate) fn register_iid(&mut self, iid: ByteArray<THING_VERTEX_MAX_LENGTH>, source_span: Span) -> ParameterID {
+        let id = ParameterID::Iid(self.iid_registry.len(), source_span);
         let _prev = self.iid_registry.insert(id, iid);
         debug_assert_eq!(_prev, None);
         id
     }
 
-    pub(crate) fn register_fetch_key(&mut self, key: String) -> ParameterID {
-        let id = ParameterID::FetchKey(self.fetch_key_registry.len());
+    pub(crate) fn register_fetch_key(&mut self, key: String, source_span: Span) -> ParameterID {
+        let id = ParameterID::FetchKey(self.fetch_key_registry.len(), source_span);
         let _prev = self.fetch_key_registry.insert(id, key);
         debug_assert_eq!(_prev, None);
         id

@@ -7,6 +7,7 @@
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
+    common::Spanned,
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
@@ -49,12 +50,14 @@ pub fn translate_function_from(
         }
     })?;
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
-    let arg_names_and_categories = signature
+    let args_sources_categories = signature
         .args
         .iter()
-        .map(|arg| (arg.var.name().unwrap().to_owned(), type_any_to_category_and_optionality(&arg.type_).0))
+        .map(|arg| {
+            (arg.var.name().unwrap().to_owned(), arg.var.span(), type_any_to_category_and_optionality(&arg.type_).0)
+        })
         .collect::<Vec<_>>();
-    let (mut context, arguments) = TranslationContext::new_with_function_arguments(arg_names_and_categories);
+    let (mut context, arguments) = TranslationContext::new_with_function_arguments(args_sources_categories);
     let mut value_parameters = ParameterRegistry::new();
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
 

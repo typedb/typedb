@@ -7,7 +7,7 @@
 use std::{collections::HashMap, sync::Arc};
 
 use compiler::VariablePosition;
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
     pipeline::{stage::ExecutionContext, PipelineExecutionError},
@@ -97,7 +97,9 @@ fn setup_common(schema: &str) -> Context {
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define).unwrap();
+    query_manager
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .unwrap();
     snapshot.commit().unwrap();
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
@@ -120,6 +122,7 @@ fn run_read_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -145,6 +148,7 @@ fn run_write_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &query_as_pipeline,
+            query,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();

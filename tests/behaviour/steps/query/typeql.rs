@@ -55,7 +55,11 @@ fn row_batch_result_to_answer(
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
-fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAnswer, Box<QueryError>> {
+fn execute_read_query(
+    context: &Context,
+    query: typeql::Query,
+    source_query: &str,
+) -> Result<QueryAnswer, Box<QueryError>> {
     with_read_tx!(context, |tx| {
         let pipeline = tx.query_manager.prepare_read_pipeline(
             tx.snapshot.clone(),
@@ -63,28 +67,39 @@ fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAn
             tx.thing_manager.clone(),
             &tx.function_manager,
             &query.into_pipeline(),
+            source_query,
         )?;
         if pipeline.has_fetch() {
             match pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, ExecutionContext { parameters, .. })) => {
-                    let documents = iterator
-                        .try_collect()
-                        .map_err(|err| QueryError::ReadPipelineExecution { typedb_source: err })?;
+                    let documents = iterator.try_collect().map_err(|err| QueryError::ReadPipelineExecution {
+                        source_query: source_query.to_string(),
+                        typedb_source: err,
+                    })?;
                     Ok(QueryAnswer::ConceptDocuments(documents, parameters))
                 }
-                Err((err, _)) => Err(Box::new(QueryError::ReadPipelineExecution { typedb_source: err })),
+                Err((err, _)) => Err(Box::new(QueryError::ReadPipelineExecution {
+                    source_query: source_query.to_string(),
+                    typedb_source: err,
+                })),
             }
         } else {
             let named_outputs = pipeline.rows_positions().expect("Expected unfetched result").clone();
             let result_as_batch = match pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()) {
                 Ok((iterator, _)) => iterator.collect_owned(),
                 Err((err, _)) => {
-                    return Err(Box::new(QueryError::ReadPipelineExecution { typedb_source: err }));
+                    return Err(Box::new(QueryError::ReadPipelineExecution {
+                        source_query: source_query.to_string(),
+                        typedb_source: err,
+                    }));
                 }
             };
             match result_as_batch {
                 Ok(batch) => Ok(QueryAnswer::ConceptRows(row_batch_result_to_answer(batch, named_outputs))),
-                Err(typedb_source) => Err(Box::new(QueryError::ReadPipelineExecution { typedb_source })),
+                Err(typedb_source) => Err(Box::new(QueryError::ReadPipelineExecution {
+                    source_query: source_query.to_string(),
+                    typedb_source,
+                })),
             }
         }
     })
@@ -93,6 +108,7 @@ fn execute_read_query(context: &Context, query: typeql::Query) -> Result<QueryAn
 fn execute_write_query(
     context: &mut Context,
     query: typeql::Query,
+    source_query: &str,
 ) -> Result<QueryAnswer, BehaviourTestExecutionError> {
     if matches!(context.active_transaction.as_ref().unwrap(), Read(_)) {
         return Err(BehaviourTestExecutionError::UseInvalidTransactionAsWrite);
@@ -113,6 +129,7 @@ fn execute_write_query(
             thing_manager.clone(),
             &function_manager,
             &query.into_pipeline(),
+            source_query,
         );
 
         match pipeline_result {
@@ -125,6 +142,7 @@ fn execute_write_query(
                                 Ok(documents) => Ok(QueryAnswer::ConceptDocuments(documents, parameters)),
                                 Err(err) => {
                                     Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
+                                        source_query: source_query.to_string(),
                                         typedb_source: err,
                                     }))
                                 }
@@ -133,6 +151,7 @@ fn execute_write_query(
                         ),
                         Err((err, ExecutionContext { snapshot, .. })) => (
                             Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
+                                source_query: source_query.to_string(),
                                 typedb_source: err,
                             })),
                             snapshot,
@@ -150,6 +169,7 @@ fn execute_write_query(
                                 ),
                                 Err(typedb_source) => (
                                     Err(BehaviourTestExecutionError::Query(QueryError::WritePipelineExecution {
+                                        source_query: source_query.to_string(),
                                         typedb_source,
                                     })),
                                     snapshot,
@@ -158,6 +178,7 @@ fn execute_write_query(
                         }
                         Err((err, ExecutionContext { snapshot, .. })) => (
                             Err(BehaviourTestExecutionError::Query(QueryError::ReadPipelineExecution {
+                                source_query: source_query.to_string(),
                                 typedb_source: err,
                             })),
                             snapshot,
@@ -194,6 +215,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             &tx.thing_manager,
             &tx.function_manager,
             typeql_schema,
+            query,
         );
         may_error.check_logic(result);
     });
@@ -202,41 +224,44 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
 #[apply(generic_step)]
 #[step(expr = r"typeql write query{typeql_may_error}")]
 async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
-    let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let parse_result = typeql::parse_query(query_str);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
         context.close_active_transaction();
         return;
     }
     let query = parse_result.unwrap();
 
-    let result = execute_write_query(context, query);
+    let result = execute_write_query(context, query, query_str);
     may_error.check_logic(result);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"get answers of typeql write query")]
 async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
-    let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    let result = execute_write_query(context, query);
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let query = typeql::parse_query(query_str).unwrap();
+    let result = execute_write_query(context, query, query_str);
     context.query_answer = Some(result.unwrap());
 }
 
 #[apply(generic_step)]
 #[step(expr = r"typeql read query{typeql_may_error}")]
 async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
-    let parse_result = typeql::parse_query(step.docstring.as_ref().unwrap().as_str());
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let parse_result = typeql::parse_query(query_str);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
         context.close_active_transaction();
         return;
     }
     let query = parse_result.unwrap();
-    let result = execute_read_query(context, query);
+    let result = execute_read_query(context, query, query_str);
     may_error.check_logic(result);
 }
 
-fn record_answers_of_typeql_read_query(context: &mut Context, query: &str) {
-    let query = typeql::parse_query(query).unwrap();
-    context.query_answer = match execute_read_query(context, query) {
+fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str) {
+    let query = typeql::parse_query(query_str).unwrap();
+    context.query_answer = match execute_read_query(context, query, query_str) {
         Ok(answers) => Some(answers),
         Err(error) => panic!("Unexpected get answers error: {:?}", error),
     }
@@ -330,7 +355,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
     with_read_tx!(context, |tx| {
         let key_type = tx
             .type_manager
-            .get_attribute_type(&*tx.snapshot, &Label::build(key_label))
+            .get_attribute_type(&*tx.snapshot, &Label::build(key_label, None))
             .unwrap()
             .unwrap_or_else(|| panic!("attribute type {key_label} not found"));
         let expected = params::Value::from_str(key_value).unwrap().into_typedb(
@@ -366,7 +391,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
     with_read_tx!(context, |tx| {
         let attr_type = tx
             .type_manager
-            .get_attribute_type(&*tx.snapshot, &Label::build(label))
+            .get_attribute_type(&*tx.snapshot, &Label::build(label, None))
             .unwrap()
             .unwrap_or_else(|| panic!("attribute type {label} not found"));
         let expected = params::Value::from_str(value).unwrap().into_typedb(
@@ -471,8 +496,9 @@ async fn answer_contains_document(context: &mut Context, contains_or_doesnt: par
 async fn each_answer_satisfies(context: &mut Context, step: &Step) {
     let templated_query = step.docstring().unwrap();
     for answer in context.query_answer.as_ref().unwrap().as_rows() {
-        let query = typeql::parse_query(&apply_query_template(templated_query, answer)).unwrap();
-        let answer_size = match execute_read_query(context, query) {
+        let query_string = apply_query_template(templated_query, answer);
+        let query = typeql::parse_query(&query_string).unwrap();
+        let answer_size = match execute_read_query(context, query, &query_string) {
             Ok(answers) => answers.len(),
             Err(error) => panic!("Unexpected get answers error: {:?}", error),
         };
@@ -525,8 +551,9 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
         eprintln!("TODO: Implement step: verify answer set is equivalent for query");
         return;
     }
-    let query = typeql::parse_query(step.docstring.as_ref().unwrap().as_str()).unwrap();
-    let verify_answers = execute_read_query(context, query).unwrap();
+    let query_str = step.docstring.as_ref().unwrap().as_str();
+    let query = typeql::parse_query(query_str).unwrap();
+    let verify_answers = execute_read_query(context, query, query_str).unwrap();
     match (&context.query_answer.as_ref().unwrap(), verify_answers) {
         (QueryAnswer::ConceptRows(actual), QueryAnswer::ConceptRows(expected)) => {
             assert_eq!(

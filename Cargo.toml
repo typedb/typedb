@@ -48,8 +48,8 @@ features = {}
 
 	[dev-dependencies.typeql]
 		features = []
+		rev = "ea9244fbf5f07c7f129276a92695fb5000e95c23"
 		git = "https://github.com/typedb/typeql"
-		tag = "3.0.4"
 		default-features = false
 
 	[dev-dependencies.test_utils_concept]

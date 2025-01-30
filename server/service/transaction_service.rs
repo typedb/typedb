@@ -131,7 +131,7 @@ pub(crate) struct TransactionService {
 
     is_open: bool,
     transaction: Option<Transaction>,
-    request_queue: VecDeque<(Uuid, typeql::query::Pipeline)>,
+    request_queue: VecDeque<(Uuid, typeql::query::Pipeline, String)>,
     responders: HashMap<Uuid, (JoinHandle<()>, QueryStreamTransmitter)>,
     running_write_query: Option<(
         Uuid,
@@ -655,9 +655,9 @@ impl TransactionService {
 
     async fn cancel_queued_read_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut write_queries = VecDeque::with_capacity(self.request_queue.len());
-        for (req_id, pipeline) in self.request_queue.drain(0..self.request_queue.len()) {
+        for (req_id, pipeline, source_query) in self.request_queue.drain(0..self.request_queue.len()) {
             if Self::is_write_pipeline(&pipeline) {
-                write_queries.push_back((req_id, pipeline));
+                write_queries.push_back((req_id, pipeline, source_query));
             }
             Self::respond_query_response(
                 &self.response_sender,
@@ -719,7 +719,7 @@ impl TransactionService {
 
     async fn cancel_queued_write_queries(&mut self, interrupt: InterruptType) -> ControlFlow<(), ()> {
         let mut read_queries = VecDeque::with_capacity(self.request_queue.len());
-        for (req_id, pipeline) in self.request_queue.drain(0..self.request_queue.len()) {
+        for (req_id, pipeline, source_query) in self.request_queue.drain(0..self.request_queue.len()) {
             if Self::is_write_pipeline(&pipeline) {
                 Self::respond_query_response(
                     &self.response_sender,
@@ -730,7 +730,7 @@ impl TransactionService {
                 )
                 .await?;
             } else {
-                read_queries.push_back((req_id, pipeline));
+                read_queries.push_back((req_id, pipeline, source_query));
             }
         }
         self.request_queue = read_queries;
@@ -740,12 +740,12 @@ impl TransactionService {
     async fn finish_queued_write_queries(&mut self, interrupt: InterruptType) -> Result<(), Status> {
         self.finish_running_write_query_no_transmit(interrupt).await?;
         let requests: Vec<_> = self.request_queue.drain(0..self.request_queue.len()).collect();
-        for (req_id, pipeline) in requests.into_iter() {
+        for (req_id, pipeline, source_query) in requests.into_iter() {
             if Self::is_write_pipeline(&pipeline) {
-                self.run_write_query(req_id, pipeline).await;
+                self.run_write_query(req_id, pipeline, source_query).await;
                 self.finish_running_write_query_no_transmit(interrupt).await?;
             } else {
-                self.request_queue.push_back((req_id, pipeline));
+                self.request_queue.push_back((req_id, pipeline, source_query));
             }
         }
         Ok(())
@@ -755,12 +755,12 @@ impl TransactionService {
         debug_assert!(self.running_write_query.is_none());
 
         // unblock requests until the first write request, which we begin executing if it exists
-        while let Some((req_id, query_pipeline)) = self.request_queue.pop_front() {
+        while let Some((req_id, query_pipeline, source_query)) = self.request_queue.pop_front() {
             if Self::is_write_pipeline(&query_pipeline) {
-                self.run_write_query(req_id, query_pipeline).await;
+                self.run_write_query(req_id, query_pipeline, source_query).await;
                 return;
             } else {
-                self.run_and_activate_read_transmitter(req_id, query_pipeline);
+                self.run_and_activate_read_transmitter(req_id, query_pipeline, source_query);
             }
         }
     }
@@ -770,8 +770,9 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        let _query_options = &query_req.options; // TODO: pass query options
-        let parsed = match parse_query(&query_req.query) {
+        let _query_options = query_req.options; // TODO: pass query options
+        let query = query_req.query;
+        let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
             Err(err) => {
                 let response = ImmediateQueryResponse::non_fatal_err(TransactionServiceError::QueryParseFailed {
@@ -787,27 +788,27 @@ impl TransactionService {
                 self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
 
                 // schema queries are handled immediately so there is a query response or a fatal Status
-                let response = self.handle_query_schema(schema_query).await?;
+                let response = self.handle_query_schema(schema_query, query).await?;
                 Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
             }
             Query::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
                 if Self::is_write_pipeline(&pipeline) {
                     if !self.request_queue.is_empty() || self.running_write_query.is_some() {
-                        self.request_queue.push_back((req_id, pipeline));
+                        self.request_queue.push_back((req_id, pipeline, query));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(Continue(()))
                     } else {
-                        self.run_write_query(req_id, pipeline).await;
+                        self.run_write_query(req_id, pipeline, query).await;
                         Ok(Continue(()))
                     }
                 } else {
                     if !self.request_queue.is_empty() || self.running_write_query.is_some() {
-                        self.request_queue.push_back((req_id, pipeline));
+                        self.request_queue.push_back((req_id, pipeline, query));
                         // queued queries are not handled yet so there will be no query response yet
                         Ok(Continue(()))
                     } else {
-                        self.run_and_activate_read_transmitter(req_id, pipeline);
+                        self.run_and_activate_read_transmitter(req_id, pipeline, query);
                         // running read queries have no response on the main loop and will respond asynchronously
                         Ok(Continue(()))
                     }
@@ -816,7 +817,11 @@ impl TransactionService {
         }
     }
 
-    async fn handle_query_schema(&mut self, query: SchemaQuery) -> Result<ImmediateQueryResponse, Status> {
+    async fn handle_query_schema(
+        &mut self,
+        query: SchemaQuery,
+        source_query: String,
+    ) -> Result<ImmediateQueryResponse, Status> {
         if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
             let TransactionSchema {
                 snapshot,
@@ -836,6 +841,7 @@ impl TransactionService {
                         &thing_manager,
                         &function_manager,
                         query,
+                        &source_query,
                     );
                     (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
                 })
@@ -866,10 +872,10 @@ impl TransactionService {
         }
     }
 
-    async fn run_write_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline) {
+    async fn run_write_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline, source_query: String) {
         debug_assert!(self.running_write_query.is_none());
         self.interrupt_and_close_responders(InterruptType::WriteQueryExecution).await;
-        let handle = match self.spawn_blocking_execute_write_query(pipeline) {
+        let handle = match self.spawn_blocking_execute_write_query(pipeline, source_query) {
             Ok(handle) => {
                 // running write queries have no valid response yet (until they finish) and will respond asynchronously
                 handle
@@ -902,9 +908,14 @@ impl TransactionService {
         self.responders.insert(req_id, (answer_reader, stream_transmitter));
     }
 
-    fn run_and_activate_read_transmitter(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline) {
+    fn run_and_activate_read_transmitter(
+        &mut self,
+        req_id: Uuid,
+        pipeline: typeql::query::Pipeline,
+        source_query: String,
+    ) {
         let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
-        let worker_handle = self.blocking_read_query_worker(pipeline, sender);
+        let worker_handle = self.blocking_read_query_worker(pipeline, source_query, sender);
         let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
@@ -918,6 +929,7 @@ impl TransactionService {
     fn spawn_blocking_execute_write_query(
         &mut self,
         pipeline: typeql::query::Pipeline,
+        source_query: String,
     ) -> Result<
         JoinHandle<(Transaction, Result<Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>, Box<QueryError>>)>,
         TransactionServiceError,
@@ -944,6 +956,7 @@ impl TransactionService {
                     &function_manager,
                     &query_manager,
                     &pipeline,
+                    &source_query,
                     interrupt,
                 );
 
@@ -976,6 +989,7 @@ impl TransactionService {
                     &function_manager,
                     &query_manager,
                     &pipeline,
+                    &source_query,
                     interrupt,
                 );
 
@@ -1005,10 +1019,17 @@ impl TransactionService {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
+        source_query: &str,
         interrupt: ExecutionInterrupt,
     ) -> (Snapshot, Result<Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>, Box<QueryError>>) {
-        let result =
-            query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline);
+        let result = query_manager.prepare_write_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            pipeline,
+            source_query,
+        );
         let pipeline = match result {
             Ok(pipeline) => pipeline,
             Err((snapshot, err)) => return (snapshot, Err(err)),
@@ -1022,7 +1043,10 @@ impl TransactionService {
                 Err((err, ExecutionContext { snapshot, .. })) => {
                     return (
                         Arc::into_inner(snapshot).unwrap(),
-                        Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
+                        Err(Box::new(QueryError::WritePipelineExecution {
+                            source_query: source_query.to_string(),
+                            typedb_source: err,
+                        })),
                     );
                 }
             };
@@ -1034,7 +1058,10 @@ impl TransactionService {
                     Err(typedb_source) => {
                         return (
                             Arc::into_inner(snapshot).unwrap(),
-                            Err(Box::new(QueryError::WritePipelineExecution { typedb_source })),
+                            Err(Box::new(QueryError::WritePipelineExecution {
+                                source_query: source_query.to_string(),
+                                typedb_source,
+                            })),
                         )
                     }
                 }
@@ -1052,7 +1079,10 @@ impl TransactionService {
                 Err((err, ExecutionContext { snapshot, .. })) => {
                     return (
                         Arc::into_inner(snapshot).unwrap(),
-                        Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
+                        Err(Box::new(QueryError::WritePipelineExecution {
+                            source_query: source_query.to_string(),
+                            typedb_source: err,
+                        })),
                     );
                 }
             };
@@ -1061,7 +1091,10 @@ impl TransactionService {
                 Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(Either::Left((query_output_descriptor, batch)))),
                 Err(err) => (
                     Arc::into_inner(snapshot).unwrap(),
-                    Err(Box::new(QueryError::WritePipelineExecution { typedb_source: err })),
+                    Err(Box::new(QueryError::WritePipelineExecution {
+                        source_query: source_query.to_string(),
+                        typedb_source: err,
+                    })),
                 ),
             };
             if query_profile.is_enabled() {
@@ -1196,6 +1229,7 @@ impl TransactionService {
     fn blocking_read_query_worker(
         &self,
         pipeline: typeql::query::Pipeline,
+        source_query: String,
         sender: Sender<StreamQueryResponse>,
     ) -> JoinHandle<()> {
         debug_assert!(
@@ -1216,18 +1250,28 @@ impl TransactionService {
                     &function_manager,
                     &query_manager,
                     &pipeline,
+                    &source_query,
                 );
 
                 let pipeline = unwrap_or_execute_and_return!(pipeline, |err| {
                     Self::submit_response_sync(&sender, StreamQueryResponse::done_err(err));
                 });
-                Self::respond_read_query_sync(pipeline, interrupt, &sender, snapshot, &type_manager, thing_manager);
+                Self::respond_read_query_sync(
+                    pipeline,
+                    &source_query,
+                    interrupt,
+                    &sender,
+                    snapshot,
+                    &type_manager,
+                    thing_manager,
+                );
             })
         })
     }
 
     fn respond_read_query_sync<Snapshot: ReadableSnapshot>(
         pipeline: Pipeline<Snapshot, ReadPipelineStage<Snapshot>>,
+        source_query: &str,
         mut interrupt: ExecutionInterrupt,
         sender: &Sender<StreamQueryResponse>,
         snapshot: Arc<Snapshot>,
@@ -1241,7 +1285,10 @@ impl TransactionService {
                 unwrap_or_execute_and_return!(pipeline.into_documents_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
-                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution { typedb_source: err }),
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution {
+                            source_query: source_query.to_string(),
+                            typedb_source: err,
+                        }),
                     );
                 });
 
@@ -1285,7 +1332,10 @@ impl TransactionService {
                 unwrap_or_execute_and_return!(pipeline.into_rows_iterator(interrupt.clone()), |(err, _)| {
                     Self::submit_response_sync(
                         sender,
-                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution { typedb_source: err }),
+                        StreamQueryResponse::done_err(QueryError::ReadPipelineExecution {
+                            source_query: source_query.to_string(),
+                            typedb_source: err,
+                        }),
                     );
                 });
 
@@ -1329,8 +1379,16 @@ impl TransactionService {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         pipeline: &typeql::query::Pipeline,
+        source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
-        query_manager.prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
+        query_manager.prepare_read_pipeline(
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            pipeline,
+            source_query,
+        )
     }
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {

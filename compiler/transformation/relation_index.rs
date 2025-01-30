@@ -157,6 +157,8 @@ fn replace_links(
         links_1.relation().clone().as_variable().unwrap(),
         links_1.role_type().clone().as_variable().unwrap(),
         links_2.role_type().clone().as_variable().unwrap(),
+        // TODO: arbitrarily picking 1 links as the source span
+        links_1.source_span(),
     );
     add_type_annotations(&links_1, &links_2, &indexed_relation, annotations);
     conjunction.constraints_mut().constraints_mut().push(Constraint::IndexedRelation(indexed_relation));

@@ -13,7 +13,7 @@ use database::{
 };
 use executor::{batch::Batch, pipeline::stage::StageIterator, ExecutionInterrupt};
 use options::TransactionOptions;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot};
+use storage::durability_client::WALClient;
 use test_utils::create_tmp_dir;
 
 const DB_NAME: &str = "benchmark-iam";
@@ -40,7 +40,14 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     } = tx;
     let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
     query_manager
-        .execute_schema(&mut inner_snapshot, &type_manager, &thing_manager, &function_manager, schema_query)
+        .execute_schema(
+            &mut inner_snapshot,
+            &type_manager,
+            &thing_manager,
+            &function_manager,
+            schema_query,
+            &schema_str,
+        )
         .unwrap();
     let tx = TransactionSchema::from(
         inner_snapshot,
@@ -77,9 +84,10 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
             thing_manager.clone(),
             &function_manager,
             &data_query,
+            &data_str,
         )
         .unwrap();
-    let (mut output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
+    let (_output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let tx = TransactionWrite::from(
         context.snapshot,
         type_manager,
@@ -117,7 +125,14 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
     let query = typeql::parse_query(query_str).unwrap().into_pipeline();
     let pipeline = query_manager
-        .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &query)
+        .prepare_read_pipeline(
+            snapshot.clone(),
+            &type_manager,
+            thing_manager.clone(),
+            &function_manager,
+            &query,
+            query_str,
+        )
         .unwrap();
     let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let batch = rows.collect_owned().unwrap();

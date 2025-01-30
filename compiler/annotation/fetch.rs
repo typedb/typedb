@@ -11,7 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::type_::{attribute_type::AttributeType, type_manager::TypeManager, OwnerAPI, TypeAPI};
-use encoding::{graph::type_::Kind, value::label::Label};
+use encoding::graph::type_::Kind;
 use ir::{
     pattern::ParameterID,
     pipeline::{
@@ -162,11 +162,12 @@ fn annotate_some(
         FetchSome::SingleAttribute(FetchSingleAttribute { variable, attribute }) => {
             let variable_name = variable_registry.get_variable_name(variable).unwrap();
             let attribute_type = type_manager
-                .get_attribute_type(snapshot, &Label::build(&attribute))
+                .get_attribute_type(snapshot, &attribute)
                 .map_err(|err| AnnotationError::ConceptRead { source: err })?
                 .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
                     var: variable_name.clone(),
-                    name: attribute,
+                    source_span: attribute.source_span(),
+                    attribute,
                 })?;
             let owner_types = input_type_annotations.get(&variable).unwrap();
             validate_attribute_owned_and_scalar(snapshot, type_manager, variable_name, owner_types, attribute_type)?;
@@ -224,11 +225,12 @@ fn annotate_some(
         FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable, attribute }) => {
             let variable_name = variable_registry.get_variable_name(variable).unwrap();
             let attribute_type = type_manager
-                .get_attribute_type(snapshot, &Label::build(&attribute))
+                .get_attribute_type(snapshot, &attribute)
                 .map_err(|err| AnnotationError::ConceptRead { source: err })?
                 .ok_or_else(|| AnnotationError::FetchAttributeNotFound {
                     var: variable_name.clone(),
-                    name: attribute,
+                    source_span: attribute.source_span(),
+                    attribute,
                 })?;
             for owner_type in input_type_annotations.get(&variable).unwrap().iter() {
                 validate_attribute_owned_and_streamable(

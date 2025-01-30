@@ -4,11 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, fmt::Formatter, hash::Hash, mem, ops::BitXor};
+use std::{
+    cmp::{Ordering, PartialEq},
+    collections::HashMap,
+    fmt,
+    fmt::Formatter,
+    hash::{Hash, Hasher},
+    mem,
+    ops::BitXor,
+};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
+use crate::pipeline::VariableRegistry;
 
 pub mod conjunction;
 pub mod constraint;
@@ -122,6 +132,16 @@ impl<ID: IrID> Vertex<ID> {
     }
 }
 
+impl Vertex<Variable> {
+    pub fn source_span(&self, variable_registry: &VariableRegistry) -> Option<Span> {
+        match self {
+            Vertex::Variable(id) => variable_registry.source_span(*id),
+            Vertex::Label(label) => label.source_span(),
+            Vertex::Parameter(param) => Some(param.source_span()),
+        }
+    }
+}
+
 impl<ID> From<ID> for Vertex<ID> {
     fn from(var: ID) -> Self {
         Self::Variable(var)
@@ -164,19 +184,76 @@ impl<ID: fmt::Debug> fmt::Display for Vertex<ID> {
     }
 }
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy)]
 pub enum ParameterID {
-    Value(usize),
-    Iid(usize),
-    FetchKey(usize),
+    Value(usize, Span),
+    Iid(usize, Span),
+    FetchKey(usize, Span),
+}
+
+impl ParameterID {
+    fn source_span(&self) -> Span {
+        match self {
+            ParameterID::Value(_, span) | ParameterID::Iid(_, span) | ParameterID::FetchKey(_, span) => *span,
+        }
+    }
+}
+
+impl Eq for ParameterID {}
+
+impl PartialEq for ParameterID {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Value(v1, _), Self::Value(v2, _)) => v1 == v2,
+            (Self::Iid(v1, _), Self::Iid(v2, _)) => v1 == v2,
+            (Self::FetchKey(v1, _), Self::FetchKey(v2, _)) => v1 == v2,
+            (_, _) => false,
+        }
+    }
+}
+
+impl PartialOrd for ParameterID {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(Ord::cmp(self, other))
+    }
+}
+
+impl Ord for ParameterID {
+    fn cmp(&self, other: &Self) -> Ordering {
+        match self {
+            ParameterID::Value(v1, _) => match other {
+                ParameterID::Value(v2, _) => v1.cmp(v2),
+                ParameterID::Iid(_, _) | ParameterID::FetchKey(_, _) => Ordering::Less,
+            },
+            ParameterID::Iid(v1, _) => match other {
+                ParameterID::Value(_, _) => Ordering::Greater,
+                ParameterID::Iid(v2, _) => v1.cmp(v2),
+                ParameterID::FetchKey(_, _) => Ordering::Less,
+            },
+            ParameterID::FetchKey(v1, _) => match other {
+                ParameterID::Value(_, _) | ParameterID::Iid(_, _) => Ordering::Greater,
+                ParameterID::FetchKey(v2, _) => v1.cmp(v2),
+            },
+        }
+    }
+}
+
+impl Hash for ParameterID {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        match self {
+            ParameterID::Value(v, _) => state.write_u64(*v as u64),
+            ParameterID::Iid(v, _) => state.write_u64(*v as u64),
+            ParameterID::FetchKey(v, _) => state.write_u64(*v as u64),
+        }
+    }
 }
 
 impl StructuralEquality for ParameterID {
     fn hash(&self) -> u64 {
         let id = match *self {
-            ParameterID::Value(id) => id,
-            ParameterID::Iid(id) => id,
-            ParameterID::FetchKey(id) => id,
+            ParameterID::Value(id, _) => id,
+            ParameterID::Iid(id, _) => id,
+            ParameterID::FetchKey(id, _) => id,
         };
         StructuralEquality::hash(&id)
     }
@@ -190,9 +267,9 @@ impl fmt::Debug for ParameterID {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Param[")?;
         match self {
-            ParameterID::Value(id) => write!(f, "Value({id})")?,
-            ParameterID::Iid(id) => write!(f, "IID({id})")?,
-            ParameterID::FetchKey(id) => write!(f, "FetchKey({id})")?,
+            ParameterID::Value(id, _) => write!(f, "Value({id})")?,
+            ParameterID::Iid(id, _) => write!(f, "IID({id})")?,
+            ParameterID::FetchKey(id, _) => write!(f, "FetchKey({id})")?,
         }
         write!(f, "]")?;
         Ok(())

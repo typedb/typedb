@@ -8,9 +8,11 @@ use answer::variable::Variable;
 use encoding::value::value::Value;
 use error::UnimplementedFeature;
 use typeql::{
+    common::Spanned,
     expression::{BuiltinFunctionName, FunctionName},
     token::{ArithmeticOperator, Function},
 };
+use typeql::common::Span;
 
 use crate::{
     pattern::{
@@ -42,8 +44,8 @@ pub(super) fn add_typeql_expression(
         Ok(Vertex::Variable(register_typeql_var(constraints, var)?))
     } else {
         let expression = build_expression(function_index, constraints, rhs)?;
-        let variable = constraints.create_anonymous_variable()?;
-        constraints.add_assignment(variable, expression)?;
+        let variable = constraints.create_anonymous_variable(rhs.span())?;
+        constraints.add_assignment(variable, expression, rhs.span())?;
         Ok(Vertex::Variable(variable))
     }
 }
@@ -92,7 +94,10 @@ fn build_recursive(
                 .iter()
                 .map(|sub_expr| build_recursive(function_index, constraints, sub_expr, tree))
                 .collect::<Result<Vec<_>, _>>()?;
-            let len_id = constraints.parameters().register_value(Value::Integer(items.len() as i64));
+            let len_id = constraints.parameters().register_value(
+                Value::Integer(items.len() as i64),
+                list.span().expect("Parser did not provide List text range"),
+            );
             Expression::List(ListConstructor::new(items, len_id))
         }
         typeql::Expression::ListIndexRange(range) => {
@@ -111,9 +116,12 @@ fn register_typeql_literal(
 ) -> Result<ParameterID, Box<RepresentationError>> {
     let value = translate_literal(literal).map_err(|typedb_source| RepresentationError::LiteralParseError {
         literal: literal.to_string(),
+        source_span: literal.span(),
         typedb_source,
     })?;
-    let id = constraints.parameters().register_value(value);
+    let id = constraints
+        .parameters()
+        .register_value(value, literal.span().expect("Parser did not provide Value text range"));
     Ok(id)
 }
 
@@ -123,15 +131,19 @@ pub fn add_user_defined_function_call(
     function_name: &str,
     assigned: Vec<Variable>,
     args: &[typeql::Expression],
+    source_span: Option<Span>,
 ) -> Result<(), Box<RepresentationError>> {
     let arguments = split_out_inline_expressions(function_index, constraints, args)?;
     let callee = function_index
         .get_function_signature(function_name)
         .map_err(|typedb_source| RepresentationError::FunctionReadError { typedb_source })?;
     let Some(callee) = callee else {
-        return Err(Box::new(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() }));
+        return Err(Box::new(RepresentationError::UnresolvedFunction {
+            function_name: function_name.to_owned() ,
+            source_span,
+        }));
     };
-    constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
+    constraints.add_function_binding(assigned, &callee, arguments, function_name, source_span)?;
     Ok(())
 }
 
@@ -151,13 +163,14 @@ fn build_function(
             Ok(Expression::BuiltInCall(BuiltInCall::new(to_builtin_id(builtin, &args)?, args)))
         }
         FunctionName::Identifier(identifier) => {
-            let assign = constraints.create_anonymous_variable()?;
+            let assign = constraints.create_anonymous_variable(identifier.span())?;
             add_user_defined_function_call(
                 function_index,
                 constraints,
                 checked_identifier(identifier)?,
                 vec![assign],
                 &function_call.args,
+                function_call.span(),
             )?;
             Ok(Expression::Variable(assign))
         }
@@ -175,11 +188,16 @@ fn translate_operator(operator: &ArithmeticOperator) -> Operator {
     }
 }
 
-fn check_builtin_arg_count(builtin: Function, actual: usize, expected: usize) -> Result<(), Box<RepresentationError>> {
+fn check_builtin_arg_count(
+    builtin: Function,
+    actual: usize,
+    expected: usize,
+    source_span: Option<Span>
+) -> Result<(), Box<RepresentationError>> {
     if actual == expected {
         Ok(())
     } else {
-        Err(Box::new(RepresentationError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual }))
+        Err(Box::new(RepresentationError::ExpressionBuiltinArgumentCountMismatch { builtin, expected, actual, source_span }))
     }
 }
 
@@ -190,19 +208,19 @@ fn to_builtin_id(
     let token = typeql_id.token;
     match token {
         Function::Abs => {
-            check_builtin_arg_count(token, args.len(), 1)?;
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltInFunctionID::Abs)
         }
         Function::Ceil => {
-            check_builtin_arg_count(token, args.len(), 1)?;
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltInFunctionID::Ceil)
         }
         Function::Floor => {
-            check_builtin_arg_count(token, args.len(), 1)?;
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltInFunctionID::Floor)
         }
         Function::Round => {
-            check_builtin_arg_count(token, args.len(), 1)?;
+            check_builtin_arg_count(token, args.len(), 1, typeql_id.span())?;
             Ok(BuiltInFunctionID::Round)
         }
         _ => Err(Box::new(RepresentationError::UnimplementedLanguageFeature {

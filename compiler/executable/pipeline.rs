@@ -12,7 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry};
+use ir::pipeline::{reduce::AssignedReduction, VariableRegistry};
 use itertools::Itertools;
 
 use crate::{

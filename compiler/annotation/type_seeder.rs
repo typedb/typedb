@@ -243,7 +243,10 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                         if let Some(annotation) = annotation_opt {
                             graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
                         } else {
-                            return Err(TypeInferenceError::LabelNotResolved { name: label.to_string() });
+                            return Err(TypeInferenceError::LabelNotResolved {
+                                name: label.to_string(),
+                                source_span: label.source_span(),
+                            });
                         }
                     } else {
                         #[cfg(debug_assertions)]
@@ -617,7 +620,10 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
     let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
         .map_err(|source| TypeInferenceError::ConceptRead { source })?;
     let Some(type_) = type_opt else {
-        return Err(TypeInferenceError::LabelNotResolved { name: label_value.scoped_name().to_string() });
+        return Err(TypeInferenceError::LabelNotResolved {
+            name: label_value.scoped_name().to_string(),
+            source_span: label_value.source_span(),
+        });
     };
     let mut types: BTreeSet<Type> = match &type_ {
         TypeAnnotation::Entity(type_) => type_
@@ -698,7 +704,10 @@ impl UnaryConstraint for Label<Variable> {
             graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotation.clone()));
             Ok(())
         } else {
-            Err(TypeInferenceError::LabelNotResolved { name: self.type_label().to_string() })
+            Err(TypeInferenceError::LabelNotResolved {
+                name: self.type_label().to_string(),
+                source_span: self.source_span(),
+            })
         }
     }
 }
@@ -1686,17 +1695,17 @@ pub mod tests {
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
-        let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
-        let var_name = conjunction.get_or_declare_variable("name").unwrap();
-        let var_animal_type = conjunction.get_or_declare_variable("animal_type").unwrap();
-        let var_name_type = conjunction.get_or_declare_variable("name_type").unwrap();
+        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
+        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
+        let var_animal_type = conjunction.constraints_mut().get_or_declare_variable("animal_type", None).unwrap();
+        let var_name_type = conjunction.constraints_mut().get_or_declare_variable("name_type", None).unwrap();
 
         // Try seeding
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into()).unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, var_animal_type.into(), None).unwrap();
         conjunction.constraints_mut().add_label(var_animal_type, LABEL_CAT.clone()).unwrap();
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
         conjunction.constraints_mut().add_label(var_name_type, LABEL_NAME.clone()).unwrap();
-        conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
@@ -1754,11 +1763,11 @@ pub mod tests {
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
-        let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
-        let var_name = conjunction.get_or_declare_variable("name").unwrap();
+        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
+        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
 
         // Try seeding
-        conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
+        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
 
         let block = builder.finish().unwrap();
         let conjunction = block.conjunction();
@@ -1805,11 +1814,11 @@ pub mod tests {
         let (_, (_type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let label_owner = Label::build("owner");
+        let label_owner = Label::build("owner", None);
         let (type_owner, type_age) = {
             let mut snapshot = storage.clone().open_snapshot_write();
             let type_owner = type_manager.create_entity_type(&mut snapshot, &label_owner).unwrap();
-            let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age")).unwrap();
+            let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age", None)).unwrap();
             type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
             type_owner.set_owns(&mut snapshot, &type_manager, &thing_manager, type_age, Ordering::Unordered).unwrap();
             type_owner
@@ -1841,15 +1850,15 @@ pub mod tests {
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
 
-            let var_x = conjunction.get_or_declare_variable("x").unwrap();
-            let var_a = conjunction.get_or_declare_variable("a").unwrap();
-            let var_b = conjunction.get_or_declare_variable("b").unwrap();
+            let var_x = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
+            let var_a = conjunction.constraints_mut().get_or_declare_variable("a", None).unwrap();
+            let var_b = conjunction.constraints_mut().get_or_declare_variable("b", None).unwrap();
 
             // Try seeding
-            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Label(label_owner.clone())).unwrap();
-            conjunction.constraints_mut().add_has(var_x, var_a).unwrap();
-            conjunction.constraints_mut().add_has(var_x, var_b).unwrap();
-            conjunction.constraints_mut().add_comparison(var_a.into(), var_b.into(), Comparator::Greater).unwrap();
+            conjunction.constraints_mut().add_isa(IsaKind::Exact, var_x, Vertex::Label(label_owner.clone()), None).unwrap();
+            conjunction.constraints_mut().add_has(var_x, var_a, None).unwrap();
+            conjunction.constraints_mut().add_has(var_x, var_b, None).unwrap();
+            conjunction.constraints_mut().add_comparison(var_a.into(), var_b.into(), Comparator::Greater, None).unwrap();
 
             let block = builder.finish().unwrap();
             let conjunction = block.conjunction();

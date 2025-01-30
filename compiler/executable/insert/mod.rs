@@ -7,17 +7,13 @@
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
     error::Error,
-    fmt,
 };
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
 use error::typedb_error;
 use ir::{
-    pattern::{
-        constraint::{Comparator, Isa},
-        ParameterID,
-    },
+    pattern::{constraint::Comparator, ParameterID},
     pipeline::VariableRegistry,
 };
 

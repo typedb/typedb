@@ -5,6 +5,7 @@
  */
 
 use std::error::Error;
+
 use typeql::common::Span;
 
 use crate::TypeDBError;
@@ -48,7 +49,7 @@ impl TypeDBError for typeql::Error {
         None
     }
 
-    fn source_span(&self) -> Option<(Span)> {
+    fn source_span(&self) -> Option<Span> {
         // don't plug into TypeDB's source_span, since this error manages its own query+span indicators
         None
     }

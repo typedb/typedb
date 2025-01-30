@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
+use typeql::common::Span;
 
 use crate::{
     pattern::variable_category::VariableCategory,
@@ -42,12 +43,14 @@ impl TranslationContext {
         Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
     }
 
-    pub fn new_with_function_arguments(input_variables: Vec<(String, VariableCategory)>) -> (Self, Vec<Variable>) {
+    pub fn new_with_function_arguments(
+        input_variables: Vec<(String, Option<Span>, VariableCategory)>,
+    ) -> (Self, Vec<Variable>) {
         let mut visible_variables = HashMap::new();
         let mut variable_registry = VariableRegistry::new();
         let mut variables = Vec::with_capacity(input_variables.len());
-        for (name, category) in input_variables {
-            let variable = variable_registry.register_function_argument(name.as_str(), category);
+        for (name, source_span, category) in input_variables {
+            let variable = variable_registry.register_function_argument(name.as_str(), category, source_span);
             visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
@@ -68,12 +71,14 @@ impl TranslationContext {
         name: &str,
         variable_category: VariableCategory,
         is_optional: bool,
+        source_span: Option<Span>,
         reducer: Reducer,
     ) -> Variable {
         let variable = self.variable_registry.register_reduce_output_variable(
             name.to_owned(),
             variable_category,
             is_optional,
+            source_span,
             reducer,
         );
         self.visible_variables.insert(name.to_owned(), variable);

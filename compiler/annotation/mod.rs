@@ -6,10 +6,11 @@
 
 use answer::variable::Variable;
 use concept::error::ConceptReadError;
-use encoding::value::value_type::ValueTypeCategory;
+use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use error::typedb_error;
 use expression::ExpressionCompileError;
 use ir::pattern::constraint::Constraint;
+use typeql::common::Span;
 
 use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
@@ -31,7 +32,7 @@ typedb_error!(
         FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, typedb_source: Box<AnnotationError>),
         FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", typedb_source: Box<FunctionAnnotationError>),
         ConceptRead(6, "Error while retrieving concept.", source: Box<ConceptReadError>),
-        FetchAttributeNotFound(7, "Fetching '${var}.{name}' failed since the attribute type is not defined.", var: String, name: String),
+        FetchAttributeNotFound(7, "Fetching '${var}.{attribute}' failed since the attribute type is not defined.", var: String, attribute: Label, source_span: Option<Span>),
         FetchSingleAttributeNotOwned(
             8,
             "Type checking '${var}.{attribute}' failed, since attribute '{attribute}' cannot be when '${var}' has type '{owner}'.",
@@ -149,7 +150,7 @@ typedb_error!(
 typedb_error!(
     pub TypeInferenceError(component = "Type inference", prefix = "INF") {
         ConceptRead(1, "Concept read error.", source: Box<ConceptReadError>),
-        LabelNotResolved(2, "Type label '{name}' not found.", name: String),
+        LabelNotResolved(2, "Type label '{name}' not found.", name: String, source_span: Option<Span>),
         RoleNameNotResolved(3, "Role label not found '{name}'.", name: String),
         IllegalInsertTypes(
             4,

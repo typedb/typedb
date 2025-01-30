@@ -7,6 +7,7 @@
 use std::collections::HashSet;
 
 use typeql::{query::stage::Operator, token::Order};
+use typeql::common::Spanned;
 
 use crate::{
     pipeline::modifier::{Limit, Offset, Require, Select, Sort},
@@ -24,7 +25,7 @@ pub fn translate_select(
         .map(|typeql_var| match context.get_variable(typeql_var.name().unwrap()) {
             None => Err(RepresentationError::OperatorStageVariableUnavailable {
                 variable_name: typeql_var.name().unwrap().to_owned(),
-                declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Select(typeql_select.clone())),
+                source_span: typeql_select.span(),
             }),
             Some(variable) => Ok(variable),
         })
@@ -46,9 +47,7 @@ pub fn translate_sort(
             match context.get_variable(ordered_var.variable.name().unwrap()) {
                 None => Err(RepresentationError::OperatorStageVariableUnavailable {
                     variable_name: ordered_var.variable.name().unwrap().to_owned(),
-                    declaration: typeql::query::pipeline::stage::Stage::Operator(
-                        typeql::query::pipeline::stage::Operator::Sort(sort.clone()),
-                    ),
+                    source_span: sort.span(),
                 }),
                 Some(variable) => Ok((variable, is_ascending)),
             }
@@ -62,7 +61,11 @@ pub fn translate_offset(
     offset: &typeql::query::stage::modifier::Offset,
 ) -> Result<Offset, Box<RepresentationError>> {
     u64::from_typeql_literal(&offset.offset).map(Offset::new).map_err(|typedb_source| {
-        Box::new(RepresentationError::LiteralParseError { literal: offset.offset.value.clone(), typedb_source })
+        Box::new(RepresentationError::LiteralParseError {
+            literal: offset.offset.value.clone(),
+            source_span: offset.span(),
+            typedb_source
+        })
     })
 }
 
@@ -71,7 +74,11 @@ pub fn translate_limit(
     limit: &typeql::query::stage::modifier::Limit,
 ) -> Result<Limit, Box<RepresentationError>> {
     u64::from_typeql_literal(&limit.limit).map(Limit::new).map_err(|typedb_source| {
-        Box::new(RepresentationError::LiteralParseError { literal: limit.limit.value.clone(), typedb_source })
+        Box::new(RepresentationError::LiteralParseError {
+            literal: limit.limit.value.clone(),
+            source_span: limit.span(),
+            typedb_source,
+        })
     })
 }
 
@@ -85,7 +92,7 @@ pub fn translate_require(
         .map(|typeql_var| match context.visible_variables.get(typeql_var.name().unwrap()) {
             None => Err(RepresentationError::OperatorStageVariableUnavailable {
                 variable_name: typeql_var.name().unwrap().to_owned(),
-                declaration: typeql::query::pipeline::stage::Stage::Operator(Operator::Require(typeql_require.clone())),
+                source_span: typeql_require.span(),
             }),
             Some(&variable) => Ok(variable),
         })

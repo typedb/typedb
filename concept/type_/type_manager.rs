@@ -1560,7 +1560,7 @@ impl TypeManager {
         let old_label = TypeReader::get_label(snapshot, role_type)?.unwrap();
         debug_assert!(old_label.scope().is_some());
 
-        let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str());
+        let new_label = Label::build_scoped(name, old_label.scope().unwrap().as_str(), None);
         let relation_type = role_type.get_relates_explicit(snapshot, self)?.relation();
 
         OperationTimeValidation::validate_new_role_name_uniqueness(snapshot, self, relation_type, &new_label)
@@ -1582,7 +1582,7 @@ impl TypeManager {
         let old_label = TypeReader::get_label(snapshot, role_type)?.unwrap();
         debug_assert!(old_label.scope().is_some());
 
-        let new_label = Label::build_scoped(old_label.name().as_str(), scope);
+        let new_label = Label::build_scoped(old_label.name().as_str(), scope, None);
 
         TypeWriter::storage_delete_label(snapshot, role_type);
         TypeWriter::storage_put_label(snapshot, role_type, &new_label);

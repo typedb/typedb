@@ -43,6 +43,7 @@ use storage::{
     key_range::KeyRange,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
+use typeql::common::Spanned;
 
 use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
 
@@ -113,7 +114,7 @@ impl FunctionManager {
                 FunctionError::FunctionRetrieval { typedb_source: FunctionReadError::FunctionRetrieval { source } }
             })?;
             if existing.is_some() {
-                Err(FunctionError::FunctionAlreadyExists { name: function.name() })?;
+                Err(FunctionError::FunctionAlreadyExists { name: function.name(), source_span: definition.span() })?;
             } else {
                 functions.push(function);
             }
@@ -637,9 +638,11 @@ pub mod tests {
             let mut snapshot = snapshot_;
 
             // Attributes
-            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME)).unwrap();
-            let catname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME)).unwrap();
-            let dogname = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME)).unwrap();
+            let name = type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_NAME, None)).unwrap();
+            let catname =
+                type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_CATNAME, None)).unwrap();
+            let dogname =
+                type_manager.create_attribute_type(&mut snapshot, &Label::build(LABEL_DOGNAME, None)).unwrap();
             name.set_annotation(
                 &mut snapshot,
                 type_manager,
@@ -655,9 +658,9 @@ pub mod tests {
             dogname.set_value_type(&mut snapshot, type_manager, thing_manager, ValueType::String).unwrap();
 
             // Entities
-            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL)).unwrap();
-            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT)).unwrap();
-            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG)).unwrap();
+            let animal = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_ANIMAL, None)).unwrap();
+            let cat = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_CAT, None)).unwrap();
+            let dog = type_manager.create_entity_type(&mut snapshot, &Label::build(LABEL_DOG, None)).unwrap();
             cat.set_supertype(&mut snapshot, type_manager, thing_manager, animal).unwrap();
             dog.set_supertype(&mut snapshot, type_manager, thing_manager, animal).unwrap();
             animal

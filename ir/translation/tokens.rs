@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::process::id;
 use concept::type_::annotation::{
     Annotation, AnnotationAbstract, AnnotationCardinality, AnnotationCascade, AnnotationCategory, AnnotationDistinct,
     AnnotationIndependent, AnnotationKey, AnnotationRange, AnnotationRegex, AnnotationUnique, AnnotationValues,
 };
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use typeql::{annotation::CardinalityRange, common::error::TypeQLError, token};
+use typeql::common::Spanned;
 
 use crate::{
     translation::literal::{translate_literal, FromTypeQLLiteral},
@@ -100,6 +102,6 @@ pub fn translate_value_type(typeql_value_type: &token::ValueType) -> ValueType {
 pub(crate) fn checked_identifier(ident: &typeql::Identifier) -> Result<&str, Box<RepresentationError>> {
     ident.as_str_unreserved().map_err(|_source| {
         let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
-        Box::new(RepresentationError::ReservedKeywordAsIdentifier { identifier })
+        Box::new(RepresentationError::ReservedKeywordAsIdentifier { source_span: identifier.span(), identifier } )
     })
 }

@@ -17,6 +17,7 @@ deps = [
     "//executor",
     "//ir",
     "//storage",
+    
     "@typeql//rust:typeql",
 
     "//concept/tests:test_utils_concept",

@@ -111,6 +111,12 @@ features = {}
 		version = "0.22.0"
 		default-features = false
 
+	[dependencies.typeql]
+		features = []
+		rev = "ea9244fbf5f07c7f129276a92695fb5000e95c23"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
+
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
 		version = "0.4.39"

@@ -230,9 +230,10 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
             let mut f_conjunction = builder.conjunction_mut();
-            let f_var_animal = f_conjunction.get_or_declare_variable("called_animal").unwrap();
-            let f_var_animal_type = f_conjunction.get_or_declare_variable("called_animal_type").unwrap();
-            let f_var_name = f_conjunction.get_or_declare_variable("called_name").unwrap();
+            let f_var_animal = f_conjunction.constraints_mut().get_or_declare_variable("called_animal", None).unwrap();
+            let f_var_animal_type =
+                f_conjunction.constraints_mut().get_or_declare_variable("called_animal_type", None).unwrap();
+            let f_var_name = f_conjunction.constraints_mut().get_or_declare_variable("called_name", None).unwrap();
             f_conjunction.constraints_mut().add_label(f_var_animal_type, LABEL_CAT.clone()).unwrap();
             f_conjunction.constraints_mut().add_isa(IsaKind::Subtype, f_var_animal, f_var_animal_type.into()).unwrap();
             f_conjunction.constraints_mut().add_has(f_var_animal, f_var_name).unwrap();
@@ -254,7 +255,7 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(entry_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
-            let var_animal = conjunction.get_or_declare_variable("animal").unwrap();
+            let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
 
             let callee_signature = FunctionSignature::new(
                 function_id.clone(),
@@ -437,7 +438,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -503,7 +504,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -567,7 +568,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -602,7 +603,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -678,24 +679,24 @@ pub mod tests {
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name, var_name_type) = ["animal", "name", "name_type"]
             .into_iter()
-            .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+            .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
             .collect_tuple()
             .unwrap();
 
         // Case 1: {$a isa cat;} or {$a isa dog;}; $a has name $n;
-        conjunction.constraints_mut().add_label(var_name_type, Label::build("name")).unwrap();
+        conjunction.constraints_mut().add_label(var_name_type, Label::build("name", None)).unwrap();
         conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
         conjunction.constraints_mut().add_has(var_animal, var_name).unwrap();
 
         let mut disj = conjunction.add_disjunction();
 
         let mut branch1 = disj.add_conjunction();
-        let b1_var_animal_type = branch1.get_or_declare_variable("b1_animal_type").unwrap();
+        let b1_var_animal_type = branch1.constraints_mut().get_or_declare_variable("b1_animal_type", None).unwrap();
         branch1.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b1_var_animal_type.into()).unwrap();
         branch1.constraints_mut().add_label(b1_var_animal_type, LABEL_CAT.clone()).unwrap();
 
         let mut branch2 = disj.add_conjunction();
-        let b2_var_animal_type = branch2.get_or_declare_variable("b2_animal_type").unwrap();
+        let b2_var_animal_type = branch2.constraints_mut().get_or_declare_variable("b2_animal_type", None).unwrap();
         branch2.constraints_mut().add_isa(IsaKind::Subtype, var_animal, b2_var_animal_type.into()).unwrap();
         branch2.constraints_mut().add_label(b2_var_animal_type, LABEL_DOG.clone()).unwrap();
 
@@ -806,7 +807,7 @@ pub mod tests {
         let mut conjunction = builder.conjunction_mut();
         let (var_animal, var_name) = ["animal", "name"]
             .into_iter()
-            .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+            .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
             .collect_tuple()
             .unwrap();
 
@@ -879,7 +880,7 @@ pub mod tests {
             "role_is_feared_type",
         ]
         .into_iter()
-        .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+        .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
         .collect_tuple()
         .unwrap();
 
@@ -890,12 +891,12 @@ pub mod tests {
 
         conjunction
             .constraints_mut()
-            .add_sub(SubKind::Subtype, var_role_has_fear.into(), var_role_has_fear_type.into())
+            .add_sub(SubKind::Subtype, var_role_has_fear.into(), var_role_has_fear_type.into(), None)
             .unwrap();
         conjunction.constraints_mut().add_label(var_role_has_fear_type, LABEL_HAS_FEAR.clone()).unwrap();
         conjunction
             .constraints_mut()
-            .add_sub(SubKind::Subtype, var_role_is_feared.into(), var_role_is_feared_type.into())
+            .add_sub(SubKind::Subtype, var_role_is_feared.into(), var_role_is_feared_type.into(), None)
             .unwrap();
         conjunction.constraints_mut().add_label(var_role_is_feared_type, LABEL_IS_FEARED.clone()).unwrap();
 
@@ -1005,7 +1006,7 @@ pub mod tests {
             let (var_animal, var_name, var_animal_type, var_owned_type) =
                 ["animal", "name", "animal_type", "name_type"]
                     .into_iter()
-                    .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                    .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                     .collect_tuple()
                     .unwrap();
 
@@ -1073,7 +1074,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_owner_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -1140,7 +1141,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -1196,7 +1197,7 @@ pub mod tests {
             let mut conjunction = builder.conjunction_mut();
             let (var_animal, var_name, var_animal_type, var_name_type) = ["animal", "name", "animal_type", "name_type"]
                 .into_iter()
-                .map(|name| conjunction.get_or_declare_variable(name).unwrap())
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap())
                 .collect_tuple()
                 .unwrap();
 
@@ -1272,8 +1273,8 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
-            let [var_animal, var_name] =
-                ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
+            let [var_animal, var_name] = ["animal", "name"]
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT)).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();
@@ -1331,8 +1332,8 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
-            let [var_animal, var_name] =
-                ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
+            let [var_animal, var_name] = ["animal", "name"]
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL)).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_CATNAME)).unwrap();
@@ -1388,8 +1389,8 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
-            let [var_animal, var_name] =
-                ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
+            let [var_animal, var_name] = ["animal", "name"]
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_CAT)).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_DOGNAME)).unwrap();
@@ -1417,8 +1418,8 @@ pub mod tests {
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
-            let [var_animal, var_name] =
-                ["animal", "name"].map(|name| conjunction.get_or_declare_variable(name).unwrap());
+            let [var_animal, var_name] = ["animal", "name"]
+                .map(|name| conjunction.constraints_mut().get_or_declare_variable(name, None).unwrap());
 
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_animal, Vertex::Label(LABEL_ANIMAL)).unwrap();
             conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, Vertex::Label(LABEL_NAME)).unwrap();

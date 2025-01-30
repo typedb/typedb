@@ -79,7 +79,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &mut snapshot,
             &type_manager,
             &thing_manager,
-            MEMBERSHIP_MEMBER_LABEL.name().as_str(),
+            MEMBERSHIP_MEMBER_LABEL.name.as_str(),
             Ordering::Unordered,
         )
         .unwrap();
@@ -91,7 +91,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &mut snapshot,
             &type_manager,
             &thing_manager,
-            MEMBERSHIP_GROUP_LABEL.name().as_str(),
+            MEMBERSHIP_GROUP_LABEL.name.as_str(),
             Ordering::Unordered,
         )
         .unwrap();
@@ -202,15 +202,17 @@ fn traverse_links_unbounded_sorted_from() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_group_type = conjunction.get_or_declare_variable("group_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
-    let var_membership_group_type = conjunction.get_or_declare_variable("membership_group_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_group_type = conjunction.constraints_mut().get_or_declare_variable("group_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
+    let var_membership_group_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_group_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_group = conjunction.get_or_declare_variable("group").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_group = conjunction.constraints_mut().get_or_declare_variable("group", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -310,12 +312,13 @@ fn traverse_links_unbounded_sorted_to() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -405,12 +408,13 @@ fn traverse_links_bounded_relation() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -517,12 +521,13 @@ fn traverse_links_bounded_relation_player() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -642,12 +647,13 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -739,12 +745,13 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -836,12 +843,13 @@ fn traverse_links_reverse_bounded_player() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()
@@ -945,12 +953,13 @@ fn traverse_links_reverse_bounded_player_relation() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
-    let var_membership_type = conjunction.get_or_declare_variable("membership_type").unwrap();
-    let var_membership_member_type = conjunction.get_or_declare_variable("membership_member_type").unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
+    let var_membership_type = conjunction.constraints_mut().get_or_declare_variable("membership_type", None).unwrap();
+    let var_membership_member_type =
+        conjunction.constraints_mut().get_or_declare_variable("membership_member_type", None).unwrap();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_membership = conjunction.get_or_declare_variable("membership").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_membership = conjunction.constraints_mut().get_or_declare_variable("membership", None).unwrap();
 
     let links_membership_person = conjunction
         .constraints_mut()

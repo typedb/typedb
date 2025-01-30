@@ -52,7 +52,9 @@ fn setup_common() -> Context {
     "#;
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define).unwrap();
+    query_manager
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .unwrap();
     snapshot.commit().unwrap();
 
     // reload to obtain latest vertex generators and statistics entries
@@ -75,6 +77,7 @@ fn test_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            query_str,
         )
         .unwrap();
 
@@ -113,6 +116,7 @@ fn test_insert_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            query_str,
         )
         .unwrap();
 
@@ -147,6 +151,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            query_str,
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
@@ -167,6 +172,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
@@ -184,6 +190,7 @@ fn test_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .unwrap();
     let (iterator, ExecutionContext { .. }) =
@@ -211,6 +218,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            query_str,
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
@@ -234,6 +242,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
@@ -251,6 +260,7 @@ fn test_match_match() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .unwrap();
     let (iterator, ExecutionContext { .. }) =
@@ -273,6 +283,7 @@ fn test_match_delete_has() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            insert_query_str,
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
@@ -307,6 +318,7 @@ fn test_match_delete_has() {
             context.thing_manager.clone(),
             &context.function_manager,
             &delete_query,
+            delete_query_str,
         )
         .unwrap();
 
@@ -346,6 +358,7 @@ fn test_insert_match_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            query_str,
         )
         .unwrap();
     let (iterator, ExecutionContext { snapshot, .. }) =
@@ -374,6 +387,7 @@ fn test_insert_match_insert() {
             context.thing_manager.clone(),
             &context.function_manager,
             &query,
+            query_str,
         )
         .unwrap();
 
@@ -403,6 +417,7 @@ fn test_match_sort() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            insert_query_str,
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
@@ -424,6 +439,7 @@ fn test_match_sort() {
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .unwrap();
     let named_outputs = pipeline.rows_positions().unwrap().clone();
@@ -464,6 +480,7 @@ fn test_select() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            insert_query_str,
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
@@ -486,6 +503,7 @@ fn test_select() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
+                query,
             )
             .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap();
@@ -504,6 +522,7 @@ fn test_select() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
+                query,
             )
             .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap();
@@ -528,6 +547,7 @@ fn test_require() {
             context.thing_manager.clone(),
             &context.function_manager,
             &insert_query,
+            insert_query_str,
         )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
@@ -550,6 +570,7 @@ fn test_require() {
                 context.thing_manager.clone(),
                 &context.function_manager,
                 &match_,
+                query,
             )
             .unwrap();
         let named_outputs = pipeline.rows_positions().unwrap();

@@ -326,8 +326,8 @@ impl Default for Label {
 impl Label {
     pub fn into_typedb(self) -> TypeDBLabel {
         match &self.label_string.split_once(":") {
-            None => TypeDBLabel::build(&self.label_string),
-            Some((name, scope)) => TypeDBLabel::build_scoped(scope, name),
+            None => TypeDBLabel::build(&self.label_string, None),
+            Some((name, scope)) => TypeDBLabel::build_scoped(scope, name, None),
         }
     }
 }

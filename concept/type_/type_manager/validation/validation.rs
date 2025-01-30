@@ -67,6 +67,7 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
             .name()
             .as_str(),
+        new_label.source_span(),
     );
 
     if TypeReader::get_labelled_type::<RoleType>(snapshot, &scoped_label)

@@ -32,7 +32,9 @@ fn define_schema(
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
     let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, function_manager, schema_query).unwrap();
+    query_manager
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, function_manager, schema_query, query_str)
+        .unwrap();
     snapshot.commit().unwrap();
 }
 
@@ -46,8 +48,9 @@ fn insert_data(
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
-    let pipeline =
-        query_manager.prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query).unwrap();
+    let pipeline = query_manager
+        .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query, query_string)
+        .unwrap();
     let (iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
     snapshot.commit().unwrap();
@@ -80,8 +83,7 @@ fn fetch() {
     );
 
     // TODO: uncomment commented features once they are introduced
-    let query = typeql::parse_query(
-        r#"
+    let query_str = r#"
 match
     $x isa person, has $a;
     $a isa! $t; $t label age;
@@ -112,14 +114,20 @@ fetch {
     "list higher-card attributes": [ $x.name ],
 #    "list attributes": $x.name[], # TODO: Uncomment when it's implemented
     "all attributes": { $x.* }
-};"#,
-    )
-    .unwrap();
+};"#;
+    let query = typeql::parse_query(query_str).unwrap();
 
     let pipeline = query.into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new(0))))
-        .prepare_read_pipeline(snapshot.clone(), &type_manager, thing_manager.clone(), &function_manager, &pipeline)
+        .prepare_read_pipeline(
+            snapshot.clone(),
+            &type_manager,
+            thing_manager.clone(),
+            &function_manager,
+            &pipeline,
+            &query_str,
+        )
         .unwrap();
 
     let (iterator, _) = pipeline.into_documents_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

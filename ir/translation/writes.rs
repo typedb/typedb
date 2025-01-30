@@ -5,7 +5,7 @@
 */
 
 use answer::variable::Variable;
-use typeql::{query::stage::delete::DeletableKind, statement::thing::RolePlayer};
+use typeql::{common::Spanned, query::stage::delete::DeletableKind, statement::thing::RolePlayer};
 
 use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
@@ -41,6 +41,7 @@ fn verify_deleted_variables_available(
             Some(translated) => Ok(translated),
             None => Err(Box::new(RepresentationError::DeleteVariableUnavailable {
                 variable: var.name().unwrap().to_owned(),
+                source_span: var.span(),
             })),
         }
     }
@@ -82,14 +83,15 @@ pub fn translate_delete(
             DeletableKind::Has { attribute, owner } => {
                 let translated_owner = register_typeql_var(&mut constraints, owner)?;
                 let translated_attribute = register_typeql_var(&mut constraints, attribute)?;
-                constraints.add_has(translated_owner, translated_attribute)?;
+                constraints.add_has(translated_owner, translated_attribute, deletable.span())?;
             }
             DeletableKind::Links { players, relation } => {
                 let translated_relation = register_typeql_var(&mut constraints, relation)?;
                 add_typeql_relation(&mut constraints, translated_relation, players)?;
             }
             DeletableKind::Concept { variable } => {
-                let translated_variable = constraints.get_or_declare_variable(variable.name().unwrap())?;
+                let translated_variable =
+                    constraints.get_or_declare_variable(variable.name().unwrap(), variable.span())?;
                 deleted_concepts.push(translated_variable);
             }
         }

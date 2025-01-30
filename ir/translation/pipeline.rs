@@ -5,6 +5,7 @@
  */
 
 use std::{iter::empty, mem};
+use typeql::common::Spanned;
 
 use answer::variable::Variable;
 use primitive::either::Either;
@@ -178,7 +179,7 @@ pub(crate) fn translate_pipeline_stages(
             Either::First(stage) => translated_stages.push(stage),
             Either::Second(fetch) => {
                 if i != stages.len() - 1 {
-                    return Err(Box::new(RepresentationError::NonTerminalFetch { declaration: stage.clone() }));
+                    return Err(Box::new(RepresentationError::NonTerminalFetch { source_span: stage.span() }));
                 } else {
                     return Ok((translated_stages, Some(fetch)));
                 }
@@ -225,6 +226,6 @@ fn translate_stage(
             TypeQLOperator::Require(require) => translate_require(translation_context, require)
                 .map(|require| Either::First(TranslatedStage::Require(require))),
         },
-        _ => Err(Box::new(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() })),
+        _ => Err(Box::new(RepresentationError::UnrecognisedClause { source_span: typeql_stage.span() })),
     }
 }

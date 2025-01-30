@@ -6,6 +6,8 @@
 
 use std::{error::Error, fmt, fmt::Formatter};
 
+use ::typeql::common::Spannable;
+
 mod typeql;
 
 pub trait TypeDBError {
@@ -38,10 +40,34 @@ pub trait TypeDBError {
 
     fn source_query(&self) -> Option<&str>;
 
-    fn source_span(&self) -> Option<(::typeql::common::Span)>;
+    fn source_span(&self) -> Option<::typeql::common::Span>;
 
     fn format_code_and_description(&self) -> String {
+        if let Some(query) = self.source_query() {
+            if let Some((line_col, _)) = self.first_source_span().map(|span| query.line_col(span)).flatten() {
+                if let Some(excerpt) = query.extract_annotated_line_col(
+                    // note: span line and col are 1-indexed,must adjust to 0-offset
+                    line_col.line as usize - 1,
+                    line_col.column as usize - 1,
+                    2,
+                    2,
+                ) {
+                    return format!(
+                        "[{}] {}\nNear {}:{}\n-----\n{}\n-----",
+                        self.code(),
+                        self.format_description(),
+                        line_col.line,
+                        line_col.column,
+                        excerpt
+                    );
+                }
+            }
+        }
         format!("[{}] {}", self.code(), self.format_description())
+    }
+
+    fn first_source_span(&self) -> Option<::typeql::common::Span> {
+        self.source_span().or_else(|| self.source_typedb_error().map(|err| err.first_source_span()).flatten())
     }
 }
 
@@ -62,9 +88,9 @@ impl fmt::Debug for dyn TypeDBError + '_ {
 impl fmt::Display for dyn TypeDBError + '_ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(source) = self.source_typedb_error() {
-            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), source as &dyn TypeDBError)
+            write!(f, "{}\nBecause: \n\t{:?}", self.format_code_and_description(), source as &dyn TypeDBError)
         } else if let Some(source) = self.source_error() {
-            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), source)
+            write!(f, "{}\nBecause: \n\t{:?}", self.format_code_and_description(), source)
         } else {
             write!(f, "{}", self.format_code_and_description())
         }
@@ -108,7 +134,7 @@ impl<T: TypeDBError> TypeDBError for Box<T> {
         (**self).source_query()
     }
 
-    fn source_span(&self) -> Option<(::typeql::common::Span)> {
+    fn source_span(&self) -> Option<::typeql::common::Span> {
         (**self).source_span()
     }
 }
@@ -186,7 +212,7 @@ macro_rules! typedb_error {
                     })*
                 }
             }
-            
+
             fn source_span(&self) -> Option<::typeql::common::Span> {
                 match self {
                     $(typedb_error!(@source_span source_span from $variant { $($($arg)*)? })=> {
@@ -266,7 +292,7 @@ macro_rules! typedb_error {
     (@source_query $ts:ident { $(,)? }) => {
         None
     };
-    
+
     (@source_span $ts:ident from $variant:ident { source_span : $argty:ty $(, $($rest:tt)*)? }) => {
         Self::$variant { source_span: $ts, .. }
     };
@@ -278,7 +304,7 @@ macro_rules! typedb_error {
     };
 
     (@source_span $ts:ident { source_span: $_:ty $(, $($rest:tt)*)? }) => {
-        Some($ts)
+        *$ts
     };
     (@source_span $ts:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
         typedb_error!(@source_span $ts { $($($rest)*)? })
