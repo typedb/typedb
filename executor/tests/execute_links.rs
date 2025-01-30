@@ -216,15 +216,15 @@ fn traverse_links_unbounded_sorted_from() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
     let links_membership_group =
-        conjunction.constraints_mut().add_links(var_membership, var_group, var_membership_group_type).unwrap().clone();
+        conjunction.constraints_mut().add_links(var_membership, var_group, var_membership_group_type, None).unwrap().clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_group, var_group_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_group_type, GROUP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
@@ -322,12 +322,12 @@ fn traverse_links_unbounded_sorted_to() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
@@ -418,14 +418,14 @@ fn traverse_links_bounded_relation() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
     let isa_membership = conjunction
         .constraints_mut()
-        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into())
+        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)
         .unwrap()
         .clone();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
@@ -531,15 +531,15 @@ fn traverse_links_bounded_relation_player() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
     let isa_person =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap().clone();
     let isa_membership = conjunction
         .constraints_mut()
-        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into())
+        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)
         .unwrap()
         .clone();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
@@ -657,12 +657,12 @@ fn traverse_links_reverse_unbounded_sorted_from() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
@@ -755,12 +755,12 @@ fn traverse_links_reverse_unbounded_sorted_to() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
@@ -853,13 +853,13 @@ fn traverse_links_reverse_bounded_player() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
     let isa_person =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into()).unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_type, MEMBERSHIP_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_membership_member_type, MEMBERSHIP_MEMBER_LABEL.clone()).unwrap();
@@ -963,15 +963,15 @@ fn traverse_links_reverse_bounded_player_relation() {
 
     let links_membership_person = conjunction
         .constraints_mut()
-        .add_links(var_membership, var_person, var_membership_member_type)
+        .add_links(var_membership, var_person, var_membership_member_type, None)
         .unwrap()
         .clone();
 
     let isa_person =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap().clone();
     let isa_membership = conjunction
         .constraints_mut()
-        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into())
+        .add_isa(IsaKind::Subtype, var_membership, var_membership_type.into(), None)
         .unwrap()
         .clone();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();

@@ -1541,7 +1541,7 @@ pub struct Links<ID> {
 }
 
 impl<ID> Links<ID> {
-    fn new(relation: ID, player: ID, role_type: ID, source_span: Option<Span>) -> Self {
+    pub fn new(relation: ID, player: ID, role_type: ID, source_span: Option<Span>) -> Self {
         Self {
             relation: Vertex::Variable(relation),
             player: Vertex::Variable(player),

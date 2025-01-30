@@ -112,9 +112,9 @@ fn attribute_equality() {
     let var_age_type_b = conjunction.constraints_mut().get_or_declare_variable("age-b", None).unwrap();
 
     let isa_a =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into(), None).unwrap().clone();
     let isa_b =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into(), None).unwrap().clone();
     conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();

@@ -157,11 +157,11 @@ fn traverse_has_unbounded_sorted_from() {
     let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
     let var_age = conjunction.constraints_mut().get_or_declare_variable("age", None).unwrap();
 
-    let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age, None).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
@@ -247,14 +247,14 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
 
     let isa_person_1 =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into()).unwrap().clone();
-    let has_name_1 = conjunction.constraints_mut().add_has(var_person_1, var_name).unwrap().clone();
-    let has_name_2 = conjunction.constraints_mut().add_has(var_person_2, var_name).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into(), None).unwrap().clone();
+    let has_name_1 = conjunction.constraints_mut().add_has(var_person_1, var_name, None).unwrap().clone();
+    let has_name_2 = conjunction.constraints_mut().add_has(var_person_2, var_name, None).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_2, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_1, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person_2, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
 
@@ -353,13 +353,13 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let var_age = conjunction.constraints_mut().get_or_declare_variable("age", None).unwrap();
     let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
 
-    let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
-    let has_name = conjunction.constraints_mut().add_has(var_person, var_name).unwrap().clone();
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age, None).unwrap().clone();
+    let has_name = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
@@ -446,8 +446,8 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
     let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
     let var_attribute = conjunction.constraints_mut().get_or_declare_variable("attr", None).unwrap();
-    let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute).unwrap().clone();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    let has_attribute = conjunction.constraints_mut().add_has(var_person, var_attribute, None).unwrap().clone();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
@@ -547,11 +547,11 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
     let var_age = conjunction.constraints_mut().get_or_declare_variable("age", None).unwrap();
 
-    let has_age = conjunction.constraints_mut().add_has(var_person, var_age).unwrap().clone();
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age, None).unwrap().clone();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap();
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
 
