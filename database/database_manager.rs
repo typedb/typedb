@@ -11,7 +11,7 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard},
 };
 
-use itertools::Itertools;
+use logger::debug;
 use resource::constants::{database::INTERNAL_DATABASE_PREFIX, server::SYSTEM_FILE_PREFIX};
 use storage::durability_client::WALClient;
 
@@ -39,6 +39,11 @@ impl DatabaseManager {
                     source: Arc::new(error),
                 })?
                 .path();
+
+            if !entry_path.is_dir() {
+                debug!("Not attempting to load database @ {:?}: not a directory", entry_path);
+                continue;
+            }
 
             if entry_path.file_name().unwrap().to_string_lossy().starts_with(SYSTEM_FILE_PREFIX) {
                 continue;
