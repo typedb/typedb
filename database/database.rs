@@ -75,6 +75,7 @@ pub struct Database<D> {
     pub(super) query_cache: Arc<QueryCache>,
     schema_write_transaction_exclusivity: Mutex<SchemaWriteTransactionState>,
     _statistics_updater: IntervalRunner,
+    _checkpointer: IntervalRunner,
 }
 
 enum TransactionReservationRequest {
@@ -201,6 +202,7 @@ impl<D> Database<D> {
 
 impl Database<WALClient> {
     const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(100);
+    const CHECKPOINT_INTERVAL: Duration = Duration::from_secs(60);
 
     pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
@@ -258,6 +260,7 @@ impl Database<WALClient> {
         let query_cache = Arc::new(QueryCache::new(0));
         let update_statistics =
             make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
+        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), storage.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -270,6 +273,7 @@ impl Database<WALClient> {
             query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
+            _checkpointer: IntervalRunner::new(checkpoint_fn, Self::CHECKPOINT_INTERVAL),
         })
     }
 
@@ -333,6 +337,7 @@ impl Database<WALClient> {
         let query_cache = Arc::new(QueryCache::new(total_count));
         let update_statistics =
             make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
+        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), storage.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -345,6 +350,11 @@ impl Database<WALClient> {
             query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
             _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
+            _checkpointer: IntervalRunner::new_with_initial_delay(
+                checkpoint_fn,
+                Self::CHECKPOINT_INTERVAL,
+                Self::CHECKPOINT_INTERVAL,
+            ),
         };
 
         let checkpoint_sequence_number = match checkpoint {
@@ -444,6 +454,14 @@ impl Database<WALClient> {
             },
             is_primary_server: true, // TODO: Should be retrieved differently for Cloud
         }
+    }
+}
+
+fn make_checkpoint_fn(path: PathBuf, storage: Arc<MVCCStorage<WALClient>>) -> impl Fn() {
+    move || {
+        let checkpoint = Checkpoint::new(&path).unwrap();
+        storage.checkpoint(&checkpoint).unwrap();
+        checkpoint.finish().unwrap();
     }
 }
 
