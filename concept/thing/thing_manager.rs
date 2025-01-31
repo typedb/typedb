@@ -2203,7 +2203,8 @@ impl ThingManager {
             let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
             let subtype = edge.from();
             let supertype = edge.to();
-            match supertype.prefix() {
+            let prefix = supertype.prefix();
+            match prefix {
                 // Interfaces: owns
                 Prefix::VertexAttributeType => match write {
                     Write::Insert { .. } | Write::Put { .. } => {
@@ -2300,21 +2301,23 @@ impl ThingManager {
                             }
                         }
 
-                        let relation_subtype = RelationType::new(subtype);
-                        let relation_supertype = RelationType::new(supertype);
+                        if prefix == Prefix::VertexRelationType {
+                            let relation_subtype = RelationType::new(subtype);
+                            let relation_supertype = RelationType::new(supertype);
 
-                        let supertype_related_role_types =
-                            relation_supertype.get_related_role_types(snapshot, self.type_manager())?;
-                        for role_type in relation_subtype.get_related_role_types(snapshot, self.type_manager())? {
-                            for &supertype_role_type in &supertype_related_role_types {
-                                if supertype_role_type.is_supertype_transitive_of_or_same(
-                                    snapshot,
-                                    self.type_manager(),
-                                    role_type,
-                                )? {
-                                    let updated_role_types = modified_relates.entry(relation_subtype).or_default();
-                                    updated_role_types.insert(role_type);
-                                    break;
+                            let supertype_related_role_types =
+                                relation_supertype.get_related_role_types(snapshot, self.type_manager())?;
+                            for role_type in relation_subtype.get_related_role_types(snapshot, self.type_manager())? {
+                                for &supertype_role_type in &supertype_related_role_types {
+                                    if supertype_role_type.is_supertype_transitive_of_or_same(
+                                        snapshot,
+                                        self.type_manager(),
+                                        role_type,
+                                    )? {
+                                        let updated_role_types = modified_relates.entry(relation_subtype).or_default();
+                                        updated_role_types.insert(role_type);
+                                        break;
+                                    }
                                 }
                             }
                         }

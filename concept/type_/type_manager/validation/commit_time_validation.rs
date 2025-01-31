@@ -331,7 +331,7 @@ impl CommitTimeValidation {
                     validation_errors.push(Box::new(
                         SchemaValidationError::CannotRedeclareInheritedCapabilityWithoutSpecialisation {
                             cap: CAP::KIND,
-                            // interface: get_label_or_concept_read_err(snapshot, type_manager, interface_type.clone())?,
+                            interface: get_label_or_concept_read_err(snapshot, type_manager, interface_type.clone())?,
                             subtype: get_label_or_concept_read_err(snapshot, type_manager, capability.object())?,
                             supertype: get_label_or_concept_read_err(
                                 snapshot,
