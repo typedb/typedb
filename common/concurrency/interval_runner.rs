@@ -29,9 +29,16 @@ impl IntervalRunner {
     ) -> Self {
         let (shutdown_sender, shutdown_receiver) = sync_channel::<SyncSender<()>>(1);
         thread::spawn(move || {
-            if !initial_delay.is_zero() {
-                thread::sleep(initial_delay);
+            match shutdown_receiver.recv_timeout(initial_delay) {
+                Ok(done_sender) => {
+                    drop(action);
+                    done_sender.send(()).unwrap();
+                    return;
+                }
+                Err(RecvTimeoutError::Timeout) => (),
+                Err(RecvTimeoutError::Disconnected) => return, // TODO log?
             }
+
             loop {
                 action();
                 match shutdown_receiver.recv_timeout(interval) {
