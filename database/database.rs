@@ -260,7 +260,7 @@ impl Database<WALClient> {
         let query_cache = Arc::new(QueryCache::new(0));
         let update_statistics =
             make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), SequenceNumber::MIN, storage.clone());
 
         Ok(Database::<WALClient> {
             name: name.to_owned(),
@@ -334,10 +334,17 @@ impl Database<WALClient> {
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
         let schema_txn_lock = Arc::new(RwLock::default());
 
+        let checkpoint_sequence_number = match checkpoint {
+            None => SequenceNumber::MIN,
+            Some(checkpoint) => checkpoint
+                .read_sequence_number()
+                .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?,
+        };
+
         let query_cache = Arc::new(QueryCache::new(total_count));
         let update_statistics =
             make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
-        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), storage.clone());
+        let checkpoint_fn = make_checkpoint_fn(path.to_owned(), checkpoint_sequence_number, storage.clone());
 
         let database = Database::<WALClient> {
             name: name.to_owned(),
@@ -357,12 +364,6 @@ impl Database<WALClient> {
             ),
         };
 
-        let checkpoint_sequence_number = match checkpoint {
-            None => SequenceNumber::MIN,
-            Some(checkpoint) => checkpoint
-                .read_sequence_number()
-                .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?,
-        };
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
         }
@@ -380,6 +381,7 @@ impl Database<WALClient> {
     #[allow(clippy::drop_non_drop)]
     pub fn delete(self) -> Result<(), DatabaseDeleteError> {
         drop(self._statistics_updater);
+        drop(self._checkpointer);
         drop(Arc::into_inner(self.schema).expect("Cannot get exclusive ownership of inner of Arc<Schema>."));
         drop(Arc::into_inner(self.query_cache).expect("Cannot get exclusive ownership of inner of Arc<QueryCache>."));
         drop(
@@ -457,11 +459,19 @@ impl Database<WALClient> {
     }
 }
 
-fn make_checkpoint_fn(path: PathBuf, storage: Arc<MVCCStorage<WALClient>>) -> impl Fn() {
+fn make_checkpoint_fn(
+    path: PathBuf,
+    mut prev_checkpoint: SequenceNumber,
+    storage: Arc<MVCCStorage<WALClient>>,
+) -> impl FnMut() {
     move || {
-        let checkpoint = Checkpoint::new(&path).unwrap();
-        storage.checkpoint(&checkpoint).unwrap();
-        checkpoint.finish().unwrap();
+        let watermark = storage.snapshot_watermark();
+        if prev_checkpoint < watermark {
+            let checkpoint = Checkpoint::new(&path).unwrap();
+            storage.checkpoint(&checkpoint).unwrap();
+            checkpoint.finish().unwrap();
+            prev_checkpoint = watermark;
+        }
     }
 }
 
