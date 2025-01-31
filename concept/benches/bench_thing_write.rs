@@ -96,9 +96,9 @@ fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    AGE_LABEL.set(Label::build("age")).unwrap();
-    NAME_LABEL.set(Label::build("name")).unwrap();
-    PERSON_LABEL.set(Label::build("person")).unwrap();
+    AGE_LABEL.set(Label::build("age", None)).unwrap();
+    NAME_LABEL.set(Label::build("name", None)).unwrap();
+    PERSON_LABEL.set(Label::build("person", None)).unwrap();
     init_logging();
 
     let mut group = c.benchmark_group("test writes");

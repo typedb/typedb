@@ -51,7 +51,7 @@ fn compile_expression_via_match(
     let query = format!("match let $x = {}; select $x;", s);
     // Avoid unbound variable errors
     let input_variable_categories =
-        variable_types.iter().map(|(name, _)| ((*name).to_owned(), VariableCategory::Value)).collect();
+        variable_types.iter().map(|(name, _)| ((*name).to_owned(), None, VariableCategory::Value)).collect();
     let (mut translation_context, _) = TranslationContext::new_with_function_arguments(input_variable_categories);
     let mut value_parameters = ParameterRegistry::new();
     if let Stage::Match(match_) = typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap() {

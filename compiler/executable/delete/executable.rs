@@ -13,6 +13,7 @@ use ir::{
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
+use typeql::common::Span;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -42,6 +43,7 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     constraints: &[Constraint<Variable>],
     deleted_concepts: &[Variable],
+    source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
     let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
     let mut connection_deletes = Vec::new();
@@ -53,11 +55,13 @@ pub fn compile(
                         input_variables,
                         has.owner().as_variable().unwrap(),
                         variable_registry,
+                        has.source_span(),
                     )?,
                     attribute: get_thing_input_position(
                         input_variables,
                         has.attribute().as_variable().unwrap(),
                         variable_registry,
+                        has.source_span(),
                     )?,
                 }));
             }
@@ -66,11 +70,13 @@ pub fn compile(
                     input_variables,
                     links.relation().as_variable().unwrap(),
                     variable_registry,
+                    links.source_span(),
                 )?;
                 let player = get_thing_input_position(
                     input_variables,
                     links.player().as_variable().unwrap(),
                     variable_registry,
+                    links.source_span(),
                 )?;
                 let role_type = links.role_type();
                 let role = match role_type {
@@ -91,6 +97,7 @@ pub fn compile(
                                         .cloned()
                                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
                                     role_types: annotations.iter().join(", "),
+                                    source_span: links.source_span(),
                                 })?;
                             }
                         }
@@ -129,6 +136,7 @@ pub fn compile(
                     .get(&variable)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                source_span,
             }));
         };
         if type_annotations
@@ -143,6 +151,7 @@ pub fn compile(
                     .get(&variable)
                     .cloned()
                     .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                source_span,
             }));
         } else {
             concept_deletes.push(ThingInstruction { thing: ThingPosition(*input_position) });

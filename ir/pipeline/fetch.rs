@@ -11,7 +11,9 @@ use std::{
 };
 
 use answer::variable::Variable;
+use encoding::value::label::Label;
 use structural_equality::{ordered_hash_combine, StructuralEquality};
+use typeql::common::Span;
 
 use crate::{
     pattern::ParameterID,
@@ -25,6 +27,7 @@ pub enum FetchSome {
     SingleAttribute(FetchSingleAttribute),
     SingleFunction(Function),
 
+    // note: all source_spans are contained in FetchObject
     Object(Box<FetchObject>),
 
     ListFunction(Function),
@@ -107,7 +110,7 @@ impl StructuralEquality for FetchSome {
 #[derive(Debug, Clone)]
 pub struct FetchSingleAttribute {
     pub variable: Variable,
-    pub attribute: String,
+    pub attribute: Label,
 }
 
 impl StructuralEquality for FetchSingleAttribute {
@@ -125,17 +128,17 @@ impl StructuralEquality for FetchSingleAttribute {
 
 #[derive(Debug, Clone)]
 pub enum FetchObject {
-    Entries(HashMap<ParameterID, FetchSome>),
-    Attributes(Variable),
+    Entries(HashMap<ParameterID, FetchSome>, HashMap<ParameterID, Option<Span>>),
+    Attributes(Variable, Option<Span>),
 }
 
 impl FetchObject {
     pub(crate) fn record_variables_recursive(&self, vars: &mut HashSet<Variable>) {
         match self {
-            FetchObject::Entries(entries) => {
+            FetchObject::Entries(entries, _) => {
                 entries.iter().for_each(|(_, some)| some.record_variables_recursive(vars));
             }
-            FetchObject::Attributes(var) => {
+            FetchObject::Attributes(var, _) => {
                 vars.insert(*var);
             }
         }
@@ -147,17 +150,17 @@ impl StructuralEquality for FetchObject {
         ordered_hash_combine(
             mem::discriminant(self).hash(),
             match self {
-                FetchObject::Entries(entries) => StructuralEquality::hash(entries),
-                FetchObject::Attributes(variable) => variable.hash(),
+                FetchObject::Entries(entries, _) => StructuralEquality::hash(entries),
+                FetchObject::Attributes(variable, _) => variable.hash(),
             },
         )
     }
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Entries(entries), Self::Entries(other_entries)) => entries.equals(other_entries),
-            (Self::Attributes(var), Self::Attributes(other_var)) => var.equals(other_var),
-            (Self::Entries(_), _) | (Self::Attributes(_), _) => false,
+            (Self::Entries(entries, _), Self::Entries(other_entries, _)) => entries.equals(other_entries),
+            (Self::Attributes(var, _), Self::Attributes(other_var, _)) => var.equals(other_var),
+            (Self::Entries(_, _), _) | (Self::Attributes(_, _), _) => false,
         }
     }
 }
@@ -183,7 +186,7 @@ impl StructuralEquality for FetchListSubFetch {
 #[derive(Debug, Clone)]
 pub struct FetchListAttributeAsList {
     pub variable: Variable,
-    pub attribute: String,
+    pub attribute: Label,
 }
 
 impl StructuralEquality for FetchListAttributeAsList {
@@ -199,7 +202,7 @@ impl StructuralEquality for FetchListAttributeAsList {
 #[derive(Debug, Clone)]
 pub struct FetchListAttributeFromList {
     pub variable: Variable,
-    pub attribute: String,
+    pub attribute: Label,
 }
 
 impl StructuralEquality for FetchListAttributeFromList {

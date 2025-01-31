@@ -7,11 +7,11 @@
 pub const SCHEMA: &str = include_str!("schema.tql");
 
 pub mod user_repository {
-    use std::{collections::HashMap, fmt::format, sync::Arc};
+    use std::{collections::HashMap, sync::Arc};
 
     use answer::variable_value::VariableValue;
     use concept::{thing::thing_manager, type_::type_manager::TypeManager};
-    use database::transaction::{TransactionRead, TransactionWrite};
+    use database::transaction::TransactionRead;
     use error::typedb_error;
     use function::function_manager::FunctionManager;
     use query::query_manager::QueryManager;
@@ -30,9 +30,9 @@ pub mod user_repository {
 
     pub fn list(tx: TransactionRead<WALClient>) -> Vec<User> {
         let unexpected_error_msg = "An unexpected error occurred when acquiring the list of users";
-        let query = parse_query("match (user: $u, credentials: $c) isa user-credentials; $u has name $n;")
-            .expect(unexpected_error_msg);
-        let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline());
+        let query_str = "match (user: $u, credentials: $c) isa user-credentials; $u has name $n;";
+        let query = parse_query(query_str).expect(unexpected_error_msg);
+        let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline(), query_str);
         let rows = result.expect(unexpected_error_msg);
         let users = rows.iter().map(|row| User::new(get_string(&tx, &row, "n"))).collect();
         users
@@ -43,17 +43,14 @@ pub mod user_repository {
             return Err(SystemDBError::IllegalQueryInput {});
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to retrieve a user";
-        let query = parse_query(
-            format!(
-                "match
+        let query_str = format!(
+            "match
                 (user: $u, credentials: $p) isa user-credentials;
                 $u has name '{username}';
                 $p has hash $h;"
-            )
-            .as_str(),
-        )
-        .expect(unexpected_error_msg);
-        let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline());
+        );
+        let query = parse_query(&query_str).expect(unexpected_error_msg);
+        let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline(), &query_str);
         let mut rows: Vec<HashMap<String, VariableValue>> = result.expect(unexpected_error_msg);
         if !rows.is_empty() {
             let row = rows.pop().expect(unexpected_error_msg);
@@ -80,23 +77,20 @@ pub mod user_repository {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to create a new user";
-        let query = match credentials {
+        let (query, query_string) = match credentials {
             Credential::PasswordType { password_hash: PasswordHash { value: hash } } => {
                 let user_uuid = Uuid::new_v4().to_string();
                 let cred_uuid = Uuid::new_v4().to_string();
-                parse_query(
-                    format!(
-                        "insert $u isa user, has uuid '{user_uuid}', has name '{name}';
+                let query_string = format!(
+                    "insert $u isa user, has uuid '{user_uuid}', has name '{name}';
                         $p isa password, has uuid '{cred_uuid}', has hash '{hash}';
                         (user: $u, credentials: $p) isa user-credentials;",
-                        user_uuid = user_uuid,
-                        cred_uuid = cred_uuid,
-                        name = user.name,
-                        hash = hash
-                    )
-                    .as_str(),
-                )
-                .expect(unexpected_error_msg)
+                    user_uuid = user_uuid,
+                    cred_uuid = cred_uuid,
+                    name = user.name,
+                    hash = hash
+                );
+                (parse_query(query_string.as_str()).expect(unexpected_error_msg), query_string)
             }
         };
         let (_, snapshot) = execute_write_pipeline(
@@ -106,6 +100,7 @@ pub mod user_repository {
             function_manager,
             query_manager,
             &query.into_pipeline(),
+            &query_string,
         );
         (Ok(()), snapshot)
     }
@@ -124,9 +119,10 @@ pub mod user_repository {
         let unexpected_error_msg = "An unexpected error occurred when attempting to update a user";
         match credential {
             Some(Credential::PasswordType { password_hash: PasswordHash { value: hash } }) => {
-                let query = parse_query(format!(
+                let query_string = format!(
                     "match (user: $u, credentials: $p) isa user-credentials; $u has name '{username}'; $p has hash $h; delete has $h of $p; insert $p has hash '{password_hash}';"
-                , username = username, password_hash = hash).as_str()).expect(unexpected_error_msg);
+                    , username = username, password_hash = hash);
+                let query = parse_query(&query_string).expect(unexpected_error_msg);
                 let (_, snapshot) = execute_write_pipeline(
                     snapshot,
                     type_manager,
@@ -134,6 +130,7 @@ pub mod user_repository {
                     function_manager,
                     query_manager,
                     &query.into_pipeline(),
+                    &query_string,
                 );
                 (Ok(()), snapshot)
             }
@@ -153,16 +150,13 @@ pub mod user_repository {
             return (Err(SystemDBError::IllegalQueryInput {}), Arc::new(snapshot));
         }
         let unexpected_error_msg = "An unexpected error occurred when attempting to delete a user";
-        let query = parse_query(
-            format!(
-                "match $uc isa user-credentials, links (user: $u, credentials: $c);
+        let query_string = format!(
+            "match $uc isa user-credentials, links (user: $u, credentials: $c);
                 $u isa user, has name '{username}';
                 delete $u; $c; $uc;",
-                username = username
-            )
-            .as_str(),
-        )
-        .expect(unexpected_error_msg);
+            username = username
+        );
+        let query = parse_query(&query_string).expect(unexpected_error_msg);
         let (_, snapshot) = execute_write_pipeline(
             snapshot,
             type_manager,
@@ -170,6 +164,7 @@ pub mod user_repository {
             function_manager,
             query_manager,
             &query.into_pipeline(),
+            &query_string,
         );
         (Ok(()), snapshot)
     }

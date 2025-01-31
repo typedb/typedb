@@ -44,7 +44,9 @@ fn setup_common(schema: &str) -> Context {
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define).unwrap();
+    query_manager
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .unwrap();
     snapshot.commit().unwrap();
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
@@ -70,6 +72,7 @@ fn run_read_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &match_,
+            query,
         )
         .map_err(|query_error| Either::Left(query_error))?;
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -95,6 +98,7 @@ fn run_write_query(
             context.thing_manager.clone(),
             &context.function_manager,
             &query_as_pipeline,
+            query,
         )
         .unwrap();
     let rows_positions = pipeline.rows_positions().unwrap().clone();
@@ -227,7 +231,7 @@ fn structs_lists_optionals() {
         let mut matches = false;
         let outer_err = run_read_query(&context, query).unwrap_err();
         if let Either::Left(err) = &outer_err {
-            if let QueryError::Representation { typedb_source: err } = err.as_ref() {
+            if let QueryError::Representation { typedb_source: err, .. } = err.as_ref() {
                 if let RepresentationError::FunctionRepresentation {
                     typedb_source: FunctionRepresentationError::BlockDefinition { typedb_source: err, .. },
                 } = err.as_ref()
@@ -246,7 +250,7 @@ fn structs_lists_optionals() {
 
 fn check_unimplemented_language_feature(err: &QueryError, expected: &UnimplementedFeature) {
     match &err {
-        QueryError::Representation { typedb_source } => match typedb_source.as_ref() {
+        QueryError::Representation { typedb_source, .. } => match typedb_source.as_ref() {
             RepresentationError::UnimplementedLanguageFeature { feature: actual, .. } => assert_eq!(expected, actual),
             _ => Err(err).unwrap(),
         },

@@ -52,13 +52,13 @@ fn build_with_functions() {
     let mut builder = Block::builder(context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
 
-    let var_person = conjunction.get_or_declare_variable("person").unwrap();
-    let var_person_type = conjunction.get_or_declare_variable("person_type").unwrap();
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("person_type", None).unwrap();
 
-    let var_count = conjunction.get_or_declare_variable("count").unwrap();
-    let var_mean = conjunction.get_or_declare_variable("sum").unwrap();
+    let var_count = conjunction.constraints_mut().get_or_declare_variable("count", None).unwrap();
+    let var_mean = conjunction.constraints_mut().get_or_declare_variable("sum", None).unwrap();
 
-    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into()).unwrap();
+    conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None).unwrap();
 
     let function_argument_categories = vec![VariableCategory::Object];
     let function_return_categories = vec![
@@ -73,7 +73,7 @@ fn build_with_functions() {
     );
     conjunction
         .constraints_mut()
-        .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn")
+        .add_function_binding(vec![var_count, var_mean], &function_signature, vec![var_person], "test_fn", None)
         .unwrap();
     let block = builder.finish().unwrap();
     println!("{}", block.conjunction());

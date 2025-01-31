@@ -10,7 +10,10 @@ use answer::variable::Variable;
 use primitive::either::Either;
 use storage::snapshot::ReadableSnapshot;
 use structural_equality::StructuralEquality;
-use typeql::query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage};
+use typeql::{
+    common::{Span, Spanned},
+    query::stage::{Operator as TypeQLOperator, Stage as TypeQLStage, Stage},
+};
 
 use crate::{
     pipeline::{
@@ -63,9 +66,9 @@ impl TranslatedPipeline {
 
 #[derive(Debug, Clone)]
 pub enum TranslatedStage {
-    Match { block: Block },
-    Insert { block: Block },
-    Delete { block: Block, deleted_variables: Vec<Variable> },
+    Match { block: Block, source_span: Option<Span> },
+    Insert { block: Block, source_span: Option<Span> },
+    Delete { block: Block, deleted_variables: Vec<Variable>, source_span: Option<Span> },
 
     // ...
     Select(Select),
@@ -79,7 +82,9 @@ pub enum TranslatedStage {
 impl TranslatedStage {
     pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
         match self {
-            Self::Match { block } | Self::Insert { block } | Self::Delete { block, .. } => Box::new(block.variables()),
+            Self::Match { block, .. } | Self::Insert { block, .. } | Self::Delete { block, .. } => {
+                Box::new(block.variables())
+            }
             Self::Select(select) => Box::new(select.variables.iter().cloned()),
             Self::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
             Self::Offset(_) => Box::new(empty()),
@@ -94,8 +99,8 @@ impl StructuralEquality for TranslatedStage {
     fn hash(&self) -> u64 {
         mem::discriminant(self).hash()
             ^ match self {
-                Self::Match { block } => block.hash(),
-                Self::Insert { block } => block.hash(),
+                Self::Match { block, .. } => block.hash(),
+                Self::Insert { block, .. } => block.hash(),
                 Self::Delete { block, .. } => block.hash(),
                 Self::Select(select) => select.hash(),
                 Self::Sort(sort) => sort.hash(),
@@ -108,8 +113,8 @@ impl StructuralEquality for TranslatedStage {
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Match { block }, Self::Match { block: other_block }) => block.equals(other_block),
-            (Self::Insert { block }, Self::Insert { block: other_block }) => block.equals(other_block),
+            (Self::Match { block, .. }, Self::Match { block: other_block, .. }) => block.equals(other_block),
+            (Self::Insert { block, .. }, Self::Insert { block: other_block, .. }) => block.equals(other_block),
             (Self::Delete { block, .. }, Self::Delete { block: other_block, .. }) => block.equals(other_block),
             (Self::Select(select), Self::Select(other_select)) => select.equals(other_select),
             (Self::Sort(sort), Self::Sort(other_sort)) => sort.equals(other_sort),
@@ -178,7 +183,7 @@ pub(crate) fn translate_pipeline_stages(
             Either::First(stage) => translated_stages.push(stage),
             Either::Second(fetch) => {
                 if i != stages.len() - 1 {
-                    return Err(Box::new(RepresentationError::NonTerminalFetch { declaration: stage.clone() }));
+                    return Err(Box::new(RepresentationError::NonTerminalFetch { source_span: stage.span() }));
                 } else {
                     return Ok((translated_stages, Some(fetch)));
                 }
@@ -197,13 +202,19 @@ fn translate_stage(
 ) -> Result<Either<TranslatedStage, FetchObject>, Box<RepresentationError>> {
     match typeql_stage {
         TypeQLStage::Match(match_) => {
-            translate_match(translation_context, value_parameters, all_function_signatures, match_)
-                .and_then(|builder| Ok(Either::First(TranslatedStage::Match { block: builder.finish()? })))
+            translate_match(translation_context, value_parameters, all_function_signatures, match_).and_then(
+                |builder| {
+                    Ok(Either::First(TranslatedStage::Match { block: builder.finish()?, source_span: match_.span() }))
+                },
+            )
         }
         TypeQLStage::Insert(insert) => translate_insert(translation_context, value_parameters, insert)
-            .map(|block| Either::First(TranslatedStage::Insert { block })),
-        TypeQLStage::Delete(delete) => translate_delete(translation_context, value_parameters, delete)
-            .map(|(block, deleted_variables)| Either::First(TranslatedStage::Delete { block, deleted_variables })),
+            .map(|block| Either::First(TranslatedStage::Insert { block, source_span: insert.span() })),
+        TypeQLStage::Delete(delete) => {
+            translate_delete(translation_context, value_parameters, delete).map(|(block, deleted_variables)| {
+                Either::First(TranslatedStage::Delete { block, deleted_variables, source_span: delete.span() })
+            })
+        }
         TypeQLStage::Fetch(fetch) => {
             translate_fetch(snapshot, translation_context, value_parameters, all_function_signatures, fetch)
                 .map(Either::Second)
@@ -225,6 +236,6 @@ fn translate_stage(
             TypeQLOperator::Require(require) => translate_require(translation_context, require)
                 .map(|require| Either::First(TranslatedStage::Require(require))),
         },
-        _ => Err(Box::new(RepresentationError::UnrecognisedClause { declaration: typeql_stage.clone() })),
+        _ => Err(Box::new(RepresentationError::UnrecognisedClause { source_span: typeql_stage.span() })),
     }
 }

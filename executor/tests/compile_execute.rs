@@ -14,7 +14,7 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::function::{ExecutableFunctionRegistry, FunctionCallCostProvider},
+    executable::function::ExecutableFunctionRegistry,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -27,10 +27,7 @@ use executor::{
 };
 use function::function_manager::FunctionManager;
 use ir::{
-    pipeline::{
-        function_signature::{FunctionID, HashMapFunctionSignatureIndex},
-        ParameterRegistry,
-    },
+    pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
@@ -62,13 +59,22 @@ fn setup(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
     let define = typeql::parse_query(schema).unwrap().into_schema();
-    query_manager.execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define).unwrap();
+    query_manager
+        .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
+        .unwrap();
     snapshot.commit().unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_pipeline();
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, &type_manager, thing_manager.clone(), &FunctionManager::default(), &query)
+        .prepare_write_pipeline(
+            snapshot,
+            &type_manager,
+            thing_manager.clone(),
+            &FunctionManager::default(),
+            &query,
+            data,
+        )
         .unwrap();
     let (mut iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();

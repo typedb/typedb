@@ -14,6 +14,8 @@ rust_library(
         "*.rs",
     ]),
     deps = [
+        "//resource",
+
         "@typeql//rust:typeql",
     ]
 )

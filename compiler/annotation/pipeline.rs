@@ -27,6 +27,7 @@ use ir::{
     translation::pipeline::TranslatedStage,
 };
 use storage::snapshot::ReadableSnapshot;
+use typeql::common::Span;
 
 use crate::{
     annotation::{
@@ -61,15 +62,18 @@ pub enum AnnotatedStage {
         block_annotations: TypeAnnotations,
         // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
         executable_expressions: HashMap<Variable, ExecutableExpression<Variable>>,
+        source_span: Option<Span>,
     },
     Insert {
         block: Block,
         annotations: TypeAnnotations,
+        source_span: Option<Span>,
     },
     Delete {
         block: Block,
         deleted_variables: Vec<Variable>,
         annotations: TypeAnnotations,
+        source_span: Option<Span>,
     },
     // ...
     Select(Select),
@@ -228,7 +232,7 @@ fn annotate_stage(
     stage: TranslatedStage,
 ) -> Result<AnnotatedStage, AnnotationError> {
     match stage {
-        TranslatedStage::Match { block } => {
+        TranslatedStage::Match { block, source_span } => {
             let block_annotations = infer_types(
                 snapshot,
                 &block,
@@ -264,10 +268,15 @@ fn annotate_stage(
             compiled_expressions.iter().for_each(|(&variable, expr)| {
                 running_value_variable_assigned_types.insert(variable, expr.return_type().clone());
             });
-            Ok(AnnotatedStage::Match { block, block_annotations, executable_expressions: compiled_expressions })
+            Ok(AnnotatedStage::Match {
+                block,
+                block_annotations,
+                executable_expressions: compiled_expressions,
+                source_span,
+            })
         }
 
-        TranslatedStage::Insert { block } => {
+        TranslatedStage::Insert { block, source_span } => {
             let insert_annotations = infer_types(
                 snapshot,
                 &block,
@@ -313,10 +322,10 @@ fn annotate_stage(
                 &insert_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            Ok(AnnotatedStage::Insert { block, annotations: insert_annotations })
+            Ok(AnnotatedStage::Insert { block, annotations: insert_annotations, source_span })
         }
 
-        TranslatedStage::Delete { block, deleted_variables } => {
+        TranslatedStage::Delete { block, deleted_variables, source_span } => {
             let delete_annotations = infer_types(
                 snapshot,
                 &block,
@@ -330,7 +339,7 @@ fn annotate_stage(
                 running_variable_annotations.remove(v);
             });
             // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
-            Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations })
+            Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
             validate_sort_variables_comparable(
@@ -358,6 +367,7 @@ fn annotate_stage(
                     reduction,
                     running_variable_annotations,
                     running_value_variable_assigned_types,
+                    reduce.source_span(),
                 )?;
                 running_value_variable_assigned_types
                     .insert(assigned, ExpressionValueType::Single(typed_reduce.output_type().clone()));
@@ -384,7 +394,10 @@ pub fn validate_sort_variables_comparable(
                 .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             if value_types.is_empty() {
                 let variable_name = variable_registry.variable_names().get(&sort_var.variable()).unwrap().clone();
-                return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name });
+                return Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput {
+                    variable: variable_name,
+                    source_span: sort.source_span(),
+                });
             }
             let first_category = value_types.iter().find(|_| true).unwrap().category();
             let allowed_categories = ValueTypeCategory::comparable_categories(first_category);
@@ -396,6 +409,7 @@ pub fn validate_sort_variables_comparable(
                         variable: variable_name,
                         category1: first_category,
                         category2: other_type,
+                        source_span: sort.source_span(),
                     });
                 }
             }
@@ -413,6 +427,7 @@ pub fn resolve_reducer_by_value_type(
     reducer: Reducer,
     variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     assigned_value_types: &BTreeMap<Variable, ExpressionValueType>,
+    reduce_source_span: Option<Span>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     match reducer {
         Reducer::Count => Ok(ReduceInstruction::Count),
@@ -431,8 +446,9 @@ pub fn resolve_reducer_by_value_type(
                 snapshot,
                 type_manager,
                 variable_registry,
+                reduce_source_span,
             )?;
-            resolve_reduce_instruction_by_value_type(reducer, value_type, variable_registry)
+            resolve_reduce_instruction_by_value_type(reducer, value_type, variable_registry, reduce_source_span)
         }
     }
 }
@@ -445,13 +461,18 @@ fn determine_value_type_for_reducer(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     variable_registry: &VariableRegistry,
+    reduce_source_span: Option<Span>,
 ) -> Result<ValueType, AnnotationError> {
     if let Some(assigned_type) = assigned_value_types.get(&variable) {
         match assigned_type {
             ExpressionValueType::Single(value_type) => Ok(value_type.clone()),
             ExpressionValueType::List(_) => {
                 let variable_name = variable_registry.variable_names()[&variable].clone();
-                Err(AnnotationError::ReducerInputVariableIsList { reducer: reducer.name(), variable: variable_name })
+                Err(AnnotationError::ReducerInputVariableIsList {
+                    reducer: reducer.name(),
+                    variable: variable_name,
+                    source_span: reduce_source_span,
+                })
             }
         }
     } else if let Some(types) = variable_annotations.get(&variable) {
@@ -459,13 +480,19 @@ fn determine_value_type_for_reducer(
             .map_err(|source| AnnotationError::TypeInference { typedb_source: source })?;
         if value_types.len() != 1 {
             let variable_name = variable_registry.variable_names()[&variable].clone();
-            Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType { variable: variable_name })
+            Err(AnnotationError::ReducerInputVariableDidNotHaveSingleValueType {
+                variable: variable_name,
+                source_span: reduce_source_span,
+            })
         } else {
             Ok(value_types.iter().next().unwrap().clone())
         }
     } else {
         let variable_name = variable_registry.variable_names()[&variable].clone();
-        Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput { variable: variable_name })
+        Err(AnnotationError::CouldNotDetermineValueTypeForReducerInput {
+            variable: variable_name,
+            source_span: reduce_source_span,
+        })
     }
 }
 
@@ -473,6 +500,7 @@ pub fn resolve_reduce_instruction_by_value_type(
     reducer: Reducer,
     value_type: ValueType,
     variable_registry: &VariableRegistry,
+    source_span: Option<Span>,
 ) -> Result<ReduceInstruction<Variable>, AnnotationError> {
     // Will have been handled earlier since it doesn't need a value type.
     debug_assert!(!matches!(reducer, Reducer::Count) && !matches!(reducer, Reducer::CountVar(_)));
@@ -514,6 +542,7 @@ pub fn resolve_reduce_instruction_by_value_type(
                 reducer: reducer_name,
                 variable: variable_name,
                 value_type: value_type.category(),
+                source_span,
             })
         }
     }
@@ -547,6 +576,7 @@ fn collect_value_types_of_function_call_assignments(
                         return Err(AnnotationError::ExpressionCompilation {
                             typedb_source: Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
                                 variable: assign_variable,
+                                source_span: binding.source_span(),
                             }),
                         });
                     }

@@ -45,20 +45,24 @@ impl QueryManager {
         thing_manager: &ThingManager,
         function_manager: &FunctionManager,
         query: SchemaQuery,
+        source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
         match query {
             SchemaQuery::Define(define) => {
-                define::execute(snapshot, type_manager, thing_manager, function_manager, define)
-                    .map_err(|err| Box::new(QueryError::Define { typedb_source: err }))
+                define::execute(snapshot, type_manager, thing_manager, function_manager, define).map_err(|err| {
+                    Box::new(QueryError::Define { source_query: source_query.to_string(), typedb_source: err })
+                })
             }
             SchemaQuery::Redefine(redefine) => {
-                redefine::execute(snapshot, type_manager, thing_manager, function_manager, redefine)
-                    .map_err(|err| Box::new(QueryError::Redefine { typedb_source: err }))
+                redefine::execute(snapshot, type_manager, thing_manager, function_manager, redefine).map_err(|err| {
+                    Box::new(QueryError::Redefine { source_query: source_query.to_string(), typedb_source: err })
+                })
             }
             SchemaQuery::Undefine(undefine) => {
-                undefine::execute(snapshot, type_manager, thing_manager, function_manager, undefine)
-                    .map_err(|err| Box::new(QueryError::Undefine { typedb_source: err }))
+                undefine::execute(snapshot, type_manager, thing_manager, function_manager, undefine).map_err(|err| {
+                    Box::new(QueryError::Undefine { source_query: source_query.to_string(), typedb_source: err })
+                })
             }
         }
     }
@@ -70,6 +74,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
+        source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", query);
         // 1: Translate
@@ -79,13 +84,18 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters: parameters,
-        } = self.translate_pipeline(snapshot.as_ref(), function_manager, query)?;
+        } = self.translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
         let arced_preamble = Arc::new(translated_preamble);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
         match validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
             Ok(_) => {}
-            Err(typedb_source) => return Err(Box::new(QueryError::FunctionDefinition { typedb_source })),
+            Err(typedb_source) => {
+                return Err(Box::new(QueryError::FunctionDefinition {
+                    source_query: source_query.to_string(),
+                    typedb_source,
+                }))
+            }
         } // TODO: ^It's not really a retrieval error is it?
 
         let executable_pipeline = match self
@@ -99,9 +109,10 @@ impl QueryManager {
             }
             None => {
                 // 2: Annotate
-                let annotated_schema_functions = function_manager
-                    .get_annotated_functions(snapshot.as_ref(), type_manager)
-                    .map_err(|err| QueryError::FunctionDefinition { typedb_source: err })?;
+                let annotated_schema_functions =
+                    function_manager.get_annotated_functions(snapshot.as_ref(), type_manager).map_err(|err| {
+                        QueryError::FunctionDefinition { source_query: source_query.to_string(), typedb_source: err }
+                    })?;
 
                 let mut annotated_pipeline = annotate_preamble_and_pipeline(
                     snapshot.as_ref(),
@@ -113,10 +124,11 @@ impl QueryManager {
                     (*arced_stages).clone(),
                     (*arced_fetch).clone(),
                 )
-                .map_err(|err| QueryError::Annotation { typedb_source: err })?;
+                .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
 
-                apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline)
-                    .map_err(|err| QueryError::Transformation { typedb_source: err })?;
+                apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline).map_err(|err| {
+                    QueryError::Transformation { source_query: source_query.to_string(), typedb_source: err }
+                })?;
 
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
                 // 3: Compile
@@ -129,7 +141,10 @@ impl QueryManager {
                     annotated_fetch,
                     &HashSet::with_capacity(0),
                 )
-                .map_err(|err| QueryError::ExecutableCompilation { typedb_source: err })?;
+                .map_err(|err| QueryError::ExecutableCompilation {
+                    source_query: source_query.to_string(),
+                    typedb_source: err,
+                })?;
                 if let Some(cache) = self.cache.as_ref() {
                     cache.insert(arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
                 }
@@ -151,7 +166,9 @@ impl QueryManager {
             Arc::new(parameters),
             None,
         )
-        .map_err(|typedb_source| Box::new(QueryError::Pipeline { typedb_source }))
+        .map_err(|typedb_source| {
+            Box::new(QueryError::Pipeline { source_query: source_query.to_string(), typedb_source })
+        })
     }
 
     pub fn prepare_write_pipeline<Snapshot: WritableSnapshot>(
@@ -161,6 +178,7 @@ impl QueryManager {
         thing_manager: Arc<ThingManager>,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
+        source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", query);
         // 1: Translate
@@ -170,7 +188,7 @@ impl QueryManager {
             translated_fetch,
             mut variable_registry,
             value_parameters,
-        } = match self.translate_pipeline(&snapshot, function_manager, query) {
+        } = match self.translate_pipeline(&snapshot, function_manager, query, source_query) {
             Ok(translated) => translated,
             Err(err) => return Err((snapshot, err)),
         };
@@ -191,7 +209,13 @@ impl QueryManager {
                 match validate_no_cycles(&arced_premable.iter().enumerate().collect()) {
                     Ok(_) => {}
                     Err(typedb_source) => {
-                        return Err((snapshot, Box::new(QueryError::FunctionDefinition { typedb_source })))
+                        return Err((
+                            snapshot,
+                            Box::new(QueryError::FunctionDefinition {
+                                source_query: source_query.to_string(),
+                                typedb_source,
+                            }),
+                        ))
                     }
                 } // TODO: ^It's not really a retrieval error is it?
 
@@ -200,7 +224,13 @@ impl QueryManager {
                 {
                     Ok(functions) => functions,
                     Err(err) => {
-                        return Err((snapshot, Box::new(QueryError::FunctionDefinition { typedb_source: err })))
+                        return Err((
+                            snapshot,
+                            Box::new(QueryError::FunctionDefinition {
+                                source_query: source_query.to_string(),
+                                typedb_source: err,
+                            }),
+                        ))
                     }
                 };
 
@@ -217,12 +247,28 @@ impl QueryManager {
 
                 let mut annotated_pipeline = match annotated_pipeline {
                     Ok(annotated_pipeline) => annotated_pipeline,
-                    Err(err) => return Err((snapshot, Box::new(QueryError::Annotation { typedb_source: err }))),
+                    Err(err) => {
+                        return Err((
+                            snapshot,
+                            Box::new(QueryError::Annotation {
+                                source_query: source_query.to_string(),
+                                typedb_source: err,
+                            }),
+                        ))
+                    }
                 };
 
                 match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
                     Ok(_) => {}
-                    Err(err) => return Err((snapshot, Box::new(QueryError::Transformation { typedb_source: err }))),
+                    Err(err) => {
+                        return Err((
+                            snapshot,
+                            Box::new(QueryError::Transformation {
+                                source_query: source_query.to_string(),
+                                typedb_source: err,
+                            }),
+                        ))
+                    }
                 };
 
                 let AnnotatedPipeline { annotated_preamble, annotated_stages, annotated_fetch } = annotated_pipeline;
@@ -239,7 +285,13 @@ impl QueryManager {
                 ) {
                     Ok(executable) => executable,
                     Err(err) => {
-                        return Err((snapshot, Box::new(QueryError::ExecutableCompilation { typedb_source: err })))
+                        return Err((
+                            snapshot,
+                            Box::new(QueryError::ExecutableCompilation {
+                                source_query: source_query.to_string(),
+                                typedb_source: err,
+                            }),
+                        ))
                     }
                 };
                 if let Some(cache) = self.cache.as_ref() {
@@ -268,13 +320,15 @@ impl QueryManager {
         snapshot: &Snapshot,
         function_manager: &FunctionManager,
         query: &typeql::query::Pipeline,
+        source_query: &str,
     ) -> Result<TranslatedPipeline, Box<QueryError>> {
         let preamble_signatures = HashMapFunctionSignatureIndex::build(
             query.preambles.iter().enumerate().map(|(i, preamble)| (FunctionID::Preamble(i), &preamble.function)),
         );
         let all_function_signatures =
             ReadThroughFunctionSignatureIndex::new(snapshot, function_manager, preamble_signatures);
-        translate_pipeline(snapshot, &all_function_signatures, query)
-            .map_err(|err| Box::new(QueryError::Representation { typedb_source: err }))
+        translate_pipeline(snapshot, &all_function_signatures, query).map_err(|err| {
+            Box::new(QueryError::Representation { source_query: source_query.to_string(), typedb_source: err })
+        })
     }
 }

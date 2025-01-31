@@ -177,6 +177,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         &input_row_format,
         &entry_annotations,
         &translation_context.variable_registry,
+        None,
     )
     .unwrap();
 
@@ -269,6 +270,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         &translation_context.variable_registry,
         block.conjunction().constraints(),
         &deleted_concepts,
+        None,
     )
     .unwrap();
 

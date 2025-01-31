@@ -21,6 +21,7 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
+use typeql::common::Span;
 
 use crate::annotation::expression::{
     compiled_expression::{ExecutableExpression, ExpressionValueType},
@@ -132,12 +133,16 @@ impl<'this> ExpressionCompilationContext<'this> {
             let element_type = self.pop_type_single()?;
             for _ in 1..list_constructor.item_expression_ids().len() {
                 if self.pop_type_single()? != element_type {
-                    Err(ExpressionCompileError::HeterogeneusListConstructor {})?;
+                    Err(ExpressionCompileError::HeterogeneusListConstructor {
+                        source_span: list_constructor.source_span(),
+                    })?;
                 }
             }
             self.push_type_list(element_type)
         } else {
-            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType {})?;
+            Err(ExpressionCompileError::EmptyListConstructorCannotInferValueType {
+                source_span: list_constructor.source_span(),
+            })?;
         }
 
         Ok(())
@@ -154,7 +159,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         let list_variable_type = self.pop_type_list()?;
         let index_type = self.pop_type_single()?.category();
         if index_type != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::ListIndexMustBeInteger {})?
+            Err(ExpressionCompileError::ListIndexMustBeInteger { source_span: list_index.source_span() })?
         }
         self.push_type_single(list_variable_type); // reuse
         Ok(())
@@ -174,11 +179,11 @@ impl<'this> ExpressionCompilationContext<'this> {
         let list_variable_type = self.pop_type_list()?;
         let from_index_type = self.pop_type_single()?.category();
         if from_index_type != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::ListIndexMustBeInteger {})?
+            Err(ExpressionCompileError::ListIndexMustBeInteger { source_span: list_index_range.source_span() })?
         }
         let to_index_type = self.pop_type_single()?.category();
         if to_index_type != ValueTypeCategory::Integer {
-            Err(ExpressionCompileError::ListIndexMustBeInteger {})?
+            Err(ExpressionCompileError::ListIndexMustBeInteger { source_span: list_index_range.source_span() })?
         }
 
         self.push_type_single(list_variable_type);
@@ -191,16 +196,22 @@ impl<'this> ExpressionCompilationContext<'this> {
         self.compile_recursive(self.expression_tree.get(operation.left_expression_id()))?;
         let left_category = self.peek_type_single()?.category();
         match left_category {
-            ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression),
-            ValueTypeCategory::Integer => self.compile_op_integer(operator, right_expression),
-            ValueTypeCategory::Double => self.compile_op_double(operator, right_expression),
-            ValueTypeCategory::Decimal => self.compile_op_decimal(operator, right_expression),
-            ValueTypeCategory::Date => self.compile_op_date(operator, right_expression),
-            ValueTypeCategory::DateTime => self.compile_op_datetime(operator, right_expression),
-            ValueTypeCategory::DateTimeTZ => self.compile_op_datetime_tz(operator, right_expression),
-            ValueTypeCategory::Duration => self.compile_op_duration(operator, right_expression),
-            ValueTypeCategory::String => self.compile_op_string(operator, right_expression),
-            ValueTypeCategory::Struct => self.compile_op_struct(operator, right_expression),
+            ValueTypeCategory::Boolean => self.compile_op_boolean(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::Integer => self.compile_op_integer(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::Double => self.compile_op_double(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::Decimal => self.compile_op_decimal(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::Date => self.compile_op_date(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::DateTime => {
+                self.compile_op_datetime(operator, right_expression, operation.source_span())
+            }
+            ValueTypeCategory::DateTimeTZ => {
+                self.compile_op_datetime_tz(operator, right_expression, operation.source_span())
+            }
+            ValueTypeCategory::Duration => {
+                self.compile_op_duration(operator, right_expression, operation.source_span())
+            }
+            ValueTypeCategory::String => self.compile_op_string(operator, right_expression, operation.source_span()),
+            ValueTypeCategory::Struct => self.compile_op_struct(operator, right_expression, operation.source_span()),
         }
     }
 
@@ -208,6 +219,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -215,6 +227,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::Boolean,
             right_category,
+            source_span,
         }))
     }
 
@@ -222,6 +235,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -256,6 +270,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 op,
                 left_category: ValueTypeCategory::Integer,
                 right_category,
+                source_span,
             })?,
         }
         Ok(())
@@ -265,6 +280,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -286,6 +302,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 op,
                 left_category: ValueTypeCategory::Double,
                 right_category,
+                source_span,
             })?,
         }
         Ok(())
@@ -295,6 +312,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -336,6 +354,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                 op,
                 left_category: ValueTypeCategory::Decimal,
                 right_category,
+                source_span,
             })?,
         }
         Ok(())
@@ -345,6 +364,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -352,6 +372,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::String,
             right_category,
+            source_span,
         }))
     }
 
@@ -359,6 +380,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -366,6 +388,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::Date,
             right_category,
+            source_span,
         }))
     }
 
@@ -373,6 +396,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -380,6 +404,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::DateTime,
             right_category,
+            source_span,
         }))
     }
 
@@ -387,6 +412,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -394,6 +420,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::DateTimeTZ,
             right_category,
+            source_span,
         }))
     }
 
@@ -401,6 +428,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -408,6 +436,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::Duration,
             right_category,
+            source_span,
         }))
     }
 
@@ -415,6 +444,7 @@ impl<'this> ExpressionCompilationContext<'this> {
         &mut self,
         op: Operator,
         right: &Expression<Variable>,
+        source_span: Option<Span>,
     ) -> Result<(), Box<ExpressionCompileError>> {
         self.compile_recursive(right)?;
         let right_category = self.peek_type_single()?.category();
@@ -422,6 +452,7 @@ impl<'this> ExpressionCompilationContext<'this> {
             op,
             left_category: ValueTypeCategory::Struct,
             right_category,
+            source_span,
         }))
     }
 
@@ -461,6 +492,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
+                        source_span: builtin.source_span(),
                     })?,
                 }
             }
@@ -472,6 +504,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
+                        source_span: builtin.source_span(),
                     })?,
                 }
             }
@@ -483,6 +516,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
+                        source_span: builtin.source_span(),
                     })?,
                 }
             }
@@ -494,6 +528,7 @@ impl<'this> ExpressionCompilationContext<'this> {
                     _ => Err(ExpressionCompileError::UnsupportedArgumentsForBuiltin {
                         function: builtin.builtin_id(),
                         category: self.peek_type_single()?.category(),
+                        source_span: builtin.source_span(),
                     })?,
                 }
             }

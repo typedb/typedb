@@ -86,7 +86,7 @@ fn entity_usage() {
         let thing_manager = thing_manager(type_manager.clone());
 
         // --- age sub attribute ---
-        let age_label = Label::build("age");
+        let age_label = Label::build("age", None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
@@ -95,7 +95,7 @@ fn entity_usage() {
         assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
 
         // --- person sub entity @abstract ---
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         person_type
             .set_annotation(
@@ -116,7 +116,7 @@ fn entity_usage() {
         assert_eq!(supertype, None);
 
         // --- child sub person ---
-        let child_label = Label::build("child");
+        let child_label = Label::build("child", None);
         let child_type = type_manager.create_entity_type(&mut snapshot, &child_label).unwrap();
         child_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, person_type).unwrap();
 
@@ -139,7 +139,7 @@ fn entity_usage() {
         assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type).unwrap());
 
         // --- adult sub person ---
-        let adult_type = type_manager.create_entity_type(&mut snapshot, &Label::build("adult")).unwrap();
+        let adult_type = type_manager.create_entity_type(&mut snapshot, &Label::build("adult", None)).unwrap();
         adult_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, person_type).unwrap();
         assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
         assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
@@ -165,7 +165,7 @@ fn entity_usage() {
         let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
 
         // --- age sub attribute ---
-        let age_label = Label::build("age");
+        let age_label = Label::build("age", None);
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
         assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
@@ -173,7 +173,7 @@ fn entity_usage() {
         assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
 
         // --- person sub entity ---
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
         assert!(person_type
             .get_annotations_declared(&snapshot, &type_manager)
@@ -185,7 +185,7 @@ fn entity_usage() {
         assert_eq!(supertype, None);
 
         // --- child sub person ---
-        let child_label = Label::build("child");
+        let child_label = Label::build("child", None);
         let child_type = type_manager.get_entity_type(&snapshot, &child_label).unwrap().unwrap();
 
         assert_eq!(*child_type.get_label(&snapshot, &type_manager).unwrap(), child_label);
@@ -224,9 +224,9 @@ fn role_usage() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let friendship_label = Label::build("friendship");
+    let friendship_label = Label::build("friendship", None);
     let friend_name = "friend";
-    let person_label = Label::build("person");
+    let person_label = Label::build("person", None);
 
     let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
     {
@@ -294,40 +294,40 @@ fn annotations_with_range_arguments() {
         let type_manager = type_manager_no_cache();
         let thing_manager = thing_manager(type_manager.clone());
 
-        let age_label = Label::build("age");
+        let age_label = Label::build("age", None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
-        let name_label = Label::build("name");
+        let name_label = Label::build("name", None);
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-        let empty_name_label = Label::build("empty_name");
+        let empty_name_label = Label::build("empty_name", None);
         let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label).unwrap();
         empty_name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-        let balance_label = Label::build("balance");
+        let balance_label = Label::build("balance", None);
         let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label).unwrap();
         balance_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Decimal).unwrap();
 
-        let measurement_label = Label::build("measurement");
+        let measurement_label = Label::build("measurement", None);
         let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label).unwrap();
         measurement_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Double).unwrap();
 
-        let empty_measurement_label = Label::build("empty_measurement");
+        let empty_measurement_label = Label::build("empty_measurement", None);
         let empty_measurement_type =
             type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label).unwrap();
         empty_measurement_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Double).unwrap();
 
-        let schedule_label = Label::build("schedule");
+        let schedule_label = Label::build("schedule", None);
         let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label).unwrap();
         schedule_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::DateTimeTZ).unwrap();
 
-        let valid_label = Label::build("valid");
+        let valid_label = Label::build("valid", None);
         let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label).unwrap();
         valid_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
-        let empty_label = Label::build("empty");
+        let empty_label = Label::build("empty", None);
         let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
@@ -362,7 +362,7 @@ fn annotations_with_range_arguments() {
             Some(ValueType::Boolean)
         );
 
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
         person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
@@ -476,35 +476,35 @@ fn annotations_with_range_arguments() {
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
 
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
 
-        let age_label = Label::build("age");
+        let age_label = Label::build("age", None);
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
-        let name_label = Label::build("name");
+        let name_label = Label::build("name", None);
         let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
 
-        let empty_name_label = Label::build("empty_name");
+        let empty_name_label = Label::build("empty_name", None);
         let empty_name_type = type_manager.get_attribute_type(&snapshot, &empty_name_label).unwrap().unwrap();
 
-        let balance_label = Label::build("balance");
+        let balance_label = Label::build("balance", None);
         let balance_type = type_manager.get_attribute_type(&snapshot, &balance_label).unwrap().unwrap();
 
-        let measurement_label = Label::build("measurement");
+        let measurement_label = Label::build("measurement", None);
         let measurement_type = type_manager.get_attribute_type(&snapshot, &measurement_label).unwrap().unwrap();
 
-        let empty_measurement_label = Label::build("empty_measurement");
+        let empty_measurement_label = Label::build("empty_measurement", None);
         let empty_measurement_type =
             type_manager.get_attribute_type(&snapshot, &empty_measurement_label).unwrap().unwrap();
 
-        let schedule_label = Label::build("schedule");
+        let schedule_label = Label::build("schedule", None);
         let schedule_type = type_manager.get_attribute_type(&snapshot, &schedule_label).unwrap().unwrap();
 
-        let valid_label = Label::build("valid");
+        let valid_label = Label::build("valid", None);
         let valid_type = type_manager.get_attribute_type(&snapshot, &valid_label).unwrap().unwrap();
 
-        let empty_label = Label::build("empty");
+        let empty_label = Label::build("empty", None);
         let empty_type = type_manager.get_attribute_type(&snapshot, &empty_label).unwrap().unwrap();
 
         let age_owns = person_type.get_owns_attribute(&snapshot, &type_manager, age_type).unwrap().unwrap();
@@ -662,40 +662,40 @@ fn annotations_with_value_arguments() {
         let type_manager = type_manager_no_cache();
         let thing_manager = thing_manager(type_manager.clone());
 
-        let age_label = Label::build("age");
+        let age_label = Label::build("age", None);
         let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
         age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
-        let name_label = Label::build("name");
+        let name_label = Label::build("name", None);
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-        let empty_name_label = Label::build("empty_name");
+        let empty_name_label = Label::build("empty_name", None);
         let empty_name_type = type_manager.create_attribute_type(&mut snapshot, &empty_name_label).unwrap();
         empty_name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-        let balance_label = Label::build("balance");
+        let balance_label = Label::build("balance", None);
         let balance_type = type_manager.create_attribute_type(&mut snapshot, &balance_label).unwrap();
         balance_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Decimal).unwrap();
 
-        let measurement_label = Label::build("measurement");
+        let measurement_label = Label::build("measurement", None);
         let measurement_type = type_manager.create_attribute_type(&mut snapshot, &measurement_label).unwrap();
         measurement_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Double).unwrap();
 
-        let empty_measurement_label = Label::build("empty_measurement");
+        let empty_measurement_label = Label::build("empty_measurement", None);
         let empty_measurement_type =
             type_manager.create_attribute_type(&mut snapshot, &empty_measurement_label).unwrap();
         empty_measurement_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Double).unwrap();
 
-        let schedule_label = Label::build("schedule");
+        let schedule_label = Label::build("schedule", None);
         let schedule_type = type_manager.create_attribute_type(&mut snapshot, &schedule_label).unwrap();
         schedule_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::DateTimeTZ).unwrap();
 
-        let valid_label = Label::build("valid");
+        let valid_label = Label::build("valid", None);
         let valid_type = type_manager.create_attribute_type(&mut snapshot, &valid_label).unwrap();
         valid_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
-        let empty_label = Label::build("empty");
+        let empty_label = Label::build("empty", None);
         let empty_type = type_manager.create_attribute_type(&mut snapshot, &empty_label).unwrap();
         empty_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Boolean).unwrap();
 
@@ -730,7 +730,7 @@ fn annotations_with_value_arguments() {
             Some(ValueType::Boolean)
         );
 
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
         person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
@@ -841,35 +841,35 @@ fn annotations_with_value_arguments() {
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
         let type_manager = type_manager_at_snapshot(storage.clone(), &snapshot);
 
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.get_entity_type(&snapshot, &person_label).unwrap().unwrap();
 
-        let age_label = Label::build("age");
+        let age_label = Label::build("age", None);
         let age_type = type_manager.get_attribute_type(&snapshot, &age_label).unwrap().unwrap();
 
-        let name_label = Label::build("name");
+        let name_label = Label::build("name", None);
         let name_type = type_manager.get_attribute_type(&snapshot, &name_label).unwrap().unwrap();
 
-        let empty_name_label = Label::build("empty_name");
+        let empty_name_label = Label::build("empty_name", None);
         let empty_name_type = type_manager.get_attribute_type(&snapshot, &empty_name_label).unwrap().unwrap();
 
-        let balance_label = Label::build("balance");
+        let balance_label = Label::build("balance", None);
         let balance_type = type_manager.get_attribute_type(&snapshot, &balance_label).unwrap().unwrap();
 
-        let measurement_label = Label::build("measurement");
+        let measurement_label = Label::build("measurement", None);
         let measurement_type = type_manager.get_attribute_type(&snapshot, &measurement_label).unwrap().unwrap();
 
-        let empty_measurement_label = Label::build("empty_measurement");
+        let empty_measurement_label = Label::build("empty_measurement", None);
         let empty_measurement_type =
             type_manager.get_attribute_type(&snapshot, &empty_measurement_label).unwrap().unwrap();
 
-        let schedule_label = Label::build("schedule");
+        let schedule_label = Label::build("schedule", None);
         let schedule_type = type_manager.get_attribute_type(&snapshot, &schedule_label).unwrap().unwrap();
 
-        let valid_label = Label::build("valid");
+        let valid_label = Label::build("valid", None);
         let valid_type = type_manager.get_attribute_type(&snapshot, &valid_label).unwrap().unwrap();
 
-        let empty_label = Label::build("empty");
+        let empty_label = Label::build("empty", None);
         let empty_type = type_manager.get_attribute_type(&snapshot, &empty_label).unwrap().unwrap();
 
         let age_owns = person_type.get_owns_attribute(&snapshot, &type_manager, age_type).unwrap().unwrap();

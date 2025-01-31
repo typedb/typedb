@@ -13,7 +13,6 @@ pub mod transaction_util {
         Database,
     };
     use function::function_manager::FunctionManager;
-    use lending_iterator::LendingIterator;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;
     use storage::{
@@ -131,6 +130,7 @@ pub mod query_util {
     pub fn execute_read_pipeline(
         tx: TransactionRead<WALClient>,
         pipeline: &Pipeline,
+        source_query: &str,
     ) -> (TransactionRead<WALClient>, Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>)
     {
         let prepared_pipeline = tx
@@ -141,6 +141,7 @@ pub mod query_util {
                 tx.thing_manager.clone(),
                 &tx.function_manager,
                 pipeline,
+                source_query,
             )
             .unwrap();
 
@@ -166,12 +167,13 @@ pub mod query_util {
         function_manager: &FunctionManager,
         query_manager: &QueryManager,
         pipeline: &Pipeline,
+        source_query: &str,
     ) -> (
         Result<Vec<HashMap<String, VariableValue<'static>>>, Box<PipelineExecutionError>>,
         Arc<WriteSnapshot<WALClient>>,
     ) {
         let prepared_pipeline = query_manager
-            .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline)
+            .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline, source_query)
             .unwrap();
 
         let named_outputs = prepared_pipeline.rows_positions().unwrap().clone();

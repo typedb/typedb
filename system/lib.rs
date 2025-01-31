@@ -8,7 +8,7 @@ pub mod concepts;
 pub mod repositories;
 pub mod util;
 
-use std::{fmt::format, sync::Arc};
+use std::sync::Arc;
 
 use database::{database_manager::DatabaseManager, Database};
 use resource::internal_database_prefix;
@@ -41,7 +41,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
                             .as_str(),
                         )
                         .into_schema();
-                    query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query).expect(
+                    query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, &SCHEMA).expect(
                         format!("Unexpected error occurred when defining the schema for the {} database.", SYSTEM_DB)
                             .as_str(),
                     );

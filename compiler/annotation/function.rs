@@ -26,6 +26,8 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
+    common::{Span, Spanned},
+    parser::Rule::sign,
     schema::definable::function::{Output, SingleSelector},
     type_::NamedType,
     TypeRef, TypeRefAny,
@@ -215,6 +217,7 @@ pub(crate) fn annotate_anonymous_function(
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     caller_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     caller_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
+    source_span: Option<Span>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_none());
@@ -252,7 +255,11 @@ pub(super) fn annotate_named_function(
     for (arg_index, (var, label)) in zip(arguments, argument_labels.as_ref().unwrap()).enumerate() {
         let argument_annotations =
             get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index: arg_index, typedb_source })
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType {
+                    index: arg_index,
+                    source_span: label.span(),
+                    typedb_source,
+                })
             })?;
         match argument_annotations {
             FunctionParameterAnnotation::Concept(concept_annotation) => {
@@ -363,6 +370,7 @@ fn validate_return_against_signature(
             Err(Box::new(FunctionAnnotationError::SignatureReturnMismatch {
                 function_name: name.to_owned(),
                 mismatching_index: i,
+                source_span: signature_return.span(),
             }))
         }
     })
@@ -381,7 +389,11 @@ fn annotate_signature_based_on_labels(
         .enumerate()
         .map(|(index, label)| {
             get_annotations_from_labels(snapshot, type_manager, label).map_err(|typedb_source| {
-                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType { index, typedb_source })
+                Box::new(FunctionAnnotationError::CouldNotResolveArgumentType {
+                    index,
+                    source_span: label.span(),
+                    typedb_source,
+                })
             })
         })
         .collect::<Result<_, Box<FunctionAnnotationError>>>()?;
@@ -409,12 +421,12 @@ fn resolve_return_operators(
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFunctionReturn, Box<FunctionAnnotationError>> {
     let return_ = match return_operation {
-        ReturnOperation::Stream(variables) => AnnotatedFunctionReturn::Stream { variables: variables.clone() },
-        ReturnOperation::Single(selector, variables) => {
+        ReturnOperation::Stream(variables, _) => AnnotatedFunctionReturn::Stream { variables: variables.clone() },
+        ReturnOperation::Single(selector, variables, _) => {
             AnnotatedFunctionReturn::Single { selector: selector.clone(), variables: variables.clone() }
         }
-        ReturnOperation::ReduceCheck() => AnnotatedFunctionReturn::ReduceCheck {},
-        ReturnOperation::ReduceReducer(reducers) => {
+        ReturnOperation::ReduceCheck(_) => AnnotatedFunctionReturn::ReduceCheck {},
+        ReturnOperation::ReduceReducer(reducers, source_span) => {
             let mut instructions = Vec::with_capacity(reducers.len());
             for &reducer in reducers {
                 let instruction = resolve_reducer_by_value_type(
@@ -424,6 +436,7 @@ fn resolve_return_operators(
                     reducer,
                     input_type_annotations,
                     input_value_type_annotations,
+                    *source_span,
                 )
                 .map_err(|err| Box::new(FunctionAnnotationError::ReturnReduce { typedb_source: Box::new(err) }))?;
                 instructions.push(instruction);
@@ -510,7 +523,7 @@ fn get_annotations_from_labels(
             let types = type_seeder::get_type_annotation_and_subtypes_from_label(
                 snapshot,
                 type_manager,
-                &Label::build(label.ident.as_str_unchecked()),
+                &Label::build(label.ident.as_str_unchecked(), label.span()),
             )?;
             Ok(FunctionParameterAnnotation::Concept(types))
         }

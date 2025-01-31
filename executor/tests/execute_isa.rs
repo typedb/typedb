@@ -109,11 +109,12 @@ fn traverse_isa_unbounded_sorted_thing() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
-    let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
+    let var_dog_type = conjunction.constraints_mut().get_or_declare_variable("dog_type", None).unwrap();
+    let var_dog = conjunction.constraints_mut().get_or_declare_variable("dog", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
+    let isa =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into(), None).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
@@ -184,11 +185,12 @@ fn traverse_isa_unbounded_sorted_type() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
-    let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
+    let var_dog_type = conjunction.constraints_mut().get_or_declare_variable("dog_type", None).unwrap();
+    let var_dog = conjunction.constraints_mut().get_or_declare_variable("dog", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
+    let isa =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into(), None).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
@@ -261,15 +263,15 @@ fn traverse_isa_bounded_thing() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_type_from = conjunction.get_or_declare_variable("t").unwrap();
-    let var_type_to = conjunction.get_or_declare_variable("u").unwrap();
-    let var_thing = conjunction.get_or_declare_variable("x").unwrap();
+    let var_type_from = conjunction.constraints_mut().get_or_declare_variable("t", None).unwrap();
+    let var_type_to = conjunction.constraints_mut().get_or_declare_variable("u", None).unwrap();
+    let var_thing = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_from_type =
-        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, var_type_from.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, var_type_from.into(), None).unwrap().clone();
     let isa_to_type =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing, var_type_to.into(), None).unwrap().clone();
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -357,11 +359,12 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
-    let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
+    let var_dog_type = conjunction.constraints_mut().get_or_declare_variable("dog_type", None).unwrap();
+    let var_dog = conjunction.constraints_mut().get_or_declare_variable("dog", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
+    let isa =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into(), None).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
@@ -432,11 +435,12 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_dog_type = conjunction.get_or_declare_variable("dog_type").unwrap();
-    let var_dog = conjunction.get_or_declare_variable("dog").unwrap();
+    let var_dog_type = conjunction.constraints_mut().get_or_declare_variable("dog_type", None).unwrap();
+    let var_dog = conjunction.constraints_mut().get_or_declare_variable("dog", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa = conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into()).unwrap().clone();
+    let isa =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_dog, var_dog_type.into(), None).unwrap().clone();
     conjunction.constraints_mut().add_label(var_dog_type, DOG_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
@@ -509,15 +513,15 @@ fn traverse_isa_reverse_bounded_type_exact() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_thing_from = conjunction.get_or_declare_variable("x").unwrap();
-    let var_thing_to = conjunction.get_or_declare_variable("y").unwrap();
-    let var_type = conjunction.get_or_declare_variable("t").unwrap();
+    let var_thing_from = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
+    let var_thing_to = conjunction.constraints_mut().get_or_declare_variable("y", None).unwrap();
+    let var_type = conjunction.constraints_mut().get_or_declare_variable("t", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_from_thing =
-        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_from, var_type.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_from, var_type.into(), None).unwrap().clone();
     let isa_to_thing =
-        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_to, var_type.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing_to, var_type.into(), None).unwrap().clone();
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -605,15 +609,15 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_thing_from = conjunction.get_or_declare_variable("x").unwrap();
-    let var_thing_to = conjunction.get_or_declare_variable("y").unwrap();
-    let var_type = conjunction.get_or_declare_variable("t").unwrap();
+    let var_thing_from = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
+    let var_thing_to = conjunction.constraints_mut().get_or_declare_variable("y", None).unwrap();
+    let var_type = conjunction.constraints_mut().get_or_declare_variable("t", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa_from_thing =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_from, var_type.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_from, var_type.into(), None).unwrap().clone();
     let isa_to_thing =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_to, var_type.into()).unwrap().clone();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_thing_to, var_type.into(), None).unwrap().clone();
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -702,11 +706,14 @@ fn traverse_isa_reverse_fixed_type_exact() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_thing = conjunction.get_or_declare_variable("x").unwrap();
+    let var_thing = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
-    let isa =
-        conjunction.constraints_mut().add_isa(IsaKind::Exact, var_thing, Vertex::Label(ANIMAL_LABEL)).unwrap().clone();
+    let isa = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Exact, var_thing, Vertex::Label(ANIMAL_LABEL), None)
+        .unwrap()
+        .clone();
     let entry = builder.finish().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
@@ -776,12 +783,12 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
-    let var_thing = conjunction.get_or_declare_variable("x").unwrap();
+    let var_thing = conjunction.constraints_mut().get_or_declare_variable("x", None).unwrap();
 
     // add all constraints to make type inference return correct types, though we only plan Has's
     let isa = conjunction
         .constraints_mut()
-        .add_isa(IsaKind::Subtype, var_thing, Vertex::Label(ANIMAL_LABEL))
+        .add_isa(IsaKind::Subtype, var_thing, Vertex::Label(ANIMAL_LABEL), None)
         .unwrap()
         .clone();
     let entry = builder.finish().unwrap();

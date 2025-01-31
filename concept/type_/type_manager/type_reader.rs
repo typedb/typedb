@@ -83,7 +83,7 @@ impl TypeReader {
     ) -> Result<Vec<RoleType>, Box<ConceptReadError>> {
         let mut name_with_colon = name;
         name_with_colon.push(':');
-        let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str())).into_storage_key();
+        let key = LabelToTypeVertexIndex::build(&Label::build(name_with_colon.as_str(), None)).into_storage_key();
         let vec = snapshot
             .iterate_range(&KeyRange::new_within(key, IdentifierIndex::<TypeVertex>::FIXED_WIDTH_ENCODING))
             .collect_cloned_vec(|_key, value| match RoleType::from_bytes(Bytes::copy(value)) {

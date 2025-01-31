@@ -98,18 +98,21 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
 
     let pipeline = query_manager
-        .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert)
+        .prepare_write_pipeline(snapshot, type_manager, thing_manager, &function_manager, &typeql_insert, query_str)
         .map_err(|(snapshot, err)| (err, snapshot))?;
     let outputs = pipeline.rows_positions().unwrap().clone();
     let (iter, ctx) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).map_err(|(typedb_source, ctx)| {
-            (Box::new(QueryError::WritePipelineExecution { typedb_source }), Arc::into_inner(ctx.snapshot).unwrap())
+            (
+                Box::new(QueryError::WritePipelineExecution { source_query: query_str.to_string(), typedb_source }),
+                Arc::into_inner(ctx.snapshot).unwrap(),
+            )
         })?;
     let batch = match iter.collect_owned() {
         Ok(batch) => batch,
         Err(typedb_source) => {
             return Err((
-                Box::new(QueryError::WritePipelineExecution { typedb_source }),
+                Box::new(QueryError::WritePipelineExecution { source_query: query_str.to_string(), typedb_source }),
                 Arc::into_inner(ctx.snapshot).unwrap(),
             ));
         }
@@ -183,7 +186,7 @@ fn multi_threaded_inserts() {
 
     {
         let snapshot = storage.clone().open_snapshot_read();
-        let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person")).unwrap().unwrap();
+        let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person", None)).unwrap().unwrap();
         assert_eq!(NUM_THREADS * INTERNAL_ITERS, thing_manager.get_entities_in(&snapshot, person_type).count());
         snapshot.close_resources();
     }

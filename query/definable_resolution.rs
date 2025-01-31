@@ -22,7 +22,7 @@ use encoding::{
 use error::typedb_error;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::error::TypeQLError,
+    common::{error::TypeQLError, Spanned},
     schema::definable::struct_::Field,
     type_::{BuiltinValueType, NamedType, Optional},
     TypeRef, TypeRefAny,
@@ -48,10 +48,10 @@ pub(crate) fn type_ref_to_label_and_ordering(
 ) -> Result<(Label, Ordering), Box<SymbolResolutionError>> {
     match type_ref {
         TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
-            Ok((Label::parse_from(checked_identifier(&label.ident)?), Ordering::Unordered))
+            Ok((Label::parse_from(checked_identifier(&label.ident)?, label.span()), Ordering::Unordered))
         }
         TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
-            Ok((Label::parse_from(checked_identifier(&label.ident)?), Ordering::Ordered))
+            Ok((Label::parse_from(checked_identifier(&label.ident)?, label.span()), Ordering::Ordered))
         }
         _ => Err(Box::new(SymbolResolutionError::ExpectedNonOptionalTypeSymbol { declaration: type_ref.clone() })),
     }
@@ -59,10 +59,11 @@ pub(crate) fn type_ref_to_label_and_ordering(
 
 pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label, Box<SymbolResolutionError>> {
     match named_type {
-        NamedType::Label(label) => Ok(Label::build(checked_identifier(&label.ident)?)),
+        NamedType::Label(label) => Ok(Label::build(checked_identifier(&label.ident)?, label.span())),
         NamedType::Role(scoped_label) => Ok(Label::build_scoped(
             checked_identifier(&scoped_label.name.ident)?,
             checked_identifier(&scoped_label.scope.ident)?,
+            scoped_label.span(),
         )),
         NamedType::BuiltinValueType(_) => Err(Box::new(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType {
             declaration: named_type.clone(),
@@ -481,6 +482,6 @@ typedb_error! {
         ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny),
         ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
         UnexpectedConceptRead(17, "Unexpected concept read error.", source: Box<ConceptReadError>),
-        IllegalKeywordAsIdentifier(18, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
+        IllegalKeywordAsIdentifier(18, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier),
     }
 }

@@ -10,7 +10,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::{ensure_unimplemented_unused, unimplemented_feature};
+use error::unimplemented_feature;
 use ir::pipeline::function_signature::FunctionID;
 
 use crate::{

@@ -7,10 +7,12 @@
 use std::collections::{HashMap, HashSet};
 
 use answer::variable::Variable;
+use encoding::value::label::Label;
 use error::typedb_error;
 use primitive::maybe_owns::MaybeOwns;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
+    common::{Span, Spanned},
     expression::{FunctionCall, FunctionName},
     query::stage::{
         fetch::{
@@ -75,6 +77,7 @@ fn translate_fetch_object(
     match &typeql_object.body {
         TypeQLFetchObjectBody::Entries(entries) => {
             let mut object = HashMap::new();
+            let mut source_spans = HashMap::new();
             let mut unique_keys: HashSet<&str> = HashSet::new();
             for entry in entries {
                 let (key, value) = (&entry.key, &entry.value);
@@ -85,17 +88,22 @@ fn translate_fetch_object(
                     }));
                 }
 
-                let key_id = register_key(value_parameters, key);
+                let key_id = register_key(
+                    value_parameters,
+                    key,
+                    entry.span().expect("Parser did not provide Fetch key-value text range."),
+                );
+                source_spans.insert(key_id, entry.span());
                 object.insert(
                     key_id,
                     translate_fetch_some(snapshot, parent_context, value_parameters, function_index, value)?,
                 );
             }
-            Ok(FetchObject::Entries(object))
+            Ok(FetchObject::Entries(object, source_spans))
         }
         TypeQLFetchObjectBody::AttributesAll(variable) => {
             let var = try_get_variable(parent_context, variable)?;
-            Ok(FetchObject::Attributes(var))
+            Ok(FetchObject::Attributes(var, variable.span()))
         }
     }
 }
@@ -135,10 +143,7 @@ fn translate_fetch_list(
             if is_list {
                 Err(Box::new(FetchRepresentationError::AttributeListInList { declaration: fetch_attribute.clone() }))
             } else {
-                Ok(FetchSome::ListAttributesAsList(FetchListAttributeAsList {
-                    variable: owner,
-                    attribute: attribute.to_owned(),
-                }))
+                Ok(FetchSome::ListAttributesAsList(FetchListAttributeAsList { variable: owner, attribute }))
             }
         }
         FetchStream::Function(call) => {
@@ -183,7 +188,8 @@ fn translate_fetch_list(
             let mut local_context = parent_context.clone();
             let body = translate_function_block(snapshot, function_index, &mut local_context, value_parameters, block)
                 .map_err(|err| FetchRepresentationError::FunctionRepresentation { declaration: block.clone() })?;
-            if !body.return_operation.is_scalar() && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_))
+            if !body.return_operation.is_scalar()
+                && !matches!(body.return_operation, ReturnOperation::ReduceReducer(_, _))
             {
                 return Err(Box::new(FetchRepresentationError::ExpectedScalarOrReduceFunctionBlock {
                     declaration: block.clone(),
@@ -212,15 +218,9 @@ fn translate_fetch_single(
             let owner = try_get_variable(parent_context, &fetch_attribute.owner)?;
             let (is_list, attribute) = extract_fetch_attribute(fetch_attribute)?;
             if is_list {
-                Ok(FetchSome::ListAttributesFromList(FetchListAttributeFromList {
-                    variable: owner,
-                    attribute: attribute.to_owned(),
-                }))
+                Ok(FetchSome::ListAttributesFromList(FetchListAttributeFromList { variable: owner, attribute }))
             } else {
-                Ok(FetchSome::SingleAttribute(FetchSingleAttribute {
-                    variable: owner,
-                    attribute: attribute.to_owned(),
-                }))
+                Ok(FetchSome::SingleAttribute(FetchSingleAttribute { variable: owner, attribute }))
             }
         }
         FetchSingle::Expression(expression) => match &expression {
@@ -279,7 +279,7 @@ fn translate_fetch_single(
     }
 }
 
-fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &str), Box<FetchRepresentationError>> {
+fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, Label), Box<FetchRepresentationError>> {
     match &fetch_attribute.attribute {
         TypeRefAny::Type(type_ref) => match &type_ref {
             TypeRef::Named(type_) => match type_ {
@@ -287,7 +287,7 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &s
                     let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
                         Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
                     })?;
-                    Ok((false, checked_label))
+                    Ok((false, Label::parse_from(checked_label, label.span())))
                 }
                 NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
                     Err(Box::new(InvalidAttributeLabelEncountered { declaration: type_ref.clone() }))
@@ -301,7 +301,7 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, &s
                     let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
                         Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
                     })?;
-                    Ok((true, checked_label))
+                    Ok((true, Label::parse_from(checked_label, label.span())))
                 }
                 NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
                     Err(Box::new(InvalidAttributeLabelEncountered { declaration: list.inner.clone() }))
@@ -336,8 +336,8 @@ fn translate_inline_expression_single(
     let block = builder
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let match_stage = TranslatedStage::Match { block };
-    let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var]);
+    let match_stage = TranslatedStage::Match { block, source_span: expression.span() };
+    let return_ = ReturnOperation::Single(SingleSelector::First, vec![assign_var], expression.span());
     let body = FunctionBody::new(vec![match_stage], return_);
     let args = find_function_body_arguments(context, &body);
     Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, value_parameters.clone(), args, body)))
@@ -356,7 +356,7 @@ fn translate_inline_user_function_call_single(
         Err(Box::new(FetchRepresentationError::ExpectedSingleInlineFunctionCall { declaration: call.clone() }))
     } else {
         let parameters = value_parameters.clone();
-        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars);
+        let return_ = ReturnOperation::Single(SingleSelector::First, assign_vars, call.span());
         let body = FunctionBody::new(vec![stage], return_);
         let args = find_function_body_arguments(context, &body);
         Ok(FetchSome::SingleFunction(create_anonymous_function(local_context, parameters, args, body)))
@@ -373,7 +373,7 @@ fn translate_inline_user_function_call_stream(
     let (local_context, stage, assign_vars, _) =
         translate_inline_user_function_call(context, value_parameters, function_index, call, function_name)?;
     let parameters = value_parameters.clone();
-    let return_ = ReturnOperation::Stream(assign_vars);
+    let return_ = ReturnOperation::Stream(assign_vars, call.span());
     let body = FunctionBody::new(vec![stage], return_);
     let args = find_function_body_arguments(context, &body);
     Ok(FetchSome::ListFunction(create_anonymous_function(local_context, parameters, args, body)))
@@ -420,7 +420,8 @@ fn translate_inline_user_function_call<'a>(
         assign_vars.push(
             builder
                 .conjunction_mut()
-                .declare_variable_anonymous()
+                .constraints_mut()
+                .create_anonymous_variable(None)
                 .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?,
         );
     }
@@ -431,13 +432,14 @@ fn translate_inline_user_function_call<'a>(
         function_name,
         assign_vars.clone(),
         &call.args,
+        call.span(),
     )
     .map_err(|typedb_source| FetchRepresentationError::ExpressionRepresentation { typedb_source })?;
 
     let block = builder
         .finish()
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let stage = TranslatedStage::Match { block };
+    let stage = TranslatedStage::Match { block, source_span: call.span() };
 
     Ok((local_context, stage, assign_vars, signature))
 }
@@ -445,17 +447,18 @@ fn translate_inline_user_function_call<'a>(
 fn add_expression(
     function_index: &impl FunctionSignatureIndex,
     builder: &mut BlockBuilder<'_>,
-    expression: &Expression,
+    typeql_expression: &Expression,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
     let mut conjunction_builder = builder.conjunction_mut();
     let assign_var = conjunction_builder
-        .declare_variable_anonymous()
+        .constraints_mut()
+        .create_anonymous_variable(None)
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
-    let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), expression)
+    let expression = build_expression(function_index, &mut conjunction_builder.constraints_mut(), typeql_expression)
         .map_err(|err| FetchRepresentationError::ExpressionRepresentation { typedb_source: err })?;
     let _ = conjunction_builder
         .constraints_mut()
-        .add_assignment(assign_var, expression)
+        .add_assignment(assign_var, expression, typeql_expression.span())
         .map_err(|err| FetchRepresentationError::ExpressionAsMatchRepresentation { typedb_source: err })?;
     Ok(assign_var)
 }
@@ -529,8 +532,8 @@ fn try_get_variable(
         .ok_or_else(|| Box::new(VariableNotAvailable { variable: name.to_owned(), declaration: variable.clone() }))
 }
 
-fn register_key(parameters: &mut ParameterRegistry, key: &StringLiteral) -> ParameterID {
-    parameters.register_fetch_key(String::from_typeql_literal(key).unwrap())
+fn register_key(parameters: &mut ParameterRegistry, key: &StringLiteral, span: Span) -> ParameterID {
+    parameters.register_fetch_key(String::from_typeql_literal(key, Some(span)).unwrap(), span)
 }
 
 typedb_error! {

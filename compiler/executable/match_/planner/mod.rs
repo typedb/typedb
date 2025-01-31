@@ -10,6 +10,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
+use typeql::common::Span;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},

@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{
+    fmt,
+    hash::{Hash, Hasher},
+};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::{
@@ -12,45 +15,54 @@ use resource::constants::{
     snapshot::BUFFER_VALUE_INLINE,
 };
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::{
     graph::type_::property::TypeVertexPropertyEncoding, layout::infix::Infix, value::string_bytes::StringBytes,
 };
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone)]
 pub struct Label {
     // TODO dedup
     pub name: StringBytes<LABEL_NAME_STRING_INLINE>,
     pub scope: Option<StringBytes<LABEL_SCOPE_STRING_INLINE>>,
     pub scoped_name: StringBytes<LABEL_SCOPED_NAME_STRING_INLINE>,
+
+    source_span: Option<Span>,
 }
 
 impl Label {
     pub fn parse_from_bytes<const INLINE_BYTES: usize>(string_bytes: StringBytes<INLINE_BYTES>) -> Label {
         let as_str = string_bytes.as_str();
-        Self::parse_from(as_str)
+        Self::parse_from(as_str, None)
     }
 
-    pub fn parse_from(string: &str) -> Label {
+    pub fn parse_from(string: &str, source_span: Option<Span>) -> Label {
         let mut splits = string.split(':');
         let first = splits.next().unwrap();
         if let Some(second) = splits.next() {
-            Self::build_scoped(second, first)
+            Self::build_scoped(second, first, source_span)
         } else {
-            Self::build(first)
+            Self::build(first, source_span)
         }
     }
 
-    pub fn build(name: &str) -> Label {
-        Label { name: StringBytes::build_owned(name), scope: None, scoped_name: StringBytes::build_owned(name) }
+    pub fn build(name: &str, source_span: Option<Span>) -> Label {
+        Label {
+            name: StringBytes::build_owned(name),
+            scope: None,
+            scoped_name: StringBytes::build_owned(name),
+            source_span,
+        }
     }
 
-    pub fn build_scoped(name: &str, scope: &str) -> Label {
+    pub fn build_scoped(name: &str, scope: &str, source_span: Option<Span>) -> Label {
         let concatenated = format!("{}:{}", scope, name);
         Label {
             name: StringBytes::build_owned(name),
             scope: Some(StringBytes::build_owned(scope)),
             scoped_name: StringBytes::build_owned(concatenated.as_ref()),
+            source_span,
         }
     }
 
@@ -59,6 +71,7 @@ impl Label {
             name: StringBytes::build_static_ref(name),
             scope: None,
             scoped_name: StringBytes::build_static_ref(name),
+            source_span: None,
         }
     }
 
@@ -70,6 +83,7 @@ impl Label {
             name: StringBytes::build_static_ref(name),
             scope: Some(StringBytes::build_static_ref(scope)),
             scoped_name: StringBytes::build_static_ref(scoped_name),
+            source_span: None,
         }
     }
 
@@ -84,6 +98,10 @@ impl Label {
     pub fn scoped_name(&self) -> StringBytes<LABEL_SCOPED_NAME_STRING_INLINE> {
         self.scoped_name.as_reference()
     }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
 }
 
 impl TypeVertexPropertyEncoding for Label {
@@ -96,6 +114,20 @@ impl TypeVertexPropertyEncoding for Label {
 
     fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
         Some(Bytes::Array(ByteArray::from(self.scoped_name().bytes())))
+    }
+}
+
+impl Hash for Label {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        state.write(self.scoped_name.bytes())
+    }
+}
+
+impl Eq for Label {}
+
+impl PartialEq<Self> for Label {
+    fn eq(&self, other: &Self) -> bool {
+        self.scoped_name.eq(&other.scoped_name)
     }
 }
 
@@ -113,7 +145,7 @@ impl PartialOrd for Label {
 
 impl StructuralEquality for Label {
     fn hash(&self) -> u64 {
-        self.scoped_name.as_str().hash()
+        StructuralEquality::hash(self.scoped_name.as_str())
     }
 
     fn equals(&self, other: &Self) -> bool {

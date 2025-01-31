@@ -15,6 +15,7 @@ use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
+use typeql::common::Span;
 
 use crate::{
     document::ConceptDocument,
@@ -245,6 +246,6 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
 
 typedb_error! {
     pub PipelineError(component = "Pipeline", prefix = "PIP") {
-        InvalidReadPipelineStage(1, "{stage} clause cannot exist in a read pipeline.", stage: String),
+        InvalidReadPipelineStage(1, "{stage} clause cannot exist in a read pipeline.", stage: String ),
     }
 }

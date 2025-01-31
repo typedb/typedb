@@ -266,7 +266,7 @@ impl RelationType {
         name: &str,
         ordering: Ordering,
     ) -> Result<Relates, Box<ConceptWriteError>> {
-        let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str());
+        let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str(), None);
         let role_type = type_manager.create_role_type(snapshot, thing_manager, &label, *self, ordering)?;
         Ok(Relates::new(*self, role_type))
     }

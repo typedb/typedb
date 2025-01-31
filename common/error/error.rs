@@ -6,6 +6,9 @@
 
 use std::{error::Error, fmt, fmt::Formatter};
 
+use ::typeql::common::Spannable;
+use resource::constants::common::{ERROR_QUERY_POINTER_LINES_AFTER, ERROR_QUERY_POINTER_LINES_BEFORE};
+
 mod typeql;
 
 pub trait TypeDBError {
@@ -21,7 +24,7 @@ pub trait TypeDBError {
 
     fn format_description(&self) -> String;
 
-    fn source(&self) -> Option<&(dyn Error + Sync)>;
+    fn source_error(&self) -> Option<&(dyn Error + Sync)>;
 
     fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Sync)>;
 
@@ -36,8 +39,37 @@ pub trait TypeDBError {
         error
     }
 
+    fn source_query(&self) -> Option<&str>;
+
+    fn source_span(&self) -> Option<::typeql::common::Span>;
+
     fn format_code_and_description(&self) -> String {
+        if let Some(query) = self.source_query() {
+            if let Some((line_col, _)) = self.bottom_source_span().map(|span| query.line_col(span)).flatten() {
+                if let Some(excerpt) = query.extract_annotated_line_col(
+                    // note: span line and col are 1-indexed,must adjust to 0-offset
+                    line_col.line as usize - 1,
+                    line_col.column as usize - 1,
+                    ERROR_QUERY_POINTER_LINES_BEFORE,
+                    ERROR_QUERY_POINTER_LINES_AFTER,
+                ) {
+                    return format!(
+                        "[{}] {}\nNear {}:{}\n-----\n{}\n-----",
+                        self.code(),
+                        self.format_description(),
+                        line_col.line,
+                        line_col.column,
+                        excerpt
+                    );
+                }
+            }
+        }
         format!("[{}] {}", self.code(), self.format_description())
+    }
+
+    // return most-specific span available
+    fn bottom_source_span(&self) -> Option<::typeql::common::Span> {
+        self.source_typedb_error().map(|err| err.bottom_source_span()).flatten().or_else(|| self.source_span())
     }
 }
 
@@ -58,9 +90,9 @@ impl fmt::Debug for dyn TypeDBError + '_ {
 impl fmt::Display for dyn TypeDBError + '_ {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if let Some(source) = self.source_typedb_error() {
-            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), source as &dyn TypeDBError)
-        } else if let Some(source) = self.source() {
-            write!(f, "{}\nCause: \n\t {:?}", self.format_code_and_description(), source)
+            write!(f, "{}\nCause: \n      {:?}", self.format_code_and_description(), source as &dyn TypeDBError)
+        } else if let Some(source) = self.source_error() {
+            write!(f, "{}\nCause: \n      {:?}", self.format_code_and_description(), source)
         } else {
             write!(f, "{}", self.format_code_and_description())
         }
@@ -92,12 +124,20 @@ impl<T: TypeDBError> TypeDBError for Box<T> {
         (**self).format_description()
     }
 
-    fn source(&self) -> Option<&(dyn Error + Sync)> {
-        (**self).source()
+    fn source_error(&self) -> Option<&(dyn Error + Sync)> {
+        (**self).source_error()
     }
 
     fn source_typedb_error(&self) -> Option<&(dyn TypeDBError + Sync)> {
         (**self).source_typedb_error()
+    }
+
+    fn source_query(&self) -> Option<&str> {
+        (**self).source_query()
+    }
+
+    fn source_span(&self) -> Option<::typeql::common::Span> {
+        (**self).source_span()
     }
 }
 
@@ -151,7 +191,7 @@ macro_rules! typedb_error {
                 }
             }
 
-            fn source(&self) -> Option<&(dyn ::std::error::Error + Sync + 'static)> {
+            fn source_error(&self) -> Option<&(dyn ::std::error::Error + Sync + 'static)> {
                 match self {
                     $(typedb_error!(@source source from $variant { $($($arg)*)? })=> {
                         typedb_error!(@source source { $($($arg)*)? })
@@ -163,6 +203,22 @@ macro_rules! typedb_error {
                 match self {
                     $(typedb_error!(@typedb_source typedb_source from $variant { $($($arg)*)? })=> {
                         typedb_error!(@typedb_source typedb_source { $($($arg)*)? })
+                    })*
+                }
+            }
+
+            fn source_query(&self) -> Option<&str> {
+                match self {
+                    $(typedb_error!(@source_query source_query from $variant { $($($arg)*)? })=> {
+                        typedb_error!(@source_query source_query { $($($arg)*)? })
+                    })*
+                }
+            }
+
+            fn source_span(&self) -> Option<::typeql::common::Span> {
+                match self {
+                    $(typedb_error!(@source_span source_span from $variant { $($($arg)*)? })=> {
+                        typedb_error!(@source_span source_span { $($($arg)*)? })
                     })*
                 }
             }
@@ -216,6 +272,46 @@ macro_rules! typedb_error {
         typedb_error!(@typedb_source $ts { $($($rest)*)? })
     };
     (@typedb_source $ts:ident { $(,)? }) => {
+        None
+    };
+
+    (@source_query $ts:ident from $variant:ident { source_query : $argty:ty $(, $($rest:tt)*)? }) => {
+        Self::$variant { source_query: $ts, .. }
+    };
+    (@source_query $ts:ident from $variant:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@source_query $ts from $variant { $($($rest)*)? })
+    };
+    (@source_query $ts:ident from $variant:ident { $(,)? }) => {
+        Self::$variant { .. }
+    };
+
+    (@source_query $ts:ident { source_query: $_:ty $(, $($rest:tt)*)? }) => {
+        Some($ts)
+    };
+    (@source_query $ts:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@source_query $ts { $($($rest)*)? })
+    };
+    (@source_query $ts:ident { $(,)? }) => {
+        None
+    };
+
+    (@source_span $ts:ident from $variant:ident { source_span : $argty:ty $(, $($rest:tt)*)? }) => {
+        Self::$variant { source_span: $ts, .. }
+    };
+    (@source_span $ts:ident from $variant:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@source_span $ts from $variant { $($($rest)*)? })
+    };
+    (@source_span $ts:ident from $variant:ident { $(,)? }) => {
+        Self::$variant { .. }
+    };
+
+    (@source_span $ts:ident { source_span: $_:ty $(, $($rest:tt)*)? }) => {
+        *$ts
+    };
+    (@source_span $ts:ident { $arg:ident : $argty:ty $(, $($rest:tt)*)? }) => {
+        typedb_error!(@source_span $ts { $($($rest)*)? })
+    };
+    (@source_span $ts:ident { $(,)? }) => {
         None
     };
 }

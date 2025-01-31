@@ -10,6 +10,7 @@ use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
 use error::UnimplementedFeature;
 use itertools::Itertools;
 use typeql::{
+    common::Spanned,
     expression::{FunctionCall, FunctionName},
     statement::{
         comparison::ComparisonStatement, thing::isa::IsaInstanceConstraint, type_::ValueType as TypeQLValueType,
@@ -42,38 +43,47 @@ pub(super) fn add_statement(
 ) -> Result<(), Box<RepresentationError>> {
     let constraints = &mut conjunction.constraints_mut();
     match stmt {
-        typeql::Statement::Is(Is { lhs, rhs, .. }) => {
+        typeql::Statement::Is(Is { lhs, rhs, span }) => {
             let lhs = register_typeql_var(constraints, lhs)?;
             let rhs = register_typeql_var(constraints, rhs)?;
-            constraints.add_is(lhs, rhs)?;
+            constraints.add_is(lhs, rhs, *span)?;
         }
-        typeql::Statement::InIterable(InIterable { lhs, rhs, .. }) => {
+        typeql::Statement::InIterable(InIterable { lhs, rhs, span }) => {
             let assigned = assignment_typeql_vars_to_variables(constraints, lhs)?;
             add_typeql_iterable_binding(function_index, constraints, assigned, rhs)?
         }
-        typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, .. }) => {
+        typeql::Statement::Comparison(ComparisonStatement { lhs, comparison, span }) => {
             let lhs_var = add_typeql_expression(function_index, constraints, lhs)?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
             let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                 Box::new(RepresentationError::LiteralParseError {
                     literal: comparison.comparator.to_string(),
+                    source_span: *span,
                     typedb_source,
                 })
             })?;
-            constraints.add_comparison(lhs_var, rhs_var, comparator)?;
+            constraints.add_comparison(lhs_var, rhs_var, comparator, *span)?;
         }
-        typeql::Statement::Assignment(Assignment { lhs, rhs, .. }) => {
+        typeql::Statement::Assignment(Assignment { lhs, rhs, span }) => {
             let assigned = assignment_pattern_to_variables(constraints, lhs)?;
-            if let typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(id), args, .. }) = rhs {
-                add_user_defined_function_call(function_index, constraints, id.as_str_unchecked(), assigned, args)?;
+            if let typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(id), args, span }) = rhs {
+                add_user_defined_function_call(
+                    function_index,
+                    constraints,
+                    id.as_str_unchecked(),
+                    assigned,
+                    args,
+                    *span,
+                )?;
             } else {
                 let [assigned] = *assigned else {
                     return Err(Box::new(RepresentationError::ExpressionAssignmentMustOneVariable {
                         assigned_count: assigned.len(),
+                        source_span: *span,
                     }));
                 };
                 let expression = build_expression(function_index, constraints, rhs)?;
-                constraints.add_assignment(assigned, expression)?;
+                constraints.add_assignment(assigned, expression, *span)?;
             }
         }
         typeql::Statement::Thing(thing) => add_thing_statement(function_index, constraints, thing)?,
@@ -90,10 +100,10 @@ fn add_thing_statement(
     let var = match &thing.head {
         typeql::statement::thing::Head::Variable(var) => register_typeql_var(constraints, var)?,
         typeql::statement::thing::Head::Relation(type_opt, rel) => {
-            let relation = constraints.create_anonymous_variable()?;
+            let relation = constraints.create_anonymous_variable(thing.span())?;
             if let Some(type_ref) = type_opt {
                 let type_ = register_typeql_type(constraints, type_ref)?;
-                constraints.add_isa(IsaKind::Subtype, relation, type_)?;
+                constraints.add_isa(IsaKind::Subtype, relation, type_, thing.span())?;
             }
             add_typeql_relation(constraints, relation, rel)?;
             relation
@@ -119,7 +129,7 @@ fn add_type_statement(
     let type_ = register_typeql_type_any(constraints, &type_statement.type_)?;
     if let Some(kind) = type_statement.kind {
         let Vertex::Variable(var) = type_ else {
-            return Err(Box::new(RepresentationError::LabelWithKind { declaration: type_statement.clone() }));
+            return Err(Box::new(RepresentationError::LabelWithKind { source_span: type_statement.span() }));
         };
         add_typeql_kind(constraints, var, kind)?;
     }
@@ -130,7 +140,7 @@ fn add_type_statement(
             typeql::statement::type_::ConstraintBase::Label(label) => match label {
                 typeql::statement::type_::LabelConstraint::Name(label) => {
                     let &Vertex::Variable(var) = &type_ else {
-                        return Err(Box::new(RepresentationError::LabelWithLabel { declaration: label.clone() }));
+                        return Err(Box::new(RepresentationError::LabelWithLabel { source_span: label.span() }));
                     };
                     let as_label = register_type_label(constraints, label)?;
                     constraints.add_label(var, as_label)?;
@@ -138,7 +148,7 @@ fn add_type_statement(
                 typeql::statement::type_::LabelConstraint::Scoped(scoped_label) => {
                     let &Vertex::Variable(var) = &type_ else {
                         return Err(Box::new(RepresentationError::ScopedLabelWithLabel {
-                            declaration: scoped_label.clone(),
+                            source_span: scoped_label.span(),
                         }));
                     };
                     let as_label = register_type_scoped_label(constraints, scoped_label)?;
@@ -163,14 +173,14 @@ fn add_type_statement(
 fn extend_from_inline_typeql_expression(
     function_index: &impl FunctionSignatureIndex,
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    expression: &typeql::Expression,
+    typeql_expression: &typeql::Expression,
 ) -> Result<Variable, Box<RepresentationError>> {
-    if let typeql::Expression::Variable(typeql_var) = expression {
+    if let typeql::Expression::Variable(typeql_var) = typeql_expression {
         register_typeql_var(constraints, typeql_var)
     } else {
-        let expression = build_expression(function_index, constraints, expression)?;
-        let assigned = constraints.create_anonymous_variable()?;
-        constraints.add_assignment(assigned, expression)?;
+        let expression = build_expression(function_index, constraints, typeql_expression)?;
+        let assigned = constraints.create_anonymous_variable(typeql_expression.span())?;
+        constraints.add_assignment(assigned, expression, typeql_expression.span())?;
         Ok(assigned)
     }
 }
@@ -181,11 +191,11 @@ pub(crate) fn register_typeql_var(
 ) -> Result<Variable, Box<RepresentationError>> {
     match var {
         typeql::Variable::Named { ident, optional, .. } => {
-            let var = constraints.get_or_declare_variable(ident.as_str_unchecked())?;
+            let var = constraints.get_or_declare_variable(ident.as_str_unchecked(), var.span())?;
             Ok(var)
         }
         typeql::Variable::Anonymous { optional, .. } => {
-            let var = constraints.create_anonymous_variable()?;
+            let var = constraints.create_anonymous_variable(var.span())?;
             Ok(var)
         }
     }
@@ -193,16 +203,16 @@ pub(crate) fn register_typeql_var(
 
 fn register_typeql_type_any(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    type_: &typeql::TypeRefAny,
+    type_: &TypeRefAny,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
-        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
-            declaration: optional.clone(),
+        TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
+        TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
+            source_span: type_.span(),
             feature: UnimplementedFeature::Optionals,
         })),
-        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
-            declaration: list.clone(),
+        TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
+            source_span: list.span(),
             feature: UnimplementedFeature::Lists,
         })),
     }
@@ -210,32 +220,35 @@ fn register_typeql_type_any(
 
 fn register_typeql_type(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    type_: &typeql::TypeRef,
+    type_: &TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
-        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
+        TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
+        TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
-        typeql::TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
-            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName { value_type: value_type.clone() }))
+        TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
+            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
+                value_type: value_type.clone(),
+                source_span: value_type.span(),
+            }))
         }
-        typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
+        TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
 
 fn register_typeql_role_type_any(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    type_: &typeql::TypeRefAny,
+    type_: &TypeRefAny,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
-        typeql::TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
-            declaration: optional.clone(),
+        TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
+        TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
+            source_span: optional.span(),
             feature: UnimplementedFeature::Optionals,
         })),
-        typeql::TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
-            declaration: list.clone(),
+        TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
+            source_span: list.span(),
             feature: error::UnimplementedFeature::Lists,
         })),
     }
@@ -243,19 +256,22 @@ fn register_typeql_role_type_any(
 
 fn register_typeql_role_type(
     constraints: &mut ConstraintsBuilder<'_, '_>,
-    type_: &typeql::TypeRef,
+    type_: &TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        typeql::TypeRef::Named(NamedType::Label(label)) => {
+        TypeRef::Named(NamedType::Label(label)) => {
             Ok(Vertex::Variable(register_type_role_name_var(constraints, label)?))
         }
-        typeql::TypeRef::Named(NamedType::Role(scoped_label)) => {
+        TypeRef::Named(NamedType::Role(scoped_label)) => {
             Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
         }
-        typeql::TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
-            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName { value_type: value_type.clone() }))
+        TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
+            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
+                value_type: value_type.clone(),
+                source_span: value_type.span(),
+            }))
         }
-        typeql::TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
+        TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
 
@@ -265,22 +281,22 @@ fn register_type_scoped_label(
 ) -> Result<Label, Box<RepresentationError>> {
     let checked_scope = checked_identifier(&scoped_label.scope.ident)?;
     let checked_name = checked_identifier(&scoped_label.name.ident)?;
-    Ok(Label::build_scoped(checked_name, checked_scope))
+    Ok(Label::build_scoped(checked_name, checked_scope, scoped_label.span()))
 }
 
 fn register_type_label(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
 ) -> Result<Label, Box<RepresentationError>> {
-    Ok(Label::build(checked_identifier(&label.ident)?))
+    Ok(Label::build(checked_identifier(&label.ident)?, label.span()))
 }
 
 fn register_type_role_name_var(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     label: &typeql::Label,
 ) -> Result<Variable, Box<RepresentationError>> {
-    let variable = constraints.create_anonymous_variable()?;
-    constraints.add_role_name(variable, checked_identifier(&label.ident)?)?;
+    let variable = constraints.create_anonymous_variable(label.span())?;
+    constraints.add_role_name(variable, checked_identifier(&label.ident)?, label.span())?;
     Ok(variable)
 }
 
@@ -292,6 +308,7 @@ fn register_typeql_value_type(
         NamedType::Role(scoped_label) => Err(Box::new(RepresentationError::ScopedValueTypeName {
             scope: scoped_label.scope.ident.as_str_unchecked().to_owned(),
             name: scoped_label.name.ident.as_str_unchecked().to_owned(),
+            source_span: value_type.span(),
         })),
         NamedType::Label(label) => Ok(ValueType::Struct(checked_identifier(&label.ident)?.to_owned())),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
@@ -316,7 +333,7 @@ fn add_typeql_sub(
 ) -> Result<(), Box<RepresentationError>> {
     let kind = sub.kind.into();
     let type_ = register_typeql_type_any(constraints, &sub.supertype)?;
-    constraints.add_sub(kind, subtype, type_)?;
+    constraints.add_sub(kind, subtype, type_, sub.span())?;
     Ok(())
 }
 
@@ -326,7 +343,7 @@ fn add_typeql_owns(
     owns: &typeql::statement::type_::Owns,
 ) -> Result<(), Box<RepresentationError>> {
     let attribute_type = register_typeql_type_any(constraints, &owns.owned)?;
-    constraints.add_owns(owner_type, attribute_type)?;
+    constraints.add_owns(owner_type, attribute_type, owns.span())?;
     Ok(())
 }
 
@@ -336,7 +353,7 @@ fn add_typeql_relates(
     relates: &typeql::statement::type_::Relates,
 ) -> Result<(), Box<RepresentationError>> {
     let role_type = register_typeql_role_type_any(constraints, &relates.related)?;
-    constraints.add_relates(relation_type, role_type.clone())?;
+    constraints.add_relates(relation_type, role_type.clone(), relates.span())?;
 
     if let Some(specialised) = &relates.specialised {
         add_typeql_as(constraints, role_type, specialised)?;
@@ -351,28 +368,28 @@ fn add_typeql_plays(
     plays: &typeql::statement::type_::Plays,
 ) -> Result<(), Box<RepresentationError>> {
     let role_type = register_typeql_role_type(constraints, &plays.role)?;
-    constraints.add_plays(player_type, role_type)?;
+    constraints.add_plays(player_type, role_type, plays.span())?;
     Ok(())
 }
 
 fn add_typeql_as(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     registered_specialising: Vertex<Variable>,
-    specialised: &typeql::TypeRef,
+    specialised: &TypeRef,
 ) -> Result<(), Box<RepresentationError>> {
     let kind = SubKind::Subtype; // will read from the IR when "as!" is introduced
     let registered_specialised = register_typeql_role_type(constraints, specialised)?;
-    constraints.add_sub(kind, registered_specialising, registered_specialised)?;
+    constraints.add_sub(kind, registered_specialising, registered_specialised, specialised.span())?;
     Ok(())
 }
 
 fn add_typeql_value(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     attribute_type: Vertex<Variable>,
-    value_type: &TypeQLValueType,
+    typeql_value_type: &TypeQLValueType,
 ) -> Result<(), Box<RepresentationError>> {
-    let value_type = register_typeql_value_type(constraints, value_type)?;
-    constraints.add_value(attribute_type, value_type)?;
+    let value_type = register_typeql_value_type(constraints, typeql_value_type)?;
+    constraints.add_value(attribute_type, value_type, typeql_value_type.span())?;
     Ok(())
 }
 
@@ -384,32 +401,49 @@ fn add_typeql_isa(
 ) -> Result<(), Box<RepresentationError>> {
     let kind = isa.kind.into();
     let type_ = register_typeql_type(constraints, &isa.type_)?;
-    constraints.add_isa(kind, thing, type_)?;
+    constraints.add_isa(kind, thing, type_, isa.span())?;
     if let Some(instance_constraint) = &isa.constraint {
         match instance_constraint {
             IsaInstanceConstraint::Relation(relation) => {
                 add_typeql_relation(constraints, thing, relation)?;
             }
-            IsaInstanceConstraint::Value(value) => {
-                let value = translate_literal(value).map_err(|typedb_source| {
-                    RepresentationError::LiteralParseError { typedb_source, literal: value.to_string().clone() }
+            IsaInstanceConstraint::Value(literal_value) => {
+                let value = translate_literal(literal_value).map_err(|typedb_source| {
+                    RepresentationError::LiteralParseError {
+                        typedb_source,
+                        literal: literal_value.to_string().clone(),
+                        source_span: literal_value.span(),
+                    }
                 })?;
-                let value_id = constraints.parameters().register_value(value);
-                constraints.add_comparison(Vertex::Variable(thing), Vertex::Parameter(value_id), Comparator::Equal)?;
+                let value_id = constraints
+                    .parameters()
+                    .register_value(value, literal_value.span().expect("Parser did not provide text range of value"));
+                constraints.add_comparison(
+                    Vertex::Variable(thing),
+                    Vertex::Parameter(value_id),
+                    Comparator::Equal,
+                    literal_value.span(),
+                )?;
             }
             IsaInstanceConstraint::Expression(expression) => {
                 let assigned_to = add_typeql_expression(function_index, constraints, expression)?;
-                constraints.add_comparison(Vertex::Variable(thing), assigned_to, Comparator::Equal)?;
+                constraints.add_comparison(
+                    Vertex::Variable(thing),
+                    assigned_to,
+                    Comparator::Equal,
+                    expression.span(),
+                )?;
             }
             IsaInstanceConstraint::Comparison(comparison) => {
                 let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
                 let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                     Box::new(RepresentationError::LiteralParseError {
                         literal: comparison.comparator.to_string(),
+                        source_span: comparison.span(),
                         typedb_source,
                     })
                 })?;
-                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator)?;
+                constraints.add_comparison(Vertex::Variable(thing), rhs_var, comparator, comparison.span())?;
             }
             IsaInstanceConstraint::Struct(_) => {
                 return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
@@ -447,8 +481,10 @@ fn add_typeql_iid(
     thing: Variable,
     iid: &typeql::statement::thing::Iid,
 ) -> Result<(), Box<RepresentationError>> {
-    let iid_parameter = constraints.parameters().register_iid(parse_iid(&iid.iid));
-    constraints.add_iid(thing, iid_parameter)?;
+    let iid_parameter = constraints
+        .parameters()
+        .register_iid(parse_iid(&iid.iid), iid.span().expect("Parser did not provide IID text range"));
+    constraints.add_iid(thing, iid_parameter, iid.span())?;
     Ok(())
 }
 
@@ -460,30 +496,36 @@ fn add_typeql_has(
 ) -> Result<(), Box<RepresentationError>> {
     let attribute = match &has.value {
         typeql::statement::thing::HasValue::Variable(var) => register_typeql_var(constraints, var)?,
-        typeql::statement::thing::HasValue::Expression(expression) => {
-            let expression = add_typeql_expression(function_index, constraints, expression)?;
-            let attribute = constraints.create_anonymous_variable()?;
-            constraints.add_comparison(Vertex::Variable(attribute), expression, Comparator::Equal)?;
+        typeql::statement::thing::HasValue::Expression(typeql_expression) => {
+            let expression = add_typeql_expression(function_index, constraints, typeql_expression)?;
+            let attribute = constraints.create_anonymous_variable(typeql_expression.span())?;
+            constraints.add_comparison(
+                Vertex::Variable(attribute),
+                expression,
+                Comparator::Equal,
+                typeql_expression.span(),
+            )?;
             attribute
         }
         typeql::statement::thing::HasValue::Comparison(comparison) => {
-            let attribute = constraints.create_anonymous_variable()?;
+            let attribute = constraints.create_anonymous_variable(comparison.rhs.span())?;
             let rhs_var = add_typeql_expression(function_index, constraints, &comparison.rhs)?;
             let comparator = comparison.comparator.try_into().map_err(|typedb_source| {
                 Box::new(RepresentationError::LiteralParseError {
                     literal: comparison.comparator.to_string(),
+                    source_span: comparison.span(),
                     typedb_source,
                 })
             })?;
-            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparator)?;
+            constraints.add_comparison(Vertex::Variable(attribute), rhs_var, comparator, comparison.span())?;
             attribute
         }
     };
 
-    constraints.add_has(owner, attribute)?;
+    constraints.add_has(owner, attribute, has.span())?;
     if let Some(type_) = &has.type_ {
         let attribute_type = register_typeql_type_any(constraints, type_)?;
-        constraints.add_isa(IsaKind::Subtype, attribute, attribute_type)?;
+        constraints.add_isa(IsaKind::Subtype, attribute, attribute_type, type_.span())?;
     }
     Ok(())
 }
@@ -504,7 +546,7 @@ pub(super) fn add_typeql_relation(
                     TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
                     TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
                         return Err(Box::new(RepresentationError::ScopedRoleNameInRelation {
-                            declaration: role_player.clone(),
+                            source_span: name.span(),
                         }));
                     }
                     TypeRefAny::Optional(_) => {
@@ -520,17 +562,18 @@ pub(super) fn add_typeql_relation(
                     TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(value_type))) => {
                         return Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
                             value_type: value_type.clone(),
+                            source_span: value_type.span(),
                         }));
                     }
                 };
                 let player = register_typeql_var(constraints, player_var)?;
-                let links = constraints.add_links(relation, player, type_)?;
+                let links = constraints.add_links(relation, player, type_, type_ref.span())?;
                 links_constraints.push(links.clone());
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {
                 let player = register_typeql_var(constraints, var)?;
-                let role_type = constraints.create_anonymous_variable()?;
-                let links = constraints.add_links(relation, player, role_type)?;
+                let role_type = constraints.create_anonymous_variable(var.span())?;
+                let links = constraints.add_links(relation, player, role_type, var.span())?;
                 links_constraints.push(links.clone());
             }
         }
@@ -551,8 +594,15 @@ fn add_typeql_iterable_binding(
     rhs: &typeql::Expression,
 ) -> Result<(), Box<RepresentationError>> {
     match rhs {
-        typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, .. }) => {
-            add_user_defined_function_call(function_index, constraints, checked_identifier(identifier)?, assigned, args)
+        typeql::Expression::Function(FunctionCall { name: FunctionName::Identifier(identifier), args, span }) => {
+            add_user_defined_function_call(
+                function_index,
+                constraints,
+                checked_identifier(identifier)?,
+                assigned,
+                args,
+                *span,
+            )
         }
         typeql::Expression::Function(FunctionCall { name: FunctionName::Builtin(_), .. }) => {
             Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
@@ -569,35 +619,36 @@ fn add_typeql_iterable_binding(
         | typeql::Expression::Paren(_) => unreachable!(),
     }
 }
-
-// Helpers
-pub(super) fn add_function_call_binding_user(
-    function_index: &(impl FunctionSignatureIndex + std::fmt::Debug),
-    constraints: &mut ConstraintsBuilder<'_, '_>,
-    assigned: Vec<Variable>,
-    function_name: &str,
-    arguments: Vec<Variable>,
-    must_be_stream: bool,
-) -> Result<(), Box<RepresentationError>> {
-    let function_opt = function_index
-        .get_function_signature(function_name)
-        .map_err(|typedb_source| RepresentationError::FunctionReadError { typedb_source })?;
-    if let Some(callee) = function_opt {
-        match (must_be_stream, callee.return_is_stream) {
-            (true, true) | (false, false) => {}
-            (false, true) => Err(RepresentationError::ExpectedSingleFunctionReturnsStream {
-                function_name: function_name.to_owned(),
-            })?,
-            (true, false) => Err(RepresentationError::ExpectedStreamFunctionReturnsSingle {
-                function_name: function_name.to_owned(),
-            })?,
-        }
-        constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
-        Ok(())
-    } else {
-        Err(Box::new(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() }))
-    }
-}
+//
+// // Helpers
+// pub(super) fn add_function_call_binding_user(
+//     function_index: &(impl FunctionSignatureIndex + std::fmt::Debug),
+//     constraints: &mut ConstraintsBuilder<'_, '_>,
+//     assigned: Vec<Variable>,
+//     function_name: &str,
+//     arguments: Vec<Variable>,
+//     must_be_stream: bool,
+// ) -> Result<(), Box<RepresentationError>> {
+//     let function_opt = function_index
+//         .get_function_signature(function_name)
+//         .map_err(|typedb_source| RepresentationError::FunctionReadError { typedb_source })?;
+//     if let Some(callee) = function_opt {
+//         match (must_be_stream, callee.return_is_stream) {
+//             (true, true) | (false, false) => {}
+//             (false, true) => Err(RepresentationError::ExpectedSingleFunctionReturnsStream {
+//                 function_name: function_name.to_owned(),
+//                 source_span:
+//             })?,
+//             (true, false) => Err(RepresentationError::ExpectedStreamFunctionReturnsSingle {
+//                 function_name: function_name.to_owned(),
+//             })?,
+//         }
+//         constraints.add_function_binding(assigned, &callee, arguments, function_name)?;
+//         Ok(())
+//     } else {
+//         Err(Box::new(RepresentationError::UnresolvedFunction { function_name: function_name.to_owned() }))
+//     }
+// }
 
 fn assignment_pattern_to_variables(
     constraints: &mut ConstraintsBuilder<'_, '_>,
@@ -606,9 +657,7 @@ fn assignment_pattern_to_variables(
     match assignment {
         AssignmentPattern::Variables(vars) => assignment_typeql_vars_to_variables(constraints, vars),
         AssignmentPattern::Deconstruct(struct_deconstruct) => {
-            Err(Box::new(RepresentationError::UnimplementedStructAssignment {
-                declaration: struct_deconstruct.clone(),
-            }))
+            Err(Box::new(RepresentationError::UnimplementedStructAssignment { source_span: struct_deconstruct.span() }))
         }
     }
 }
@@ -631,9 +680,9 @@ pub(super) fn split_out_inline_expressions(
             if let typeql::Expression::Variable(typeql_variable) = expr {
                 Ok(register_typeql_var(constraints, typeql_variable)?)
             } else {
-                let variable = constraints.create_anonymous_variable()?;
+                let variable = constraints.create_anonymous_variable(expr.span())?;
                 let expression = build_expression(function_index, constraints, expr)?;
-                constraints.add_assignment(variable, expression)?;
+                constraints.add_assignment(variable, expression, expr.span())?;
                 Ok(variable)
             }
         })

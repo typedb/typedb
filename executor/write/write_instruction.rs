@@ -8,11 +8,7 @@ use compiler::executable::insert::{
     instructions::{PutAttribute, PutObject},
     ThingPosition, TypeSource, ValueSource,
 };
-use concept::thing::{
-    object::{Object, ObjectAPI},
-    thing_manager::ThingManager,
-    ThingAPI,
-};
+use concept::thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI};
 use encoding::value::value::Value;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;

@@ -9,6 +9,7 @@ use std::collections::{HashMap, HashSet};
 use answer::variable::Variable;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::{
     pattern::{
@@ -123,6 +124,7 @@ fn validate_conjunction(
     if let Some(variable) = unbound {
         return Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
+            source_span: variable_registry.source_span(variable),
         }));
     }
     let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find_or_first(|is| {
@@ -142,6 +144,7 @@ fn validate_conjunction(
             rhs_variable,
             lhs_category,
             rhs_category,
+            source_span: is.source_span(),
         }));
     }
     Ok(())
@@ -177,6 +180,7 @@ impl BlockContext {
         &mut self,
         var: Variable,
         var_name: &str,
+        source_span: Option<Span>,
         scope: ScopeId,
     ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
@@ -190,7 +194,7 @@ impl BlockContext {
             *existing_scope = scope;
             Ok(())
         } else {
-            Err(Box::new(RepresentationError::DisjointVariableReuse { name: var_name.to_string() }))
+            Err(Box::new(RepresentationError::DisjointVariableReuse { name: var_name.to_string(), source_span }))
         }
     }
 
@@ -285,23 +289,33 @@ impl<'a> BlockBuilderContext<'a> {
         &mut self,
         name: &str,
         scope: ScopeId,
+        source_span: Option<Span>,
     ) -> Result<Variable, Box<RepresentationError>> {
         match self.variable_names_index.get(name) {
             None => {
-                let variable = self.variable_registry.register_variable_named(name.to_string());
+                let variable = self.variable_registry.register_variable_named(name.to_string(), source_span);
                 self.block_context.add_variable_declaration(variable, scope);
                 self.variable_names_index.insert(name.to_string(), variable);
                 Ok(variable)
             }
             Some(existing_variable) => self
                 .block_context
-                .may_update_declaration_scope(*existing_variable, name, scope)
+                .may_update_declaration_scope(
+                    *existing_variable,
+                    name,
+                    self.variable_registry.source_span(*existing_variable),
+                    scope,
+                )
                 .map(|_| *existing_variable),
         }
     }
 
-    pub(crate) fn create_anonymous_variable(&mut self, scope: ScopeId) -> Result<Variable, Box<RepresentationError>> {
-        let variable = self.variable_registry.register_anonymous_variable();
+    pub(crate) fn create_anonymous_variable(
+        &mut self,
+        scope: ScopeId,
+        source_span: Option<Span>,
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let variable = self.variable_registry.register_anonymous_variable(source_span);
         self.block_context.add_variable_declaration(variable, scope);
         Ok(variable)
     }

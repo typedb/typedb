@@ -8,6 +8,7 @@ use std::{collections::HashSet, mem};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 #[derive(Debug, Clone)]
 pub enum Operator {
@@ -21,11 +22,16 @@ pub enum Operator {
 #[derive(Debug, Clone)]
 pub struct Select {
     pub variables: HashSet<Variable>,
+    source_span: Option<Span>,
 }
 
 impl Select {
-    pub(crate) fn new(variables: HashSet<Variable>) -> Self {
-        Self { variables }
+    pub(crate) fn new(variables: HashSet<Variable>, source_span: Option<Span>) -> Self {
+        Self { variables, source_span }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -42,10 +48,11 @@ impl StructuralEquality for Select {
 #[derive(Debug, Clone)]
 pub struct Sort {
     pub variables: Vec<SortVariable>,
+    source_span: Option<Span>,
 }
 
 impl Sort {
-    pub(crate) fn new(variables: Vec<(Variable, bool)>) -> Self {
+    pub(crate) fn new(variables: Vec<(Variable, bool)>, source_span: Option<Span>) -> Self {
         let mut sort_variables = Vec::with_capacity(variables.len());
         for (var, is_ascending) in variables {
             if is_ascending {
@@ -54,7 +61,11 @@ impl Sort {
                 sort_variables.push(SortVariable::Descending(var));
             }
         }
-        Self { variables: sort_variables }
+        Self { variables: sort_variables, source_span }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -101,15 +112,20 @@ impl StructuralEquality for SortVariable {
 #[derive(Debug, Copy, Clone)]
 pub struct Offset {
     offset: u64,
+    source_span: Option<Span>,
 }
 
 impl Offset {
-    pub(crate) fn new(offset: u64) -> Self {
-        Self { offset }
+    pub(crate) fn new(offset: u64, source_span: Option<Span>) -> Self {
+        Self { offset, source_span }
     }
 
     pub fn offset(&self) -> u64 {
         self.offset
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -126,15 +142,20 @@ impl StructuralEquality for Offset {
 #[derive(Debug, Copy, Clone)]
 pub struct Limit {
     limit: u64,
+    source_span: Option<Span>,
 }
 
 impl Limit {
-    pub(crate) fn new(limit: u64) -> Self {
-        Self { limit }
+    pub(crate) fn new(limit: u64, source_span: Option<Span>) -> Self {
+        Self { limit, source_span }
     }
 
     pub fn limit(&self) -> u64 {
         self.limit
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 
@@ -151,11 +172,16 @@ impl StructuralEquality for Limit {
 #[derive(Debug, Clone)]
 pub struct Require {
     pub variables: HashSet<Variable>,
+    source_span: Option<Span>,
 }
 
 impl Require {
-    pub(crate) fn new(variables: HashSet<Variable>) -> Self {
-        Self { variables }
+    pub(crate) fn new(variables: HashSet<Variable>, source_span: Option<Span>) -> Self {
+        Self { variables, source_span }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        self.source_span
     }
 }
 

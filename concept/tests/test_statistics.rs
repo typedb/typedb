@@ -196,7 +196,7 @@ fn create_entity() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let person_label = Label::build("person");
+    let person_label = Label::build("person", None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
@@ -221,7 +221,7 @@ fn delete_twice() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let person_label = Label::build("person");
+    let person_label = Label::build("person", None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
@@ -251,8 +251,8 @@ fn put_has_twice() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let person_label = Label::build("person");
-    let name_label = Label::build("name");
+    let person_label = Label::build("person", None);
+    let name_label = Label::build("name", None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
@@ -288,8 +288,8 @@ fn put_plays() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let person_label = Label::build("person");
-    let friendship_label = Label::build("friendship");
+    let person_label = Label::build("person", None);
+    let friendship_label = Label::build("friendship", None);
     let friend_role_name = "friend";
 
     let mut snapshot = storage.clone().open_snapshot_schema();

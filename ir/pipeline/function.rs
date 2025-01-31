@@ -13,6 +13,7 @@ use std::{
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 use typeql::{
+    common::Span,
     schema::definable::function::{Output, SingleSelector},
     TypeRefAny,
 };
@@ -86,38 +87,47 @@ impl FunctionBody {
 
 #[derive(Debug, Clone)]
 pub enum ReturnOperation {
-    Stream(Vec<Variable>),
-    Single(SingleSelector, Vec<Variable>),
-    ReduceCheck(),
-    ReduceReducer(Vec<Reducer>),
+    Stream(Vec<Variable>, Option<Span>),
+    Single(SingleSelector, Vec<Variable>, Option<Span>),
+    ReduceCheck(Option<Span>),
+    ReduceReducer(Vec<Reducer>, Option<Span>),
 }
 
 impl ReturnOperation {
     pub(crate) fn is_stream(&self) -> bool {
         match self {
-            Self::Stream(_) => true,
-            Self::ReduceReducer(_) | Self::Single(_, _) | Self::ReduceCheck() => false,
+            Self::Stream(_, _) => true,
+            Self::ReduceReducer(_, _) | Self::Single(_, _, _) | Self::ReduceCheck(_) => false,
         }
     }
 
     pub(crate) fn is_scalar(&self) -> bool {
         match self {
-            Self::Stream(vars) => vars.len() < 2,
-            Self::Single(_, vars) => vars.len() < 2,
-            Self::ReduceCheck() => true,
-            Self::ReduceReducer(reducers) => reducers.len() < 2,
+            Self::Stream(vars, _) => vars.len() < 2,
+            Self::Single(_, vars, _) => vars.len() < 2,
+            Self::ReduceCheck(_) => true,
+            Self::ReduceReducer(reducers, _) => reducers.len() < 2,
         }
     }
 
     pub(crate) fn variables(&self) -> Cow<'_, [Variable]> {
         match self {
-            ReturnOperation::Stream(vars) => Cow::Borrowed(vars),
-            ReturnOperation::Single(_, vars) => Cow::Borrowed(vars),
-            ReturnOperation::ReduceCheck() => Cow::Owned(vec![]),
-            ReturnOperation::ReduceReducer(reducers) => {
+            ReturnOperation::Stream(vars, _) => Cow::Borrowed(vars),
+            ReturnOperation::Single(_, vars, _) => Cow::Borrowed(vars),
+            ReturnOperation::ReduceCheck(_) => Cow::Owned(vec![]),
+            ReturnOperation::ReduceReducer(reducers, _) => {
                 let vars = reducers.iter().filter_map(Reducer::variable).collect();
                 Cow::Owned(vars)
             }
+        }
+    }
+
+    pub fn source_span(&self) -> Option<Span> {
+        match self {
+            ReturnOperation::Stream(_, source_span)
+            | ReturnOperation::Single(_, _, source_span)
+            | ReturnOperation::ReduceCheck(source_span)
+            | ReturnOperation::ReduceReducer(_, source_span) => *source_span,
         }
     }
 }
@@ -157,15 +167,15 @@ impl StructuralEquality for ReturnOperation {
     fn hash(&self) -> u64 {
         mem::discriminant(self).hash()
             ^ match self {
-                ReturnOperation::Stream(variables) => variables.hash(),
-                ReturnOperation::Single(selector, variables) => {
+                ReturnOperation::Stream(variables, _) => variables.hash(),
+                ReturnOperation::Single(selector, variables, _) => {
                     let mut hasher = DefaultHasher::new();
                     selector.hash_into(&mut hasher);
                     variables.hash_into(&mut hasher);
                     hasher.finish()
                 }
-                ReturnOperation::ReduceCheck() => 0,
-                ReturnOperation::ReduceReducer(reducers) => {
+                ReturnOperation::ReduceCheck(_) => 0,
+                ReturnOperation::ReduceReducer(reducers, _) => {
                     // note: position matters for return operations
                     reducers.hash()
                 }
@@ -174,12 +184,12 @@ impl StructuralEquality for ReturnOperation {
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (Self::Stream(vars), Self::Stream(other_vars)) => vars.equals(other_vars),
-            (Self::Single(selector, vars), Self::Single(other_selector, other_vars)) => {
+            (Self::Stream(vars, _), Self::Stream(other_vars, _)) => vars.equals(other_vars),
+            (Self::Single(selector, vars, _), Self::Single(other_selector, other_vars, _)) => {
                 selector.equals(other_selector) && vars.equals(other_vars)
             }
-            (Self::ReduceCheck(), Self::ReduceCheck()) => true,
-            (Self::ReduceReducer(inner), Self::ReduceReducer(other_inner)) => inner.equals(other_inner),
+            (Self::ReduceCheck(_), Self::ReduceCheck(_)) => true,
+            (Self::ReduceReducer(inner, _), Self::ReduceReducer(other_inner, _)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
             (Self::Stream { .. }, _)
             | (Self::Single { .. }, _)

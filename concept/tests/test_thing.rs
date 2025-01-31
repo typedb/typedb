@@ -54,7 +54,7 @@ fn thing_create_iterate() {
     {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-        let person_label = Label::build("person");
+        let person_label = Label::build("person", None);
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
         let _person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
@@ -80,8 +80,8 @@ fn attribute_create() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let age_label = Label::build("age");
-    let name_label = Label::build("name");
+    let age_label = Label::build("age", None);
+    let name_label = Label::build("name", None);
 
     let age_value: i64 = 10;
     let name_value: &str = "TypeDB Fan";
@@ -140,9 +140,9 @@ fn has() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let age_label = Label::build("age");
-    let name_label = Label::build("name");
-    let person_label = Label::build("person");
+    let age_label = Label::build("age", None);
+    let name_label = Label::build("name", None);
+    let person_label = Label::build("person", None);
 
     let age_value: i64 = 10;
     let name_value: &str = "TypeDB Fan";
@@ -211,10 +211,10 @@ fn get_has_reverse_in_range() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let age_label = Label::build("age");
-    let name_label = Label::build("name");
-    let person_label = Label::build("person");
-    let company_label = Label::build("company");
+    let age_label = Label::build("age", None);
+    let name_label = Label::build("name", None);
+    let person_label = Label::build("person", None);
+    let company_label = Label::build("company", None);
 
     let age_value_10: i64 = 10;
     let age_value_11: i64 = 11;
@@ -403,9 +403,9 @@ fn attribute_cleanup_on_concurrent_detach() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let age_label = Label::build("age");
-    let name_label = Label::build("name");
-    let person_label = Label::build("person");
+    let age_label = Label::build("age", None);
+    let name_label = Label::build("name", None);
+    let person_label = Label::build("person", None);
 
     let age_value: i64 = 10;
     let name_alice_value: &str = "Alice";
@@ -535,11 +535,11 @@ fn role_player_distinct() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let employment_label = Label::build("employment");
+    let employment_label = Label::build("employment", None);
     let employee_role = "employee";
     let employer_role = "employer";
-    let person_label = Label::build("person");
-    let company_label = Label::build("company");
+    let person_label = Label::build("person", None);
+    let company_label = Label::build("company", None);
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
@@ -658,11 +658,11 @@ fn role_player_duplicates_unordered() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let collection_label = Label::build("collection");
+    let collection_label = Label::build("collection", None);
     let entry_role_label = "entry";
     let owner_role_label = "owner";
-    let resource_label = Label::build("resource");
-    let group_label = Label::build("group");
+    let resource_label = Label::build("resource", None);
+    let group_label = Label::build("group", None);
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
@@ -821,11 +821,11 @@ fn role_player_duplicates_ordered_default_card() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let collection_label = Label::build("collection");
+    let collection_label = Label::build("collection", None);
     let entry_role_label = "entry";
     let owner_role_label = "owner";
-    let resource_label = Label::build("resource");
-    let group_label = Label::build("group");
+    let resource_label = Label::build("resource", None);
+    let group_label = Label::build("group", None);
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
@@ -951,11 +951,11 @@ fn role_player_duplicates_ordered_small_card() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_concept_storage(&mut storage);
 
-    let collection_label = Label::build("collection");
+    let collection_label = Label::build("collection", None);
     let entry_role_label = "entry";
     let owner_role_label = "owner";
-    let resource_label = Label::build("resource");
-    let group_label = Label::build("group");
+    let resource_label = Label::build("resource", None);
+    let group_label = Label::build("group", None);
 
     let mut snapshot: WriteSnapshot<WALClient> = storage.clone().open_snapshot_write();
     {
@@ -1119,7 +1119,7 @@ fn attribute_string_write_read_delete() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let attr_label = Label::build("test_string_attr");
+    let attr_label = Label::build("test_string_attr", None);
     let short_string = "short".to_owned();
     let long_string = "this string is 33 characters long".to_owned();
     let attr_type = {
@@ -1205,8 +1205,8 @@ fn attribute_string_write_read_delete_with_has() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let owner_label = Label::build("test_owner");
-    let attr_label = Label::build("test_string_attr");
+    let owner_label = Label::build("test_owner", None);
+    let attr_label = Label::build("test_string_attr", None);
     let short_string = "short".to_owned();
     let long_string = "this string is 33 characters long".to_owned();
     let (owner_type, attr_type) = {
@@ -1300,7 +1300,7 @@ fn attribute_struct_write_read() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let attr_label = Label::build("struct_test_attr");
+    let attr_label = Label::build("struct_test_attr", None);
     let struct_name = "struct_test_test".to_owned();
     let fields: HashMap<String, (ValueType, bool)> = HashMap::from([
         ("f0l".to_owned(), (ValueType::Integer, false)),
@@ -1379,7 +1379,7 @@ fn read_attribute_struct_by_field() {
     setup_concept_storage(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
 
-    let attr_label = Label::build("index_test_attr");
+    let attr_label = Label::build("index_test_attr", None);
     let nested_struct_spec =
         ("nested_test_struct".to_owned(), HashMap::from([("nested_string".to_owned(), (ValueType::String, false))]));
 

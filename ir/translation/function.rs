@@ -7,6 +7,7 @@
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
+    common::Spanned,
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
@@ -49,12 +50,14 @@ pub fn translate_function_from(
         }
     })?;
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
-    let arg_names_and_categories = signature
+    let args_sources_categories = signature
         .args
         .iter()
-        .map(|arg| (arg.var.name().unwrap().to_owned(), type_any_to_category_and_optionality(&arg.type_).0))
+        .map(|arg| {
+            (arg.var.name().unwrap().to_owned(), arg.var.span(), type_any_to_category_and_optionality(&arg.type_).0)
+        })
         .collect::<Vec<_>>();
-    let (mut context, arguments) = TranslationContext::new_with_function_arguments(arg_names_and_categories);
+    let (mut context, arguments) = TranslationContext::new_with_function_arguments(args_sources_categories);
     let mut value_parameters = ParameterRegistry::new();
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
 
@@ -69,16 +72,16 @@ pub fn translate_function_from(
     }
     // Check return declaration aligns with definition
     let returns_consistent = match (&signature.output, &body.return_operation) {
-        (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars)) => {
+        (Output::Stream(declared_vars), ReturnOperation::Stream(defined_vars, _)) => {
             defined_vars.len() == declared_vars.types.len()
         }
-        (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars)) => {
+        (Output::Single(declared_vars), ReturnOperation::Single(_, defined_vars, _)) => {
             defined_vars.len() == declared_vars.types.len()
         }
-        (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers)) => {
+        (Output::Single(declared_vars), ReturnOperation::ReduceReducer(reducers, _)) => {
             reducers.len() == declared_vars.types.len()
         }
-        (Output::Single(declared_vars), ReturnOperation::ReduceCheck()) => declared_vars.types.len() == 1,
+        (Output::Single(declared_vars), ReturnOperation::ReduceCheck(_)) => declared_vars.types.len() == 1,
         _ => false,
     };
     if !returns_consistent {
@@ -201,7 +204,7 @@ fn build_return_stream(
             })
         })
         .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
-    Ok(ReturnOperation::Stream(variables))
+    Ok(ReturnOperation::Stream(variables, stream.span()))
 }
 
 fn build_return_single(
@@ -221,7 +224,7 @@ fn build_return_single(
         })
         .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
     let selector = single.selector.clone();
-    Ok(ReturnOperation::Single(selector, variables))
+    Ok(ReturnOperation::Single(selector, variables, single.span()))
 }
 
 fn build_return_reduce(
@@ -229,8 +232,8 @@ fn build_return_reduce(
     reduction: &ReturnReduction,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     match reduction {
-        ReturnReduction::Check(_) => Ok(ReturnOperation::ReduceCheck()),
-        ReturnReduction::Value(typeql_reducers) => {
+        ReturnReduction::Check(_) => Ok(ReturnOperation::ReduceCheck(reduction.span())),
+        ReturnReduction::Value(typeql_reducers, _) => {
             let mut reducers = Vec::new();
             for typeql_reducer in typeql_reducers {
                 let reducer = build_reducer(context, typeql_reducer).map_err(|err| {
@@ -241,7 +244,7 @@ fn build_return_reduce(
                 })?;
                 reducers.push(reducer);
             }
-            Ok(ReturnOperation::ReduceReducer(reducers))
+            Ok(ReturnOperation::ReduceReducer(reducers, reduction.span()))
         }
     }
 }

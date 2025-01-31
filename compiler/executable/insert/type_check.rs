@@ -89,13 +89,13 @@ fn validate_has_insertable(
     let Some(input_owner_types) = input_annotations_variables.get(&has.owner().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: has.owner().as_variable().unwrap(),
-            constraint: Constraint::Has(has.clone()),
+            source_span: has.source_span(),
         });
     };
     let Some(input_attr_types) = input_annotations_variables.get(&has.attribute().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: has.attribute().as_variable().unwrap(),
-            constraint: Constraint::Has(has.clone()),
+            source_span: has.source_span(),
         });
     };
 
@@ -126,6 +126,7 @@ fn validate_has_insertable(
                 .scoped_name()
                 .as_str()
                 .to_string(),
+            source_span: has.source_span(),
         })?;
     }
     Ok(())
@@ -147,19 +148,19 @@ fn validate_links_insertable(
     let Some(input_relation_types) = input_annotations_variables.get(&links.relation().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: links.relation().as_variable().unwrap(),
-            constraint: Constraint::Links(links.clone()),
+            source_span: links.source_span(),
         });
     };
     let Some(input_player_types) = input_annotations_variables.get(&links.player().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: links.player().as_variable().unwrap(),
-            constraint: Constraint::Links(links.clone()),
+            source_span: links.source_span(),
         });
     };
     let Some(input_role_types) = input_annotations_variables.get(&links.role_type().as_variable().unwrap()) else {
         return Err(TypeInferenceError::AnnotationsUnavailableForVariableInInsert {
             variable: links.role_type().as_variable().unwrap(),
-            constraint: Constraint::Links(links.clone()),
+            source_span: links.source_span(),
         });
     };
 
@@ -202,6 +203,7 @@ fn validate_links_insertable(
                 .scoped_name()
                 .as_str()
                 .to_string(),
+            source_span: links.source_span(),
         })?;
     }
     Ok(())

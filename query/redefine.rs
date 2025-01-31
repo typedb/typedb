@@ -27,15 +27,11 @@ use function::{function::SchemaFunction, function_manager::FunctionManager, Func
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::error::TypeQLError,
+    common::{error::TypeQLError, Span, Spanned},
     query::schema::Redefine,
     schema::definable::{
         function::Function,
-        struct_::Field,
-        type_::{
-            capability::{Owns as TypeQLOwns, Relates as TypeQLRelates},
-            Capability, CapabilityBase,
-        },
+        type_::{capability::Relates as TypeQLRelates, Capability, CapabilityBase},
         Struct, Type,
     },
     token::Keyword,
@@ -62,7 +58,7 @@ macro_rules! verify_no_annotations_for_capability {
                 .map_err(|typedb_source| RedefineError::LiteralParseError { typedb_source })?;
             let error = { $annotation_error { $error_arg_name: annotation.category() } };
             Err(RedefineError::IllegalCapabilityAnnotation {
-                declaration: $capability.clone(),
+                source_span: $capability.span(),
                 typedb_source: error,
                 annotation,
             })
@@ -75,7 +71,7 @@ macro_rules! verify_no_annotations_for_capability {
 fn checked_identifier(identifier: &typeql::Identifier) -> Result<&str, RedefineError> {
     identifier.as_str_unreserved().map_err(|_source| {
         let TypeQLError::ReservedKeywordAsIdentifier { identifier } = _source else { unreachable!() };
-        RedefineError::IllegalKeywordAsIdentifier { identifier }
+        RedefineError::IllegalKeywordAsIdentifier { source_span: identifier.span(), identifier }
     })
 }
 
@@ -179,10 +175,10 @@ fn redefine_struct_fields(
         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {
-                return Err(RedefineError::StructFieldDoesNotExist { declaration: field.to_owned() });
+                return Err(RedefineError::StructFieldDoesNotExist { source_span: field.span() });
             }
             DefinableStatus::ExistsSame(_) => {
-                return Err(RedefineError::StructFieldRemainsSame { declaration: field.to_owned() });
+                return Err(RedefineError::StructFieldRemainsSame { source_span: field.span() });
             }
             DefinableStatus::ExistsDifferent(_) => {}
         }
@@ -192,7 +188,7 @@ fn redefine_struct_fields(
             .delete_struct_field(snapshot, thing_manager, struct_key.clone(), checked_identifier(&field.key)?)
             .map_err(|err| RedefineError::StructFieldDeleteError {
                 struct_name: name.to_owned(),
-                declaration: field.clone(),
+                source_span: field.span(),
                 typedb_source: err,
             })?;
 
@@ -200,7 +196,7 @@ fn redefine_struct_fields(
             .create_struct_field(snapshot, struct_key.clone(), checked_identifier(&field.key)?, value_type, optional)
             .map_err(|err| RedefineError::StructFieldCreateError {
                 struct_name: name.to_owned(),
-                declaration: field.clone(),
+                source_span: field.span(),
                 typedb_source: err,
             })?;
     }
@@ -214,7 +210,7 @@ fn redefine_type_annotations(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for typeql_annotation in &type_declaration.annotations {
@@ -228,6 +224,7 @@ fn redefine_type_annotations(
                     &label,
                     entity,
                     annotation.clone(),
+                    typeql_annotation,
                     type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
@@ -235,7 +232,7 @@ fn redefine_type_annotations(
                         RedefineError::SetTypeAnnotation {
                             type_: label.to_owned(),
                             annotation,
-                            declaration: type_declaration.clone(),
+                            source_span: type_declaration.span(),
                             typedb_source: source,
                         }
                     })?;
@@ -248,6 +245,7 @@ fn redefine_type_annotations(
                     &label,
                     relation,
                     annotation.clone(),
+                    typeql_annotation,
                     type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
@@ -255,7 +253,7 @@ fn redefine_type_annotations(
                         RedefineError::SetTypeAnnotation {
                             type_: label.to_owned(),
                             annotation,
-                            declaration: type_declaration.clone(),
+                            source_span: type_declaration.span(),
                             typedb_source: source,
                         }
                     })?;
@@ -268,13 +266,14 @@ fn redefine_type_annotations(
                     &label,
                     attribute,
                     annotation.clone(),
+                    typeql_annotation,
                     type_declaration,
                 )? {
                     if converted.is_value_type_annotation() {
                         return Err(RedefineError::IllegalTypeAnnotation {
                             type_: label.to_owned(),
                             annotation: annotation.clone(),
-                            declaration: type_declaration.clone(),
+                            source_span: type_declaration.span(),
                             typedb_source: AnnotationError::UnsupportedAnnotationForAttributeType {
                                 category: annotation.category(),
                             },
@@ -285,7 +284,7 @@ fn redefine_type_annotations(
                         RedefineError::SetTypeAnnotation {
                             type_: label.to_owned(),
                             annotation,
-                            declaration: type_declaration.clone(),
+                            source_span: type_declaration.span(),
                             typedb_source: source,
                         }
                     })?;
@@ -326,7 +325,7 @@ fn redefine_sub(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
@@ -335,7 +334,8 @@ fn redefine_sub(
             continue;
         };
 
-        let supertype_label = Label::parse_from(checked_identifier(&sub.supertype_label.ident)?);
+        let supertype_label =
+            Label::parse_from(checked_identifier(&sub.supertype_label.ident)?, sub.supertype_label.span());
         let supertype = resolve_typeql_type(snapshot, type_manager, &supertype_label)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
         if type_.kind() != supertype.kind() {
@@ -346,23 +346,23 @@ fn redefine_sub(
             (TypeEnum::Entity(type_), TypeEnum::Entity(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, *type_, supertype, capability)?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                type_.set_supertype(snapshot, type_manager, thing_manager, supertype).map_err(|source| {
-                    RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source }
-                })?;
+                type_
+                    .set_supertype(snapshot, type_manager, thing_manager, supertype)
+                    .map_err(|source| RedefineError::SetSupertype { source_span: sub.span(), typedb_source: source })?;
             }
             (TypeEnum::Relation(type_), TypeEnum::Relation(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, *type_, supertype, capability)?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                type_.set_supertype(snapshot, type_manager, thing_manager, supertype).map_err(|source| {
-                    RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source }
-                })?;
+                type_
+                    .set_supertype(snapshot, type_manager, thing_manager, supertype)
+                    .map_err(|source| RedefineError::SetSupertype { source_span: sub.span(), typedb_source: source })?;
             }
             (TypeEnum::Attribute(type_), TypeEnum::Attribute(supertype)) => {
                 check_can_redefine_sub(snapshot, type_manager, &label, *type_, supertype, capability)?;
                 error_if_anything_redefined_else_set_true(anything_redefined)?;
-                type_.set_supertype(snapshot, type_manager, thing_manager, supertype).map_err(|source| {
-                    RedefineError::SetSupertype { declaration: sub.clone(), typedb_source: source }
-                })?;
+                type_
+                    .set_supertype(snapshot, type_manager, thing_manager, supertype)
+                    .map_err(|source| RedefineError::SetSupertype { source_span: sub.span(), typedb_source: source })?;
             }
             (TypeEnum::RoleType(_), TypeEnum::RoleType(_)) => {
                 unreachable!("RoleType's sub is controlled by specialise")
@@ -386,7 +386,7 @@ fn redefine_value_type(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -414,7 +414,7 @@ fn redefine_value_type(
                     type_: label.to_owned(),
                     key: Keyword::Value,
                     value_type,
-                    declaration: capability.clone(),
+                    source_span: capability.span(),
                 });
             }
             DefinableStatus::ExistsSame(_) => false, // is not a leaf of redefine query, don't error
@@ -424,7 +424,12 @@ fn redefine_value_type(
         if redefine_needed {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             attribute_type.set_value_type(snapshot, type_manager, thing_manager, value_type.clone()).map_err(
-                |source| RedefineError::SetValueType { type_: label.to_owned(), value_type, typedb_source: source },
+                |source| RedefineError::SetValueType {
+                    type_: label.to_owned(),
+                    value_type,
+                    source_span: value_type_statement.span(),
+                    typedb_source: source,
+                },
             )?;
         }
 
@@ -461,11 +466,12 @@ fn redefine_value_type_annotations(
             attribute_type_label,
             attribute_type,
             annotation.clone(),
+            typeql_annotation,
             typeql_type_declaration,
         )? {
             if !converted.is_value_type_annotation() {
                 return Err(RedefineError::IllegalCapabilityAnnotation {
-                    declaration: typeql_capability.clone(),
+                    source_span: typeql_capability.span(),
                     typedb_source: AnnotationError::UnsupportedAnnotationForValueType {
                         category: annotation.category(),
                     },
@@ -476,7 +482,7 @@ fn redefine_value_type_annotations(
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 RedefineError::SetCapabilityAnnotation {
-                    declaration: typeql_capability.clone(),
+                    source_span: typeql_capability.span(),
                     annotation,
                     typedb_source: source,
                 }
@@ -493,7 +499,7 @@ fn redefine_relates(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -522,7 +528,7 @@ fn redefine_relates(
                     type_: label.clone(),
                     key: Keyword::Relates,
                     role: role_label.name.to_string(),
-                    declaration: capability.to_owned(),
+                    source_span: capability.span(),
                     ordering,
                 });
             }
@@ -534,7 +540,7 @@ fn redefine_relates(
                     |source| RedefineError::SetRelatesOrdering {
                         type_: label.clone(),
                         key: Keyword::Relates,
-                        declaration: typeql_relates.to_owned(),
+                        source_span: typeql_relates.span(),
                         typedb_source: source,
                     },
                 )?;
@@ -582,13 +588,14 @@ fn redefine_relates_annotations(
             relation_label,
             relates,
             annotation.clone(),
+            typeql_annotation,
             typeql_capability,
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             relates.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 RedefineError::SetCapabilityAnnotation {
                     annotation,
-                    declaration: typeql_capability.clone(),
+                    source_span: typeql_capability.span(),
                     typedb_source: source,
                 }
             })?;
@@ -631,7 +638,7 @@ fn redefine_relates_specialise(
                         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                         .name()
                         .to_string(),
-                    declaration: typeql_relates.clone(),
+                    source_span: typeql_relates.span(),
                 })
             }
             DefinableStatus::ExistsSame(_) => {
@@ -651,7 +658,7 @@ fn redefine_relates_specialise(
                         .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                         .name()
                         .to_string(),
-                    declaration: typeql_relates.clone(),
+                    source_span: typeql_relates.span(),
                 })
             }
             DefinableStatus::ExistsDifferent(_) => {}
@@ -663,7 +670,7 @@ fn redefine_relates_specialise(
                 type_: relation_label.clone(),
                 relates_key: Keyword::Relates,
                 as_key: Keyword::As,
-                declaration: typeql_relates.clone(),
+                source_span: typeql_relates.span(),
                 typedb_source: source,
             }
         })?;
@@ -678,7 +685,7 @@ fn redefine_owns(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -712,7 +719,7 @@ fn redefine_owns(
                         .get_label(snapshot, type_manager)
                         .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
                         .clone(),
-                    declaration: capability.to_owned(),
+                    source_span: capability.span(),
                     ordering,
                 });
             }
@@ -724,7 +731,7 @@ fn redefine_owns(
                     RedefineError::SetOwnsOrdering {
                         type_: label.clone(),
                         key: Keyword::Owns,
-                        declaration: typeql_owns.clone(),
+                        source_span: typeql_owns.span(),
                         typedb_source: source,
                     }
                 })?;
@@ -755,12 +762,13 @@ fn redefine_owns_annotations(
             owner_label,
             owns,
             annotation.clone(),
+            typeql_annotation,
             typeql_capability,
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             owns.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 RedefineError::SetCapabilityAnnotation {
-                    declaration: typeql_capability.clone(),
+                    source_span: typeql_capability.span(),
                     annotation,
                     typedb_source: source,
                 }
@@ -777,7 +785,7 @@ fn redefine_plays(
     anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
-    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?);
+    let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
     for capability in &type_declaration.capabilities {
@@ -788,6 +796,7 @@ fn redefine_plays(
         let role_label = Label::build_scoped(
             checked_identifier(&typeql_plays.role.name.ident)?,
             checked_identifier(&typeql_plays.role.scope.ident)?,
+            typeql_plays.role.span(),
         );
         let role_type = resolve_role_type(snapshot, type_manager, &role_label)
             .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
@@ -807,7 +816,7 @@ fn redefine_plays(
                         .get_label(snapshot, type_manager)
                         .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
                         .clone(),
-                    declaration: capability.to_owned(),
+                    source_span: capability.span(),
                 });
             }
             DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
@@ -846,13 +855,14 @@ fn redefine_plays_annotations(
             player_label,
             plays,
             annotation.clone(),
+            typeql_annotation,
             typeql_capability,
         )? {
             error_if_anything_redefined_else_set_true(anything_redefined)?;
             plays.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
                 RedefineError::SetCapabilityAnnotation {
-                    declaration: typeql_capability.clone(),
                     annotation,
+                    source_span: typeql_capability.span(),
                     typedb_source: source,
                 }
             })?;
@@ -870,6 +880,7 @@ fn redefine_function(
     let function = function_manager.redefine_function(snapshot, function_declaration).map_err(|source| {
         RedefineError::FunctionRedefinition {
             name: function_declaration.signature.ident.as_str_unchecked().to_owned(),
+            source_span: function_declaration.span(),
             typedb_source: Box::new(source),
         }
     })?;
@@ -895,7 +906,7 @@ fn check_can_redefine_sub<T: TypeAPI>(
                 .get_label(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .clone(),
-            declaration: capability.clone(),
+            source_span: capability.span(),
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::TypeSubRemainsSame {
             type_: label.clone(),
@@ -904,7 +915,7 @@ fn check_can_redefine_sub<T: TypeAPI>(
                 .get_label(snapshot, type_manager)
                 .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
                 .clone(),
-            declaration: capability.clone(),
+            source_span: capability.span(),
         }),
         DefinableStatus::ExistsDifferent(_) => Ok(()),
     }
@@ -916,15 +927,16 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
     label: &Label,
     type_: T,
     annotation: Annotation,
+    typeql_annotation: &typeql::Annotation,
     typeql_declaration: &Type,
 ) -> Result<Option<T::AnnotationType>, RedefineError> {
-    error_if_not_redefinable(label, annotation.clone())?;
+    error_if_not_redefinable(label, annotation.clone(), typeql_annotation)?;
 
     let converted = T::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| {
         RedefineError::IllegalTypeAnnotation {
             type_: label.clone(),
             annotation: annotation.clone(),
-            declaration: typeql_declaration.clone(),
+            source_span: typeql_declaration.span(),
             typedb_source,
         }
     })?;
@@ -936,12 +948,12 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeAnnotationNotDefined {
             type_: label.clone(),
             annotation,
-            declaration: typeql_declaration.clone(),
+            source_span: typeql_declaration.span(),
         }),
         DefinableStatus::ExistsSame(_) => Err(RedefineError::TypeAnnotationRemainsSame {
             type_: label.clone(),
             annotation,
-            declaration: typeql_declaration.clone(),
+            source_span: typeql_declaration.span(),
         }),
         DefinableStatus::ExistsDifferent(_) => Ok(Some(converted)),
     }
@@ -953,13 +965,14 @@ fn capability_convert_and_validate_annotation_redefinition_need<CAP: concept::ty
     label: &Label,
     capability: CAP,
     annotation: Annotation,
+    typeql_annotation: &typeql::Annotation,
     typeql_capability: &Capability,
 ) -> Result<Option<CAP::AnnotationType>, RedefineError> {
-    error_if_not_redefinable(label, annotation.clone())?;
+    error_if_not_redefinable(label, annotation.clone(), typeql_annotation)?;
 
     let converted = CAP::AnnotationType::try_from(annotation.clone()).map_err(|typedb_source| {
         RedefineError::IllegalCapabilityAnnotation {
-            declaration: typeql_capability.clone(),
+            source_span: typeql_capability.span(),
             annotation: annotation.clone(),
             typedb_source,
         }
@@ -970,18 +983,26 @@ fn capability_convert_and_validate_annotation_redefinition_need<CAP: concept::ty
             .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => {
-            Err(RedefineError::CapabilityAnnotationNotDefined { declaration: typeql_capability.clone(), annotation })
+            Err(RedefineError::CapabilityAnnotationNotDefined { source_span: typeql_capability.span(), annotation })
         }
         DefinableStatus::ExistsSame(_) => {
-            Err(RedefineError::CapabilityAnnotationRemainsSame { declaration: typeql_capability.clone(), annotation })
+            Err(RedefineError::CapabilityAnnotationRemainsSame { source_span: typeql_capability.span(), annotation })
         }
         DefinableStatus::ExistsDifferent(_) => Ok(Some(converted)),
     }
 }
 
-fn error_if_not_redefinable(label: &Label, annotation: Annotation) -> Result<(), RedefineError> {
+fn error_if_not_redefinable(
+    label: &Label,
+    annotation: Annotation,
+    typeql_annotation: &typeql::Annotation,
+) -> Result<(), RedefineError> {
     match annotation.category().has_parameter() {
-        false => Err(RedefineError::ParameterFreeAnnotationCannotBeRedefined { type_: label.clone(), annotation }),
+        false => Err(RedefineError::ParameterFreeAnnotationCannotBeRedefined {
+            type_: label.clone(),
+            annotation,
+            source_span: typeql_annotation.span(),
+        }),
         true => Ok(()),
     }
 }
@@ -998,7 +1019,7 @@ fn err_capability_kind_mismatch(
         right: right.clone(),
         left_kind,
         right_kind,
-        declaration: capability.clone(),
+        source_span: capability.span(),
     }
 }
 
@@ -1020,34 +1041,34 @@ typedb_error! {
         DefinitionResolution(4, "Could not find symbol in redefine query.", typedb_source: Box<SymbolResolutionError>),
         LiteralParseError(5, "Error parsing literal in redefine query.", typedb_source: LiteralParseError),
         CanOnlyRedefineOneThingPerQuery(6, "Redefine queries can currently only mutate exactly one schema element per query."),
-        StructFieldDoesNotExist(7, "Struct field used in redefine query does not exist.\nSource:\n{declaration}", declaration: Field),
-        StructFieldRemainsSame(8, "Struct field in redefine was not changed. Redefine queries are required to update the schema.\nSource:\n{declaration}", declaration: Field),
+        StructFieldDoesNotExist(7, "Struct field used in redefine query does not exist.", source_span: Option<Span>),
+        StructFieldRemainsSame(8, "Struct field in redefine was not changed. Redefine queries are required to update the schema", source_span: Option<Span>),
         StructFieldDeleteError(
             9,
-            "Error removing field from struct type '{struct_name}'.\nSource:\n{declaration}",
+            "Error removing field from struct type '{struct_name}'.",
             struct_name: String,
-            declaration: Field,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         StructFieldCreateError(
             10,
-            "Error creating new field in struct type '{struct_name}'.\nSource:\n{declaration}",
+            "Error creating new field in struct type '{struct_name}'.",
             struct_name: String,
-            declaration: Field,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         SetSupertype(
             11,
-            "Error setting supertype during redefine.\nSource:\n{declaration}",
-            declaration: typeql::schema::definable::type_::capability::Sub,
+            "Error setting supertype during redefine.",
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         TypeCannotHaveCapability(
             12,
-            "Invalid redefine - the type '{type_}' of kind '{kind}', which is not allowed to declare:\n'{declaration}'",
+            "Invalid redefine - the type '{type_}' of kind '{kind}', which is not allowed to make this declaration.'",
             type_: Label,
             kind: Kind,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         ValueTypeSymbolResolution(
             13,
@@ -1056,187 +1077,195 @@ typedb_error! {
         ),
         TypeSubNotDefined(
             14,
-            "Redefining '{key}' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{new_supertype}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?",
             type_: Label,
             key: Keyword,
             new_supertype: Label,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         TypeSubRemainsSame(
             15,
-            "Redefining '{key}' to '{supertype}' for type '{type_}' failed since '{type_} {key} {supertype}' is already defined.\nSource:\n{declaration}",
+            "Redefining '{key}' to '{supertype}' for type '{type_}' failed since '{type_} {key} {supertype}' is already defined.",
             type_: Label,
             key: Keyword,
             supertype: Label,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         RelatesNotDefined(
             16,
-            "Redefining '{key}' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{role}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?",
             type_: Label,
             key: Keyword,
             role: String,
             ordering: Ordering,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         OwnsNotDefined(
             17,
-            "Redefining '{key}' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{attribute}{ordering}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?",
             type_: Label,
             key: Keyword,
             attribute: Label,
             ordering: Ordering,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         PlaysNotDefined(
             18,
-            "Redefining '{key}' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{role}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?",
             type_: Label,
             key: Keyword,
             role: Label,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         RelatesSpecialiseNotDefined(
             19,
-            "Redefining '{relates_key} {specialising_role_name} {as_key}' to '{specialised_role_name}' for type '{type_}' failed since there is no previously defined '{relates_key} {specialising_role_name} {as_key}' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{relates_key} {specialising_role_name} {as_key}' to '{specialised_role_name}' for type '{type_}' failed since there is no previously defined '{relates_key} {specialising_role_name} {as_key}' to replace. Try define instead?",
             type_: Label,
             relates_key: Keyword,
             as_key: Keyword,
             specialised_role_name: String,
             specialising_role_name: String,
-            declaration: TypeQLRelates
+            source_span: Option<Span>,
         ),
         RelatesSpecialiseRemainsSame(
             20,
-            "Redefining '{relates_key} {specialising_role_name} {as_key}' to '{specialised_role_name}' for type '{type_}' failed since '{type_} {relates_key} {specialising_role_name} {as_key} {specialised_role_name}' is already defined.\nSource:\n{declaration}",
+            "Redefining '{relates_key} {specialising_role_name} {as_key}' to '{specialised_role_name}' for type '{type_}' failed since '{type_} {relates_key} {specialising_role_name} {as_key} {specialised_role_name}' is already defined.",
             type_: Label,
             relates_key: Keyword,
             as_key: Keyword,
             specialised_role_name: String,
             specialising_role_name: String,
-            declaration: TypeQLRelates
+            source_span: Option<Span>,
         ),
         AttributeTypeValueTypeNotDefined(
             21,
-            "Redefining '{key}' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining '{key}' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?",
             type_: Label,
             key: Keyword,
             value_type: ValueType,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         TypeAnnotationNotDefined(
             22,
-            "Redefining annotation '{annotation}' for type '{type_}' failed since there is no previously defined annotation of this category to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for type '{type_}' failed since there is no previously defined annotation of this category to replace. Try define instead?",
             type_: Label,
             annotation: Annotation,
-            declaration: Type
+            source_span: Option<Span>,
         ),
         TypeAnnotationRemainsSame(
             23,
-            "Redefining annotation '{annotation}' for type '{type_}' failed since '{type_} {annotation}' is already defined.\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for type '{type_}' failed since '{type_} {annotation}' is already defined.",
             type_: Label,
             annotation: Annotation,
-            declaration: Type
+            source_span: Option<Span>,
         ),
         CapabilityAnnotationNotDefined(
             24,
-            "Redefining annotation '{annotation}' for a capability failed since there is no previously defined annotation of this category to replace. Try define instead?\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for a capability failed since there is no previously defined annotation of this category to replace. Try define instead?",
             annotation: Annotation,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         CapabilityAnnotationRemainsSame(
             25,
-            "Redefining annotation '{annotation}' for a capability failed since is already defined identically.\nSource:\n{declaration}",
+            "Redefining annotation '{annotation}' for a capability failed since is already defined identically.",
             annotation: Annotation,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         ParameterFreeAnnotationCannotBeRedefined(
             26,
             "For type '{type_}', annotation '{annotation}' can never be redefined as it carries no parameters. Redefine can only replace existing schema elements.",
             type_: Label,
-            annotation: Annotation
+            annotation: Annotation,
+            source_span: Option<Span>,
         ),
         SetValueType(
             27,
             "Redefining '{type_}' to have value type '{value_type}' failed.",
             type_: Label,
             value_type: ValueType,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         SetRelatesOrdering(
             28,
-            "Redefining '{type_}' to have an updated '{key}' ordering failed.\nSource:\n{declaration}",
+            "Redefining '{type_}' to have an updated '{key}' ordering failed.",
             type_: Label,
             key: Keyword,
-            declaration: TypeQLRelates,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         SetOwnsOrdering(
             29,
-            "Redefining '{type_}' to have an updated '{key}' ordering failed.\nSource:\n{declaration}",
+            "Redefining '{type_}' to have an updated '{key}' ordering failed.",
             type_: Label,
             key: Keyword,
-            declaration: TypeQLOwns,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         IllegalTypeAnnotation(
             30,
-            "Redefining '{type_}' to have annotation '{annotation}' failed as this is an illegal annotation.\nSource:\n:{declaration}",
+            "Redefining '{type_}' to have annotation '{annotation}' failed as this is an illegal annotation.",
             type_: Label,
             annotation: Annotation,
-            declaration: Type,
+            source_span: Option<Span>,
             typedb_source: AnnotationError
         ),
         IllegalCapabilityAnnotation(
             31,
-            "Redefining to have annotation '{annotation}' failed.\nSource:\n{declaration}",
+            "Redefining to have annotation '{annotation}' failed.",
             annotation: Annotation,
-            declaration: Capability,
+            source_span: Option<Span>,
             typedb_source: AnnotationError
         ),
         SetTypeAnnotation(
             32,
-            "Redefining '{type_}' to have annotation '{annotation}' failed.\nSource:\n{declaration}",
+            "Redefining '{type_}' to have annotation '{annotation}' failed.",
             type_: Label,
             annotation: Annotation,
-            declaration: Type,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         SetCapabilityAnnotation(
             33,
-            "Redefining '{annotation}' failed.\nSource:\n{declaration}",
+            "Redefining '{annotation}' failed.",
             annotation: Annotation,
-            declaration: Capability,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         SetRelatesSpecialise(
             34,
-            "For relation type '{type_}', redefining '{relates_key} {as_key}' failed.\nSource:\n{declaration}",
+            "For relation type '{type_}', redefining '{relates_key} {as_key}' failed.",
             type_: Label,
             relates_key: Keyword,
             as_key: Keyword,
-            declaration: TypeQLRelates,
+            source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         CapabilityKindMismatch(
             35,
-            "Redefine failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'.\nSource:\n{declaration}",
+            "Redefine failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'.",
             left: Label,
             right: Label,
             left_kind: Kind,
             right_kind: Kind,
-            declaration: Capability
+            source_span: Option<Span>,
         ),
         FunctionRedefinition(
             36,
-            "Redefining the function \"{name}\" failed",
+            "Redefining the function '{name}' failed",
             name: String,
+            source_span: Option<Span>,
             typedb_source: Box<FunctionError>
         ),
-        IllegalKeywordAsIdentifier(37, "The reserved keyword \"{identifier}\" cannot be used as an identifier.", identifier: typeql::Identifier),
+        IllegalKeywordAsIdentifier(
+            37,
+            "The reserved keyword '{identifier}' cannot be used as an identifier.",
+            identifier: typeql::Identifier,
+            source_span: Option<Span>,
+        ),
     }
 }
 
 fn err_unsupported_capability(label: &Label, kind: Kind, capability: &Capability) -> RedefineError {
-    RedefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, declaration: capability.clone() }
+    RedefineError::TypeCannotHaveCapability { type_: label.to_owned(), kind, source_span: capability.span() }
 }
