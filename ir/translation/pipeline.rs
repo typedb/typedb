@@ -25,7 +25,7 @@ use crate::{
         fetch::FetchObject,
         function::Function,
         function_signature::FunctionSignatureIndex,
-        modifier::{Limit, Offset, Require, Select, Sort},
+        modifier::{Limit, Offset, Require, Select, Sort, Distinct},
         reduce::Reduce,
         ParameterRegistry, VariableRegistry,
     },
@@ -33,7 +33,7 @@ use crate::{
         fetch::translate_fetch,
         function::translate_typeql_function,
         match_::translate_match,
-        modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort},
+        modifiers::{translate_limit, translate_offset, translate_require, translate_select, translate_sort, translate_distinct},
         reduce::translate_reduce,
         writes::{translate_delete, translate_insert},
         TranslationContext,
@@ -81,6 +81,7 @@ pub enum TranslatedStage {
     Limit(Limit),
     Require(Require),
     Reduce(Reduce),
+    Distinct(Distinct),
 }
 
 impl TranslatedStage {
@@ -94,6 +95,7 @@ impl TranslatedStage {
             Self::Offset(_) => Box::new(empty()),
             Self::Limit(_) => Box::new(empty()),
             Self::Require(require) => Box::new(require.variables.iter().cloned()),
+            Self::Distinct(distinct) => Box::new(empty()),
             Self::Reduce(reduce) => Box::new(reduce.groupby.iter().cloned()),
         }
     }
@@ -116,6 +118,7 @@ impl StructuralEquality for TranslatedStage {
                 Self::Offset(offset) => offset.hash(),
                 Self::Limit(limit) => limit.hash(),
                 Self::Require(require) => require.hash(),
+                Self::Distinct(distinct) => distinct.hash(),
                 Self::Reduce(reduce) => reduce.hash(),
             }
     }
@@ -130,6 +133,7 @@ impl StructuralEquality for TranslatedStage {
             (Self::Offset(offset), Self::Offset(other_offset)) => offset.equals(other_offset),
             (Self::Limit(limit), Self::Limit(other_limit)) => limit.equals(other_limit),
             (Self::Require(require), Self::Require(other_require)) => require.equals(other_require),
+            (Self::Distinct(distinct), Self::Distinct(other_distinct)) => distinct.equals(other_distinct),
             (Self::Reduce(reduce), Self::Reduce(other_reduce)) => reduce.equals(other_reduce),
             // note: this style forces updating the match when the variants change
             (Self::Match { .. }, _)
@@ -140,6 +144,7 @@ impl StructuralEquality for TranslatedStage {
             | (Self::Offset { .. }, _)
             | (Self::Limit { .. }, _)
             | (Self::Require { .. }, _)
+            | (Self::Distinct { .. }, _)
             | (Self::Reduce { .. }, _) => false,
         }
     }
@@ -244,6 +249,8 @@ fn translate_stage(
                 .map(|reduce| Either::First(TranslatedStage::Reduce(reduce))),
             TypeQLOperator::Require(require) => translate_require(translation_context, require)
                 .map(|require| Either::First(TranslatedStage::Require(require))),
+            TypeQLOperator::Distinct(distinct) => translate_distinct(translation_context, distinct)
+                .map(|distinct| Either::First(TranslatedStage::Distinct(distinct))),
         },
         _ => Err(Box::new(RepresentationError::UnrecognisedClause { source_span: typeql_stage.span() })),
     }

@@ -35,6 +35,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::pipeline::modifiers::DistinctStageExecutor;
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),
@@ -150,6 +151,10 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                     let sort_stage = SortStageExecutor::new(sort_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Sort(Box::new(sort_stage));
                 }
+                ExecutableStage::Distinct(distinct_executable) => {
+                    let distinct_stage = DistinctStageExecutor::new(distinct_executable.clone(), last_stage);
+                    last_stage = ReadPipelineStage::Distinct(Box::new(distinct_stage));
+                }
                 ExecutableStage::Offset(offset_executable) => {
                     let offset_stage = OffsetStageExecutor::new(offset_executable.clone(), last_stage);
                     last_stage = ReadPipelineStage::Offset(Box::new(offset_stage));
@@ -227,6 +232,10 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                 ExecutableStage::Require(require_executable) => {
                     let require_stage = RequireStageExecutor::new(require_executable, last_stage);
                     last_stage = WritePipelineStage::Require(Box::new(require_stage));
+                }
+                ExecutableStage::Distinct(distinct_executable) => {
+                    let distinct_stage = DistinctStageExecutor::new(distinct_executable, last_stage);
+                    last_stage = WritePipelineStage::Distinct(Box::new(distinct_stage));
                 }
                 ExecutableStage::Reduce(reduce_executable) => {
                     let reduce_stage = ReduceStageExecutor::new(reduce_executable, last_stage);

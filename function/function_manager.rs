@@ -332,6 +332,7 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
         matches!(
             stage,
             TranslatedStage::Sort(_)
+                | TranslatedStage::Distinct(_)
                 | TranslatedStage::Offset(_)
                 | TranslatedStage::Limit(_)
                 | TranslatedStage::Reduce(_)

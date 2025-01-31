@@ -194,3 +194,22 @@ impl StructuralEquality for Require {
         self.variables.equals(&other.variables)
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct Distinct;
+
+impl crate::pipeline::modifier::Distinct {
+    pub(crate) fn new() -> Self {
+        Distinct
+    }
+}
+
+impl StructuralEquality for crate::pipeline::modifier::Distinct {
+    fn hash(&self) -> u64 {
+        0
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        true
+    }
+}

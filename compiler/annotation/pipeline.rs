@@ -20,7 +20,7 @@ use ir::{
         block::Block,
         fetch::FetchObject,
         function::Function,
-        modifier::{Limit, Offset, Require, Select, Sort},
+        modifier::{Limit, Offset, Require, Select, Sort, Distinct},
         reduce::{AssignedReduction, Reduce, Reducer},
         ParameterRegistry, VariableRegistry,
     },
@@ -81,6 +81,7 @@ pub enum AnnotatedStage {
     Offset(Offset),
     Limit(Limit),
     Require(Require),
+    Distinct(Distinct),
     Reduce(Reduce, Vec<ReduceInstruction<Variable>>),
 }
 
@@ -98,6 +99,7 @@ impl AnnotatedStage {
             AnnotatedStage::Offset(_) => Box::new(iter::empty()),
             AnnotatedStage::Limit(_) => Box::new(iter::empty()),
             AnnotatedStage::Require(_) => Box::new(iter::empty()),
+            AnnotatedStage::Distinct(_) => Box::new(iter::empty()),
             AnnotatedStage::Reduce(reduce, _) => Box::new(reduce.variables()),
         };
         variables.filter(move |variable| variable_registry.get_variable_name(*variable).is_some())
@@ -359,6 +361,7 @@ fn annotate_stage(
         TranslatedStage::Offset(offset) => Ok(AnnotatedStage::Offset(offset)),
         TranslatedStage::Limit(limit) => Ok(AnnotatedStage::Limit(limit)),
         TranslatedStage::Require(require) => Ok(AnnotatedStage::Require(require)),
+        TranslatedStage::Distinct(_) => Ok(AnnotatedStage::Distinct(Distinct)),
 
         TranslatedStage::Reduce(reduce) => {
             let mut reduce_instructions = Vec::with_capacity(reduce.assigned_reductions.len());

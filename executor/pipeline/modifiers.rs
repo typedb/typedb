@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::{borrow::Cow, cmp::Ordering, sync::Arc};
-
+use std::collections::HashSet;
 use answer::{variable_value::VariableValue, Thing};
 use compiler::executable::modifiers::{
-    LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
+    LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable, DistinctExecutable
 };
+use compiler::VariablePosition;
 use encoding::value::value::Value;
 use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
@@ -393,3 +394,132 @@ where
         self.previous.next()
     }
 }
+
+// Distinct
+pub struct DistinctStageExecutor<PreviousStage> {
+    executable: Arc<DistinctExecutable>,
+    previous: PreviousStage,
+}
+
+impl<PreviousStage> crate::pipeline::modifiers::DistinctStageExecutor<PreviousStage> {
+    pub fn new(executable: Arc<DistinctExecutable>, previous: PreviousStage) -> Self {
+        Self { executable, previous }
+    }
+}
+
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for crate::pipeline::modifiers::DistinctStageExecutor<PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = crate::pipeline::modifiers::DistinctStageIterator;
+
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
+        let Self { previous, executable, .. } = self;
+        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
+        // accumulate once, then we will operate in-place
+        let batch = match previous_iterator.collect_owned() {
+            Ok(batch) => batch,
+            Err(err) => return Err((err, context)),
+        };
+        println!("Starting distinct with {:?}", executable.output_row_mapping);
+        let batch_len = batch.len();
+        let profile = context.profile.profile_stage(|| String::from("Distinct"), executable.executable_id);
+        let step_profile = profile.extend_or_get(0, || String::from("Distinct execution"));
+        let measurement = step_profile.start_measurement();
+        let distinct_iterator = crate::pipeline::modifiers::DistinctStageIterator::from_batch_with_duplicates(batch, &executable, &context, executable.output_row_mapping.values().collect());
+        measurement.end(&step_profile, 1, batch_len as u64);
+        Ok((distinct_iterator, context))
+    }
+}
+
+pub struct DistinctStageIterator {
+    batch_with_duplicates: Batch,
+    next_row_index: usize,
+    // Record contiguous index blocks of duplicates:
+    duplicate_block_start_indices: Vec<usize>, // invariant: nui.len() <= fdi.len() <= nui.len() + 1
+    unique_block_restart_indices: Vec<usize>,
+    next_duplicate_index_index: Option<usize>,
+}
+
+impl crate::pipeline::modifiers::DistinctStageIterator {
+    fn from_batch_with_duplicates(
+        batch_with_duplicates: Batch,
+        sort_executable: &DistinctExecutable,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        variable_positions: Vec<&VariablePosition>,
+    ) -> Self {
+        let mut indices: Vec<usize> = (0..batch_with_duplicates.len()).collect();
+        let mut duplicate_block_start_indices: Vec<usize> = vec![];
+        let mut unique_block_restart_indices: Vec<usize> = vec![];
+        let mut seen_rows: HashSet<MaybeOwnedRow<'_>> = HashSet::new();
+        let mut looking_for_duplicate = true;
+
+        for &row_index in indices.iter() {
+            // let row = Self::filter_values(batch_with_duplicates.get_row(row_index), &variable_positions);
+            let row = batch_with_duplicates.get_row(row_index);
+            println!("DISTINCT: got row {:?}", row);
+            if !seen_rows.contains(&row) {
+                seen_rows.insert(row);
+                if looking_for_duplicate == false {
+                    looking_for_duplicate = true;
+                    unique_block_restart_indices.push(row_index)
+                }
+            } else {
+                if looking_for_duplicate == true {
+                    looking_for_duplicate = false;
+                    duplicate_block_start_indices.push(row_index)
+                }
+            }
+        }
+
+        let next_duplicate_index_index = if duplicate_block_start_indices.is_empty() { None } else { Some(0) };
+
+        Self { batch_with_duplicates, next_row_index: 0, duplicate_block_start_indices, unique_block_restart_indices, next_duplicate_index_index }
+    }
+
+    // fn filter_values<'a>(unfiltered: MaybeOwnedRow, variable_positions: &Vec<VariablePosition>) -> &'a[VariableValue<'_>] {
+    //     let mut row = &[VariableValue::Empty; 1];
+    //     for pos in variable_positions {
+    //         todo!()
+    //     }
+    //     todo!()    // fn filter_values<'a>(unfiltered: MaybeOwnedRow, variable_positions: &Vec<VariablePosition>) -> &'a[VariableValue<'_>] {
+    //     //     let mut row = &[VariableValue::Empty; 1];
+    //     //     for pos in variable_positions {
+    //     //         todo!()
+    //     //     }
+    //     //     todo!()
+    //     // }
+    // }
+}
+
+impl LendingIterator for crate::pipeline::modifiers::DistinctStageIterator {
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        if self.next_row_index < self.batch_with_duplicates.len() {
+            // Invariant: self.next_index_index <= self.first_duplicate_indices[self.next_duplicate_index_index]
+            if self.next_duplicate_index_index.is_none() || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index?] {
+                let row = self.batch_with_duplicates.get_row(self.next_row_index);
+                self.next_row_index += 1;
+                Some(Ok(row))
+            } else {
+                self.unique_block_restart_indices.get(self.next_duplicate_index_index?).map(|next_index| {
+                    let row = self.batch_with_duplicates.get_row(*next_index);
+                    self.next_row_index = *next_index + 1;
+                    Ok(row)
+                })
+            }
+        } else {
+            None
+        }
+    }
+}
+
+impl StageIterator for crate::pipeline::modifiers::DistinctStageIterator {}

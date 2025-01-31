@@ -33,6 +33,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::modifiers::DistinctExecutable;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
@@ -52,6 +53,7 @@ pub enum ExecutableStage {
     Offset(Arc<OffsetExecutable>),
     Limit(Arc<LimitExecutable>),
     Require(Arc<RequireExecutable>),
+    Distinct(Arc<DistinctExecutable>),
     Reduce(Arc<ReduceExecutable>),
 }
 
@@ -77,6 +79,7 @@ impl ExecutableStage {
             ExecutableStage::Offset(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Limit(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Require(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Distinct(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Reduce(executable) => executable.output_row_mapping.clone(),
         }
     }
@@ -276,6 +279,9 @@ fn compile_stage(
                 required_positions.insert(pos);
             }
             Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))))
+        }
+        AnnotatedStage::Distinct(distinct) => {
+            Ok(ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(input_variables.clone()))))
         }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());

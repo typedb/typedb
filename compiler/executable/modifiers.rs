@@ -81,3 +81,15 @@ impl RequireExecutable {
         Self { executable_id: next_executable_id(), required, output_row_mapping }
     }
 }
+
+#[derive(Debug)]
+pub struct DistinctExecutable {
+    pub executable_id: u64,
+    pub output_row_mapping: HashMap<Variable, VariablePosition>,
+}
+
+impl crate::executable::modifiers::DistinctExecutable {
+    pub(crate) fn new(output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
+        Self { executable_id: next_executable_id(), output_row_mapping }
+    }
+}
