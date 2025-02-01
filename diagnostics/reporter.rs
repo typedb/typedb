@@ -23,7 +23,7 @@ use hyper::{
     header::{CONNECTION, CONTENT_TYPE},
     http, Body, Client, Request,
 };
-use hyper_rustls::{builderstates::WantsSchemes, HttpsConnector, HttpsConnectorBuilder};
+use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
 use resource::constants::{
     common::SECONDS_IN_MINUTE,
