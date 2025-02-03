@@ -88,6 +88,11 @@ impl ConstraintVertex<'_> {
                 let mut unbound_join_variables : Vec<VariableVertexId>= self.variables()
                     .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
                     .collect();
+                // If only one variable is unbound we don't have much choice
+                if unbound_join_variables.len() == 1 {
+                    return unbound_join_variables.get(0).cloned();
+                }
+                // Otherwise, pick according to the provided direction
                 match dir {
                     Direction::Canonical => unbound_join_variables.get(0).cloned(),
                     Direction::Reverse => unbound_join_variables.get(1).cloned(),
@@ -101,8 +106,10 @@ impl ConstraintVertex<'_> {
         // First check if we are in a bound case, in which case we don't care about directions
         match self {
             Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
-                let mut unbound_join_variables = self.variables().filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)));
-                 if unbound_join_variables.count() < 2 {
+                let unbound_join_variables : Vec<VariableVertexId>= self.variables()
+                    .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
+                    .collect();
+                 if unbound_join_variables.len() < 2 {
                     return None;
                  }
             },
@@ -110,9 +117,9 @@ impl ConstraintVertex<'_> {
         }
         // If unbounded, we choose direction based on the provided join variable
         match self {
-            Self::Links(inner) => { if inner.relation == var { Some(Direction::Canonical) } else { Some(Direction::Canonical) } },
-            Self::Has(inner) => { if inner.owner == var { Some(Direction::Canonical) } else { Some(Direction::Canonical) } },
-            Self::IndexedRelation(inner) => { if inner.player_1 == var { Some(Direction::Canonical) } else { Some(Direction::Canonical) } },
+            Self::Links(inner) => { if inner.relation == var { Some(Direction::Canonical) } else { Some(Direction::Reverse) } },
+            Self::Has(inner) => { if inner.owner == var { Some(Direction::Canonical) } else { Some(Direction::Reverse) } },
+            Self::IndexedRelation(inner) => { if inner.player_1 == var { Some(Direction::Canonical) } else { Some(Direction::Reverse) } },
             _ => None,
         }
     }

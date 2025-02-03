@@ -949,15 +949,14 @@ impl PartialCostPlan {
             let PlannerVertex::Constraint(constraint) = planner else { return None; };
             // Determine whether there are any candidate join variables:
             let Ok(candidate_join_var) =
-                constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
+                constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var) && constraint.can_join_on(*var)).exactly_one()
                 else { return None; };
             // Only direct-able patterns are join-able:
             let Some(CostMetaData::Direction(prev_dir)) = self.pattern_metadata.get(&prev_pattern) else { return None; };
-            // Only join when we are on the "join var" of the previous constraint
-            if Some(candidate_join_var) == prev_constraint.join_var_from_direction(prev_dir, &self.ongoing_step_produced_vars, &self.all_produced_vars)
-                && constraint.can_join_on(candidate_join_var)
-                && (self.ongoing_step_join_var.is_none()
-                    || self.ongoing_step_join_var == Some(candidate_join_var))
+            // If no join var is set yet, only join when we are on the "regular join var" of the previous constraint based on its direction
+            if (self.ongoing_step_join_var.is_none()
+                   && Some(candidate_join_var) == prev_constraint.join_var_from_direction(prev_dir, &self.ongoing_step_produced_vars, &self.all_produced_vars))
+                || self.ongoing_step_join_var == Some(candidate_join_var)
             {
                 return Some(candidate_join_var);
             }
