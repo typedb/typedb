@@ -423,13 +423,13 @@ pub(crate) use filter_by_scope;
 
 macro_rules! filter_out_unchecked_constraints {
     ($constraints_iter:expr) => {
-        $constraints_iter.filter(|constraint| constraint.is_checked())
+        $constraints_iter.filter(|constraint| constraint.requires_validation())
     };
 }
 
 macro_rules! filter_out_operation_time_unchecked_constraints {
     ($constraints_iter:expr) => {
-        $constraints_iter.filter(|constraint| constraint.is_operation_time_checked())
+        $constraints_iter.filter(|constraint| constraint.requires_operation_time_validation())
     };
 }
 pub(crate) use filter_out_operation_time_unchecked_constraints;
