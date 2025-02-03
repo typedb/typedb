@@ -129,6 +129,7 @@ fn test_has_planning_traversal() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -216,6 +217,7 @@ fn test_expression_planning_traversal() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -313,6 +315,7 @@ fn test_links_planning_traversal() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -406,6 +409,7 @@ fn test_links_intersection() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -490,6 +494,7 @@ fn test_negation_planning_traversal() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -595,6 +600,7 @@ fn test_forall_planning_traversal() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -686,6 +692,7 @@ fn test_named_var_select() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -777,6 +784,7 @@ fn test_disjunction_planning_traversal() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -872,6 +880,7 @@ fn test_disjunction_planning_nested_negations() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -960,6 +969,7 @@ select $name, $age;
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
     let expressions = compile_expressions(

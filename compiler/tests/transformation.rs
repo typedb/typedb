@@ -93,6 +93,7 @@ fn test_relation_index_transformation_single() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -141,6 +142,7 @@ fn test_relation_index_transformation_dual() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -203,6 +205,7 @@ fn test_relation_index_transformation_not_applied_ternary() {
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 

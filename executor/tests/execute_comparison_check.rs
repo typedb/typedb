@@ -130,6 +130,7 @@ fn attribute_equality() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 

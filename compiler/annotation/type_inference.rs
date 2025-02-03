@@ -290,6 +290,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
             assert_eq!(
@@ -339,6 +340,7 @@ pub mod tests {
                 &type_manager,
                 previous_stage_variable_annotations,
                 &function_annotations,
+                false,
             )
             .unwrap();
             assert_eq!(
@@ -460,6 +462,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -527,6 +530,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -589,6 +593,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap_err();
 
@@ -625,6 +630,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -715,6 +721,7 @@ pub mod tests {
             &type_manager,
             &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap();
 
@@ -826,6 +833,7 @@ pub mod tests {
             &type_manager,
             &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap();
 
@@ -914,6 +922,7 @@ pub mod tests {
             &type_manager,
             &BTreeMap::new(),
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap();
 
@@ -1027,6 +1036,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -1096,6 +1106,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -1162,6 +1173,7 @@ pub mod tests {
                 &type_manager,
                 &EmptyAnnotatedFunctionSignatures,
                 &translation_context.variable_registry,
+                false,
             )
             .create_graph(block.block_context(), &BTreeMap::new(), block.conjunction())
             .unwrap();
@@ -1217,6 +1229,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -1295,6 +1308,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -1361,6 +1375,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 
@@ -1422,6 +1437,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap_err();
             assert_matches!(err, TypeInferenceError::DetectedUnsatisfiablePattern {});
@@ -1455,6 +1471,7 @@ pub mod tests {
                 &type_manager,
                 &BTreeMap::new(),
                 &EmptyAnnotatedFunctionSignatures,
+                false,
             )
             .unwrap();
 

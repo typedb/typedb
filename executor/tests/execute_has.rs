@@ -178,6 +178,7 @@ fn traverse_has_unbounded_sorted_from() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -272,6 +273,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -380,6 +382,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -465,6 +468,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -571,6 +575,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 

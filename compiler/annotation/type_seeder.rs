@@ -45,6 +45,7 @@ pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     type_manager: &'this TypeManager,
     function_annotations: &'this dyn AnnotatedFunctionSignatures,
     variable_registry: &'this VariableRegistry,
+    is_insert: bool,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
@@ -53,8 +54,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_manager: &'this TypeManager,
         function_annotations: &'this dyn AnnotatedFunctionSignatures,
         variable_registry: &'this VariableRegistry,
+        is_insert: bool,
     ) -> Self {
-        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry }
+        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, is_insert }
     }
 
     pub(crate) fn create_graph<'graph>(
@@ -726,10 +728,12 @@ impl UnaryConstraint for RoleName<Variable> {
             let mut annotations = BTreeSet::new();
             for role_type in &*role_types {
                 annotations.insert(TypeAnnotation::RoleType(*role_type));
-                let subtypes = role_type
-                    .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
-                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
-                annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(*subtype)));
+                if !seeder.is_insert {
+                    let subtypes = role_type
+                        .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
+                        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                    annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(*subtype)));
+                }
             }
             graph_vertices.add_or_intersect(self.type_(), Cow::Owned(annotations));
             Ok(())
@@ -1021,7 +1025,7 @@ impl BinaryConstraint for Isa<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if self.isa_kind() == IsaKind::Subtype {
+        if seeder.is_insert || self.isa_kind() == IsaKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
@@ -1749,6 +1753,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
+            false,
         );
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
@@ -1803,6 +1808,7 @@ pub mod tests {
             &type_manager,
             &empty_function_cache,
             &translation_context.variable_registry,
+            false,
         );
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         if expected_graph != graph {
@@ -1931,6 +1937,7 @@ pub mod tests {
                 &type_manager,
                 &empty_function_cache,
                 &translation_context.variable_registry,
+                false,
             );
             let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
             assert_eq!(expected_graph.vertices, graph.vertices);

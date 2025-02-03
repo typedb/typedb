@@ -129,6 +129,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -205,6 +206,7 @@ fn traverse_isa_unbounded_sorted_type() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -285,6 +287,7 @@ fn traverse_isa_bounded_thing() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -379,6 +382,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -455,6 +459,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -535,6 +540,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -631,6 +637,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -727,6 +734,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -804,6 +812,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 

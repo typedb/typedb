@@ -169,6 +169,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -250,6 +251,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             &type_manager,
             previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap()
     };
