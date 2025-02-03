@@ -850,7 +850,7 @@ pub(super) struct PartialCostPlan {
     ongoing_step_stash_produced_vars: HashSet<VariableVertexId>, // variables produced in this step
     ongoing_step_join_var: Option<VariableVertexId>, // the join variable of the ongoing step
 
-    all_produced_vars: HashSet<VariableVertexId>, // the set of all variables produced (incl. in ongoing step)
+    all_produced_vars: HashSet<VariableVertexId>, // the set of all variables produced (incl. in ongoing step, excl. stash)
     remaining_patterns: HashSet<PatternVertexId>, // the set of remaining patterns to be searched
     pattern_metadata: HashMap<PatternVertexId, CostMetaData>, // metadata, like pattern directions
     heuristic: Cost,                              // the heuristic that plans are sorted by
@@ -941,29 +941,28 @@ impl PartialCostPlan {
     }
 
     fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
-        let mut updated_join_var: Option<VariableVertexId> = None;
-        if let Some(prev_constraint) = self.ongoing_step.iter().next() {
+        if let Some(&prev_pattern) = self.ongoing_step.iter().next() {
+            // We only join constraint patterns, so let's extract constraints
+            let prev_planner = &graph.elements[&VertexId::Pattern(prev_pattern)];
+            let PlannerVertex::Constraint(prev_constraint) = prev_planner else { return None; };
             let planner = &graph.elements[&VertexId::Pattern(pattern)];
-            if let PlannerVertex::Constraint(constraint) = planner {
-                if let Ok(candidate_join_var) =
-                    constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
-                {
-                    if self.ongoing_step_join_var.is_none()
-                        && constraint.can_join_on(candidate_join_var)
-                        && graph.elements[&VertexId::Pattern(*prev_constraint)]
-                            .as_constraint()
-                            .map_or(false, |c| c.can_join_on(candidate_join_var))
-                    {
-                        updated_join_var = Some(candidate_join_var);
-                    } else if self.ongoing_step_join_var == Some(candidate_join_var)
-                        && constraint.can_join_on(candidate_join_var)
-                    {
-                        updated_join_var = self.ongoing_step_join_var;
-                    }
-                }
+            let PlannerVertex::Constraint(constraint) = planner else { return None; };
+            // Determine whether there are any candidate join variables:
+            let Ok(candidate_join_var) =
+                constraint.variables().filter(|var| self.ongoing_step_produced_vars.contains(var)).exactly_one()
+                else { return None; };
+            // Only direct-able patterns are join-able:
+            let Some(CostMetaData::Direction(prev_dir)) = self.pattern_metadata.get(&prev_pattern) else { return None; };
+            // Only join when we are on the "join var" of the previous constraint
+            if Some(candidate_join_var) == prev_constraint.join_var_from_direction(prev_dir, &self.ongoing_step_produced_vars, &self.all_produced_vars)
+                && constraint.can_join_on(candidate_join_var)
+                && (self.ongoing_step_join_var.is_none()
+                    || self.ongoing_step_join_var == Some(candidate_join_var))
+            {
+                return Some(candidate_join_var);
             }
-        };
-        updated_join_var
+        }
+        None
     }
 
     fn compute_added_cost(
@@ -981,13 +980,14 @@ impl PartialCostPlan {
                         .as_variable()
                         .unwrap()
                         .restricted_expected_output_size(&self.vertex_ordering);
-                    let (constraint_cost, meta_data) = constraint.cost_and_metadata(input_vars, graph);
+                    let fixed_direction = constraint.direction_from_join_var(join_var, &self.ongoing_step_produced_vars, &self.all_produced_vars); // TODO: we only allow unbounded regular joins for now
+                    let (constraint_cost, meta_data) = constraint.cost_and_metadata(input_vars, fixed_direction, graph);
                     (self.ongoing_step_cost.join(constraint_cost, total_join_size), meta_data)
                 } else {
-                    constraint.cost_and_metadata(input_vars, graph)
+                    constraint.cost_and_metadata(input_vars, None, graph)
                 }
             }
-            planner_vertex => planner_vertex.cost_and_metadata(input_vars, graph),
+            planner_vertex => planner_vertex.cost_and_metadata(input_vars, None, graph),
         };
         (updated_cost, extension_metadata)
     }

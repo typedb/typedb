@@ -11,7 +11,7 @@ use std::{
     iter,
     sync::Arc,
 };
-
+use std::collections::HashSet;
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::constraint::{
@@ -76,9 +76,44 @@ impl ConstraintVertex<'_> {
     pub(crate) fn can_join_on(&self, var: VariableVertexId) -> bool {
         match self {
             Self::Links(inner) => inner.relation == var || inner.player == var,
-            Self::Has(_) => true,
+            Self::Has(inner) => inner.owner == var || inner.attribute == var,
             Self::IndexedRelation(inner) => inner.player_1 == var || inner.player_2 == var,
             _ => false,
+        }
+    }
+
+    pub(crate) fn join_var_from_direction(&self, dir: &Direction, include: &HashSet<VariableVertexId>, exclude: &HashSet<VariableVertexId>) -> Option<VariableVertexId> {
+        match self {
+            Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
+                let mut unbound_join_variables : Vec<VariableVertexId>= self.variables()
+                    .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
+                    .collect();
+                match dir {
+                    Direction::Canonical => unbound_join_variables.get(0).cloned(),
+                    Direction::Reverse => unbound_join_variables.get(1).cloned(),
+                }
+            },
+            _ => None
+        }
+    }
+
+    pub(crate) fn direction_from_join_var(&self, var: VariableVertexId, include: &HashSet<VariableVertexId>, exclude: &HashSet<VariableVertexId>) -> Option<Direction> {
+        // First check if we are in a bound case, in which case we don't care about directions
+        match self {
+            Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
+                let mut unbound_join_variables = self.variables().filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)));
+                 if unbound_join_variables.count() < 2 {
+                    return None;
+                 }
+            },
+            _ => { return None; }
+        }
+        // If unbounded, we choose direction based on the provided join variable
+        match self {
+            Self::Links(inner) => { if inner.relation == var { Some(Direction::Canonical) } else { Some(Direction::Canonical) } },
+            Self::Has(inner) => { if inner.owner == var { Some(Direction::Canonical) } else { Some(Direction::Canonical) } },
+            Self::IndexedRelation(inner) => { if inner.player_1 == var { Some(Direction::Canonical) } else { Some(Direction::Canonical) } },
+            _ => None,
         }
     }
 }
@@ -121,20 +156,20 @@ impl fmt::Display for ConstraintVertex<'_> {
 }
 
 impl Costed for ConstraintVertex<'_> {
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], fix_dir: Option<crate::executable::match_::planner::vertex::Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
         match self {
-            Self::TypeList(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::Iid(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::TypeList(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Iid(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
 
-            Self::Isa(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::Has(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::Links(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::IndexedRelation(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Isa(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Has(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Links(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::IndexedRelation(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
 
-            Self::Sub(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::Owns(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::Relates(inner) => inner.cost_and_metadata(vertex_ordering, graph),
-            Self::Plays(inner) => inner.cost_and_metadata(vertex_ordering, graph),
+            Self::Sub(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Owns(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Relates(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Plays(inner) => inner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
 }
@@ -245,7 +280,7 @@ impl<'a> TypeListPlanner<'a> {
 }
 
 impl Costed for TypeListPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::in_mem_complex_with_ratio(self.types.len() as f64), CostMetaData::Direction(Direction::Canonical))
     }
 }
@@ -283,7 +318,7 @@ impl<'a> IidPlanner<'a> {
 }
 
 impl Costed for IidPlanner<'_> {
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let cost = if vertex_ordering.contains(&VertexId::Variable(self.var)) {
             Cost::in_mem_simple_with_ratio(0.001) // TODO calculate properly, assuming the IID is originating from the DB
         } else {
@@ -381,7 +416,7 @@ impl<'a> IsaPlanner<'a> {
 }
 
 impl Costed for IsaPlanner<'_> {
-    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], _fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let (is_thing_bound, thing_size, thing_selectivity) = self.thing_estimates(inputs, graph);
         let (is_type_bound, num_types) = self.type_estimate(inputs, graph);
 
@@ -567,7 +602,7 @@ impl<'a> HasPlanner<'a> {
 }
 
 impl Costed for HasPlanner<'_> {
-    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let (is_owner_bound, owner_size, owner_selectivity) = self.owner_estimates(inputs, graph);
         let (is_attribute_bound, attribute_size, attribute_selectivity) = self.attribute_estimates(inputs, graph);
 
@@ -596,7 +631,7 @@ impl Costed for HasPlanner<'_> {
         let cost: f64;
         let direction: Direction;
 
-        if scan_size_canonical <= scan_size_reverse {
+        if (fix_dir != Some(Direction::Reverse) && scan_size_canonical <= scan_size_reverse) || fix_dir == Some(Direction::Canonical) {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
             direction = Direction::Canonical;
         } else {
@@ -806,7 +841,7 @@ impl<'a> LinksPlanner<'a> {
 }
 
 impl Costed for LinksPlanner<'_> {
-    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let (is_relation_bound, relation_size, relation_selectivity) = self.relation_estimates(inputs, graph);
         let (is_player_bound, player_size, player_selectivity) = self.player_estimates(inputs, graph);
 
@@ -835,7 +870,7 @@ impl Costed for LinksPlanner<'_> {
         let cost: f64;
         let direction: Direction;
 
-        if scan_size_canonical <= scan_size_reverse {
+        if (fix_dir != Some(Direction::Reverse) && scan_size_canonical <= scan_size_reverse) || fix_dir == Some(Direction::Canonical) {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
             direction = Direction::Canonical;
         } else {
@@ -1026,7 +1061,7 @@ impl<'a> IndexedRelationPlanner<'a> {
 }
 
 impl Costed for IndexedRelationPlanner<'_> {
-    fn cost_and_metadata(&self, inputs: &[VertexId], graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, inputs: &[VertexId], fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
         let (is_relation_bound, _relation_selectivity) = self.relation_estimates(inputs, graph);
         let (is_player1_bound, player1_selectivity) = self.player_estimates(inputs, graph, 1);
         let (is_player2_bound, player2_selectivity) = self.player_estimates(inputs, graph, 2);
@@ -1049,7 +1084,7 @@ impl Costed for IndexedRelationPlanner<'_> {
         let cost: f64;
         let direction: Direction;
 
-        if scan_size_canonical <= scan_size_reverse {
+        if (fix_dir != Some(Direction::Reverse) && scan_size_canonical <= scan_size_reverse) || fix_dir == Some(Direction::Canonical) {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
             direction = Direction::Canonical;
         } else {
@@ -1090,7 +1125,7 @@ impl<'a> SubPlanner<'a> {
 }
 
 impl Costed for SubPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse))
     }
 }
@@ -1124,7 +1159,7 @@ impl<'a> OwnsPlanner<'a> {
 }
 
 impl Costed for OwnsPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }
@@ -1158,7 +1193,7 @@ impl<'a> RelatesPlanner<'a> {
 }
 
 impl Costed for RelatesPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }
@@ -1192,7 +1227,7 @@ impl<'a> PlaysPlanner<'a> {
 }
 
 impl Costed for PlaysPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical))
     }
 }
