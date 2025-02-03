@@ -70,7 +70,6 @@ macro_rules! validate_capability_cardinality_constraint {
             }
 
             for constraint in cardinality_constraints {
-                println!("CHecking constraint: {constraint:?}"); // TODO: remove
                 if !constraint
                     .description()
                     .unwrap_cardinality()
