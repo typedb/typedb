@@ -75,7 +75,7 @@ macro_rules! validate_capability_cardinality_constraint {
                     .unwrap_cardinality()
                     .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
-                    .is_checked()
+                    .requires_validation()
                 {
                     continue;
                 }

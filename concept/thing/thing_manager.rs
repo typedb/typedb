@@ -173,12 +173,12 @@ impl ThingManager {
         self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE)
     }
 
-    pub fn get_entities_in_range_unordered(
+    pub fn get_entities_in_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type_range: &impl RangeBounds<EntityType>,
     ) -> InstanceIterator<Entity> {
-        self.get_thing_in_range_unordered(
+        self.get_thing_in_range(
             snapshot,
             entity_type_range,
             <Entity as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
@@ -195,12 +195,12 @@ impl ThingManager {
         self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE)
     }
 
-    pub fn get_relations_in_range_unordered(
+    pub fn get_relations_in_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type_range: &impl RangeBounds<RelationType>,
     ) -> InstanceIterator<Relation> {
-        self.get_thing_in_range_unordered(
+        self.get_thing_in_range(
             snapshot,
             relation_type_range,
             <Relation as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
@@ -217,12 +217,12 @@ impl ThingManager {
         self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE)
     }
 
-    pub fn get_objects_in_range_unordered(
+    pub fn get_objects_in_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         object_type_range: &impl RangeBounds<ObjectType>,
     ) -> InstanceIterator<Object> {
-        self.get_thing_in_range_unordered(
+        self.get_thing_in_range(
             snapshot,
             object_type_range,
             Prefix::object_type_range_inclusive(),
@@ -231,7 +231,7 @@ impl ThingManager {
         )
     }
 
-    fn get_thing_in_range_unordered<T: ThingAPI>(
+    fn get_thing_in_range<T: ThingAPI>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_range: &impl RangeBounds<T::TypeAPI>,
@@ -2085,7 +2085,7 @@ impl ThingManager {
                 ),
                 unreachable!("Expected at least one object type")
             );
-            let mut it = self.get_relations_in_range_unordered(snapshot, &(Bound::Included(min), Bound::Included(max)));
+            let mut it = self.get_relations_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
             while let Some(relation) = it.next().transpose()? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.extend(role_types.iter());
@@ -2100,7 +2100,7 @@ impl ThingManager {
                 ),
                 unreachable!("Expected at least one object type")
             );
-            let mut it = self.get_objects_in_range_unordered(snapshot, &(Bound::Included(min), Bound::Included(max)));
+            let mut it = self.get_objects_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
             while let Some(object) = it.next().transpose()? {
                 let updated_role_types = out_object_role_types.entry(object).or_default();
                 updated_role_types.extend(role_types.iter());
@@ -2115,7 +2115,7 @@ impl ThingManager {
                 ),
                 unreachable!("Expected at least one object type")
             );
-            let mut it = self.get_objects_in_range_unordered(snapshot, &(Bound::Included(min), Bound::Included(max)));
+            let mut it = self.get_objects_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
             while let Some(object) = it.next().transpose()? {
                 let updated_attribute_types = out_object_attribute_types.entry(object).or_default();
                 updated_attribute_types.extend(attribute_types.iter());

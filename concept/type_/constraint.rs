@@ -146,15 +146,15 @@ impl ConstraintDescription {
         }
     }
 
-    pub(crate) fn is_checked(&self) -> bool {
+    pub(crate) fn requires_validation(&self) -> bool {
         match self {
-            ConstraintDescription::Cardinality(cardinality) => cardinality.is_checked(),
+            ConstraintDescription::Cardinality(cardinality) => cardinality.requires_validation(),
             ConstraintDescription::Independent(_) => false,
             _ => true,
         }
     }
 
-    pub(crate) fn is_operation_time_checked(&self) -> bool {
+    pub(crate) fn requires_operation_time_validation(&self) -> bool {
         match self {
             ConstraintDescription::Cardinality(_) => false, // only commit time
             ConstraintDescription::Independent(_) => false, // never
@@ -248,12 +248,12 @@ pub trait Constraint<T>: Sized + Clone + Hash + Eq {
         self.description().scope()
     }
 
-    fn is_checked(&self) -> bool {
-        self.description().is_checked()
+    fn requires_validation(&self) -> bool {
+        self.description().requires_validation()
     }
 
-    fn is_operation_time_checked(&self) -> bool {
-        self.description().is_operation_time_checked()
+    fn requires_operation_time_validation(&self) -> bool {
+        self.description().requires_operation_time_validation()
     }
 
     fn validate_narrowed_by_strictly_same_type(

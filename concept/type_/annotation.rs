@@ -152,7 +152,7 @@ impl AnnotationCardinality {
         Self::new(0, None)
     }
 
-    pub fn is_checked(&self) -> bool {
+    pub fn requires_validation(&self) -> bool {
         self != &Self::unchecked()
     }
 
