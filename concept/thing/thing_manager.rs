@@ -182,7 +182,6 @@ impl ThingManager {
             snapshot,
             entity_type_range,
             <Entity as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
-            <Entity as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING,
             <Entity as ThingAPI>::Vertex::KEYSPACE,
         )
     }
@@ -204,7 +203,6 @@ impl ThingManager {
             snapshot,
             relation_type_range,
             <Relation as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
-            <Relation as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING,
             <Relation as ThingAPI>::Vertex::KEYSPACE,
         )
     }
@@ -226,7 +224,6 @@ impl ThingManager {
             snapshot,
             object_type_range,
             Prefix::object_type_range_inclusive(),
-            <Object as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING,
             <Object as ThingAPI>::Vertex::KEYSPACE,
         )
     }
@@ -236,8 +233,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         type_range: &impl RangeBounds<T::TypeAPI>,
         unbounded_prefix_range: (Prefix, Prefix),
-        fixed_width_encoding: bool, // TODO: Can be generalized for ThingAPI?
-        keyspace: EncodingKeyspace, // TODO: Can be generalized for ThingAPI?
+        keyspace: EncodingKeyspace,
     ) -> InstanceIterator<T> {
         let range_start = match type_range.start_bound() {
             Bound::Included(start_type) => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
@@ -273,7 +269,7 @@ impl ThingManager {
                 keyspace,
             )),
         };
-        let key_range = KeyRange::new(range_start, range_end, fixed_width_encoding);
+        let key_range = KeyRange::new(range_start, range_end, <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING);
         InstanceIterator::new(snapshot.iterate_range(&key_range))
     }
 

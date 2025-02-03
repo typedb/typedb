@@ -178,6 +178,8 @@ impl Typed<BUFFER_KEY_INLINE> for AttributeVertex {
 }
 
 impl ThingVertex for AttributeVertex {
+    const FIXED_WIDTH_ENCODING: bool = false;
+
     fn decode(bytes: &[u8]) -> Self {
         AttributeVertex::decode(bytes)
     }
