@@ -413,7 +413,7 @@ impl<'a> LinksDeduplicationPlanner<'a> {
 }
 
 impl Costed for LinksDeduplicationPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId],  _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
