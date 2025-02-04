@@ -15,6 +15,7 @@ load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_a
 
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
+load("@io_bazel_rules_docker//docker/util:run.bzl", docker_container_run_and_commit = "container_run_and_commit")
 
 load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
@@ -270,11 +271,29 @@ alias(
 )
 
 # docker
+docker_image_prepare_commands = [
+    "apt-get update",
+    "apt-get install -y ca-certificates",
+    "rm -rf /var/lib/apt/lists/*",
+]
+
+docker_container_run_and_commit(
+    name = "typedb-ubuntu-22.04-x86_64",
+    image = "@ubuntu-22.04-x86_64//image",
+    commands = docker_image_prepare_commands,
+)
+
+docker_container_run_and_commit(
+    name = "typedb-ubuntu-22.04-arm64",
+    image = "@ubuntu-22.04-arm64//image",
+    commands = docker_image_prepare_commands,
+)
+
 docker_container_image(
     name = "assemble-docker-x86_64",
     operating_system = "linux",
     architecture = "amd64",
-    base = "@ubuntu-22.04-x86_64//image",
+    base = ":typedb-ubuntu-22.04-x86_64",
     cmd = ["/opt/typedb-server-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
@@ -293,7 +312,7 @@ docker_container_image(
     name = "assemble-docker-arm64",
     operating_system = "linux",
     architecture = "arm64",
-    base = "@ubuntu-22.04-arm64//image",
+    base = ":typedb-ubuntu-22.04-arm64",
     cmd = ["/opt/typedb-server-linux-arm64/typedb", "server"],
     directory = "opt",
     env = {

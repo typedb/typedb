@@ -87,7 +87,7 @@ impl Reporter {
                 }
             },
             REPORT_INTERVAL,
-            self.calculate_initial_delay(),
+            Duration::from_secs(10), // TODO: Temp
             true,
         );
         *self._reporting_job.lock().expect("Expected reporting job exclusive lock acquisition") = Some(reporting_job);
@@ -141,6 +141,7 @@ impl Reporter {
 
         // The request is sent once, so it's fine to take a snapshot lossy with a small delay
         if is_reported {
+            println!("Reported successfully to service!");
             trace!("Service reporting is successful. Taking a snapshot...");
             diagnostics.take_service_snapshot();
         }
@@ -172,7 +173,7 @@ impl Reporter {
         if !is_reported {
             trace!("PostHog reporting is not successful. Restoring the snapshot...");
             diagnostics.restore_posthog_snapshot();
-        }
+        } else {println!("reported successfully to posthog!");}
         is_reported
     }
 
@@ -225,7 +226,10 @@ impl Reporter {
     fn new_https_client() -> Result<Client<HttpsConnector<HttpConnector>>, DiagnosticsReporterError> {
         let https = HttpsConnectorBuilder::new()
             .with_native_roots()
-            .map_err(|source| DiagnosticsReporterError::HttpsClientBuilding { source: Arc::new(source) })?
+            .map_err(|source| {
+                println!("TEST: Cannot build an https client: {source:?}");
+                DiagnosticsReporterError::HttpsClientBuilding { source: Arc::new(source) }
+            })?
             .https_only()
             .enable_http1()
             .build();
@@ -276,10 +280,12 @@ impl Reporter {
     }
 
     fn report_inner_error_message_critical(message: &str) {
+        println!("Cannot send reporting: critical");
         sentry::capture_message(message, sentry::Level::Error);
     }
 
     fn report_inner_error_message_warning(message: &str) {
+        println!("Cannot send reporting: warning");
         sentry::capture_message(message, sentry::Level::Warning);
     }
 }
