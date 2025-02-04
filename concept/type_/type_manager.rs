@@ -1726,9 +1726,6 @@ impl TypeManager {
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_attribute_type_supertype_is_abstract(snapshot, self, supertype)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
         OperationTimeValidation::validate_new_attribute_type_supertype_owns_ordering(
             snapshot, self, subtype, supertype,
         )
@@ -2313,9 +2310,6 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_no_attribute_subtypes_to_unset_abstractness(snapshot, self, attribute_type)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
         OperationTimeValidation::validate_value_type_compatible_with_abstractness(
             snapshot,
             self,
