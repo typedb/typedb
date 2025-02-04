@@ -17,6 +17,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use ir::{
+    pattern::Vertex,
     pipeline::{
         function::{Function, FunctionBody, ReturnOperation},
         function_signature::FunctionID,
@@ -299,7 +300,7 @@ fn annotate_function_impl(
         &mut context.variable_registry,
         parameters,
         stages.clone(),
-        argument_concept_variable_types,
+        argument_concept_variable_types.clone(),
         argument_value_variable_types.clone(),
     )
     .map_err(|err| {
@@ -317,7 +318,12 @@ fn annotate_function_impl(
     if let Some(output) = function.output.as_ref() {
         validate_return_against_signature(snapshot, type_manager, function.name.as_str(), &return_annotations, output)?;
     }
-    let argument_annotations = annotate_arguments(stages.as_slice(), arguments, &argument_value_variable_types);
+    let argument_annotations = annotate_arguments(
+        stages.as_slice(),
+        arguments,
+        &argument_concept_variable_types,
+        &argument_value_variable_types,
+    );
     let annotated_signature =
         AnnotatedFunctionSignature { arguments: argument_annotations, returned: return_annotations };
     Ok(AnnotatedFunction {
@@ -450,23 +456,33 @@ fn resolve_return_operators(
 fn annotate_arguments(
     annotated_stages: &[AnnotatedStage],
     arguments: &[Variable],
+    argument_annotations_from_signature: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     argument_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Vec<FunctionParameterAnnotation> {
-    let first_match_annotations = annotated_stages
-        .iter()
-        .filter_map(|stage| {
-            if let AnnotatedStage::Match { block_annotations, .. } = stage {
-                Some(block_annotations)
-            } else {
-                None
-            }
-        })
-        .next()
-        .unwrap();
     arguments
         .iter()
         .map(|&var| {
-            get_function_parameter(var, first_match_annotations.vertex_annotations(), argument_value_type_annotations)
+            let body_variable_annotations = annotated_stages
+                .iter()
+                .filter_map(|stage| {
+                    if let AnnotatedStage::Match { block_annotations, .. } = stage {
+                        block_annotations.vertex_annotations_of(&Vertex::Variable(var)).cloned()
+                    } else {
+                        None
+                    }
+                })
+                .next();
+            if let Some(arced_types) = body_variable_annotations.as_ref() {
+                let types: &BTreeSet<Type> = arced_types;
+                FunctionParameterAnnotation::Concept(types.clone())
+            } else if let Some(arced_types) = argument_annotations_from_signature.get(&var) {
+                let types: &BTreeSet<Type> = arced_types;
+                FunctionParameterAnnotation::Concept(types.clone())
+            } else if let Some(expression_value_type) = argument_value_type_annotations.get(&var) {
+                FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
+            } else {
+                unreachable!("Could not find annotations for a function argument or return variable.")
+            }
         })
         .collect()
 }
@@ -479,7 +495,16 @@ fn annotate_return(
     match return_operation {
         AnnotatedFunctionReturn::Stream { variables } | AnnotatedFunctionReturn::Single { variables, .. } => variables
             .iter()
-            .map(|&var| get_function_parameter(var, final_type_annotations, final_value_type_annotations))
+            .map(|&var| {
+                if let Some(arced_types) = final_type_annotations.get(&var.into()) {
+                    let types: &BTreeSet<Type> = arced_types;
+                    FunctionParameterAnnotation::Concept(types.clone())
+                } else if let Some(expression_value_type) = final_value_type_annotations.get(&var) {
+                    FunctionParameterAnnotation::Value(expression_value_type.value_type().clone())
+                } else {
+                    unreachable!("Could not find annotations for a function argument or return variable.")
+                }
+            })
             .collect(),
         AnnotatedFunctionReturn::ReduceReducer { instructions } => instructions
             .iter()
