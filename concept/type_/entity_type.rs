@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, fmt, sync::Arc};
+use std::{any::Any, collections::HashSet, fmt, sync::Arc};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -45,9 +45,15 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType {
     vertex: TypeVertex,
+}
+
+impl fmt::Debug for EntityType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Entity[{:?}]", self.vertex)
+    }
 }
 
 impl Hkt for EntityType {

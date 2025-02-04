@@ -48,9 +48,15 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType {
     vertex: TypeVertex,
+}
+
+impl fmt::Debug for RelationType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Relation[{:?}]", self.vertex)
+    }
 }
 
 impl RelationType {}

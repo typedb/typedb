@@ -110,7 +110,7 @@ impl<const INLINE_BYTES: usize> ByteArray<INLINE_BYTES> {
 
 impl<const INLINE_BYTES: usize> fmt::Debug for ByteArray<INLINE_BYTES> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct(std::any::type_name_of_val(self)).field("data", &HexBytesFormatter::borrowed(self)).finish()
+        write!(f, "{}", HexBytesFormatter::borrowed(self))
     }
 }
 

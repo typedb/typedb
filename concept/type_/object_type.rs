@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, fmt, sync::Arc};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -39,10 +39,19 @@ macro_rules! with_object_type {
 }
 pub(crate) use with_object_type;
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ObjectType {
     Entity(EntityType),
     Relation(RelationType),
+}
+
+impl fmt::Debug for ObjectType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Entity(inner) => fmt::Debug::fmt(inner, f),
+            Self::Relation(inner) => fmt::Debug::fmt(inner, f),
+        }
+    }
 }
 
 impl TypeVertexEncoding for ObjectType {
