@@ -212,11 +212,21 @@ impl Cost {
 }
 
 pub(super) trait Costed {
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData);
+    fn cost_and_metadata(
+        &self,
+        vertex_ordering: &[VertexId],
+        fix_dir: Option<Direction>,
+        graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData);
 }
 
 impl Costed for PlannerVertex<'_> {
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        vertex_ordering: &[VertexId],
+        fix_dir: Option<Direction>,
+        graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         match self {
             Self::Variable(_) => (Cost::NOOP, CostMetaData::None),
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, fix_dir, graph),
@@ -299,7 +309,12 @@ impl<'a> ExpressionPlanner<'a> {
 }
 
 impl Costed for ExpressionPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         (self.cost, CostMetaData::None)
     }
 }
@@ -328,7 +343,12 @@ impl<'a> FunctionCallPlanner<'a> {
 }
 
 impl Costed for FunctionCallPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         (self.cost, CostMetaData::None)
     }
 }
@@ -366,7 +386,12 @@ impl<'a> IsPlanner<'a> {
 }
 
 impl Costed for IsPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
@@ -413,7 +438,12 @@ impl<'a> LinksDeduplicationPlanner<'a> {
 }
 
 impl Costed for LinksDeduplicationPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId],  _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
@@ -463,7 +493,12 @@ impl<'a> ComparisonPlanner<'a> {
 }
 
 impl Costed for ComparisonPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
     }
 }
@@ -494,7 +529,12 @@ impl<'a> NegationPlanner<'a> {
 }
 
 impl Costed for NegationPlanner<'_> {
-    fn cost_and_metadata(&self, _vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, _graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         (self.plan.planner_statistics.query_cost, CostMetaData::None)
     }
 }
@@ -536,7 +576,12 @@ impl<'a> DisjunctionPlanner<'a> {
 }
 
 impl Costed for DisjunctionPlanner<'_> {
-    fn cost_and_metadata(&self, vertex_ordering: &[VertexId], _fix_dir: Option<Direction>, graph: &Graph<'_>) -> (Cost, CostMetaData) {
+    fn cost_and_metadata(
+        &self,
+        vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        graph: &Graph<'_>,
+    ) -> (Cost, CostMetaData) {
         let input_variables =
             vertex_ordering.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         let cost = self
