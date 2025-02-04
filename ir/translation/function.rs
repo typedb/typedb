@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use itertools::Itertools;
 use answer::variable::Variable;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
@@ -62,13 +63,20 @@ pub fn translate_function_from(
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
 
     // Check for unused arguments
-    for arg in &signature.args {
-        let var = context.get_variable(arg.var.name().unwrap()).ok_or_else(|| {
-            FunctionRepresentationError::FunctionArgumentUnused {
-                argument_variable: arg.var.name().unwrap().to_owned(),
-                declaration: declaration.unwrap().clone(),
+    for arg in &arguments {
+        if !body.stages.iter().any(|stage| {
+            if let TranslatedStage::Match { block, .. } = stage {
+                block.conjunction().referenced_variables().contains(&arg)
+            } else {
+                false
             }
-        })?;
+        }) {
+            let argument_variable = context.variable_registry.get_variable_name(arg.clone()).unwrap();
+            return Err(FunctionRepresentationError::FunctionArgumentUnused {
+                argument_variable: argument_variable.clone(),
+                declaration: declaration.unwrap().clone(),
+            })
+        }
     }
     // Check return declaration aligns with definition
     let returns_consistent = match (&signature.output, &body.return_operation) {
