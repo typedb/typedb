@@ -28,6 +28,7 @@ use concept::{
 use encoding::value::label::Label;
 use error::{typedb_error, unimplemented_feature};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use iterator::minmax_or;
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -535,11 +536,7 @@ fn prepare_attribute_type_has_iterator(
         .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
         .map_err(|source| FetchExecutionError::ConceptRead { source })?;
     let attribute_types = TypeAPI::chain_types(attribute_type, subtypes.into_iter().cloned());
-    let (min_type, max_type) = match attribute_types.into_iter().minmax() {
-        MinMaxResult::NoElements => return Ok(HasIterator::new_empty()),
-        MinMaxResult::OneElement(item) => (item, item),
-        MinMaxResult::MinMax(min, max) => (min, max),
-    };
+    let (min_type, max_type) = minmax_or!(attribute_types.into_iter(), return Ok(HasIterator::new_empty()));
     let range = (Bound::Included(min_type), Bound::Included(max_type));
     Ok(object.get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), &range))
 }

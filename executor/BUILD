@@ -19,6 +19,7 @@ rust_library(
         "//answer",
         "//common/bytes",
         "//common/error",
+        "//common/iterator",
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",

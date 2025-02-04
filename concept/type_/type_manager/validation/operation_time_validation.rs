@@ -33,10 +33,10 @@ use crate::{
         },
         attribute_type::{AttributeType, AttributeTypeAnnotation},
         constraint::{
-            filter_by_constraint_category, filter_by_scope, filter_out_unchecked_constraints, get_abstract_constraints,
-            get_checked_constraints, get_distinct_constraints, get_range_constraints, get_regex_constraints,
-            get_values_constraints, type_get_constraints_closest_source, CapabilityConstraint, Constraint,
-            ConstraintDescription, ConstraintScope, TypeConstraint,
+            filter_by_constraint_category, filter_by_scope, filter_out_operation_time_unchecked_constraints,
+            get_abstract_constraints, get_distinct_constraints, get_operation_time_checked_constraints,
+            get_range_constraints, get_regex_constraints, get_values_constraints, type_get_constraints_closest_source,
+            CapabilityConstraint, Constraint, ConstraintDescription, ConstraintScope, TypeConstraint,
         },
         entity_type::EntityType,
         object_type::ObjectType,
@@ -250,7 +250,7 @@ macro_rules! new_acquired_capability_instances_validation {
                 &affected_object_types,
                 &affected_interface_types,
                 &HashMap::new(), // all interface supertypes are read from storage
-                &get_checked_constraints(default_constraints.into_iter()),
+                &get_operation_time_checked_constraints(default_constraints.into_iter()),
             )
             .map_err(|typedb_source| {
                 Box::new(SchemaValidationError::CannotAcquireCapabilityAsExistingInstancesViolateItsConstraint {
@@ -290,8 +290,9 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
                     .cloned(),
             )
             .collect();
-            let constraints =
-                get_checked_constraints(annotation.to_capability_constraints(capability.clone()).into_iter());
+            let constraints = get_operation_time_checked_constraints(
+                annotation.to_capability_constraints(capability.clone()).into_iter(),
+            );
 
             $validation_func(
                 snapshot,
@@ -352,7 +353,7 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                         .cloned(),
                 )
                 .collect();
-                let mut constraints = get_checked_constraints(
+                let mut constraints = get_operation_time_checked_constraints(
                     new_capability
                         .get_constraints(snapshot, type_manager)
                         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
@@ -460,7 +461,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     continue;
                 }
 
-                let affected_constraints = filter_out_unchecked_constraints!(constraints.into_iter())
+                let affected_constraints = filter_out_operation_time_unchecked_constraints!(constraints.into_iter())
                     .filter(|constraint| match constraint.scope() {
                         ConstraintScope::SingleInstanceOfType | ConstraintScope::SingleInstanceOfTypeOrSubtype => false,
                         ConstraintScope::AllInstancesOfSiblingTypeOrSubtypes
@@ -566,7 +567,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                     &HashSet::from([affected_object_type]),
                     &affected_interface_types,
                     &updated_supertypes,
-                    &get_checked_constraints(constraints.into_iter()),
+                    &get_operation_time_checked_constraints(constraints.into_iter()),
                 )
                 .map_err(|typedb_source| {
                     SchemaValidationError::CannotChangeInterfaceTypeSupertypeAsUpdatedCapabilityConstraintIsViolatedByExistingInstances {
@@ -589,7 +590,8 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
             type_: $type_,
             annotation: Annotation,
         ) -> Result<(), Box<SchemaValidationError>> {
-            let constraints = get_checked_constraints(annotation.to_type_constraints(type_.clone()).into_iter());
+            let constraints =
+                get_operation_time_checked_constraints(annotation.to_type_constraints(type_.clone()).into_iter());
             let affected_types = TypeAPI::chain_types(
                 type_.clone(),
                 type_
@@ -620,7 +622,7 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
             type_: $type_,
             new_supertype: $type_,
         ) -> Result<(), Box<SchemaValidationError>> {
-            let constraints = get_checked_constraints(
+            let constraints = get_operation_time_checked_constraints(
                 new_supertype
                     .get_constraints(snapshot, type_manager)
                     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
@@ -1568,7 +1570,7 @@ impl OperationTimeValidation {
         {
             Ok(())
         } else {
-            Err(Box::new(SchemaValidationError::AttributeTypeSupertypeIsNotAbstract {
+            Err(Box::new(SchemaValidationError::AttributeTypeMustBeAbstractToHaveSubtypes {
                 attribute: get_label_or_schema_err(snapshot, type_manager, type_)?,
             }))
         }

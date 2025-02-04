@@ -24,7 +24,8 @@ use encoding::{
             ThingVertex,
         },
         type_::{
-            property::{TypeVertexProperty, TypeVertexPropertyEncoding},
+            edge::TypeEdge,
+            property::{TypeEdgeProperty, TypeVertexProperty, TypeVertexPropertyEncoding},
             vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
         },
         Typed,
@@ -49,7 +50,8 @@ use encoding::{
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
-use itertools::Itertools;
+use iterator::minmax_or;
+use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
 use resource::constants::{
@@ -87,6 +89,9 @@ use crate::{
         constraint::{get_checked_constraints, Constraint},
         entity_type::EntityType,
         object_type::ObjectType,
+        owns::Owns,
+        plays::Plays,
+        relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
@@ -168,6 +173,19 @@ impl ThingManager {
         self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE)
     }
 
+    pub fn get_entities_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        entity_type_range: &impl RangeBounds<EntityType>,
+    ) -> InstanceIterator<Entity> {
+        self.get_thing_in_range(
+            snapshot,
+            entity_type_range,
+            <Entity as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
+            <Entity as ThingAPI>::Vertex::KEYSPACE,
+        )
+    }
+
     pub fn get_relations_in(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -176,12 +194,83 @@ impl ThingManager {
         self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE)
     }
 
+    pub fn get_relations_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type_range: &impl RangeBounds<RelationType>,
+    ) -> InstanceIterator<Relation> {
+        self.get_thing_in_range(
+            snapshot,
+            relation_type_range,
+            <Relation as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
+            <Relation as ThingAPI>::Vertex::KEYSPACE,
+        )
+    }
+
     pub fn get_objects_in(
         &self,
         snapshot: &impl ReadableSnapshot,
         object_type: ObjectType,
     ) -> InstanceIterator<Object> {
         self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE)
+    }
+
+    pub fn get_objects_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        object_type_range: &impl RangeBounds<ObjectType>,
+    ) -> InstanceIterator<Object> {
+        self.get_thing_in_range(
+            snapshot,
+            object_type_range,
+            Prefix::object_type_range_inclusive(),
+            <Object as ThingAPI>::Vertex::KEYSPACE,
+        )
+    }
+
+    fn get_thing_in_range<T: ThingAPI>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_range: &impl RangeBounds<T::TypeAPI>,
+        unbounded_prefix_range: (Prefix, Prefix),
+        keyspace: EncodingKeyspace,
+    ) -> InstanceIterator<T> {
+        let range_start = match type_range.start_bound() {
+            Bound::Included(start_type) => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(*start_type),
+                start_type.vertex().type_id_(),
+                keyspace,
+            )),
+            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(<T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(*start_type),
+                start_type.vertex().type_id_(),
+                keyspace,
+            )),
+            Bound::Unbounded => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
+                unbounded_prefix_range.0,
+                TypeID::MIN,
+                keyspace,
+            )),
+        };
+        let range_end = match type_range.end_bound() {
+            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(<T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(*end_type),
+                end_type.vertex().type_id_(),
+                keyspace,
+            )),
+            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(<T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(*end_type),
+                end_type.vertex().type_id_(),
+                keyspace,
+            )),
+            Bound::Unbounded => RangeEnd::EndPrefixInclusive(<T as ThingAPI>::Vertex::build_prefix_type(
+                unbounded_prefix_range.1,
+                TypeID::MAX,
+                keyspace,
+            )),
+        };
+        let key_range = KeyRange::new(range_start, range_end, <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING);
+        InstanceIterator::new(snapshot.iterate_range(&key_range))
     }
 
     pub fn instance_exists(
@@ -1773,6 +1862,42 @@ impl ThingManager {
     }
 
     fn validate(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
+        /*
+        The cardinalities validation flow is the following:
+        1. Collect instances affected by cardinalities changes (separately for 3 capabilities: owns, plays, relates)
+        2. Validate only the affected instances to avoid rescanning the whole system (see validate_capability_cardinality_constraint). For each object,
+          2a. Count every capability instance it has (every has, every played role, every roleplayer)
+          2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once)
+          2c. Validate each constraint separately using the counts prepared in 2a. To validate a constraint, take its source type (where this constraint is declared), and count all instances of the source type and its subtypes.
+
+        Let's consider the following example (also consider that super attribute types can be not abstract):
+          entity person,
+            owns name @card(1..),
+            owns surname, # sub name
+            owns changed-surname @card(1..2); # sub surname
+
+        A query is being run:
+          define person owns surname @card(1..10);
+
+        It will be processed like:
+        1. All instances of persons will be collected, the only surname attribute type saved as modified.
+        2. For each instance of persons:
+          2a. All names, surnames, and changed-surnames are counted (based on instances' explicit types).
+          2b. surname's constraints will be taken: @card(1..) from name and @card(1..10) from surname.
+          2c. For each constraint:
+            @card(1..): combines counts of names, surnames, and changed-surnames. If it's at least 1, it's good.
+            @card(1..10): combines counts of surnames and changed-surnames (without names). If it's from 1 to 10, it's good.
+
+        This way, the validation on step 2 always goes up the sub hierarchy to collect current constraints, and then goes down the hierarchy to consider all the suitable instances.
+
+        However, it won't work if stage 1 is incomplete. For example:
+          undefine owns surname from person
+
+        If we mark only surnames as affected attribute types, we will get 0 constraints on the validation stage (as person does not have any constraints for it anymore, it does not own it).
+        Thus, we will not check the cardinality of names, although it might be violated as it does not now count surnames!
+        We could potentially use the old version of storage (ignoring the snapshot), but it would make the reasoning even more complicated.
+        Please keep these complexities in mind when modifying the collection stage in the following methods.
+         */
         let mut errors = Vec::new();
 
         let mut modified_objects_attribute_types = HashMap::new();
@@ -1786,10 +1911,23 @@ impl ThingManager {
             &mut modified_relations_role_types,
         );
         collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
-        res = self.collect_modified_has(snapshot, &mut modified_objects_attribute_types);
+
+        res = self.collect_modified_has_objects(snapshot, &mut modified_objects_attribute_types);
         collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
-        res =
-            self.collect_modified_links(snapshot, &mut modified_relations_role_types, &mut modified_objects_role_types);
+
+        res = self.collect_modified_links_objects(
+            snapshot,
+            &mut modified_relations_role_types,
+            &mut modified_objects_role_types,
+        );
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+
+        res = self.collect_modified_schema_capability_cardinalities_objects(
+            snapshot,
+            &mut modified_objects_attribute_types,
+            &mut modified_objects_role_types,
+            &mut modified_relations_role_types,
+        );
         collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
@@ -1870,7 +2008,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn collect_modified_has(
+    fn collect_modified_has_objects(
         &self,
         snapshot: &impl WritableSnapshot,
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
@@ -1890,7 +2028,7 @@ impl ThingManager {
         Ok(())
     }
 
-    fn collect_modified_links(
+    fn collect_modified_links_objects(
         &self,
         snapshot: &impl WritableSnapshot,
         out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
@@ -1912,6 +2050,312 @@ impl ThingManager {
             if self.object_exists(snapshot, player)? {
                 let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn collect_modified_schema_capability_cardinalities_objects(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
+        out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
+        out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let mut modified_owns = HashMap::new();
+        let mut modified_plays = HashMap::new();
+        let mut modified_relates = HashMap::new();
+        self.collect_modified_schema_capability_cardinalities(
+            snapshot,
+            &mut modified_owns,
+            &mut modified_plays,
+            &mut modified_relates,
+        )?;
+
+        for (relation_type, role_types) in modified_relates {
+            let (min, max) = minmax_or!(
+                TypeAPI::chain_types(
+                    relation_type,
+                    relation_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                ),
+                unreachable!("Expected at least one object type")
+            );
+            let mut it = self.get_relations_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
+            while let Some(relation) = it.next().transpose()? {
+                let updated_role_types = out_relation_role_types.entry(relation).or_default();
+                updated_role_types.extend(role_types.iter());
+            }
+        }
+
+        for (object_type, role_types) in modified_plays {
+            let (min, max) = minmax_or!(
+                TypeAPI::chain_types(
+                    object_type,
+                    object_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                ),
+                unreachable!("Expected at least one object type")
+            );
+            let mut it = self.get_objects_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
+            while let Some(object) = it.next().transpose()? {
+                let updated_role_types = out_object_role_types.entry(object).or_default();
+                updated_role_types.extend(role_types.iter());
+            }
+        }
+
+        for (object_type, attribute_types) in modified_owns {
+            let (min, max) = minmax_or!(
+                TypeAPI::chain_types(
+                    object_type,
+                    object_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                ),
+                unreachable!("Expected at least one object type")
+            );
+            let mut it = self.get_objects_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
+            while let Some(object) = it.next().transpose()? {
+                let updated_attribute_types = out_object_attribute_types.entry(object).or_default();
+                updated_attribute_types.extend(attribute_types.iter());
+            }
+        }
+
+        Ok(())
+    }
+
+    fn collect_modified_schema_capability_cardinalities(
+        &self,
+        snapshot: &impl WritableSnapshot,
+        modified_owns: &mut HashMap<ObjectType, HashSet<AttributeType>>,
+        modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
+        modified_relates: &mut HashMap<RelationType, HashSet<RoleType>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        // New / deleted capabilities
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeOwns),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let attribute_type = AttributeType::new(edge.to());
+            let updated_attribute_types = modified_owns.entry(ObjectType::new(edge.from())).or_default();
+            match write {
+                Write::Insert { .. } | Write::Put { .. } => {
+                    updated_attribute_types.insert(attribute_type);
+                }
+                Write::Delete => {
+                    updated_attribute_types.extend(TypeAPI::chain_types(
+                        attribute_type,
+                        attribute_type.get_supertypes_transitive(snapshot, self.type_manager())?.into_iter().cloned(),
+                    ));
+                }
+            }
+        }
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgePlays),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let role_type = RoleType::new(edge.to());
+            let updated_role_types = modified_plays.entry(ObjectType::new(edge.from())).or_default();
+            match write {
+                Write::Insert { .. } | Write::Put { .. } => {
+                    updated_role_types.insert(role_type);
+                }
+                Write::Delete => {
+                    updated_role_types.extend(TypeAPI::chain_types(
+                        role_type,
+                        role_type.get_supertypes_transitive(snapshot, self.type_manager())?.into_iter().cloned(),
+                    ));
+                }
+            }
+        }
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeRelates),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let role_type = RoleType::new(edge.to());
+            let updated_role_types = modified_relates.entry(RelationType::new(edge.from())).or_default();
+            match write {
+                Write::Insert { .. } | Write::Put { .. } => {
+                    updated_role_types.insert(role_type);
+                }
+                Write::Delete => {
+                    updated_role_types.extend(TypeAPI::chain_types(
+                        role_type,
+                        role_type.get_supertypes_transitive(snapshot, self.type_manager())?.into_iter().cloned(),
+                    ));
+                }
+            }
+        }
+
+        // New / deleted subs between objects and interfaces
+
+        for (key, write) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::EdgeSub),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let edge = TypeEdge::decode(Bytes::reference(key.bytes()));
+            let subtype = edge.from();
+            let supertype = edge.to();
+            let prefix = supertype.prefix();
+            match prefix {
+                // Interfaces: owns
+                Prefix::VertexAttributeType => match write {
+                    Write::Insert { .. } | Write::Put { .. } => {
+                        let attribute_subtype = AttributeType::new(subtype);
+                        for &object_type in attribute_subtype.get_owner_types(snapshot, self.type_manager())?.keys() {
+                            let updated_attribute_types = modified_owns.entry(object_type).or_default();
+                            updated_attribute_types.insert(attribute_subtype);
+                        }
+                    }
+                    Write::Delete => {
+                        let attribute_supertype = AttributeType::new(supertype);
+                        for attribute_type in TypeAPI::chain_types(
+                            attribute_supertype,
+                            attribute_supertype
+                                .get_supertypes_transitive(snapshot, self.type_manager())?
+                                .into_iter()
+                                .cloned(),
+                        ) {
+                            for &object_type in attribute_type.get_owner_types(snapshot, self.type_manager())?.keys() {
+                                let updated_attribute_types = modified_owns.entry(object_type).or_default();
+                                updated_attribute_types.insert(attribute_type);
+                            }
+                        }
+                    }
+                },
+                // Interfaces: plays and relates
+                Prefix::VertexRoleType => match write {
+                    Write::Insert { .. } | Write::Put { .. } => {
+                        let role_subtype = RoleType::new(subtype);
+                        for &object_type in role_subtype.get_player_types(snapshot, self.type_manager())?.keys() {
+                            let updated_role_types = modified_plays.entry(object_type).or_default();
+                            updated_role_types.insert(role_subtype);
+                        }
+                        for &relation_type in role_subtype.get_relation_types(snapshot, self.type_manager())?.keys() {
+                            let updated_role_types = modified_relates.entry(relation_type).or_default();
+                            updated_role_types.insert(role_subtype);
+                        }
+                    }
+                    Write::Delete => {
+                        let role_supertype = RoleType::new(supertype);
+                        for role_type in TypeAPI::chain_types(
+                            role_supertype,
+                            role_supertype
+                                .get_supertypes_transitive(snapshot, self.type_manager())?
+                                .into_iter()
+                                .cloned(),
+                        ) {
+                            for &object_type in role_type.get_player_types(snapshot, self.type_manager())?.keys() {
+                                let updated_role_types = modified_plays.entry(object_type).or_default();
+                                updated_role_types.insert(role_type);
+                            }
+                            for &relation_type in role_type.get_relation_types(snapshot, self.type_manager())?.keys() {
+                                let updated_role_types = modified_relates.entry(relation_type).or_default();
+                                updated_role_types.insert(role_type);
+                            }
+                        }
+                    }
+                },
+                // Objects and Relations: owns, plays, and relates
+                Prefix::VertexEntityType | Prefix::VertexRelationType => match write {
+                    Write::Insert { .. } | Write::Put { .. } => {
+                        let object_subtype = ObjectType::new(subtype);
+                        let object_supertype = ObjectType::new(supertype);
+
+                        let supertype_owned_attribute_types =
+                            object_supertype.get_owned_attribute_types(snapshot, self.type_manager())?;
+                        for attribute_type in object_subtype.get_owned_attribute_types(snapshot, self.type_manager())? {
+                            for &supertype_attribute_type in &supertype_owned_attribute_types {
+                                if supertype_attribute_type.is_supertype_transitive_of_or_same(
+                                    snapshot,
+                                    self.type_manager(),
+                                    attribute_type,
+                                )? {
+                                    let updated_attribute_types = modified_owns.entry(object_subtype).or_default();
+                                    updated_attribute_types.insert(attribute_type);
+                                    break;
+                                }
+                            }
+                        }
+
+                        let supertype_played_role_types =
+                            object_supertype.get_played_role_types(snapshot, self.type_manager())?;
+                        for role_type in object_subtype.get_played_role_types(snapshot, self.type_manager())? {
+                            for &supertype_role_type in &supertype_played_role_types {
+                                if supertype_role_type.is_supertype_transitive_of_or_same(
+                                    snapshot,
+                                    self.type_manager(),
+                                    role_type,
+                                )? {
+                                    let updated_role_types = modified_plays.entry(object_subtype).or_default();
+                                    updated_role_types.insert(role_type);
+                                    break;
+                                }
+                            }
+                        }
+
+                        if prefix == Prefix::VertexRelationType {
+                            let relation_subtype = RelationType::new(subtype);
+                            let relation_supertype = RelationType::new(supertype);
+
+                            let supertype_related_role_types =
+                                relation_supertype.get_related_role_types(snapshot, self.type_manager())?;
+                            for role_type in relation_subtype.get_related_role_types(snapshot, self.type_manager())? {
+                                for &supertype_role_type in &supertype_related_role_types {
+                                    if supertype_role_type.is_supertype_transitive_of_or_same(
+                                        snapshot,
+                                        self.type_manager(),
+                                        role_type,
+                                    )? {
+                                        let updated_role_types = modified_relates.entry(relation_subtype).or_default();
+                                        updated_role_types.insert(role_type);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+
+        // New / deleted annotations
+
+        for (key, _) in snapshot.iterate_writes_range(&KeyRange::new_within(
+            TypeEdge::build_prefix(Prefix::PropertyTypeEdge),
+            TypeEdge::FIXED_WIDTH_ENCODING,
+        )) {
+            let property = TypeEdgeProperty::decode(Bytes::reference(key.bytes()));
+            match property.infix() {
+                Infix::PropertyAnnotationKey | Infix::PropertyAnnotationCardinality => {
+                    let edge = property.type_edge();
+                    match edge.prefix() {
+                        Prefix::EdgeOwns => {
+                            let updated_attribute_types =
+                                modified_owns.entry(ObjectType::new(edge.from())).or_default();
+                            updated_attribute_types.insert(AttributeType::new(edge.to()));
+                        }
+                        Prefix::EdgeOwnsReverse => debug_assert!(false, "Unexpected property on reverse owns"),
+                        Prefix::EdgePlays => {
+                            let updated_role_types = modified_plays.entry(ObjectType::new(edge.from())).or_default();
+                            updated_role_types.insert(RoleType::new(edge.to()));
+                        }
+                        Prefix::EdgePlaysReverse => debug_assert!(false, "Unexpected property on reverse plays"),
+                        Prefix::EdgeRelates => {
+                            let updated_role_types =
+                                modified_relates.entry(RelationType::new(edge.from())).or_default();
+                            updated_role_types.insert(RoleType::new(edge.to()));
+                        }
+                        Prefix::EdgeRelatesReverse => debug_assert!(false, "Unexpected property on reverse relates"),
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
         }
 

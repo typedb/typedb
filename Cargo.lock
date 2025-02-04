@@ -1037,6 +1037,7 @@ dependencies = [
  "error",
  "function",
  "ir",
+ "iterator",
  "itertools 0.10.5",
  "lending_iterator",
  "logger",

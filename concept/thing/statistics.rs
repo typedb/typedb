@@ -362,14 +362,20 @@ impl Statistics {
         let player_1_to_2_index_count =
             self.links_index_counts.entry(player_1_type).or_default().entry(player_2_type).or_default();
         *player_1_to_2_index_count = match player_1_to_2_index_count.checked_add_signed(delta) {
-            None => panic!("Error with unsigned add player_1_to_2_index_count + delta: {} + {}", player_1_to_2_index_count, delta),
-            Some(value) => value
+            None => panic!(
+                "Error with unsigned add player_1_to_2_index_count + delta: {} + {}",
+                player_1_to_2_index_count, delta
+            ),
+            Some(value) => value,
         };
         if player_1_type != player_2_type {
             let player_2_to_1_index_count =
                 self.links_index_counts.entry(player_2_type).or_default().entry(player_1_type).or_default();
             *player_2_to_1_index_count = match player_2_to_1_index_count.checked_add_signed(delta) {
-                None => panic!("Error with unsigned add player_2_to_1_index_count: {} + {}", player_2_to_1_index_count, delta),
+                None => panic!(
+                    "Error with unsigned add player_2_to_1_index_count: {} + {}",
+                    player_2_to_1_index_count, delta
+                ),
                 Some(value) => value,
             };
         }

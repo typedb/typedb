@@ -29,7 +29,6 @@ pub struct ObjectVertex {
 
 impl ObjectVertex {
     pub const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
-    pub const FIXED_WIDTH_ENCODING: bool = true;
 
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
 
@@ -116,6 +115,8 @@ impl Typed<BUFFER_KEY_INLINE> for ObjectVertex {
 }
 
 impl ThingVertex for ObjectVertex {
+    const FIXED_WIDTH_ENCODING: bool = true;
+
     fn decode(bytes: &[u8]) -> ObjectVertex {
         debug_assert_eq!(bytes.len(), Self::LENGTH);
         let prefix = Prefix::from_prefix_id(PrefixID { byte: bytes[0] });

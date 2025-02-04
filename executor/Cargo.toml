@@ -101,6 +101,11 @@ features = {}
 		version = "0.10.5"
 		default-features = false
 
+	[dependencies.iterator]
+		path = "../common/iterator"
+		features = []
+		default-features = false
+
 	[dependencies.answer]
 		path = "../answer"
 		features = []

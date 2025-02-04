@@ -6,6 +6,7 @@
 
 use std::{collections::HashMap, fmt, marker::PhantomData, ops::Bound};
 
+use ::iterator::minmax_or;
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{
     executable::match_::instructions::{
@@ -941,10 +942,6 @@ fn get_vertex_value<'a>(
     }
 }
 
-fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (Type, Type) {
-    match types.into_iter().minmax() {
-        MinMaxResult::NoElements => unreachable!("Empty type iterator"),
-        MinMaxResult::OneElement(item) => (item.clone(), item.clone()),
-        MinMaxResult::MinMax(min, max) => (min.clone(), max.clone()),
-    }
+fn min_max_types<'a>(types: impl IntoIterator<Item = &'a Type>) -> (&'a Type, &'a Type) {
+    minmax_or!(types.into_iter(), unreachable!("Empty type iterator"))
 }

@@ -152,8 +152,8 @@ impl AnnotationCardinality {
         Self::new(0, None)
     }
 
-    pub fn is_unchecked(&self) -> bool {
-        self == &Self::unchecked()
+    pub fn requires_validation(&self) -> bool {
+        self != &Self::unchecked()
     }
 
     pub fn is_bounded_to_one(&self) -> bool {
