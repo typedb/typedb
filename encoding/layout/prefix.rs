@@ -72,7 +72,7 @@ impl Prefix {
         if Prefix::VertexEntityType.prefix_id().byte < Prefix::VertexRelationType.prefix_id().byte {
             Prefix::VertexRelationType
         } else {
-            Prefix::VertexRelationType
+            Prefix::VertexEntityType
         }
     }
 
