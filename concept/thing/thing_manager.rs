@@ -1870,7 +1870,7 @@ impl ThingManager {
           2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once)
           2c. Validate each constraint separately using the counts prepared in 2a. To validate a constraint, take its source type (where this constraint is declared), and count all instances of the source type and its subtypes.
 
-        Let's consider the following example (also consider that super attribute types can be not abstract):
+        Let's consider the following example:
           entity person,
             owns name @card(1..),
             owns surname, # sub name

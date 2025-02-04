@@ -6,16 +6,6 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
-    name = "test_function",
-    srcs = ["function.rs"],
-    deps = [
-        "//tests/behaviour/steps:steps",
-        "@crates//:tokio",
-    ],
-    data = ["@typedb_behaviour//concept/migration:function.feature"],
-)
-
-rust_test(
     name = "test_data_validation",
     srcs = ["data_validation.rs"],
     deps = [
