@@ -246,6 +246,7 @@ fn traverse_links_unbounded_sorted_from() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -347,6 +348,7 @@ fn traverse_links_unbounded_sorted_to() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -448,6 +450,7 @@ fn traverse_links_bounded_relation() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -565,6 +568,7 @@ fn traverse_links_bounded_relation_player() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -687,6 +691,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -785,6 +790,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -886,6 +892,7 @@ fn traverse_links_reverse_bounded_player() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -1003,6 +1010,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 

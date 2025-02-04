@@ -240,6 +240,7 @@ fn annotate_stage(
                 type_manager,
                 running_variable_annotations,
                 annotated_function_signatures,
+                false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
@@ -284,6 +285,7 @@ fn annotate_stage(
                 type_manager,
                 running_variable_annotations,
                 annotated_function_signatures,
+                true,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             block.conjunction().constraints().iter().for_each(|constraint| match constraint {
@@ -333,6 +335,7 @@ fn annotate_stage(
                 type_manager,
                 running_variable_annotations,
                 annotated_function_signatures,
+                true,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             deleted_variables.iter().for_each(|v| {

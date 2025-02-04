@@ -197,6 +197,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
             &type_manager,
             previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap()
     };
@@ -290,6 +291,7 @@ fn unselected_named_vars_counted() {
             &type_manager,
             previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap()
     };
@@ -396,6 +398,7 @@ fn cartesian_named_counted_checked() {
             &type_manager,
             previous_stage_variable_annotations,
             &EmptyAnnotatedFunctionSignatures,
+            false,
         )
         .unwrap()
     };

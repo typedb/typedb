@@ -282,6 +282,7 @@ fn traverse_index_from_unbound() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -535,6 +536,7 @@ fn traverse_index_from_bound() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
@@ -699,6 +701,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         &type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
+        false,
     )
     .unwrap();
 
