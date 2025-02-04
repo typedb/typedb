@@ -90,7 +90,7 @@ impl VariableModes {
 
     fn insert(&mut self, variable_position: ExecutorVariable, mode: VariableMode) {
         let existing = self.modes.insert(variable_position, mode);
-        debug_assert!(existing.is_none())
+        debug_assert!(existing.is_none() || existing == Some(mode))
     }
 
     pub fn get(&self, variable_position: ExecutorVariable) -> Option<VariableMode> {
