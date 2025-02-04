@@ -56,7 +56,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         variable_registry: &'this VariableRegistry,
         is_write_stage: bool,
     ) -> Self {
-        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, is_write_stage: is_write_stage }
+        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, is_write_stage }
     }
 
     pub(crate) fn create_graph<'graph>(

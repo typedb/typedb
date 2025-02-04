@@ -16,7 +16,7 @@ use compiler::{
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
-            instructions::{CheckInstruction, CheckVertex, ConstraintInstruction, Inputs, thing::IsaInstruction},
+            instructions::{thing::IsaInstruction, CheckInstruction, CheckVertex, ConstraintInstruction, Inputs},
             planner::{
                 match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
                 plan::PlannerStatistics,
@@ -29,8 +29,8 @@ use compiler::{
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, ExecutionInterrupt, match_executor::MatchExecutor, pipeline::stage::ExecutionContext,
-    profile::QueryProfile, row::MaybeOwnedRow,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
+    row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
@@ -38,7 +38,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use storage::{durability_client::WALClient, MVCCStorage, snapshot::CommittableSnapshot};
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 
@@ -111,10 +111,16 @@ fn attribute_equality() {
     let var_age_type_a = conjunction.constraints_mut().get_or_declare_variable("age-a", None).unwrap();
     let var_age_type_b = conjunction.constraints_mut().get_or_declare_variable("age-b", None).unwrap();
 
-    let isa_a =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into(), None).unwrap().clone();
-    let isa_b =
-        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into(), None).unwrap().clone();
+    let isa_a = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_age_a, var_age_type_a.into(), None)
+        .unwrap()
+        .clone();
+    let isa_b = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_age_b, var_age_type_b.into(), None)
+        .unwrap()
+        .clone();
     conjunction.constraints_mut().add_label(var_age_type_a, AGE_LABEL.clone()).unwrap();
     conjunction.constraints_mut().add_label(var_age_type_b, AGE_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
