@@ -82,42 +82,42 @@ impl Prefix {
 }
 
 make_prefix_enum! {
-    // Reserved: 0-9
-    VertexEntityType => 10, true;
-    VertexRelationType => 11, true;
-    VertexAttributeType => 12, true;
-    VertexRoleType => 15, true;
-    DefinitionStruct => 20, true;
-    DefinitionFunction => 21, true;
+    // Reserved: 0x00-0x09
+    VertexEntityType => 0x0A, true;
+    VertexRelationType => 0x0B, true;
+    VertexAttributeType => 0x0C, true;
+    VertexRoleType => 0x0F, true;
+    DefinitionStruct => 0x14, true;
+    DefinitionFunction => 0x15, true;
 
     // All objects are stored consecutively for iteration
-    VertexEntity => 30, true;
-    VertexRelation => 31, true;
-    VertexAttribute => 32, false;
+    VertexEntity => 0x1E, true;
+    VertexRelation => 0x1F, true;
+    VertexAttribute => 0x20, false;
 
-    EdgeSub => 100, true;
-    EdgeSubReverse => 101, true;
-    EdgeOwns => 102, true;
-    EdgeOwnsReverse => 103, true;
-    EdgePlays => 104, true;
-    EdgePlaysReverse => 105, true;
-    EdgeRelates => 106, true;
-    EdgeRelatesReverse => 107, true;
+    EdgeSub => 0x64, true;
+    EdgeSubReverse => 0x65, true;
+    EdgeOwns => 0x66, true;
+    EdgeOwnsReverse => 0x67, true;
+    EdgePlays => 0x68, true;
+    EdgePlaysReverse => 0x69, true;
+    EdgeRelates => 0x6A, true;
+    EdgeRelatesReverse => 0x6B, true;
 
-    EdgeHas => 130, false;
-    EdgeHasReverse => 131, false;
-    EdgeLinks => 132, true;
-    EdgeLinksReverse => 133, true;
-    EdgeLinksIndex => 140, true;
+    EdgeHas => 0x82, false;
+    EdgeHasReverse => 0x83, false;
+    EdgeLinks => 0x84, true;
+    EdgeLinksReverse => 0x85, true;
+    EdgeLinksIndex => 0x8C, true;
 
-    PropertyTypeVertex => 160, true;
-    PropertyTypeEdge => 162, true;
-    PropertyObjectVertex => 163, true;
+    PropertyTypeVertex => 0xA0, true;
+    PropertyTypeEdge => 0xA2, true;
+    PropertyObjectVertex => 0xA3, true;
 
-    IndexLabelToType => 182, false;
-    IndexNameToDefinitionStruct => 183, false;
-    IndexNameToDefinitionFunction => 184, false;
+    IndexLabelToType => 0xB6, false;
+    IndexNameToDefinitionStruct => 0xB7, false;
+    IndexNameToDefinitionFunction => 0xB8, false;
 
-    IndexValueToStruct => 190, false
-    // Reserved: 200-255
+    IndexValueToStruct => 0xBE, false
+    // Reserved: 0xC8-0xFF
 }
