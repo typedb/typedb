@@ -254,9 +254,18 @@ pub enum CostMetaData {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum Direction {
+pub(crate) enum Direction {
     Canonical,
     Reverse,
+}
+
+impl Direction {
+    pub(crate) fn canonical_if(b: bool) -> Direction {
+        match b {
+            true => Direction::Canonical,
+            false => Direction::Reverse,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]

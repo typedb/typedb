@@ -82,29 +82,44 @@ impl ConstraintVertex<'_> {
         }
     }
 
-    pub(crate) fn join_var_from_direction(
+    pub(crate) fn join_from_direction_and_inputs(
         &self,
         dir: &Direction,
         include: &HashSet<VariableVertexId>,
         exclude: &HashSet<VariableVertexId>,
     ) -> Option<VariableVertexId> {
+        // Check whether we have unbound vars for join candidates
         match self {
             Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
                 let mut unbound_join_variables: Vec<VariableVertexId> = self
                     .variables()
                     .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
                     .collect();
-                // If only one variable is unbound we don't have much choice
                 if unbound_join_variables.len() == 1 {
                     return unbound_join_variables.get(0).cloned();
                 }
-                // Otherwise, pick according to the provided direction
-                match dir {
-                    Direction::Canonical => unbound_join_variables.get(0).cloned(),
-                    Direction::Reverse => unbound_join_variables.get(1).cloned(),
+                if unbound_join_variables.len() == 0 {
+                    return None;
                 }
             }
-            _ => None,
+            _ => return None,
+        }
+        // Pick join candidate based on direction
+        let is_canonical = *dir == Direction::Canonical;
+        if is_canonical {
+            match self {
+                Self::Links(inner) => Some(inner.relation),
+                Self::Has(inner) => Some(inner.owner),
+                Self::IndexedRelation(inner) => Some(inner.player_1),
+                _ => None,
+            }
+        } else {
+            match self {
+                Self::Links(inner) => Some(inner.player),
+                Self::Has(inner) => Some(inner.attribute),
+                Self::IndexedRelation(inner) => Some(inner.player_2),
+                _ => None,
+            }
         }
     }
 
@@ -131,27 +146,9 @@ impl ConstraintVertex<'_> {
         }
         // If unbounded, we choose direction based on the provided join variable
         match self {
-            Self::Links(inner) => {
-                if inner.relation == var {
-                    Some(Direction::Canonical)
-                } else {
-                    Some(Direction::Reverse)
-                }
-            }
-            Self::Has(inner) => {
-                if inner.owner == var {
-                    Some(Direction::Canonical)
-                } else {
-                    Some(Direction::Reverse)
-                }
-            }
-            Self::IndexedRelation(inner) => {
-                if inner.player_1 == var {
-                    Some(Direction::Canonical)
-                } else {
-                    Some(Direction::Reverse)
-                }
-            }
+            Self::Links(inner) => Some(Direction::canonical_if(inner.relation == var)),
+            Self::Has(inner) => Some(Direction::canonical_if(inner.owner == var)),
+            Self::IndexedRelation(inner) => Some(Direction::canonical_if(inner.player_1 == var)),
             _ => None,
         }
     }
@@ -693,16 +690,12 @@ impl Costed for HasPlanner<'_> {
             attribute_selectivity,
         );
         let cost: f64;
-        let direction: Direction;
+        let direction = fix_dir.unwrap_or(Direction::canonical_if(scan_size_canonical <= scan_size_reverse));
 
-        if (fix_dir != Some(Direction::Reverse) && scan_size_canonical <= scan_size_reverse)
-            || fix_dir == Some(Direction::Canonical)
-        {
+        if direction == Direction::Canonical {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
-            direction = Direction::Canonical;
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
-            direction = Direction::Reverse;
         }
         (Cost { cost, io_ratio }, CostMetaData::Direction(direction))
     }
@@ -939,16 +932,12 @@ impl Costed for LinksPlanner<'_> {
             player_selectivity,
         );
         let cost: f64;
-        let direction: Direction;
+        let direction = fix_dir.unwrap_or(Direction::canonical_if(scan_size_canonical <= scan_size_reverse));
 
-        if (fix_dir != Some(Direction::Reverse) && scan_size_canonical <= scan_size_reverse)
-            || fix_dir == Some(Direction::Canonical)
-        {
+        if direction == Direction::Canonical {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
-            direction = Direction::Canonical;
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
-            direction = Direction::Reverse;
         }
         (Cost { cost, io_ratio }, CostMetaData::Direction(direction))
     }
@@ -1160,16 +1149,12 @@ impl Costed for IndexedRelationPlanner<'_> {
             player2_selectivity,
         );
         let cost: f64;
-        let direction: Direction;
+        let direction = fix_dir.unwrap_or(Direction::canonical_if(scan_size_canonical <= scan_size_reverse));
 
-        if (fix_dir != Some(Direction::Reverse) && scan_size_canonical <= scan_size_reverse)
-            || fix_dir == Some(Direction::Canonical)
-        {
+        if direction == Direction::Canonical {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
-            direction = Direction::Canonical;
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
-            direction = Direction::Reverse;
         }
         (Cost { cost, io_ratio }, CostMetaData::Direction(direction))
     }
