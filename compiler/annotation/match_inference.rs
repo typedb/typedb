@@ -103,7 +103,7 @@ pub fn infer_types(
     type_manager: &TypeManager,
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    is_insert: bool,
+    is_write_stage: bool,
 ) -> Result<TypeAnnotations, TypeInferenceError> {
     let graph = compute_type_inference_graph(
         snapshot,
@@ -112,7 +112,7 @@ pub fn infer_types(
         type_manager,
         previous_stage_variable_annotations,
         annotated_function_signatures,
-        is_insert,
+        is_write_stage,
     )?;
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
@@ -141,14 +141,14 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     type_manager: &TypeManager,
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    is_insert: bool,
+    is_write_stage: bool,
 ) -> Result<TypeInferenceGraph<'graph>, TypeInferenceError> {
     let mut graph = TypeGraphSeedingContext::new(
         snapshot,
         type_manager,
         annotated_function_signatures,
         variable_registry,
-        is_insert,
+        is_write_stage,
     )
     .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);

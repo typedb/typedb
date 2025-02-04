@@ -45,7 +45,7 @@ pub struct TypeGraphSeedingContext<'this, Snapshot: ReadableSnapshot> {
     type_manager: &'this TypeManager,
     function_annotations: &'this dyn AnnotatedFunctionSignatures,
     variable_registry: &'this VariableRegistry,
-    is_insert: bool,
+    is_write_stage: bool,
 }
 
 impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot> {
@@ -54,9 +54,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         type_manager: &'this TypeManager,
         function_annotations: &'this dyn AnnotatedFunctionSignatures,
         variable_registry: &'this VariableRegistry,
-        is_insert: bool,
+        is_write_stage: bool,
     ) -> Self {
-        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, is_insert }
+        TypeGraphSeedingContext { snapshot, type_manager, function_annotations, variable_registry, is_write_stage: is_write_stage }
     }
 
     pub(crate) fn create_graph<'graph>(
@@ -728,7 +728,7 @@ impl UnaryConstraint for RoleName<Variable> {
             let mut annotations = BTreeSet::new();
             for role_type in &*role_types {
                 annotations.insert(TypeAnnotation::RoleType(*role_type));
-                if !seeder.is_insert {
+                if !seeder.is_write_stage {
                     let subtypes = role_type
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
                         .map_err(|source| TypeInferenceError::ConceptRead { source })?;
@@ -1025,7 +1025,7 @@ impl BinaryConstraint for Isa<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if seeder.is_insert || self.isa_kind() == IsaKind::Subtype {
+        if seeder.is_write_stage || self.isa_kind() == IsaKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
