@@ -15,7 +15,6 @@ load("@typedb_bazel_distribution//platform:constraints.bzl", "constraint_linux_a
 
 load("@io_bazel_rules_docker//container:image.bzl", docker_container_image = "container_image")
 load("@io_bazel_rules_docker//container:container.bzl", docker_container_push = "container_push")
-load("@io_bazel_rules_docker//docker/util:run.bzl", docker_container_run_and_commit = "container_run_and_commit")
 
 load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
