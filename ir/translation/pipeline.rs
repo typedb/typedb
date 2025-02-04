@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{iter::empty, mem};
+use std::{
+    hash::{DefaultHasher, Hasher},
+    iter::empty,
+    mem,
+};
 
 use answer::variable::Variable;
 use primitive::either::Either;
@@ -101,7 +105,12 @@ impl StructuralEquality for TranslatedStage {
             ^ match self {
                 Self::Match { block, .. } => block.hash(),
                 Self::Insert { block, .. } => block.hash(),
-                Self::Delete { block, .. } => block.hash(),
+                Self::Delete { block, deleted_variables, .. } => {
+                    let mut hasher = DefaultHasher::new();
+                    block.hash_into(&mut hasher);
+                    deleted_variables.hash_into(&mut hasher);
+                    hasher.finish()
+                }
                 Self::Select(select) => select.hash(),
                 Self::Sort(sort) => sort.hash(),
                 Self::Offset(offset) => offset.hash(),
