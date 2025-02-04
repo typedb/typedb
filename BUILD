@@ -271,29 +271,11 @@ alias(
 )
 
 # docker
-docker_image_prepare_commands = [
-    "apt-get update",
-    "apt-get install -y ca-certificates",
-    "rm -rf /var/lib/apt/lists/*",
-]
-
-docker_container_run_and_commit(
-    name = "typedb-ubuntu-22.04-x86_64",
-    image = "@ubuntu-22.04-x86_64//image",
-    commands = docker_image_prepare_commands,
-)
-
-docker_container_run_and_commit(
-    name = "typedb-ubuntu-22.04-arm64",
-    image = "@ubuntu-22.04-arm64//image",
-    commands = docker_image_prepare_commands,
-)
-
 docker_container_image(
     name = "assemble-docker-x86_64",
     operating_system = "linux",
     architecture = "amd64",
-    base = ":typedb-ubuntu-22.04-x86_64",
+    base = "//docker:typedb-ubuntu-22.04-x86_64",
     cmd = ["/opt/typedb-server-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
@@ -312,7 +294,7 @@ docker_container_image(
     name = "assemble-docker-arm64",
     operating_system = "linux",
     architecture = "arm64",
-    base = ":typedb-ubuntu-22.04-arm64",
+    base = "//docker:typedb-ubuntu-22.04-arm64",
     cmd = ["/opt/typedb-server-linux-arm64/typedb", "server"],
     directory = "opt",
     env = {
