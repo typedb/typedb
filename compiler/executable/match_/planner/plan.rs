@@ -1609,7 +1609,7 @@ impl ConjunctionPlan<'_> {
         }) = match_builder.current.as_deref()
         {
             if !constraint.variables().contains(&self.graph.variable_index[sort_variable]) {
-                match_builder.finish_one();
+                match_builder.finish_one(); // This should be unreachable
             }
         }
 
@@ -1783,7 +1783,7 @@ impl ConjunctionPlan<'_> {
                         ),
                     )
                 };
-                let sort_variable = instruction.first_unbound_component();
+                let sort_variable = sort_variable.or(Some(instruction.first_unbound_component())).unwrap();
                 let instruction = ConstraintInstruction::IndexedRelation(instruction);
                 match_builder.push_instruction(sort_variable, instruction);
             }
