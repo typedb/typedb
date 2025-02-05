@@ -37,6 +37,7 @@ use encoding::{
 use error::typedb_error;
 use function::{function_cache::FunctionCache, FunctionError};
 use query::query_cache::QueryCache;
+use resource::constants::database::{CHECKPOINT_INTERVAL, STATISTICS_UPDATE_INTERVAL};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, WALClient},
     recovery::checkpoint::{Checkpoint, CheckpointCreateError, CheckpointLoadError},
@@ -201,9 +202,6 @@ impl<D> Database<D> {
 }
 
 impl Database<WALClient> {
-    const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(100);
-    const CHECKPOINT_INTERVAL: Duration = Duration::from_secs(60);
-
     pub fn open(path: &Path) -> Result<Database<WALClient>, DatabaseOpenError> {
         use DatabaseOpenError::InvalidUnicodeName;
 
@@ -272,8 +270,8 @@ impl Database<WALClient> {
             schema,
             query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
-            _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
-            _checkpointer: IntervalRunner::new(checkpoint_fn, Self::CHECKPOINT_INTERVAL),
+            _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
+            _checkpointer: IntervalRunner::new(checkpoint_fn, CHECKPOINT_INTERVAL),
         })
     }
 
@@ -356,11 +354,11 @@ impl Database<WALClient> {
             schema,
             query_cache,
             schema_write_transaction_exclusivity: Mutex::new((false, 0, VecDeque::with_capacity(100))),
-            _statistics_updater: IntervalRunner::new(update_statistics, Self::STATISTICS_UPDATE_INTERVAL),
+            _statistics_updater: IntervalRunner::new(update_statistics, STATISTICS_UPDATE_INTERVAL),
             _checkpointer: IntervalRunner::new_with_initial_delay(
                 checkpoint_fn,
-                Self::CHECKPOINT_INTERVAL,
-                Self::CHECKPOINT_INTERVAL,
+                CHECKPOINT_INTERVAL,
+                CHECKPOINT_INTERVAL,
             ),
         };
 
