@@ -8,7 +8,7 @@ use std::{
     error::Error,
     fmt, fs, io,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock, RwLockReadGuard},
+    sync::Arc,
 };
 
 use bytes::{util::MB, Bytes};
@@ -51,12 +51,11 @@ pub trait KeyspaceSet: Copy {
 pub struct Keyspaces {
     keyspaces: Vec<Keyspace>,
     index: [Option<KeyspaceId>; KEYSPACE_MAXIMUM_COUNT],
-    freeze_lock: RwLock<()>,
 }
 
 impl Keyspaces {
     pub(crate) fn new() -> Self {
-        Self { keyspaces: Vec::new(), index: std::array::from_fn(|_| None), freeze_lock: RwLock::new(()) }
+        Self { keyspaces: Vec::new(), index: std::array::from_fn(|_| None) }
     }
 
     pub(crate) fn open<KS: KeyspaceSet>(storage_dir: impl AsRef<Path>) -> Result<Self, KeyspaceOpenError> {
@@ -107,7 +106,6 @@ impl Keyspaces {
     }
 
     pub(crate) fn write(&self, write_batches: WriteBatches) -> Result<(), KeyspaceError> {
-        let _guard = self.freeze_lock.write().unwrap();
         for (index, write_batch) in write_batches.into_iter() {
             debug_assert!(index < KEYSPACE_MAXIMUM_COUNT);
             self.get(KeyspaceId(index as u8)).write(write_batch)?;
@@ -116,7 +114,6 @@ impl Keyspaces {
     }
 
     pub(crate) fn checkpoint(&self, current_checkpoint_dir: &Path) -> Result<(), KeyspaceCheckpointError> {
-        let _guard = self.freeze_lock.read().unwrap();
         for keyspace in &self.keyspaces {
             keyspace.checkpoint(current_checkpoint_dir)?;
         }
@@ -124,7 +121,6 @@ impl Keyspaces {
     }
 
     pub(crate) fn delete(self) -> Result<(), Vec<KeyspaceDeleteError>> {
-        let _guard = self.freeze_lock.write().unwrap();
         let errors = self.keyspaces.into_iter().filter_map(|keyspace| keyspace.delete().err()).collect_vec();
         if !errors.is_empty() {
             return Err(errors);
@@ -133,7 +129,6 @@ impl Keyspaces {
     }
 
     pub(crate) fn reset(&mut self) -> Result<(), KeyspaceError> {
-        let _guard = self.freeze_lock.write().unwrap();
         for keyspace in self.keyspaces.iter_mut() {
             keyspace.reset()?
         }
