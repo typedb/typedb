@@ -52,6 +52,7 @@ use tokio::{
     sync::{
         broadcast,
         mpsc::{channel, Receiver, Sender},
+        watch,
     },
     task::{spawn_blocking, JoinHandle},
 };
@@ -60,7 +61,7 @@ use tonic::{Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{
     query::Type::{Read, Write},
-    transaction::{stream_signal::Req, Server},
+    transaction::{stream_signal::Req, Server as ProtocolServer},
 };
 use typeql::{
     parse_query,
@@ -120,9 +121,10 @@ pub(crate) struct TransactionService {
     diagnostics_manager: Arc<DiagnosticsManager>,
 
     request_stream: Streaming<typedb_protocol::transaction::Client>,
-    response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
+    response_sender: Sender<Result<ProtocolServer, Status>>,
     query_interrupt_sender: broadcast::Sender<InterruptType>,
     query_interrupt_receiver: ExecutionInterrupt,
+    shutdown_receiver: watch::Receiver<()>,
 
     transaction_timeout_millis: Option<u64>,
     schema_lock_acquire_timeout_millis: Option<u64>,
@@ -242,9 +244,10 @@ impl StreamingCondition {
 impl TransactionService {
     pub(crate) fn new(
         request_stream: Streaming<typedb_protocol::transaction::Client>,
-        response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: Sender<Result<ProtocolServer, Status>>,
         database_manager: Arc<DatabaseManager>,
         diagnostics_manager: Arc<DiagnosticsManager>,
+        shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
 
@@ -256,6 +259,7 @@ impl TransactionService {
             response_sender,
             query_interrupt_sender,
             query_interrupt_receiver: ExecutionInterrupt::new(query_interrupt_receiver),
+            shutdown_receiver,
 
             transaction_timeout_millis: None,
             schema_lock_acquire_timeout_millis: None,
@@ -275,6 +279,11 @@ impl TransactionService {
             let result = if self.running_write_query.is_some() {
                 let (req_id, write_query_worker) = self.running_write_query.as_mut().unwrap();
                 tokio::select! { biased;
+                    _ = self.shutdown_receiver.changed() => {
+                        event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
                     write_query_result = write_query_worker => {
                         let req_id = *req_id;
                         self.running_write_query = None;
@@ -292,8 +301,16 @@ impl TransactionService {
                     }
                 }
             } else {
-                let next = self.request_stream.next().await;
-                self.handle_next(next).await
+                tokio::select! { biased;
+                    _ = self.shutdown_receiver.changed() => {
+                        event!(Level::TRACE, "Shutdown signal received, closing transaction service.");
+                        self.do_close().await;
+                        return;
+                    }
+                    next = self.request_stream.next() => {
+                        self.handle_next(next).await
+                    }
+                }
             };
 
             match result {
@@ -433,7 +450,7 @@ impl TransactionService {
     }
 
     async fn respond_query_response(
-        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: &Sender<Result<ProtocolServer, Status>>,
         req_id: Uuid,
         immediate_query_response: ImmediateQueryResponse,
     ) -> ControlFlow<(), ()> {
@@ -1438,7 +1455,7 @@ impl TransactionService {
 
 #[derive(Debug)]
 struct QueryStreamTransmitter {
-    response_sender: Sender<Result<Server, Status>>,
+    response_sender: Sender<Result<ProtocolServer, Status>>,
     req_id: Uuid,
     prefetch_size: usize,
     network_latency_millis: usize,
@@ -1448,7 +1465,7 @@ struct QueryStreamTransmitter {
 
 impl QueryStreamTransmitter {
     fn start_new(
-        response_sender: Sender<Result<Server, Status>>,
+        response_sender: Sender<Result<ProtocolServer, Status>>,
         query_response_receiver: Receiver<StreamQueryResponse>,
         req_id: Uuid,
         prefetch_size: usize,
@@ -1515,7 +1532,7 @@ impl QueryStreamTransmitter {
     }
 
     async fn respond_stream_parts(
-        response_sender: Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: Sender<Result<ProtocolServer, Status>>,
         prefetch_size: usize,
         network_latency_millis: usize,
         req_id: Uuid,
@@ -1543,7 +1560,7 @@ impl QueryStreamTransmitter {
     }
 
     async fn respond_stream_while_or_finish(
-        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: &Sender<Result<ProtocolServer, Status>>,
         req_id: Uuid,
         mut query_response_receiver: Receiver<StreamQueryResponse>,
         streaming_condition: StreamingCondition,
@@ -1623,7 +1640,7 @@ impl QueryStreamTransmitter {
     }
 
     async fn send_on_stream_done(
-        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: &Sender<Result<ProtocolServer, Status>>,
         req_id: Uuid,
         rows: Vec<typedb_protocol::ConceptRow>,
         documents: Vec<typedb_protocol::ConceptDocument>,
@@ -1639,7 +1656,7 @@ impl QueryStreamTransmitter {
     }
 
     async fn send_rows(
-        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: &Sender<Result<ProtocolServer, Status>>,
         req_id: Uuid,
         rows: Vec<typedb_protocol::ConceptRow>,
     ) -> ControlFlow<(), ()> {
@@ -1652,7 +1669,7 @@ impl QueryStreamTransmitter {
     }
 
     async fn send_documents(
-        response_sender: &Sender<Result<typedb_protocol::transaction::Server, Status>>,
+        response_sender: &Sender<Result<ProtocolServer, Status>>,
         req_id: Uuid,
         documents: Vec<typedb_protocol::ConceptDocument>,
     ) -> ControlFlow<(), ()> {

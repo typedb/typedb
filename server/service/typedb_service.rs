@@ -57,6 +57,7 @@ pub(crate) struct TypeDBService {
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
     diagnostics_manager: Arc<DiagnosticsManager>,
+    shutdown_receiver: tokio::sync::watch::Receiver<()>,
 }
 
 impl TypeDBService {
@@ -66,8 +67,16 @@ impl TypeDBService {
         user_manager: Arc<UserManager>,
         authenticator_cache: Arc<AuthenticatorCache>,
         diagnostics_manager: Arc<DiagnosticsManager>,
+        shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Self {
-        Self { address: *address, database_manager, user_manager, authenticator_cache, diagnostics_manager }
+        Self {
+            address: *address,
+            database_manager,
+            user_manager,
+            authenticator_cache,
+            diagnostics_manager,
+            shutdown_receiver,
+        }
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {
@@ -329,6 +338,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             response_sender,
             self.database_manager.clone(),
             self.diagnostics_manager.clone(),
+            self.shutdown_receiver.clone(),
         );
         tokio::spawn(async move { service.listen().await });
         let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);

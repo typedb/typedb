@@ -8,9 +8,11 @@ use std::{
     fs, io,
     net::SocketAddr,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
-use std::sync::atomic::{AtomicBool, Ordering};
 
 use concurrency::IntervalRunner;
 use database::{database_manager::DatabaseManager, DatabaseOpenError};
@@ -46,6 +48,7 @@ pub struct Server {
     typedb_service: Option<TypeDBService>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     config: Config,
+    shutdown_sender: tokio::sync::watch::Sender<()>,
     _database_diagnostics_updater: IntervalRunner,
 }
 
@@ -57,6 +60,8 @@ impl Server {
         version: &'static str,
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
 
@@ -86,6 +91,7 @@ impl Server {
             user_manager.clone(),
             authenticator_cache.clone(),
             diagnostics_manager.clone(),
+            shutdown_receiver,
         );
 
         diagnostics_manager.may_start_monitoring().await;
@@ -103,6 +109,7 @@ impl Server {
             typedb_service: Some(typedb_service),
             diagnostics_manager: diagnostics_manager.clone(),
             config,
+            shutdown_sender,
             _database_diagnostics_updater: IntervalRunner::new(
                 move || synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
@@ -124,19 +131,12 @@ impl Server {
 
         Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
 
-        // TODO: Can be a oneshot if we only use it here
-        // let (shutdown_sender, mut shutdown_receiver) = tokio::sync::watch::channel(());
-        // tokio::spawn(async move {
-        //     Self::shutdown_signal().await;
-        //     shutdown_sender.send(()).expect("Expected a successful shutdown signal");
-        // });
-
         Self::create_tonic_server(&self.config.server.encryption)?
             .layer(&authenticator)
             .add_service(service)
             .serve_with_shutdown(self.address, async {
                 Self::shutdown_signal().await;
-                // shutdown_receiver.changed().await.expect("Expected a successful shutdown signal retrieval");
+                self.shutdown_sender.send(()).expect("Expected a successful shutdown signal");
             })
             .await
             .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
