@@ -34,12 +34,8 @@ def typedb_protocol():
 
 def typedb_behaviour():
     # TODO: Return typedb
-#    native.local_repository(
-#        name = "typedb_behaviour",
-#        path = "../typedb-behaviour",
-#    )
     git_repository(
         name = "typedb_behaviour",
         remote = "https://github.com/farost/typedb-behaviour",
-        commit = "70564128db6581e3e2f1482ff819c8223ef2235e",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
+        commit = "b5dcf118b3e8d5f3e00671a082a9dba50dc1fec0",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_behaviour
     )
