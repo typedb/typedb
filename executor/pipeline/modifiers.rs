@@ -401,13 +401,13 @@ pub struct DistinctStageExecutor<PreviousStage> {
     previous: PreviousStage,
 }
 
-impl<PreviousStage> crate::pipeline::modifiers::DistinctStageExecutor<PreviousStage> {
+impl<PreviousStage> DistinctStageExecutor<PreviousStage> {
     pub fn new(executable: Arc<DistinctExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for crate::pipeline::modifiers::DistinctStageExecutor<PreviousStage>
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DistinctStageExecutor<PreviousStage>
 where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
@@ -448,7 +448,7 @@ pub struct DistinctStageIterator {
     next_duplicate_index_index: Option<usize>,
 }
 
-impl crate::pipeline::modifiers::DistinctStageIterator {
+impl DistinctStageIterator {
     fn from_batch_with_duplicates(
         batch_with_duplicates: Batch,
         sort_executable: &DistinctExecutable,
@@ -499,7 +499,7 @@ impl crate::pipeline::modifiers::DistinctStageIterator {
     // }
 }
 
-impl LendingIterator for crate::pipeline::modifiers::DistinctStageIterator {
+impl LendingIterator for DistinctStageIterator {
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
@@ -522,4 +522,4 @@ impl LendingIterator for crate::pipeline::modifiers::DistinctStageIterator {
     }
 }
 
-impl StageIterator for crate::pipeline::modifiers::DistinctStageIterator {}
+impl StageIterator for DistinctStageIterator {}
