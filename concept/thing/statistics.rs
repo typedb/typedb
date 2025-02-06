@@ -511,6 +511,7 @@ impl fmt::Debug for Statistics {
 
         write_field!("encoding_version", self.encoding_version);
         write_field!("sequence_number", self.sequence_number.number());
+        write_field!("last_durable_write_sequence_number", self.last_durable_write_sequence_number);
         write_field!("last_durable_write_total_count", self.last_durable_write_total_count);
         write_field!("total_count", self.total_count);
         write_field!("total_thing_count", self.total_thing_count);
