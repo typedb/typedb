@@ -5,6 +5,7 @@
  */
 use std::{borrow::Cow, cmp::Ordering, sync::Arc};
 use std::collections::HashSet;
+use std::hash::{Hash, Hasher, DefaultHasher};
 use answer::{variable_value::VariableValue, Thing};
 use compiler::executable::modifiers::{
     LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable, DistinctExecutable
@@ -115,14 +116,15 @@ impl SortStageIterator {
     fn get_value<'a, T: ReadableSnapshot>(
         entry: &'a VariableValue<'a>,
         context: &'a ExecutionContext<T>,
-    ) -> Cow<'a, Value<'a>> {
+    ) -> Option<Cow<'a, Value<'a>>> {
         let snapshot: &T = &context.snapshot;
         match entry {
-            VariableValue::Value(value) => Cow::Borrowed(value),
+            VariableValue::Value(value) => Some(Cow::Borrowed(value)),
             VariableValue::Thing(Thing::Attribute(attribute)) => {
-                Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap())
+                Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
             }
-            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => {
+            VariableValue::Empty => { None }
+            VariableValue::Type(_) | VariableValue::Thing(_) => {
                 unreachable!("Should have been caught earlier")
             }
 
@@ -458,15 +460,18 @@ impl DistinctStageIterator {
         let mut indices: Vec<usize> = (0..batch_with_duplicates.len()).collect();
         let mut duplicate_block_start_indices: Vec<usize> = vec![];
         let mut unique_block_restart_indices: Vec<usize> = vec![];
-        let mut seen_rows: HashSet<MaybeOwnedRow<'_>> = HashSet::new();
+        let mut previously_seen_hashes: HashSet<u64> = HashSet::new();
         let mut looking_for_duplicate = true;
 
         for &row_index in indices.iter() {
-            // let row = Self::filter_values(batch_with_duplicates.get_row(row_index), &variable_positions);
             let row = batch_with_duplicates.get_row(row_index);
-            println!("DISTINCT: got row {:?}", row);
-            if !seen_rows.contains(&row) {
-                seen_rows.insert(row);
+            let mut hasher = DefaultHasher::new();
+            for &pos in &variable_positions {
+                row.get(*pos).hash(&mut hasher);
+            }
+            let hash = hasher.finish();
+            if !previously_seen_hashes.contains(&hash) {
+                previously_seen_hashes.insert(hash);
                 if looking_for_duplicate == false {
                     looking_for_duplicate = true;
                     unique_block_restart_indices.push(row_index)
@@ -483,20 +488,6 @@ impl DistinctStageIterator {
 
         Self { batch_with_duplicates, next_row_index: 0, duplicate_block_start_indices, unique_block_restart_indices, next_duplicate_index_index }
     }
-
-    // fn filter_values<'a>(unfiltered: MaybeOwnedRow, variable_positions: &Vec<VariablePosition>) -> &'a[VariableValue<'_>] {
-    //     let mut row = &[VariableValue::Empty; 1];
-    //     for pos in variable_positions {
-    //         todo!()
-    //     }
-    //     todo!()    // fn filter_values<'a>(unfiltered: MaybeOwnedRow, variable_positions: &Vec<VariablePosition>) -> &'a[VariableValue<'_>] {
-    //     //     let mut row = &[VariableValue::Empty; 1];
-    //     //     for pos in variable_positions {
-    //     //         todo!()
-    //     //     }
-    //     //     todo!()
-    //     // }
-    // }
 }
 
 impl LendingIterator for DistinctStageIterator {
