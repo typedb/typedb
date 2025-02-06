@@ -329,6 +329,8 @@ fn annotate_stage(
             Ok(AnnotatedStage::Insert { block, annotations: insert_annotations, source_span })
         }
 
+        TranslatedStage::Update { .. } => todo!("Update is not implemented"),
+
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
             let delete_annotations = infer_types(
                 snapshot,

@@ -42,6 +42,7 @@ use crate::{
     },
     RepresentationError,
 };
+use crate::translation::writes::translate_update;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -74,6 +75,7 @@ impl TranslatedPipeline {
 pub enum TranslatedStage {
     Match { block: Block, source_span: Option<Span> },
     Insert { block: Block, source_span: Option<Span> },
+    Update { block: Block, source_span: Option<Span> },
     Delete { block: Block, deleted_variables: Vec<Variable>, source_span: Option<Span> },
 
     // ...
@@ -89,7 +91,7 @@ pub enum TranslatedStage {
 impl TranslatedStage {
     pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
         match self {
-            Self::Match { block, .. } | Self::Insert { block, .. } | Self::Delete { block, .. } => {
+            Self::Match { block, .. } | Self::Insert { block, .. } | Self::Update { block, .. } | Self::Delete { block, .. } => {
                 Box::new(block.variables())
             }
             Self::Select(select) => Box::new(select.variables.iter().cloned()),
@@ -109,6 +111,7 @@ impl StructuralEquality for TranslatedStage {
             ^ match self {
                 Self::Match { block, .. } => block.hash(),
                 Self::Insert { block, .. } => block.hash(),
+                Self::Update { block, .. } => block.hash(), // TODO: Just like for deletes?
                 Self::Delete { block, deleted_variables, .. } => {
                     let mut hasher = DefaultHasher::new();
                     block.hash_into(&mut hasher);
@@ -129,6 +132,7 @@ impl StructuralEquality for TranslatedStage {
         match (self, other) {
             (Self::Match { block, .. }, Self::Match { block: other_block, .. }) => block.equals(other_block),
             (Self::Insert { block, .. }, Self::Insert { block: other_block, .. }) => block.equals(other_block),
+            (Self::Update { block, .. }, Self::Update { block: other_block, .. }) => block.equals(other_block),
             (Self::Delete { block, .. }, Self::Delete { block: other_block, .. }) => block.equals(other_block),
             (Self::Select(select), Self::Select(other_select)) => select.equals(other_select),
             (Self::Sort(sort), Self::Sort(other_sort)) => sort.equals(other_sort),
@@ -140,6 +144,7 @@ impl StructuralEquality for TranslatedStage {
             // note: this style forces updating the match when the variants change
             (Self::Match { .. }, _)
             | (Self::Insert { .. }, _)
+            | (Self::Update { .. }, _)
             | (Self::Delete { .. }, _)
             | (Self::Select { .. }, _)
             | (Self::Sort { .. }, _)
@@ -226,6 +231,10 @@ fn translate_stage(
         }
         TypeQLStage::Insert(insert) => translate_insert(translation_context, value_parameters, insert)
             .map(|block| Either::First(TranslatedStage::Insert { block, source_span: insert.span() })),
+        TypeQLStage::Update(update) => translate_update(translation_context, value_parameters, update)
+            .map(|(block, deleted_variables)| { // TODO: Use deleted/updated vars?
+                Either::First(TranslatedStage::Update { block, source_span: update.span() })
+            }),
         TypeQLStage::Delete(delete) => {
             translate_delete(translation_context, value_parameters, delete).map(|(block, deleted_variables)| {
                 Either::First(TranslatedStage::Delete { block, deleted_variables, source_span: delete.span() })
