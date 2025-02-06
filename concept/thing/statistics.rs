@@ -182,14 +182,11 @@ impl Statistics {
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
         storage: &MVCCStorage<D>,
     ) -> Result<(), MVCCReadError> {
-        let mut total_delta = 0;
         for (sequence_number, writes) in commits.range(self.sequence_number.next()..) {
-            total_delta += self.update_write(*sequence_number, writes, commits, storage)?;
+            let delta = self.update_write(*sequence_number, writes, commits, storage)?;
+            self.total_count = self.total_count.checked_add_signed(delta).unwrap();
+            self.sequence_number = *sequence_number;
         }
-        if let Some((&last_sequence_number, _)) = commits.last_key_value() {
-            self.sequence_number = last_sequence_number;
-        }
-        self.total_count = self.total_count.checked_add_signed(total_delta).unwrap();
         Ok(())
     }
 
