@@ -1063,7 +1063,7 @@ impl TypeManager {
             .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability {}))?
             .description()
             .unwrap_cardinality()
-            .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
+            .map_err(|source| Box::new(ConceptReadError::Constraint { typedb_source: source }))
     }
 
     pub(crate) fn get_relates_cardinality(
@@ -1147,7 +1147,7 @@ impl TypeManager {
                         .collect())
                 }
             }
-            Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),
+            Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
         }
     }
 

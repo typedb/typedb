@@ -56,13 +56,13 @@ macro_rules! validate_capability_cardinality_constraint {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             let counts = object
                 .$get_interface_counts_func(snapshot, thing_manager)
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
             for interface_type in interface_types_to_check {
                 for constraint in object
                     .type_()
                     .$get_cardinality_constraints_func(snapshot, thing_manager.type_manager(), interface_type.clone())
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                     .into_iter()
                 {
                     cardinality_constraints.insert(constraint);
@@ -73,8 +73,8 @@ macro_rules! validate_capability_cardinality_constraint {
                 if !constraint
                     .description()
                     .unwrap_cardinality()
-                    .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+                    .map_err(|source| Box::new(ConceptReadError::Constraint { typedb_source: source }))
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                     .requires_validation()
                 {
                     continue;
@@ -83,7 +83,7 @@ macro_rules! validate_capability_cardinality_constraint {
                 let source_interface_type = constraint.source().interface();
                 let sub_interface_types = source_interface_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
                 let count =
                     TypeAPI::chain_types(source_interface_type.clone(), sub_interface_types.into_iter().cloned())
                         .filter_map(|interface_type| counts.get(&interface_type))

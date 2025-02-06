@@ -109,18 +109,18 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             while changed {
                 changed = self
                     .propagate_vertex_annotations(graph)
-                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             }
             some_vertex_was_directly_annotated = self
                 .annotate_some_unannotated_vertex(graph, context)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
         }
 
         // Prune abstract types from type annotations of thing variables
         self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph);
 
         // Seed edges in root & disjunctions
-        self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
 
         // Now we recurse into the nested negations & optionals
         let TypeInferenceGraph { vertices, nested_negations, nested_optionals, .. } = graph;
@@ -241,7 +241,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Vertex::Label(label) => {
                     if !graph.vertices.contains_key(vertex) {
                         let annotation_opt = get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                         if let Some(annotation) = annotation_opt {
                             graph.vertices.insert(vertex.clone(), BTreeSet::from([annotation]));
                         } else {
@@ -255,7 +255,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                         {
                             let annotation_opt =
                                 get_type_annotation_from_label(self.snapshot, self.type_manager, label)
-                                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                             debug_assert_ne!(annotation_opt, None);
                             debug_assert_eq!(graph.vertices[vertex], BTreeSet::from([annotation_opt.unwrap()]));
                         }
@@ -572,7 +572,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             };
             if self.variable_registry.get_variable_category(*id).map_or(false, |cat| cat.is_category_thing()) {
                 TypeAnnotation::try_retain(annotations, |type_| self.is_not_abstract(type_))
-                    .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                    .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
@@ -620,7 +620,7 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
     label_value: &encoding::value::label::Label,
 ) -> Result<BTreeSet<TypeAnnotation>, TypeInferenceError> {
     let type_opt = get_type_annotation_from_label(snapshot, type_manager, label_value)
-        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+        .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
     let Some(type_) = type_opt else {
         return Err(TypeInferenceError::LabelNotResolved {
             name: label_value.scoped_name().to_string(),
@@ -630,25 +630,25 @@ pub(crate) fn get_type_annotation_and_subtypes_from_label<Snapshot: ReadableSnap
     let mut types: BTreeSet<Type> = match &type_ {
         TypeAnnotation::Entity(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
             .iter()
             .map(|t| TypeAnnotation::Entity(*t))
             .collect(),
         TypeAnnotation::Relation(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
             .iter()
             .map(|t| TypeAnnotation::Relation(*t))
             .collect(),
         TypeAnnotation::Attribute(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
             .iter()
             .map(|t| TypeAnnotation::Attribute(*t))
             .collect(),
         TypeAnnotation::RoleType(type_) => type_
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
             .iter()
             .map(|t| TypeAnnotation::RoleType(*t))
             .collect(),
@@ -667,25 +667,25 @@ impl UnaryConstraint for Kind<Variable> {
         let annotations = match self.kind() {
             typeql::token::Kind::Entity => type_manager
                 .get_entity_types(seeder.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Entity(*t))
                 .collect(),
             typeql::token::Kind::Relation => type_manager
                 .get_relation_types(seeder.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Relation(*t))
                 .collect(),
             typeql::token::Kind::Attribute => type_manager
                 .get_attribute_types(seeder.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::Attribute(*t))
                 .collect(),
             typeql::token::Kind::Role => type_manager
                 .get_role_types(seeder.snapshot)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?
                 .iter()
                 .map(|t| TypeAnnotation::RoleType(*t))
                 .collect(),
@@ -723,7 +723,7 @@ impl UnaryConstraint for RoleName<Variable> {
         let role_types_opt = seeder
             .type_manager
             .get_roles_by_name(seeder.snapshot, self.name())
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
         if let Some(role_types) = role_types_opt {
             let mut annotations = BTreeSet::new();
             for role_type in &*role_types {
@@ -731,7 +731,7 @@ impl UnaryConstraint for RoleName<Variable> {
                 if !seeder.is_write_stage {
                     let subtypes = role_type
                         .get_subtypes_transitive(seeder.snapshot, seeder.type_manager)
-                        .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                        .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
                     annotations.extend(subtypes.into_iter().map(|subtype| TypeAnnotation::RoleType(*subtype)));
                 }
             }
@@ -762,7 +762,7 @@ impl UnaryConstraint for Value<Variable> {
                         name: struct_name.clone().to_owned(),
                         source_span: self.source_span(),
                     }),
-                    Err(source) => Err(TypeInferenceError::ConceptRead { source }),
+                    Err(source) => Err(TypeInferenceError::ConceptRead { typedb_source: source }),
                 }
             }
         }?;
@@ -771,11 +771,11 @@ impl UnaryConstraint for Value<Variable> {
         let attribute_types = seeder
             .type_manager
             .get_attribute_types(seeder.snapshot)
-            .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+            .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
         for attribute_type in attribute_types {
             let attribute_value_type_opt = attribute_type
                 .get_value_type_without_source(seeder.snapshot, seeder.type_manager)
-                .map_err(|source| TypeInferenceError::ConceptRead { source })?;
+                .map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
             if let Some(attribute_value_type) = attribute_value_type_opt {
                 if pattern_value_type == attribute_value_type {
                     annotations.insert(TypeAnnotation::Attribute(attribute_type));

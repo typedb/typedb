@@ -271,10 +271,10 @@ impl IntersectionExecutor {
                 while iter
                     .peek_first_unbound_value()
                     .transpose()
-                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                    .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
                     .is_some_and(|value| value == &self.intersection_value)
                 {
-                    iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+                    iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
                 }
                 self.compute_next_row(context)
             }
@@ -333,7 +333,7 @@ impl IntersectionExecutor {
                         break;
                     }
                     Some(Ok(value)) => current_max.partial_cmp(value).unwrap(),
-                    Some(Err(err)) => return Err(ReadExecutionError::ConceptRead { source: err.clone() }),
+                    Some(Err(err)) => return Err(ReadExecutionError::ConceptRead { typedb_source: err.clone() }),
                 };
 
                 match max_cmp_peek {
@@ -346,7 +346,7 @@ impl IntersectionExecutor {
                         let iter_i = &mut containing_i[i_index];
                         let next_value_cmp = iter_i
                             .advance_until_index_is(iter_i.first_unbound_index(), current_max)
-                            .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+                            .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
                         match next_value_cmp {
                             None => {
                                 failed = true;
@@ -384,7 +384,7 @@ impl IntersectionExecutor {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             for executor in &self.instruction_executors {
                 self.iterators.push(executor.get_iterator(context, next_row.as_reference()).map_err(|err| {
-                    ReadExecutionError::CreatingIterator { instruction_name: executor.name().to_string(), source: err }
+                    ReadExecutionError::CreatingIterator { instruction_name: executor.name().to_string(), typedb_source: err }
                 })?);
             }
         }
@@ -394,7 +394,7 @@ impl IntersectionExecutor {
     fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ReadExecutionError> {
         let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
-            multiplicity *= iter.advance_past().map_err(|err| ReadExecutionError::ConceptRead { source: err })? as u64;
+            multiplicity *= iter.advance_past().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })? as u64;
         }
         self.intersection_multiplicity = multiplicity;
         Ok(())
@@ -418,13 +418,13 @@ impl IntersectionExecutor {
             if !self.intersection_value.is_empty() {
                 iter.peek_first_unbound_value()
                     .transpose()
-                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                    .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
                     .inspect(|&value| assert_eq!(value, &self.intersection_value));
             } else {
                 let value = iter
                     .peek_first_unbound_value()
                     .transpose()
-                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+                    .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
                 if let Some(value) = value {
                     self.intersection_value = value.to_owned();
                 }
@@ -461,7 +461,7 @@ impl IntersectionExecutor {
             if iter
                 .peek_first_unbound_value()
                 .transpose()
-                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
                 .is_some_and(|value| value == &self.intersection_value)
             {
                 cartesian = true;
@@ -542,7 +542,7 @@ impl CartesianIterator {
             if iter
                 .peek_first_unbound_value()
                 .transpose()
-                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
                 .is_some_and(|value| value == source_intersection_value)
             {
                 self.cartesian_executor_indices.push(index);
@@ -557,7 +557,7 @@ impl CartesianIterator {
                             if value < source_intersection_value {
                                 let next_value_cmp = iter
                                     .advance_until_index_is(iter.first_unbound_index(), source_intersection_value)
-                                    .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+                                    .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
                                 debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
                                 iter
                             } else if value == source_intersection_value {
@@ -567,7 +567,7 @@ impl CartesianIterator {
                             }
                         }
                         Some(Err(err)) => {
-                            return Err(ReadExecutionError::ConceptRead { source: err });
+                            return Err(ReadExecutionError::ConceptRead { typedb_source: err });
                         }
                     },
                 };
@@ -589,11 +589,11 @@ impl CartesianIterator {
         loop {
             let iterator_index = self.cartesian_executor_indices[executor_index];
             let iter = self.iterators[iterator_index].as_mut().unwrap();
-            iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+            iter.advance_single().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
             if !iter
                 .peek_first_unbound_value()
                 .transpose()
-                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
                 .is_some_and(|value| value == &self.intersection_value)
             {
                 if executor_index == 0 {
@@ -617,11 +617,11 @@ impl CartesianIterator {
     ) -> Result<TupleIterator, ReadExecutionError> {
         let mut reopened = executor
             .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1))
-            .map_err(|err| ReadExecutionError::ConceptRead { source: err })?;
+            .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
         // TODO: use seek()
         reopened
             .advance_until_index_is(reopened.first_unbound_index(), &self.intersection_value)
-            .map_err(|err| ReadExecutionError::AdvancingIteratorTo { source: err })?;
+            .map_err(|err| ReadExecutionError::AdvancingIteratorTo { typedb_source: err })?;
         Ok(reopened)
     }
 
@@ -820,7 +820,7 @@ impl CheckExecutor {
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
             if (self.checker.filter_for_row(context, &input_row))(&Ok(()))
-                .map_err(|err| ReadExecutionError::ConceptRead { source: err })?
+                .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {
                     row.set_multiplicity(input_row.multiplicity());

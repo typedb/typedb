@@ -46,7 +46,7 @@ impl From<Box<ConceptReadError>> for Box<ConceptWriteError> {
             ConceptReadError::SnapshotGet { source } => ConceptWriteError::SnapshotGet { source },
             ConceptReadError::SnapshotIterate { source } => ConceptWriteError::SnapshotIterate { source },
             ConceptReadError::Encoding { source, .. } => ConceptWriteError::Encoding { source },
-            _ => ConceptWriteError::ConceptRead { source: error },
+            _ => ConceptWriteError::ConceptRead { typedb_source: error },
         })
     }
 }
@@ -73,7 +73,7 @@ typedb_error! {
         CannotGetPlaysDoesntExist(18, "Cannot get plays doesn't exist.", type_: Label, plays: Label),
         CannotGetRelatesDoesntExist(19, "Cannot get relates doesn't exist.", type_: Label, relates: Label),
         Annotation(20, "Annotation error.", typedb_source: AnnotationError),
-        Constraint(21, "Constraint error.", source: Box<ConstraintError>),
+        Constraint(21, "Constraint error.", typedb_source: Box<ConstraintError>),
         ValueTypeMismatchWithAttributeType(22, "Value type mismatch with attribute type.", attribute_type: AttributeType, expected: Option<ValueType>, provided: ValueType),
         RelationIndexNotAvailable(23, "Relation index not available.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality.", functionality: error::UnimplementedFeature),

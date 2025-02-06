@@ -357,7 +357,7 @@ impl ThingAPI for Relation {
 
         for relation_role in self.get_relations_roles(snapshot, thing_manager) {
             let (relation, role, _count) =
-                relation_role.map_err(|error| Box::new(ConceptWriteError::ConceptRead { source: error }))?;
+                relation_role.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
             thing_manager.unset_links(snapshot, relation, self, role)?;
         }
 
@@ -366,7 +366,7 @@ impl ThingAPI for Relation {
             .map_ok(|(roleplayer, _count)| (roleplayer.role_type, roleplayer.player));
         for role_player in players {
             let (role, player) =
-                role_player.map_err(|error| Box::new(ConceptWriteError::ConceptRead { source: error }))?;
+                role_player.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role)?;

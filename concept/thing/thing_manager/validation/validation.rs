@@ -35,7 +35,7 @@ pub(crate) fn get_label_or_data_err(
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone())
-        .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))
+        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))
 }
 
 macro_rules! create_data_validation_type_abstractness_error_methods {
@@ -102,7 +102,7 @@ impl DataValidation {
             let constraint_source = constraint.source();
             let is_key = match constraint_source.is_key(snapshot, type_manager) {
                 Ok(is_key) => is_key,
-                Err(err) => return Box::new(DataValidationError::ConceptRead { source: err }),
+                Err(err) => return Box::new(DataValidationError::ConceptRead { typedb_source: err }),
             };
             if is_key {
                 Box::new(DataValidationError::KeyConstraintViolatedCard {
@@ -334,7 +334,7 @@ impl DataValidation {
         let typedb_source = Box::new(ConstraintError::ViolatedUnique { value: value.clone().into_owned() });
         let is_key = match constraint_source.is_key(snapshot, type_manager) {
             Ok(is_key) => is_key,
-            Err(err) => return Box::new(DataValidationError::ConceptRead { source: err }),
+            Err(err) => return Box::new(DataValidationError::ConceptRead { typedb_source: err }),
         };
         if is_key {
             Box::new(DataValidationError::KeyConstraintViolatedUniqueness {

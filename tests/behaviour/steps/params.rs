@@ -70,7 +70,7 @@ impl MayError {
         match self.check(res.as_ref().map_err(|e| e.as_ref())) {
             None => None,
             Some(error) => match error {
-                ConceptWriteError::ConceptRead { source } => {
+                ConceptWriteError::ConceptRead { typedb_source: source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
                 ConceptWriteError::SchemaValidation { typedb_source: err } => match **err {

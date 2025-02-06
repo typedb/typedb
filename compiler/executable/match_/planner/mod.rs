@@ -11,7 +11,7 @@ use concept::thing::statistics::Statistics;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
 use typeql::common::Span;
-
+use error::typedb_error;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::{
@@ -30,10 +30,17 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::plan::QueryPlanningError;
 
 pub mod match_executable;
 pub mod plan;
 pub(crate) mod vertex;
+
+typedb_error! {
+    pub MatchCompilationError(component = "Match compiler", prefix = "MCL") {
+        PlanningError(1, "Snapshot get error.", typedb_source: QueryPlanningError),
+    }
+}
 
 pub fn compile(
     block: &Block,
@@ -44,7 +51,7 @@ pub fn compile(
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> MatchExecutable {
+) -> Result<MatchExecutable, MatchCompilationError>  {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
     debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
@@ -62,8 +69,9 @@ pub fn compile(
         statistics,
         call_cost_provider,
     )
-    .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
-    .finish(variable_registry)
+        .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
+        .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
+        .finish(variable_registry)
 }
 
 #[derive(Debug)]

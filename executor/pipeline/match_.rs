@@ -104,7 +104,7 @@ where
                 self.function_registry.clone(),
                 profile,
             )
-            .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { source: err }));
+            .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }));
 
             match executor {
                 Ok(executor) => {

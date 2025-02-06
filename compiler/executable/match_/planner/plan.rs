@@ -15,7 +15,7 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use error::unimplemented_feature;
+use error::{typedb_error, unimplemented_feature};
 use ir::{
     pattern::{
         conjunction::Conjunction,
@@ -72,6 +72,12 @@ pub const AVERAGE_QUERY_OUTPUT_SIZE: f64 = 1.0; // replace with actual statistic
 pub const AVERAGE_STEP_COST: f64 = 1.0; // replace with actual heuristic
 pub const VARIABLE_PRODUCTION_ADVANTAGE: f64 = 0.05; // this is a percentage 0.00 <= x < 1.00
 
+typedb_error! {
+    pub QueryPlanningError(component = "Beam Planner", prefix = "BPL") {
+        ExpectedPlannableConjunction(1, "Planning failed as no valid pattern ordering as been found"),
+    }
+}
+
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
@@ -81,7 +87,7 @@ pub(crate) fn plan_conjunction<'a>(
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
     call_cost_provider: &'a impl FunctionCallCostProvider,
-) -> ConjunctionPlan<'a> {
+) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
     make_builder(
         conjunction,
         block_context,

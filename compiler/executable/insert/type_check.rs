@@ -116,13 +116,13 @@ fn validate_has_insertable(
             constraint_name: Constraint::Has(has.clone()).name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
                 .scoped_name()
                 .as_str()
                 .to_string(),
             right_type: right_type
                 .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
                 .scoped_name()
                 .as_str()
                 .to_string(),
@@ -193,13 +193,13 @@ fn validate_links_insertable(
             constraint_name: Constraint::Links(links.clone()).name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
                 .scoped_name()
                 .as_str()
                 .to_string(),
             right_type: right_type
                 .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { source: err })?
+                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
                 .scoped_name()
                 .as_str()
                 .to_string(),

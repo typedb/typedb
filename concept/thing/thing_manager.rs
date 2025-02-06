@@ -1536,7 +1536,7 @@ impl ThingManager {
 
         match self.create_commit_locks(snapshot) {
             Ok(_) => Ok(()),
-            Err(error) => Err(vec![ConceptWriteError::ConceptRead { source: error }]),
+            Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
         }
     }
 
@@ -1910,17 +1910,17 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
 
         res = self.collect_modified_has_objects(snapshot, &mut modified_objects_attribute_types);
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
 
         res = self.collect_modified_links_objects(
             snapshot,
             &mut modified_relations_role_types,
             &mut modified_objects_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
 
         res = self.collect_modified_schema_capability_cardinalities_objects(
             snapshot,
@@ -1928,22 +1928,22 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
             res = CommitTimeValidation::validate_object_has(snapshot, self, object, modified_owns, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
         }
 
         for (object, modified_plays) in modified_objects_role_types {
             res = CommitTimeValidation::validate_object_links(snapshot, self, object, modified_plays, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
         }
 
         for (relation, modified_relates) in modified_relations_role_types {
             res =
                 CommitTimeValidation::validate_relation_links(snapshot, self, relation, modified_relates, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { source });
+            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
         }
 
         if errors.is_empty() {
@@ -2585,7 +2585,7 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let value = match attribute
             .get_value(snapshot, self)
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+            .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
             Value::String(string) => ByteArray::copy(string.as_bytes()),
             _ => ByteArray::empty(),
@@ -2834,7 +2834,7 @@ impl ThingManager {
         if self
             .type_manager
             .relation_index_available(snapshot, relation.type_())
-            .map_err(|error| ConceptWriteError::ConceptRead { source: error })?
+            .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
             self.relation_index_player_deleted(snapshot, relation, player, role_type)?;
         }

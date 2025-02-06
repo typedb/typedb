@@ -157,7 +157,7 @@ fn define_types<'a>(
     for label in undefined_labels {
         let existing =
             try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
-                typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }),
+                typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: err }),
             })?;
         if existing.is_none() {
             return Err(DefineError::SymbolResolution {
@@ -177,7 +177,7 @@ fn define_struct(
     let name = checked_identifier(&struct_definable.ident)?;
 
     let definition_status = get_struct_status(snapshot, type_manager, name)
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => {}
         DefinableStatus::ExistsSame(_) => return Ok(()),
@@ -212,7 +212,7 @@ fn define_struct_fields(
             value_type.clone(),
             optional,
         )
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {}
             DefinableStatus::ExistsSame(_) => return Ok(()),
@@ -247,7 +247,7 @@ fn define_type(
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let existing =
         try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
-            typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { source: err }),
+            typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: err }),
         })?;
     match type_declaration.kind {
         None => {
@@ -493,7 +493,7 @@ fn define_value_type(
             value_type.clone(),
             DefinableStatusMode::Declared,
         )
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let define_needed = match definition_status {
             DefinableStatus::DoesNotExist => true,
             DefinableStatus::ExistsSame(_) => false,
@@ -601,7 +601,7 @@ fn define_relates_with_annotations(
             ordering,
             DefinableStatusMode::Declared,
         )
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => relation_type
                 .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
@@ -701,7 +701,7 @@ fn define_relates_specialise(
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let need_define = match definition_status {
             DefinableStatus::DoesNotExist => Ok(true),
             DefinableStatus::ExistsSame(_) => Ok(false),
@@ -713,18 +713,18 @@ fn define_relates_specialise(
                     specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     specialising_role_name: relates
                         .role()
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     existing_specialised_role_name: existing_superrole
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     source_span: typeql_relates.span(),
@@ -774,7 +774,7 @@ fn define_owns_with_annotations(
             ordering,
             DefinableStatusMode::Declared,
         )
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => object_type
                 .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
@@ -859,7 +859,7 @@ fn define_plays_with_annotations(
 
         let definition_status =
             get_plays_status(snapshot, type_manager, object_type, role_type, DefinableStatusMode::Declared)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+                .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => {
                 object_type.set_plays(snapshot, type_manager, thing_manager, role_type).map_err(|source| {
@@ -916,7 +916,7 @@ fn check_can_and_need_define_sub<T: TypeAPI>(
     capability: &TypeQLCapability,
 ) -> Result<bool, DefineError> {
     let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype)
-        .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(true),
         DefinableStatus::ExistsSame(_) => Ok(false),
@@ -925,11 +925,11 @@ fn check_can_and_need_define_sub<T: TypeAPI>(
             key: Keyword::Sub,
             supertype: new_supertype
                 .get_label(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             existing_supertype: existing
                 .get_label(snapshot, type_manager)
-                .map_err(|source| DefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             source_span: capability.span(),
         }),
@@ -951,7 +951,7 @@ fn type_convert_and_validate_annotation_definition_need<T: KindAPI>(
 
     let definition_status =
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(Some(converted)),
         DefinableStatus::ExistsSame(_) => Ok(None),
@@ -978,7 +978,7 @@ fn capability_convert_and_validate_annotation_definition_need<CAP: Capability>(
 
     let definition_status =
         get_capability_annotation_status(snapshot, type_manager, &capability, &converted, annotation.category())
-            .map_err(|source| DefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Ok(Some(converted)),
         DefinableStatus::ExistsSame(_) => Ok(None),
@@ -1020,7 +1020,7 @@ fn err_unsupported_capability(label: &Label, kind: Kind, capability: &TypeQLCapa
 typedb_error! {
     pub DefineError(component = "Define execution", prefix = "DEX") {
         Unimplemented(1, "Unimplemented define functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error. ", source: Box<ConceptReadError>),
+        UnexpectedConceptRead(2, "Concept read error. ", typedb_source: Box<ConceptReadError>),
         SymbolResolution(3, "Failed to find symbol.", typedb_source: Box<SymbolResolutionError>),
         LiteralParseError(4, "Failed to parse literal.", typedb_source: LiteralParseError),
         TypeCreateError(

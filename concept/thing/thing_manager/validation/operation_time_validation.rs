@@ -41,7 +41,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = entity_type
             .get_constraint_abstract(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_entity_type_abstractness_error(
                 &abstract_constraint,
@@ -60,7 +60,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = relation_type
             .get_constraint_abstract(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_relation_type_abstractness_error(
                 &abstract_constraint,
@@ -79,7 +79,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(abstract_constraint) = attribute_type
             .get_constraint_abstract(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_attribute_type_abstractness_error(
                 &abstract_constraint,
@@ -100,7 +100,7 @@ impl OperationTimeValidation {
         if let Some(abstract_constraint) = owner
             .type_()
             .get_owned_attribute_type_constraint_abstract(snapshot, thing_manager.type_manager(), attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_owns_abstractness_error(
                 &abstract_constraint,
@@ -122,7 +122,7 @@ impl OperationTimeValidation {
         if let Some(abstract_constraint) = player
             .type_()
             .get_played_role_type_constraint_abstract(snapshot, thing_manager.type_manager(), role_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_plays_abstractness_error(
                 &abstract_constraint,
@@ -144,7 +144,7 @@ impl OperationTimeValidation {
         if let Some(abstract_constraint) = relation
             .type_()
             .get_related_role_type_constraint_abstract(snapshot, thing_manager.type_manager(), role_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_relates_abstractness_error(
                 &abstract_constraint,
@@ -165,7 +165,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         let has_plays = object_type
             .get_plays_role(snapshot, &thing_manager.type_manager, role_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             .is_some();
         if has_plays {
             Ok(())
@@ -185,7 +185,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         let has_relates = relation_type
             .get_relates_role(snapshot, &thing_manager.type_manager, role_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             .is_some();
         if has_relates {
             Ok(())
@@ -205,7 +205,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         let has_owns = object_type
             .get_owns_attribute(snapshot, &thing_manager.type_manager, attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
             .is_some();
         if has_owns {
             Ok(())
@@ -227,7 +227,7 @@ impl OperationTimeValidation {
         let distinct = relation
             .type_()
             .get_related_role_type_constraints_distinct(snapshot, thing_manager.type_manager(), role_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
         if let Some(distinct_constraint) = distinct.into_iter().next() {
             for (&player, &count) in players_counts {
                 DataValidation::validate_relates_distinct_constraint(
@@ -254,7 +254,7 @@ impl OperationTimeValidation {
         let distinct = owner
             .type_()
             .get_owned_attribute_type_constraints_distinct(snapshot, thing_manager.type_manager(), attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
         if let Some(distinct_constraint) = distinct.into_iter().next() {
             for (&attribute, &count) in attributes_counts {
                 DataValidation::validate_owns_distinct_constraint(
@@ -278,7 +278,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in attribute_type
             .get_constraints_regex(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             DataValidation::validate_attribute_regex_constraint(
                 snapshot,
@@ -299,7 +299,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in attribute_type
             .get_constraints_range(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             DataValidation::validate_attribute_range_constraint(
                 snapshot,
@@ -320,7 +320,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         for constraint in attribute_type
             .get_constraints_values(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             DataValidation::validate_attribute_values_constraint(
                 snapshot,
@@ -343,7 +343,7 @@ impl OperationTimeValidation {
         for constraint in owner
             .type_()
             .get_owned_attribute_type_constraints_regex(snapshot, thing_manager.type_manager(), attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             DataValidation::validate_owns_regex_constraint(
                 snapshot,
@@ -367,7 +367,7 @@ impl OperationTimeValidation {
         for constraint in owner
             .type_()
             .get_owned_attribute_type_constraints_range(snapshot, thing_manager.type_manager(), attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             DataValidation::validate_owns_range_constraint(
                 snapshot,
@@ -391,7 +391,7 @@ impl OperationTimeValidation {
         for constraint in owner
             .type_()
             .get_owned_attribute_type_constraints_values(snapshot, thing_manager.type_manager(), attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             DataValidation::validate_owns_values_constraint(
                 snapshot,
@@ -415,19 +415,19 @@ impl OperationTimeValidation {
         if let Some(constraint) = owner
             .type_()
             .get_owned_attribute_type_constraint_unique(snapshot, thing_manager.type_manager(), attribute_type)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             let root_owner_type = constraint.source().owner();
             let root_owner_subtypes = root_owner_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
             let owner_and_subtypes: HashSet<ObjectType> =
                 TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
 
             let root_attribute_type = constraint.source().attribute();
             let root_attribute_subtypes = root_attribute_type
                 .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
             let attribute_and_subtypes: HashSet<AttributeType> =
                 TypeAPI::chain_types(root_attribute_type, root_attribute_subtypes.into_iter().cloned()).collect();
 
@@ -438,7 +438,7 @@ impl OperationTimeValidation {
                 while let Some(object) = objects
                     .next()
                     .transpose()
-                    .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                 {
                     if object == owner {
                         continue;
@@ -447,7 +447,7 @@ impl OperationTimeValidation {
                     for checked_attribute_type in &attribute_and_subtypes {
                         if object
                             .has_attribute_with_value(snapshot, thing_manager, *checked_attribute_type, value.clone())
-                            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+                            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                         {
                             return Err(DataValidation::create_data_validation_uniqueness_error(
                                 snapshot,
@@ -518,7 +518,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
             .object_exists(snapshot, owner)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Ok(())
         } else {
@@ -535,7 +535,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
             .object_exists(snapshot, relation)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Ok(())
         } else {
@@ -552,7 +552,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
             .object_exists(snapshot, owner)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Ok(())
         } else {
@@ -569,7 +569,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
             .object_exists(snapshot, relation)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Ok(())
         } else {
