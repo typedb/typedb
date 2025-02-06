@@ -20,6 +20,7 @@ load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
+load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
 load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
 
 exports_files(
@@ -409,4 +410,71 @@ label_flag(
 label_flag(
     name = "checksum-mac-x86_64",
     build_setting_default = ":invalid-checksum",
+)
+
+
+apt_depends = ["default-jre"]
+
+apt_installation_dir = "/opt/typedb/core/"
+
+apt_empty_dirs = [
+    "/var/log/typedb/",
+    "/var/lib/typedb/core/data/",
+]
+
+apt_symlinks = {
+    "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
+    "/usr/local/bin/typedb": "/opt/typedb/core/typedb",
+    "/opt/typedb/core/server/logs": "/var/log/typedb/",
+    "/usr/lib/systemd/system/typedb.service": "/opt/typedb/core/typedb.service",
+}
+
+assemble_apt(
+    name = "assemble-linux-x86_64-apt",
+    package_name = "typedb",
+    architecture = "amd64",
+    archives = [
+        "//:assemble-all-linux-x86_64-targz"
+    ],
+    depends = apt_depends,
+    description = "TypeDB",
+    empty_dirs = apt_empty_dirs,
+    empty_dirs_permission = "0777",
+    files = assemble_files,
+    installation_dir = apt_installation_dir,
+    maintainer = "TypeDB Community <community@typedb.com>",
+    symlinks = apt_symlinks,
+    workspace_refs = "@typedb_workspace_refs//:refs.json",
+)
+
+deploy_apt(
+    name = "deploy-apt-x86_64",
+    release = deployment["apt"]["release"]["upload"],
+    snapshot = deployment["apt"]["snapshot"]["upload"],
+    target = ":assemble-linux-x86_64-apt",
+)
+
+assemble_apt(
+    name = "assemble-linux-arm64-apt",
+    package_name = "typedb",
+    architecture = "arm64",
+    archives = [
+        "//:assemble-all-linux-arm64-targz"
+    ],
+    depends = apt_depends,
+    description = "TypeDB",
+    empty_dirs = apt_empty_dirs,
+    empty_dirs_permission = "0777",
+    files = assemble_files,
+    installation_dir = apt_installation_dir,
+    maintainer = "TypeDB Community <community@typedb.com>",
+    symlinks = apt_symlinks,
+    workspace_refs = "@typedb_workspace_refs//:refs.json",
+)
+
+deploy_apt(
+    name = "deploy-apt-arm64",
+    release = deployment["apt"]["release"]["upload"],
+    snapshot = deployment["apt"]["snapshot"]["upload"],
+    target = ":assemble-linux-arm64-apt",
 )
