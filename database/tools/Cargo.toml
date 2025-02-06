@@ -32,10 +32,10 @@ features = {}
 		default-features = false
 
 [[bin]]
-	path = "read-wal.rs"
-	name = "read-wal"
-
-[[bin]]
 	path = "replay-wal.rs"
 	name = "replay-wal"
+
+[[bin]]
+	path = "read-wal.rs"
+	name = "read-wal"
 
