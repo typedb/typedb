@@ -3,6 +3,7 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@rules_rust//rust:defs.bzl", "rust_binary")
+load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_binary(
     name = "read-wal",
@@ -30,3 +31,11 @@ rust_binary(
     ],
 )
 
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*"]),
+    exclude = glob([
+        "Cargo.*",
+    ]),
+    license_type = "mpl-header",
+)
