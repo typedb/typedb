@@ -256,7 +256,7 @@ jobs:
           at: ~/dist
       - checkout
       - install-deps-yum:
-          bazel-arch: arm64
+          bazel-arch: amd64
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
