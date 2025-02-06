@@ -20,6 +20,8 @@ load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
+load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
+
 exports_files(
     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
 )
@@ -383,4 +385,28 @@ filegroup(
         "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
         "@typedb_dependencies//tool/ide:rust_sync",
     ],
+)
+
+
+deploy_brew(
+    name = "deploy-brew",
+    file_substitutions = {
+        "//:checksum-mac-arm64": "{sha256-arm64}",
+        "//:checksum-mac-x86_64": "{sha256-x86_64}",
+    },
+    formula = "//config/brew:typedb.rb",
+    release = deployment["brew"]["release"],
+    snapshot = deployment["brew"]["snapshot"],
+    version_file = "//:VERSION",
+)
+
+
+label_flag(
+    name = "checksum-mac-arm64",
+    build_setting_default = ":invalid-checksum",
+)
+
+label_flag(
+    name = "checksum-mac-x86_64",
+    build_setting_default = ":invalid-checksum",
 )
