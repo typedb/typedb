@@ -5,7 +5,7 @@
 features = {}
 
 [package]
-	name = "read-wal"
+	name = "database-tools"
 	edition = "2021"
 	version = "0.0.0"
 
