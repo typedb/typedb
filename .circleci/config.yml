@@ -251,6 +251,7 @@ jobs:
   deploy-release-brew:
     executor: linux-x86_64-amazonlinux-2
     steps:
+      - run: yum install -y tar gzip
       - attach_workspace:
           at: ~/dist
       - checkout
