@@ -8,7 +8,10 @@ use std::{
     fs, io,
     net::SocketAddr,
     path::{Path, PathBuf},
-    sync::Arc,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
 use concurrency::IntervalRunner;
@@ -45,6 +48,7 @@ pub struct Server {
     typedb_service: Option<TypeDBService>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     config: Config,
+    shutdown_sender: tokio::sync::watch::Sender<()>,
     _database_diagnostics_updater: IntervalRunner,
 }
 
@@ -56,6 +60,8 @@ impl Server {
         version: &'static str,
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+
         let storage_directory = &config.storage.data;
         Self::initialise_storage_directory(storage_directory)?;
 
@@ -85,6 +91,7 @@ impl Server {
             user_manager.clone(),
             authenticator_cache.clone(),
             diagnostics_manager.clone(),
+            shutdown_receiver,
         );
 
         diagnostics_manager.may_start_monitoring().await;
@@ -102,6 +109,7 @@ impl Server {
             typedb_service: Some(typedb_service),
             diagnostics_manager: diagnostics_manager.clone(),
             config,
+            shutdown_sender,
             _database_diagnostics_updater: IntervalRunner::new(
                 move || synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
@@ -122,12 +130,13 @@ impl Server {
         );
 
         Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
+
         Self::create_tonic_server(&self.config.server.encryption)?
             .layer(&authenticator)
             .add_service(service)
             .serve_with_shutdown(self.address, async {
-                tokio::signal::ctrl_c().await.expect("Failed to listen for a CTRL-C signal");
-                println!("\nReceived a CTRL-C signal. Shutting down...");
+                // The tonic server starts a shutdown process when this closure execution finishes
+                Self::shutdown_handler(self.shutdown_sender).await;
             })
             .await
             .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
@@ -250,6 +259,24 @@ impl Server {
             println!("Running {distribution} {version}.");
         }
         println!("Ready!");
+    }
+
+    async fn shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
+        Self::listen_ctrl_c().await;
+        println!("\nReceived CTRL-C. Initiating shutdown...");
+        shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
+
+        tokio::spawn(Self::forced_shutdown_handler());
+    }
+
+    async fn forced_shutdown_handler() {
+        Self::listen_ctrl_c().await;
+        println!("\nReceived CTRL-C. Forcing shutdown...");
+        std::process::exit(1);
+    }
+
+    async fn listen_ctrl_c() {
+        tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL-C signal");
     }
 }
 
