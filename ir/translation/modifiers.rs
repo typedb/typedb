@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use typeql::{common::Spanned, token::Order};
 
 use crate::{
-    pipeline::modifier::{Limit, Offset, Require, Select, Sort, Distinct},
+    pipeline::modifier::{Distinct, Limit, Offset, Require, Select, Sort},
     translation::{literal::FromTypeQLLiteral, TranslationContext},
     RepresentationError,
 };

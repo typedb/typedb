@@ -4,13 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, cmp::Ordering, iter::Peekable, sync::Arc};
-use std::collections::HashSet;
-use std::hash::{DefaultHasher, Hash, Hasher};
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    collections::HashSet,
+    hash::{DefaultHasher, Hash, Hasher},
+    iter::Peekable,
+    sync::Arc,
+};
+
 use answer::{variable_value::VariableValue, Thing};
-use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
-use compiler::executable::modifiers::DistinctExecutable;
-use compiler::VariablePosition;
+use compiler::{
+    executable::{
+        modifiers::{DistinctExecutable, SortExecutable},
+        reduce::ReduceRowsExecutable,
+    },
+    VariablePosition,
+};
 use encoding::value::value::Value;
 use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
@@ -91,7 +101,10 @@ impl CollectingStageExecutor {
     }
 
     pub(crate) fn new_distinct(previous_stage: PatternExecutor, distinct_executable: &DistinctExecutable) -> Self {
-        Self { pattern: previous_stage, collector: CollectorEnum::Distinct(DistinctCollector::new(distinct_executable)) }
+        Self {
+            pattern: previous_stage,
+            collector: CollectorEnum::Distinct(DistinctCollector::new(distinct_executable)),
+        }
     }
 
     pub(crate) fn reset(&mut self) {
@@ -228,7 +241,7 @@ impl SortCollector {
             VariableValue::Thing(Thing::Attribute(attribute)) => {
                 Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
             }
-            VariableValue::Empty => { None }
+            VariableValue::Empty => None,
             VariableValue::Type(_) | VariableValue::Thing(_) => {
                 unreachable!("Should have been caught earlier")
             }
@@ -314,10 +327,7 @@ pub(super) struct DistinctCollector {
 
 impl DistinctCollector {
     fn new(distinct_executable: &DistinctExecutable) -> Self {
-        Self {
-            variable_positions: distinct_executable.output_row_mapping.values().cloned().collect(),
-            collector: None
-        }
+        Self { variable_positions: distinct_executable.output_row_mapping.values().cloned().collect(), collector: None }
     }
 }
 
@@ -368,7 +378,13 @@ impl CollectorTrait for DistinctCollector {
             }
         }
 
-        CollectedStageIterator::Distinct(DistinctStageIterator { batch_with_duplicates, next_row_index: 0, duplicate_block_start_indices, unique_block_restart_indices, next_duplicate_index_index: 0 })
+        CollectedStageIterator::Distinct(DistinctStageIterator {
+            batch_with_duplicates,
+            next_row_index: 0,
+            duplicate_block_start_indices,
+            unique_block_restart_indices,
+            next_duplicate_index_index: 0,
+        })
     }
 }
 
@@ -388,7 +404,9 @@ impl CollectedStageIteratorTrait for DistinctStageIterator {
             let mut next_batch = FixedBatch::new(width as u32);
             while self.next_row_index < self.batch_with_duplicates.len() {
                 let mut next_row;
-                if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len() || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index] {
+                if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len()
+                    || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index]
+                {
                     // Case 1: next row is not a duplicate
                     let row = self.batch_with_duplicates.get_row(self.next_row_index);
                     self.next_row_index += 1;

@@ -26,7 +26,8 @@ use crate::{
         insert::InsertStageExecutor,
         match_::MatchStageExecutor,
         modifiers::{
-            LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor, SortStageExecutor,
+            DistinctStageExecutor, LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor,
+            SortStageExecutor,
         },
         reduce::ReduceStageExecutor,
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
@@ -35,7 +36,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::pipeline::modifiers::DistinctStageExecutor;
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),

@@ -20,7 +20,7 @@ use ir::{
         block::Block,
         fetch::FetchObject,
         function::Function,
-        modifier::{Limit, Offset, Require, Select, Sort, Distinct},
+        modifier::{Distinct, Limit, Offset, Require, Select, Sort},
         reduce::{AssignedReduction, Reduce, Reducer},
         ParameterRegistry, VariableRegistry,
     },

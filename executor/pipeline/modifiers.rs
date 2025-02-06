@@ -3,14 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{borrow::Cow, cmp::Ordering, sync::Arc};
-use std::collections::HashSet;
-use std::hash::{Hash, Hasher, DefaultHasher};
-use answer::{variable_value::VariableValue, Thing};
-use compiler::executable::modifiers::{
-    LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable, DistinctExecutable
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    collections::HashSet,
+    hash::{DefaultHasher, Hash, Hasher},
+    sync::Arc,
 };
-use compiler::VariablePosition;
+
+use answer::{variable_value::VariableValue, Thing};
+use compiler::{
+    executable::modifiers::{
+        DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
+    },
+    VariablePosition,
+};
 use encoding::value::value::Value;
 use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
@@ -123,7 +130,7 @@ impl SortStageIterator {
             VariableValue::Thing(Thing::Attribute(attribute)) => {
                 Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
             }
-            VariableValue::Empty => { None }
+            VariableValue::Empty => None,
             VariableValue::Type(_) | VariableValue::Thing(_) => {
                 unreachable!("Should have been caught earlier")
             }
@@ -434,7 +441,12 @@ where
         let profile = context.profile.profile_stage(|| String::from("Distinct"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Distinct execution"));
         let measurement = step_profile.start_measurement();
-        let distinct_iterator = DistinctStageIterator::from_batch_with_duplicates(batch, &executable, &context, executable.output_row_mapping.values().cloned().collect());
+        let distinct_iterator = DistinctStageIterator::from_batch_with_duplicates(
+            batch,
+            &executable,
+            &context,
+            executable.output_row_mapping.values().cloned().collect(),
+        );
         measurement.end(&step_profile, 1, batch_len as u64);
         Ok((distinct_iterator, context))
     }
@@ -483,7 +495,13 @@ impl DistinctStageIterator {
             }
         }
 
-        Self { batch_with_duplicates, next_row_index: 0, duplicate_block_start_indices, unique_block_restart_indices, next_duplicate_index_index: 0 }
+        Self {
+            batch_with_duplicates,
+            next_row_index: 0,
+            duplicate_block_start_indices,
+            unique_block_restart_indices,
+            next_duplicate_index_index: 0,
+        }
     }
 }
 
@@ -492,7 +510,9 @@ impl LendingIterator for DistinctStageIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.next_row_index < self.batch_with_duplicates.len() {
-            if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len() || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index] {
+            if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len()
+                || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index]
+            {
                 // Case 1: next row is not a duplicate
                 let next_row = self.batch_with_duplicates.get_row(self.next_row_index);
                 self.next_row_index += 1;

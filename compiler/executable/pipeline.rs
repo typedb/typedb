@@ -27,13 +27,14 @@ use crate::{
         function::{compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::executable::InsertExecutable,
         match_::planner::{match_executable::MatchExecutable, vertex::Cost},
-        modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
+        modifiers::{
+            DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
+        },
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::modifiers::DistinctExecutable;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
