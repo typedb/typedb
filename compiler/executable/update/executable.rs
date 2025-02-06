@@ -23,11 +23,10 @@ use typeql::common::Span;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
-        WriteCompilationError,
         insert::{
             get_kinds_from_types, get_thing_input_position,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
-            ThingPosition, TypeSource, ValueSource, VariableSource,
+            ThingPosition, TypeSource, ValueSource, VariableSource, WriteCompilationError,
         },
         next_executable_id,
     },

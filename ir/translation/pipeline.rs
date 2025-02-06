@@ -37,12 +37,11 @@ use crate::{
             translate_distinct, translate_limit, translate_offset, translate_require, translate_select, translate_sort,
         },
         reduce::translate_reduce,
-        writes::{translate_delete, translate_insert},
+        writes::{translate_delete, translate_insert, translate_update},
         TranslationContext,
     },
     RepresentationError,
 };
-use crate::translation::writes::translate_update;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {
@@ -91,9 +90,10 @@ pub enum TranslatedStage {
 impl TranslatedStage {
     pub fn variables(&self) -> Box<dyn Iterator<Item = Variable> + '_> {
         match self {
-            Self::Match { block, .. } | Self::Insert { block, .. } | Self::Update { block, .. } | Self::Delete { block, .. } => {
-                Box::new(block.variables())
-            }
+            Self::Match { block, .. }
+            | Self::Insert { block, .. }
+            | Self::Update { block, .. }
+            | Self::Delete { block, .. } => Box::new(block.variables()),
             Self::Select(select) => Box::new(select.variables.iter().cloned()),
             Self::Sort(sort) => Box::new(sort.variables.iter().map(|sort_var| sort_var.variable())),
             Self::Offset(_) => Box::new(empty()),
@@ -232,9 +232,7 @@ fn translate_stage(
         TypeQLStage::Insert(insert) => translate_insert(translation_context, value_parameters, insert)
             .map(|block| Either::First(TranslatedStage::Insert { block, source_span: insert.span() })),
         TypeQLStage::Update(update) => translate_update(translation_context, value_parameters, update)
-            .map(|(block, deleted_variables)| { // TODO: Use deleted/updated vars?
-                Either::First(TranslatedStage::Update { block, source_span: update.span() })
-            }),
+            .map(|block| Either::First(TranslatedStage::Update { block, source_span: update.span() })),
         TypeQLStage::Delete(delete) => {
             translate_delete(translation_context, value_parameters, delete).map(|(block, deleted_variables)| {
                 Either::First(TranslatedStage::Delete { block, deleted_variables, source_span: delete.span() })

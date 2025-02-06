@@ -17,6 +17,7 @@ use ir::{
     pipeline::VariableRegistry,
 };
 use typeql::common::Span;
+use crate::executable::WriteCompilationError;
 
 use crate::VariablePosition;
 
@@ -65,78 +66,4 @@ pub(crate) fn get_thing_input_position(
 
 pub(crate) fn get_kinds_from_types(types: &BTreeSet<Type>) -> HashSet<Kind> {
     types.iter().map(Type::kind).collect()
-}
-
-typedb_error! {
-    pub WriteCompilationError(component = "Write compiler", prefix = "WCP") {
-        InsertIsaStatementForInputVariable(
-            1,
-            "Illegal 'isa' provided for variable '{variable}' that is input from a previous stage - 'isa's should only be used to create new instances in insert stages.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        InsertVariableAmbiguousAttributeOrObject(
-            2,
-            "Insert variable '{variable}' is ambiguously an attribute or an object (entity/relation).",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        InsertVariableUnknownType(
-            3,
-            "Could not determine the type of the insert variable '{variable}'.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        InsertAttributeMissingValue(
-            4,
-            "Could not determine the value of the insert attribute '{variable}'.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        InsertIllegalPredicate(
-            5,
-            "Illegal predicate in insert for variable '{variable}' with comparator '{comparator}'.",
-            variable: String,
-            comparator: Comparator,
-            source_span: Option<Span>,
-        ),
-        MissingExpectedInput(
-            6,
-            "Missing expected input variable in compilation data '{variable}'.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        AmbiguousRoleType(
-            7,
-            "Could not uniquely resolve the role type for variable '{variable}'. Possible role types are: {role_types}.",
-            variable: String,
-            role_types: String,
-            source_span: Option<Span>,
-        ),
-        InsertLinksAmbiguousRoleType(
-            8,
-            "Links insert for player '{player_variable}' requires unambiguous role type, but inferred: {role_types}.",
-            player_variable: String,
-            role_types: String,
-            source_span: Option<Span>,
-        ),
-        DeleteIllegalRoleVariable(
-            9,
-            "Illegal delete for variable '{variable}', which represents role types.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        InsertIllegalRole(
-            10,
-            "Illegal role type insert for variable '{variable}'.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-        DeletedThingWasNotInInput(
-            11,
-            "Deleted variable '{variable}' is not available as input from previous stages.",
-            variable: String,
-            source_span: Option<Span>,
-        ),
-    }
 }

@@ -18,10 +18,10 @@ use typeql::common::Span;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
+        WriteCompilationError,
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
             executable::collect_role_type_bindings, get_thing_input_position, ThingPosition, TypeSource,
-            WriteCompilationError,
         },
         next_executable_id,
     },

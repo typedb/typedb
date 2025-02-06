@@ -6,7 +6,7 @@
 
 use compiler::{
     annotation::{expression::ExpressionCompileError, AnnotationError},
-    executable::{insert::WriteCompilationError, ExecutableCompilationError},
+    executable::{WriteCompilationError, ExecutableCompilationError},
     transformation::StaticOptimiserError,
 };
 use error::typedb_error;

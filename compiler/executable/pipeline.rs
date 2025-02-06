@@ -47,6 +47,7 @@ pub struct ExecutablePipeline {
 pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
+    Update(Arc<UpdateExecutable>),
     Delete(Arc<DeleteExecutable>),
 
     Select(Arc<SelectExecutable>),
@@ -63,6 +64,13 @@ impl ExecutableStage {
         match self {
             ExecutableStage::Match(executable) => executable.variable_positions().to_owned(),
             ExecutableStage::Insert(executable) => executable
+                .output_row_schema
+                .iter()
+                .enumerate()
+                .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
+                .map(|(i, v)| (v, VariablePosition::new(i as u32)))
+                .collect(),
+            ExecutableStage::Update(executable) => executable
                 .output_row_schema
                 .iter()
                 .enumerate()
@@ -239,8 +247,19 @@ fn compile_stage(
                 variable_registry,
                 *source_span,
             )
-            .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
+                .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Insert(Arc::new(plan)))
+        }
+        AnnotatedStage::Update { block, annotations, source_span } => {
+            let plan = crate::executable::update::executable::compile(
+                block.conjunction().constraints(),
+                input_variables,
+                annotations,
+                variable_registry,
+                *source_span,
+            )
+                .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
+            Ok(ExecutableStage::Update(Arc::new(plan)))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {
             let plan = crate::executable::delete::executable::compile(

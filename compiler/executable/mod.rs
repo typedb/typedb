@@ -5,12 +5,13 @@
  */
 
 use std::sync::atomic::{AtomicU64, Ordering};
+use typeql::common::Span;
 
 use error::typedb_error;
+use ir::pattern::constraint::Comparator;
 
-use crate::executable::{
-    fetch::executable::FetchCompilationError, insert::WriteCompilationError, match_::planner::MatchCompilationError,
-};
+use crate::executable::fetch::executable::FetchCompilationError;
+use crate::executable::match_::planner::MatchCompilationError;
 
 pub mod delete;
 pub mod fetch;
@@ -20,6 +21,7 @@ pub mod match_;
 pub mod modifiers;
 pub mod pipeline;
 pub mod reduce;
+pub mod update;
 
 static EXECUTABLE_ID: AtomicU64 = AtomicU64::new(0);
 
@@ -30,8 +32,83 @@ pub fn next_executable_id() -> u64 {
 typedb_error! {
     pub ExecutableCompilationError(component = "Executable compiler", prefix = "ECP") {
         InsertExecutableCompilation(1, "Error compiling insert stage into executable.", typedb_source: Box<WriteCompilationError>),
-        DeleteExecutableCompilation(2, "Error compiling delete stage into executable.", typedb_source: Box<WriteCompilationError>),
-        FetchCompilation(3, "Error compiling fetch stage into executable.", typedb_source: FetchCompilationError),
-        MatchCompilation(4, "Error compiling match stage into executable.", typedb_source: MatchCompilationError),
+        UpdateExecutableCompilation(2, "Error compiling update clause into executable.", typedb_source: Box<WriteCompilationError>),
+        DeleteExecutableCompilation(3, "Error compiling delete stage into executable.", typedb_source: Box<WriteCompilationError>),
+        FetchCompilation(4, "Error compiling fetch stage into executable.", typedb_source: FetchCompilationError),
+        MatchCompilation(5, "Error compiling match stage into executable.", typedb_source: MatchCompilationError),
+    }
+}
+
+typedb_error! {
+    pub WriteCompilationError(component = "Write compiler", prefix = "WCP") {
+        InsertIsaStatementForInputVariable(
+            1,
+            "Illegal 'isa' provided for variable '{variable}' that is input from a previous stage - 'isa's should only be used to create new instances in insert stages.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        InsertVariableAmbiguousAttributeOrObject(
+            2,
+            "Insert variable '{variable}' is ambiguously an attribute or an object (entity/relation).",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        InsertVariableUnknownType(
+            3,
+            "Could not determine the type of the insert variable '{variable}'.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        InsertAttributeMissingValue(
+            4,
+            "Could not determine the value of the insert attribute '{variable}'.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        InsertIllegalPredicate(
+            5,
+            "Illegal predicate in insert for variable '{variable}' with comparator '{comparator}'.",
+            variable: String,
+            comparator: Comparator,
+            source_span: Option<Span>,
+        ),
+        MissingExpectedInput(
+            6,
+            "Missing expected input variable in compilation data '{variable}'.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        AmbiguousRoleType(
+            7,
+            "Could not uniquely resolve the role type for variable '{variable}'. Possible role types are: {role_types}.",
+            variable: String,
+            role_types: String,
+            source_span: Option<Span>,
+        ),
+        InsertLinksAmbiguousRoleType(
+            8,
+            "Links insert for player '{player_variable}' requires unambiguous role type, but inferred: {role_types}.",
+            player_variable: String,
+            role_types: String,
+            source_span: Option<Span>,
+        ),
+        DeleteIllegalRoleVariable(
+            9,
+            "Illegal delete for variable '{variable}', which represents role types.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        InsertIllegalRole(
+            10,
+            "Illegal role type insert for variable '{variable}'.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        DeletedThingWasNotInInput(
+            11,
+            "Deleted variable '{variable}' is not available as input from previous stages.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
     }
 }
