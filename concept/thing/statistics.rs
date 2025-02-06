@@ -53,6 +53,8 @@ type StatisticsEncodingVersion = u64;
 pub struct Statistics {
     encoding_version: StatisticsEncodingVersion,
     pub sequence_number: SequenceNumber,
+
+    pub last_durable_write_sequence_number: SequenceNumber,
     pub last_durable_write_total_count: u64,
 
     pub total_count: u64,
@@ -90,6 +92,7 @@ impl Statistics {
             encoding_version: Self::ENCODING_VERSION,
             sequence_number,
             last_durable_write_total_count: 0,
+            last_durable_write_sequence_number: sequence_number,
             total_count: 0,
             total_thing_count: 0,
             total_entity_count: 0,
@@ -130,27 +133,25 @@ impl Statistics {
             .map_err(|err| ReloadCommitData { typedb_source: err })?
         {
             if let RecoveryCommitStatus::Validated(record) = status {
-                match record.commit_type() {
-                    CommitType::Data => {
-                        let writes = CommittedWrites {
-                            open_sequence_number: record.open_sequence_number(),
-                            operations: record.into_operations(),
-                        };
-                        data_commits.insert(seq, writes);
-                    }
+                let commit_type = record.commit_type();
+                let writes = CommittedWrites {
+                    open_sequence_number: record.open_sequence_number(),
+                    operations: record.into_operations(),
+                };
+                match commit_type {
+                    CommitType::Data => _ = data_commits.insert(seq, writes),
                     CommitType::Schema => {
-                        self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
-                        self.durably_write(storage.durability())?;
-
+                        if self.sequence_number < seq {
+                            // If last write was at Seq[11] and this schema commit is at Seq[12],
+                            // no changes need to be applied or persisted.
+                            if self.last_durable_write_sequence_number.next() < seq {
+                                self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
+                                self.durably_write(storage.durability())?;
+                            }
+                            self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
+                                .map_err(|err| DataRead { source: err })?;
+                        }
                         data_commits.clear();
-
-                        let writes = CommittedWrites {
-                            open_sequence_number: record.open_sequence_number(),
-                            operations: record.into_operations(),
-                        };
-                        let mut commits = BTreeMap::new();
-                        commits.insert(seq, writes);
-                        self.update_writes(&commits, storage).map_err(|err| DataRead { source: err })?;
                     }
                 }
             }
@@ -171,6 +172,7 @@ impl Statistics {
     pub fn durably_write(&mut self, durability: &impl DurabilityClient) -> Result<(), StatisticsError> {
         use StatisticsError::DurablyWrite;
         durability.unsequenced_write(self).map_err(|err| DurablyWrite { typedb_source: err })?;
+        self.last_durable_write_sequence_number = self.sequence_number;
         self.last_durable_write_total_count = self.total_count;
         Ok(())
     }
@@ -180,14 +182,11 @@ impl Statistics {
         commits: &BTreeMap<SequenceNumber, CommittedWrites>,
         storage: &MVCCStorage<D>,
     ) -> Result<(), MVCCReadError> {
-        let mut total_delta = 0;
         for (sequence_number, writes) in commits.range(self.sequence_number.next()..) {
-            total_delta += self.update_write(*sequence_number, writes, commits, storage)?;
+            let delta = self.update_write(*sequence_number, writes, commits, storage)?;
+            self.total_count = self.total_count.checked_add_signed(delta).unwrap();
+            self.sequence_number = *sequence_number;
         }
-        if let Some((&last_sequence_number, _)) = commits.last_key_value() {
-            self.sequence_number = last_sequence_number;
-        }
-        self.total_count = self.total_count.checked_add_signed(total_delta).unwrap();
         Ok(())
     }
 
@@ -846,8 +845,7 @@ mod serialise {
                     V: SeqAccess<'de>,
                 {
                     let statistics_version = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(0, &self))?;
-                    let open_sequence_number =
-                        seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
+                    let sequence_number = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(1, &self))?;
                     let last_durable_write_total_count =
                         seq.next_element()?.ok_or_else(|| de::Error::invalid_length(2, &self))?;
                     let total_count = seq.next_element()?.ok_or_else(|| de::Error::invalid_length(3, &self))?;
@@ -933,7 +931,8 @@ mod serialise {
                         .collect();
                     Ok(Statistics {
                         encoding_version: statistics_version,
-                        sequence_number: open_sequence_number,
+                        sequence_number,
+                        last_durable_write_sequence_number: sequence_number,
                         last_durable_write_total_count,
                         total_count,
                         total_thing_count,
@@ -1190,6 +1189,8 @@ mod serialise {
                             .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
                         last_durable_write_total_count: last_durable_write_total_count
                             .ok_or_else(|| de::Error::missing_field(Field::LastDurableWriteTotalCount.name()))?,
+                        last_durable_write_sequence_number: open_sequence_number
+                            .ok_or_else(|| de::Error::missing_field(Field::OpenSequenceNumber.name()))?,
                         total_count: total_count.ok_or_else(|| de::Error::missing_field(Field::TotalCount.name()))?,
                         total_thing_count: total_thing_count
                             .ok_or_else(|| de::Error::missing_field(Field::TotalThingCount.name()))?,
