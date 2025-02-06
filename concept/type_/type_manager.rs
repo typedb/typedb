@@ -189,7 +189,7 @@ macro_rules! get_type_label_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(MaybeOwns::Borrowed(cache.$cache_method(type_)))
                 } else {
-                    Ok(MaybeOwns::Owned(TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?))
+                    Ok(MaybeOwns::Owned(TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType {})?))
                 }
             }
         )*
@@ -207,7 +207,7 @@ macro_rules! get_type_label_arc_methods {
                 if let Some(cache) = &self.type_cache {
                     Ok(cache.$cache_method(type_))
                 } else {
-                    Ok(Arc::new(TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType)?))
+                    Ok(Arc::new(TypeReader::get_label(snapshot, type_)?.ok_or(ConceptReadError::CorruptMissingLabelOfType {})?))
                 }
             }
         )*
@@ -1060,7 +1060,7 @@ impl TypeManager {
         capability: CAP,
     ) -> Result<AnnotationCardinality, Box<ConceptReadError>> {
         self.get_capability_cardinality_constraint(snapshot, capability)?
-            .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability))?
+            .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatoryCardinalityForNonSpecialisingCapability {}))?
             .description()
             .unwrap_cardinality()
             .map_err(|source| Box::new(ConceptReadError::Constraint { source }))
@@ -1108,7 +1108,7 @@ impl TypeManager {
             Err(err) => {
                 match *err {
                     // Can be called from validation functions before storing ordering
-                    ConceptReadError::OrderingValueMissing => Ok(false),
+                    ConceptReadError::OrderingValueMissing {} => Ok(false),
                     _ => Err(err),
                 }
             }
@@ -2491,7 +2491,7 @@ impl TypeManager {
                     self,
                     specialised_role_type.get_label(snapshot, self)?.name.as_str(),
                 )?
-                .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole))?;
+                .ok_or_else(|| Box::new(ConceptReadError::CorruptMissingMandatorySpecialisingRelatesForRole {}))?;
             self.unset_relates_unchecked(snapshot, specialising_relates)?;
         }
         Ok(())

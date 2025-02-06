@@ -3194,7 +3194,7 @@ impl OperationTimeValidation {
                     let owns = object_type
                         .get_owns_attribute(snapshot, type_manager, attribute_type)
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
-                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundHasWithoutOwns))
+                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundHasWithoutOwns {}))
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
 
                     for abstract_constraint in abstract_constraints.iter() {
@@ -3442,7 +3442,7 @@ impl OperationTimeValidation {
                     let plays = object_type
                         .get_plays_role(snapshot, type_manager, role_type)
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
-                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutPlays))
+                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutPlays {}))
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
 
                     for abstract_constraint in abstract_constraints.iter() {
@@ -3556,7 +3556,7 @@ impl OperationTimeValidation {
                     let relates = relation_type
                         .get_relates_role(snapshot, type_manager, role_type)
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?
-                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutRelates))
+                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutRelates {}))
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { source }))?;
 
                     for abstract_constraint in abstract_constraints.iter() {
