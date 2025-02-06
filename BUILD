@@ -429,12 +429,21 @@ apt_symlinks = {
     "/usr/lib/systemd/system/typedb.service": "/opt/typedb/core/typedb.service",
 }
 
+assemble_targz(
+    name = "assemble-service-targz",
+    additional_files = {
+        "//binary:typedb.service": "typedb.service",
+    },
+    visibility = ["//visibility:public"]
+)
+
 assemble_apt(
     name = "assemble-linux-x86_64-apt",
     package_name = "typedb",
     architecture = "amd64",
     archives = [
-        "//:assemble-all-linux-x86_64-targz"
+        "//:package-typedb-all",
+        "//:assemble-service-targz",
     ],
     depends = apt_depends,
     description = "TypeDB",
@@ -459,7 +468,8 @@ assemble_apt(
     package_name = "typedb",
     architecture = "arm64",
     archives = [
-        "//:assemble-all-linux-arm64-targz"
+        "//:package-typedb-all",
+        "//:assemble-service-targz",
     ],
     depends = apt_depends,
     description = "TypeDB",
