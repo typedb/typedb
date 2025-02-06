@@ -1025,7 +1025,7 @@ impl BinaryConstraint for Isa<Variable> {
         left_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if seeder.is_write_stage || self.isa_kind() == IsaKind::Subtype {
+        if !seeder.is_write_stage && self.isa_kind() == IsaKind::Subtype {
             match left_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
@@ -1067,7 +1067,7 @@ impl BinaryConstraint for Isa<Variable> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        if self.isa_kind() == IsaKind::Subtype {
+        if !seeder.is_write_stage && self.isa_kind() == IsaKind::Subtype {
             match right_type {
                 TypeAnnotation::Attribute(attribute) => {
                     attribute
