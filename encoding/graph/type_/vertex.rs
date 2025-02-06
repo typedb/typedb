@@ -75,8 +75,9 @@ impl Prefixed<BUFFER_KEY_INLINE> for TypeVertex {}
 
 impl Typed<BUFFER_KEY_INLINE> for TypeVertex {
     fn type_id_(&self) -> TypeID {
-        // TODO: is this the best way to get the TypeID out?
-        TypeID::decode(self.to_bytes()[Self::RANGE_TYPE_ID].try_into().unwrap())
+        debug_assert_eq!(Self::LENGTH, 3);
+        debug_assert_eq!(Self::RANGE_TYPE_ID, 1..3);
+        TypeID { value: (self.value & 0xFFFF) as u16 }
     }
 }
 
