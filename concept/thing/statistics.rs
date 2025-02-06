@@ -470,16 +470,16 @@ struct CommittedWrites {
 
 impl fmt::Debug for Statistics {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        const INDENT: usize = 4;
+
         let pretty = f.alternate();
-        let indent = 4;
-        let current_indent = indent;
 
         writeln!(f, "Statistics {{")?;
 
         macro_rules! write_field {
             ($name:expr, $value:expr) => {
                 if pretty {
-                    writeln!(f, "{:indent$}{}: {:?},", "", $name, $value)?;
+                    writeln!(f, "{:INDENT$}{}: {:?},", "", $name, $value)?;
                 } else {
                     write!(f, " {}: {:?},", $name, $value)?;
                 }
@@ -489,15 +489,15 @@ impl fmt::Debug for Statistics {
         macro_rules! write_hashmap {
             ($name:expr, $map:expr) => {
                 if pretty {
-                    write!(f, "{:indent$}{}: {{", "", $name)?;
+                    write!(f, "{:INDENT$}{}: {{", "", $name)?;
                     if $map.is_empty() {
                         writeln!(f, "}}")?;
                     } else {
                         writeln!(f)?;
                         for (key, value) in &$map {
-                            writeln!(f, "{:indent$}{:?}: {:?},", "", key, value, indent = indent + 4)?;
+                            writeln!(f, "{:indent$}{:?}: {:?},", "", key, value, indent = INDENT * 2)?;
                         }
-                        writeln!(f, "{:indent$}}},", "", indent = current_indent)?;
+                        writeln!(f, "{:INDENT$}}},", "")?;
                     }
                 } else {
                     write!(f, " {}: {{", $name)?;
