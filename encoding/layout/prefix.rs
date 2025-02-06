@@ -20,7 +20,10 @@ impl PrefixID {
 }
 
 macro_rules! make_prefix_enum {
-    ($($name:ident => $byte:literal, $fixed_width_keys:literal);*) => {
+    ($($name:ident => $byte:literal = $hex:literal, $fixed_width_keys:literal);*) => {
+        // assert that $byte and $hex are the same literal
+        $(const _: [(); $byte] = [(); $hex];)*
+
         #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, Ord, PartialOrd)]
         pub enum Prefix {
             $($name = $byte,)*
@@ -82,42 +85,42 @@ impl Prefix {
 }
 
 make_prefix_enum! {
-    // Reserved: 0x00-0x09
-    VertexEntityType => 0x0A, true;
-    VertexRelationType => 0x0B, true;
-    VertexAttributeType => 0x0C, true;
-    VertexRoleType => 0x0F, true;
-    DefinitionStruct => 0x14, true;
-    DefinitionFunction => 0x15, true;
+    // Reserved: 0x00-0x09 = 0-9
+    VertexEntityType => 10 = 0x0A, true;
+    VertexRelationType => 11 = 0x0B, true;
+    VertexAttributeType => 12 = 0x0C, true;
+    VertexRoleType => 15 = 0x0F, true;
+    DefinitionStruct => 20 = 0x14, true;
+    DefinitionFunction => 21 = 0x15, true;
 
     // All objects are stored consecutively for iteration
-    VertexEntity => 0x1E, true;
-    VertexRelation => 0x1F, true;
-    VertexAttribute => 0x20, false;
+    VertexEntity => 30 = 0x1E, true;
+    VertexRelation => 31 = 0x1F, true;
+    VertexAttribute => 32 = 0x20, false;
 
-    EdgeSub => 0x64, true;
-    EdgeSubReverse => 0x65, true;
-    EdgeOwns => 0x66, true;
-    EdgeOwnsReverse => 0x67, true;
-    EdgePlays => 0x68, true;
-    EdgePlaysReverse => 0x69, true;
-    EdgeRelates => 0x6A, true;
-    EdgeRelatesReverse => 0x6B, true;
+    EdgeSub => 100 = 0x64, true;
+    EdgeSubReverse => 101 = 0x65, true;
+    EdgeOwns => 102 = 0x66, true;
+    EdgeOwnsReverse => 103 = 0x67, true;
+    EdgePlays => 104 = 0x68, true;
+    EdgePlaysReverse => 105 = 0x69, true;
+    EdgeRelates => 106 = 0x6A, true;
+    EdgeRelatesReverse => 107 = 0x6B, true;
 
-    EdgeHas => 0x82, false;
-    EdgeHasReverse => 0x83, false;
-    EdgeLinks => 0x84, true;
-    EdgeLinksReverse => 0x85, true;
-    EdgeLinksIndex => 0x8C, true;
+    EdgeHas => 130 = 0x82, false;
+    EdgeHasReverse => 131 = 0x83, false;
+    EdgeLinks => 132 = 0x84, true;
+    EdgeLinksReverse => 133 = 0x85, true;
+    EdgeLinksIndex => 140 = 0x8C, true;
 
-    PropertyTypeVertex => 0xA0, true;
-    PropertyTypeEdge => 0xA2, true;
-    PropertyObjectVertex => 0xA3, true;
+    PropertyTypeVertex => 160 = 0xA0, true;
+    PropertyTypeEdge => 162 = 0xA2, true;
+    PropertyObjectVertex => 163 = 0xA3, true;
 
-    IndexLabelToType => 0xB6, false;
-    IndexNameToDefinitionStruct => 0xB7, false;
-    IndexNameToDefinitionFunction => 0xB8, false;
+    IndexLabelToType => 182 = 0xB6, false;
+    IndexNameToDefinitionStruct => 183 = 0xB7, false;
+    IndexNameToDefinitionFunction => 184 = 0xB8, false;
 
-    IndexValueToStruct => 0xBE, false
-    // Reserved: 0xC8-0xFF
+    IndexValueToStruct => 190 = 0xBE, false
+    // Reserved: 0xC8-0xFF = 200-255
 }
