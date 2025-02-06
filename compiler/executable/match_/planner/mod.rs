@@ -51,7 +51,7 @@ pub fn compile(
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> Result<MatchExecutable, MatchCompilationError>  {
+) -> MatchExecutable {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
     debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
@@ -69,9 +69,8 @@ pub fn compile(
         statistics,
         call_cost_provider,
     )
-        .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-        .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
-        .finish(variable_registry)
+    .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
+    .finish(variable_registry)
 }
 
 #[derive(Debug)]

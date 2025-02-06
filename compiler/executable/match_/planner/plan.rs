@@ -87,7 +87,7 @@ pub(crate) fn plan_conjunction<'a>(
     expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
     call_cost_provider: &'a impl FunctionCallCostProvider,
-) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
+) -> ConjunctionPlan<'a> {
     make_builder(
         conjunction,
         block_context,
