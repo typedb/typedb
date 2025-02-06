@@ -135,8 +135,8 @@ impl Server {
             .layer(&authenticator)
             .add_service(service)
             .serve_with_shutdown(self.address, async {
-                Self::shutdown_signal().await;
-                self.shutdown_sender.send(()).expect("Expected a successful shutdown signal");
+                // The tonic server starts a shutdown process when this closure execution finishes
+                Self::shutdown_handler(self.shutdown_sender).await;
             })
             .await
             .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
@@ -261,18 +261,21 @@ impl Server {
         println!("Ready!");
     }
 
-    async fn shutdown_signal() {
-        Self::listen_ctrl_c().await;
-        println!("\nReceived CTRL-C. Initiating graceful shutdown...");
+    async fn shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
+        Self::block_and_listen_ctrl_c().await;
+        println!("\nReceived CTRL-C. Initiating shutdown...");
+        shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
 
-        tokio::spawn(async {
-            Self::listen_ctrl_c().await;
-            println!("\nReceived CTRL-C. Forcing shutdown...");
-            std::process::exit(1);
-        });
+        tokio::spawn(Self::forced_shutdown_handler());
     }
 
-    async fn listen_ctrl_c() {
+    async fn forced_shutdown_handler() {
+        Self::block_and_listen_ctrl_c().await;
+        println!("\nReceived CTRL-C. Forcing shutdown...");
+        std::process::exit(1);
+    }
+
+    async fn block_and_listen_ctrl_c() {
         tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL-C signal");
     }
 }
