@@ -23,19 +23,19 @@ struct Cli {
 enum Command {
     /// Print wal data at a single sequence number
     Print {
-        /// The sequence number of the records to print
-        #[arg(value_name = "SEQ (default: last sequence number in the WAL)")]
+        /// The sequence number of the records to print [default: last in the WAL]
+        #[arg(value_name = "SEQ")]
         sequence_number: Option<u64>,
     },
     /// Print wal data in the range of sequence numbers
     PrintRange {
         /// The sequence number to start printing from (inclusive)
-        #[arg(value_name = "FROM")]
+        #[arg(value_name = "FROM", default_value = "0")]
         sequence_number_from: u64,
 
-        /// The sequence number to stop printing at (inclusive)
+        /// The sequence number to stop printing at (inclusive) [default: last in the WAL]
         #[arg(value_name = "TO")]
-        sequence_number_to: u64,
+        sequence_number_to: Option<u64>,
     },
 }
 
@@ -96,7 +96,7 @@ fn print_raw_record(record: RawRecord<'_>) {
     }
 }
 
-fn print_range(path: PathBuf, from: u64, to: u64) {
+fn print_range(path: PathBuf, from: u64, to: Option<u64>) {
     let wal = WAL::load(path).unwrap();
 
     let mut wal = WALClient::new(wal);
@@ -104,10 +104,11 @@ fn print_range(path: PathBuf, from: u64, to: u64) {
     wal.register_record_type::<CommitRecord>();
     wal.register_record_type::<StatusRecord>();
 
-    let sequence_number = DurabilitySequenceNumber::new(from);
-    for record in wal.iter_from(sequence_number).unwrap() {
+    let from = DurabilitySequenceNumber::new(from);
+    let to = to.map(DurabilitySequenceNumber::new).unwrap_or(wal.previous());
+    for record in wal.iter_from(from).unwrap() {
         let record = record.unwrap();
-        if record.sequence_number.number() > to {
+        if record.sequence_number > to {
             break;
         }
         print_record(record);
