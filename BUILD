@@ -488,3 +488,11 @@ deploy_apt(
     snapshot = deployment["apt"]["snapshot"]["upload"],
     target = ":assemble-linux-arm64-apt",
 )
+
+alias(
+    name = "deploy-apt",
+    actual = select({
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : ":deploy-apt-arm64",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":deploy-apt-x86_64",
+    })
+)
