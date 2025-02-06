@@ -249,17 +249,18 @@ jobs:
       - run: .circleci\windows\deploy_release.bat
 
   deploy-release-brew:
-    executor: mac-arm64
+    executor: linux-x86_64-amazonlinux-2
     steps:
       - attach_workspace:
           at: ~/dist
       - checkout
-      - install-deps-brew:
+      - install-deps-yum:
           bazel-arch: arm64
       - run: |
           export DEPLOY_BREW_TOKEN=$REPO_GITHUB_TOKEN DEPLOY_BREW_USERNAME=$REPO_GITHUB_USERNAME DEPLOY_BREW_EMAIL=$REPO_GITHUB_EMAIL
           sha256sum ~/dist/typedb-all-mac-arm64.zip  | awk '{print $1}' > checksum-arm64
-          sha256sum ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
+          sha256sum 256 ~/dist/typedb-all-mac-x86_64.zip | awk '{print $1}' > checksum-x86_64
+          bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --define version=$(cat VERSION) //:deploy-brew --//:checksum-mac-arm64=:checksum-arm64 --//:checksum-mac-x86_64=:checksum-x86_64 --compilation_mode=opt -- release
 
   deploy-release-apt-x86_64:
