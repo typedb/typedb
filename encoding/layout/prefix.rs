@@ -85,7 +85,7 @@ impl Prefix {
 }
 
 make_prefix_enum! {
-    // Reserved: 0x00-0x09 = 0-9
+    // Reserved: 0-9 = 0x00-0x09
     VertexEntityType => 10 = 0x0A, true;
     VertexRelationType => 11 = 0x0B, true;
     VertexAttributeType => 12 = 0x0C, true;
@@ -122,5 +122,5 @@ make_prefix_enum! {
     IndexNameToDefinitionFunction => 184 = 0xB8, false;
 
     IndexValueToStruct => 190 = 0xBE, false
-    // Reserved: 0xC8-0xFF = 200-255
+    // Reserved: 200-255 = 0xC8-0xFF
 }
