@@ -51,7 +51,7 @@ pub struct AttributeType {
 
 impl fmt::Debug for AttributeType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Attribute[{:?}]", self.vertex)
+        write!(f, "Attribute[{:?}]", self.vertex.type_id_())
     }
 }
 

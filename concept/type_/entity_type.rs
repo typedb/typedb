@@ -52,7 +52,7 @@ pub struct EntityType {
 
 impl fmt::Debug for EntityType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Entity[{:?}]", self.vertex)
+        write!(f, "Entity[{:?}]", self.vertex.type_id_())
     }
 }
 

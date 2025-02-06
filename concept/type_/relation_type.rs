@@ -55,7 +55,7 @@ pub struct RelationType {
 
 impl fmt::Debug for RelationType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Relation[{:?}]", self.vertex)
+        write!(f, "Relation[{:?}]", self.vertex.type_id_())
     }
 }
 

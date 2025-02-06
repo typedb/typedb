@@ -56,7 +56,7 @@ pub struct RoleType {
 
 impl fmt::Debug for RoleType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Role[{:?}]", self.vertex)
+        write!(f, "Role[{:?}]", self.vertex.type_id_())
     }
 }
 

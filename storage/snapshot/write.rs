@@ -42,7 +42,6 @@ impl fmt::Debug for Write {
                 } else {
                     write!(f, "Put {{ value: {value:?}, known_to_exist: {known_to_exist} }}")
                 }
-
             }
             Self::Delete => write!(f, "Delete"),
         }

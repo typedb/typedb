@@ -30,8 +30,7 @@ pub struct TypeVertex {
 
 impl fmt::Debug for TypeVertex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // NOTE: Only prints the TypeID part!
-        write!(f, "{:04X}", self.value & 0xFFFF)
+        write!(f, "{:06X}", self.value)
     }
 }
 
