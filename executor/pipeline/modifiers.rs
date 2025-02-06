@@ -434,7 +434,7 @@ where
         let profile = context.profile.profile_stage(|| String::from("Distinct"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Distinct execution"));
         let measurement = step_profile.start_measurement();
-        let distinct_iterator = DistinctStageIterator::from_batch_with_duplicates(batch, &executable, &context, executable.output_row_mapping.values().collect());
+        let distinct_iterator = DistinctStageIterator::from_batch_with_duplicates(batch, &executable, &context, executable.output_row_mapping.values().cloned().collect());
         measurement.end(&step_profile, 1, batch_len as u64);
         Ok((distinct_iterator, context))
     }

@@ -41,6 +41,7 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.accept(context, batch),
             CollectorEnum::Sort(collector) => collector.accept(context, batch),
+            CollectorEnum::Distinct(collector) => collector.accept(context, batch),
         }
     }
 
@@ -51,6 +52,7 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.collected_to_iterator(context),
             CollectorEnum::Sort(collector) => collector.collected_to_iterator(context),
+            CollectorEnum::Distinct(collector) => collector.collected_to_iterator(context),
         }
     }
 }
@@ -66,6 +68,7 @@ impl CollectedStageIterator {
         match self {
             CollectedStageIterator::Reduce(iterator) => iterator.batch_continue(),
             CollectedStageIterator::Sort(iterator) => iterator.batch_continue(),
+            CollectedStageIterator::Distinct(iterator) => iterator.batch_continue(),
         }
     }
 }
@@ -87,7 +90,7 @@ impl CollectingStageExecutor {
         Self { pattern: previous_stage, collector: CollectorEnum::Sort(SortCollector::new(sort_executable)) }
     }
 
-    pub(crate) fn new_distinct(previous_stage: PatternExecutor, distinct_executable: &SortExecutable) -> Self {
+    pub(crate) fn new_distinct(previous_stage: PatternExecutor, distinct_executable: &DistinctExecutable) -> Self {
         Self { pattern: previous_stage, collector: CollectorEnum::Distinct(DistinctCollector::new(distinct_executable)) }
     }
 
@@ -96,6 +99,7 @@ impl CollectingStageExecutor {
         match &mut self.collector {
             CollectorEnum::Reduce(collector) => collector.reset(),
             CollectorEnum::Sort(collector) => collector.reset(),
+            CollectorEnum::Distinct(collector) => collector.reset(),
         }
     }
 
@@ -110,6 +114,7 @@ impl CollectingStageExecutor {
         match &mut self.collector {
             CollectorEnum::Reduce(collector) => collector.prepare(),
             CollectorEnum::Sort(collector) => collector.prepare(),
+            CollectorEnum::Distinct(collector) => collector.prepare(),
         }
     }
 }
@@ -310,7 +315,7 @@ pub(super) struct DistinctCollector {
 impl DistinctCollector {
     fn new(distinct_executable: &DistinctExecutable) -> Self {
         Self {
-            variable_positions: distinct_executable.output_row_mapping.values().collect(),
+            variable_positions: distinct_executable.output_row_mapping.values().cloned().collect(),
             collector: None
         }
     }
