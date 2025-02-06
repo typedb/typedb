@@ -276,8 +276,7 @@ impl TransactionService {
 
     pub(crate) async fn listen(&mut self) {
         loop {
-            let result = if self.running_write_query.is_some() {
-                let (req_id, write_query_worker) = self.running_write_query.as_mut().unwrap();
+            let result = if let Some((req_id, write_query_worker)) = &mut self.running_write_query {
                 tokio::select! { biased;
                     _ = self.shutdown_receiver.changed() => {
                         event!(Level::TRACE, "Shutdown signal received, closing transaction service.");

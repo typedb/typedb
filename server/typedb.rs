@@ -262,7 +262,7 @@ impl Server {
     }
 
     async fn shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
-        Self::block_and_listen_ctrl_c().await;
+        Self::listen_ctrl_c().await;
         println!("\nReceived CTRL-C. Initiating shutdown...");
         shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
 
@@ -270,12 +270,12 @@ impl Server {
     }
 
     async fn forced_shutdown_handler() {
-        Self::block_and_listen_ctrl_c().await;
+        Self::listen_ctrl_c().await;
         println!("\nReceived CTRL-C. Forcing shutdown...");
         std::process::exit(1);
     }
 
-    async fn block_and_listen_ctrl_c() {
+    async fn listen_ctrl_c() {
         tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL-C signal");
     }
 }
