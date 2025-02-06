@@ -308,9 +308,14 @@ pub(super) fn create_executors_for_function_pipeline_stages(
         ExecutableStage::Require(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
             functionality: UnimplementedFeature::PipelineStageInFunction("require"),
         })),
-        ExecutableStage::Distinct(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-            functionality: UnimplementedFeature::PipelineStageInFunction("distinct"), // TODO
-        })),
+        ExecutableStage::Distinct(distinct_executable) => {
+            // Complete this sentence for
+            let step = CollectingStageExecutor::new_distinct(
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                distinct_executable,
+            );
+            Ok(vec![StepExecutors::CollectingStage(step)])
+        }
         ExecutableStage::Sort(sort_executable) => {
             let step = CollectingStageExecutor::new_sort(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),

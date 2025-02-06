@@ -414,7 +414,7 @@ where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    type OutputIterator = crate::pipeline::modifiers::DistinctStageIterator;
+    type OutputIterator = DistinctStageIterator;
 
     fn into_iterator(
         self,
@@ -430,12 +430,11 @@ where
             Ok(batch) => batch,
             Err(err) => return Err((err, context)),
         };
-        println!("Starting distinct with {:?}", executable.output_row_mapping);
         let batch_len = batch.len();
         let profile = context.profile.profile_stage(|| String::from("Distinct"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Distinct execution"));
         let measurement = step_profile.start_measurement();
-        let distinct_iterator = crate::pipeline::modifiers::DistinctStageIterator::from_batch_with_duplicates(batch, &executable, &context, executable.output_row_mapping.values().collect());
+        let distinct_iterator = DistinctStageIterator::from_batch_with_duplicates(batch, &executable, &context, executable.output_row_mapping.values().collect());
         measurement.end(&step_profile, 1, batch_len as u64);
         Ok((distinct_iterator, context))
     }
@@ -447,7 +446,7 @@ pub struct DistinctStageIterator {
     // Record contiguous index blocks of duplicates:
     duplicate_block_start_indices: Vec<usize>, // invariant: nui.len() <= fdi.len() <= nui.len() + 1
     unique_block_restart_indices: Vec<usize>,
-    next_duplicate_index_index: Option<usize>,
+    next_duplicate_index_index: usize,
 }
 
 impl DistinctStageIterator {
@@ -455,7 +454,7 @@ impl DistinctStageIterator {
         batch_with_duplicates: Batch,
         sort_executable: &DistinctExecutable,
         context: &ExecutionContext<impl ReadableSnapshot>,
-        variable_positions: Vec<&VariablePosition>,
+        variable_positions: Vec<VariablePosition>,
     ) -> Self {
         let mut indices: Vec<usize> = (0..batch_with_duplicates.len()).collect();
         let mut duplicate_block_start_indices: Vec<usize> = vec![];
@@ -467,7 +466,7 @@ impl DistinctStageIterator {
             let row = batch_with_duplicates.get_row(row_index);
             let mut hasher = DefaultHasher::new();
             for &pos in &variable_positions {
-                row.get(*pos).hash(&mut hasher);
+                row.get(pos).hash(&mut hasher);
             }
             let hash = hasher.finish();
             if !previously_seen_hashes.contains(&hash) {
@@ -484,9 +483,7 @@ impl DistinctStageIterator {
             }
         }
 
-        let next_duplicate_index_index = if duplicate_block_start_indices.is_empty() { None } else { Some(0) };
-
-        Self { batch_with_duplicates, next_row_index: 0, duplicate_block_start_indices, unique_block_restart_indices, next_duplicate_index_index }
+        Self { batch_with_duplicates, next_row_index: 0, duplicate_block_start_indices, unique_block_restart_indices, next_duplicate_index_index: 0 }
     }
 }
 
@@ -495,17 +492,21 @@ impl LendingIterator for DistinctStageIterator {
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if self.next_row_index < self.batch_with_duplicates.len() {
-            // Invariant: self.next_index_index <= self.first_duplicate_indices[self.next_duplicate_index_index]
-            if self.next_duplicate_index_index.is_none() || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index?] {
-                let row = self.batch_with_duplicates.get_row(self.next_row_index);
+            if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len() || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index] {
+                // Case 1: next row is not a duplicate
+                let next_row = self.batch_with_duplicates.get_row(self.next_row_index);
                 self.next_row_index += 1;
-                Some(Ok(row))
+                Some(Ok(next_row))
             } else {
-                self.unique_block_restart_indices.get(self.next_duplicate_index_index?).map(|next_index| {
-                    let row = self.batch_with_duplicates.get_row(*next_index);
-                    self.next_row_index = *next_index + 1;
-                    Ok(row)
-                })
+                // Case 2: next row *is* a duplicate
+                if let Some(next_index) = self.unique_block_restart_indices.get(self.next_duplicate_index_index) {
+                    let next_row = self.batch_with_duplicates.get_row(self.next_row_index);
+                    self.next_row_index = *next_index;
+                    Some(Ok(next_row))
+                } else {
+                    // There are no more non-duplicates
+                    None
+                }
             }
         } else {
             None
