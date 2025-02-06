@@ -45,9 +45,15 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType {
     vertex: TypeVertex,
+}
+
+impl fmt::Debug for EntityType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Entity[{:?}]", self.vertex.type_id_())
+    }
 }
 
 impl Hkt for EntityType {

@@ -23,9 +23,15 @@ use crate::{
 // TODO: we could make all Type constructs contain plain byte arrays, since they will always be 64 bytes (BUFFER_KEY_INLINE), then make Types all Copy
 //       However, we should benchmark this first, since 64 bytes may be better off referenced
 
-#[derive(Copy, Clone, Debug, PartialEq, Eq, Hash, Ord, PartialOrd)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct TypeVertex {
     value: u32,
+}
+
+impl fmt::Debug for TypeVertex {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:06X}", self.value)
+    }
 }
 
 impl TypeVertex {
@@ -69,8 +75,9 @@ impl Prefixed<BUFFER_KEY_INLINE> for TypeVertex {}
 
 impl Typed<BUFFER_KEY_INLINE> for TypeVertex {
     fn type_id_(&self) -> TypeID {
-        // TODO: is this the best way to get the TypeID out?
-        TypeID::decode(self.clone().to_bytes()[Self::RANGE_TYPE_ID].try_into().unwrap())
+        debug_assert_eq!(Self::LENGTH, 3);
+        debug_assert_eq!(Self::RANGE_TYPE_ID, 1..3);
+        TypeID { value: (self.value & 0xFFFF) as u16 }
     }
 }
 
@@ -84,9 +91,15 @@ impl primitive::prefix::Prefix for TypeVertex {
     }
 }
 
-#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Copy, Clone, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub struct TypeID {
     value: u16,
+}
+
+impl fmt::Debug for TypeID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:04X}", self.value)
+    }
 }
 
 // TODO: this type should move into constants.rs, similarly to DefinitionIDUInt

@@ -44,9 +44,15 @@ use crate::{
     ConceptAPI,
 };
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType {
     vertex: TypeVertex,
+}
+
+impl fmt::Debug for AttributeType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Attribute[{:?}]", self.vertex.type_id_())
+    }
 }
 
 impl AttributeType {}

@@ -6,6 +6,7 @@
 
 use std::{
     collections::{BTreeMap, HashMap},
+    fmt,
     ops::Bound,
 };
 
@@ -49,7 +50,7 @@ type StatisticsEncodingVersion = u64;
 /// Thing statistics, reflecting a snapshot of statistics accurate as of a particular sequence number
 /// When types are undefined, we retain the last count of the instances of the type
 /// Invariant: all undefined types are
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Statistics {
     encoding_version: StatisticsEncodingVersion,
     pub sequence_number: SequenceNumber,
@@ -465,6 +466,81 @@ fn write_to_delta<D>(
 struct CommittedWrites {
     open_sequence_number: SequenceNumber,
     operations: OperationsBuffer,
+}
+
+impl fmt::Debug for Statistics {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        const INDENT: usize = 4;
+
+        let pretty = f.alternate();
+
+        writeln!(f, "Statistics {{")?;
+
+        macro_rules! write_field {
+            ($name:expr, $value:expr) => {
+                if pretty {
+                    writeln!(f, "{:INDENT$}{}: {:?},", "", $name, $value)?;
+                } else {
+                    write!(f, " {}: {:?},", $name, $value)?;
+                }
+            };
+        }
+
+        macro_rules! write_hashmap {
+            ($name:expr, $map:expr) => {
+                if pretty {
+                    write!(f, "{:INDENT$}{}: {{", "", $name)?;
+                    if $map.is_empty() {
+                        writeln!(f, "}}")?;
+                    } else {
+                        writeln!(f)?;
+                        for (key, value) in &$map {
+                            writeln!(f, "{:indent$}{:?}: {:?},", "", key, value, indent = INDENT * 2)?;
+                        }
+                        writeln!(f, "{:INDENT$}}},", "")?;
+                    }
+                } else {
+                    write!(f, " {}: {{", $name)?;
+                    for (key, value) in &$map {
+                        write!(f, " {:?}: {:?},", key, value)?;
+                    }
+                    write!(f, " }},")?;
+                }
+            };
+        }
+
+        write_field!("encoding_version", self.encoding_version);
+        write_field!("sequence_number", self.sequence_number.number());
+        write_field!("last_durable_write_sequence_number", self.last_durable_write_sequence_number);
+        write_field!("last_durable_write_total_count", self.last_durable_write_total_count);
+        write_field!("total_count", self.total_count);
+        write_field!("total_thing_count", self.total_thing_count);
+        write_field!("total_entity_count", self.total_entity_count);
+        write_field!("total_relation_count", self.total_relation_count);
+        write_field!("total_attribute_count", self.total_attribute_count);
+        write_field!("total_role_count", self.total_role_count);
+        write_field!("total_has_count", self.total_has_count);
+
+        write_hashmap!("entity_counts", self.entity_counts);
+        write_hashmap!("relation_counts", self.relation_counts);
+        write_hashmap!("attribute_counts", self.attribute_counts);
+        write_hashmap!("role_counts", self.role_counts);
+        write_hashmap!("has_attribute_counts", self.has_attribute_counts);
+        write_hashmap!("attribute_owner_counts", self.attribute_owner_counts);
+        write_hashmap!("role_player_counts", self.role_player_counts);
+        write_hashmap!("relation_role_counts", self.relation_role_counts);
+        write_hashmap!("relation_role_player_counts", self.relation_role_player_counts);
+        write_hashmap!("player_role_relation_counts", self.player_role_relation_counts);
+        write_hashmap!("links_index_counts", self.links_index_counts);
+
+        if pretty {
+            write!(f, "}}")?;
+        } else {
+            write!(f, " }}")?;
+        }
+
+        Ok(())
+    }
 }
 
 typedb_error!(

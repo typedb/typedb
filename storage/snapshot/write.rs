@@ -4,16 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
+use std::{
+    fmt,
+    sync::{
+        atomic::{AtomicBool, Ordering},
+        Arc,
+    },
 };
 
 use bytes::byte_array::ByteArray;
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Write {
     // Insert KeyValue with a new version. Never conflicts. May represent a brand new key or re-inserting an existing key blindly
     Insert { value: ByteArray<BUFFER_VALUE_INLINE> },
@@ -21,6 +24,28 @@ pub enum Write {
     Put { value: ByteArray<BUFFER_VALUE_INLINE>, reinsert: Arc<AtomicBool>, known_to_exist: bool },
     // Delete with a new version. Conflicts with Require.
     Delete,
+}
+
+impl fmt::Debug for Write {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Insert { value } => {
+                if value.is_empty() {
+                    write!(f, "Insert {{}}")
+                } else {
+                    write!(f, "Insert {{ value: {value:?} }}")
+                }
+            }
+            Self::Put { value, reinsert: _, known_to_exist } => {
+                if value.is_empty() {
+                    write!(f, "Put {{ known_to_exist: {known_to_exist} }}")
+                } else {
+                    write!(f, "Put {{ value: {value:?}, known_to_exist: {known_to_exist} }}")
+                }
+            }
+            Self::Delete => write!(f, "Delete"),
+        }
+    }
 }
 
 impl PartialEq for Write {

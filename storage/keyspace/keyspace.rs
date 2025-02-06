@@ -20,8 +20,14 @@ use serde::{Deserialize, Serialize};
 use super::{constants, iterator, IteratorPool};
 use crate::{key_range::KeyRange, write_batches::WriteBatches};
 
-#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct KeyspaceId(pub u8);
+
+impl fmt::Debug for KeyspaceId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
+    }
+}
 
 impl fmt::Display for KeyspaceId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -651,12 +651,22 @@ impl SlotMarker {
 }
 
 // TODO: move out of isolation manager
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 pub struct CommitRecord {
     // TODO: this could read-through to the WAL if we have to save memory?
     operations: OperationsBuffer,
     open_sequence_number: SequenceNumber,
     commit_type: CommitType,
+}
+
+impl fmt::Debug for CommitRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("CommitRecord")
+            .field("open_sequence_number", &self.open_sequence_number)
+            .field("commit_type", &self.commit_type)
+            .field("operations", &self.operations)
+            .finish()
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Copy, Clone)]
@@ -666,7 +676,7 @@ pub enum CommitType {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub(crate) struct StatusRecord {
+pub struct StatusRecord {
     pub(crate) commit_record_sequence_number: SequenceNumber,
     pub(crate) was_committed: bool,
 }

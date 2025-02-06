@@ -48,8 +48,8 @@ features = {}
 
 	[dev-dependencies.typeql]
 		features = []
-		rev = "04d6d804b7493f89156c67e6b4c8d240fb1d4eae"
 		git = "https://github.com/typedb/typeql"
+		tag = "3.0.5"
 		default-features = false
 
 	[dev-dependencies.test_utils_concept]
@@ -268,5 +268,5 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 
