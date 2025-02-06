@@ -13,7 +13,19 @@ rust_binary(
         "//concept",
         "//durability",
         "//storage",
+        "@crates//:clap",
+    ],
+)
 
+rust_binary(
+    name = "replay-wal",
+    srcs = [
+        "replay-wal.rs",
+    ],
+    deps = [
+        "//concept",
+        "//durability",
+        "//storage",
         "@crates//:clap",
     ],
 )
