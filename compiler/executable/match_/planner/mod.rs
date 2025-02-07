@@ -37,7 +37,7 @@ pub mod plan;
 pub(crate) mod vertex;
 
 typedb_error! {
-    pub MatchCompilationError(component = "Match compiler", prefix = "MCL") {
+    pub MatchCompilationError(component = "Match compiler", prefix = "MCP") {
         PlanningError(1, "Snapshot get error.", typedb_source: QueryPlanningError),
     }
 }
@@ -51,7 +51,7 @@ pub fn compile(
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> MatchExecutable {
+) -> Result<MatchExecutable, MatchCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
     debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
@@ -59,7 +59,7 @@ pub fn compile(
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
-    plan_conjunction(
+    Ok(plan_conjunction(
         conjunction,
         block_context,
         input_variables,
@@ -69,8 +69,10 @@ pub fn compile(
         statistics,
         call_cost_provider,
     )
+    .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
-    .finish(variable_registry)
+    .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
+    .finish(variable_registry))
 }
 
 #[derive(Debug)]

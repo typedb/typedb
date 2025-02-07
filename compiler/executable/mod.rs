@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use error::typedb_error;
 
 use crate::executable::{fetch::executable::FetchCompilationError, insert::WriteCompilationError};
+use crate::executable::match_::planner::MatchCompilationError;
 
 pub mod delete;
 pub mod fetch;
@@ -29,6 +30,7 @@ typedb_error! {
     pub ExecutableCompilationError(component = "Executable compilation", prefix = "ECP") {
         InsertExecutableCompilation(1, "Error compiling insert clause into executable.", typedb_source: Box<WriteCompilationError>),
         DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", typedb_source: Box<WriteCompilationError>),
-        FetchCompliation(3, "Error compiling fetch clause into executable.", typedb_source: FetchCompilationError),
+        FetchCompilation(3, "Error compiling fetch clause into executable.", typedb_source: FetchCompilationError),
+        MatchCompilation(4, "Error compiling match clause into executable.", typedb_source: MatchCompilationError),
     }
 }

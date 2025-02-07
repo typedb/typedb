@@ -142,7 +142,7 @@ pub fn compile_stages_and_fetch(
     let executable_fetch = annotated_fetch
         .map(|fetch| {
             compile_fetch(statistics, available_functions, fetch, &stages_variable_positions)
-                .map_err(|err| ExecutableCompilationError::FetchCompliation { typedb_source: err })
+                .map_err(|err| ExecutableCompilationError::FetchCompilation { typedb_source: err })
         })
         .transpose()?
         .map(Arc::new);
@@ -223,7 +223,7 @@ fn compile_stage(
                 executable_expressions,
                 statistics,
                 call_cost_provider,
-            );
+            ).map_err(|source| ExecutableCompilationError::MatchCompilation { typedb_source: source })?;
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }
         AnnotatedStage::Insert { block, annotations, source_span } => {

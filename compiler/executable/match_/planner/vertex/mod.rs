@@ -26,6 +26,7 @@ use crate::{
         vertex::{constraint::ConstraintVertex, variable::VariableVertex},
     },
 };
+use crate::executable::match_::planner::plan::QueryPlanningError;
 
 pub(super) mod constraint;
 pub(super) mod variable;
@@ -217,7 +218,7 @@ pub(super) trait Costed {
         vertex_ordering: &[VertexId],
         fix_dir: Option<Direction>,
         graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData);
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError>;
 }
 
 impl Costed for PlannerVertex<'_> {
@@ -226,9 +227,9 @@ impl Costed for PlannerVertex<'_> {
         vertex_ordering: &[VertexId],
         fix_dir: Option<Direction>,
         graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         match self {
-            Self::Variable(_) => (Cost::NOOP, CostMetaData::None),
+            Self::Variable(_) => Ok((Cost::NOOP, CostMetaData::None)),
             Self::Constraint(vertex) => vertex.cost_and_metadata(vertex_ordering, fix_dir, graph),
 
             Self::Is(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
@@ -323,8 +324,8 @@ impl Costed for ExpressionPlanner<'_> {
         _vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
-        (self.cost, CostMetaData::None)
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((self.cost, CostMetaData::None))
     }
 }
 
@@ -357,8 +358,8 @@ impl Costed for FunctionCallPlanner<'_> {
         _vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
-        (self.cost, CostMetaData::None)
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((self.cost, CostMetaData::None))
     }
 }
 
@@ -400,8 +401,8 @@ impl Costed for IsPlanner<'_> {
         _vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None))
     }
 }
 #[derive(Clone, Debug)]
@@ -452,8 +453,8 @@ impl Costed for LinksDeduplicationPlanner<'_> {
         _vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None))
     }
 }
 
@@ -507,8 +508,8 @@ impl Costed for ComparisonPlanner<'_> {
         _vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
-        (Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None)
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None))
     }
 }
 
@@ -543,8 +544,8 @@ impl Costed for NegationPlanner<'_> {
         _vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
-        (self.plan.planner_statistics.query_cost, CostMetaData::None)
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((self.plan.planner_statistics.query_cost, CostMetaData::None))
     }
 }
 
@@ -590,16 +591,21 @@ impl Costed for DisjunctionPlanner<'_> {
         vertex_ordering: &[VertexId],
         _fix_dir: Option<Direction>,
         graph: &Graph<'_>,
-    ) -> (Cost, CostMetaData) {
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         let input_variables =
             vertex_ordering.iter().filter_map(|id| graph.elements()[id].as_variable()).map(|var| var.variable());
         let cost = self
             .builder()
             .branches()
             .iter()
-            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().cost())
-            .fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost));
-        (cost, CostMetaData::None)
+            .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().map(|plan| plan.cost()))
+            .collect::<Result<Vec<_>, _>>()
+            .map(|costs| {
+                costs
+                    .into_iter()
+                    .fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost))
+            })?;
+        Ok((cost, CostMetaData::None))
     }
 }
 
