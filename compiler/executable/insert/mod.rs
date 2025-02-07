@@ -68,7 +68,7 @@ pub(crate) fn get_kinds_from_types(types: &BTreeSet<Type>) -> HashSet<Kind> {
 }
 
 typedb_error! {
-    pub WriteCompilationError(component = "Write compile", prefix = "WCP") {
+    pub WriteCompilationError(component = "Write compiler", prefix = "WCP") {
         InsertIsaStatementForInputVariable(
             1,
             "Illegal 'isa' provided for variable '{variable}' that is input from a previous stage - 'isa's should only be used to create new instances in insert clauses.",

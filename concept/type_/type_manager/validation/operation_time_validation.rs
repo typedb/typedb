@@ -3194,7 +3194,7 @@ impl OperationTimeValidation {
                     let owns = object_type
                         .get_owns_attribute(snapshot, type_manager, attribute_type)
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundHasWithoutOwns {}))
+                        .ok_or_else(|| Box::new(ConceptReadError::InternalHasWithoutOwns {}))
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
                     for abstract_constraint in abstract_constraints.iter() {
@@ -3442,7 +3442,7 @@ impl OperationTimeValidation {
                     let plays = object_type
                         .get_plays_role(snapshot, type_manager, role_type)
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutPlays {}))
+                        .ok_or_else(|| Box::new(ConceptReadError::InternalLinksWithoutPlays {}))
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
                     for abstract_constraint in abstract_constraints.iter() {
@@ -3556,7 +3556,7 @@ impl OperationTimeValidation {
                     let relates = relation_type
                         .get_relates_role(snapshot, type_manager, role_type)
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
-                        .ok_or_else(|| Box::new(ConceptReadError::CorruptFoundLinksWithoutRelates {}))
+                        .ok_or_else(|| Box::new(ConceptReadError::InternalLinksWithoutRelates {}))
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
                     for abstract_constraint in abstract_constraints.iter() {

@@ -27,7 +27,7 @@ pub fn next_executable_id() -> u64 {
 }
 
 typedb_error! {
-    pub ExecutableCompilationError(component = "Executable compilation", prefix = "ECP") {
+    pub ExecutableCompilationError(component = "Executable compiler", prefix = "ECP") {
         InsertExecutableCompilation(1, "Error compiling insert clause into executable.", typedb_source: Box<WriteCompilationError>),
         DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", typedb_source: Box<WriteCompilationError>),
         FetchCompilation(3, "Error compiling fetch clause into executable.", typedb_source: FetchCompilationError),

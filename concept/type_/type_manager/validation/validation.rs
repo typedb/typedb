@@ -31,7 +31,7 @@ pub(crate) fn get_label_or_concept_read_err(
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone())
-        .map_err(|_| Box::new(ConceptReadError::CorruptMissingLabelOfType {}))
+        .map_err(|_| Box::new(ConceptReadError::InternalMissingTypeLabel {}))
 }
 
 pub(crate) fn get_label_or_schema_err(

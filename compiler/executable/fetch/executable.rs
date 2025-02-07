@@ -172,7 +172,7 @@ fn compile_some(
 }
 
 typedb_error!(
-    pub FetchCompilationError(component = "Fetch compile", prefix = "FCP") {
+    pub FetchCompilationError(component = "Fetch compiler", prefix = "FCP") {
         FetchVariableNotFound(1, "Internal compilation error - fetch variable {var} not found in expected inputs", var: Variable),
         AnonymousFunctionCompilation(2, "Failed to compile inline/anonymous function.", typedb_source: Box<ExecutableCompilationError>),
         SubFetchCompilation(3, "Failed to compile sub-fetch pipeline.", typedb_source: Box<ExecutableCompilationError>),

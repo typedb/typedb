@@ -38,7 +38,7 @@ pub(crate) mod vertex;
 
 typedb_error! {
     pub MatchCompilationError(component = "Match compiler", prefix = "MCP") {
-        PlanningError(1, "Snapshot get error.", typedb_source: QueryPlanningError),
+        PlanningError(1, "Error during planning of match stage.", typedb_source: QueryPlanningError),
     }
 }
 
