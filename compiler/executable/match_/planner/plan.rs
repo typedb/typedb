@@ -74,7 +74,7 @@ pub const VARIABLE_PRODUCTION_ADVANTAGE: f64 = 0.05; // this is a percentage 0.0
 
 typedb_error! {
     pub QueryPlanningError(component = "Query Planner", prefix = "QPL") {
-        ExpectedPlannableConjunction(1, "Planning failed as no valid pattern ordering as been found"),
+        ExpectedPlannableConjunction(1, "Planning failed as no valid pattern ordering was found by the query planner (this is a bug!)"),
     }
 }
 
