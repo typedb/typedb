@@ -337,58 +337,7 @@ docker_container_push(
     target_compatible_with = constraint_linux_arm64,
 )
 
-# validation & tests
-release_validate_deps(
-    name = "release-validate-deps",
-    refs = "@typedb_workspace_refs//:refs.json",
-    tagged_deps = [
-        # TODO: Reenable
-#         "@typeql",
-         "@typedb_protocol",
-    ],
-    tags = ["manual"],  # in order for bazel test //... to not fail
-    version_file = "VERSION",
-)
-
-checkstyle_test(
-    name = "checkstyle",
-    include = glob(["*", ".cargo/*", ".factory/*", "bin/*", ".circleci/*"]),
-    exclude = glob([
-        "*.md",
-        ".circleci/windows/*",
-        "docs/*",
-        "tools/**",
-        "Cargo.*",
-    ]) + [
-        ".bazelversion",
-        ".bazel-remote-cache.rc",
-        ".bazel-cache-credential.json",
-        "LICENSE",
-        "VERSION",
-    ],
-    license_type = "mpl-header",
-)
-
-checkstyle_test(
-    name = "checkstyle_license",
-    include = ["LICENSE"],
-    license_type = "mpl-fulltext",
-)
-
-filegroup(
-    name = "tools",
-    data = [
-        "@typedb_dependencies//factory/analysis:dependency-analysis",
-        "@typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh",
-        "@typedb_dependencies//tool/release/notes:create",
-        "@typedb_dependencies//tool/checkstyle:test-coverage",
-        "@typedb_dependencies//tool/unuseddeps:unused-deps",
-        "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
-        "@typedb_dependencies//tool/ide:rust_sync",
-    ],
-)
-
-
+# brew
 deploy_brew(
     name = "deploy-brew",
     file_substitutions = {
@@ -401,6 +350,12 @@ deploy_brew(
     version_file = "//:VERSION",
 )
 
+genrule(
+    name = "invalid-checksum",
+    outs = ["invalid-checksum.txt"],
+    srcs = [],
+    cmd = "echo > $@",
+)
 
 label_flag(
     name = "checksum-mac-arm64",
@@ -412,7 +367,7 @@ label_flag(
     build_setting_default = ":invalid-checksum",
 )
 
-
+# apt
 apt_depends = ["default-jre"]
 
 apt_installation_dir = "/opt/typedb/core/"
@@ -494,5 +449,57 @@ alias(
     actual = select({
         "@typedb_bazel_distribution//platform:is_linux_arm64" : ":deploy-apt-arm64",
         "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":deploy-apt-x86_64",
-    })
+    }),
+    tags = ["manual"],
+)
+
+# validation & tests
+release_validate_deps(
+    name = "release-validate-deps",
+    refs = "@typedb_workspace_refs//:refs.json",
+    tagged_deps = [
+        # TODO: Reenable
+#         "@typeql",
+         "@typedb_protocol",
+    ],
+    tags = ["manual"],  # in order for bazel test //... to not fail
+    version_file = "VERSION",
+)
+
+checkstyle_test(
+    name = "checkstyle",
+    include = glob(["*", ".cargo/*", ".factory/*", "bin/*", ".circleci/*"]),
+    exclude = glob([
+        "*.md",
+        ".circleci/windows/*",
+        "docs/*",
+        "tools/**",
+        "Cargo.*",
+    ]) + [
+        ".bazelversion",
+        ".bazel-remote-cache.rc",
+        ".bazel-cache-credential.json",
+        "LICENSE",
+        "VERSION",
+    ],
+    license_type = "mpl-header",
+)
+
+checkstyle_test(
+    name = "checkstyle_license",
+    include = ["LICENSE"],
+    license_type = "mpl-fulltext",
+)
+
+filegroup(
+    name = "tools",
+    data = [
+        "@typedb_dependencies//factory/analysis:dependency-analysis",
+        "@typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh",
+        "@typedb_dependencies//tool/release/notes:create",
+        "@typedb_dependencies//tool/checkstyle:test-coverage",
+        "@typedb_dependencies//tool/unuseddeps:unused-deps",
+        "@rust_analyzer_toolchain_tools//lib/rustlib/src:rustc_srcs",
+        "@typedb_dependencies//tool/ide:rust_sync",
+    ],
 )

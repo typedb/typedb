@@ -92,8 +92,8 @@ load("//dependencies/typedb:repositories.bzl", "typedb_bazel_distribution")
 typedb_bazel_distribution()
 
 # Load @typedb_bazel_distribution_uploader
-load("@typedb_bazel_distribution//common/uploader:deps.bzl", uploader_deps = "deps")
-uploader_deps()
+load("@typedb_bazel_distribution//common/uploader:deps.bzl", "typedb_bazel_distribution_uploader")
+typedb_bazel_distribution_uploader()
 load("@typedb_bazel_distribution_uploader//:requirements.bzl", install_uploader_deps = "install_deps")
 install_uploader_deps()
 
@@ -104,12 +104,13 @@ load("@rules_pkg//:deps.bzl", "rules_pkg_dependencies")
 rules_pkg_dependencies()
 
 # Load //github
-load("@typedb_bazel_distribution//github:deps.bzl", github_deps = "deps")
-github_deps()
+load("@typedb_bazel_distribution//github:deps.bzl", "ghr_linux_tar", "ghr_osx_zip")
+ghr_linux_tar()
+ghr_osx_zip()
 
 # Load //pip
-load("@typedb_bazel_distribution//pip:deps.bzl", pip_deps = "deps")
-pip_deps()
+load("@typedb_bazel_distribution//pip:deps.bzl", "typedb_bazel_distribution_pip")
+typedb_bazel_distribution_pip()
 
 ###################################################
 # Load @typedb_dependencies//distribution/docker #
