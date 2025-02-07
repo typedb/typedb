@@ -135,7 +135,7 @@ fn illegal_stages_in_function() {
             unreachable!();
         };
         match &err.as_ref() {
-            PipelineExecutionError::InitialisingMatchIterator { source } => {
+            PipelineExecutionError::InitialisingMatchIterator { typedb_source: source } => {
                 assert!(matches!(
                     source.as_ref(),
                     ConceptReadError::UnimplementedFunctionality {
@@ -162,7 +162,7 @@ fn illegal_stages_in_function() {
         "#;
         let Either::Right(err) = run_read_query(&context, query).unwrap_err() else { unreachable!() };
         match &err.as_ref() {
-            PipelineExecutionError::InitialisingMatchIterator { source } => {
+            PipelineExecutionError::InitialisingMatchIterator { typedb_source: source } => {
                 assert!(matches!(
                     source.as_ref(),
                     ConceptReadError::UnimplementedFunctionality {
