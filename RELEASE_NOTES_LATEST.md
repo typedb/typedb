@@ -1,67 +1,56 @@
 **Download from TypeDB Package Repository:**
 
-[Distributions for 3.0.5](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.0.5)
+[Distributions for 3.0.6](https://cloudsmith.io/~typedb/repos/public-release/packages/?q=name%3A%5Etypedb-all+version%3A3.0.6)
 
 **Pull the Docker image:**
 
-```docker pull typedb/typedb:3.0.5```
+```docker pull typedb/typedb:3.0.6```
 
 
 ## New Features
-- **Dramatically improve error messages with source query pointers**
+- **Database debug tools**
   
-  TypeDB now shows the source of an error in the context of the original query, wher it is possible. In general, we aim to show a detailed error message in context of the original query whenever the error arises in the compilation phase of the query.
+  We introduce the database/tools package, hosting small CLI tools to help investigate misbehaving or corrupted databases.
   
-  Example of the improved error format:
-  ```
-  [QEX2] Failed to execute define query.
-  Near 4:29
-  -----
-          define
-          attribute name value string;
-  -->     entity person owns name @range(0..10);
-                                  ^
-        
-  -----
-  Caused by: 
-        [DEX25] Defining annotation failed for type 'person'.
-  Caused by: 
-        [COW4] Concept write failed due to a schema validation error.
-  Caused by: 
-        [SVL34] Invalid arguments for range annotation '@range(0..10)' for value type 'Some(String)'.
-  ```
+  Tools included in this commit:
+  - read-wal: read and dump the contents of the WAL in the database at specified sequence numbers;
+  - replay-wal: replay the records from one WAL to another, filtering by record type and sequence numbers.
   
   
-- **Apply typedb error macro to top-level packages**
+- **Introduce multi-staged server termination**
+  Make server termination through `CTRL-C` interrupt opened transactions to proceed with the resource deallocation.
+  Introduce two stages of termination:
+  * When `CTRL-C` is pressed, a graceful termination will be initiated, ensuring that all resources are freed securely and all open transactions finish preparing current batches of streamed answers (this might take some time to calculate answers for the whole batch, but will not wait until all the answers are sent).
+  * When `CTRL-C` is pressed while a graceful termination is active, the server's process will be forcefully immediately terminated. This prevents the server from hanging because of long-running queries or other issues. 
   
-  TypeDB now reports extended error stack traces for all error types in the compiler and the intermediate representation builder, improving debuggability and ease-of-use.
+  
+- **Checkpoint databases at regular intervals**
+  
+  We checkpoint the database every minute, if changes to it were made.
   
   
 
 ## Bugs Fixed
-- **Introduce role-player deduplication & Expand BDD coverage**
-  Introduce role-player deduplication for when specified together in a single links constraint. i.e. `$r links (my-role: $p, my-role: $q);` will not use the same edge twice to satisfy each sub-constraint.
-  Writing them as separate links constraint  `$r links (my-role: $p); $r links (my-role: $q);` will not de-duplicate.
+- **Avoid persisting empty statistics deltas**
+  
+  We resolve the issue in which statistics would be written to the WAL more often than necessary, which could cause WAL (not the data) to become corrupted.
   
   
-- **Fix relates double specialization**
-  Fix the behavior of `relates` specialization, featuring:
-  * Unblocked double specialization:
-  ```
-  define 
-    relation family-relation relates member @abstract;
-    relation parentship sub family relation, relates parent as member, relates child as member; # Good!
-  ```  
-  * Fixed validations for multi-layered specializations:
-  ```
-  define
-    relation family-relation relates member @abstract, relates pet @abstract;
-    relation parentship sub family relation, relates parent as member;
-    relation fathership sub parentship, relates father as member; # Bad!
-    relation fathership sub parentship, relates fathers-dog as pet; # Good!
-  ```
-  * Better definition resolution and error messaging.
-  * Change the inner terminology for generated `relates` for specialization: "root" and "non specializing" are substituted by "explicit", and "specializing" is substituted by "implicit".
+- **Fix getting annotations when argument is not referenced in body**
+  Fixes a crash during function annotation when  a function argument is not used in the body of the function.
+  
+  
+- **Include deleted concepts in structural equality for delete stage**
+  Include deleted concepts in structural equality for delete stage. This avoids a bug where the query cache picks the wrong cached query and runs it - allowing the execution of a delete stage with a totally different set of deleted concepts.
+  
+  
+- **Add flag to type-seeder for write stages**
+  Adds a flag to type-seeder to indicate the stage is a write stage. This ensures variables constrained by `isa`, or labelled roles are seeded with the exact type, and not (transitive) subtypes. This fixes a bug where one could not insert a role-player for a role with a subtype.
+  
+  
+- **Remove cardinalities operation time validation**
+  Remove cardinalities operation time validation. Now, both schema and data modifications lead to cardinalities revalidations only on commits.
+  This fix solves https://github.com/typedb/typedb/issues/7317.
   
   
 
@@ -69,13 +58,22 @@
 
 
 ## Other Improvements
-- **Replace unwraps with panics for more detailed error messages**
-
-- **Update automation.yml: return test_update**
-
-- **Bugfix: direction of indexed relation instruction in lowering**
+- **Introduce brew and apt deployment**
+  Introduce brew and apt deployment
   
-  We fix the logic in the lowering of query plans to executables that determines the direction of indexed relation instructions.
+  
+- **Fixes for the is_write_stage type-seeder fix**
+
+- **Activate diagnostics reporting for the Docker image**
+  The TypeDB Docker image receives enough minimal dependencies to report diagnostics and error data for maintenance.
+  
+  
+- **Syncing up planning and lowering**
+  
+  We synced up three subsystems:
+  1. Planner logic for selection of pattern traversal direction 
+  2. Planner logic for selection of sort (a.k.a. join) variables
+  3. Lowering logic for both, which in same cases overwrote choices made by the planner leading to errors.
   
   
     
