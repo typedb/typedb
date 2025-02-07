@@ -19,6 +19,7 @@ class Typedb < Formula
 
   license "MPL-2.0"
 
+  # TODO: Remove when console no longer requires jre
   depends_on "openjdk"
 
 
