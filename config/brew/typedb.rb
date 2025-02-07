@@ -26,6 +26,7 @@ class Typedb < Formula
   def install
     libexec.install Dir["*"]
     bin.install libexec / "typedb"
+    # TODO: Remove when console no longer requires jre
     bin.env_script_all_files(libexec, Language::Java.java_home_env)
   end
 end
