@@ -138,6 +138,9 @@ impl Relation {
         OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
+        OperationTimeValidation::validate_role_player_exists_to_add_player(snapshot, thing_manager, self, player)
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
             thing_manager,
@@ -205,6 +208,9 @@ impl Relation {
             .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
             OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, player, role_type)
+                .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+
+            OperationTimeValidation::validate_role_player_exists_to_add_player(snapshot, thing_manager, self, player)
                 .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
             *new_counts.entry(player).or_default() += 1;
@@ -345,7 +351,7 @@ impl ThingAPI for Relation {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(has, _value)| has.attribute()) {
-            thing_manager.unset_has(snapshot, self, &attr?);
+            thing_manager.unset_has(snapshot, self, &attr?)?;
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {

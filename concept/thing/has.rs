@@ -6,10 +6,17 @@
 
 use std::fmt;
 
-use encoding::graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse};
+use encoding::{
+    graph::thing::edge::{ThingEdgeHas, ThingEdgeHasReverse},
+    Keyable,
+};
 use lending_iterator::higher_order::Hkt;
+use storage::snapshot::ReadableSnapshot;
 
-use crate::thing::{attribute::Attribute, object::Object, ThingAPI};
+use crate::{
+    thing::{attribute::Attribute, object::Object, thing_manager::ThingManager, ThingAPI},
+    ConceptStatus,
+};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Has {

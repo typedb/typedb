@@ -55,6 +55,16 @@ fn row_batch_result_to_answer(
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 
+fn row_answers_to_string(rows: &[HashMap<String, VariableValue<'static>>]) -> String {
+    rows.iter()
+        .map(|row| {
+            let mut row_strings: Vec<String> = row.iter().map(|(key, value)| format!("{}: {}", key, value)).collect();
+            row_strings.join(", ")
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
 fn execute_read_query(
     context: &Context,
     query: typeql::Query,
@@ -288,11 +298,10 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     let num_specs = step.table().unwrap().rows.len() - 1;
     with_rows_answer!(context, |query_answer| {
         let num_answers = query_answer.len();
-        assert_eq!(
-            num_specs, num_answers,
-            "expected the number of identifier entries to match the number of answers, found {} entries and {} answers",
-            num_specs, num_answers
-        );
+        if num_specs != num_answers {
+            assert!(false, "expected the number of identifier entries to match the number of answers, found {} entries and {} answers. Real answers: \n{}",
+            num_specs, num_answers, row_answers_to_string(query_answer))
+        }
         for row in iter_table_map(step) {
             let mut num_matches = 0;
             for answer_row in query_answer {

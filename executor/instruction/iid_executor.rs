@@ -107,12 +107,12 @@ impl IidExecutor {
         let instance = if let Some(object) = ObjectVertex::try_from_bytes(bytes) {
             let object = Object::new(object);
             thing_manager
-                .instance_exists(snapshot, &object)
+                .instance_exists(snapshot, object)
                 .map(move |exists| exists.then_some(VariableValue::Thing(object.into())))
         } else if let Some(attribute) = AttributeVertex::try_from_bytes(bytes) {
             let attribute = Attribute::new(attribute);
             thing_manager
-                .instance_exists(snapshot, &attribute)
+                .instance_ref_exists(snapshot, &attribute)
                 .map(move |exists| exists.then_some(VariableValue::Thing(attribute.clone().into())))
         } else {
             Ok(None)

@@ -102,6 +102,24 @@ use crate::{
 
 pub mod validation;
 
+macro_rules! vertex_exists_methods {
+    ($(
+        fn $method_name:ident($type_:ty);
+    )*) => {
+        $(
+            pub fn $method_name(
+                &self,
+                snapshot: &impl ReadableSnapshot,
+                vertex: $type_,
+            ) -> Result<bool, Box<ConceptReadError>> {
+                snapshot
+                    .contains(vertex.vertex().into_storage_key().as_reference())
+                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+            }
+        )*
+    }
+}
+
 #[derive(Debug)]
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -271,18 +289,6 @@ impl ThingManager {
         };
         let key_range = KeyRange::new(range_start, range_end, <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING);
         InstanceIterator::new(snapshot.iterate_range(&key_range))
-    }
-
-    pub fn instance_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        instance: &impl ThingAPI,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        let storage_key = instance.vertex().into_storage_key();
-        snapshot
-            .get::<BUFFER_KEY_INLINE>(storage_key.as_reference())
-            .map(|value| value.is_some())
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
     pub(crate) fn get_relations_roles(
@@ -1495,27 +1501,18 @@ impl ThingManager {
                 Write::Put { .. } => ConceptStatus::Put,
                 Write::Delete => ConceptStatus::Deleted,
             })
-            .unwrap_or_else(|| ConceptStatus::Persisted)
+            .unwrap_or_else(|| {
+                debug_assert!(snapshot
+                    .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference())
+                    .is_ok_and(|option| option.is_some()));
+                ConceptStatus::Persisted
+            })
     }
 
-    pub(crate) fn object_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        object: impl ObjectAPI,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        snapshot
-            .contains(object.vertex().into_storage_key().as_reference())
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
-    }
-
-    pub(crate) fn type_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: impl TypeAPI,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        snapshot
-            .contains(type_.vertex().into_storage_key().as_reference())
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+    vertex_exists_methods! {
+        fn instance_exists(impl ThingAPI);
+        fn instance_ref_exists(&impl ThingAPI);
+        fn type_exists(impl TypeAPI);
     }
 }
 
@@ -1779,6 +1776,7 @@ impl ThingManager {
         {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let attribute = Attribute::new(edge.to());
+            let label = attribute.type_().get_label(snapshot, self.type_manager()).unwrap().scoped_name.to_string();
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if attribute.get_status(snapshot, self) == ConceptStatus::Deleted {
                 continue;
@@ -2019,7 +2017,7 @@ impl ThingManager {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
-            if self.object_exists(snapshot, owner)? {
+            if self.instance_exists(snapshot, owner)? {
                 let updated_attribute_types = out_object_attribute_types.entry(owner).or_default();
                 updated_attribute_types.insert(attribute.type_());
             }
@@ -2042,12 +2040,12 @@ impl ThingManager {
             let player = Object::new(edge.player());
             let role_type = RoleType::build_from_type_id(edge.role_id());
 
-            if self.object_exists(snapshot, relation)? {
+            if self.instance_exists(snapshot, relation)? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.insert(role_type);
             }
 
-            if self.object_exists(snapshot, player)? {
+            if self.instance_exists(snapshot, player)? {
                 let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
             }
@@ -2675,24 +2673,41 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn unset_has(&self, snapshot: &mut impl WritableSnapshot, owner: impl ObjectAPI, attribute: &Attribute) {
-        let owner_status = owner.get_status(snapshot, self);
-        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
-        let has_reverse =
-            ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
-        match owner_status {
-            ConceptStatus::Inserted => {
-                let count = 1;
-                snapshot.unput_val(has, ByteArray::copy(&encode_u64(count)));
-                snapshot.unput_val(has_reverse, ByteArray::copy(&encode_u64(count)));
+    pub(crate) fn unset_has(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owner: impl ObjectAPI,
+        attribute: &Attribute,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        // TODO:
+        // if owner is inserted, then:
+        //   if the has write exists, unput has
+        //   else do nothing
+        // else:
+        //   if has exists (goes to storage: self.has_attribute), then delete -> OR JUST DELETE WITHOUT CHECKS (decide) (unhappy)
+        //   else do nothing
+
+        if self.has_attribute(snapshot, owner, attribute).map_err(|source| ConceptWriteError::ConceptRead { source })? {
+            let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
+            let has_status = self.get_status(snapshot, has.into_storage_key());
+            let has_key = has.into_storage_key().into_owned_array();
+            let has_reverse_key =
+                ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
+            match has_status {
+                ConceptStatus::Put => {
+                    let count = 1;
+                    snapshot.unput_val(has_key, ByteArray::copy(&encode_u64(count)));
+                    snapshot.unput_val(has_reverse_key, ByteArray::copy(&encode_u64(count)));
+                }
+                ConceptStatus::Persisted => {
+                    snapshot.delete(has_key);
+                    snapshot.delete(has_reverse_key);
+                }
+                ConceptStatus::Inserted => unreachable!("Encountered an `insert` for a has: {has:?}."),
+                ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
             }
-            ConceptStatus::Persisted => {
-                snapshot.delete(has);
-                snapshot.delete(has_reverse);
-            }
-            ConceptStatus::Put => unreachable!("Encountered a `put` attribute owner: {owner:?}."),
-            ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
+        Ok(())
     }
 
     pub(crate) fn set_has_ordered(

@@ -171,7 +171,7 @@ impl OperationTimeValidation {
         if has_plays {
             Ok(())
         } else {
-            Err(Box::new(DataValidationError::CannotAddPlayerInstanceForNotPlayedRoleType {
+            Err(Box::new(DataValidationError::CannotHavePlayerInstanceForNotPlayedRoleType {
                 player: get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
                 role: get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
             }))
@@ -191,7 +191,7 @@ impl OperationTimeValidation {
         if has_relates {
             Ok(())
         } else {
-            Err(Box::new(DataValidationError::CannotAddPlayerInstanceForNotRelatedRoleType {
+            Err(Box::new(DataValidationError::CannotHavePlayerInstanceForNotRelatedRoleType {
                 relation: get_label_or_data_err(snapshot, &thing_manager.type_manager, relation_type)?,
                 role: get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
             }))
@@ -211,7 +211,7 @@ impl OperationTimeValidation {
         if has_owns {
             Ok(())
         } else {
-            Err(Box::new(DataValidationError::CannotAddOwnerInstanceForNotOwnedAttributeType {
+            Err(Box::new(DataValidationError::CannotHaveOwnerInstanceForNotOwnedAttributeType {
                 owner: get_label_or_data_err(snapshot, &thing_manager.type_manager, object_type)?,
                 attribute: get_label_or_data_err(snapshot, &thing_manager.type_manager, attribute_type)?,
             }))
@@ -478,17 +478,23 @@ impl OperationTimeValidation {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
             Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
-            Some(_) => Err(Box::new(ConceptWriteError::DataValidation {
+            Some(type_value_type) => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
-                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager()).unwrap().clone(),
-                    expected_value_type: type_value_type.unwrap(),
+                    attribute_type: attribute_type
+                        .get_label(snapshot, thing_manager.type_manager())
+                        .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?
+                        .clone(),
+                    expected_value_type: type_value_type,
                     provided_value_type: value_type,
                     provided_value: value.into_owned(),
                 }),
             })),
             None => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::AttributeTypeHasNoValueType {
-                    attribute_type: attribute_type.get_label(snapshot, thing_manager.type_manager()).unwrap().clone(),
+                    attribute_type: attribute_type
+                        .get_label(snapshot, thing_manager.type_manager())
+                        .map_err(|typedb_source| Box::new(ConceptWriteError::ConceptRead { typedb_source }))?
+                        .clone(),
                     provided_value_type: value_type,
                     provided_value: value.into_owned(),
                 }),
@@ -519,13 +525,36 @@ impl OperationTimeValidation {
         owner: impl ObjectAPI,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .object_exists(snapshot, owner)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+            .instance_exists(snapshot, owner)
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::SetHasOnDeletedOwner {
                 owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
+            }))
+        }
+    }
+
+    pub(crate) fn validate_attribute_exists_to_set_has(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        owner: impl ObjectAPI,
+        attribute: &Attribute,
+    ) -> Result<(), Box<DataValidationError>> {
+        if thing_manager
+            .instance_ref_exists(snapshot, attribute)
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
+        {
+            Ok(())
+        } else {
+            Err(Box::new(DataValidationError::SetHasDeletedAttribute {
+                owner_iid: HexBytesFormatter::owned(Vec::from(owner.iid())),
+                attribute_type: attribute
+                    .type_()
+                    .get_label(snapshot, thing_manager.type_manager())
+                    .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
+                    .clone(),
             }))
         }
     }
@@ -536,13 +565,32 @@ impl OperationTimeValidation {
         relation: Relation,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .object_exists(snapshot, relation)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+            .instance_exists(snapshot, relation)
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
         } else {
             Err(Box::new(DataValidationError::AddPlayerOnDeletedRelation {
                 relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
+            }))
+        }
+    }
+
+    pub(crate) fn validate_role_player_exists_to_add_player(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: Relation,
+        player: impl ObjectAPI,
+    ) -> Result<(), Box<DataValidationError>> {
+        if thing_manager
+            .instance_exists(snapshot, player)
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
+        {
+            Ok(())
+        } else {
+            Err(Box::new(DataValidationError::AddDeletedPlayer {
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
+                player_iid: HexBytesFormatter::owned(Vec::from(player.iid())),
             }))
         }
     }
@@ -553,8 +601,8 @@ impl OperationTimeValidation {
         owner: impl ObjectAPI,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .object_exists(snapshot, owner)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+            .instance_exists(snapshot, owner)
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
         } else {
@@ -570,8 +618,8 @@ impl OperationTimeValidation {
         relation: Relation,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .object_exists(snapshot, relation)
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+            .instance_exists(snapshot, relation)
+            .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
         } else {

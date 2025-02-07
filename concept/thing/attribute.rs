@@ -37,7 +37,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
-    type_::{attribute_type::AttributeType, ObjectTypeAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
     ConceptAPI, ConceptStatus,
 };
 
@@ -149,7 +149,8 @@ impl ThingAPI for Attribute {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         for object in self.get_owners(snapshot, thing_manager).map_ok(|(key, _)| key) {
-            thing_manager.unset_has(snapshot, object?, &self);
+            // TODO: This will not work for ordered owns: it unsets 1 under the hood. Write tests with lists when implemented.
+            thing_manager.unset_has(snapshot, object?, &self)?;
         }
         thing_manager.delete_attribute(snapshot, self)?;
 
