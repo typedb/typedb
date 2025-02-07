@@ -131,7 +131,7 @@ fn make_builder<'a>(
                             call_cost_provider,
                         )
                     })
-                    .collect::<Result<Vec<_>,_>>()?
+                    .collect::<Result<Vec<_>, _>>()?,
             )),
             NestedPattern::Negation(negation) => negation_subplans.push(
                 make_builder(
@@ -609,7 +609,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // (When a step has multiple pattern, the first such produced variable is always the join variable)
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
-    fn beam_search_plan(&self) -> Result<(Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost), QueryPlanningError> {
+    fn beam_search_plan(
+        &self,
+    ) -> Result<(Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost), QueryPlanningError> {
         const INDENT: &str = "";
 
         let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
@@ -735,7 +737,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             best_partial_plans = new_plans_heap.into_vec();
         }
 
-        let best_plan = best_partial_plans.into_iter().min().ok_or(QueryPlanningError::ExpectedPlannableConjunction {})?;
+        let best_plan =
+            best_partial_plans.into_iter().min().ok_or(QueryPlanningError::ExpectedPlannableConjunction {})?;
         let complete_plan = best_plan.into_complete_plan(&self.graph);
         event!(
             Level::TRACE,
@@ -920,7 +923,8 @@ impl PartialCostPlan {
                 let meta_data: CostMetaData;
 
                 if join_var.is_none() {
-                    (added_cost, meta_data) = self.compute_added_cost(graph, extension, &all_available_vars, join_var)?;
+                    (added_cost, meta_data) =
+                        self.compute_added_cost(graph, extension, &all_available_vars, join_var)?;
                 } else {
                     (added_cost, meta_data) =
                         self.compute_added_cost(graph, extension, &self.vertex_ordering, join_var)?;
@@ -944,7 +948,7 @@ impl PartialCostPlan {
                     heuristic,
                 })
             })
-            .collect::<Result<Vec<_>,_>>()
+            .collect::<Result<Vec<_>, _>>()
     }
 
     fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
@@ -997,7 +1001,8 @@ impl PartialCostPlan {
                         &self.ongoing_step_produced_vars,
                         &self.all_produced_vars,
                     ); // TODO: we only allow unbounded regular joins for now
-                    let (constraint_cost, meta_data) = constraint.cost_and_metadata(input_vars, fixed_direction, graph)?;
+                    let (constraint_cost, meta_data) =
+                        constraint.cost_and_metadata(input_vars, fixed_direction, graph)?;
                     (self.ongoing_step_cost.join(constraint_cost, total_join_size), meta_data)
                 } else {
                     constraint.cost_and_metadata(input_vars, None, graph)?
@@ -1569,9 +1574,7 @@ impl ConjunctionPlan<'_> {
                 let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
                 Ok(match_builder.push_check(&vars, check))
             }
-            PlannerVertex::Constraint(constraint) => {
-                Ok(self.lower_constraint_check(match_builder, constraint))
-            }
+            PlannerVertex::Constraint(constraint) => Ok(self.lower_constraint_check(match_builder, constraint)),
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
             }
@@ -1587,7 +1590,8 @@ impl ConjunctionPlan<'_> {
                         variable_registry,
                     )?;
                 let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
-                Ok(match_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into()))
+                Ok(match_builder
+                    .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into()))
             }
         }
     }
@@ -1920,10 +1924,15 @@ impl<'a> DisjunctionPlanBuilder<'a> {
         &self.branches
     }
 
-    fn plan(self, input_variables: impl Iterator<Item = Variable> + Clone) -> Result<DisjunctionPlan<'a>, QueryPlanningError> {
-        let branches =
-            self.branches.into_iter()
-                .map(|branch| branch.with_inputs(input_variables.clone()).plan()).collect::<Result<Vec<_>,_>>()?;
+    fn plan(
+        self,
+        input_variables: impl Iterator<Item = Variable> + Clone,
+    ) -> Result<DisjunctionPlan<'a>, QueryPlanningError> {
+        let branches = self
+            .branches
+            .into_iter()
+            .map(|branch| branch.with_inputs(input_variables.clone()).plan())
+            .collect::<Result<Vec<_>, _>>()?;
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
         Ok(DisjunctionPlan { branches, _cost: cost })
     }

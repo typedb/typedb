@@ -39,9 +39,10 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         entity_type: EntityType,
     ) -> Result<(), Box<DataValidationError>> {
-        if let Some(abstract_constraint) = entity_type
-            .get_constraint_abstract(snapshot, thing_manager.type_manager())
-            .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
+        if let Some(abstract_constraint) =
+            entity_type
+                .get_constraint_abstract(snapshot, thing_manager.type_manager())
+                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             Err(DataValidation::create_data_validation_entity_type_abstractness_error(
                 &abstract_constraint,
@@ -418,9 +419,10 @@ impl OperationTimeValidation {
             .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
         {
             let root_owner_type = constraint.source().owner();
-            let root_owner_subtypes = root_owner_type
-                .get_subtypes_transitive(snapshot, thing_manager.type_manager())
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+            let root_owner_subtypes =
+                root_owner_type
+                    .get_subtypes_transitive(snapshot, thing_manager.type_manager())
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
             let owner_and_subtypes: HashSet<ObjectType> =
                 TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
 

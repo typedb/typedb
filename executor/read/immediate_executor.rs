@@ -384,7 +384,10 @@ impl IntersectionExecutor {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             for executor in &self.instruction_executors {
                 self.iterators.push(executor.get_iterator(context, next_row.as_reference()).map_err(|err| {
-                    ReadExecutionError::CreatingIterator { instruction_name: executor.name().to_string(), typedb_source: err }
+                    ReadExecutionError::CreatingIterator {
+                        instruction_name: executor.name().to_string(),
+                        typedb_source: err,
+                    }
                 })?);
             }
         }
@@ -394,7 +397,8 @@ impl IntersectionExecutor {
     fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ReadExecutionError> {
         let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
-            multiplicity *= iter.advance_past().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })? as u64;
+            multiplicity *=
+                iter.advance_past().map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })? as u64;
         }
         self.intersection_multiplicity = multiplicity;
         Ok(())

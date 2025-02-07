@@ -8,8 +8,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use error::typedb_error;
 
-use crate::executable::{fetch::executable::FetchCompilationError, insert::WriteCompilationError};
-use crate::executable::match_::planner::MatchCompilationError;
+use crate::executable::{
+    fetch::executable::FetchCompilationError, insert::WriteCompilationError, match_::planner::MatchCompilationError,
+};
 
 pub mod delete;
 pub mod fetch;

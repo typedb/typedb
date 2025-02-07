@@ -386,7 +386,7 @@ pub trait OwnerAPI: TypeAPI {
     ) -> Result<Owns, Box<ConceptReadError>> {
         let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type)?;
         match owns {
-            None => Err(Box::new(ConceptReadError::CannotGetOwnsDoesntExist{
+            None => Err(Box::new(ConceptReadError::CannotGetOwnsDoesntExist {
                 type_: self.get_label(snapshot, type_manager)?.clone(),
                 owns: attribute_type.get_label(snapshot, type_manager)?.clone(),
             })),

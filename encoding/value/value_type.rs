@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, mem, ops::Range};
-use std::fmt::Formatter;
+use std::{fmt, fmt::Formatter, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;

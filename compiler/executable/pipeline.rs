@@ -223,7 +223,8 @@ fn compile_stage(
                 executable_expressions,
                 statistics,
                 call_cost_provider,
-            ).map_err(|source| ExecutableCompilationError::MatchCompilation { typedb_source: source })?;
+            )
+            .map_err(|source| ExecutableCompilationError::MatchCompilation { typedb_source: source })?;
             Ok(ExecutableStage::Match(Arc::new(plan)))
         }
         AnnotatedStage::Insert { block, annotations, source_span } => {

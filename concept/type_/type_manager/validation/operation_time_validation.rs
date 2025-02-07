@@ -2325,7 +2325,9 @@ impl OperationTimeValidation {
                                 type_manager,
                                 type_
                                     .get_constraints_independent(snapshot, type_manager)
-                                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                                    .map_err(|source| {
+                                        Box::new(SchemaValidationError::ConceptRead { typedb_source: source })
+                                    })?
                                     .iter(),
                             );
                             match sub_subtype_constraint_source {
@@ -2977,7 +2979,8 @@ impl OperationTimeValidation {
                 .get_attributes_in(snapshot, *attribute_type)
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
             for attribute in attribute_iterator {
-                let attribute = attribute.map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+                let attribute =
+                    attribute.map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
                 for abstract_constraint in abstract_constraints.iter() {
                     debug_assert_eq!(
@@ -3183,8 +3186,8 @@ impl OperationTimeValidation {
                 // non-interesting interfaces rather creating multiple iterators
                 let has_attribute_iterator = object.get_has_unordered(snapshot, thing_manager);
                 for has_count in has_attribute_iterator {
-                    let (has, count) =
-                        has_count.map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+                    let (has, count) = has_count
+                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
                     let attribute = has.attribute();
                     let attribute_type = attribute.type_();
                     if !attribute_types.contains(&attribute_type) {
@@ -3433,8 +3436,8 @@ impl OperationTimeValidation {
                 // non-interesting interfaces rather creating multiple iterators
                 let relations_iterator = object.get_relations_roles(snapshot, thing_manager);
                 for relation in relations_iterator {
-                    let (_, role_type, count) =
-                        relation.map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+                    let (_, role_type, count) = relation
+                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
                     if !role_types.contains(&role_type) {
                         continue;
                     }
@@ -3546,8 +3549,8 @@ impl OperationTimeValidation {
                 let role_players_iterator = relation.get_players(snapshot, thing_manager);
 
                 for role_players in role_players_iterator {
-                    let (role_player, count) =
-                        role_players.map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+                    let (role_player, count) = role_players
+                        .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
                     let role_type = role_player.role_type();
                     if !role_types.contains(&role_type) {
                         continue;

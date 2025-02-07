@@ -8,10 +8,11 @@ use std::collections::{hash_map, HashMap, HashSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
+use error::typedb_error;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
 use typeql::common::Span;
-use error::typedb_error;
+
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::{
@@ -23,14 +24,13 @@ use crate::{
                     AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
                     MatchExecutable, NegationStep,
                 },
-                plan::{plan_conjunction, PlannerStatistics},
+                plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
             },
         },
         next_executable_id,
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::plan::QueryPlanningError;
 
 pub mod match_executable;
 pub mod plan;

@@ -22,11 +22,10 @@ use itertools::{chain, Itertools};
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
     executable::match_::planner::{
-        plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, VariableVertexId, VertexId},
+        plan::{ConjunctionPlan, DisjunctionPlanBuilder, Graph, QueryPlanningError, VariableVertexId, VertexId},
         vertex::{constraint::ConstraintVertex, variable::VariableVertex},
     },
 };
-use crate::executable::match_::planner::plan::QueryPlanningError;
 
 pub(super) mod constraint;
 pub(super) mod variable;
@@ -600,11 +599,7 @@ impl Costed for DisjunctionPlanner<'_> {
             .iter()
             .map(|branch| branch.clone().with_inputs(input_variables.clone()).plan().map(|plan| plan.cost()))
             .collect::<Result<Vec<_>, _>>()
-            .map(|costs| {
-                costs
-                    .into_iter()
-                    .fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost))
-            })?;
+            .map(|costs| costs.into_iter().fold(Cost::EMPTY, |acc_cost, cost| acc_cost.combine_parallel(cost)))?;
         Ok((cost, CostMetaData::None))
     }
 }

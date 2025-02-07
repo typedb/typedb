@@ -24,7 +24,7 @@ use crate::{
     executable::match_::{
         instructions::{type_::TypeListInstruction, CheckInstruction, ConstraintInstruction},
         planner::{
-            plan::{Graph, VariableVertexId, VertexId},
+            plan::{Graph, QueryPlanningError, VariableVertexId, VertexId},
             vertex::{
                 instance_count, variable::VariableVertex, Cost, CostMetaData, Costed, Direction, Input,
                 ADVANCE_ITERATOR_RELATIVE_COST, OPEN_ITERATOR_RELATIVE_COST,
@@ -32,7 +32,6 @@ use crate::{
         },
     },
 };
-use crate::executable::match_::planner::plan::QueryPlanningError;
 
 const MIN_SCAN_SIZE: f64 = 1.0;
 
@@ -1191,7 +1190,12 @@ impl<'a> SubPlanner<'a> {
 }
 
 impl Costed for SubPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+    fn cost_and_metadata(
+        &self,
+        _: &[VertexId],
+        _: Option<Direction>,
+        _: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse)))
     }
 }
@@ -1225,7 +1229,12 @@ impl<'a> OwnsPlanner<'a> {
 }
 
 impl Costed for OwnsPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+    fn cost_and_metadata(
+        &self,
+        _: &[VertexId],
+        _: Option<Direction>,
+        _: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
     }
 }
@@ -1259,7 +1268,12 @@ impl<'a> RelatesPlanner<'a> {
 }
 
 impl Costed for RelatesPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+    fn cost_and_metadata(
+        &self,
+        _: &[VertexId],
+        _: Option<Direction>,
+        _: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
     }
 }
@@ -1293,7 +1307,12 @@ impl<'a> PlaysPlanner<'a> {
 }
 
 impl Costed for PlaysPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+    fn cost_and_metadata(
+        &self,
+        _: &[VertexId],
+        _: Option<Direction>,
+        _: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
     }
 }
