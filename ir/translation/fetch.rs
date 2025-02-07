@@ -66,7 +66,7 @@ pub(super) fn translate_fetch(
 }
 
 // This function returns a specific `FetchObject`, rather than the FetchSome` higher-level enum
-// This gives us a simpler entry point for the fetch clause translation
+// This gives us a simpler entry point for the fetch stage translation
 fn translate_fetch_object(
     snapshot: &impl ReadableSnapshot,
     parent_context: &mut TranslationContext,

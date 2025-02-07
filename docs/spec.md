@@ -22,7 +22,7 @@
 -->
 
 <!-- To be discussed:
-* when the _same_ insert clause inserts the same list attribute twice ... throw?
+* when the _same_ insert stage inserts the same list attribute twice ... throw?
 *
 -->
 
@@ -692,7 +692,7 @@ This section describes valid declarations of _types_ and axioms relating types (
 
 ### (Feature) Variabilized definitions
 
-* 🔶 Definition clauses can be preceded by a match clause
+* 🔶 Definition clauses can be preceded by a match stage
   * _Example_:
     ```
     match <PATT>; 
@@ -830,7 +830,7 @@ _Key principle_: If $`\diamond(A : K)`$ can be inferred in the type system, then
 
 _System property_
 
-* 🔶 _Abstractness prevails_. When both $`\diamond(A : K)`$ and $`A : K`$ are present after a define clause is completed, then we remove the latter statements from the type system. (_Note_. Abstractness can only be removed through ***undefining it***, not by "overwriting" it in another `define` statement ... define is always additive!).
+* 🔶 _Abstractness prevails_. When both $`\diamond(A : K)`$ and $`A : K`$ are present after a define stage is completed, then we remove the latter statements from the type system. (_Note_. Abstractness can only be removed through ***undefining it***, not by "overwriting" it in another `define` statement ... define is always additive!).
 
 ##### **Case TYP_ABSTRACT_DEF**
 * 🔷 `(kind) A @abstract` adds $`\diamond(A : \mathbf{Kind})`$ which affects `insert` behavior.
@@ -2465,7 +2465,7 @@ _System property_:
 
 ### Clean-up
 
-Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete clause.
+Orphaned relation and attribute instance (i.e. those with insufficient dependencies) are cleaned up at the end of a delete stage.
 
 ## Put behavior
 
@@ -2830,7 +2830,7 @@ A function executable comprises steps organized into a stack.
 
 #### Non-recursive execution
 
-In the non-recursive case, to execute a function (or, really, *any pattern* in a match clause, since patterns can be thought of simply as a functions without arguments), we run the steps on the entry stack to completion (which may spawn substacks on the way) returning completed results of the entry stack.
+In the non-recursive case, to execute a function (or, really, *any pattern* in a match stage, since patterns can be thought of simply as a functions without arguments), we run the steps on the entry stack to completion (which may spawn substacks on the way) returning completed results of the entry stack.
 
 To allow for partial results, the function executor can keep track of their machine state, and resume only when a request for more results is given.
 
