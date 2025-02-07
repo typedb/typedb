@@ -20,6 +20,9 @@ load("@rules_pkg//:mappings.bzl", "pkg_files", "pkg_attributes")
 load("@rules_pkg//:pkg.bzl", "pkg_tar")
 load("@rules_rust//rust:defs.bzl", "rust_binary")
 
+load("@typedb_bazel_distribution//apt:rules.bzl", "assemble_apt", "deploy_apt")
+load("@typedb_bazel_distribution//brew:rules.bzl", "deploy_brew")
+
 exports_files(
     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
 )
@@ -332,6 +335,123 @@ docker_container_push(
     ),
     tag_file = "//docker:version-arm64",
     target_compatible_with = constraint_linux_arm64,
+)
+
+# brew
+deploy_brew(
+    name = "deploy-brew",
+    file_substitutions = {
+        "//:checksum-mac-arm64": "{sha256-arm64}",
+        "//:checksum-mac-x86_64": "{sha256-x86_64}",
+    },
+    formula = "//config/brew:typedb.rb",
+    release = deployment["brew"]["release"],
+    snapshot = deployment["brew"]["snapshot"],
+    version_file = "//:VERSION",
+)
+
+genrule(
+    name = "invalid-checksum",
+    outs = ["invalid-checksum.txt"],
+    srcs = [],
+    cmd = "echo > $@",
+)
+
+label_flag(
+    name = "checksum-mac-arm64",
+    build_setting_default = ":invalid-checksum",
+)
+
+label_flag(
+    name = "checksum-mac-x86_64",
+    build_setting_default = ":invalid-checksum",
+)
+
+# apt
+# TODO: Remove when console no longer requires jre
+apt_depends = ["default-jre"]
+
+apt_installation_dir = "/opt/typedb/core/"
+
+apt_empty_dirs = [
+    "/var/log/typedb/",
+    "/var/lib/typedb/core/data/",
+]
+
+apt_symlinks = {
+    "/opt/typedb/core/server/data": "/var/lib/typedb/core/data/",
+    "/usr/local/bin/typedb": "/opt/typedb/core/typedb",
+    "/opt/typedb/core/server/logs": "/var/log/typedb/",
+    "/usr/lib/systemd/system/typedb.service": "/opt/typedb/core/typedb.service",
+}
+
+assemble_targz(
+    name = "assemble-service-targz",
+    additional_files = {
+        "//binary:typedb.service": "typedb.service",
+    },
+    visibility = ["//visibility:public"]
+)
+
+assemble_apt(
+    name = "assemble-linux-x86_64-apt",
+    package_name = "typedb",
+    architecture = "amd64",
+    archives = [
+        "//:package-typedb-all",
+        "//:assemble-service-targz",
+    ],
+    depends = apt_depends,
+    description = "TypeDB",
+    empty_dirs = apt_empty_dirs,
+    empty_dirs_permission = "0777",
+    files = assemble_files,
+    installation_dir = apt_installation_dir,
+    maintainer = "TypeDB Community <community@typedb.com>",
+    symlinks = apt_symlinks,
+    workspace_refs = "@typedb_workspace_refs//:refs.json",
+)
+
+deploy_apt(
+    name = "deploy-apt-x86_64",
+    release = deployment["apt"]["release"]["upload"],
+    snapshot = deployment["apt"]["snapshot"]["upload"],
+    target = ":assemble-linux-x86_64-apt",
+)
+
+assemble_apt(
+    name = "assemble-linux-arm64-apt",
+    package_name = "typedb",
+    architecture = "arm64",
+    archives = [
+        "//:package-typedb-all",
+        "//:assemble-service-targz",
+    ],
+    depends = apt_depends,
+    description = "TypeDB",
+    empty_dirs = apt_empty_dirs,
+    empty_dirs_permission = "0777",
+    files = assemble_files,
+    installation_dir = apt_installation_dir,
+    maintainer = "TypeDB Community <community@typedb.com>",
+    symlinks = apt_symlinks,
+    workspace_refs = "@typedb_workspace_refs//:refs.json",
+)
+
+deploy_apt(
+    name = "deploy-apt-arm64",
+    release = deployment["apt"]["release"]["upload"],
+    snapshot = deployment["apt"]["snapshot"]["upload"],
+    target = ":assemble-linux-arm64-apt",
+)
+
+alias(
+    name = "deploy-apt",
+    actual = select({
+        "@typedb_bazel_distribution//platform:is_linux_arm64" : ":deploy-apt-arm64",
+        "@typedb_bazel_distribution//platform:is_linux_x86_64" : ":deploy-apt-x86_64",
+    }),
+    tags = ["manual"],
 )
 
 # validation & tests
