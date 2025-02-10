@@ -153,11 +153,8 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
-        Err(TypeInferenceError::DetectedUnsatisfiablePattern {})
-    } else {
-        Ok(graph)
-    }
+    graph.check_thing_variables_have_types(variable_registry)?;
+    Ok(graph)
 }
 
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
@@ -255,6 +252,23 @@ impl TypeInferenceGraph<'_> {
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
         .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
+    }
+
+    fn check_thing_variables_have_types(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+        let any_thing_variables_empty = self.vertices.annotations.iter()
+            .filter_map(|(var,types)| var.as_variable().map(|v| (v, types)))
+            .any(|(var, types)| {
+                variable_registry.get_variable_category(var).unwrap().is_category_thing() &&
+                    types.is_empty()
+            });
+        if any_thing_variables_empty {
+            return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
+        }
+        self.nested_disjunctions.iter().flat_map(|d| d.disjunction.iter())
+            .chain(self.nested_optionals.iter())
+            .chain(self.nested_negations.iter())
+            .try_for_each(|graph| graph.check_thing_variables_have_types(variable_registry))?;
+        Ok(())
     }
 }
 
