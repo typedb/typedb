@@ -25,7 +25,7 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Scope, Vertex,
+        Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -170,7 +170,7 @@ fn make_builder<'a>(
 }
 
 #[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct VariableVertexId(usize);
+pub(crate) struct VariableVertexId(usize);
 
 impl fmt::Debug for VariableVertexId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -1436,7 +1436,8 @@ impl ConjunctionPlan<'_> {
                             match_builder.position_mapping(),
                             variable_registry,
                         )?;
-                    let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
+                    let variable_positions =
+                        step_builder.branches.iter().flat_map(|x| x.index.iter().map(|(&k, &v)| (k, v))).collect();
                     match_builder
                         .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
                 }
@@ -1520,10 +1521,10 @@ impl ConjunctionPlan<'_> {
                 let variable_positions: HashMap<Variable, ExecutorVariable> = negation
                     .index
                     .iter()
-                    .filter_map(|(k, v)| match_builder.current_outputs.get(k).map(|_| (k.clone(), v.clone())))
+                    .filter_map(|(&k, &v)| match_builder.current_outputs.contains(&k).then_some((k, v)))
                     .collect();
                 Ok(match_builder.push_step(
-                    &&variable_positions,
+                    &variable_positions,
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
                 ))
             }
@@ -1786,7 +1787,7 @@ impl ConjunctionPlan<'_> {
                         ),
                     )
                 };
-                let sort_variable = sort_variable.or(Some(instruction.first_unbound_component())).unwrap();
+                let sort_variable = sort_variable.unwrap_or(instruction.first_unbound_component());
                 let instruction = ConstraintInstruction::IndexedRelation(instruction);
                 match_builder.push_instruction(sort_variable, instruction);
             }

@@ -12,7 +12,6 @@ use std::{
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
-use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -84,7 +83,7 @@ impl Conjunction {
     fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
         let mut produced_variables: HashSet<Variable> =
             self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
-        let mut available_referenced_variables: HashSet<Variable> =
+        let available_referenced_variables: HashSet<Variable> =
             self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v)).collect();
         available_referenced_variables
             .iter()
@@ -104,7 +103,7 @@ impl Conjunction {
         &'a self,
         block_context: &'a BlockContext,
     ) -> impl Iterator<Item = Variable> + 'a {
-        let mut available_referenced_variables =
+        let available_referenced_variables =
             self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v));
         let producible_variables: HashSet<_> = self.producible_variables(block_context);
         available_referenced_variables.filter(move |v| !producible_variables.contains(v))
