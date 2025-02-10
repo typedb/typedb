@@ -136,7 +136,7 @@ pub enum ReadStageIterator<Snapshot: ReadableSnapshot + 'static> {
     Initial(Box<InitialIterator>),
     Match(Box<MatchStageIterator<Snapshot, ReadStageIterator<Snapshot>>>),
     Sort(SortStageIterator),
-    Distinct(DistinctStageIterator),
+    Distinct(Box<DistinctStageIterator<ReadStageIterator<Snapshot>>>),
     Limit(Box<LimitStageIterator<ReadStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<ReadStageIterator<Snapshot>>>),
     Select(Box<SelectStageIterator<ReadStageIterator<Snapshot>>>),
@@ -169,7 +169,7 @@ impl<Snapshot: ReadableSnapshot + 'static> StageAPI<Snapshot> for ReadPipelineSt
             }
             ReadPipelineStage::Distinct(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
-                Ok((ReadStageIterator::Distinct(iterator), snapshot))
+                Ok((ReadStageIterator::Distinct(Box::new(iterator)), snapshot))
             }
             ReadPipelineStage::Offset(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
@@ -276,7 +276,7 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
             }
             WritePipelineStage::Distinct(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
-                Ok((WriteStageIterator::Distinct(iterator), snapshot))
+                Ok((WriteStageIterator::Distinct(Box::new(iterator)), snapshot))
             }
             WritePipelineStage::Limit(stage) => {
                 let (iterator, snapshot) = stage.into_iterator(interrupt)?;
@@ -307,7 +307,7 @@ pub enum WriteStageIterator<Snapshot: WritableSnapshot + 'static> {
     Match(Box<MatchStageIterator<Snapshot, WriteStageIterator<Snapshot>>>),
     Write(WrittenRowsIterator),
     Sort(SortStageIterator),
-    Distinct(DistinctStageIterator),
+    Distinct(Box<DistinctStageIterator<WriteStageIterator<Snapshot>>>),
     Limit(Box<LimitStageIterator<WriteStageIterator<Snapshot>>>),
     Offset(Box<OffsetStageIterator<WriteStageIterator<Snapshot>>>),
     Select(Box<SelectStageIterator<WriteStageIterator<Snapshot>>>),

@@ -427,7 +427,7 @@ where
     Snapshot: ReadableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
 {
-    type OutputIterator = DistinctStageIterator;
+    type OutputIterator = DistinctStageIterator<PreviousStage::OutputIterator>;
 
     fn into_iterator(
         self,
@@ -438,107 +438,49 @@ where
     > {
         let Self { previous, executable, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        // accumulate once, then we will operate in-place
-        let batch = match previous_iterator.collect_owned() {
-            Ok(batch) => batch,
-            Err(err) => return Err((err, context)),
-        };
-        let batch_len = batch.len();
-        let profile = context.profile.profile_stage(|| String::from("Distinct"), executable.executable_id);
-        let step_profile = profile.extend_or_get(0, || String::from("Distinct execution"));
-        let measurement = step_profile.start_measurement();
-        let distinct_iterator = DistinctStageIterator::from_batch_with_duplicates(
-            batch,
-            &executable,
-            &context,
-            executable.output_row_mapping.values().cloned().collect(),
-        );
-        measurement.end(&step_profile, 1, batch_len as u64);
+        let distinct_iterator = DistinctStageIterator::new(previous_iterator);
         Ok((distinct_iterator, context))
     }
 }
 
-pub struct DistinctStageIterator {
-    batch_with_duplicates: Batch,
-    next_row_index: usize,
-    // Record contiguous index blocks of duplicates:
-    duplicate_block_start_indices: Vec<usize>, // invariant: nui.len() <= fdi.len() <= nui.len() + 1
-    unique_block_restart_indices: Vec<usize>,
-    next_duplicate_index_index: usize,
+pub struct DistinctStageIterator<PreviousIterator> {
+    seen: HashSet<MaybeOwnedRow<'static>>,
+    previous: PreviousIterator
 }
 
-impl DistinctStageIterator {
-    fn from_batch_with_duplicates(
-        batch_with_duplicates: Batch,
-        sort_executable: &DistinctExecutable,
-        context: &ExecutionContext<impl ReadableSnapshot>,
-        variable_positions: Vec<VariablePosition>,
+impl<PreviousIterator> DistinctStageIterator<PreviousIterator> {
+    fn new(
+        previous_iterator: PreviousIterator
     ) -> Self {
-        let mut indices: Vec<usize> = (0..batch_with_duplicates.len()).collect();
-        let mut duplicate_block_start_indices: Vec<usize> = vec![];
-        let mut unique_block_restart_indices: Vec<usize> = vec![];
-        let mut previously_seen_hashes: HashSet<u64> = HashSet::new();
-        let mut looking_for_duplicate = true;
-
-        for &row_index in indices.iter() {
-            let row = batch_with_duplicates.get_row(row_index);
-            println!("distinct got row {row:?}");
-            let mut hasher = DefaultHasher::new();
-            for &pos in &variable_positions {
-                row.get(pos).hash(&mut hasher);
-            }
-            let hash = hasher.finish();
-            if !previously_seen_hashes.contains(&hash) {
-                previously_seen_hashes.insert(hash);
-                if looking_for_duplicate == false {
-                    looking_for_duplicate = true;
-                    unique_block_restart_indices.push(row_index)
-                }
-            } else {
-                if looking_for_duplicate == true {
-                    looking_for_duplicate = false;
-                    duplicate_block_start_indices.push(row_index)
-                }
-            }
-        }
-
         Self {
-            batch_with_duplicates,
-            next_row_index: 0,
-            duplicate_block_start_indices,
-            unique_block_restart_indices,
-            next_duplicate_index_index: 0,
+            seen: HashSet::new(),
+            previous: previous_iterator,
         }
     }
 }
 
-impl LendingIterator for DistinctStageIterator {
+impl<PreviousIterator> LendingIterator for DistinctStageIterator<PreviousIterator>
+where
+    PreviousIterator: StageIterator,
+{
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        if self.next_row_index < self.batch_with_duplicates.len() {
-            if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len()
-                || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index]
-            {
-                // Case 1: next row is not a duplicate
-                let next_row = self.batch_with_duplicates.get_row(self.next_row_index);
-                self.next_row_index += 1;
-                Some(Ok(next_row))
-            } else {
-                // Case 2: next row *is* a duplicate
-                if let Some(next_index) = self.unique_block_restart_indices.get(self.next_duplicate_index_index) {
-                    let next_row = self.batch_with_duplicates.get_row(self.next_row_index);
-                    self.next_row_index = *next_index;
-                    Some(Ok(next_row))
+        match self.previous.next() {
+            None => None,
+            Some(Err(err)) => return Some(Err(err)),
+            Some(Ok(row)) => {
+                if self.seen.insert(row.clone().into_owned()) {
+                    Some(Ok(row.clone().into_owned()))
                 } else {
-                    // There are no more non-duplicates
-                    None
+                    self.next()
                 }
-            }
-        } else {
-            None
+            },
         }
     }
 }
 
-impl StageIterator for DistinctStageIterator {}
+impl<PreviousIterator> StageIterator for DistinctStageIterator<PreviousIterator>
+where
+    PreviousIterator: StageIterator,
+{}

@@ -324,7 +324,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),
                 distinct_executable.output_row_mapping.values().len() as u32,
             );
-            Ok(vec![StepExecutors::CollectingStage(step)])
+            Ok(vec![step.into()])
         }
         ExecutableStage::Sort(sort_executable) => {
             let step = CollectingStageExecutor::new_sort(
