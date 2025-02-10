@@ -53,7 +53,6 @@ pub fn compile(
 ) -> Result<MatchExecutable, MatchCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
-    debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
 
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
