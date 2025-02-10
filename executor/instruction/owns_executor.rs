@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::OwnsInstruction, ExecutorVariable};
 use concept::{
@@ -32,6 +32,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::owns_reverse_executor::OwnsReverseExecutor;
 
 pub(crate) struct OwnsExecutor {
     owns: ir::pattern::constraint::Owns<ExecutorVariable>,
@@ -42,6 +43,12 @@ pub(crate) struct OwnsExecutor {
     attribute_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
     checker: Checker<(ObjectType, AttributeType)>,
+}
+
+impl fmt::Debug for OwnsExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "OwnsExecutor")
+    }
 }
 
 pub(super) type OwnsTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<OwnsFilterMapFn>>, OwnsToTupleFn>;

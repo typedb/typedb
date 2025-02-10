@@ -5,14 +5,16 @@
  */
 
 use std::collections::HashSet;
-
+use compiler::VariablePosition;
 use crate::{
     batch::FixedBatch,
     read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(crate) enum StreamModifierExecutor {
+    Select { inner: PatternExecutor, removed_positions: Vec<VariablePosition> },
     Offset { inner: PatternExecutor, offset: u64 },
     Limit { inner: PatternExecutor, limit: u64 },
     Distinct { inner: PatternExecutor, output_width: u32 },
@@ -26,6 +28,10 @@ impl From<StreamModifierExecutor> for StepExecutors {
 }
 
 impl StreamModifierExecutor {
+    pub(crate) fn new_select(inner: PatternExecutor, removed_positions: Vec<VariablePosition>) -> Self {
+        Self::Select { inner, removed_positions }
+    }
+
     pub(crate) fn new_offset(inner: PatternExecutor, offset: u64) -> Self {
         Self::Offset { inner, offset }
     }
@@ -49,6 +55,7 @@ impl StreamModifierExecutor {
 
     pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
         match self {
+            Self::Select { inner, .. } => inner,
             Self::Offset { inner, .. } => inner,
             Self::Limit { inner, .. } => inner,
             Self::Distinct { inner, .. } => inner,
@@ -61,7 +68,9 @@ impl StreamModifierExecutor {
     }
 }
 
+#[derive(Debug)]
 pub(super) enum StreamModifierResultMapper {
+    Select(SelectMapper),
     Offset(OffsetMapper),
     Limit(LimitMapper),
     Distinct(DistinctMapper),
@@ -71,6 +80,7 @@ pub(super) enum StreamModifierResultMapper {
 impl StreamModifierResultMapper {
     pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
         match self {
+            Self::Select(mapper) => mapper.map_output(subquery_result),
             Self::Offset(mapper) => mapper.map_output(subquery_result),
             Self::Limit(mapper) => mapper.map_output(subquery_result),
             Self::Distinct(mapper) => mapper.map_output(subquery_result),
@@ -97,6 +107,34 @@ impl StreamModifierControl {
     }
 }
 
+#[derive(Debug)]
+pub(super) struct SelectMapper {
+    removed_positions: Vec<VariablePosition>
+}
+
+impl SelectMapper {
+    pub(crate) fn new(removed_positions: Vec<VariablePosition>) -> Self {
+        Self { removed_positions }
+    }
+}
+
+impl StreamModifierResultMapperTrait for SelectMapper {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+        if let Some(mut input_batch) = subquery_result {
+            for i in 0..input_batch.len() {
+                let mut row = input_batch.get_row_mut(i);
+                for pos in self.removed_positions.iter() {
+                    row.unset(*pos);
+                }
+            }
+            StreamModifierControl::Retry(Some(input_batch))
+        } else {
+            StreamModifierControl::Done(None)
+        }
+    }
+}
+
+#[derive(Debug)]
 pub(super) struct OffsetMapper {
     required: u64,
     current: u64,
@@ -131,6 +169,7 @@ impl StreamModifierResultMapperTrait for OffsetMapper {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct LimitMapper {
     required: u64,
     current: u64,
@@ -170,6 +209,7 @@ impl StreamModifierResultMapperTrait for LimitMapper {
 }
 
 // Distinct
+#[derive(Debug)]
 pub(super) struct DistinctMapper {
     collector: HashSet<MaybeOwnedRow<'static>>,
     output_width: u32,
@@ -198,6 +238,7 @@ impl StreamModifierResultMapperTrait for DistinctMapper {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct LastMapper {
     last_row: Option<MaybeOwnedRow<'static>>,
 }

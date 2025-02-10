@@ -22,6 +22,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(crate) struct TypeListExecutor {
     variable_modes: VariableModes,
     tuple_positions: TuplePositions,

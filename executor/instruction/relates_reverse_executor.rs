@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::RelatesReverseInstruction, ExecutorVariable};
 use concept::{
@@ -44,6 +44,13 @@ pub(crate) struct RelatesReverseExecutor {
     filter_fn: Arc<RelatesFilterFn>,
     checker: Checker<(RelationType, RoleType)>,
 }
+
+impl fmt::Debug for RelatesReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "RelatesReverseExecutor")
+    }
+}
+
 
 pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     iter::Map<

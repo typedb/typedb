@@ -35,6 +35,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(crate) struct IsaReverseExecutor {
     isa: Isa<ExecutorVariable>,
     iterate_mode: BinaryIterateMode,

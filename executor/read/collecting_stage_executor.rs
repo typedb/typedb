@@ -4,15 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    cmp::Ordering,
-    collections::HashSet,
-    hash::{DefaultHasher, Hash, Hasher},
-    iter::Peekable,
-    sync::Arc,
-};
-
+use std::{borrow::Cow, cmp::Ordering, collections::HashSet, fmt, hash::{DefaultHasher, Hash, Hasher}, iter::Peekable, sync::Arc};
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     executable::{
@@ -35,11 +28,13 @@ use crate::{
     reduce_executor::GroupedReducer,
 };
 
+#[derive(Debug)]
 pub(crate) struct CollectingStageExecutor {
     pattern: PatternExecutor,
     collector: CollectorEnum,
 }
 
+#[derive(Debug)]
 pub(super) enum CollectorEnum {
     Reduce(ReduceCollector),
     Sort(SortCollector),
@@ -67,6 +62,7 @@ impl CollectorEnum {
     }
 }
 
+#[derive(Debug)]
 pub(super) enum CollectedStageIterator {
     Reduce(ReduceStageIterator),
     Sort(SortStageIterator),
@@ -151,6 +147,12 @@ pub(super) struct ReduceCollector {
     output_width: u32,
 }
 
+impl fmt::Debug for ReduceCollector {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "ReduceCollector")
+    }
+}
+
 impl ReduceCollector {
     fn new(reduce_executable: Arc<ReduceRowsExecutable>) -> Self {
         let output_width = (reduce_executable.input_group_positions.len() + reduce_executable.reductions.len()) as u32;
@@ -182,6 +184,7 @@ impl CollectorTrait for ReduceCollector {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct ReduceStageIterator {
     batch_row_iterator: BatchRowIterator,
     output_width: u32,
@@ -212,6 +215,7 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
 }
 
 // Sort
+#[derive(Debug)]
 pub(super) struct SortCollector {
     sort_on: Vec<(usize, bool)>,
     collector: Option<Batch>,
@@ -295,6 +299,7 @@ impl CollectorTrait for SortCollector {
     }
 }
 
+#[derive(Debug)]
 pub struct SortStageIterator {
     unsorted: Batch,
     sorted_indices: Peekable<std::vec::IntoIter<usize>>,
@@ -320,6 +325,7 @@ impl CollectedStageIteratorTrait for SortStageIterator {
 }
 
 // Distinct
+#[derive(Debug)]
 pub(super) struct DistinctCollector {
     variable_positions: Vec<VariablePosition>,
     collector: Option<Batch>,
@@ -388,6 +394,7 @@ impl CollectorTrait for DistinctCollector {
     }
 }
 
+#[derive(Debug)]
 pub struct DistinctStageIterator {
     batch_with_duplicates: Batch,
     next_row_index: usize,

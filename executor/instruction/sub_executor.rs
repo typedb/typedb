@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
@@ -36,6 +36,12 @@ pub(crate) struct SubExecutor {
     supertypes: Arc<BTreeSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
     checker: Checker<(Type, Type)>,
+}
+
+impl fmt::Debug for SubExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "SubExecutor")
+    }
 }
 
 pub(super) type SubTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<SubFilterMapFn>>, SubToTupleFn>;

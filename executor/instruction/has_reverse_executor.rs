@@ -10,7 +10,7 @@ use std::{
     sync::{Arc, OnceLock},
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
@@ -36,6 +36,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::iid_executor::IidExecutor;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -48,6 +49,12 @@ pub(crate) struct HasReverseExecutor {
     filter_fn: Arc<HasFilterFn>,
     attribute_cache: OnceLock<Vec<Attribute>>,
     checker: Checker<(Has, u64)>,
+}
+
+impl fmt::Debug for HasReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "HasReverseExecutor")
+    }
 }
 
 pub(crate) type HasReverseTupleIteratorSingle = HasTupleIterator<HasReverseIterator>;

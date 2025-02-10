@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::OwnsReverseInstruction, ExecutorVariable};
 use concept::{
@@ -33,6 +33,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::plays_executor::PlaysExecutor;
 
 pub(crate) struct OwnsReverseExecutor {
     owns: ir::pattern::constraint::Owns<ExecutorVariable>,
@@ -43,6 +44,12 @@ pub(crate) struct OwnsReverseExecutor {
     owner_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
     checker: Checker<(ObjectType, AttributeType)>,
+}
+
+impl fmt::Debug for OwnsReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "OwnsReverseExecutor")
+    }
 }
 
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<

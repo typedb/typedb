@@ -10,7 +10,7 @@ use std::{
     ops::Bound,
     sync::Arc,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksInstruction, ExecutorVariable};
 use concept::{
@@ -39,6 +39,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::links_reverse_executor::LinksReverseExecutor;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -56,6 +57,12 @@ pub(crate) struct LinksExecutor {
     relation_cache: Option<Vec<Relation>>,
 
     checker: Checker<(Relation, RolePlayer, u64)>,
+}
+
+impl fmt::Debug for LinksExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "LinksExecutor")
+    }
 }
 
 pub(super) type LinksTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<LinksFilterMapFn>>, LinksToTupleFn>;

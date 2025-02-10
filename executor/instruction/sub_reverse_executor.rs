@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
@@ -28,6 +28,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::sub_executor::SubExecutor;
 
 pub(crate) struct SubReverseExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,
@@ -38,6 +39,12 @@ pub(crate) struct SubReverseExecutor {
     subtypes: Arc<BTreeSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
     checker: Checker<(Type, Type)>,
+}
+
+impl fmt::Debug for SubReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "SubReverseExecutor")
+    }
 }
 
 pub(super) type SubReverseUnboundedSortedSuper =

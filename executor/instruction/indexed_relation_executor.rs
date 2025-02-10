@@ -9,7 +9,7 @@ use std::{
     fmt, iter,
     sync::Arc,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{
     executable::match_::instructions::{thing::IndexedRelationInstruction, VariableMode, VariableModes},
@@ -37,6 +37,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::links_executor::LinksExecutor;
 
 pub(super) type IndexedRelationTupleIterator<I> = iter::FilterMap<I, Box<IndexedRelationFilterMapFn>>;
 
@@ -86,6 +87,12 @@ pub(crate) struct IndexedRelationExecutor {
     start_player_cache: Option<Vec<Object>>,
 
     checker: Checker<(IndexedRelationPlayers, u64)>,
+}
+
+impl fmt::Debug for IndexedRelationExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "IndexedRelationExecutor")
+    }
 }
 
 impl IndexedRelationExecutor {

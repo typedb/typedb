@@ -5,7 +5,7 @@
  */
 
 use std::{collections::HashMap, fmt, iter, sync::Arc};
-
+use std::fmt::Formatter;
 use answer::variable_value::VariableValue;
 use compiler::{executable::match_::instructions::thing::IidInstruction, ExecutorVariable};
 use concept::{
@@ -25,6 +25,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::indexed_relation_executor::IndexedRelationExecutor;
 
 pub(crate) struct IidExecutor {
     iid: Iid<ExecutorVariable>,
@@ -32,6 +33,12 @@ pub(crate) struct IidExecutor {
     tuple_positions: TuplePositions,
     filter_fn: Arc<IidFilterFn>,
     checker: Checker<VariableValue<'static>>,
+}
+
+impl fmt::Debug for IidExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "IidExecutor")
+    }
 }
 
 pub(crate) type IidToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static>;

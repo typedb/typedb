@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
 use concept::{
@@ -29,6 +29,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::plays_reverse_executor::PlaysReverseExecutor;
 
 pub(crate) struct PlaysExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,
@@ -39,6 +40,12 @@ pub(crate) struct PlaysExecutor {
     role_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
     checker: Checker<(ObjectType, RoleType)>,
+}
+
+impl fmt::Debug for PlaysExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "PlaysExecutor")
+    }
 }
 
 pub(super) type PlaysTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<PlaysFilterMapFn>>, PlaysToTupleFn>;

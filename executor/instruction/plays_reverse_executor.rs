@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::PlaysReverseInstruction, ExecutorVariable};
 use concept::{
@@ -33,6 +33,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::relates_executor::RelatesExecutor;
 
 pub(crate) struct PlaysReverseExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,
@@ -43,6 +44,12 @@ pub(crate) struct PlaysReverseExecutor {
     player_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
     checker: Checker<(ObjectType, RoleType)>,
+}
+
+impl fmt::Debug for PlaysReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "PlaysReverseExecutor")
+    }
 }
 
 pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<

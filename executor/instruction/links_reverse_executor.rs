@@ -10,7 +10,7 @@ use std::{
     ops::Bound,
     sync::Arc,
 };
-
+use std::fmt::Formatter;
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
 use concept::{
@@ -44,6 +44,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::owns_executor::OwnsExecutor;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -61,6 +62,12 @@ pub(crate) struct LinksReverseExecutor {
     player_cache: Option<Vec<Object>>,
 
     checker: Checker<(Relation, RolePlayer, u64)>,
+}
+
+impl fmt::Debug for LinksReverseExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "LinksReverseExecutor")
+    }
 }
 
 impl LinksReverseExecutor {

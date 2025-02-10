@@ -10,7 +10,7 @@ use std::{
     sync::Arc,
     vec,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::RelatesInstruction, ExecutorVariable};
 use concept::{
@@ -29,6 +29,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::relates_reverse_executor::RelatesReverseExecutor;
 
 pub(crate) struct RelatesExecutor {
     relates: ir::pattern::constraint::Relates<ExecutorVariable>,
@@ -39,6 +40,12 @@ pub(crate) struct RelatesExecutor {
     role_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<RelatesFilterFn>,
     checker: Checker<(RelationType, RoleType)>,
+}
+
+impl fmt::Debug for RelatesExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "RelatesExecutor")
+    }
 }
 
 pub(super) type RelatesTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<RelatesFilterMapFn>>, RelatesToTupleFn>;

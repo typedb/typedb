@@ -32,6 +32,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::read::stream_modifier::SelectMapper;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct BranchIndex(pub usize);
@@ -45,6 +46,7 @@ impl ExecutorIndex {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct PatternExecutor {
     executable_id: u64,
     executors: Vec<StepExecutors>,
@@ -116,6 +118,8 @@ impl PatternExecutor {
                 return Err(ReadExecutionError::Interrupted { interrupt });
             }
 
+            println!("------> EXECUTORS {:#?}", executors);
+            println!("------> TOP OF STACK {:#?}", control_stack.last());
             match control_stack.pop().unwrap() {
                 ControlInstruction::PatternStart(PatternStart { input_batch }) => {
                     self.push_next_instruction(context, ExecutorIndex(0), input_batch)?;
@@ -364,6 +368,15 @@ impl PatternExecutor {
             }
         } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
             match stream_modifier {
+                StreamModifierExecutor::Select { inner, removed_positions } => {
+                    let mapper = StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()));
+                    inner.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index,
+                        mapper,
+                        input: input.clone().into_owned(),
+                    }));
+                }
                 StreamModifierExecutor::Offset { inner, offset } => {
                     let mapper = StreamModifierResultMapper::Offset(OffsetMapper::new(*offset));
                     inner.prepare(FixedBatch::from(input.as_reference()));

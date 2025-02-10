@@ -25,6 +25,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(crate) struct IsExecutor {
     is: Is<ExecutorVariable>,
     input: VariablePosition,

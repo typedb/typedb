@@ -10,7 +10,7 @@ use std::{
     ops::Bound,
     sync::Arc,
 };
-
+use std::fmt::Formatter;
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::HasInstruction, ExecutorVariable};
 use concept::{
@@ -37,6 +37,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::has_reverse_executor::HasReverseExecutor;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -49,6 +50,12 @@ pub(crate) struct HasExecutor {
     filter_fn: Arc<HasFilterFn>,
     owner_cache: Option<Vec<Object>>,
     checker: Checker<(Has, u64)>,
+}
+
+impl fmt::Debug for HasExecutor {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "HasExecutor")
+    }
 }
 
 pub(super) type HasTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<HasFilterMapFn>>, HasToTupleFn>;

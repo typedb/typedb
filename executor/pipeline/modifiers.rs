@@ -310,17 +310,18 @@ where
     > {
         let Self { previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((SelectStageIterator::new(previous_iterator), context))
+        Ok((SelectStageIterator::new(previous_iterator, self.select_executable.retained_positions.clone()), context))
     }
 }
 
 pub struct SelectStageIterator<PreviousIterator> {
     previous: PreviousIterator,
+    retained_positions: HashSet<VariablePosition>
 }
 
 impl<PreviousIterator> SelectStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator) -> Self {
-        Self { previous }
+    fn new(previous: PreviousIterator, retained_positions: HashSet<VariablePosition>) -> Self {
+        Self { previous, retained_positions }
     }
 }
 
@@ -333,7 +334,12 @@ where
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.previous.next()
+        self.previous.next().map(|res| { res.map(|row| {
+            let (input, mult) = row.into_owned_parts();
+            let output: Vec<VariableValue<'_>> = input.into_iter().enumerate().map(|(i, val)|
+                if self.retained_positions.contains(&VariablePosition::new(i as u32)){ val } else { VariableValue::Empty }).collect();
+            MaybeOwnedRow::new_owned(output, mult)
+        })})
     }
 }
 
@@ -476,6 +482,7 @@ impl DistinctStageIterator {
 
         for &row_index in indices.iter() {
             let row = batch_with_duplicates.get_row(row_index);
+            println!("distinct got row {row:?}");
             let mut hasher = DefaultHasher::new();
             for &pos in &variable_positions {
                 row.get(pos).hash(&mut hasher);
