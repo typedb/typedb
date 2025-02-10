@@ -283,6 +283,7 @@ jobs:
   deploy-docker-release-x86_64:
     executor: linux-x86_64-amazonlinux-2
     steps:
+      - setup_remote_docker
       - checkout
       - install-deps-yum:
           bazel-arch: amd64
@@ -292,6 +293,7 @@ jobs:
   deploy-docker-release-arm64:
     executor: linux-arm64-amazonlinux-2
     steps:
+      - setup_remote_docker
       - checkout
       - install-deps-yum:
           bazel-arch: arm64
@@ -301,6 +303,7 @@ jobs:
   deploy-docker-release-multiarch:
     executor: linux-x86_64-amazonlinux-2
     steps:
+      - setup_remote_docker
       - checkout
       - install-deps-yum:
           bazel-arch: amd64
