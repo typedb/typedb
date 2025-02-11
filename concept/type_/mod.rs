@@ -386,10 +386,10 @@ pub trait OwnerAPI: TypeAPI {
     ) -> Result<Owns, Box<ConceptReadError>> {
         let owns = self.get_owns_attribute(snapshot, type_manager, attribute_type)?;
         match owns {
-            None => Err(Box::new(ConceptReadError::CannotGetOwnsDoesntExist(
-                self.get_label(snapshot, type_manager)?.clone(),
-                attribute_type.get_label(snapshot, type_manager)?.clone(),
-            ))),
+            None => Err(Box::new(ConceptReadError::CannotGetOwnsDoesntExist {
+                type_: self.get_label(snapshot, type_manager)?.clone(),
+                owns: attribute_type.get_label(snapshot, type_manager)?.clone(),
+            })),
             Some(owns) => Ok(owns),
         }
     }
@@ -549,10 +549,10 @@ pub trait PlayerAPI: TypeAPI {
     ) -> Result<Plays, Box<ConceptReadError>> {
         let plays = self.get_plays_role(snapshot, type_manager, role_type)?;
         match plays {
-            None => Err(Box::new(ConceptReadError::CannotGetPlaysDoesntExist(
-                self.get_label(snapshot, type_manager)?.clone(),
-                role_type.get_label(snapshot, type_manager)?.clone(),
-            ))),
+            None => Err(Box::new(ConceptReadError::CannotGetPlaysDoesntExist {
+                type_: self.get_label(snapshot, type_manager)?.clone(),
+                plays: role_type.get_label(snapshot, type_manager)?.clone(),
+            })),
             Some(plays) => Ok(plays),
         }
     }

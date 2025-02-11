@@ -8,7 +8,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use error::typedb_error;
 
-use crate::executable::{fetch::executable::FetchCompilationError, insert::WriteCompilationError};
+use crate::executable::{
+    fetch::executable::FetchCompilationError, insert::WriteCompilationError, match_::planner::MatchCompilationError,
+};
 
 pub mod delete;
 pub mod fetch;
@@ -26,9 +28,10 @@ pub fn next_executable_id() -> u64 {
 }
 
 typedb_error! {
-    pub ExecutableCompilationError(component = "Executable compilation", prefix = "ECP") {
-        InsertExecutableCompilation(1, "Error compiling insert clause into executable.", typedb_source: Box<WriteCompilationError>),
-        DeleteExecutableCompilation(2, "Error compiling delete clause into executable.", typedb_source: Box<WriteCompilationError>),
-        FetchCompliation(3, "Error compiling fetch clause into executable.", typedb_source: FetchCompilationError),
+    pub ExecutableCompilationError(component = "Executable compiler", prefix = "ECP") {
+        InsertExecutableCompilation(1, "Error compiling insert stage into executable.", typedb_source: Box<WriteCompilationError>),
+        DeleteExecutableCompilation(2, "Error compiling delete stage into executable.", typedb_source: Box<WriteCompilationError>),
+        FetchCompilation(3, "Error compiling fetch stage into executable.", typedb_source: FetchCompilationError),
+        MatchCompilation(4, "Error compiling match stage into executable.", typedb_source: MatchCompilationError),
     }
 }

@@ -100,7 +100,7 @@ fn index_available(
     for type_ in relation_types.iter() {
         let index_available = type_manager
             .relation_index_available(snapshot, type_.as_relation_type())
-            .map_err(|err| StaticOptimiserError::ConceptRead { source: err })?;
+            .map_err(|err| StaticOptimiserError::ConceptRead { typedb_source: err })?;
         if !index_available {
             return Ok(false);
         }

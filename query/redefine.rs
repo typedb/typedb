@@ -172,7 +172,7 @@ fn redefine_struct_fields(
             value_type.clone(),
             optional,
         )
-        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::StructFieldDoesNotExist { source_span: field.span() });
@@ -407,7 +407,7 @@ fn redefine_value_type(
             value_type.clone(),
             DefinableStatusMode::Declared,
         )
-        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
         let redefine_needed = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::AttributeTypeValueTypeNotDefined {
@@ -521,7 +521,7 @@ fn redefine_relates(
             ordering,
             DefinableStatusMode::Declared,
         )
-        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
         let relates = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesNotDefined {
@@ -619,7 +619,7 @@ fn redefine_relates_specialise(
                 .map_err(|typedb_source| RedefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
         match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::RelatesSpecialiseNotDefined {
@@ -629,13 +629,13 @@ fn redefine_relates_specialise(
                     specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     specialising_role_name: relates
                         .role()
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     source_span: typeql_relates.span(),
@@ -649,13 +649,13 @@ fn redefine_relates_specialise(
                     specialised_role_name: specialised_relates
                         .role()
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     specialising_role_name: relates
                         .role()
                         .get_label(snapshot, type_manager)
-                        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?
                         .name()
                         .to_string(),
                     source_span: typeql_relates.span(),
@@ -709,7 +709,7 @@ fn redefine_owns(
             ordering,
             DefinableStatusMode::Declared,
         )
-        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
         let owns = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::OwnsNotDefined {
@@ -717,7 +717,7 @@ fn redefine_owns(
                     key: Keyword::Owns,
                     attribute: attribute_type
                         .get_label(snapshot, type_manager)
-                        .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
+                        .map_err(|err| RedefineError::UnexpectedConceptRead { typedb_source: err })?
                         .clone(),
                     source_span: capability.span(),
                     ordering,
@@ -806,7 +806,7 @@ fn redefine_plays(
 
         let definition_status =
             get_plays_status(snapshot, type_manager, object_type, role_type, DefinableStatusMode::Declared)
-                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+                .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
         let plays = match definition_status {
             DefinableStatus::DoesNotExist => {
                 return Err(RedefineError::PlaysNotDefined {
@@ -814,7 +814,7 @@ fn redefine_plays(
                     key: Keyword::Plays,
                     role: role_type
                         .get_label(snapshot, type_manager)
-                        .map_err(|err| RedefineError::UnexpectedConceptRead { source: err })?
+                        .map_err(|err| RedefineError::UnexpectedConceptRead { typedb_source: err })?
                         .clone(),
                     source_span: capability.span(),
                 });
@@ -897,14 +897,14 @@ fn check_can_redefine_sub<T: TypeAPI>(
     capability: &Capability,
 ) -> Result<(), RedefineError> {
     let definition_status = get_sub_status(snapshot, type_manager, type_, new_supertype)
-        .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeSubNotDefined {
             type_: label.clone(),
             key: Keyword::Sub,
             new_supertype: new_supertype
                 .get_label(snapshot, type_manager)
-                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             source_span: capability.span(),
         }),
@@ -913,7 +913,7 @@ fn check_can_redefine_sub<T: TypeAPI>(
             key: Keyword::Sub,
             supertype: new_supertype
                 .get_label(snapshot, type_manager)
-                .map_err(|source| RedefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             source_span: capability.span(),
         }),
@@ -943,7 +943,7 @@ fn type_convert_and_validate_annotation_redefinition_need<T: KindAPI>(
 
     let definition_status =
         get_type_annotation_status(snapshot, type_manager, type_, &converted, annotation.category())
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => Err(RedefineError::TypeAnnotationNotDefined {
             type_: label.clone(),
@@ -980,7 +980,7 @@ fn capability_convert_and_validate_annotation_redefinition_need<CAP: concept::ty
 
     let definition_status =
         get_capability_annotation_status(snapshot, type_manager, &capability, &converted, annotation.category())
-            .map_err(|source| RedefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| RedefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::DoesNotExist => {
             Err(RedefineError::CapabilityAnnotationNotDefined { source_span: typeql_capability.span(), annotation })
@@ -1036,7 +1036,7 @@ fn error_if_anything_redefined_else_set_true(anything_redefined: &mut bool) -> R
 typedb_error! {
     pub RedefineError(component = "Redefine execution", prefix = "REX") {
         Unimplemented(1, "Unimplemented redefine functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error during redefine query execution.", source: Box<ConceptReadError>),
+        UnexpectedConceptRead(2, "Concept read error during redefine query execution.", typedb_source: Box<ConceptReadError>),
         NothingRedefined(3, "Nothing was redefined."),
         DefinitionResolution(4, "Could not find symbol in redefine query.", typedb_source: Box<SymbolResolutionError>),
         LiteralParseError(5, "Error parsing literal in redefine query.", typedb_source: LiteralParseError),

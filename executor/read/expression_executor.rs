@@ -48,7 +48,7 @@ impl ExpressionValue {
             VariableValue::ValueList(values) => Ok(ExpressionValue::List(values)),
             VariableValue::Thing(Thing::Attribute(attr)) => Ok(ExpressionValue::Single(
                 attr.get_value(&**context.snapshot(), context.thing_manager())
-                    .map_err(|source| ExpressionEvaluationError::ConceptRead { source })?
+                    .map_err(|source| ExpressionEvaluationError::ConceptRead { typedb_source: source })?
                     .into_owned(),
             )),
             VariableValue::ThingList(things) => {
@@ -57,7 +57,7 @@ impl ExpressionValue {
                     .map(|thing| match thing {
                         Thing::Attribute(attr) => Ok(attr
                             .get_value(&**context.snapshot(), context.thing_manager())
-                            .map_err(|source| ExpressionEvaluationError::ConceptRead { source })?
+                            .map_err(|source| ExpressionEvaluationError::ConceptRead { typedb_source: source })?
                             .into_owned()),
                         _ => Err(ExpressionEvaluationError::CastFailed {
                             description: "list contains elements without values".to_string(),

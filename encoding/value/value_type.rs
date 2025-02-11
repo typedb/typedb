@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, mem, ops::Range};
+use std::{fmt, fmt::Formatter, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -21,7 +21,7 @@ use crate::{
 };
 
 // We can support Prefix::ATTRIBUTE_MAX - Prefix::ATTRIBUTE_MIN different built-in value types
-#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
+#[derive(Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ValueType {
     Boolean,
     Integer,
@@ -150,6 +150,12 @@ impl StructuralEquality for ValueType {
             | (Self::String { .. }, _)
             | (Self::Struct { .. }, _) => false,
         }
+    }
+}
+
+impl fmt::Debug for ValueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(self, f)
     }
 }
 

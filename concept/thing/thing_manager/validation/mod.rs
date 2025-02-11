@@ -19,7 +19,7 @@ pub(crate) mod validation;
 
 typedb_error!(
     pub DataValidationError(component = "Data validation", prefix = "DVL") {
-        ConceptRead(1, "Data validation failed due to concept read error.", source: Box<ConceptReadError>),
+        ConceptRead(1, "Data validation failed due to concept read error.", typedb_source: Box<ConceptReadError>),
         CannotAddOwnerInstanceForNotOwnedAttributeType(
             2,
             "Type '{owner}' cannot own attribute type '{attribute}'.",

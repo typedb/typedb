@@ -1192,7 +1192,7 @@ impl TransactionService {
                 Err(err) => {
                     Self::submit_response_async(
                         &sender,
-                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
                     )
                     .await;
                     return;
@@ -1232,7 +1232,7 @@ impl TransactionService {
                 Err(err) => {
                     Self::submit_response_async(
                         &sender,
-                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                        StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
                     )
                     .await;
                     return;
@@ -1331,7 +1331,7 @@ impl TransactionService {
                     Err(err) => {
                         Self::submit_response_sync(
                             sender,
-                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
                         );
                         return;
                     }
@@ -1374,7 +1374,7 @@ impl TransactionService {
                     Err(err) => {
                         Self::submit_response_sync(
                             sender,
-                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { source: err }),
+                            StreamQueryResponse::done_err(PipelineExecutionError::ConceptRead { typedb_source: err }),
                         );
                         return;
                     }

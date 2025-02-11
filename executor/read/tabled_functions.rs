@@ -45,7 +45,7 @@ impl TabledFunctions {
                 &context.profile,
                 function,
             )
-            .map_err(|source| ReadExecutionError::ConceptRead { source })?;
+            .map_err(|source| ReadExecutionError::ConceptRead { typedb_source: source })?;
             let pattern_executor = PatternExecutor::new(function.executable_id, executors);
             let width = match &function.returns {
                 ExecutableReturn::Stream(v) | ExecutableReturn::Single(_, v) => v.len() as u32,

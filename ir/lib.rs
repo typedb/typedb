@@ -173,7 +173,7 @@ typedb_error! {
         ),
         FetchRepresentation(
             23,
-            "Error building representation of fetch clause.",
+            "Error building representation of fetch stage.",
             typedb_source: Box<FetchRepresentationError> ,
         ),
         NonTerminalFetch(

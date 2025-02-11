@@ -31,7 +31,7 @@ pub fn resolve_value_types(
                         Err(TypeInferenceError::InternalAttributeTypeWithoutValueType { label })
                     }
                     Ok(Some(value_type)) => Ok(value_type),
-                    Err(source) => Err(TypeInferenceError::ConceptRead { source }),
+                    Err(source) => Err(TypeInferenceError::ConceptRead { typedb_source: source }),
                 }
             }
             _ => {

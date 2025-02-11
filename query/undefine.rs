@@ -193,7 +193,7 @@ fn undefine_specialise(
     .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
     let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
-        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => {
             relates.unset_specialise(snapshot, type_manager, thing_manager).map_err(|source| {
@@ -211,13 +211,13 @@ fn undefine_specialise(
             specialising_role_name: relates
                 .role()
                 .get_label(snapshot, type_manager)
-                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                 .name()
                 .to_string(),
             specialised_role_name: specialised_relates
                 .role()
                 .get_label(snapshot, type_manager)
-                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                 .name()
                 .to_string(),
             source_span: specialise_undefinable.span(),
@@ -230,18 +230,18 @@ fn undefine_specialise(
                 specialising_role_name: relates
                     .role()
                     .get_label(snapshot, type_manager)
-                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                     .name()
                     .to_string(),
                 specialised_role_name: specialised_relates
                     .role()
                     .get_label(snapshot, type_manager)
-                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                     .name()
                     .to_string(),
                 existing_specialised_role_name: existing_specialised_role
                     .get_label(snapshot, type_manager)
-                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                     .name()
                     .to_string(),
                 source_span: specialise_undefinable.span(),
@@ -292,7 +292,7 @@ fn undefine_capability_annotation(
                 ordering,
                 DefinableStatusMode::Transitive,
             )
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
             match owns_definition_status {
                 DefinableStatus::DoesNotExist | DefinableStatus::ExistsSame(_) => {}
                 DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
@@ -357,7 +357,7 @@ fn undefine_capability_annotation(
                 ordering,
                 DefinableStatusMode::Transitive,
             )
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
             match relates_definition_status {
                 DefinableStatus::DoesNotExist | DefinableStatus::ExistsSame(_) => {}
                 DefinableStatus::ExistsDifferent((_, existing_ordering)) => {
@@ -394,7 +394,7 @@ fn undefine_capability_annotation(
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
             let definition_status =
                 get_type_annotation_category_status(snapshot, type_manager, attribute_type, annotation_category)
-                    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+                    .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
             match definition_status {
                 DefinableStatus::ExistsSame(_) => {
                     attribute_type.unset_annotation(snapshot, type_manager, annotation_category)
@@ -593,7 +593,7 @@ fn undefine_type_capability_owns(
 
     let definition_status =
         get_owns_status(snapshot, type_manager, object_type, attribute_type, ordering, DefinableStatusMode::Transitive)
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => object_type
             .unset_owns(snapshot, type_manager, thing_manager, attribute_type)
@@ -638,7 +638,7 @@ fn undefine_type_capability_plays(
 
     let definition_status =
         get_plays_status(snapshot, type_manager, object_type, role_type, DefinableStatusMode::Transitive)
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => object_type
             .unset_plays(snapshot, type_manager, thing_manager, role_type)
@@ -681,7 +681,7 @@ fn undefine_type_capability_relates(
         ordering,
         DefinableStatusMode::Declared,
     )
-    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(None) => unreachable!("Expected existing relates definition"),
         DefinableStatus::ExistsSame(Some((existing_relates, _))) => {
@@ -729,7 +729,7 @@ fn undefine_type_capability_value_type(
         value_type.clone(),
         DefinableStatusMode::Transitive,
     )
-    .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+    .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => attribute_type
             .unset_value_type(snapshot, type_manager, thing_manager)
@@ -870,7 +870,7 @@ fn check_can_and_need_undefine_sub<T: TypeAPI>(
     declaration: &CapabilityType,
 ) -> Result<bool, UndefineError> {
     let definition_status = get_sub_status(snapshot, type_manager, type_, supertype)
-        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::DoesNotExist => Err(UndefineError::TypeSubNotDefined {
@@ -878,7 +878,7 @@ fn check_can_and_need_undefine_sub<T: TypeAPI>(
             key: Keyword::Sub,
             supertype: supertype
                 .get_label(snapshot, type_manager)
-                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             source_span: declaration.span(),
         }),
@@ -887,11 +887,11 @@ fn check_can_and_need_undefine_sub<T: TypeAPI>(
             key: Keyword::Sub,
             supertype: supertype
                 .get_label(snapshot, type_manager)
-                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             existing_supertype: existing
                 .get_label(snapshot, type_manager)
-                .map_err(|source| UndefineError::UnexpectedConceptRead { source })?
+                .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?
                 .clone(),
             source_span: declaration.span(),
         }),
@@ -907,7 +907,7 @@ fn check_can_and_need_undefine_type_annotation<T: KindAPI>(
     declaration: &AnnotationType,
 ) -> Result<bool, UndefineError> {
     let definition_status = get_type_annotation_category_status(snapshot, type_manager, type_, annotation_category)
-        .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+        .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
@@ -928,7 +928,7 @@ fn check_can_and_need_undefine_capability_annotation<CAP: Capability>(
 ) -> Result<bool, UndefineError> {
     let definition_status =
         get_capability_annotation_category_status(snapshot, type_manager, &capability, annotation_category)
-            .map_err(|source| UndefineError::UnexpectedConceptRead { source })?;
+            .map_err(|source| UndefineError::UnexpectedConceptRead { typedb_source: source })?;
     match definition_status {
         DefinableStatus::ExistsSame(_) => Ok(true),
         DefinableStatus::ExistsDifferent(_) => unreachable!("Annotation categories cannot differ"),
@@ -962,7 +962,7 @@ fn err_unsupported_capability(label: &Label, kind: Kind, capability: &Capability
 typedb_error! {
     pub UndefineError(component = "Undefine execution", prefix = "UEX") {
         Unimplemented(1, "Unimplemented undefine functionality: {description}", description: String),
-        UnexpectedConceptRead(2, "Concept read error during undefine query execution.", source: Box<ConceptReadError>),
+        UnexpectedConceptRead(2, "Concept read error during undefine query execution.", typedb_source: Box<ConceptReadError>),
         DefinitionResolution(3, "Could not find symbol in undefine query.", typedb_source: Box<SymbolResolutionError>),
         LiteralParseError(4, "Error parsing literal in undefine query.", typedb_source: LiteralParseError),
         StructDoesNotExist(5, "Struct used in undefine query does not exist.", source_span: Option<Span>),

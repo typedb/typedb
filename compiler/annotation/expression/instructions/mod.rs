@@ -43,7 +43,7 @@ pub(crate) fn check_operation<T>(
 
 typedb_error! {
     pub ExpressionEvaluationError(component = "Expression evaluation", prefix = "EEV") {
-        ConceptRead(1, "Concept read failed", source: Box<ConceptReadError>),
+        ConceptRead(1, "Concept read failed", typedb_source: Box<ConceptReadError>),
         CheckedOperationFailed(2, "Checked operation failed: {description}", description: &'static str),
         CastFailed(3, "Cast failed due to {description}.", description: String),
         DivisionFailed(4, "Division failed, dividend: {dividend}, divisor: {divisor}.", dividend: f64, divisor: f64),

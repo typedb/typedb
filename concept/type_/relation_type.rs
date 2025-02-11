@@ -422,10 +422,10 @@ impl RelationType {
     ) -> Result<Relates, Box<ConceptReadError>> {
         let relates = self.get_relates_role(snapshot, type_manager, role_type)?;
         match relates {
-            None => Err(Box::new(ConceptReadError::CannotGetRelatesDoesntExist(
-                self.get_label(snapshot, type_manager)?.clone(),
-                role_type.get_label(snapshot, type_manager)?.clone(),
-            ))),
+            None => Err(Box::new(ConceptReadError::CannotGetRelatesDoesntExist {
+                type_: self.get_label(snapshot, type_manager)?.clone(),
+                relates: role_type.get_label(snapshot, type_manager)?.clone(),
+            })),
             Some(relates) => Ok(relates),
         }
     }

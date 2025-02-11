@@ -31,7 +31,7 @@ typedb_error!(
         ExpressionCompilation(3, "Error inferring correct expression types.", typedb_source: Box<ExpressionCompileError>),
         FetchEntry(4, "Error during type inference for fetch operation for key '{key}'.", key: String, typedb_source: Box<AnnotationError>),
         FetchBlockFunctionInferenceError(5, "Error during type inference for fetch sub-query.", typedb_source: Box<FunctionAnnotationError>),
-        ConceptRead(6, "Error while retrieving concept.", source: Box<ConceptReadError>),
+        ConceptRead(6, "Error while retrieving concept.", typedb_source: Box<ConceptReadError>),
         FetchAttributeNotFound(
             7,
             "Fetching '${var}.{attribute}' failed since the attribute type is not defined.",
@@ -150,7 +150,7 @@ typedb_error!(
 
 typedb_error!(
     pub TypeInferenceError(component = "Type inference", prefix = "INF") {
-        ConceptRead(1, "Concept read error.", source: Box<ConceptReadError>),
+        ConceptRead(1, "Concept read error.", typedb_source: Box<ConceptReadError>),
         LabelNotResolved(
             2,
             "Type label '{name}' not found.",

@@ -31,7 +31,7 @@ pub(crate) fn get_label_or_concept_read_err(
     type_
         .get_label(snapshot, type_manager)
         .map(|label| label.clone())
-        .map_err(|_| Box::new(ConceptReadError::CorruptMissingLabelOfType))
+        .map_err(|_| Box::new(ConceptReadError::InternalMissingTypeLabel {}))
 }
 
 pub(crate) fn get_label_or_schema_err(
@@ -40,7 +40,7 @@ pub(crate) fn get_label_or_schema_err(
     type_: impl TypeAPI,
 ) -> Result<Label, Box<SchemaValidationError>> {
     get_label_or_concept_read_err(snapshot, type_manager, type_)
-        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))
+        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))
 }
 
 pub(crate) fn get_opt_label_or_schema_err(
@@ -64,14 +64,14 @@ pub(crate) fn validate_role_name_uniqueness_non_transitive(
         new_label.name.as_str(),
         relation_type
             .get_label(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
             .name()
             .as_str(),
         new_label.source_span(),
     );
 
     if TypeReader::get_labelled_type::<RoleType>(snapshot, &scoped_label)
-        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
+        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
         .is_some()
     {
         Err(Box::new(SchemaValidationError::RoleNameShouldBeUniqueForRelationTypeHierarchy {
@@ -91,10 +91,10 @@ pub(crate) fn validate_type_declared_constraints_narrowing_of_supertype_constrai
 ) -> Result<(), Box<SchemaValidationError>> {
     let supertype_constraints = supertype
         .get_constraints(snapshot, type_manager)
-        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
     let subtype_constraints = subtype
         .get_constraints(snapshot, type_manager)
-        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
 
     for subtype_constraint in filter_by_source!(subtype_constraints.into_iter(), subtype.clone()) {
         for supertype_constraint in supertype_constraints.iter() {
@@ -131,11 +131,11 @@ pub(crate) fn validate_role_type_supertype_ordering_match(
 ) -> Result<(), Box<SchemaValidationError>> {
     let subtype_ordering = set_subtype_role_ordering.unwrap_or(
         TypeReader::get_type_ordering(snapshot, subtype)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
     );
     let supertype_ordering = set_supertype_role_ordering.unwrap_or(
         TypeReader::get_type_ordering(snapshot, supertype)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
     );
 
     if subtype_ordering == supertype_ordering {
@@ -159,7 +159,7 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
     let mut attribute_types_ordering: HashMap<AttributeType, (AttributeType, Ordering)> = HashMap::new();
     let existing_owns = owner_type
         .get_owns_with_specialised(snapshot, type_manager)
-        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?;
+        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
     let filtered_existing_owns =
         existing_owns.into_iter().filter(|owns| !new_set_owns_orderings.contains_key(*owns)).map(|owns| (owns, None));
 
@@ -172,13 +172,13 @@ pub(crate) fn validate_sibling_owns_ordering_match_for_type(
         let ordering = match ordering_opt {
             None => owns
                 .get_ordering(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
+                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
             Some(ordering) => ordering,
         };
         let attribute_type = owns.attribute();
         let root_attribute_type = if let Some(root) = attribute_type
             .get_supertype_root(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
         {
             root
         } else {
@@ -214,7 +214,7 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI>(
     let supertype = match supertype {
         None => subtype
             .get_supertype(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
+            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
         Some(_) => supertype,
     };
 
@@ -222,12 +222,12 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI>(
         let subtype_abstract = set_subtype_abstract.unwrap_or(
             subtype
                 .is_abstract(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
+                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
         );
         let supertype_abstract = set_supertype_abstract.unwrap_or(
             supertype
                 .is_abstract(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source }))?,
+                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
         );
 
         match (subtype_abstract, supertype_abstract) {

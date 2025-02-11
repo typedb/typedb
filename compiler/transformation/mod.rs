@@ -24,6 +24,6 @@ pub(crate) trait PipelineTransformation {
 
 typedb_error!(
     pub StaticOptimiserError(component = "Static optimiser", prefix = "SOP") {
-        ConceptRead(1, "Error reading concept", source: Box<ConceptReadError>),
+        ConceptRead(1, "Error reading concept", typedb_source: Box<ConceptReadError>),
     }
 );

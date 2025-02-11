@@ -452,18 +452,18 @@ fn execute_attributes_all(
     let iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
     let mut map: HashMap<Arc<Label>, DocumentNode> = HashMap::new();
     for result in iter {
-        let (has, count) = result.map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+        let (has, count) = result.map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
         let attribute = has.attribute();
         let attribute_type = attribute.type_();
         let label = attribute_type
             .get_label_arc(snapshot.as_ref(), thing_manager.type_manager())
-            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+            .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
         let leaf = DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(attribute.clone()))));
 
         let is_bounded_to_one = object
             .type_()
             .is_owned_attribute_type_bounded_to_one(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
-            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+            .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
         if is_bounded_to_one {
             map.insert(label, leaf);
         } else {
@@ -485,12 +485,12 @@ fn execute_attribute_single(
     let iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
 
     for result in iter {
-        let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         let attribute = has.attribute();
         let suitable = attribute
             .type_()
             .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
-            .map_err(|source| FetchExecutionError::ConceptRead { source })?;
+            .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         if suitable {
             debug_assert!(count <= 1);
             return Ok(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(has.attribute().clone()))));
@@ -509,12 +509,12 @@ fn execute_attributes_list(
     let iter = prepare_attribute_type_has_iterator(object, attribute_type, &snapshot, &thing_manager)?;
 
     for result in iter {
-        let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        let (has, count) = result.map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         let attribute = has.attribute();
         let suitable = attribute
             .type_()
             .is_subtype_transitive_of_or_same(snapshot.as_ref(), thing_manager.type_manager(), attribute_type)
-            .map_err(|source| FetchExecutionError::ConceptRead { source })?;
+            .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
         if suitable {
             for _ in 0..count {
                 list.list.push(DocumentNode::Leaf(DocumentLeaf::Concept(Concept::Thing(Thing::Attribute(
@@ -534,7 +534,7 @@ fn prepare_attribute_type_has_iterator(
 ) -> Result<HasIterator, FetchExecutionError> {
     let subtypes = attribute_type
         .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
-        .map_err(|source| FetchExecutionError::ConceptRead { source })?;
+        .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
     let attribute_types = TypeAPI::chain_types(attribute_type, subtypes.into_iter().cloned());
     let (min_type, max_type) = minmax_or!(attribute_types.into_iter(), return Ok(HasIterator::new_empty()));
     let range = (Bound::Included(min_type), Bound::Included(max_type));
@@ -560,7 +560,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
 
     let step_executors =
         create_executors_for_function(&snapshot, &thing_manager, &functions_registry, &query_profile, function)
-            .map_err(|err| FetchExecutionError::ConceptRead { source: err })?;
+            .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
     let mut pattern_executor = PatternExecutor::new(next_executable_id(), step_executors);
     pattern_executor.prepare(FixedBatch::from(args));
     Ok((pattern_executor, Arc::new(ExecutionContext::new(snapshot, thing_manager, parameters))))
@@ -631,7 +631,7 @@ typedb_error! {
 
         SubFetch(10, "Error executing sub fetch.", typedb_source: Box<PipelineExecutionError>),
 
-        ConceptRead(30, "Unexpected failed to read concept.", source: Box<ConceptReadError>),
+        ConceptRead(30, "Unexpected failed to read concept.", typedb_source: Box<ConceptReadError>),
         ReadExecution(31, "Unexpected failed to execute read.", typedb_source: Box<ReadExecutionError>),
         Pipeline(32, "Pipeline error.", typedb_source: Box<PipelineError>),
     }
