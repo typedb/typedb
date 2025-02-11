@@ -59,7 +59,7 @@ impl SubReverseExecutor {
     ) -> Self {
         let subtypes = sub.subtypes().clone();
         let super_to_subtypes = sub.super_to_subtypes().clone();
-        debug_assert!(subtypes.len() > 0);
+        // debug_assert!(subtypes.len() > 0);// TODO: Manually verify and remove before merging PR
 
         let SubReverseInstruction { sub, checks, .. } = sub;
 

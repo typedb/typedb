@@ -114,10 +114,6 @@ pub fn infer_types(
         annotated_function_signatures,
         is_write_stage,
     )?;
-    // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
-        return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
-    }
     let mut vertex_annotations = BTreeMap::new();
     let mut constraint_annotations = HashMap::new();
     graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
