@@ -108,6 +108,5 @@ pub fn translate_distinct(
     context: &mut TranslationContext,
     typeql_distinct: &typeql::query::pipeline::stage::modifier::Distinct,
 ) -> Result<Distinct, Box<RepresentationError>> {
-    let distinct = Distinct::new();
-    Ok(distinct)
+    Ok(Distinct)
 }
