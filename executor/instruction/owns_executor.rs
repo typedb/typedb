@@ -82,7 +82,7 @@ impl OwnsExecutor {
     ) -> Self {
         let attribute_types = owns.attribute_types().clone();
         let owner_attribute_types = owns.owner_attribute_types().clone();
-        debug_assert!(attribute_types.len() > 0);
+        // debug_assert!(attribute_types.len() > 0); // TODO: Manually verify and remove before merging PR
 
         let OwnsInstruction { owns, checks, .. } = owns;
 

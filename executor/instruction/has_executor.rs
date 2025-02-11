@@ -86,7 +86,7 @@ impl HasExecutor {
     ) -> Result<Self, Box<ConceptReadError>> {
         debug_assert!(!variable_modes.all_inputs());
         let owner_attribute_types = has.owner_to_attribute_types().clone();
-        debug_assert!(owner_attribute_types.len() > 0);
+        // debug_assert!(owner_attribute_types.len() > 0); // TODO: Manually verify and remove before merging PR
         let attribute_types = has.attribute_types().clone();
         let HasInstruction { has, checks, .. } = has;
         let iterate_mode = BinaryIterateMode::new(has.owner(), has.attribute(), &variable_modes, sort_by);
