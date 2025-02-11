@@ -6,11 +6,13 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt, iter,
+    fmt,
+    fmt::Formatter,
+    iter,
     sync::Arc,
     vec,
 };
-use std::fmt::Formatter;
+
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::PlaysInstruction, ExecutorVariable};
 use concept::{
@@ -23,13 +25,13 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        plays_reverse_executor::PlaysReverseExecutor,
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::plays_reverse_executor::PlaysReverseExecutor;
 
 pub(crate) struct PlaysExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,

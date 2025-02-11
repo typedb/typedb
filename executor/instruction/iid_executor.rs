@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, iter, sync::Arc};
-use std::fmt::Formatter;
+use std::{collections::HashMap, fmt, fmt::Formatter, iter, sync::Arc};
+
 use answer::variable_value::VariableValue;
 use compiler::{executable::match_::instructions::thing::IidInstruction, ExecutorVariable};
 use concept::{
@@ -18,6 +18,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        indexed_relation_executor::IndexedRelationExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
@@ -25,7 +26,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::indexed_relation_executor::IndexedRelationExecutor;
 
 pub(crate) struct IidExecutor {
     iid: Iid<ExecutorVariable>,

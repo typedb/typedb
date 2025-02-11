@@ -6,11 +6,13 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt, iter,
+    fmt,
+    fmt::Formatter,
+    iter,
     sync::Arc,
     vec,
 };
-use std::fmt::Formatter;
+
 use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;

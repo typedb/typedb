@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, fmt, sync::Arc};
-use std::fmt::Formatter;
+use std::{cmp::Ordering, collections::HashMap, fmt, fmt::Formatter, sync::Arc};
+
 use answer::variable_value::VariableValue;
 use compiler::{
     annotation::expression::compiled_expression::ExecutableExpression,

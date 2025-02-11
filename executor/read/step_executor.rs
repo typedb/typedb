@@ -288,8 +288,8 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)
         }
-        ExecutableStage::Select(select_executable) =>{
-            let removed_positions: Vec<VariablePosition>= (0..select_executable.input_length)
+        ExecutableStage::Select(select_executable) => {
+            let removed_positions: Vec<VariablePosition> = (0..select_executable.input_length)
                 .into_iter()
                 .map(|i| VariablePosition::new(i as u32))
                 .filter(|&p| !select_executable.retained_positions.contains(&p))

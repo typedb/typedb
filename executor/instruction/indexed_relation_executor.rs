@@ -6,10 +6,12 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt, iter,
+    fmt,
+    fmt::Formatter,
+    iter,
     sync::Arc,
 };
-use std::fmt::Formatter;
+
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{
     executable::match_::instructions::{thing::IndexedRelationInstruction, VariableMode, VariableModes},
@@ -31,13 +33,13 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        links_executor::LinksExecutor,
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapFn,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::links_executor::LinksExecutor;
 
 pub(super) type IndexedRelationTupleIterator<I> = iter::FilterMap<I, Box<IndexedRelationFilterMapFn>>;
 

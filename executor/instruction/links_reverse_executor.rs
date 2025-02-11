@@ -7,10 +7,11 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt,
+    fmt::Formatter,
     ops::Bound,
     sync::Arc,
 };
-use std::fmt::Formatter;
+
 use answer::Type;
 use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
 use concept::{
@@ -35,6 +36,7 @@ use crate::{
             LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
         min_max_types,
+        owns_executor::OwnsExecutor,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, TuplePositions,
@@ -44,7 +46,6 @@ use crate::{
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
-use crate::instruction::owns_executor::OwnsExecutor;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,

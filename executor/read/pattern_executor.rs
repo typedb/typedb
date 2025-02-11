@@ -23,7 +23,8 @@ use crate::{
         nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
         step_executor::StepExecutors,
         stream_modifier::{
-            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
+            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, SelectMapper, StreamModifierExecutor,
+            StreamModifierResultMapper,
         },
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
@@ -32,7 +33,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::read::stream_modifier::SelectMapper;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct BranchIndex(pub usize);

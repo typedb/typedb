@@ -4,8 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, cmp::Ordering, collections::HashSet, fmt, hash::{DefaultHasher, Hash, Hasher}, iter::Peekable, sync::Arc};
-use std::fmt::Formatter;
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    collections::HashSet,
+    fmt,
+    fmt::Formatter,
+    hash::{DefaultHasher, Hash, Hasher},
+    iter::Peekable,
+    sync::Arc,
+};
+
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     executable::{

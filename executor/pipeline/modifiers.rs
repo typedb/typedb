@@ -316,7 +316,7 @@ where
 
 pub struct SelectStageIterator<PreviousIterator> {
     previous: PreviousIterator,
-    retained_positions: HashSet<VariablePosition>
+    retained_positions: HashSet<VariablePosition>,
 }
 
 impl<PreviousIterator> SelectStageIterator<PreviousIterator> {
@@ -334,12 +334,23 @@ where
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.previous.next().map(|res| { res.map(|row| {
-            let (input, mult) = row.into_owned_parts();
-            let output: Vec<VariableValue<'_>> = input.into_iter().enumerate().map(|(i, val)|
-                if self.retained_positions.contains(&VariablePosition::new(i as u32)){ val } else { VariableValue::Empty }).collect();
-            MaybeOwnedRow::new_owned(output, mult)
-        })})
+        self.previous.next().map(|res| {
+            res.map(|row| {
+                let (input, mult) = row.into_owned_parts();
+                let output: Vec<VariableValue<'_>> = input
+                    .into_iter()
+                    .enumerate()
+                    .map(|(i, val)| {
+                        if self.retained_positions.contains(&VariablePosition::new(i as u32)) {
+                            val
+                        } else {
+                            VariableValue::Empty
+                        }
+                    })
+                    .collect();
+                MaybeOwnedRow::new_owned(output, mult)
+            })
+        })
     }
 }
 
@@ -445,17 +456,12 @@ where
 
 pub struct DistinctStageIterator<PreviousIterator> {
     seen: HashSet<MaybeOwnedRow<'static>>,
-    previous: PreviousIterator
+    previous: PreviousIterator,
 }
 
 impl<PreviousIterator> DistinctStageIterator<PreviousIterator> {
-    fn new(
-        previous_iterator: PreviousIterator
-    ) -> Self {
-        Self {
-            seen: HashSet::new(),
-            previous: previous_iterator,
-        }
+    fn new(previous_iterator: PreviousIterator) -> Self {
+        Self { seen: HashSet::new(), previous: previous_iterator }
     }
 }
 
@@ -475,12 +481,9 @@ where
                 } else {
                     self.next()
                 }
-            },
+            }
         }
     }
 }
 
-impl<PreviousIterator> StageIterator for DistinctStageIterator<PreviousIterator>
-where
-    PreviousIterator: StageIterator,
-{}
+impl<PreviousIterator> StageIterator for DistinctStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}

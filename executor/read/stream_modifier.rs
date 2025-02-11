@@ -5,7 +5,9 @@
  */
 
 use std::collections::HashSet;
+
 use compiler::VariablePosition;
+
 use crate::{
     batch::FixedBatch,
     read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
@@ -109,7 +111,7 @@ impl StreamModifierControl {
 
 #[derive(Debug)]
 pub(super) struct SelectMapper {
-    removed_positions: Vec<VariablePosition>
+    removed_positions: Vec<VariablePosition>,
 }
 
 impl SelectMapper {
@@ -223,18 +225,18 @@ impl DistinctMapper {
 
 impl StreamModifierResultMapperTrait for DistinctMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
-        let Some(input_batch) = subquery_result else { return StreamModifierControl::Done(None) };
+        let Some(mut input_batch) = subquery_result else { return StreamModifierControl::Done(None) };
         if input_batch.is_empty() {
             return StreamModifierControl::Done(None);
         };
 
-        let mut output_batch = FixedBatch::new(self.output_width);
-        for row in input_batch {
-            if self.collector.insert(row.clone().into_owned()) {
-                output_batch.append(|mut output_row| output_row.copy_from_row(row));
+        for i in 0..input_batch.len() {
+            if !self.collector.insert(input_batch.get_row(i).into_owned()) {
+                let mut row = input_batch.get_row_mut(i);
+                row.set_multiplicity(0);
             }
         }
-        StreamModifierControl::Retry(Some(output_batch))
+        StreamModifierControl::Retry(Some(input_batch))
     }
 }
 

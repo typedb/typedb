@@ -6,11 +6,13 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt, iter,
+    fmt,
+    fmt::Formatter,
+    iter,
     sync::Arc,
     vec,
 };
-use std::fmt::Formatter;
+
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::RelatesReverseInstruction, ExecutorVariable};
 use concept::{
@@ -50,7 +52,6 @@ impl fmt::Debug for RelatesReverseExecutor {
         write!(f, "RelatesReverseExecutor")
     }
 }
-
 
 pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     iter::Map<

@@ -262,7 +262,11 @@ fn compile_stage(
                 retained_positions.insert(pos);
                 output_row_mapping.insert(variable, pos);
             }
-            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(retained_positions, output_row_mapping, input_variables.len()))))
+            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(
+                retained_positions,
+                output_row_mapping,
+                input_variables.len(),
+            ))))
         }
         AnnotatedStage::Sort(sort) => {
             Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))))
