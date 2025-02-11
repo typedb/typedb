@@ -72,6 +72,7 @@ mod type_list_executor;
 
 pub(crate) const TYPES_EMPTY: Vec<Type> = Vec::new();
 
+#[derive(Debug)]
 pub(crate) enum InstructionExecutor {
     Is(IsExecutor),
     Iid(IidExecutor),
@@ -362,9 +363,10 @@ pub(super) type FilterMapFn<T, U> =
     dyn Fn(Result<T, Box<ConceptReadError>>) -> Option<Result<U, Box<ConceptReadError>>>;
 type FilterFn<T> = dyn Fn(&Result<T, Box<ConceptReadError>>) -> Result<bool, Box<ConceptReadError>>;
 
+#[derive(Debug)]
 pub(crate) struct Checker<T: 'static> {
     extractors: HashMap<ExecutorVariable, fn(&T) -> VariableValue<'_>>,
-    checks: Vec<CheckInstruction<ExecutorVariable>>,
+    pub checks: Vec<CheckInstruction<ExecutorVariable>>,
     _phantom_data: PhantomData<T>,
 }
 

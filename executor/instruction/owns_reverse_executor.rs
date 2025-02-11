@@ -27,6 +27,7 @@ use crate::{
             OwnsFilterFn, OwnsFilterMapFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE,
             EXTRACT_OWNER,
         },
+        plays_executor::PlaysExecutor,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -43,6 +44,12 @@ pub(crate) struct OwnsReverseExecutor {
     owner_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
     checker: Checker<(ObjectType, AttributeType)>,
+}
+
+impl fmt::Debug for OwnsReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "OwnsReverseExecutor")
+    }
 }
 
 pub(super) type OwnsReverseUnboundedSortedAttribute = OwnsTupleIterator<

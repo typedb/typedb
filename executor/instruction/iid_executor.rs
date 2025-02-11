@@ -18,6 +18,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        indexed_relation_executor::IndexedRelationExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
@@ -32,6 +33,12 @@ pub(crate) struct IidExecutor {
     tuple_positions: TuplePositions,
     filter_fn: Arc<IidFilterFn>,
     checker: Checker<VariableValue<'static>>,
+}
+
+impl fmt::Debug for IidExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "IidExecutor")
+    }
 }
 
 pub(crate) type IidToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static>;

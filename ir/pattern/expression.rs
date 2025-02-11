@@ -7,7 +7,6 @@
 use std::{
     collections::HashMap,
     fmt,
-    fmt::{Display, Formatter},
     hash::{DefaultHasher, Hash, Hasher},
     mem,
 };
@@ -298,8 +297,8 @@ impl StructuralEquality for BuiltInFunctionID {
     }
 }
 
-impl Display for BuiltInFunctionID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for BuiltInFunctionID {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             BuiltInFunctionID::Abs => fmt::Display::fmt(&typeql::token::Function::Abs, f),
             BuiltInFunctionID::Ceil => fmt::Display::fmt(&typeql::token::Function::Ceil, f),
@@ -522,8 +521,8 @@ impl StructuralEquality for Operator {
     }
 }
 
-impl Display for Operator {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+impl fmt::Display for Operator {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Operator::Add => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Add, f),
             Operator::Subtract => fmt::Display::fmt(&typeql::token::ArithmeticOperator::Subtract, f),

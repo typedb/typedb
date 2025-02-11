@@ -38,6 +38,12 @@ pub(crate) struct SubExecutor {
     checker: Checker<(Type, Type)>,
 }
 
+impl fmt::Debug for SubExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SubExecutor")
+    }
+}
+
 pub(super) type SubTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<SubFilterMapFn>>, SubToTupleFn>;
 
 pub(super) type SubUnboundedSortedSub = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;

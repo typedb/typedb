@@ -6,9 +6,7 @@
 
 use std::{
     collections::{HashMap, HashSet},
-    fmt,
-    fmt::Formatter,
-    iter,
+    fmt, iter,
 };
 
 use answer::{variable::Variable, Type};
@@ -134,7 +132,7 @@ pub(crate) struct Cost {
 }
 
 impl<'a> fmt::Display for PlannerVertex<'a> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             PlannerVertex::Variable(v) => {
                 write!(f, "|Var {}|", v.variable())

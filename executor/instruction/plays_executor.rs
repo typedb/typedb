@@ -23,6 +23,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        plays_reverse_executor::PlaysReverseExecutor,
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -39,6 +40,12 @@ pub(crate) struct PlaysExecutor {
     role_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
     checker: Checker<(ObjectType, RoleType)>,
+}
+
+impl fmt::Debug for PlaysExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "PlaysExecutor")
+    }
 }
 
 pub(super) type PlaysTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<PlaysFilterMapFn>>, PlaysToTupleFn>;

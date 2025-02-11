@@ -20,6 +20,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(crate) struct GroupedReducer {
     rows_executable: Arc<ReduceRowsExecutable>, // for accessing input group positions
     grouped_reductions: HashMap<Vec<VariableValue<'static>>, Vec<ReducerExecutor>>,

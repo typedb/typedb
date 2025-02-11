@@ -3,8 +3,10 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::{MutexGuard, TryLockError};
+use std::{
+    fmt,
+    sync::{MutexGuard, TryLockError},
+};
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
@@ -27,6 +29,12 @@ pub(crate) struct TabledCallExecutor {
     assignment_positions: Vec<VariablePosition>,
     output_width: u32,
     active_executor: Option<TabledCallExecutorState>,
+}
+
+impl fmt::Debug for TabledCallExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "TabledCallExecutor (function id {:?})", self.function_id)
+    }
 }
 
 pub struct TabledCallExecutorState {

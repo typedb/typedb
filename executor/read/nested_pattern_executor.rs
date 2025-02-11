@@ -16,6 +16,7 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(super) struct Disjunction {
     pub branches: Vec<PatternExecutor>,
     pub selected_variables: Vec<VariablePosition>,
@@ -34,10 +35,12 @@ impl Disjunction {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct Negation {
     pub inner: PatternExecutor,
 }
 
+#[derive(Debug)]
 pub(super) struct InlinedFunction {
     pub inner: PatternExecutor,
     pub arg_mapping: Vec<VariablePosition>,
@@ -75,6 +78,7 @@ impl InlinedFunction {
     }
 }
 
+#[derive(Debug)]
 pub(crate) enum NestedPatternExecutor {
     Disjunction(Disjunction),
     Negation(Negation),

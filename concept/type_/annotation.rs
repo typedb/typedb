@@ -9,7 +9,6 @@ use std::{
     cmp::{max, min},
     collections::HashSet,
     fmt,
-    fmt::Formatter,
     hash::Hash,
     iter::Sum,
     ops::Add,
@@ -48,7 +47,7 @@ pub enum Annotation {
 }
 
 impl fmt::Display for Annotation {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Annotation::Abstract(annotation) => fmt::Display::fmt(annotation, f),
             Annotation::Distinct(annotation) => fmt::Display::fmt(annotation, f),
@@ -68,7 +67,7 @@ impl fmt::Display for Annotation {
 pub struct AnnotationAbstract;
 
 impl fmt::Display for AnnotationAbstract {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@abstract")
     }
 }
@@ -77,7 +76,7 @@ impl fmt::Display for AnnotationAbstract {
 pub struct AnnotationDistinct;
 
 impl fmt::Display for AnnotationDistinct {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@distinct")
     }
 }
@@ -95,7 +94,7 @@ impl AnnotationUnique {
 }
 
 impl fmt::Display for AnnotationUnique {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@unique")
     }
 }
@@ -115,7 +114,7 @@ impl AnnotationKey {
 }
 
 impl fmt::Display for AnnotationKey {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@key")
     }
 }
@@ -124,7 +123,7 @@ impl fmt::Display for AnnotationKey {
 pub struct AnnotationIndependent;
 
 impl fmt::Display for AnnotationIndependent {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@independent")
     }
 }
@@ -218,7 +217,7 @@ impl Sum for AnnotationCardinality {
 }
 
 impl fmt::Display for AnnotationCardinality {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self.end() {
             None => write!(f, "@card({}..)", self.start_inclusive),
             Some(end) => write!(f, "@card({}..{})", self.start_inclusive, end),
@@ -263,7 +262,7 @@ impl AnnotationRegex {
 }
 
 impl fmt::Display for AnnotationRegex {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.regex)
     }
 }
@@ -272,7 +271,7 @@ impl fmt::Display for AnnotationRegex {
 pub struct AnnotationCascade;
 
 impl fmt::Display for AnnotationCascade {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@cascade")
     }
 }
@@ -415,7 +414,7 @@ impl AnnotationRange {
 }
 
 impl fmt::Display for AnnotationRange {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match (self.start(), self.end()) {
             (Some(start), Some(end)) => write!(f, "@range({start}..{end})"),
             (Some(start), None) => write!(f, "@range({start}..)"),
@@ -514,7 +513,7 @@ impl AnnotationValues {
 }
 
 impl fmt::Display for AnnotationValues {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         assert!(!self.values.is_empty());
         write!(f, "@values({}", self.values[0])?;
         for value in &self.values[1..] {
@@ -643,13 +642,13 @@ impl AnnotationCategory {
 }
 
 impl fmt::Display for AnnotationCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
 
 impl fmt::Debug for AnnotationCategory {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "@{}", self.name())
     }
 }

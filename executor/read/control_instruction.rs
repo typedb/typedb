@@ -14,67 +14,81 @@ use crate::{
     row::MaybeOwnedRow,
 };
 
+#[derive(Debug)]
 pub(super) struct PatternStart {
     pub(super) input_batch: FixedBatch,
 }
 
+#[derive(Debug)]
 pub(super) struct RestoreSuspension {
     pub(super) depth: usize,
 }
 
+#[derive(Debug)]
 pub(super) struct ExecuteImmediate {
     pub(super) index: ExecutorIndex,
 }
 
+#[derive(Debug)]
 pub(super) struct MapRowBatchToRowForNested {
     pub(super) index: ExecutorIndex,
     pub(super) iterator: FixedBatchRowIterator,
 }
 
+#[derive(Debug)]
 pub(super) struct ExecuteStreamModifier {
     pub(super) index: ExecutorIndex,
     pub(super) mapper: StreamModifierResultMapper,
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
+#[derive(Debug)]
 pub(super) struct ExecuteInlinedFunction {
     pub(super) index: ExecutorIndex,
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
+#[derive(Debug)]
 pub(super) struct ExecuteNegation {
     pub(super) index: ExecutorIndex,
     pub(super) input: MaybeOwnedRow<'static>,
 }
 
+#[derive(Debug)]
 pub(super) struct ExecuteDisjunction {
     pub(super) index: ExecutorIndex,
     pub(super) branch_index: BranchIndex,
     pub(super) input: MaybeOwnedRow<'static>, // Only needed for suspend points. We can actually use an empty one, because the nested pattern has all the info
 }
 
+#[derive(Debug)]
 pub(super) struct TabledCall {
     pub(super) index: ExecutorIndex,
 }
 
+#[derive(Debug)]
 pub(super) struct CollectingStage {
     pub(super) index: ExecutorIndex,
 }
 
+#[derive(Debug)]
 pub(super) struct StreamCollected {
     pub(super) index: ExecutorIndex,
     pub(super) iterator: CollectedStageIterator,
 }
 
+#[derive(Debug)]
 pub(super) struct ReshapeForReturn {
     pub(super) index: ExecutorIndex,
     pub(super) to_reshape: FixedBatch,
 }
 
+#[derive(Debug)]
 pub(super) struct Yield {
     pub(super) batch: FixedBatch,
 }
 
+#[derive(Debug)]
 pub(super) enum ControlInstruction {
     PatternStart(PatternStart),
     RestoreSuspension(RestoreSuspension),

@@ -45,6 +45,12 @@ pub(crate) struct RelatesReverseExecutor {
     checker: Checker<(RelationType, RoleType)>,
 }
 
+impl fmt::Debug for RelatesReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "RelatesReverseExecutor")
+    }
+}
+
 pub(super) type RelatesReverseUnboundedSortedRole = RelatesTupleIterator<
     iter::Map<
         iter::Flatten<vec::IntoIter<BTreeSet<(RelationType, RoleType)>>>,

@@ -124,6 +124,7 @@ impl IntoIterator for FixedBatch {
     }
 }
 
+#[derive(Debug)]
 pub struct FixedBatchRowIterator {
     batch: Result<FixedBatch, Box<ReadExecutionError>>,
     index: u32,
@@ -247,6 +248,7 @@ impl LendingIterator for MutableBatchRowIterator {
         }
     }
 }
+#[derive(Debug)]
 pub struct BatchRowIterator {
     batch: Batch,
     index: usize,

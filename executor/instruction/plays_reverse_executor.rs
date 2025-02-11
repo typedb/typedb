@@ -27,6 +27,7 @@ use crate::{
             PlaysFilterFn, PlaysFilterMapFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER,
             EXTRACT_ROLE,
         },
+        relates_executor::RelatesExecutor,
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -43,6 +44,12 @@ pub(crate) struct PlaysReverseExecutor {
     player_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<PlaysFilterFn>,
     checker: Checker<(ObjectType, RoleType)>,
+}
+
+impl fmt::Debug for PlaysReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "PlaysReverseExecutor")
+    }
 }
 
 pub(super) type PlaysReverseUnboundedSortedRole = PlaysTupleIterator<

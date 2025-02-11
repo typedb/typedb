@@ -6,7 +6,7 @@
 
 #![deny(elided_lifetimes_in_paths)]
 
-use std::{fmt, fmt::Formatter};
+use std::fmt;
 
 use answer::variable::Variable;
 use ir::pattern::IrID;
@@ -78,7 +78,7 @@ impl fmt::Debug for ExecutorVariable {
 }
 
 impl fmt::Display for ExecutorVariable {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }

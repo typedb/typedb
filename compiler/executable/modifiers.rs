@@ -16,14 +16,16 @@ pub struct SelectExecutable {
     pub executable_id: u64,
     pub retained_positions: HashSet<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
+    pub removed_positions: HashSet<VariablePosition>,
 }
 
 impl SelectExecutable {
     pub(crate) fn new(
         retained_positions: HashSet<VariablePosition>,
         output_row_mapping: HashMap<Variable, VariablePosition>,
+        removed_positions: HashSet<VariablePosition>,
     ) -> Self {
-        Self { executable_id: next_executable_id(), retained_positions, output_row_mapping }
+        Self { executable_id: next_executable_id(), retained_positions, output_row_mapping, removed_positions }
     }
 }
 
@@ -79,5 +81,17 @@ impl RequireExecutable {
         output_row_mapping: HashMap<Variable, VariablePosition>,
     ) -> Self {
         Self { executable_id: next_executable_id(), required, output_row_mapping }
+    }
+}
+
+#[derive(Debug)]
+pub struct DistinctExecutable {
+    pub executable_id: u64,
+    pub output_row_mapping: HashMap<Variable, VariablePosition>,
+}
+
+impl DistinctExecutable {
+    pub(crate) fn new(output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
+        Self { executable_id: next_executable_id(), output_row_mapping }
     }
 }

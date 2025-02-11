@@ -3,11 +3,20 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{borrow::Cow, cmp::Ordering, sync::Arc};
+use std::{
+    borrow::Cow,
+    cmp::Ordering,
+    collections::HashSet,
+    hash::{DefaultHasher, Hash, Hasher},
+    sync::Arc,
+};
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::executable::modifiers::{
-    LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
+use compiler::{
+    executable::modifiers::{
+        DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
+    },
+    VariablePosition,
 };
 use encoding::value::value::Value;
 use error::unimplemented_feature;
@@ -114,14 +123,15 @@ impl SortStageIterator {
     fn get_value<'a, T: ReadableSnapshot>(
         entry: &'a VariableValue<'a>,
         context: &'a ExecutionContext<T>,
-    ) -> Cow<'a, Value<'a>> {
+    ) -> Option<Cow<'a, Value<'a>>> {
         let snapshot: &T = &context.snapshot;
         match entry {
-            VariableValue::Value(value) => Cow::Borrowed(value),
+            VariableValue::Value(value) => Some(Cow::Borrowed(value)),
             VariableValue::Thing(Thing::Attribute(attribute)) => {
-                Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap())
+                Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
             }
-            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => {
+            VariableValue::Empty => None,
+            VariableValue::Type(_) | VariableValue::Thing(_) => {
                 unreachable!("Should have been caught earlier")
             }
 
@@ -300,17 +310,18 @@ where
     > {
         let Self { previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
-        Ok((SelectStageIterator::new(previous_iterator), context))
+        Ok((SelectStageIterator::new(previous_iterator, self.select_executable.retained_positions.clone()), context))
     }
 }
 
 pub struct SelectStageIterator<PreviousIterator> {
     previous: PreviousIterator,
+    retained_positions: HashSet<VariablePosition>,
 }
 
 impl<PreviousIterator> SelectStageIterator<PreviousIterator> {
-    fn new(previous: PreviousIterator) -> Self {
-        Self { previous }
+    fn new(previous: PreviousIterator, retained_positions: HashSet<VariablePosition>) -> Self {
+        Self { previous, retained_positions }
     }
 }
 
@@ -323,7 +334,20 @@ where
     type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        self.previous.next()
+        self.previous.next().map(|res| {
+            res.map(|row| {
+                let (input, mult) = row.into_owned_parts();
+                let mut output = Vec::with_capacity(input.len());
+                for (i, val) in input.into_iter().enumerate() {
+                    if self.retained_positions.contains(&VariablePosition::new(i as u32)) {
+                        output.push(val);
+                    } else {
+                        output.push(VariableValue::Empty);
+                    }
+                }
+                MaybeOwnedRow::new_owned(output, mult)
+            })
+        })
     }
 }
 
@@ -393,3 +417,70 @@ where
         self.previous.next()
     }
 }
+
+// Distinct
+pub struct DistinctStageExecutor<PreviousStage> {
+    executable: Arc<DistinctExecutable>,
+    previous: PreviousStage,
+}
+
+impl<PreviousStage> DistinctStageExecutor<PreviousStage> {
+    pub fn new(executable: Arc<DistinctExecutable>, previous: PreviousStage) -> Self {
+        Self { executable, previous }
+    }
+}
+
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for DistinctStageExecutor<PreviousStage>
+where
+    Snapshot: ReadableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
+{
+    type OutputIterator = DistinctStageIterator<PreviousStage::OutputIterator>;
+
+    fn into_iterator(
+        self,
+        interrupt: ExecutionInterrupt,
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
+        let Self { previous, executable, .. } = self;
+        let (previous_iterator, context) = previous.into_iterator(interrupt)?;
+        let distinct_iterator = DistinctStageIterator::new(previous_iterator);
+        Ok((distinct_iterator, context))
+    }
+}
+
+pub struct DistinctStageIterator<PreviousIterator> {
+    seen: HashSet<MaybeOwnedRow<'static>>,
+    previous: PreviousIterator,
+}
+
+impl<PreviousIterator> DistinctStageIterator<PreviousIterator> {
+    fn new(previous_iterator: PreviousIterator) -> Self {
+        Self { seen: HashSet::new(), previous: previous_iterator }
+    }
+}
+
+impl<PreviousIterator> LendingIterator for DistinctStageIterator<PreviousIterator>
+where
+    PreviousIterator: StageIterator,
+{
+    type Item<'a> = Result<MaybeOwnedRow<'a>, Box<PipelineExecutionError>>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        match self.previous.next() {
+            None => None,
+            Some(Err(err)) => return Some(Err(err)),
+            Some(Ok(row)) => {
+                if self.seen.insert(row.clone().into_owned()) {
+                    Some(Ok(row.clone().into_owned()))
+                } else {
+                    self.next()
+                }
+            }
+        }
+    }
+}
+
+impl<PreviousIterator> StageIterator for DistinctStageIterator<PreviousIterator> where PreviousIterator: StageIterator {}

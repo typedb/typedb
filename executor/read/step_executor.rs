@@ -30,6 +30,7 @@ use crate::{
     },
 };
 
+#[derive(Debug)]
 pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Nested(NestedPatternExecutor),
@@ -175,7 +176,7 @@ pub(crate) fn create_executors_for_match(
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", step));
 
                 // I shouldn't need to pass recursive here since it's stratified
-                let branches = step
+                let branches: Vec<PatternExecutor> = step
                     .branches
                     .iter()
                     .map(|branch_executable| {
@@ -287,12 +288,18 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             previous_stage_steps.append(&mut match_stages);
             Ok(previous_stage_steps)
         }
-        ExecutableStage::Select(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-            functionality: UnimplementedFeature::PipelineStageInFunction("select"),
-        })),
+        ExecutableStage::Select(select_executable) => {
+            let removed_positions: Vec<VariablePosition> =
+                select_executable.removed_positions.iter().cloned().collect();
+            let step = StreamModifierExecutor::new_select(
+                // TODO: not sure if these are correct new executable IDs or should be different?
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                removed_positions,
+            );
+            Ok(vec![step.into()])
+        }
         ExecutableStage::Offset(offset_executable) => {
             let step = StreamModifierExecutor::new_offset(
-                // TODO: not sure if these are correct new executable IDs or should be different?
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),
                 offset_executable.offset,
             );
@@ -308,6 +315,14 @@ pub(super) fn create_executors_for_function_pipeline_stages(
         ExecutableStage::Require(_) => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
             functionality: UnimplementedFeature::PipelineStageInFunction("require"),
         })),
+        ExecutableStage::Distinct(distinct_executable) => {
+            // Complete this sentence for
+            let step = StreamModifierExecutor::new_distinct(
+                PatternExecutor::new(next_executable_id(), previous_stage_steps),
+                distinct_executable.output_row_mapping.values().len() as u32,
+            );
+            Ok(vec![step.into()])
+        }
         ExecutableStage::Sort(sort_executable) => {
             let step = CollectingStageExecutor::new_sort(
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),

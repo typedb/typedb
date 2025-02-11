@@ -21,7 +21,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::{SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
+        sub_executor::{SubExecutor, SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -38,6 +38,12 @@ pub(crate) struct SubReverseExecutor {
     subtypes: Arc<BTreeSet<Type>>,
     filter_fn: Arc<SubFilterFn>,
     checker: Checker<(Type, Type)>,
+}
+
+impl fmt::Debug for SubReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "SubReverseExecutor")
+    }
 }
 
 pub(super) type SubReverseUnboundedSortedSuper =

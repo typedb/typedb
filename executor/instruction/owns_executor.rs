@@ -26,6 +26,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        owns_reverse_executor::OwnsReverseExecutor,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -42,6 +43,12 @@ pub(crate) struct OwnsExecutor {
     attribute_types: Arc<BTreeSet<Type>>,
     filter_fn: Arc<OwnsFilterFn>,
     checker: Checker<(ObjectType, AttributeType)>,
+}
+
+impl fmt::Debug for OwnsExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "OwnsExecutor")
+    }
 }
 
 pub(super) type OwnsTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<OwnsFilterMapFn>>, OwnsToTupleFn>;

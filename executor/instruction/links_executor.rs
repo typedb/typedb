@@ -29,6 +29,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        links_reverse_executor::LinksReverseExecutor,
         min_max_types,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
@@ -56,6 +57,12 @@ pub(crate) struct LinksExecutor {
     relation_cache: Option<Vec<Relation>>,
 
     checker: Checker<(Relation, RolePlayer, u64)>,
+}
+
+impl fmt::Debug for LinksExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "LinksExecutor")
+    }
 }
 
 pub(super) type LinksTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<LinksFilterMapFn>>, LinksToTupleFn>;

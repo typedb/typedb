@@ -31,6 +31,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        links_executor::LinksExecutor,
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapFn,
     },
@@ -86,6 +87,12 @@ pub(crate) struct IndexedRelationExecutor {
     start_player_cache: Option<Vec<Object>>,
 
     checker: Checker<(IndexedRelationPlayers, u64)>,
+}
+
+impl fmt::Debug for IndexedRelationExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "IndexedRelationExecutor")
+    }
 }
 
 impl IndexedRelationExecutor {

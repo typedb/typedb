@@ -29,6 +29,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        has_reverse_executor::HasReverseExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions},
@@ -49,6 +50,12 @@ pub(crate) struct HasExecutor {
     filter_fn: Arc<HasFilterFn>,
     owner_cache: Option<Vec<Object>>,
     checker: Checker<(Has, u64)>,
+}
+
+impl fmt::Debug for HasExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "HasExecutor")
+    }
 }
 
 pub(super) type HasTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<HasFilterMapFn>>, HasToTupleFn>;

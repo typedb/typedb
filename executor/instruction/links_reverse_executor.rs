@@ -35,6 +35,7 @@ use crate::{
             LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
         min_max_types,
+        owns_executor::OwnsExecutor,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, TuplePositions,
@@ -61,6 +62,12 @@ pub(crate) struct LinksReverseExecutor {
     player_cache: Option<Vec<Object>>,
 
     checker: Checker<(Relation, RolePlayer, u64)>,
+}
+
+impl fmt::Debug for LinksReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "LinksReverseExecutor")
+    }
 }
 
 impl LinksReverseExecutor {

@@ -121,35 +121,6 @@ fn illegal_stages_in_function() {
     {
         let query = r#"
         with
-        fun with_select() -> { integer }:
-        match
-          let $x = 1;
-          let $y = $x + 1;
-        select $y;
-        return {$y};
-
-        match
-            let $two in with_select();
-        "#;
-        let Either::Right(err) = run_read_query(&context, query).unwrap_err() else {
-            unreachable!();
-        };
-        match &err.as_ref() {
-            PipelineExecutionError::InitialisingMatchIterator { typedb_source: source } => {
-                assert!(matches!(
-                    source.as_ref(),
-                    ConceptReadError::UnimplementedFunctionality {
-                        functionality: error::UnimplementedFeature::PipelineStageInFunction(_)
-                    }
-                ))
-            }
-            _ => Err(err).unwrap(),
-        }
-    }
-
-    {
-        let query = r#"
-        with
         fun with_require() -> { integer }:
         match
           let $x = 1;

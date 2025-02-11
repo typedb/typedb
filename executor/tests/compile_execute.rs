@@ -142,7 +142,8 @@ fn test_has_planning_traversal() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -241,7 +242,8 @@ fn test_expression_planning_traversal() {
         &compiled_expressions,
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -328,7 +330,8 @@ fn test_links_planning_traversal() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -422,7 +425,8 @@ fn test_links_intersection() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -507,7 +511,8 @@ fn test_negation_planning_traversal() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -613,7 +618,8 @@ fn test_forall_planning_traversal() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -705,7 +711,8 @@ fn test_named_var_select() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -797,7 +804,8 @@ fn test_disjunction_planning_traversal() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -893,7 +901,8 @@ fn test_disjunction_planning_nested_negations() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,
@@ -991,7 +1000,8 @@ select $name, $age;
         &expressions,
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
+    )
+    .unwrap();
     let executor = MatchExecutor::new(
         &match_executable,
         &snapshot,

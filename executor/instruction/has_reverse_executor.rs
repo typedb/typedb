@@ -28,6 +28,7 @@ use super::has_executor::HasFilterMapFn;
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
+        iid_executor::IidExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
@@ -48,6 +49,12 @@ pub(crate) struct HasReverseExecutor {
     filter_fn: Arc<HasFilterFn>,
     attribute_cache: OnceLock<Vec<Attribute>>,
     checker: Checker<(Has, u64)>,
+}
+
+impl fmt::Debug for HasReverseExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "HasReverseExecutor")
+    }
 }
 
 pub(crate) type HasReverseTupleIteratorSingle = HasTupleIterator<HasReverseIterator>;

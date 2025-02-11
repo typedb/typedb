@@ -194,3 +194,16 @@ impl StructuralEquality for Require {
         self.variables.equals(&other.variables)
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct Distinct;
+
+impl StructuralEquality for Distinct {
+    fn hash(&self) -> u64 {
+        0
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        true
+    }
+}

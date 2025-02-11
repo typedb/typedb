@@ -6,9 +6,7 @@
 
 use std::{
     collections::{BTreeSet, HashMap, HashSet},
-    fmt,
-    fmt::Formatter,
-    iter,
+    fmt, iter,
     sync::Arc,
 };
 
@@ -155,7 +153,7 @@ impl ConstraintVertex<'_> {
 }
 
 impl fmt::Display for ConstraintVertex<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
             ConstraintVertex::TypeList(_) => {
                 write!(f, "|TypeId|")

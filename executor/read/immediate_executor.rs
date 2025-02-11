@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, fmt, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -35,6 +35,7 @@ use crate::{
     ExecutionInterrupt, SelectedPositions,
 };
 
+#[derive(Debug)]
 pub(crate) enum ImmediateExecutor {
     SortedJoin(IntersectionExecutor),
     UnsortedJoin(UnsortedJoinExecutor),
@@ -164,6 +165,12 @@ pub(crate) struct IntersectionExecutor {
     intersection_multiplicity: u64,
 
     profile: Arc<StepProfile>,
+}
+
+impl fmt::Debug for IntersectionExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "IntersectionExecutor (instruction = {:?})", self.instruction_executors)
+    }
 }
 
 impl IntersectionExecutor {
@@ -649,6 +656,7 @@ impl CartesianIterator {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct UnsortedJoinExecutor {
     iterate: ConstraintInstruction<ExecutorVariable>,
     checks: Vec<ConstraintInstruction<ExecutorVariable>>,
@@ -689,6 +697,7 @@ impl UnsortedJoinExecutor {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct AssignExecutor {
     expression: ExecutableExpression<VariablePosition>,
     inputs: Vec<VariablePosition>,
@@ -781,6 +790,12 @@ pub(crate) struct CheckExecutor {
     output_width: u32,
     input: Option<FixedBatch>,
     profile: Arc<StepProfile>,
+}
+
+impl fmt::Debug for CheckExecutor {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "CheckExecutor (with checks {:?})", self.checker.checks)
+    }
 }
 
 impl CheckExecutor {

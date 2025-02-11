@@ -23,7 +23,8 @@ use crate::{
         nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
         step_executor::StepExecutors,
         stream_modifier::{
-            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, StreamModifierExecutor, StreamModifierResultMapper,
+            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, SelectMapper, StreamModifierExecutor,
+            StreamModifierResultMapper,
         },
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
@@ -45,6 +46,7 @@ impl ExecutorIndex {
     }
 }
 
+#[derive(Debug)]
 pub(crate) struct PatternExecutor {
     executable_id: u64,
     executors: Vec<StepExecutors>,
@@ -364,6 +366,15 @@ impl PatternExecutor {
             }
         } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
             match stream_modifier {
+                StreamModifierExecutor::Select { inner, removed_positions } => {
+                    let mapper = StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()));
+                    inner.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index,
+                        mapper,
+                        input: input.clone().into_owned(),
+                    }));
+                }
                 StreamModifierExecutor::Offset { inner, offset } => {
                     let mapper = StreamModifierResultMapper::Offset(OffsetMapper::new(*offset));
                     inner.prepare(FixedBatch::from(input.as_reference()));

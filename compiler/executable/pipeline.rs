@@ -27,7 +27,9 @@ use crate::{
         function::{compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::executable::InsertExecutable,
         match_::planner::{match_executable::MatchExecutable, vertex::Cost},
-        modifiers::{LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable},
+        modifiers::{
+            DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
+        },
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         ExecutableCompilationError,
     },
@@ -52,6 +54,7 @@ pub enum ExecutableStage {
     Offset(Arc<OffsetExecutable>),
     Limit(Arc<LimitExecutable>),
     Require(Arc<RequireExecutable>),
+    Distinct(Arc<DistinctExecutable>),
     Reduce(Arc<ReduceExecutable>),
 }
 
@@ -77,6 +80,7 @@ impl ExecutableStage {
             ExecutableStage::Offset(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Limit(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Require(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Distinct(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Reduce(executable) => executable.output_row_mapping.clone(),
         }
     }
@@ -252,13 +256,22 @@ fn compile_stage(
         }
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
+            let mut removed_positions =
+                HashSet::with_capacity(input_variables.len().checked_sub(select.variables.len()).unwrap_or(0));
             let mut output_row_mapping = HashMap::with_capacity(select.variables.len());
-            for &variable in &select.variables {
-                let pos = input_variables[&variable];
-                retained_positions.insert(pos);
-                output_row_mapping.insert(variable, pos);
+            for (&variable, &pos) in input_variables.iter() {
+                if select.variables.contains(&variable) {
+                    retained_positions.insert(pos);
+                    output_row_mapping.insert(variable, pos);
+                } else {
+                    removed_positions.insert(pos);
+                }
             }
-            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(retained_positions, output_row_mapping))))
+            Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(
+                retained_positions,
+                output_row_mapping,
+                removed_positions,
+            ))))
         }
         AnnotatedStage::Sort(sort) => {
             Ok(ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))))
@@ -276,6 +289,9 @@ fn compile_stage(
                 required_positions.insert(pos);
             }
             Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))))
+        }
+        AnnotatedStage::Distinct(distinct) => {
+            Ok(ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(input_variables.clone()))))
         }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
