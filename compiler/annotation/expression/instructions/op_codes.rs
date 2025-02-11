@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt::{Display, Formatter};
+use std::fmt;
 
 // TODO: Rewrite so we generate the dispatcher macro along with the enum. SEe https://cprohm.de/blog/rust-macros/
 #[derive(Debug, Clone)]
@@ -58,8 +58,8 @@ pub enum ExpressionOpCode {
     MathFloorDouble,
 }
 
-impl Display for ExpressionOpCode {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for ExpressionOpCode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ExpressionOpCode::LoadConstant => write!(f, "load-constant"),
             ExpressionOpCode::LoadVariable => write!(f, "load-variable"),

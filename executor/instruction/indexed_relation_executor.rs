@@ -6,9 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt,
-    fmt::Formatter,
-    iter,
+    fmt, iter,
     sync::Arc,
 };
 
@@ -92,7 +90,7 @@ pub(crate) struct IndexedRelationExecutor {
 }
 
 impl fmt::Debug for IndexedRelationExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "IndexedRelationExecutor")
     }
 }

@@ -6,9 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt,
-    fmt::Formatter,
-    iter,
+    fmt, iter,
     sync::Arc,
     vec,
 };
@@ -48,7 +46,7 @@ pub(crate) struct OwnsExecutor {
 }
 
 impl fmt::Debug for OwnsExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "OwnsExecutor")
     }
 }

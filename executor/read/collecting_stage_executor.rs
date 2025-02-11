@@ -9,7 +9,6 @@ use std::{
     cmp::Ordering,
     collections::HashSet,
     fmt,
-    fmt::Formatter,
     hash::{DefaultHasher, Hash, Hasher},
     iter::Peekable,
     sync::Arc,
@@ -157,7 +156,7 @@ pub(super) struct ReduceCollector {
 }
 
 impl fmt::Debug for ReduceCollector {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ReduceCollector")
     }
 }

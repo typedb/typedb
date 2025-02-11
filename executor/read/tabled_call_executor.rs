@@ -5,7 +5,6 @@
  */
 use std::{
     fmt,
-    fmt::Formatter,
     sync::{MutexGuard, TryLockError},
 };
 
@@ -33,7 +32,7 @@ pub(crate) struct TabledCallExecutor {
 }
 
 impl fmt::Debug for TabledCallExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "TabledCallExecutor (function id {:?})", self.function_id)
     }
 }

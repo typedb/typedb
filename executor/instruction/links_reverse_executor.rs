@@ -7,7 +7,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt,
-    fmt::Formatter,
     ops::Bound,
     sync::Arc,
 };
@@ -66,7 +65,7 @@ pub(crate) struct LinksReverseExecutor {
 }
 
 impl fmt::Debug for LinksReverseExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "LinksReverseExecutor")
     }
 }

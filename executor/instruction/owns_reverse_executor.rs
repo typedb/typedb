@@ -6,9 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
-    fmt,
-    fmt::Formatter,
-    iter,
+    fmt, iter,
     sync::Arc,
     vec,
 };
@@ -49,7 +47,7 @@ pub(crate) struct OwnsReverseExecutor {
 }
 
 impl fmt::Debug for OwnsReverseExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "OwnsReverseExecutor")
     }
 }

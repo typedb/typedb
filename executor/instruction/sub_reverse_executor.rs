@@ -7,7 +7,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     fmt,
-    fmt::Formatter,
     sync::Arc,
     vec,
 };
@@ -42,7 +41,7 @@ pub(crate) struct SubReverseExecutor {
 }
 
 impl fmt::Debug for SubReverseExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SubReverseExecutor")
     }
 }

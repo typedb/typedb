@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{error::Error, fmt, fmt::Formatter};
+use std::{error::Error, fmt};
 
 use ::typeql::common::Spannable;
 use resource::constants::common::{ERROR_QUERY_POINTER_LINES_AFTER, ERROR_QUERY_POINTER_LINES_BEFORE};
@@ -336,7 +336,7 @@ pub enum UnimplementedFeature {
     IrrelevantUnboundInvertedMode(&'static str),
 }
 impl std::fmt::Display for UnimplementedFeature {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{self:?}")
     }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, fmt::Formatter, mem, ops::Range};
+use std::{fmt, mem, ops::Range};
 
 use bytes::{byte_array::ByteArray, Bytes};
 use resource::constants::snapshot::BUFFER_VALUE_INLINE;
@@ -154,7 +154,7 @@ impl StructuralEquality for ValueType {
 }
 
 impl fmt::Debug for ValueType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Display::fmt(self, f)
     }
 }

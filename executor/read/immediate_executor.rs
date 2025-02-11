@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::HashMap, fmt, fmt::Formatter, sync::Arc};
+use std::{cmp::Ordering, collections::HashMap, fmt, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{
@@ -168,7 +168,7 @@ pub(crate) struct IntersectionExecutor {
 }
 
 impl fmt::Debug for IntersectionExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "IntersectionExecutor (instruction = {:?})", self.instruction_executors)
     }
 }
@@ -793,7 +793,7 @@ pub(crate) struct CheckExecutor {
 }
 
 impl fmt::Debug for CheckExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "CheckExecutor (with checks {:?})", self.checker.checks)
     }
 }

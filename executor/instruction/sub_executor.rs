@@ -6,9 +6,7 @@
 
 use std::{
     collections::{BTreeMap, BTreeSet},
-    fmt,
-    fmt::Formatter,
-    iter,
+    fmt, iter,
     sync::Arc,
     vec,
 };
@@ -41,7 +39,7 @@ pub(crate) struct SubExecutor {
 }
 
 impl fmt::Debug for SubExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "SubExecutor")
     }
 }

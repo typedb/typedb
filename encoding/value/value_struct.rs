@@ -7,7 +7,6 @@
 use std::{
     collections::HashMap,
     fmt,
-    fmt::Formatter,
     hash::{Hash, Hasher},
     ops::Range,
     sync::Arc,
@@ -160,7 +159,7 @@ impl Hash for StructValue<'_> {
 
 // Prints struct with inner values, but without the right labels, since these are not available inline
 impl fmt::Display for StructValue<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{{")?;
         for (field_id, value) in self.fields.iter().sorted_by_key(|(id, _)| **id) {
             write!(f, "_{field_id}: {value}")?;

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, fmt::Formatter, iter, sync::Arc};
+use std::{collections::HashMap, fmt, iter, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::{executable::match_::instructions::thing::IidInstruction, ExecutorVariable};
@@ -36,7 +36,7 @@ pub(crate) struct IidExecutor {
 }
 
 impl fmt::Debug for IidExecutor {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "IidExecutor")
     }
 }

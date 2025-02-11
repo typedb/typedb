@@ -8,7 +8,6 @@ use std::{
     cmp::{Ordering, PartialEq},
     collections::HashMap,
     fmt,
-    fmt::Formatter,
     hash::{Hash, Hasher},
     mem,
     ops::BitXor,
@@ -180,7 +179,7 @@ impl<ID: fmt::Debug> fmt::Debug for Vertex<ID> {
 }
 
 impl<ID: fmt::Debug> fmt::Display for Vertex<ID> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
@@ -278,7 +277,7 @@ impl fmt::Debug for ParameterID {
 }
 
 impl fmt::Display for ParameterID {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         fmt::Debug::fmt(self, f)
     }
 }
