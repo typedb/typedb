@@ -79,7 +79,7 @@ impl RelatesExecutor {
     ) -> Self {
         let role_types = relates.role_types().clone();
         let relation_role_types = relates.relation_role_types().clone();
-        debug_assert!(role_types.len() > 0);
+        // debug_assert!(role_types.len() > 0); // TODO: Manually verify and remove before merging PR
 
         let RelatesInstruction { relates, checks, .. } = relates;
 

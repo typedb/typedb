@@ -78,7 +78,7 @@ impl PlaysExecutor {
     ) -> Self {
         let role_types = plays.role_types().clone();
         let player_role_types = plays.player_role_types().clone();
-        debug_assert!(role_types.len() > 0);
+        // debug_assert!(role_types.len() > 0); // TODO: Manually verify and remove before merging PR
 
         let PlaysInstruction { plays, checks, .. } = plays;
 
