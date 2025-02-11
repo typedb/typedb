@@ -16,16 +16,16 @@ pub struct SelectExecutable {
     pub executable_id: u64,
     pub retained_positions: HashSet<VariablePosition>,
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
-    pub input_length: usize,
+    pub removed_positions: HashSet<VariablePosition>,
 }
 
 impl SelectExecutable {
     pub(crate) fn new(
         retained_positions: HashSet<VariablePosition>,
         output_row_mapping: HashMap<Variable, VariablePosition>,
-        input_length: usize,
+        removed_positions: HashSet<VariablePosition>,
     ) -> Self {
-        Self { executable_id: next_executable_id(), retained_positions, output_row_mapping, input_length }
+        Self { executable_id: next_executable_id(), retained_positions, output_row_mapping, removed_positions }
     }
 }
 

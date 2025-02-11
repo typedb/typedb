@@ -256,16 +256,21 @@ fn compile_stage(
         }
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
+            let mut removed_positions =
+                HashSet::with_capacity(input_variables.len().checked_sub(select.variables.len()).unwrap_or(0));
             let mut output_row_mapping = HashMap::with_capacity(select.variables.len());
-            for &variable in &select.variables {
-                let pos = input_variables[&variable];
-                retained_positions.insert(pos);
-                output_row_mapping.insert(variable, pos);
+            for (&variable, &pos) in input_variables.iter() {
+                if select.variables.contains(&variable) {
+                    retained_positions.insert(pos);
+                    output_row_mapping.insert(variable, pos);
+                } else {
+                    removed_positions.insert(pos);
+                }
             }
             Ok(ExecutableStage::Select(Arc::new(SelectExecutable::new(
                 retained_positions,
                 output_row_mapping,
-                input_variables.len(),
+                removed_positions,
             ))))
         }
         AnnotatedStage::Sort(sort) => {

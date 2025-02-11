@@ -289,11 +289,8 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             Ok(previous_stage_steps)
         }
         ExecutableStage::Select(select_executable) => {
-            let removed_positions: Vec<VariablePosition> = (0..select_executable.input_length)
-                .into_iter()
-                .map(|i| VariablePosition::new(i as u32))
-                .filter(|&p| !select_executable.retained_positions.contains(&p))
-                .collect();
+            let removed_positions: Vec<VariablePosition> =
+                select_executable.removed_positions.iter().cloned().collect();
             let step = StreamModifierExecutor::new_select(
                 // TODO: not sure if these are correct new executable IDs or should be different?
                 PatternExecutor::new(next_executable_id(), previous_stage_steps),
