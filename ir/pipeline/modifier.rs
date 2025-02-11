@@ -198,13 +198,13 @@ impl StructuralEquality for Require {
 #[derive(Debug, Clone)]
 pub struct Distinct;
 
-impl crate::pipeline::modifier::Distinct {
+impl Distinct {
     pub(crate) fn new() -> Self {
         Distinct
     }
 }
 
-impl StructuralEquality for crate::pipeline::modifier::Distinct {
+impl StructuralEquality for Distinct {
     fn hash(&self) -> u64 {
         0
     }

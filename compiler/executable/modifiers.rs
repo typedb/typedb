@@ -90,7 +90,7 @@ pub struct DistinctExecutable {
     pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
 
-impl crate::executable::modifiers::DistinctExecutable {
+impl DistinctExecutable {
     pub(crate) fn new(output_row_mapping: HashMap<Variable, VariablePosition>) -> Self {
         Self { executable_id: next_executable_id(), output_row_mapping }
     }
