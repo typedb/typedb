@@ -261,12 +261,17 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Has {
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), Box<WriteError>> {
-        // TODO: Lists
         let attribute = get_thing(row, &self.attribute).as_attribute();
         let owner = get_thing(row, &self.owner).as_object();
-        owner
-            .unset_has_unordered(snapshot, thing_manager, attribute)
-            .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
+        let has_exists = owner.has_attribute(snapshot, thing_manager, attribute)
+            .map_err(|source| Box::new(WriteError::ConceptRead { typedb_source: source }))?;
+        if has_exists {
+            owner
+                .unset_has_unordered(snapshot, thing_manager, attribute)
+                .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
+        } else {
+            Ok(())
+        }
     }
 }
 
@@ -282,8 +287,15 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Links {
         let relation = get_thing(row, &self.relation).as_relation();
         let player = get_thing(row, &self.player).as_object();
         let answer::Type::RoleType(role_type) = get_type(row, &self.role) else { unreachable!() };
-        relation
-            .remove_player_single(snapshot, thing_manager, *role_type, player)
-            .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
+        let links_exists =
+            relation.has_role_player(snapshot, thing_manager, player, role_type.clone())
+            .map_err(|source| Box::new(WriteError::ConceptRead { typedb_source: source }))?;
+        if links_exists {
+            relation
+                .remove_player_single(snapshot, thing_manager, *role_type, player)
+                .map_err(|source| Box::new(WriteError::ConceptWrite { typedb_source: source }))
+        } else {
+            Ok(())
+        }
     }
 }

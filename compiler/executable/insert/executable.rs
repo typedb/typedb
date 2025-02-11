@@ -86,7 +86,7 @@ pub(crate) fn add_inserted_concepts(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
-    vertex_instructions: &mut Vec<ConceptInstruction>,
+    concept_instructions: &mut Vec<ConceptInstruction>,
     stage_source_span: Option<Span>,
 ) -> Result<HashMap<Variable, VariablePosition>, Box<WriteCompilationError>> {
     let first_inserted_variable_position =
@@ -156,10 +156,15 @@ pub(crate) fn add_inserted_concepts(
                     source_span: isa.source_span(),
                 }));
             }
-            let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
+            if output_variables.contains_key(&thing) {
+                return Err(Box::new(WriteCompilationError::MultipleInsertsForSameVariable {
+                    variable: variable_registry.get_variable_name(thing).unwrap().clone()
+                }));
+            }
+            let write_to = VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingPosition(write_to) });
-            vertex_instructions.push(instruction);
+            concept_instructions.push(instruction);
         } else {
             debug_assert!(kinds.len() == 1 && kinds.contains(&Kind::Attribute));
             let value_variable = resolve_value_variable_for_inserted_attribute(
@@ -196,11 +201,16 @@ pub(crate) fn add_inserted_concepts(
                     source_span: isa.source_span(),
                 }));
             };
-            let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
+            if output_variables.contains_key(&thing) {
+                return Err(Box::new(WriteCompilationError::MultipleInsertsForSameVariable {
+                    variable: variable_registry.get_variable_name(thing).unwrap().clone()
+                }));
+            }
+            let write_to = VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction =
                 ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingPosition(write_to) });
-            vertex_instructions.push(instruction);
+            concept_instructions.push(instruction);
         };
     }
     Ok(output_variables)
