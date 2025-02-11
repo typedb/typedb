@@ -118,8 +118,6 @@ impl PatternExecutor {
                 return Err(ReadExecutionError::Interrupted { interrupt });
             }
 
-            println!("------> EXECUTORS {:#?}", executors);
-            println!("------> TOP OF STACK {:#?}", control_stack.last());
             match control_stack.pop().unwrap() {
                 ControlInstruction::PatternStart(PatternStart { input_batch }) => {
                     self.push_next_instruction(context, ExecutorIndex(0), input_batch)?;

@@ -337,17 +337,14 @@ where
         self.previous.next().map(|res| {
             res.map(|row| {
                 let (input, mult) = row.into_owned_parts();
-                let output: Vec<VariableValue<'_>> = input
-                    .into_iter()
-                    .enumerate()
-                    .map(|(i, val)| {
-                        if self.retained_positions.contains(&VariablePosition::new(i as u32)) {
-                            val
-                        } else {
-                            VariableValue::Empty
-                        }
-                    })
-                    .collect();
+                let mut output = Vec::with_capacity(input.len());
+                for (i, val) in input.into_iter().enumerate() {
+                    if self.retained_positions.contains(&VariablePosition::new(i as u32)) {
+                        output.push(val);
+                    } else {
+                        output.push(VariableValue::Empty);
+                    }
+                }
                 MaybeOwnedRow::new_owned(output, mult)
             })
         })
