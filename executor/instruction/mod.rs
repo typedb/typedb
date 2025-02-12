@@ -934,7 +934,7 @@ fn get_vertex_value<'a>(
                 row.expect("CheckVertex::Variable requires a row to take from").get(*position).as_reference()
             }
             ExecutorVariable::Internal(_) => {
-                unreachable!("Comparator check variables must have been recorded in the row.")
+                unreachable!("Check variables without an extractor must have been recorded in the row.")
             }
         },
         CheckVertex::Type(type_) => VariableValue::Type(*type_),

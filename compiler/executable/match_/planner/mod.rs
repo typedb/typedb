@@ -324,10 +324,22 @@ impl MatchExecutableBuilder {
             return;
         }
 
-        // all variables are inputs
         if self.current.as_ref().is_some_and(|builder| !builder.builder.is_check()) {
             self.finish_one();
         }
+
+        if let Some(StepBuilder { builder: StepInstructionsBuilder::Intersection(builder), .. }) = self.steps.last_mut()
+        {
+            for instr in builder.instructions.iter_mut().rev() {
+                for var in variables {
+                    if instr.is_new_variable(self.index[var]) {
+                        instr.add_check(check);
+                        return;
+                    }
+                }
+            }
+        }
+
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
                 selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),

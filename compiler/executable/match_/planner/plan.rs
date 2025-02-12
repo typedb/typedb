@@ -756,14 +756,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self {
-            required_inputs: _,
-            shared_variables,
-            graph,
-            type_annotations,
-            statistics: _,
-            mut planner_statistics,
-        } = self;
+        let Self { shared_variables, graph, type_annotations, mut planner_statistics, .. } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {

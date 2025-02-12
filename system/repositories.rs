@@ -34,7 +34,7 @@ pub mod user_repository {
         let query = parse_query(query_str).expect(unexpected_error_msg);
         let (tx, result) = execute_read_pipeline(tx, &query.into_pipeline(), query_str);
         let rows = result.expect(unexpected_error_msg);
-        let users = rows.iter().map(|row| User::new(get_string(&tx, &row, "n"))).collect();
+        let users = rows.iter().map(|row| User::new(get_string(&tx, row, "n"))).collect();
         users
     }
 
