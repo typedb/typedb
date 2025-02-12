@@ -299,7 +299,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     with_rows_answer!(context, |query_answer| {
         let num_answers = query_answer.len();
         if num_specs != num_answers {
-            assert!(false, "expected the number of identifier entries to match the number of answers, found {} entries and {} answers. Real answers: \n{}",
+            assert!(false, "expected the number of identifier entries to match the number of answers, found {} expected entries and {} real answers. Real answers: \n{}",
             num_specs, num_answers, row_answers_to_string(query_answer))
         }
         for row in iter_table_map(step) {

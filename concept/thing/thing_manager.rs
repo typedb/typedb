@@ -1908,17 +1908,17 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_has_objects(snapshot, &mut modified_objects_attribute_types);
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_links_objects(
             snapshot,
             &mut modified_relations_role_types,
             &mut modified_objects_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_schema_capability_cardinalities_objects(
             snapshot,
@@ -1926,22 +1926,22 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
             res = CommitTimeValidation::validate_object_has(snapshot, self, object, modified_owns, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         for (object, modified_plays) in modified_objects_role_types {
             res = CommitTimeValidation::validate_object_links(snapshot, self, object, modified_plays, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         for (relation, modified_relates) in modified_relations_role_types {
             res =
                 CommitTimeValidation::validate_relation_links(snapshot, self, relation, modified_relates, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         if errors.is_empty() {
@@ -2656,21 +2656,19 @@ impl ThingManager {
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
-
         if count == 0 {
-            snapshot.delete(has.into_storage_key().into_owned_array());
-            snapshot.delete(has_reverse.into_storage_key().into_owned_array());
+            self.unset_has(snapshot, owner, attribute)
         } else {
+            let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
+            let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
+
+            println!("HAS PUT VAL {:?}: {:?}", has_reverse.clone().into_storage_key().into_owned_array(), ByteArray::<BUFFER_VALUE_INLINE>::copy(&encode_u64(count)));
             owner.set_required(snapshot, self)?;
             attribute.set_required(snapshot, self)?;
-
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            Ok(())
         }
-
-        Ok(())
     }
 
     pub(crate) fn unset_has(
@@ -2679,34 +2677,44 @@ impl ThingManager {
         owner: impl ObjectAPI,
         attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
-        // TODO:
-        // if owner is inserted, then:
-        //   if the has write exists, unput has
-        //   else do nothing
-        // else:
-        //   if has exists (goes to storage: self.has_attribute), then delete -> OR JUST DELETE WITHOUT CHECKS (decide) (unhappy)
-        //   else do nothing
+        let owner_status = owner.get_status(snapshot, self);
+        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key();
+        let has_reverse_array =
+            ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
 
-        if self.has_attribute(snapshot, owner, attribute).map_err(|source| ConceptWriteError::ConceptRead { source })? {
-            let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-            let has_status = self.get_status(snapshot, has.into_storage_key());
-            let has_key = has.into_storage_key().into_owned_array();
-            let has_reverse_key =
-                ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
-            match has_status {
-                ConceptStatus::Put => {
-                    let count = 1;
-                    snapshot.unput_val(has_key, ByteArray::copy(&encode_u64(count)));
-                    snapshot.unput_val(has_reverse_key, ByteArray::copy(&encode_u64(count)));
+        match owner_status {
+            ConceptStatus::Inserted => {
+                if let Some(has_write) = snapshot.get_write(has.as_reference()).cloned() {
+                    match has_write {
+                        Write::Put { value, .. } => {
+                            let has_array = has.into_owned_array();
+                            println!("HAS UNPUT VAL {has_reverse_array:?}: {value:?}");
+                            snapshot.unput_val(has_array, value.clone());
+                            snapshot.unput_val(has_reverse_array, value);
+                        }
+                        Write::Delete => {}
+                        Write::Insert { .. } => {
+                            unreachable!("Encountered an `insert` has. Owner: {owner:?}, attribute: {attribute:?}.")
+                        }
+                    }
                 }
-                ConceptStatus::Persisted => {
-                    snapshot.delete(has_key);
-                    snapshot.delete(has_reverse_key);
-                }
-                ConceptStatus::Inserted => unreachable!("Encountered an `insert` for a has: {has:?}."),
-                ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
             }
+            ConceptStatus::Persisted => {
+                // TODO: This call goes to storage if not buffered. Maybe it's more optimal to delete unconditionally.
+                if self
+                    .has_attribute(snapshot, owner, attribute)
+                    .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
+                {
+                    let has_array = has.into_owned_array();
+                    println!("DELETE");
+                    snapshot.delete(has_array);
+                    snapshot.delete(has_reverse_array);
+                }
+            }
+            ConceptStatus::Put => unreachable!("Encountered a `put` attribute owner: {owner:?}."),
+            ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
+
         Ok(())
     }
 
@@ -2792,13 +2800,12 @@ impl ThingManager {
         role_type: RoleType,
         count: u64,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
-        let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
-
         if count == 0 {
-            snapshot.delete(links.into_storage_key().into_owned_array());
-            snapshot.delete(links_reverse.into_storage_key().into_owned_array());
+            self.unset_links(snapshot, relation, player, role_type)
         } else {
+            let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+            let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+
             relation.set_required(snapshot, self)?;
             player.set_required(snapshot, self)?;
 
@@ -2809,9 +2816,8 @@ impl ThingManager {
                 let player = Object::new(player.vertex());
                 self.relation_index_player_regenerate(snapshot, relation, player, role_type, count)?
             }
+            Ok(())
         }
-
-        Ok(())
     }
 
     /// Delete all counts of the specific role player in a given relation, and update indexes if required
@@ -2822,28 +2828,43 @@ impl ThingManager {
         player: impl ObjectAPI,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex())
-            .into_storage_key()
-            .into_owned_array();
+        let relation_status = relation.get_status(&*snapshot, self);
+        let links =
+            ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex()).into_storage_key();
+        let links_reverse_array =
+            ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
+                .into_storage_key()
+                .into_owned_array();
 
-        let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
-            .into_storage_key()
-            .into_owned_array();
-
-        let owner_status = relation.get_status(&*snapshot, self);
-
-        match owner_status {
+        match relation_status {
             ConceptStatus::Inserted => {
-                let count = 1;
-                snapshot.unput_val(links, ByteArray::copy(&encode_u64(count)));
-                snapshot.unput_val(links_reverse, ByteArray::copy(&encode_u64(count)));
+                if let Some(links_write) = snapshot.get_write(links.as_reference()).cloned() {
+                    match links_write {
+                        Write::Put { value, .. } => {
+                            let links_array = links.into_owned_array();
+                            snapshot.unput_val(links_array, value.clone());
+                            snapshot.unput_val(links_reverse_array, value);
+                        }
+                        Write::Delete => {}
+                        Write::Insert { .. } => {
+                            unreachable!("Encountered an `insert` links. Relation: {relation:?}, player: {player:?}.")
+                        }
+                    }
+                }
             }
             ConceptStatus::Persisted => {
-                snapshot.delete(links);
-                snapshot.delete(links_reverse);
+                // TODO: This call goes to storage if not buffered. Maybe it's more optimal to delete unconditionally.
+                if self
+                    .has_role_player(snapshot, relation, player, role_type)
+                    .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
+                {
+                    let links_array = links.into_owned_array();
+                    snapshot.delete(links_array);
+                    snapshot.delete(links_reverse_array);
+                }
             }
             ConceptStatus::Put => unreachable!("Encountered a `put` relation: {relation:?}."),
-            ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
+            ConceptStatus::Deleted => unreachable!("Attempting to unset role player links of a deleted relation."),
         }
 
         if self

@@ -217,13 +217,8 @@ pub(super) fn instances_of_all_types_chained(
     // Since the object types are sorted, and instance ordering follows matches type ordering, we have instance-sorting here
     let object_iter: MultipleTypeIsaObjectIterator = object_iters.into_iter().flatten();
 
-    let type_manager = thing_manager.type_manager();
     let attribute_iters: Vec<_> = attribute_types
         .into_iter()
-        // TODO: we shouldn't really filter out errors here, but presumably a ConceptReadError will crop up elsewhere too if it happens here
-        .filter(|(type_, _)| {
-            type_.as_attribute_type().get_value_type(snapshot, type_manager).is_ok_and(|vt| vt.is_some())
-        })
         .map(|(type_, types)| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) { types.clone() } else { vec![*type_] };
             Ok::<_, Box<_>>(with_types(

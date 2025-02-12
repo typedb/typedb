@@ -12,6 +12,7 @@ use std::{
     iter,
     sync::{Arc, OnceLock},
 };
+use std::io::Read;
 
 use bytes::Bytes;
 use encoding::{
@@ -26,12 +27,16 @@ use encoding::{
 };
 use iterator::State;
 use itertools::Itertools;
+use encoding::graph::thing::edge::ThingEdgeHas;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::StorageKey,
     snapshot::{buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
 };
+use storage::key_range::{KeyRange, RangeEnd, RangeStart};
+use storage::key_value::StorageKeyArray;
+use storage::snapshot::write::{Write, WriteCategory};
 
 use crate::{
     edge_iterator,
@@ -256,30 +261,43 @@ where
             match self.attributes_iterator.as_mut().unwrap().peek() {
                 None => self.state = State::Done,
                 Some(Ok(attribute)) => {
+                    println!("Checking attribute: {}", attribute);
                     let attribute_vertex = attribute.vertex();
                     let independent = self.independent_attribute_types.contains(&attribute.type_());
                     if independent {
+                        println!("INDEPENDENT: READY");
                         self.state = State::ItemReady;
                     } else {
-                        match Self::has_any_writes(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex)
+                        println!("NOT INDEPENDENT");
+                        match Self::write_category(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex)
                         {
-                            Ok(has_writes) => {
-                                if has_writes {
+                            Ok(Some(write_category)) => {
+                                if write_category.is_new() {
+                                    println!("HAS WRITES: NEW");
                                     self.state = State::ItemReady
+                                } else if write_category.is_delete() {
+                                    println!("HAS WRITES: DELETE");
+                                    advance_attribute = true
                                 } else {
-                                    match Self::has_owner(
-                                        self.has_reverse_iterator_storage.as_mut().unwrap(),
-                                        attribute_vertex,
-                                    ) {
-                                        Ok(has_owner) => {
-                                            if has_owner {
-                                                self.state = State::ItemReady
-                                            } else {
-                                                advance_attribute = true
-                                            }
+                                    unreachable!("Not new and not delete write category");
+                                }
+                            }
+                            Ok(None) => {
+                                println!("DOES NOT HAVE WRITES");
+                                match Self::has_owner(
+                                    self.has_reverse_iterator_storage.as_mut().unwrap(),
+                                    attribute_vertex,
+                                ) {
+                                    Ok(has_owner) => {
+                                        if has_owner {
+                                            println!("HAS OWNER!");
+                                            self.state = State::ItemReady
+                                        } else {
+                                            println!("DOES NOT HAVE OWNER");
+                                            advance_attribute = true
                                         }
-                                        Err(err) => self.state = State::Error(err),
                                     }
+                                    Err(err) => self.state = State::Error(err),
                                 }
                             }
                             Err(err) => self.state = State::Error(err),
@@ -300,10 +318,9 @@ where
     ) -> Result<bool, Box<ConceptReadError>> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.as_reference());
-        match has_reverse_iterator.peek() {
+        match has_reverse_iterator.peek().transpose().map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))? {
             None => Ok(false),
-            Some(Err(err)) => Err(Box::new(ConceptReadError::SnapshotIterate { source: err.clone() })),
-            Some(Ok((bytes, _))) => {
+            Some((bytes, _)) => {
                 let edge = ThingEdgeHasReverse::decode(Bytes::Reference(bytes.bytes()));
                 let edge_from = edge.from();
                 match edge_from.cmp(&attribute_vertex) {
@@ -317,13 +334,19 @@ where
         }
     }
 
-    fn has_any_writes(
+    fn write_category(
         has_reverse_iterator: &mut BufferRangeIterator,
         attribute_vertex: AttributeVertex,
-    ) -> Result<bool, Box<ConceptReadError>> {
+    ) -> Result<Option<WriteCategory>, Box<ConceptReadError>> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.bytes());
-        Ok(has_reverse_iterator.peek().is_some())
+        if let Some((key, write)) = has_reverse_iterator.peek() {
+            let edge = ThingEdgeHasReverse::decode(Bytes::Reference(key.byte_array()));
+            if edge.from() == attribute_vertex {
+                return Ok(Some(write.category()));
+            }
+        }
+        Ok(None)
     }
 }
 

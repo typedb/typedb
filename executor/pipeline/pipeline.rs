@@ -133,6 +133,8 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
                     // TODO: Pass expressions & functions
+
+                    println!("READ MATCH!");
                     let match_stage =
                         MatchStageExecutor::new(match_executable.clone(), last_stage, executable_functions.clone());
                     last_stage = ReadPipelineStage::Match(Box::new(match_stage));

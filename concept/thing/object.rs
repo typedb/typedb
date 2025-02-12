@@ -44,6 +44,7 @@ use crate::{
     },
     ConceptStatus,
 };
+use crate::type_::TypeAPI;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Object {
