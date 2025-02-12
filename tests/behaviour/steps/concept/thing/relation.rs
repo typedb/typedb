@@ -74,12 +74,13 @@ async fn relation_set_players_for_role(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"relation {var} remove player for role\({type_label}\): {var}")]
+#[step(expr = r"relation {var} remove player for role\({type_label}\): {var}{may_error}")]
 async fn relation_remove_player_for_role(
     context: &mut Context,
     relation_var: params::Var,
     role_label: params::Label,
     player_var: params::Var,
+    may_error: params::MayError,
 ) {
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let player = context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
@@ -90,9 +91,10 @@ async fn relation_remove_player_for_role(
             .unwrap()
             .unwrap()
             .role();
-        relation
-            .remove_player_single(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player)
-            .unwrap();
+
+        let res = relation
+            .remove_player_single(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player);
+        may_error.check_concept_write_without_read_errors(&res);
     });
 }
 

@@ -261,39 +261,31 @@ where
             match self.attributes_iterator.as_mut().unwrap().peek() {
                 None => self.state = State::Done,
                 Some(Ok(attribute)) => {
-                    println!("Checking attribute: {}", attribute);
                     let attribute_vertex = attribute.vertex();
                     let independent = self.independent_attribute_types.contains(&attribute.type_());
                     if independent {
-                        println!("INDEPENDENT: READY");
                         self.state = State::ItemReady;
                     } else {
-                        println!("NOT INDEPENDENT");
                         match Self::write_category(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex)
                         {
                             Ok(Some(write_category)) => {
                                 if write_category.is_new() {
-                                    println!("HAS WRITES: NEW");
                                     self.state = State::ItemReady
                                 } else if write_category.is_delete() {
-                                    println!("HAS WRITES: DELETE");
                                     advance_attribute = true
                                 } else {
                                     unreachable!("Not new and not delete write category");
                                 }
                             }
                             Ok(None) => {
-                                println!("DOES NOT HAVE WRITES");
                                 match Self::has_owner(
                                     self.has_reverse_iterator_storage.as_mut().unwrap(),
                                     attribute_vertex,
                                 ) {
                                     Ok(has_owner) => {
                                         if has_owner {
-                                            println!("HAS OWNER!");
                                             self.state = State::ItemReady
                                         } else {
-                                            println!("DOES NOT HAVE OWNER");
                                             advance_attribute = true
                                         }
                                     }

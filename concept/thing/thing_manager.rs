@@ -2662,7 +2662,6 @@ impl ThingManager {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            println!("HAS PUT VAL {:?}: {:?}", has_reverse.clone().into_storage_key().into_owned_array(), ByteArray::<BUFFER_VALUE_INLINE>::copy(&encode_u64(count)));
             owner.set_required(snapshot, self)?;
             attribute.set_required(snapshot, self)?;
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
@@ -2679,40 +2678,31 @@ impl ThingManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         let owner_status = owner.get_status(snapshot, self);
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key();
+        let has_array = has.clone().into_owned_array();
         let has_reverse_array =
             ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
 
-        match owner_status {
-            ConceptStatus::Inserted => {
-                if let Some(has_write) = snapshot.get_write(has.as_reference()).cloned() {
-                    match has_write {
-                        Write::Put { value, .. } => {
-                            let has_array = has.into_owned_array();
-                            println!("HAS UNPUT VAL {has_reverse_array:?}: {value:?}");
-                            snapshot.unput_val(has_array, value.clone());
-                            snapshot.unput_val(has_reverse_array, value);
-                        }
-                        Write::Delete => {}
-                        Write::Insert { .. } => {
-                            unreachable!("Encountered an `insert` has. Owner: {owner:?}, attribute: {attribute:?}.")
-                        }
-                    }
+        if let Some(has_write) = snapshot.get_write(has.as_reference()).cloned() {
+            match has_write {
+                Write::Put { value, .. } => {
+                    snapshot.unput_val(has_array.clone(), value.clone());
+                    snapshot.unput_val(has_reverse_array.clone(), value);
+                }
+                Write::Delete => {}
+                Write::Insert { .. } => {
+                    unreachable!("Encountered an `insert` has. Owner: {owner:?}, attribute: {attribute:?}.")
                 }
             }
-            ConceptStatus::Persisted => {
-                // TODO: This call goes to storage if not buffered. Maybe it's more optimal to delete unconditionally.
-                if self
-                    .has_attribute(snapshot, owner, attribute)
-                    .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
-                {
-                    let has_array = has.into_owned_array();
-                    println!("DELETE");
-                    snapshot.delete(has_array);
-                    snapshot.delete(has_reverse_array);
-                }
+        }
+
+        if !matches!(owner_status, ConceptStatus::Inserted) {
+            if self
+                .has_attribute(snapshot, owner, attribute)
+                .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
+            {
+                snapshot.delete(has_array);
+                snapshot.delete(has_reverse_array);
             }
-            ConceptStatus::Put => unreachable!("Encountered a `put` attribute owner: {owner:?}."),
-            ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
 
         Ok(())
@@ -2831,40 +2821,33 @@ impl ThingManager {
         let relation_status = relation.get_status(&*snapshot, self);
         let links =
             ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex()).into_storage_key();
+        let links_array = links.clone().into_owned_array();
         let links_reverse_array =
             ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
                 .into_storage_key()
                 .into_owned_array();
 
-        match relation_status {
-            ConceptStatus::Inserted => {
-                if let Some(links_write) = snapshot.get_write(links.as_reference()).cloned() {
-                    match links_write {
-                        Write::Put { value, .. } => {
-                            let links_array = links.into_owned_array();
-                            snapshot.unput_val(links_array, value.clone());
-                            snapshot.unput_val(links_reverse_array, value);
-                        }
-                        Write::Delete => {}
-                        Write::Insert { .. } => {
-                            unreachable!("Encountered an `insert` links. Relation: {relation:?}, player: {player:?}.")
-                        }
-                    }
+        if let Some(links_write) = snapshot.get_write(links.as_reference()).cloned() {
+            match links_write {
+                Write::Put { value, .. } => {
+                    snapshot.unput_val(links_array.clone(), value.clone());
+                    snapshot.unput_val(links_reverse_array.clone(), value);
+                }
+                Write::Delete => {}
+                Write::Insert { .. } => {
+                    unreachable!("Encountered an `insert` links. Relation: {relation:?}, player: {player:?}.")
                 }
             }
-            ConceptStatus::Persisted => {
-                // TODO: This call goes to storage if not buffered. Maybe it's more optimal to delete unconditionally.
-                if self
-                    .has_role_player(snapshot, relation, player, role_type)
-                    .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
-                {
-                    let links_array = links.into_owned_array();
-                    snapshot.delete(links_array);
-                    snapshot.delete(links_reverse_array);
-                }
+        }
+
+        if !matches!(relation_status, ConceptStatus::Inserted) {
+            if self
+                .has_role_player(snapshot, relation, player, role_type)
+                .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
+            {
+                snapshot.delete(links_array);
+                snapshot.delete(links_reverse_array);
             }
-            ConceptStatus::Put => unreachable!("Encountered a `put` relation: {relation:?}."),
-            ConceptStatus::Deleted => unreachable!("Attempting to unset role player links of a deleted relation."),
         }
 
         if self
@@ -2928,6 +2911,11 @@ impl ThingManager {
                 .unwrap();
             debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
+
+        OperationTimeValidation::validate_links_count_to_remove_players(
+            snapshot, self, relation, player, role_type, count, decrement_count
+        )
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         debug_assert!(*count.as_ref().unwrap() >= decrement_count);
         self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)

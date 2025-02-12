@@ -628,4 +628,27 @@ impl OperationTimeValidation {
             }))
         }
     }
+
+    pub(crate) fn validate_links_count_to_remove_players(
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        relation: Relation,
+        player: impl ObjectAPI,
+        role_type: RoleType,
+        current_count: Option<u64>,
+        decrement_count: u64,
+    ) -> Result<(), Box<DataValidationError>> {
+        let current_count = current_count.unwrap_or(0);
+        if current_count < decrement_count {
+            Err(Box::new(DataValidationError::RemoveDeletedPlayers {
+                player_iid: HexBytesFormatter::owned(Vec::from(player.iid())),
+                relation_iid: HexBytesFormatter::owned(Vec::from(relation.iid())),
+                role: get_label_or_data_err(snapshot, &thing_manager.type_manager, role_type)?,
+                decrement_count,
+                current_count,
+            }))
+        } else {
+            Ok(())
+        }
+    }
 }

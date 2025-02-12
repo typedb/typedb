@@ -162,5 +162,14 @@ typedb_error!(
             player_iid: HexBytesFormatter<'static>,
             relation_iid: HexBytesFormatter<'static>
         ),
+        RemoveDeletedPlayers(
+            22,
+            "Cannot delete {decrement_count} role players {player_iid} of type {role} of a relation {relation_iid}: only {current_count} role players exists.",
+            player_iid: HexBytesFormatter<'static>,
+            relation_iid: HexBytesFormatter<'static>,
+            role: Label,
+            decrement_count: u64,
+            current_count: u64,
+        ),
     }
 );

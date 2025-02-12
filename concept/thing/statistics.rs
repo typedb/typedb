@@ -317,7 +317,6 @@ impl Statistics {
     fn update_has(&mut self, owner_type: ObjectType, attribute_type: AttributeType, delta: i64) {
         let attribute_count =
             self.has_attribute_counts.entry(owner_type).or_default().entry(attribute_type).or_default();
-        println!("UPDATE HAS! Attribute count: {attribute_count}, delta: {delta}");
         *attribute_count = attribute_count.checked_add_signed(delta).unwrap();
         let owner_count = self.attribute_owner_counts.entry(attribute_type).or_default().entry(owner_type).or_default();
         *owner_count = owner_count.checked_add_signed(delta).unwrap();
