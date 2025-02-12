@@ -32,7 +32,7 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn as_negation(&self) -> Option<&Negation> {
+    pub fn as_negation(&self) -> Option<&Negation> {
         match self {
             NestedPattern::Negation(negation) => Some(negation),
             _ => None,

@@ -14,6 +14,7 @@ use crate::{
     pattern::{conjunction::Conjunction, ScopeId},
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
+use crate::pattern::Scope;
 
 #[derive(Clone, Debug, Default)]
 pub struct Disjunction {
@@ -35,6 +36,10 @@ impl Disjunction {
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
+    }
+
+    pub fn optimise_away_failing_branches(&mut self, scope_ids: Vec<ScopeId>) {
+        self.conjunctions.retain(|v| !scope_ids.contains(&v.scope_id()))
     }
 }
 

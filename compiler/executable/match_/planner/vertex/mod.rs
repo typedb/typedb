@@ -16,6 +16,7 @@ use ir::pattern::{
     Vertex,
 };
 use itertools::{chain, Itertools};
+use ir::pattern::constraint::OptimisedAway;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -43,6 +44,7 @@ pub(super) enum PlannerVertex<'a> {
     Is(IsPlanner<'a>),
     LinksDeduplication(LinksDeduplicationPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
+    OptimisedAway(OptimisedAwayPlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
     FunctionCall(FunctionCallPlanner<'a>),
@@ -72,6 +74,7 @@ impl PlannerVertex<'_> {
             }
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
+            Self::OptimisedAway(inner) => inner.is_valid(vertex_plan, graph),
         }
     }
 
@@ -86,6 +89,7 @@ impl PlannerVertex<'_> {
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
+            Self::OptimisedAway(inner) => Box::new(inner.variables()),
         }
     }
 
@@ -161,6 +165,9 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Disjunction(_) => {
                 write!(f, "|Disjunction|")
             } //TODO
+            PlannerVertex::OptimisedAway(_) => {
+                write!(f, "|OptimisedAway|")
+            }
         }
     }
 }
@@ -238,6 +245,7 @@ impl Costed for PlannerVertex<'_> {
 
             Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::OptimisedAway(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
 }
@@ -507,6 +515,37 @@ impl Costed for ComparisonPlanner<'_> {
         _graph: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         Ok((Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct OptimisedAwayPlanner<'a> {
+    optimised_away: &'a OptimisedAway,
+}
+
+impl<'a> OptimisedAwayPlanner<'a> {
+
+    pub(crate) fn from_constraint(
+        optimised_away: &'a OptimisedAway,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        Self { optimised_away }
+    }
+
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        true
+    }
+
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        [].into_iter()
+    }
+}
+
+impl Costed for OptimisedAwayPlanner<'_> {
+    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> (Cost, CostMetaData) {
+        (Cost::in_mem_simple_with_ratio(Cost::MIN_IO_RATIO), CostMetaData::None)
     }
 }
 

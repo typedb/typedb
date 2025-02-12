@@ -31,6 +31,7 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
+use compiler::transformation::transform::apply_transformations;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{

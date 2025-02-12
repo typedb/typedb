@@ -67,9 +67,11 @@ pub fn check_annotations(
             | Constraint::Plays(_)
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_) => (),
-
             Constraint::Iid(_) => unreachable!("iid in insert should have been rejected by now"),
             Constraint::IndexedRelation(_) => unreachable!("Indexed relations can only appear after type inference"),
+            Constraint::OptimisedAway(_) => {
+                unreachable!("Optimised away can only appear after type inference")
+            }
         }
     }
     Ok(())

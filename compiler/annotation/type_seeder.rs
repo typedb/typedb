@@ -237,6 +237,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
                 }
+                Constraint::OptimisedAway(_) => {
+                    unreachable!("OptimisedAway are only generated after type inference")
+                }
             }
         }
         for nested_graph in graph.nested_disjunctions.iter_mut().flat_map(|nested| &mut nested.disjunction) {
@@ -403,6 +406,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_) => false,
             Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference"),
+            Constraint::OptimisedAway(_) => unreachable!("OptimisedAway are only generated after type inference"),
         };
         Ok(any_modified)
     }
@@ -543,6 +547,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::LinksDeduplication(_) => (), // Do nothing
                 Constraint::IndexedRelation(_) => {
                     unreachable!("Indexed relations are only generated after type inference")
+                }
+                Constraint::OptimisedAway(_) => {
+                    unreachable!("OptimisedAway are only generated after type inference")
                 }
             }
         }
