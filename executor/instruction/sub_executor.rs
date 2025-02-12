@@ -64,7 +64,7 @@ impl SubExecutor {
     ) -> Self {
         let supertypes = sub.supertypes().clone();
         let sub_to_supertypes = sub.sub_to_supertypes().clone();
-        // debug_assert!(supertypes.len() > 0); // TODO: Manually verify and remove before merging PR
+        debug_assert!(supertypes.len() > 0);
 
         let SubInstruction { sub, checks, .. } = sub;
 

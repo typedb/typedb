@@ -258,7 +258,7 @@ impl BinaryIterateMode {
         sort_by: ExecutorVariable,
     ) -> BinaryIterateMode {
         // TODO
-        // debug_assert!(var_modes.len() == 2);// TODO: Manually verify and remove before merging PR
+        // debug_assert!(var_modes.len() == 2);
         debug_assert!(!var_modes.all_inputs());
 
         let is_from_bound = match from_vertex {
@@ -899,7 +899,9 @@ impl<T> Checker<T> {
                     }));
                 }
 
-                CheckInstruction::Fail => filters.push(Box::new(|value| Ok(false)))
+                CheckInstruction::Fail => filters.push(Box::new(|value| {
+                    Ok(false)
+                }))
             }
         }
 
