@@ -295,7 +295,10 @@ fn test_optimise_away() {
         let query = "match $p sub person, plays dog-ownership:dog;";
         let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
-        assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::OptimisedAway(_)));
+        assert!(matches!(
+            conjunction.constraints().iter().exactly_one().unwrap(),
+            Constraint::OptimisedToUnsatisfiable(_)
+        ));
     }
 
     {
@@ -326,7 +329,7 @@ fn test_optimise_away() {
         let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
         assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
-        let must_be_optimised_away = conjunction
+        let must_be_optimised_to_unsatisfiable = conjunction
             .nested_patterns()
             .iter()
             .exactly_one()
@@ -338,7 +341,7 @@ fn test_optimise_away() {
             .iter()
             .exactly_one()
             .unwrap();
-        assert!(matches!(must_be_optimised_away, Constraint::OptimisedAway(_)))
+        assert!(matches!(must_be_optimised_to_unsatisfiable, Constraint::OptimisedToUnsatisfiable(_)))
     }
 }
 

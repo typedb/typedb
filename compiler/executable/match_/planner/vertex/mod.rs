@@ -12,7 +12,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, OptimisedAway},
+    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, OptimisedToUnsatisfiable},
     Vertex,
 };
 use itertools::{chain, Itertools};
@@ -43,7 +43,7 @@ pub(super) enum PlannerVertex<'a> {
     Is(IsPlanner<'a>),
     LinksDeduplication(LinksDeduplicationPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
-    OptimisedAway(OptimisedAwayPlanner<'a>),
+    OptimisedToUnsatisfiable(OptimisedToUnsatisfiablePlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
     FunctionCall(FunctionCallPlanner<'a>),
@@ -73,7 +73,7 @@ impl PlannerVertex<'_> {
             }
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
-            Self::OptimisedAway(inner) => inner.is_valid(vertex_plan, graph),
+            Self::OptimisedToUnsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
         }
     }
 
@@ -88,7 +88,7 @@ impl PlannerVertex<'_> {
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
-            Self::OptimisedAway(inner) => Box::new(inner.variables()),
+            Self::OptimisedToUnsatisfiable(inner) => Box::new(inner.variables()),
         }
     }
 
@@ -164,8 +164,8 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Disjunction(_) => {
                 write!(f, "|Disjunction|")
             } //TODO
-            PlannerVertex::OptimisedAway(_) => {
-                write!(f, "|OptimisedAway|")
+            PlannerVertex::OptimisedToUnsatisfiable(_) => {
+                write!(f, "|OptimisedToUnsatisfiable|")
             }
         }
     }
@@ -244,7 +244,7 @@ impl Costed for PlannerVertex<'_> {
 
             Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
-            Self::OptimisedAway(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::OptimisedToUnsatisfiable(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
 }
@@ -518,18 +518,18 @@ impl Costed for ComparisonPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct OptimisedAwayPlanner<'a> {
-    optimised_away: &'a OptimisedAway,
+pub(super) struct OptimisedToUnsatisfiablePlanner<'a> {
+    optimised_unsatisfiable: &'a OptimisedToUnsatisfiable,
 }
 
-impl<'a> OptimisedAwayPlanner<'a> {
+impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
     pub(crate) fn from_constraint(
-        optimised_away: &'a OptimisedAway,
+        optimised_unsatisfiable: &'a OptimisedToUnsatisfiable,
         variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        Self { optimised_away }
+        Self { optimised_unsatisfiable }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
@@ -541,7 +541,7 @@ impl<'a> OptimisedAwayPlanner<'a> {
     }
 }
 
-impl Costed for OptimisedAwayPlanner<'_> {
+impl Costed for OptimisedToUnsatisfiablePlanner<'_> {
     fn cost_and_metadata(
         &self,
         _: &[VertexId],

@@ -621,7 +621,7 @@ pub enum CheckInstruction<ID> {
         rhs: CheckVertex<ID>,
         comparator: Comparator,
     },
-    Fail,
+    Unsatisfiable,
 }
 
 impl<ID: IrID> CheckInstruction<ID> {
@@ -673,7 +673,7 @@ impl<ID: IrID> CheckInstruction<ID> {
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
-            Self::Fail => CheckInstruction::Fail,
+            Self::Unsatisfiable => CheckInstruction::Unsatisfiable,
         }
     }
 }
@@ -728,7 +728,7 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
             Self::Comparison { lhs, rhs, comparator } => {
                 write!(f, "{lhs} {comparator} {rhs}")?;
             }
-            Self::Fail => {
+            Self::Unsatisfiable => {
                 write!(f, "fail")?;
             }
         }

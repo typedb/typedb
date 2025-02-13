@@ -78,13 +78,13 @@ fn optimize_away_statically_unsatisfiable_conjunctions_impl(
     for nested in conjunction.nested_patterns_mut() {
         match nested {
             NestedPattern::Disjunction(disjunction) => {
-                let mut optimised_away_branch_ids = Vec::new();
+                let mut optimised_unsatisfiable_branch_ids = Vec::new();
                 for branch in disjunction.conjunctions_mut().iter_mut() {
                     if optimize_away_statically_unsatisfiable_conjunctions_impl(branch, block_annotations) {
-                        optimised_away_branch_ids.push(branch.scope_id())
+                        optimised_unsatisfiable_branch_ids.push(branch.scope_id())
                     }
                 }
-                disjunction.optimise_away_failing_branches(optimised_away_branch_ids);
+                disjunction.optimise_away_failing_branches(optimised_unsatisfiable_branch_ids);
                 must_optimise_away = must_optimise_away || disjunction.conjunctions().is_empty();
             }
             NestedPattern::Negation(negation) => {

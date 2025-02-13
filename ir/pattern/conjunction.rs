@@ -17,7 +17,7 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        constraint::{Constraint, Constraints, ConstraintsBuilder, OptimisedAway},
+        constraint::{Constraint, Constraints, ConstraintsBuilder, OptimisedToUnsatisfiable},
         disjunction::{Disjunction, DisjunctionBuilder},
         negation::Negation,
         nested_pattern::NestedPattern,
@@ -64,7 +64,7 @@ impl Conjunction {
         );
         self.constraints_mut()
             .constraints_mut()
-            .push(Constraint::OptimisedAway(OptimisedAway::new(swapped_conjunction)))
+            .push(Constraint::OptimisedToUnsatisfiable(OptimisedToUnsatisfiable::new(swapped_conjunction)))
     }
 
     pub fn captured_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
