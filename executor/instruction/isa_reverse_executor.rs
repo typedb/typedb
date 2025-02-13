@@ -207,25 +207,7 @@ pub(super) fn instances_of_types_chained<'a>(
     let object_iter: MultipleTypeIsaObjectIterator = object_iters.into_iter().flatten();
 
     // TODO: don't unwrap inside the operators
-    let attribute_iters: Vec<_> = attribute_types.clone()
-        .into_iter()
-        .flat_map(|type_| {
-            let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
-                type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
-            } else {
-                vec![*type_]
-            };
-            returned_types.into_iter().map(move |subtype| {
-                Ok::<_, Box<_>>(with_type(
-                    thing_manager
-                        .get_attributes_in_range(snapshot, subtype.as_attribute_type(), range)?
-                        .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
-                    *type_,
-                ))
-            })
-        })
-        .try_collect()?;
-    let attribute_iters2: Vec<_> = attribute_types
+    let attribute_iters: Vec<_> = attribute_types
         .into_iter()
         .flat_map(|type_| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
@@ -244,11 +226,6 @@ pub(super) fn instances_of_types_chained<'a>(
         })
         .try_collect()?;
     let attribute_iter: MultipleTypeIsaAttributeIterator = attribute_iters.into_iter().flatten();
-    println!("GOT INSTANCES!");
-    for it in &mut attribute_iters2.into_iter().flatten() {
-        let (thing, type_) = it.unwrap();
-        println!("Thing: {}, {}", thing, type_);
-    }
 
     let thing_iter: MultipleTypeIsaIterator = object_iter.chain(attribute_iter);
     Ok(thing_iter)

@@ -92,8 +92,12 @@ async fn relation_remove_player_for_role(
             .unwrap()
             .role();
 
-        let res = relation
-            .remove_player_single(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player);
+        let res = relation.remove_player_single(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.thing_manager,
+            role_type,
+            player,
+        );
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

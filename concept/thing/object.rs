@@ -40,11 +40,10 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };
-use crate::type_::TypeAPI;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum Object {

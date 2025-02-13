@@ -11,7 +11,10 @@ use std::{collections::BTreeMap, sync::Arc};
 use concept::{
     thing::{object::ObjectAPI, statistics::Statistics, thing_manager::ThingManager, ThingAPI},
     type_::{
-        annotation::AnnotationCardinality, relates::RelatesAnnotation, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
+        annotation::{AnnotationCardinality, AnnotationIndependent},
+        attribute_type::AttributeTypeAnnotation,
+        relates::RelatesAnnotation,
+        ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
@@ -258,6 +261,14 @@ fn put_has_twice() {
     let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+    name_type
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            AttributeTypeAnnotation::Independent(AnnotationIndependent),
+        )
+        .unwrap();
     person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
     let person = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     let name = thing_manager.create_attribute(&mut snapshot, name_type, Value::String("alice".into())).unwrap();

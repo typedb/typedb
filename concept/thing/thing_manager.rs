@@ -1776,7 +1776,6 @@ impl ThingManager {
         {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let attribute = Attribute::new(edge.to());
-            let label = attribute.type_().get_label(snapshot, self.type_manager()).unwrap().scoped_name.to_string();
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
             if attribute.get_status(snapshot, self) == ConceptStatus::Deleted {
                 continue;
@@ -2794,7 +2793,8 @@ impl ThingManager {
             self.unset_links(snapshot, relation, player, role_type)
         } else {
             let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
-            let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+            let links_reverse =
+                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
             relation.set_required(snapshot, self)?;
             player.set_required(snapshot, self)?;
@@ -2913,9 +2913,15 @@ impl ThingManager {
         }
 
         OperationTimeValidation::validate_links_count_to_remove_players(
-            snapshot, self, relation, player, role_type, count, decrement_count
+            snapshot,
+            self,
+            relation,
+            player,
+            role_type,
+            count,
+            decrement_count,
         )
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         debug_assert!(*count.as_ref().unwrap() >= decrement_count);
         self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)

@@ -103,7 +103,6 @@ impl Write {
     }
 }
 
-
 #[derive(Debug, Clone, Copy)]
 pub enum WriteCategory {
     Insert,

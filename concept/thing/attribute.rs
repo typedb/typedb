@@ -9,15 +9,18 @@ use std::{
     collections::HashSet,
     fmt,
     hash::{Hash, Hasher},
+    io::Read,
     iter,
     sync::{Arc, OnceLock},
 };
-use std::io::Read;
 
 use bytes::Bytes;
 use encoding::{
     graph::{
-        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeHasReverse},
+            vertex_attribute::AttributeVertex,
+        },
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
@@ -27,16 +30,18 @@ use encoding::{
 };
 use iterator::State;
 use itertools::Itertools;
-use encoding::graph::thing::edge::ThingEdgeHas;
 use lending_iterator::{higher_order::Hkt, LendingIterator};
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_value::StorageKey,
-    snapshot::{buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, ReadableSnapshot, WritableSnapshot},
+    key_range::{KeyRange, RangeEnd, RangeStart},
+    key_value::{StorageKey, StorageKeyArray},
+    snapshot::{
+        buffer::BufferRangeIterator,
+        iterator::SnapshotRangeIterator,
+        write::{Write, WriteCategory},
+        ReadableSnapshot, WritableSnapshot,
+    },
 };
-use storage::key_range::{KeyRange, RangeEnd, RangeStart};
-use storage::key_value::StorageKeyArray;
-use storage::snapshot::write::{Write, WriteCategory};
 
 use crate::{
     edge_iterator,
@@ -154,7 +159,6 @@ impl ThingAPI for Attribute {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         for object in self.get_owners(snapshot, thing_manager).map_ok(|(key, _)| key) {
-            // TODO: This will not work for ordered owns: it unsets 1 under the hood. Write tests with lists when implemented.
             thing_manager.unset_has(snapshot, object?, &self)?;
         }
         thing_manager.delete_attribute(snapshot, self)?;
@@ -310,7 +314,11 @@ where
     ) -> Result<bool, Box<ConceptReadError>> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.as_reference());
-        match has_reverse_iterator.peek().transpose().map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))? {
+        match has_reverse_iterator
+            .peek()
+            .transpose()
+            .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))?
+        {
             None => Ok(false),
             Some((bytes, _)) => {
                 let edge = ThingEdgeHasReverse::decode(Bytes::Reference(bytes.bytes()));

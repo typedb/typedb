@@ -124,30 +124,36 @@ async fn object_set_has_list(
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} unset has: {var}")]
+#[step(expr = r"{object_kind} {var} unset has: {var}{may_error}")]
 async fn object_unset_has(
     context: &mut Context,
     object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_var: params::Var,
+    may_error: params::MayError,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_kind.assert(&object.type_());
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap().to_owned();
-    object_unset_has_impl(context, &object, &attribute).unwrap();
+    may_error.check_concept_write_without_read_errors(&object_unset_has_impl(context, &object, &attribute));
 }
 
 #[apply(generic_step)]
-#[step(expr = r"{object_kind} {var} unset has: {type_label}[]")]
+#[step(expr = r"{object_kind} {var} unset has: {type_label}[]{may_error}")]
 async fn object_unset_has_ordered(
     context: &mut Context,
     object_kind: params::ObjectKind,
     object_var: params::Var,
     attribute_type_label: params::Label,
+    may_error: params::MayError,
 ) {
     let object = context.objects[&object_var.name].as_ref().unwrap().object.to_owned();
     object_kind.assert(&object.type_());
-    object_unset_has_ordered_impl(context, &object, attribute_type_label).unwrap();
+    may_error.check_concept_write_without_read_errors(&object_unset_has_ordered_impl(
+        context,
+        &object,
+        attribute_type_label,
+    ));
 }
 
 #[apply(generic_step)]
