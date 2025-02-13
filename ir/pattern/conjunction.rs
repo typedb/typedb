@@ -17,7 +17,7 @@ use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        constraint::{Constraint, Constraints, ConstraintsBuilder},
+        constraint::{Constraint, Constraints, ConstraintsBuilder, OptimisedAway},
         disjunction::{Disjunction, DisjunctionBuilder},
         negation::Negation,
         nested_pattern::NestedPattern,
@@ -26,7 +26,6 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
-use crate::pattern::constraint::OptimisedAway;
 
 #[derive(Debug, Clone)]
 pub struct Conjunction {
@@ -61,9 +60,11 @@ impl Conjunction {
         std::mem::swap(&mut self.nested_patterns, &mut swapped_conjunction.nested_patterns);
         std::mem::swap(
             self.constraints_mut().constraints_mut(),
-            swapped_conjunction.constraints_mut().constraints_mut()
+            swapped_conjunction.constraints_mut().constraints_mut(),
         );
-        self.constraints_mut().constraints_mut().push(Constraint::OptimisedAway(OptimisedAway::new(swapped_conjunction)))
+        self.constraints_mut()
+            .constraints_mut()
+            .push(Constraint::OptimisedAway(OptimisedAway::new(swapped_conjunction)))
     }
 
     pub fn captured_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {

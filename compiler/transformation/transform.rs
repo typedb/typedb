@@ -5,18 +5,16 @@
  */
 
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::{conjunction::Conjunction, constraint::Constraint, Scope, Vertex};
-use ir::pattern::nested_pattern::NestedPattern;
+use ir::pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope, Vertex};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     annotation::{
         pipeline::{AnnotatedPipeline, AnnotatedStage},
-        type_annotations::TypeAnnotations,
+        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
     },
     transformation::{relation_index::relation_index_transformation, StaticOptimiserError},
 };
-use crate::annotation::type_annotations::ConstraintTypeAnnotations;
 
 pub fn apply_transformations(
     snapshot: &impl ReadableSnapshot,
@@ -65,11 +63,17 @@ fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block
     });
 }
 
-pub fn optimize_away_statically_unsatisfiable_conjunctions(conjunction: &mut Conjunction, block_annotations: &TypeAnnotations) {
+pub fn optimize_away_statically_unsatisfiable_conjunctions(
+    conjunction: &mut Conjunction,
+    block_annotations: &TypeAnnotations,
+) {
     optimize_away_statically_unsatisfiable_conjunctions_impl(conjunction, block_annotations);
 }
 
-fn optimize_away_statically_unsatisfiable_conjunctions_impl(conjunction: &mut Conjunction, block_annotations: &TypeAnnotations) -> bool {
+fn optimize_away_statically_unsatisfiable_conjunctions_impl(
+    conjunction: &mut Conjunction,
+    block_annotations: &TypeAnnotations,
+) -> bool {
     let mut must_optimise_away = false;
     for nested in conjunction.nested_patterns_mut() {
         match nested {
@@ -91,8 +95,8 @@ fn optimize_away_statically_unsatisfiable_conjunctions_impl(conjunction: &mut Co
             }
         }
     }
-    let must_optimise_away = must_optimise_away ||
-        conjunction.constraints().iter().any(|constraint| {
+    let must_optimise_away = must_optimise_away
+        || conjunction.constraints().iter().any(|constraint| {
             if let Some(constraint_annotation) = block_annotations.constraint_annotations_of(constraint.clone()) {
                 match constraint_annotation {
                     ConstraintTypeAnnotations::LeftRight(lr) => {

@@ -12,11 +12,10 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication},
+    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, OptimisedAway},
     Vertex,
 };
 use itertools::{chain, Itertools};
-use ir::pattern::constraint::OptimisedAway;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -524,7 +523,6 @@ pub(super) struct OptimisedAwayPlanner<'a> {
 }
 
 impl<'a> OptimisedAwayPlanner<'a> {
-
     pub(crate) fn from_constraint(
         optimised_away: &'a OptimisedAway,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -544,8 +542,13 @@ impl<'a> OptimisedAwayPlanner<'a> {
 }
 
 impl Costed for OptimisedAwayPlanner<'_> {
-    fn cost_and_metadata(&self, _: &[VertexId], _: Option<Direction>, _: &Graph<'_>) -> (Cost, CostMetaData) {
-        (Cost::in_mem_simple_with_ratio(Cost::MIN_IO_RATIO), CostMetaData::None)
+    fn cost_and_metadata(
+        &self,
+        _: &[VertexId],
+        _: Option<Direction>,
+        _: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((Cost::in_mem_simple_with_ratio(Cost::MIN_IO_RATIO), CostMetaData::None))
     }
 }
 

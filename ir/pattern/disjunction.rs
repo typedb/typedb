@@ -11,10 +11,9 @@ use structural_equality::StructuralEquality;
 
 use super::conjunction::ConjunctionBuilder;
 use crate::{
-    pattern::{conjunction::Conjunction, ScopeId},
+    pattern::{conjunction::Conjunction, Scope, ScopeId},
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
-use crate::pattern::Scope;
 
 #[derive(Clone, Debug, Default)]
 pub struct Disjunction {

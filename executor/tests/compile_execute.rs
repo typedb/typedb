@@ -15,6 +15,7 @@ use compiler::{
         match_inference::infer_types,
     },
     executable::function::ExecutableFunctionRegistry,
+    transformation::transform::apply_transformations,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -31,7 +32,6 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
-use compiler::transformation::transform::apply_transformations;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{

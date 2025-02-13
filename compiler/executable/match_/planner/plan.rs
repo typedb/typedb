@@ -21,7 +21,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Value,
+            Isa, Kind, Label, Links, LinksDeduplication, OptimisedAway, Owns, Plays, Relates, RoleName, Sub, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -31,7 +31,6 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
-use ir::pattern::constraint::OptimisedAway;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -57,7 +56,8 @@ use crate::{
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                     ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NegationPlanner, PlannerVertex,
+                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NegationPlanner,
+                    OptimisedAwayPlanner, PlannerVertex,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
                 MatchExecutableBuilder, NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -66,7 +66,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::vertex::OptimisedAwayPlanner;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -412,7 +411,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
                 Constraint::LinksDeduplication(dedup) => self.register_links_deduplication(dedup),
-                Constraint::OptimisedAway(optimised_away) => self.register_optimised_to_fail(optimised_away)
+                Constraint::OptimisedAway(optimised_away) => self.register_optimised_to_fail(optimised_away),
             }
         }
     }
@@ -591,7 +590,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_optimised_to_fail(&mut self, optimised_away: &'a OptimisedAway) {
-        let planner = OptimisedAwayPlanner::from_constraint(optimised_away, &self.graph.variable_index, self.type_annotations, self.statistics);
+        let planner = OptimisedAwayPlanner::from_constraint(
+            optimised_away,
+            &self.graph.variable_index,
+            self.type_annotations,
+            self.statistics,
+        );
         self.graph.push_optimised_to_fail(planner);
     }
 
@@ -1403,7 +1407,9 @@ impl ConjunctionPlan<'_> {
                     match_builder.push_instruction(variable, instruction);
                 }
                 PlannerVertex::Comparison(_) => unreachable!("encountered comparison registered as producing variable"),
-                PlannerVertex::OptimisedAway(_) => unreachable!("encountered optimised-away registered as producing variable"),
+                PlannerVertex::OptimisedAway(_) => {
+                    unreachable!("encountered optimised-away registered as producing variable")
+                }
                 PlannerVertex::Constraint(constraint) => {
                     let inputs =
                         self.inputs_of_pattern(producer).map(|var| self.graph.index_to_variable[&var]).collect_vec();

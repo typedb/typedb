@@ -20,16 +20,15 @@ use typeql::common::Span;
 
 use crate::{
     pattern::{
+        conjunction::Conjunction,
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, ScopeId, ValueType, Vertex,
+        IrID, ParameterID, Scope, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     LiteralParseError, RepresentationError,
 };
-use crate::pattern::conjunction::Conjunction;
-use crate::pattern::Scope;
 
 #[derive(Debug, Clone)]
 pub struct Constraints {
@@ -814,7 +813,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for Constraint<ID> {
                 Self::Value(inner) => inner.hash(),
                 Self::LinksDeduplication(inner) => inner.hash(),
                 Self::OptimisedAway(inner) => StructuralEquality::hash(&inner),
-        }
+            }
     }
 
     fn equals(&self, other: &Self) -> bool {
@@ -2716,7 +2715,6 @@ pub struct OptimisedAway {
 }
 
 impl OptimisedAway {
-
     pub(crate) fn new(conjunction: Conjunction) -> OptimisedAway {
         Self { conjunction }
     }
@@ -2730,10 +2728,9 @@ impl OptimisedAway {
     }
 
     pub fn ids_foreach<F, ID: IrID>(&self, mut function: F)
-        where
-            F: FnMut(ID),
+    where
+        F: FnMut(ID),
     {
-
     }
 
     pub fn map<ID: IrID, T: Clone>(self, mapping: &HashMap<ID, T>) -> OptimisedAway {
@@ -2747,11 +2744,11 @@ impl PartialEq<Self> for OptimisedAway {
     }
 }
 
-impl Eq for OptimisedAway { }
+impl Eq for OptimisedAway {}
 
 impl Hash for OptimisedAway {
     fn hash<H: Hasher>(&self, state: &mut H) {
-         Hash::hash(&self.conjunction.scope_id(), state)
+        Hash::hash(&self.conjunction.scope_id(), state)
     }
 }
 
