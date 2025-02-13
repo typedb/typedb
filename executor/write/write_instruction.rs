@@ -145,6 +145,44 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
     }
 }
 
+impl AsWriteInstruction for compiler::executable::update::instructions::Has {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+    ) -> Result<(), Box<WriteError>> {
+        let owner_thing = get_thing(row, &self.owner);
+        let attribute = get_thing(row, &self.attribute);
+        // TODO: Unset if set... Or not?
+        owner_thing
+            .as_object()
+            .set_has_unordered(snapshot, thing_manager, attribute.as_attribute())
+            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+        Ok(())
+    }
+}
+
+impl AsWriteInstruction for compiler::executable::update::instructions::Links {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+    ) -> Result<(), Box<WriteError>> {
+        let relation_thing = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
+        let player_thing = get_thing(row, &self.player).as_object();
+        let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
+        // TODO: Remove player if exists... What if there are multiple players of this role? What does it do?
+        relation_thing
+            .add_player(snapshot, thing_manager, *role_type, player_thing)
+            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+        Ok(())
+    }
+}
+
 impl AsWriteInstruction for compiler::executable::delete::instructions::ThingInstruction {
     fn execute(
         &self,

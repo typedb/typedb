@@ -5,23 +5,7 @@
  */
 
 use std::fmt;
-
-use super::{ThingPosition, TypeSource, ValueSource};
-
-#[derive(Debug)]
-pub enum ConceptInstruction {
-    PutObject(PutObject),
-    PutAttribute(PutAttribute),
-}
-
-impl fmt::Display for ConceptInstruction {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            ConceptInstruction::PutObject(_) => write!(f, "Put object"),
-            ConceptInstruction::PutAttribute(_) => write!(f, "Put attribute"),
-        }
-    }
-}
+use crate::executable::insert::{ThingPosition, TypeSource};
 
 #[derive(Debug)]
 pub enum ConnectionInstruction {
@@ -32,24 +16,10 @@ pub enum ConnectionInstruction {
 impl fmt::Display for ConnectionInstruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Self::Has(_) => write!(f, "Put has"),
-            Self::Links(_) => write!(f, "Put links"),
+            ConnectionInstruction::Has(_) => write!(f, "has"),
+            ConnectionInstruction::Links(_) => write!(f, "links"),
         }
     }
-}
-
-// TODO: Move to storing the inserted thing directly into the output row
-#[derive(Debug)]
-pub struct PutObject {
-    pub type_: TypeSource,
-    pub write_to: ThingPosition,
-}
-
-#[derive(Debug)]
-pub struct PutAttribute {
-    pub type_: TypeSource,
-    pub value: ValueSource,
-    pub write_to: ThingPosition,
 }
 
 #[derive(Debug)]

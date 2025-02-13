@@ -35,6 +35,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::update::executable::UpdateExecutable;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
@@ -256,7 +257,6 @@ fn compile_stage(
                 input_variables,
                 annotations,
                 variable_registry,
-                *source_span,
             )
                 .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Update(Arc::new(plan)))

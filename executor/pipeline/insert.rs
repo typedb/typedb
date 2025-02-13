@@ -61,7 +61,7 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
 
-        let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
+        let mut batch = match prepare_insert_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
         };
@@ -72,7 +72,7 @@ where
             // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
 
-            if let Err(err) = execute_insert(
+            if let Err(typedb_source) = execute_insert(
                 &executable,
                 snapshot_mut,
                 &context.thing_manager,
@@ -80,7 +80,7 @@ where
                 &mut row,
                 &profile,
             ) {
-                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source: err }), context));
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
 
             if index % 100 == 0 {
@@ -93,7 +93,7 @@ where
     }
 }
 
-fn prepare_output_rows(
+pub(crate) fn prepare_insert_output_rows(
     output_width: u32,
     input_iterator: impl StageIterator,
 ) -> Result<Batch, Box<PipelineExecutionError>> {

@@ -33,6 +33,7 @@ use crate::{
     },
     filter_variants, VariablePosition,
 };
+use crate::executable::insert::{prepare_output_row_schema, resolve_links_role};
 
 #[derive(Debug)]
 pub struct InsertExecutable {
@@ -75,17 +76,11 @@ pub fn compile(
     add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
     add_role_players(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
 
-    let output_width = variables.values().map(|i| i.position + 1).max().unwrap_or(0);
-    let mut output_row_schema = vec![None; output_width as usize];
-    variables.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
-        output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
-    });
-
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema,
+        output_row_schema: prepare_output_row_schema(input_variables),
     })
 }
 
@@ -259,30 +254,13 @@ fn add_role_players(
             variable_registry,
             links.source_span(),
         )?;
-        let &Vertex::Variable(role_variable) = links.role_type() else { unreachable!() };
-
-        let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
-            (Some(&input), None) => TypeSource::InputVariable(input),
-            (None, Some(type_)) => TypeSource::Constant(*type_),
-            (None, None) => {
-                // TODO: Do we want to support inserts with unspecified role-types?
-                let annotations = type_annotations.vertex_annotations_of(&Vertex::Variable(role_variable)).unwrap();
-                if annotations.len() == 1 {
-                    TypeSource::Constant(*annotations.iter().find(|_| true).unwrap())
-                } else {
-                    return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
-                        player_variable: variable_registry
-                            .variable_names()
-                            .get(&links.relation().as_variable().unwrap())
-                            .cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                        role_types: annotations.iter().join(", "),
-                        source_span: links.source_span(),
-                    }));
-                }
-            }
-            (Some(_), Some(_)) => unreachable!(),
-        };
+        let role = resolve_links_role(
+            type_annotations,
+            input_variables,
+            variable_registry,
+            &named_role_types,
+            links,
+        )?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
