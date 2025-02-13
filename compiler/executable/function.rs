@@ -221,14 +221,8 @@ pub(crate) fn compile_function(
         true // The call above will crash if the assertion fails.
     }));
     let AnnotatedFunction { variable_registry, parameter_registry, arguments, stages, return_, .. } = function;
-    let (argument_positions, executable_stages, _) = compile_pipeline_stages(
-        statistics,
-        &variable_registry,
-        call_cost_provider,
-        stages,
-        arguments.into_iter(),
-        &return_.referenced_variables(),
-    )?;
+    let (argument_positions, executable_stages, _) =
+        compile_pipeline_stages(statistics, &variable_registry, call_cost_provider, stages, arguments.into_iter())?;
 
     let returns = compile_return_operation(&executable_stages, return_)?;
     debug_assert!(executable_stages.iter().any(|stage| matches!(stage, ExecutableStage::Match(_))));

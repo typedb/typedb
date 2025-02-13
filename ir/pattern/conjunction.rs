@@ -58,7 +58,7 @@ impl Conjunction {
         let self_scope = self.scope_id;
         self.referenced_variables().filter(move |var| {
             let scope = block_context.get_scope(var).unwrap();
-            self_scope != scope && block_context.is_visible_child(self_scope, scope)
+            block_context.is_parent_scope(scope, self_scope) || self_scope != scope && !var.is_anonymous()
         })
     }
 
@@ -66,7 +66,9 @@ impl Conjunction {
         let self_scope = self.scope_id;
         block_context
             .get_variable_scopes()
-            .filter(move |&(_, scope)| scope == self_scope || block_context.is_visible_child(scope, self_scope))
+            .filter(move |&(var, scope)| {
+                scope == self_scope || block_context.is_visible_child(self_scope, scope) && !var.is_anonymous()
+            })
             .map(|(var, _)| var)
     }
 

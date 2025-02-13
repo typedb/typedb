@@ -150,7 +150,6 @@ fn make_builder<'a>(
             NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
         }
     }
-    // Compute variables which must be bound from a parent scope.
 
     let mut plan_builder = ConjunctionPlanBuilder::new(
         Vec::from_iter(conjunction.captured_required_variables(block_context)),
@@ -1306,7 +1305,7 @@ impl ConjunctionPlan<'_> {
                             .all(|pat| self.element_to_order[&VertexId::Pattern(pat)] <= order);
                         if is_last_consumer {
                             match_builder.finish_one();
-                            match_builder.remove_output(self.graph.index_to_variable[&input])
+                            match_builder.remove_output(self.graph.index_to_variable[&input]);
                         }
                     }
                     for output in self.outputs_of_pattern(pattern) {

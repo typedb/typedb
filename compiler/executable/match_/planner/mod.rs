@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{hash_map, HashMap, HashSet};
+use std::{
+    collections::{hash_map, HashMap, HashSet},
+    ops::Index,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -44,7 +47,6 @@ typedb_error! {
 pub fn compile(
     block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &[Variable],
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
@@ -68,7 +70,12 @@ pub fn compile(
         call_cost_provider,
     )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
+    .lower(
+        input_variables.keys().copied(),
+        variable_registry.variable_names().keys().copied(),
+        &assigned_identities,
+        variable_registry,
+    )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry))
 }
@@ -326,18 +333,6 @@ impl MatchExecutableBuilder {
 
         if self.current.as_ref().is_some_and(|builder| !builder.builder.is_check()) {
             self.finish_one();
-        }
-
-        if let Some(StepBuilder { builder: StepInstructionsBuilder::Intersection(builder), .. }) = self.steps.last_mut()
-        {
-            for instr in builder.instructions.iter_mut().rev() {
-                for var in variables {
-                    if instr.is_new_variable(self.index[var]) {
-                        instr.add_check(check);
-                        return;
-                    }
-                }
-            }
         }
 
         if self.current.is_none() {
