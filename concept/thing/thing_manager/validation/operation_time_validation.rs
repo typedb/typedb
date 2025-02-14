@@ -525,7 +525,7 @@ impl OperationTimeValidation {
         owner: impl ObjectAPI,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, owner)
+            .instance_exists(snapshot, &owner)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -543,7 +543,7 @@ impl OperationTimeValidation {
         attribute: &Attribute,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_ref_exists(snapshot, attribute)
+            .instance_exists(snapshot, attribute)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -565,7 +565,7 @@ impl OperationTimeValidation {
         relation: Relation,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, relation)
+            .instance_exists(snapshot, &relation)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -583,7 +583,7 @@ impl OperationTimeValidation {
         player: impl ObjectAPI,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, player)
+            .instance_exists(snapshot, &player)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -601,7 +601,7 @@ impl OperationTimeValidation {
         owner: impl ObjectAPI,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, owner)
+            .instance_exists(snapshot, &owner)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -618,7 +618,7 @@ impl OperationTimeValidation {
         relation: Relation,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, relation)
+            .instance_exists(snapshot, &relation)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())

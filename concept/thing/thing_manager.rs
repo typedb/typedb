@@ -102,24 +102,6 @@ use crate::{
 
 pub mod validation;
 
-macro_rules! vertex_exists_methods {
-    ($(
-        fn $method_name:ident($type_:ty);
-    )*) => {
-        $(
-            pub fn $method_name(
-                &self,
-                snapshot: &impl ReadableSnapshot,
-                vertex: $type_,
-            ) -> Result<bool, Box<ConceptReadError>> {
-                snapshot
-                    .contains(vertex.vertex().into_storage_key().as_reference())
-                    .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
-            }
-        )*
-    }
-}
-
 #[derive(Debug)]
 pub struct ThingManager {
     vertex_generator: Arc<ThingVertexGenerator>,
@@ -1509,10 +1491,24 @@ impl ThingManager {
             })
     }
 
-    vertex_exists_methods! {
-        fn instance_exists(impl ThingAPI);
-        fn instance_ref_exists(&impl ThingAPI);
-        fn type_exists(impl TypeAPI);
+    pub fn instance_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        instance: &impl ThingAPI,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        snapshot
+            .contains(instance.vertex().into_storage_key().as_reference())
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+    }
+
+    pub fn type_exists(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: impl TypeAPI,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        snapshot
+            .contains(type_.vertex().into_storage_key().as_reference())
+            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 }
 
@@ -2016,7 +2012,7 @@ impl ThingManager {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
-            if self.instance_exists(snapshot, owner)? {
+            if self.instance_exists(snapshot, &owner)? {
                 let updated_attribute_types = out_object_attribute_types.entry(owner).or_default();
                 updated_attribute_types.insert(attribute.type_());
             }
@@ -2039,12 +2035,12 @@ impl ThingManager {
             let player = Object::new(edge.player());
             let role_type = RoleType::build_from_type_id(edge.role_id());
 
-            if self.instance_exists(snapshot, relation)? {
+            if self.instance_exists(snapshot, &relation)? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.insert(role_type);
             }
 
-            if self.instance_exists(snapshot, player)? {
+            if self.instance_exists(snapshot, &player)? {
                 let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
             }
@@ -2694,7 +2690,7 @@ impl ThingManager {
             }
         }
 
-        if !matches!(owner_status, ConceptStatus::Inserted) {
+        if owner_status != ConceptStatus::Inserted {
             if self
                 .has_attribute(snapshot, owner, attribute)
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
@@ -2840,7 +2836,7 @@ impl ThingManager {
             }
         }
 
-        if !matches!(relation_status, ConceptStatus::Inserted) {
+        if relation_status != ConceptStatus::Inserted {
             if self
                 .has_role_player(snapshot, relation, player, role_type)
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?

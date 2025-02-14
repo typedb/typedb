@@ -232,7 +232,7 @@ pub(crate) fn validate_type_supertype_abstractness<T: KindAPI>(
 
         match (subtype_abstract, supertype_abstract) {
             (false, false) | (false, true) | (true, true) => Ok(()),
-            (true, false) => Err(Box::new(SchemaValidationError::AbstractTypesSupertypeHasToBeAbstract {
+            (true, false) => Err(Box::new(SchemaValidationError::AbstractTypesSupertypeMustBeAbstract {
                 type_: get_label_or_schema_err(snapshot, type_manager, subtype)?,
                 supertype: get_label_or_schema_err(snapshot, type_manager, supertype)?,
             })),

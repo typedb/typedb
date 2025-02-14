@@ -39,7 +39,7 @@ typedb_error!(
         RelatesNotInheritedForSpecialisation(12, "Role type '{role}' must be inherited without specialization by supertypes to be specialized by relation type '{relation}'.", relation: Label, role: Label),
         RelatesIsAlreadySpecialisedByASupertype(13, "Role type '{role}' is already specialised by a supertype of relation type '{relation}'.", relation: Label, role: Label),
         CannotManageAnnotationsForSpecialisingRelates(14, "Cannot manage annotations for the specialising relates role '{role}'.", role: Label),
-        AbstractTypesSupertypeHasToBeAbstract(16, "Abstract type '{type_}' must have an abstract supertype, but it has '{supertype}'.", type_: Label, supertype: Label),
+        AbstractTypesSupertypeMustBeAbstract(16, "Abstract type '{type_}' must have an abstract supertype, but it has '{supertype}'.", type_: Label, supertype: Label),
         CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates(17, "Cannot unset the abstractness of relates role '{role}' as it is a specialising relates.", role: Label),
         CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost(18, "Cannot change supertype of relation type '{relation}' as the relates specialisation for roles '{role_1}' and '{role_2}' will be lost.", relation: Label, role_1: Label, role_2: Label),
         OrderingDoesNotMatchWithSupertype(19, "Ordering for '{label}' '{ordering}' does not match with its supertype '{super_label}' ordering '{super_ordering}.", label: Label, super_label: Label, ordering: Ordering, super_ordering: Ordering),

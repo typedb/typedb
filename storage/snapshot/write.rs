@@ -103,25 +103,9 @@ impl Write {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum WriteCategory {
     Insert,
     Put,
     Delete,
-}
-
-impl WriteCategory {
-    pub fn is_new(&self) -> bool {
-        match self {
-            WriteCategory::Insert | WriteCategory::Put => true,
-            WriteCategory::Delete => false,
-        }
-    }
-
-    pub fn is_delete(&self) -> bool {
-        match self {
-            WriteCategory::Insert | WriteCategory::Put => false,
-            WriteCategory::Delete => true,
-        }
-    }
 }

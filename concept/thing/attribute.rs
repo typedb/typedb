@@ -272,30 +272,18 @@ where
                     } else {
                         match Self::write_category(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex)
                         {
-                            Ok(Some(write_category)) => {
-                                if write_category.is_new() {
-                                    self.state = State::ItemReady
-                                } else if write_category.is_delete() {
-                                    advance_attribute = true
-                                } else {
-                                    unreachable!("Not new and not delete write category");
-                                }
-                            }
-                            Ok(None) => {
-                                match Self::has_owner(
-                                    self.has_reverse_iterator_storage.as_mut().unwrap(),
-                                    attribute_vertex,
-                                ) {
-                                    Ok(has_owner) => {
-                                        if has_owner {
-                                            self.state = State::ItemReady
-                                        } else {
-                                            advance_attribute = true
-                                        }
-                                    }
-                                    Err(err) => self.state = State::Error(err),
-                                }
-                            }
+                            Ok(Some(write_category)) => match write_category {
+                                WriteCategory::Insert | WriteCategory::Put => self.state = State::ItemReady,
+                                WriteCategory::Delete => advance_attribute = true,
+                            },
+                            Ok(None) => match Self::has_owner(
+                                self.has_reverse_iterator_storage.as_mut().unwrap(),
+                                attribute_vertex,
+                            ) {
+                                Ok(true) => self.state = State::ItemReady,
+                                Ok(false) => advance_attribute = true,
+                                Err(err) => self.state = State::Error(err),
+                            },
                             Err(err) => self.state = State::Error(err),
                         }
                     }
@@ -314,13 +302,10 @@ where
     ) -> Result<bool, Box<ConceptReadError>> {
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
         has_reverse_iterator.seek(has_reverse_prefix.as_reference());
-        match has_reverse_iterator
-            .peek()
-            .transpose()
-            .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))?
-        {
+        match has_reverse_iterator.peek() {
             None => Ok(false),
-            Some((bytes, _)) => {
+            Some(Err(source)) => Err(Box::new(ConceptReadError::SnapshotIterate { source })),
+            Some(Ok((bytes, _))) => {
                 let edge = ThingEdgeHasReverse::decode(Bytes::Reference(bytes.bytes()));
                 let edge_from = edge.from();
                 match edge_from.cmp(&attribute_vertex) {
