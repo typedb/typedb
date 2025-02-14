@@ -166,6 +166,13 @@ pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
     }
 
     // Then do it for the nested negations & optionals
+    // TODO: This is too permissive. We should have seeded these with the pruned types from the parent.
+    prune_types_for_nested_negations_and_optionals(graph);
+}
+
+fn prune_types_for_nested_negations_and_optionals(graph: &mut TypeInferenceGraph<'_>) {
+    graph.nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut())
+        .for_each(|nested| prune_types_for_nested_negations_and_optionals(nested));
     graph.nested_negations.iter_mut().for_each(|nested| prune_types(nested));
     graph.nested_optionals.iter_mut().for_each(|nested| prune_types(nested));
 }
