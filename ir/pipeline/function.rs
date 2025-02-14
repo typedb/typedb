@@ -15,6 +15,7 @@ use structural_equality::StructuralEquality;
 use typeql::{
     common::Span,
     schema::definable::function::{Output, SingleSelector},
+    type_::NamedTypeAny,
     TypeRefAny,
 };
 
@@ -32,7 +33,7 @@ pub struct Function {
     pub output: Option<Output>,
     // Variable categories for args & return can be read from the block's context.
     pub arguments: Vec<Variable>,
-    pub argument_labels: Option<Vec<TypeRefAny>>,
+    pub argument_labels: Option<Vec<NamedTypeAny>>,
 }
 
 impl Function {
@@ -41,7 +42,7 @@ impl Function {
         context: TranslationContext,
         parameters: ParameterRegistry,
         arguments: Vec<Variable>,
-        argument_labels: Option<Vec<TypeRefAny>>,
+        argument_labels: Option<Vec<NamedTypeAny>>,
         output: Option<Output>,
         function_body: FunctionBody,
     ) -> Self {

@@ -24,7 +24,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     common::{error::TypeQLError, Spanned},
     schema::definable::struct_::Field,
-    type_::{BuiltinValueType, NamedType, Optional},
+    type_::{BuiltinValueType, NamedType, NamedTypeAny, NamedTypeOptional},
     TypeRef, TypeRefAny,
 };
 
@@ -47,26 +47,14 @@ pub(crate) fn type_ref_to_label_and_ordering(
     type_ref: &TypeRefAny,
 ) -> Result<(Label, Ordering), Box<SymbolResolutionError>> {
     match type_ref {
-        TypeRefAny::Type(TypeRef::Named(NamedType::Label(label))) => {
+        TypeRefAny::Type(TypeRef::Label(label)) => {
             Ok((Label::parse_from(checked_identifier(&label.ident)?, label.span()), Ordering::Unordered))
         }
-        TypeRefAny::List(typeql::type_::List { inner: TypeRef::Named(NamedType::Label(label)), .. }) => {
+        TypeRefAny::List(typeql::type_::TypeRefList { inner: TypeRef::Label(label), .. }) => {
             Ok((Label::parse_from(checked_identifier(&label.ident)?, label.span()), Ordering::Ordered))
         }
-        _ => Err(Box::new(SymbolResolutionError::ExpectedNonOptionalTypeSymbol { declaration: type_ref.clone() })),
-    }
-}
-
-pub(crate) fn named_type_to_label(named_type: &NamedType) -> Result<Label, Box<SymbolResolutionError>> {
-    match named_type {
-        NamedType::Label(label) => Ok(Label::build(checked_identifier(&label.ident)?, label.span())),
-        NamedType::Role(scoped_label) => Ok(Label::build_scoped(
-            checked_identifier(&scoped_label.name.ident)?,
-            checked_identifier(&scoped_label.scope.ident)?,
-            scoped_label.span(),
-        )),
-        NamedType::BuiltinValueType(_) => Err(Box::new(SymbolResolutionError::ExpectedLabelButGotBuiltinValueType {
-            declaration: named_type.clone(),
+        _ => Err(Box::new(SymbolResolutionError::ExpectedNonVariableAndNonScopedTypeSymbol {
+            declaration: type_ref.clone(),
         })),
     }
 }
@@ -85,17 +73,13 @@ pub(crate) fn get_struct_field_value_type_optionality(
     type_manager: &TypeManager,
     field: &Field,
 ) -> Result<(ValueType, bool), Box<SymbolResolutionError>> {
-    let optional = matches!(&field.type_, TypeRefAny::Optional(_));
+    let optional = matches!(&field.type_, NamedTypeAny::Optional(_));
     match &field.type_ {
-        TypeRefAny::Type(TypeRef::Named(named))
-        | TypeRefAny::Optional(Optional { inner: TypeRef::Named(named), .. }) => {
+        NamedTypeAny::Simple(named) | NamedTypeAny::Optional(NamedTypeOptional { inner: named, .. }) => {
             let value_type = resolve_value_type(snapshot, type_manager, named)?;
             Ok((value_type, optional))
         }
-        TypeRefAny::Type(TypeRef::Variable(_)) | TypeRefAny::Optional(Optional { inner: TypeRef::Variable(_), .. }) => {
-            Err(Box::new(SymbolResolutionError::StructFieldIllegalVariable { declaration: field.clone() }))
-        }
-        TypeRefAny::List(_) => {
+        NamedTypeAny::List(_) => {
             Err(Box::new(SymbolResolutionError::StructFieldIllegalList { declaration: field.clone() }))
         }
     }
@@ -148,10 +132,6 @@ pub(crate) fn resolve_value_type(
                 Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source })),
             }
         }
-        NamedType::Role(scoped_label) => Err(Box::new(SymbolResolutionError::ScopedValueTypeName {
-            scope: scoped_label.scope.ident.as_str_unchecked().to_owned(),
-            name: scoped_label.name.ident.as_str_unchecked().to_owned(),
-        })),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ir::translation::tokens::translate_value_type(token))
         }
@@ -479,7 +459,7 @@ typedb_error! {
         OwnsNotFound(12, "The type '{owner_label}' does not own attribute type '{attribute_label}'.", owner_label: Label, attribute_label: Label),
         PlaysNotFound(13, "The type '{player_label}' does not play the role '{role_label}'.", player_label: Label, role_label: Label),
         ScopedValueTypeName(14, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
-        ExpectedNonOptionalTypeSymbol(15, "Expected a type label or a type[] label, but not an optional type? label.\nSource:\n{declaration}", declaration: TypeRefAny),
+        ExpectedNonVariableAndNonScopedTypeSymbol(15, "Expected a type label or a type[] label, but not a variable or scoped label.\nSource:\n{declaration}", declaration: TypeRefAny),
         ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
         UnexpectedConceptRead(17, "Unexpected concept read error.", typedb_source: Box<ConceptReadError>),
         IllegalKeywordAsIdentifier(18, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier),
