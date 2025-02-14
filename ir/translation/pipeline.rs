@@ -111,7 +111,7 @@ impl StructuralEquality for TranslatedStage {
             ^ match self {
                 Self::Match { block, .. } => block.hash(),
                 Self::Insert { block, .. } => block.hash(),
-                Self::Update { block, .. } => block.hash(), // TODO: Just like for deletes?
+                Self::Update { block, .. } => block.hash(),
                 Self::Delete { block, deleted_variables, .. } => {
                     let mut hasher = DefaultHasher::new();
                     block.hash_into(&mut hasher);

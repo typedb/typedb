@@ -109,5 +109,10 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
+        UnsupportedCompoundExpressions(
+            12,
+            "Compound expressions are not supported in these statements yet.",
+            source_span: Option<Span>,
+        ),
     }
 }

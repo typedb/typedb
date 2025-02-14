@@ -51,7 +51,6 @@ pub fn translate_update(
     value_parameters: &mut ParameterRegistry,
     update: &typeql::query::stage::Update,
 ) -> Result<Block, Box<RepresentationError>> {
-    // TODO: Do we even need this validation?
     validate_update_statements_and_variables(context, update)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();

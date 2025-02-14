@@ -312,7 +312,7 @@ fn collect_value_bindings(
     filter_variants!(Constraint::ExpressionBinding : constraints)
         .map(|expr| {
             let &Expression::Constant(constant) = expr.expression().get_root() else {
-                unreachable!("The grammar does not allow compound expressions")
+                return Err(Box::new(WriteCompilationError::UnsupportedCompoundExpressions { source_span: expr.source_span() }));
             };
             #[cfg(debug_assertions)]
             {

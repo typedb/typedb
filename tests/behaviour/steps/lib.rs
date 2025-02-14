@@ -163,7 +163,7 @@ impl Context {
     }
 
     pub fn close_active_transaction(&mut self) {
-        Self::close_transaction(self.take_transaction().unwrap())
+        Self::close_transaction(self.take_transaction().expect("Expected a transaction to close. No active transaction is found"))
     }
 
     pub fn close_transaction(tx: ActiveTransaction) {
