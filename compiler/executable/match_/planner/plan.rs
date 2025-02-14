@@ -1320,7 +1320,7 @@ impl ConjunctionPlan<'_> {
                         }
                     }
                     if self.outputs_of_pattern(pattern).next().is_none() {
-                        self.may_make_check_step(&mut match_builder, pattern, variable_registry);
+                        self.may_make_check_step(&mut match_builder, pattern, variable_registry)?;
                     }
                 }
             }
@@ -1463,7 +1463,8 @@ impl ConjunctionPlan<'_> {
                 }
             }
         }
-        Ok(match_builder.finish_one())
+        match_builder.finish_one();
+        Ok(())
     }
 
     fn may_make_check_step(
@@ -1501,7 +1502,7 @@ impl ConjunctionPlan<'_> {
                     assigned,
                     output_width: match_builder.next_output.position,
                 });
-                Ok(match_builder.push_step(&HashMap::new(), step_builder.into()))
+                match_builder.push_step(&HashMap::new(), step_builder.into());
             }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
@@ -1515,16 +1516,16 @@ impl ConjunctionPlan<'_> {
                     .iter()
                     .filter_map(|(&k, &v)| match_builder.current_outputs.contains(&k).then_some((k, v)))
                     .collect();
-                Ok(match_builder.push_step(
+                match_builder.push_step(
                     &variable_positions,
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
-                ))
+                )
             }
             PlannerVertex::Is(is) => {
                 let lhs = is.is().lhs().as_variable().unwrap();
                 let rhs = is.is().rhs().as_variable().unwrap();
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
-                Ok(match_builder.push_check(&[lhs, rhs], check))
+                match_builder.push_check(&[lhs, rhs], check)
             }
             PlannerVertex::LinksDeduplication(deduplication) => {
                 let role1 = deduplication.links_deduplication().links1().role_type().as_variable().unwrap();
@@ -1533,7 +1534,7 @@ impl ConjunctionPlan<'_> {
                 let player2 = deduplication.links_deduplication().links2().player().as_variable().unwrap();
                 let check = CheckInstruction::LinksDeduplication { role1, player1, role2, player2 }
                     .map(match_builder.position_mapping());
-                Ok(match_builder.push_check(&[role1, player1, role2, player2], check))
+                match_builder.push_check(&[role1, player1, role2, player2], check)
             }
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();
@@ -1565,9 +1566,9 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
-                Ok(match_builder.push_check(&vars, check))
+                match_builder.push_check(&vars, check)
             }
-            PlannerVertex::Constraint(constraint) => Ok(self.lower_constraint_check(match_builder, constraint)),
+            PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
             }
@@ -1583,10 +1584,10 @@ impl ConjunctionPlan<'_> {
                         variable_registry,
                     )?;
                 let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
-                Ok(match_builder
-                    .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into()))
+                match_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into())
             }
         }
+        Ok(())
     }
 
     fn lower_constraint(
