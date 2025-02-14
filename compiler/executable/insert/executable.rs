@@ -78,11 +78,11 @@ pub fn compile(
         executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema: prepare_output_row_schema(input_variables),
+        output_row_schema: prepare_output_row_schema(&variables),
     })
 }
 
-fn add_inserted_concepts(
+pub(crate) fn add_inserted_concepts(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,

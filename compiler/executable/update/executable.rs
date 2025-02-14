@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use answer::variable::Variable;
 use ir::{pattern::constraint::Constraint, pipeline::VariableRegistry};
 use itertools::Itertools;
+use typeql::common::Span;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -23,10 +24,13 @@ use crate::{
     },
     filter_variants, VariablePosition,
 };
+use crate::executable::insert::executable::add_inserted_concepts;
+use crate::executable::insert::instructions::ConceptInstruction;
 
 #[derive(Debug)]
 pub struct UpdateExecutable {
     pub executable_id: u64,
+    pub concept_instructions: Vec<ConceptInstruction>, // TODO: Insert instruction?
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
@@ -42,14 +46,28 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
+    source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
+    let mut attributes_inserts = Vec::with_capacity(constraints.len());
+    let variables = add_inserted_concepts(
+        constraints,
+        input_variables,
+        type_annotations,
+        variable_registry,
+        &mut attributes_inserts,
+        source_span,
+    )?;
+
     let mut connection_inserts = Vec::with_capacity(constraints.len());
-    add_has(constraints, input_variables, variable_registry, &mut connection_inserts)?;
-    add_role_players(constraints, type_annotations, input_variables, variable_registry, &mut connection_inserts)?;
+
+    add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
+    add_role_players(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
+
     Ok(UpdateExecutable {
         executable_id: next_executable_id(),
+        concept_instructions: attributes_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema: prepare_output_row_schema(input_variables),
+        output_row_schema: prepare_output_row_schema(&variables),
     })
 }
 

@@ -5,6 +5,7 @@
  */
 
 use std::sync::Arc;
+use compiler::executable::insert::instructions::ConceptInstruction;
 
 use compiler::executable::update::{executable::UpdateExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
@@ -102,6 +103,20 @@ fn execute_update(
     debug_assert!(row.get_multiplicity() == 1);
     debug_assert!(row.len() == executable.output_row_schema.len());
     let mut index = 0;
+    for instruction in &executable.concept_instructions {
+        let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let measurement = step_profile.start_measurement();
+        match instruction {
+            ConceptInstruction::PutAttribute(isa_attr) => {
+                isa_attr.execute(snapshot, thing_manager, parameters, row)?;
+            }
+            ConceptInstruction::PutObject(isa_object) => {
+                unreachable!("Unexpected Put Object for Update: {isa_object:?}");
+            }
+        }
+        measurement.end(&step_profile, 1, 1);
+        index += 1;
+    }
     for instruction in &executable.connection_instructions {
         let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
         let measurement = step_profile.start_measurement();
