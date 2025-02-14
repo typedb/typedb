@@ -173,8 +173,14 @@ pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
 fn prune_types_for_nested_negations_and_optionals(graph: &mut TypeInferenceGraph<'_>) {
     graph.nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut())
         .for_each(|nested| prune_types_for_nested_negations_and_optionals(nested));
-    graph.nested_negations.iter_mut().for_each(|nested| prune_types(nested));
-    graph.nested_optionals.iter_mut().for_each(|nested| prune_types(nested));
+    chain(graph.nested_negations.iter_mut(), graph.nested_optionals.iter_mut()).for_each(|nested| {
+        for (vertex, parent_annotations) in &graph.vertices.annotations {
+            if let Some(nested_annotations) = nested.vertices.annotations.get_mut(&vertex) {
+                nested_annotations.retain(|t| parent_annotations.contains(t));
+            }
+        }
+        prune_types(nested)
+    });
 }
 
 #[derive(Debug)]
