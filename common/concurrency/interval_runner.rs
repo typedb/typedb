@@ -59,7 +59,7 @@ impl IntervalRunner {
 impl Drop for IntervalRunner {
     fn drop(&mut self) {
         let (done_sender, done_receiver) = sync_channel(1);
-        self.shutdown_sink.send(done_sender).unwrap();
-        done_receiver.recv().unwrap()
+        self.shutdown_sink.send(done_sender).expect("Expected interval runner shutdown signal sending");
+        done_receiver.recv().expect("Expected interval runner shutdown finishing")
     }
 }

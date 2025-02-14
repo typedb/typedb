@@ -40,7 +40,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
-        ObjectTypeAPI, Ordering, OwnerAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
     },
     ConceptStatus,
 };
@@ -208,7 +208,10 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+
+        OperationTimeValidation::validate_attribute_exists_to_set_has(snapshot, thing_manager, self, attribute)
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -216,7 +219,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             self.type_(),
             attribute.type_(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -225,7 +228,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
 
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute.type_())
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         thing_manager.set_has_unordered(snapshot, self, attribute)
     }
@@ -237,7 +240,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         attribute: &Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -245,7 +248,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             self.type_(),
             attribute.type_(),
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute.type_())?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -253,19 +256,19 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             Ordering::Ordered => return Err(Box::new(ConceptWriteError::UnsetHasUnorderedOwnsOrdered {})),
         }
 
-        thing_manager.unset_has(snapshot, self, attribute);
-        Ok(())
+        thing_manager.unset_has(snapshot, self, attribute)
     }
 
     fn set_has_ordered(
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        // TODO: We might need to change this interface if we can add attributes of different types!
         attribute_type: AttributeType,
         new_attributes: Vec<Attribute>,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -273,7 +276,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             self.type_(),
             attribute_type,
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type)?;
         match owns.get_ordering(snapshot, thing_manager.type_manager())? {
@@ -282,11 +285,14 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         }
 
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute_type)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let mut new_counts = BTreeMap::<_, u64>::new();
-        for attr in &new_attributes {
-            *new_counts.entry(attr).or_default() += 1;
+        for attribute in &new_attributes {
+            OperationTimeValidation::validate_attribute_exists_to_set_has(snapshot, thing_manager, self, attribute)
+                .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+
+            *new_counts.entry(attribute).or_default() += 1;
         }
 
         OperationTimeValidation::validate_owns_distinct_constraint(
@@ -296,25 +302,25 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             attribute_type,
             &new_counts,
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         // 1. get owned list
         let old_attributes = thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)?;
 
         let mut old_counts = BTreeMap::<_, u64>::new();
-        for attr in &old_attributes {
-            *old_counts.entry(attr).or_default() += 1;
+        for attribute in &old_attributes {
+            *old_counts.entry(attribute).or_default() += 1;
         }
 
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
-        for attr in old_counts.keys() {
-            if !new_counts.contains_key(attr) {
-                thing_manager.unset_has(snapshot, self, attr);
+        for attribute in old_counts.keys() {
+            if !new_counts.contains_key(attribute) {
+                thing_manager.unset_has(snapshot, self, attribute)?;
             }
         }
-        for (attr, count) in new_counts {
+        for (attribute, count) in new_counts {
             // Don't skip unchanged count to ensure that locks are placed correctly
-            thing_manager.set_has_count(snapshot, self, attr, count)?;
+            thing_manager.set_has_count(snapshot, self, attribute, count)?;
         }
 
         // 3. Overwrite owned list
@@ -328,7 +334,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
         OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
-            .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -336,7 +342,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             self.type_(),
             attribute_type,
         )
-        .map_err(|error| ConceptWriteError::DataValidation { typedb_source: error })?;
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         let owns = self.type_().try_get_owns_attribute(snapshot, thing_manager.type_manager(), attribute_type)?;
         let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
@@ -344,7 +350,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             Ordering::Unordered => Err(Box::new(ConceptWriteError::UnsetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => {
                 for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type)? {
-                    thing_manager.unset_has(snapshot, self, &attribute);
+                    thing_manager.unset_has(snapshot, self, &attribute)?;
                 }
                 thing_manager.unset_has_ordered(snapshot, self, attribute_type);
                 Ok(())

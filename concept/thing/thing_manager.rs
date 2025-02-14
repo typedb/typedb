@@ -273,18 +273,6 @@ impl ThingManager {
         InstanceIterator::new(snapshot.iterate_range(&key_range))
     }
 
-    pub fn instance_exists(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        instance: &impl ThingAPI,
-    ) -> Result<bool, Box<ConceptReadError>> {
-        let storage_key = instance.vertex().into_storage_key();
-        snapshot
-            .get::<BUFFER_KEY_INLINE>(storage_key.as_reference())
-            .map(|value| value.is_some())
-            .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
-    }
-
     pub(crate) fn get_relations_roles(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -1495,20 +1483,25 @@ impl ThingManager {
                 Write::Put { .. } => ConceptStatus::Put,
                 Write::Delete => ConceptStatus::Deleted,
             })
-            .unwrap_or_else(|| ConceptStatus::Persisted)
+            .unwrap_or_else(|| {
+                debug_assert!(snapshot
+                    .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference())
+                    .is_ok_and(|option| option.is_some()));
+                ConceptStatus::Persisted
+            })
     }
 
-    pub(crate) fn object_exists(
+    pub fn instance_exists(
         &self,
         snapshot: &impl ReadableSnapshot,
-        object: impl ObjectAPI,
+        instance: &impl ThingAPI,
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
-            .contains(object.vertex().into_storage_key().as_reference())
+            .contains(instance.vertex().into_storage_key().as_reference())
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
-    pub(crate) fn type_exists(
+    pub fn type_exists(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI,
@@ -1870,7 +1863,7 @@ impl ThingManager {
           2b. Collect cardinality constraints (declared and inherited) of all marked capabilities without duplications (if a subtype and its supertype are affected, the supertype's constraint is checked once)
           2c. Validate each constraint separately using the counts prepared in 2a. To validate a constraint, take its source type (where this constraint is declared), and count all instances of the source type and its subtypes.
 
-        Let's consider the following example (also consider that super attribute types can be not abstract):
+        Let's consider the following example:
           entity person,
             owns name @card(1..),
             owns surname, # sub name
@@ -1910,17 +1903,17 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_has_objects(snapshot, &mut modified_objects_attribute_types);
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_links_objects(
             snapshot,
             &mut modified_relations_role_types,
             &mut modified_objects_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_schema_capability_cardinalities_objects(
             snapshot,
@@ -1928,22 +1921,22 @@ impl ThingManager {
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
         );
-        collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+        collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
             res = CommitTimeValidation::validate_object_has(snapshot, self, object, modified_owns, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         for (object, modified_plays) in modified_objects_role_types {
             res = CommitTimeValidation::validate_object_links(snapshot, self, object, modified_plays, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         for (relation, modified_relates) in modified_relations_role_types {
             res =
                 CommitTimeValidation::validate_relation_links(snapshot, self, relation, modified_relates, &mut errors);
-            collect_errors!(errors, res, |source| DataValidationError::ConceptRead { typedb_source: source });
+            collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         if errors.is_empty() {
@@ -2019,7 +2012,7 @@ impl ThingManager {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
-            if self.object_exists(snapshot, owner)? {
+            if self.instance_exists(snapshot, &owner)? {
                 let updated_attribute_types = out_object_attribute_types.entry(owner).or_default();
                 updated_attribute_types.insert(attribute.type_());
             }
@@ -2042,12 +2035,12 @@ impl ThingManager {
             let player = Object::new(edge.player());
             let role_type = RoleType::build_from_type_id(edge.role_id());
 
-            if self.object_exists(snapshot, relation)? {
+            if self.instance_exists(snapshot, &relation)? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.insert(role_type);
             }
 
-            if self.object_exists(snapshot, player)? {
+            if self.instance_exists(snapshot, &player)? {
                 let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
             }
@@ -2658,41 +2651,56 @@ impl ThingManager {
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
-        let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
-
         if count == 0 {
-            snapshot.delete(has.into_storage_key().into_owned_array());
-            snapshot.delete(has_reverse.into_storage_key().into_owned_array());
+            self.unset_has(snapshot, owner, attribute)
         } else {
+            let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
+            let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
+
             owner.set_required(snapshot, self)?;
             attribute.set_required(snapshot, self)?;
-
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
+            Ok(())
+        }
+    }
+
+    pub(crate) fn unset_has(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        owner: impl ObjectAPI,
+        attribute: &Attribute,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        let owner_status = owner.get_status(snapshot, self);
+        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key();
+        let has_array = has.clone().into_owned_array();
+        let has_reverse_array =
+            ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
+
+        if let Some(has_write) = snapshot.get_write(has.as_reference()).cloned() {
+            match has_write {
+                Write::Put { value, .. } => {
+                    snapshot.unput_val(has_array.clone(), value.clone());
+                    snapshot.unput_val(has_reverse_array.clone(), value);
+                }
+                Write::Delete => {}
+                Write::Insert { .. } => {
+                    unreachable!("Encountered an `insert` has. Owner: {owner:?}, attribute: {attribute:?}.")
+                }
+            }
+        }
+
+        if owner_status != ConceptStatus::Inserted {
+            if self
+                .has_attribute(snapshot, owner, attribute)
+                .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
+            {
+                snapshot.delete(has_array);
+                snapshot.delete(has_reverse_array);
+            }
         }
 
         Ok(())
-    }
-
-    pub(crate) fn unset_has(&self, snapshot: &mut impl WritableSnapshot, owner: impl ObjectAPI, attribute: &Attribute) {
-        let owner_status = owner.get_status(snapshot, self);
-        let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key().into_owned_array();
-        let has_reverse =
-            ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
-        match owner_status {
-            ConceptStatus::Inserted => {
-                let count = 1;
-                snapshot.unput_val(has, ByteArray::copy(&encode_u64(count)));
-                snapshot.unput_val(has_reverse, ByteArray::copy(&encode_u64(count)));
-            }
-            ConceptStatus::Persisted => {
-                snapshot.delete(has);
-                snapshot.delete(has_reverse);
-            }
-            ConceptStatus::Put => unreachable!("Encountered a `put` attribute owner: {owner:?}."),
-            ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
-        }
     }
 
     pub(crate) fn set_has_ordered(
@@ -2777,13 +2785,13 @@ impl ThingManager {
         role_type: RoleType,
         count: u64,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
-        let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
-
         if count == 0 {
-            snapshot.delete(links.into_storage_key().into_owned_array());
-            snapshot.delete(links_reverse.into_storage_key().into_owned_array());
+            self.unset_links(snapshot, relation, player, role_type)
         } else {
+            let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+            let links_reverse =
+                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+
             relation.set_required(snapshot, self)?;
             player.set_required(snapshot, self)?;
 
@@ -2794,9 +2802,8 @@ impl ThingManager {
                 let player = Object::new(player.vertex());
                 self.relation_index_player_regenerate(snapshot, relation, player, role_type, count)?
             }
+            Ok(())
         }
-
-        Ok(())
     }
 
     /// Delete all counts of the specific role player in a given relation, and update indexes if required
@@ -2807,28 +2814,36 @@ impl ThingManager {
         player: impl ObjectAPI,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex())
-            .into_storage_key()
-            .into_owned_array();
+        let relation_status = relation.get_status(&*snapshot, self);
+        let links =
+            ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex()).into_storage_key();
+        let links_array = links.clone().into_owned_array();
+        let links_reverse_array =
+            ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
+                .into_storage_key()
+                .into_owned_array();
 
-        let links_reverse = ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
-            .into_storage_key()
-            .into_owned_array();
-
-        let owner_status = relation.get_status(&*snapshot, self);
-
-        match owner_status {
-            ConceptStatus::Inserted => {
-                let count = 1;
-                snapshot.unput_val(links, ByteArray::copy(&encode_u64(count)));
-                snapshot.unput_val(links_reverse, ByteArray::copy(&encode_u64(count)));
+        if let Some(links_write) = snapshot.get_write(links.as_reference()).cloned() {
+            match links_write {
+                Write::Put { value, .. } => {
+                    snapshot.unput_val(links_array.clone(), value.clone());
+                    snapshot.unput_val(links_reverse_array.clone(), value);
+                }
+                Write::Delete => {}
+                Write::Insert { .. } => {
+                    unreachable!("Encountered an `insert` links. Relation: {relation:?}, player: {player:?}.")
+                }
             }
-            ConceptStatus::Persisted => {
-                snapshot.delete(links);
-                snapshot.delete(links_reverse);
+        }
+
+        if relation_status != ConceptStatus::Inserted {
+            if self
+                .has_role_player(snapshot, relation, player, role_type)
+                .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
+            {
+                snapshot.delete(links_array);
+                snapshot.delete(links_reverse_array);
             }
-            ConceptStatus::Put => unreachable!("Encountered a `put` relation: {relation:?}."),
-            ConceptStatus::Deleted => unreachable!("Attempting to unset attribute ownership on a deleted owner."),
         }
 
         if self
@@ -2892,6 +2907,17 @@ impl ThingManager {
                 .unwrap();
             debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
+
+        OperationTimeValidation::validate_links_count_to_remove_players(
+            snapshot,
+            self,
+            relation,
+            player,
+            role_type,
+            count,
+            decrement_count,
+        )
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         debug_assert!(*count.as_ref().unwrap() >= decrement_count);
         self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)

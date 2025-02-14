@@ -742,24 +742,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_no_attribute_subtypes_to_unset_abstractness(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        attribute_type: AttributeType,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        let no_subtypes = attribute_type
-            .get_subtypes(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
-            .is_empty();
-        if no_subtypes {
-            Ok(())
-        } else {
-            Err(Box::new(SchemaValidationError::CannotUnsetAbstractnessOfAttributeTypeAsItHasSubtypes {
-                attribute: get_label_or_schema_err(snapshot, type_manager, attribute_type)?,
-            }))
-        }
-    }
-
     pub(crate) fn validate_label_uniqueness(
         snapshot: &impl ReadableSnapshot,
         new_label: &Label,
@@ -1557,23 +1539,6 @@ impl OperationTimeValidation {
                 })?;
         }
         Ok(())
-    }
-
-    pub(crate) fn validate_attribute_type_supertype_is_abstract<T: KindAPI>(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        type_: T,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        if type_
-            .is_abstract(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
-        {
-            Ok(())
-        } else {
-            Err(Box::new(SchemaValidationError::AttributeTypeMustBeAbstractToHaveSubtypes {
-                attribute: get_label_or_schema_err(snapshot, type_manager, type_)?,
-            }))
-        }
     }
 
     pub(crate) fn validate_cardinality_arguments(

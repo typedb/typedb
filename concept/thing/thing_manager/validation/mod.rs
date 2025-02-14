@@ -20,19 +20,19 @@ pub(crate) mod validation;
 typedb_error!(
     pub DataValidationError(component = "Data validation", prefix = "DVL") {
         ConceptRead(1, "Data validation failed due to concept read error.", typedb_source: Box<ConceptReadError>),
-        CannotAddOwnerInstanceForNotOwnedAttributeType(
+        CannotHaveOwnerInstanceForNotOwnedAttributeType(
             2,
             "Type '{owner}' cannot own attribute type '{attribute}'.",
             owner: Label,
             attribute: Label
         ),
-        CannotAddPlayerInstanceForNotPlayedRoleType(
+        CannotHavePlayerInstanceForNotPlayedRoleType(
             3,
             "Type '{player}' cannot play role '{role}'.",
             player: Label,
             role: Label
         ),
-        CannotAddPlayerInstanceForNotRelatedRoleType(
+        CannotHavePlayerInstanceForNotRelatedRoleType(
             4,
             "Relation type '{relation}' cannot relate '{role}'.",
             relation: Label,
@@ -149,6 +149,27 @@ typedb_error!(
             19,
             "Cannot remove role player from a relation {relation_iid} that has already been deleted.",
             relation_iid: HexBytesFormatter<'static>
+        ),
+        SetHasDeletedAttribute(
+            20,
+            "Cannot set attribute ownership of a deleted attribute of type {attribute_type} on an owner {owner_iid}.",
+            owner_iid: HexBytesFormatter<'static>,
+            attribute_type: Label,
+        ),
+        AddDeletedPlayer(
+            21,
+            "Cannot add a deleted role player {player_iid} to a relation {relation_iid}.",
+            player_iid: HexBytesFormatter<'static>,
+            relation_iid: HexBytesFormatter<'static>
+        ),
+        RemoveDeletedPlayers(
+            22,
+            "Cannot delete {decrement_count} role players {player_iid} of type {role} of a relation {relation_iid}: only {current_count} role players exists.",
+            player_iid: HexBytesFormatter<'static>,
+            relation_iid: HexBytesFormatter<'static>,
+            role: Label,
+            decrement_count: u64,
+            current_count: u64,
         ),
     }
 );

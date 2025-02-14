@@ -93,4 +93,19 @@ impl Write {
             Write::Delete => panic!("Buffered delete does not have a value."),
         }
     }
+
+    pub fn category(&self) -> WriteCategory {
+        match self {
+            Write::Insert { .. } => WriteCategory::Insert,
+            Write::Put { .. } => WriteCategory::Put,
+            Write::Delete => WriteCategory::Delete,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum WriteCategory {
+    Insert,
+    Put,
+    Delete,
 }

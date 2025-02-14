@@ -183,7 +183,6 @@ pub(super) fn instances_of_types_chained<'a>(
     isa_kind: IsaKind,
     range: &(Bound<Value<'_>>, Bound<Value<'_>>),
 ) -> Result<MultipleTypeIsaIterator, Box<ConceptReadError>> {
-    let type_manager = thing_manager.type_manager();
     let (attribute_types, object_types) =
         types.into_iter().partition::<Vec<_>, _>(|type_| matches!(type_, Type::Attribute(_)));
 
@@ -210,7 +209,6 @@ pub(super) fn instances_of_types_chained<'a>(
     // TODO: don't unwrap inside the operators
     let attribute_iters: Vec<_> = attribute_types
         .into_iter()
-        .filter(|type_| type_.as_attribute_type().get_value_type(snapshot, type_manager).unwrap().is_some())
         .flat_map(|type_| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
                 type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
