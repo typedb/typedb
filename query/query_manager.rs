@@ -25,6 +25,7 @@ use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
+use compiler::executable::function::ExecutableFunctionRegistry;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -309,6 +310,7 @@ impl QueryManager {
             snapshot,
             variable_registry.variable_names(),
             thing_manager,
+            Arc::new(executable_functions),
             executable_stages,
             executable_fetch,
             Arc::new(value_parameters),

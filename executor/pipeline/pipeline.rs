@@ -192,6 +192,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         snapshot: Snapshot,
         variable_names: &HashMap<Variable, String>,
         thing_manager: Arc<ThingManager>,
+        executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
@@ -199,8 +200,6 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
         let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
-        // TODO: Receive as an argument from schema
-        let executable_functions = Arc::new(ExecutableFunctionRegistry::empty());
         for executable_stage in executable_stages {
             match executable_stage {
                 ExecutableStage::Match(match_executable) => {
@@ -253,7 +252,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         }
         Pipeline::build_with_fetch(
             variable_names,
-            executable_functions,
+            executable_functions.clone(),
             last_stage,
             output_variable_positions,
             executable_fetch,
