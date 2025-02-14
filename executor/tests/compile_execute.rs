@@ -136,6 +136,7 @@ fn test_has_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -235,6 +236,7 @@ fn test_expression_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &compiled_expressions,
@@ -322,6 +324,7 @@ fn test_links_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -416,6 +419,7 @@ fn test_links_intersection() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -501,6 +505,7 @@ fn test_negation_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -607,6 +612,7 @@ fn test_forall_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -699,6 +705,7 @@ fn test_named_var_select() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -791,6 +798,7 @@ fn test_disjunction_planning_traversal() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -887,6 +895,7 @@ fn test_disjunction_planning_nested_negations() {
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -985,6 +994,7 @@ select $name, $age;
     let match_executable = compiler::executable::match_::planner::compile(
         &block,
         &HashMap::new(),
+        &translation_context.variable_registry.variable_names().keys().copied().collect::<Vec<_>>(),
         &entry_annotations,
         &translation_context.variable_registry,
         &expressions,
