@@ -536,11 +536,6 @@ typedb_error! {
             "Encountered anonymous variable where it is not permitted.\nSource:\n{declaration}",
             declaration: TypeQLVariable
         ),
-        OptionalVariableEncountered(
-            2,
-            "Encountered optional variable where it is not permitted.\nSource:\n{declaration}",
-            declaration: TypeRefAny
-        ),
         NamedVariableEncountered(
             3,
             "Encountered named variable where it is not permitted.\nSource:\n{declaration}",

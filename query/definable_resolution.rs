@@ -448,7 +448,6 @@ typedb_error! {
         TypeNotFound(1, "The type '{label}' was not found.", label: Label),
         StructNotFound(2, "The struct value type '{name}' was not found.", name: String),
         StructFieldIllegalList(3, "Struct fields cannot be lists.\nSource:\n{declaration}", declaration: Field),
-        StructFieldIllegalVariable(4, "Encountered variable in struct field declaration.\nSource:\n{declaration}", declaration: Field),
         ValueTypeNotFound(5, "The value type '{name}' was not found.", name: String),
         ObjectTypeNotFound(6, "The entity or relation type '{label}' was not found.", label: Label),
         EntityTypeNotFound(7, "The entity type '{label}' was not found.", label: Label),
@@ -458,9 +457,7 @@ typedb_error! {
         RelatesNotFound(11, "The relation type '{label}' does not relate role '{role_name}'", label: Label, role_name: String),
         OwnsNotFound(12, "The type '{owner_label}' does not own attribute type '{attribute_label}'.", owner_label: Label, attribute_label: Label),
         PlaysNotFound(13, "The type '{player_label}' does not play the role '{role_label}'.", player_label: Label, role_label: Label),
-        ScopedValueTypeName(14, "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.", scope: String, name: String),
         ExpectedNonVariableAndNonScopedTypeSymbol(15, "Expected a type label or a type[] label, but not a variable or scoped label.\nSource:\n{declaration}", declaration: TypeRefAny),
-        ExpectedLabelButGotBuiltinValueType(16, "Expected type label got built-in value type name:\nSource:\n{declaration}", declaration: NamedType),
         UnexpectedConceptRead(17, "Unexpected concept read error.", typedb_source: Box<ConceptReadError>),
         IllegalKeywordAsIdentifier(18, "The reserved keyword '{identifier}' cannot be used as an identifier.", identifier: typeql::Identifier),
     }
