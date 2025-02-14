@@ -31,6 +31,8 @@ rust_test(
         "//util/test:test_utils",
     
         "@typeql//rust:typeql",
+
+        "@crates//:itertools",
     ],
 )
 
