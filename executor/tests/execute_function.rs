@@ -156,9 +156,9 @@ fn run_write_query(
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, ExecutionContext { snapshot, .. }) =
         pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    let snapshot = Arc::into_inner(snapshot).unwrap();
     let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    let snapshot = Arc::into_inner(snapshot).unwrap();
     snapshot.commit().unwrap();
     result.map(move |rows| (rows, rows_positions))
 }
@@ -511,28 +511,52 @@ fn fibonacci() {
 
 #[test]
 fn write_pipelines() {
-    let context = setup_common("define attribute number @independent, value integer; ");
+    let context = setup_common(r#"
+        define
+            relation edge relates begin, relates end;
+            entity node, plays edge:begin, plays edge:end, owns id @key;
+            attribute id, value integer;
+            attribute number @independent, value integer;
+    "#);
+    let insert_query = r#"insert
+        $n0  isa number  0;
+        $n1  isa number  1;
+        $n2  isa number  2;
+        $n3  isa number  3;
+    "#;
+    let (rows, _positions) = run_write_query(&context, insert_query).unwrap();
+    assert_eq!(1, rows.len());
 
     let query = r#"
         with
-        fun sum_numbers() -> integer:
+        fun hops_starting_at($begin: node) -> { integer }:
         match
-            let $ignored = sum_numbers();
-            $n isa number;
-        return sum($n);
+            $begin isa node;
+            let $hops = $hops_inner;
+            {
+                $edge isa edge, links (begin: $begin, end: $to);
+                let $hops_inner_1 = hops_starting_at($to) + 1;
+                $hops_inner isa number == $hops_inner_1;
+            }
+            or {
+                not { $no-edge isa edge, links (begin: $begin, end: $anywhere); };
+                $hops_inner isa number == 0;
+            };
+        return { $hops };
 
         insert
-             $x isa number 1;
+             $x isa node, has id 123456;
         match
-            let $sum1 = sum_numbers();
+            let $hops1 = hops_starting_at($x);
         insert
-             $y isa number == $sum1;
+             $y isa node, has id == $hops1;
+             $edge isa edge, links (begin: $x, end: $y);
         match
-             let $sum2 = sum_numbers();
-         select $sum2;
+             let $hops2 = hops_starting_at($x);
+         select $hops1, $hops2;
     "#;
     let (rows, positions) = run_write_query(&context, query).unwrap();
     assert_eq!(rows.len(), 1);
-    assert_eq!(rows[0].get(*positions.get("sum2").unwrap()), &VariableValue::Value(Value::Integer(2)));
-
+    assert_eq!(rows[0].get(*positions.get("hops1").unwrap()), &VariableValue::Value(Value::Integer(0)));
+    assert_eq!(rows[0].get(*positions.get("hops2").unwrap()), &VariableValue::Value(Value::Integer(1)));
 }
