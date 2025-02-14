@@ -8,21 +8,18 @@ use std::{
     collections::{BTreeSet, HashMap, HashSet},
     error::Error,
 };
-use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::Comparator, ParameterID},
+    pattern::{constraint, constraint::Comparator, ParameterID, Vertex},
     pipeline::VariableRegistry,
 };
+use itertools::Itertools;
 use typeql::common::Span;
-use ir::pattern::{constraint, Vertex};
-use crate::annotation::type_annotations::TypeAnnotations;
-use crate::executable::WriteCompilationError;
 
-use crate::VariablePosition;
+use crate::{annotation::type_annotations::TypeAnnotations, executable::WriteCompilationError, VariablePosition};
 
 pub mod executable;
 pub mod instructions;

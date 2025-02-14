@@ -31,6 +31,7 @@ use crate::{
         },
         reduce::ReduceStageExecutor,
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
+        update::UpdateStageExecutor,
         PipelineExecutionError,
     },
     row::MaybeOwnedRow,

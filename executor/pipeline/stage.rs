@@ -25,6 +25,7 @@ use crate::{
             SortStageExecutor, SortStageIterator,
         },
         reduce::ReduceStageExecutor,
+        update::UpdateStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
     },
     profile::QueryProfile,

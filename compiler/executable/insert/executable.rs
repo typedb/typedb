@@ -23,17 +23,15 @@ use typeql::common::Span;
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
-        WriteCompilationError,
         insert::{
             get_kinds_from_types, get_thing_input_position,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
-            ThingPosition, TypeSource, ValueSource, VariableSource,
+            prepare_output_row_schema, resolve_links_role, ThingPosition, TypeSource, ValueSource, VariableSource,
         },
-        next_executable_id,
+        next_executable_id, WriteCompilationError,
     },
     filter_variants, VariablePosition,
 };
-use crate::executable::insert::{prepare_output_row_schema, resolve_links_role};
 
 #[derive(Debug)]
 pub struct InsertExecutable {
@@ -254,13 +252,7 @@ fn add_role_players(
             variable_registry,
             links.source_span(),
         )?;
-        let role = resolve_links_role(
-            type_annotations,
-            input_variables,
-            variable_registry,
-            &named_role_types,
-            links,
-        )?;
+        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())

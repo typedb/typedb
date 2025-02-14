@@ -31,11 +31,11 @@ use crate::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
         reduce::{ReduceExecutable, ReduceRowsExecutable},
+        update::executable::UpdateExecutable,
         ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::update::executable::UpdateExecutable;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
@@ -248,7 +248,7 @@ fn compile_stage(
                 variable_registry,
                 *source_span,
             )
-                .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
+            .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Insert(Arc::new(plan)))
         }
         AnnotatedStage::Update { block, annotations, source_span } => {
@@ -258,7 +258,7 @@ fn compile_stage(
                 annotations,
                 variable_registry,
             )
-                .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
+            .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Update(Arc::new(plan)))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {

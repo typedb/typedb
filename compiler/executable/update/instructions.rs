@@ -5,6 +5,7 @@
  */
 
 use std::fmt;
+
 use crate::executable::insert::{ThingPosition, TypeSource};
 
 #[derive(Debug)]

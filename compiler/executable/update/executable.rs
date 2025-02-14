@@ -7,28 +7,22 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use ir::{
-    pattern::{
-        constraint::{Constraint},
-    },
-    pipeline::VariableRegistry,
-};
+use ir::{pattern::constraint::Constraint, pipeline::VariableRegistry};
 use itertools::Itertools;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
-        WriteCompilationError,
         insert::{
-            get_thing_input_position, VariableSource,
+            executable::collect_role_type_bindings, get_thing_input_position, prepare_output_row_schema,
+            resolve_links_role, VariableSource,
         },
         next_executable_id,
+        update::instructions::{ConnectionInstruction, Has, Links},
+        WriteCompilationError,
     },
     filter_variants, VariablePosition,
 };
-use crate::executable::insert::{prepare_output_row_schema, resolve_links_role};
-use crate::executable::insert::executable::collect_role_type_bindings;
-use crate::executable::update::instructions::{ConnectionInstruction, Has, Links};
 
 #[derive(Debug)]
 pub struct UpdateExecutable {
@@ -104,13 +98,7 @@ fn add_role_players(
             variable_registry,
             links.source_span(),
         )?;
-        let role = resolve_links_role(
-            type_annotations,
-            input_variables,
-            variable_registry,
-            &named_role_types,
-            links,
-        )?;
+        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())

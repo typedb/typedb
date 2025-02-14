@@ -5,13 +5,12 @@
  */
 
 use std::sync::atomic::{AtomicU64, Ordering};
-use typeql::common::Span;
 
 use error::typedb_error;
 use ir::pattern::constraint::Comparator;
+use typeql::common::Span;
 
-use crate::executable::fetch::executable::FetchCompilationError;
-use crate::executable::match_::planner::MatchCompilationError;
+use crate::executable::{fetch::executable::FetchCompilationError, match_::planner::MatchCompilationError};
 
 pub mod delete;
 pub mod fetch;

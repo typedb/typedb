@@ -426,7 +426,7 @@ fn annotate_and_check_insertables(
         annotated_function_signatures,
         true,
     )
-        .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
@@ -445,10 +445,8 @@ fn annotate_and_check_insertables(
                 if !running_variable_annotations.contains_key(&variable)
                     && annotations.vertex_annotations_of(links.role_type()).is_some()
                 {
-                    running_variable_annotations.insert(
-                        variable,
-                        annotations.vertex_annotations_of(links.role_type()).unwrap().clone(),
-                    );
+                    running_variable_annotations
+                        .insert(variable, annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
                 }
             }
         }
@@ -463,7 +461,7 @@ fn annotate_and_check_insertables(
         running_constraint_annotations,
         &annotations,
     )
-        .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     Ok(annotations)
 }

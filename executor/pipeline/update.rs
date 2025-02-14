@@ -6,10 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::update::{
-    executable::UpdateExecutable,
-    instructions::ConnectionInstruction,
-};
+use compiler::executable::update::{executable::UpdateExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
@@ -18,6 +15,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     batch::Batch,
     pipeline::{
+        insert::prepare_insert_output_rows,
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
@@ -26,14 +24,13 @@ use crate::{
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
-use crate::pipeline::insert::prepare_insert_output_rows;
 
-pub struct UpdateStageExecutable<PreviousStage> {
+pub struct UpdateStageExecutor<PreviousStage> {
     executable: Arc<UpdateExecutable>,
     previous: PreviousStage,
 }
 
-impl<PreviousStage> UpdateStageExecutable<PreviousStage> {
+impl<PreviousStage> UpdateStageExecutor<PreviousStage> {
     pub fn new(executable: Arc<UpdateExecutable>, previous: PreviousStage) -> Self {
         Self { executable, previous }
     }
@@ -43,7 +40,7 @@ impl<PreviousStage> UpdateStageExecutable<PreviousStage> {
     }
 }
 
-impl<Snapshot, PreviousStage> StageAPI<Snapshot> for UpdateStageExecutable<PreviousStage>
+impl<Snapshot, PreviousStage> StageAPI<Snapshot> for UpdateStageExecutor<PreviousStage>
 where
     Snapshot: WritableSnapshot + 'static,
     PreviousStage: StageAPI<Snapshot>,
