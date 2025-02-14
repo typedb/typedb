@@ -47,6 +47,7 @@ typedb_error! {
 pub fn compile(
     block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
+    selected_variables: &[Variable],
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
@@ -72,7 +73,7 @@ pub fn compile(
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .lower(
         input_variables.keys().copied(),
-        variable_registry.variable_names().keys().copied(),
+        selected_variables.iter().chain(variable_registry.variable_names().keys()).copied().unique(),
         &assigned_identities,
         variable_registry,
     )

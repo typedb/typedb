@@ -1439,19 +1439,13 @@ impl ConjunctionPlan<'_> {
                         .assigned()
                         .iter()
                         .map(|variable| {
-                            match_builder
-                                .index
-                                .get(&variable.as_variable().unwrap())
-                                .unwrap()
-                                .clone()
-                                .as_position()
-                                .unwrap()
+                            match_builder.index[&variable.as_variable().unwrap()].clone().as_position().unwrap()
                         })
                         .collect();
                     let arguments = call_binding
                         .function_call()
                         .argument_ids()
-                        .map(|variable| match_builder.index.get(&variable).unwrap().clone().as_position().unwrap())
+                        .map(|variable| match_builder.index[&variable].clone().as_position().unwrap())
                         .collect();
                     let step_builder = StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
                         function_id: call_binding.function_call().function_id(),
