@@ -8,9 +8,9 @@
 
 use std::io::stdout;
 
-use tracing::{self, dispatcher::DefaultGuard, Level, metadata::LevelFilter};
+use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
 pub use tracing::{debug, error, info, trace};
-use tracing_subscriber::{EnvFilter, fmt::SubscriberBuilder};
+use tracing_subscriber::{fmt::SubscriberBuilder, EnvFilter};
 
 pub mod result;
 

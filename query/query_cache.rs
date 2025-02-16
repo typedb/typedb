@@ -7,15 +7,10 @@
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
     sync::{
-        Arc,
         atomic::{AtomicU64, Ordering},
+        Arc, Mutex,
     },
 };
-use std::sync::Mutex;
-
-use moka::sync::Cache;
-use tracing::{event, Level};
-use typeql::query::stage::reduce::Stat;
 
 use compiler::executable::pipeline::ExecutablePipeline;
 use concept::thing::statistics::Statistics;
@@ -23,12 +18,15 @@ use ir::{
     pipeline::{fetch::FetchObject, function::Function},
     translation::pipeline::TranslatedStage,
 };
+use moka::sync::Cache;
 use resource::{
     constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
     perf_counters::QUERY_CACHE_FLUSH,
 };
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
+use tracing::{event, Level};
+use typeql::query::stage::reduce::Stat;
 
 #[derive(Debug)]
 pub struct QueryCache {
@@ -64,11 +62,11 @@ impl QueryCache {
     }
 
     pub fn may_reset(&self, new_statistics: &Statistics) {
-        let last_statistics = self.last_statistics.lock().unwrap();
-        let largest_change = last_statistics.largest_difference_frac(new_statistics);
+        let last_statistics_guard = self.last_statistics.lock().unwrap();
+        let largest_change = last_statistics_guard.largest_difference_frac(new_statistics);
         if largest_change > QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION {
             event!(Level::INFO, "Invalidating query cache given a statistic change of {}.", largest_change);
-            drop(last_statistics);
+            drop(last_statistics_guard);
             self.force_reset(new_statistics);
         }
     }
