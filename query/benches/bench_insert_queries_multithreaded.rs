@@ -11,27 +11,27 @@ use std::{
     collections::HashMap,
     sync::{Arc, OnceLock, RwLock},
     thread,
-    thread::{sleep, JoinHandle},
+    thread::{JoinHandle, sleep},
     time::{Duration, Instant},
 };
 
 use answer::variable_value::VariableValue;
 use concept::{
     thing::thing_manager::ThingManager,
-    type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI},
+    type_::{Ordering, OwnerAPI, PlayerAPI, type_manager::TypeManager},
 };
 use encoding::{
     graph::definition::definition_key_generator::DefinitionKeyGenerator,
     value::{label::Label, value_type::ValueType},
 };
-use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
+use executor::{ExecutionInterrupt, pipeline::stage::StageIterator};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, WritableSnapshot},
     MVCCStorage,
+    snapshot::{CommittableSnapshot, WritableSnapshot},
 };
 use test_utils::init_logging;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -142,7 +142,7 @@ fn multi_threaded_inserts() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
     let (type_manager, thing_manager) = load_managers(storage.clone(), Some(storage.snapshot_watermark()));
-    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     const NUM_THREADS: usize = 32;
     const INTERNAL_ITERS: usize = 1000;
     let start_signal_rw_lock = Arc::new(RwLock::new(()));

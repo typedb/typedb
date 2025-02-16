@@ -29,11 +29,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
-
 	[dev-dependencies.criterion]
 		features = ["cargo_bench_support", "default", "plotters", "rayon"]
 		version = "0.5.1"
@@ -55,6 +50,11 @@ features = {}
 		default-features = false
 
 [dependencies]
+
+	[dependencies.tracing]
+		features = ["attributes", "default", "log", "std", "tracing-attributes"]
+		version = "0.1.41"
+		default-features = false
 
 	[dependencies.primitive]
 		path = "../common/primitive"

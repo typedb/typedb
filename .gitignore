@@ -57,3 +57,6 @@ logs/
 
 # Python cache
 __pycache__
+
+# AI tools
+.aider*

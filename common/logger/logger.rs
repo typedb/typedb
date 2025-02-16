@@ -6,9 +6,11 @@
 
 #![allow(unexpected_cfgs)]
 
-use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
+use std::io::stdout;
+
+use tracing::{self, dispatcher::DefaultGuard, Level, metadata::LevelFilter};
 pub use tracing::{debug, error, info, trace};
-use tracing_subscriber::{fmt::SubscriberBuilder, EnvFilter};
+use tracing_subscriber::{EnvFilter, fmt::SubscriberBuilder};
 
 pub mod result;
 
@@ -25,7 +27,21 @@ pub fn initialise_logging_global() {
         // .add_directive("tonic=trace".parse().unwrap());
     ;
 
-    let subscriber = SubscriberBuilder::default().with_max_level(Level::TRACE).with_env_filter(filter).finish();
+    // Create a file appender
+    // let file_appender = File::create("output.log")
+    //     .expect("Failed to create log file");
+
+    let subscriber = SubscriberBuilder::default()
+        .with_max_level(Level::TRACE)
+        .with_env_filter(filter)
+        .with_writer(stdout)
+        // .with_writer(file_appender)
+        .with_ansi(false) // Disable ANSI colors in file output
+        .with_thread_ids(true)
+        .with_file(true)
+        .with_line_number(true)
+        .finish();
+
     tracing::subscriber::set_global_default(subscriber).unwrap()
 }
 

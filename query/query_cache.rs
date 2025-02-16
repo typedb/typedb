@@ -7,33 +7,39 @@
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
     sync::{
-        atomic::{AtomicU64, Ordering},
         Arc,
+        atomic::{AtomicU64, Ordering},
     },
 };
+use std::sync::Mutex;
+
+use moka::sync::Cache;
+use tracing::{event, Level};
+use typeql::query::stage::reduce::Stat;
 
 use compiler::executable::pipeline::ExecutablePipeline;
+use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
     translation::pipeline::TranslatedStage,
 };
-use moka::sync::Cache;
 use resource::{
-    constants::database::{QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT, QUERY_PLAN_CACHE_SIZE},
+    constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
     perf_counters::QUERY_CACHE_FLUSH,
 };
+use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
 
 #[derive(Debug)]
 pub struct QueryCache {
     cache: Cache<IRQuery, ExecutablePipeline>,
-    statistics_size: AtomicU64,
+    last_statistics: Mutex<Statistics>,
 }
 
 impl QueryCache {
-    pub fn new(statistics_size: u64) -> Self {
+    pub fn new() -> Self {
         let cache = Cache::new(QUERY_PLAN_CACHE_SIZE);
-        QueryCache { cache, statistics_size: AtomicU64::from(statistics_size) }
+        QueryCache { cache, last_statistics: Mutex::new(Statistics::new(SequenceNumber::MIN)) }
     }
 
     pub(crate) fn get(
@@ -57,17 +63,20 @@ impl QueryCache {
         self.cache.insert(key, pipeline);
     }
 
-    pub fn may_reset(&self, new_statistics_size: u64) {
-        let last_statistics_size = self.statistics_size.load(Ordering::SeqCst);
-        let change = (last_statistics_size as f64 - new_statistics_size as f64) / (last_statistics_size as f64);
-        if change.abs() > QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT {
-            self.force_reset(new_statistics_size);
+    pub fn may_reset(&self, new_statistics: &Statistics) {
+        let last_statistics = self.last_statistics.lock().unwrap();
+        let largest_change = last_statistics.largest_difference_frac(new_statistics);
+        if largest_change > QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION {
+            event!(Level::INFO, "Invalidating query cache given a statistic change of {}.", largest_change);
+            drop(last_statistics);
+            self.force_reset(new_statistics);
         }
     }
 
-    pub fn force_reset(&self, new_statistics_size: u64) {
+    pub fn force_reset(&self, new_statistics: &Statistics) {
+        let statistics = new_statistics.clone();
+        *self.last_statistics.lock().unwrap() = statistics;
         self.cache.invalidate_all();
-        self.statistics_size.store(new_statistics_size, Ordering::SeqCst);
         QUERY_CACHE_FLUSH.increment();
     }
 }

@@ -9,32 +9,37 @@ use std::{
     fmt,
     ops::Bound,
 };
+use std::cmp::{min};
+use std::hash::Hash;
+use std::time::Instant;
+
+use serde::{Deserialize, Serialize};
+use tracing::{event, Level};
 
 use bytes::Bytes;
 use durability::{DurabilityRecordType, DurabilitySequenceNumber};
 use encoding::graph::{
     thing::{
         edge::{ThingEdgeHas, ThingEdgeIndexedRelation, ThingEdgeLinks},
+        ThingVertex,
         vertex_attribute::AttributeVertex,
         vertex_object::ObjectVertex,
-        ThingVertex,
     },
     type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeIDUInt, TypeVertexEncoding},
     Typed,
 };
 use error::typedb_error;
 use resource::constants::{database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT, snapshot::BUFFER_KEY_INLINE};
-use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
     isolation_manager::CommitType,
     iterator::MVCCReadError,
     key_value::{StorageKeyArray, StorageKeyReference},
     keyspace::IteratorPool,
+    MVCCStorage,
     recovery::commit_recovery::{load_commit_data_from, RecoveryCommitStatus, StorageRecoveryError},
     sequence_number::SequenceNumber,
     snapshot::{buffer::OperationsBuffer, write::Write},
-    MVCCStorage,
 };
 
 use crate::{
@@ -124,6 +129,9 @@ impl Statistics {
             return Ok(());
         }
 
+        let start_seq_nr = self.sequence_number;
+        let start = Instant::now();
+
         // make it a little more likely that we capture concurrent commits
         let load_start = DurabilitySequenceNumber::new(
             self.sequence_number.number().saturating_sub(Self::COMMIT_CONTEXT_SIZE).max(1),
@@ -167,6 +175,14 @@ impl Statistics {
             self.durably_write(storage.durability())?;
         }
 
+        let millis = Instant::now().duration_since(start).as_millis();
+        event!(
+            Level::TRACE,
+            "Statistics sync finished in {} ms. Storage watermark was initially: {}. Current statistics sequence is from: {}",
+            millis,
+            storage_watermark,
+            start_seq_nr
+        );
         Ok(())
     }
 
@@ -379,6 +395,76 @@ impl Statistics {
                 Some(value) => value,
             };
         }
+    }
+
+    /// Compute the largest fractional difference of any individual statistic
+    pub fn largest_difference_frac(&self, other: &Statistics) -> f64 {
+        let mut largest: f64 = 0.0;
+        largest = largest.max(Self::largest_difference_frac_maps(&self.entity_counts, &other.entity_counts));
+        largest = largest.max(Self::largest_difference_frac_maps(&self.relation_counts, &other.relation_counts));
+        largest = largest.max(Self::largest_difference_frac_maps(&self.attribute_counts, &other.attribute_counts));
+        largest = largest.max(Self::largest_difference_frac_map_maps(&self.has_attribute_counts, &other.has_attribute_counts));
+        largest = largest.max(Self::largest_difference_frac_map_maps(&self.relation_role_counts, &other.relation_role_counts));
+        largest = largest.max(Self::largest_difference_frac_map_maps(&self.role_player_counts, &other.role_player_counts));
+        largest
+    }
+
+    // compute largest abs(value_1 - value_2) / min(value_1, value_2)
+    fn largest_difference_frac_maps<T: Hash + Eq>(first: &HashMap<T, u64>, second: &HashMap<T, u64>) -> f64 {
+        let mut largest = 0.0;
+        for (key, first_value) in first {
+            let second_value = second.get(key).copied().unwrap_or(0);
+            if *first_value == 0  && second_value == 0 {
+                continue;
+            } else if second_value == 0 || *first_value == 0 {
+                return f64::MAX;
+            }
+            let difference = (*first_value as f64 - second_value as f64).abs();
+            let frac = difference / (min(*first_value, second_value) as f64);
+            if frac > largest {
+                largest = frac;
+            }
+        }
+        for (key, second_value) in second {
+            let first_value = first.get(key).copied().unwrap_or(0);
+            if first_value == 0  && *second_value == 0 {
+                continue;
+            } else if *second_value == 0 || first_value == 0 {
+                return f64::MAX;
+            }
+            // if both maps have a non-zero value, the first loop must have handled it
+        }
+        largest
+    }
+
+    fn largest_difference_frac_map_maps<T: Hash + Eq, U: Hash + Eq>(
+        first: &HashMap<T, HashMap<U, u64>>,
+        second: &HashMap<T, HashMap<U, u64>>
+    ) -> f64 {
+        let mut largest = 0.0;
+        let empty_map = HashMap::new();
+        for (key, first_map) in first {
+            let second_map = second.get(key).unwrap_or(&empty_map);
+            let largest_map_diff = Self::largest_difference_frac_maps(first_map, second_map);
+            if largest_map_diff > largest {
+                largest = largest_map_diff;
+            }
+        }
+        for (key, second_map) in second {
+            match first.get(key) {
+                None => {
+                    let largest_map_diff = Self::largest_difference_frac_maps(second_map, &empty_map);
+                    if largest_map_diff > largest {
+                        largest = largest_map_diff;
+                    }
+                }
+                Some(_) => {
+                    continue;
+                }
+            };
+            // if both maps have the value, the first loop would have handled it
+        }
+        largest
     }
 
     pub fn reset(&mut self, sequence_number: SequenceNumber) {
@@ -660,8 +746,8 @@ mod serialise {
     use serde::{
         de,
         de::{MapAccess, SeqAccess, Visitor},
-        ser::SerializeStruct,
-        Deserialize, Deserializer, Serialize, Serializer,
+        Deserialize,
+        Deserializer, ser::SerializeStruct, Serialize, Serializer,
     };
 
     use crate::{

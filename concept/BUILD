@@ -45,6 +45,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:regex",
         "@crates//:serde",
+        "@crates//:tracing",
     ],
     proc_macro_deps = [
         "@crates//:paste",
