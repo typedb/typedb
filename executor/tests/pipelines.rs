@@ -59,7 +59,7 @@ fn setup_common() -> Context {
 
     // reload to obtain latest vertex generators and statistics entries
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     Context { _tmp_dir, storage, type_manager, function_manager, query_manager, thing_manager }
 }
 

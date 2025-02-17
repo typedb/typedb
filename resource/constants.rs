@@ -61,7 +61,7 @@ pub mod server {
 pub mod database {
     use std::time::Duration;
 
-    pub const QUERY_PLAN_CACHE_FLUSH_STATISTICS_CHANGE_PERCENT: f64 = 0.05;
+    pub const QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION: f64 = 0.25;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_PERCENT: f64 = 0.05;
 

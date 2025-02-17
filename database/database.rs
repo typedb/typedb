@@ -255,7 +255,7 @@ impl Database<WALClient> {
         let schema = Arc::new(RwLock::new(Schema { thing_statistics, type_cache, function_cache }));
         let schema_txn_lock = Arc::new(RwLock::default());
 
-        let query_cache = Arc::new(QueryCache::new(0));
+        let query_cache = Arc::new(QueryCache::new());
         let update_statistics =
             make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
         let checkpoint_fn = make_checkpoint_fn(path.to_owned(), SequenceNumber::MIN, storage.clone());
@@ -312,7 +312,6 @@ impl Database<WALClient> {
             .map_err(|err| DurabilityClientRead { typedb_source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
-        let total_count = thing_statistics.total_count;
         let thing_statistics = Arc::new(thing_statistics);
 
         let type_cache = Arc::new(
@@ -339,7 +338,7 @@ impl Database<WALClient> {
                 .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?,
         };
 
-        let query_cache = Arc::new(QueryCache::new(total_count));
+        let query_cache = Arc::new(QueryCache::new());
         let update_statistics =
             make_update_statistics_fn(storage.clone(), schema.clone(), schema_txn_lock.clone(), query_cache.clone());
         let checkpoint_fn = make_checkpoint_fn(path.to_owned(), checkpoint_sequence_number, storage.clone());
@@ -432,7 +431,7 @@ impl Database<WALClient> {
         let thing_statistics = Arc::get_mut(&mut locked_schema.thing_statistics).unwrap();
         thing_statistics.reset(self.storage.snapshot_watermark());
 
-        self.query_cache.force_reset(0);
+        self.query_cache.force_reset(&Statistics::new(SequenceNumber::MIN));
 
         self.release_schema_transaction();
         Ok(())
@@ -482,11 +481,10 @@ fn make_update_statistics_fn(
     move || {
         if storage.snapshot_watermark() > (*schema).read().unwrap().thing_statistics.sequence_number {
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
-            let mut thing_statistics = (*schema.read().unwrap().thing_statistics).clone();
-            thing_statistics.may_synchronise(&storage).ok();
-            let total_count = thing_statistics.total_count;
-            query_cache.may_reset(total_count);
-            schema.write().unwrap().thing_statistics = Arc::new(thing_statistics);
+            let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
+            new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
+            query_cache.may_reset(&new_statistics);
+            schema.write().unwrap().thing_statistics = Arc::new(new_statistics);
         }
     }
 }

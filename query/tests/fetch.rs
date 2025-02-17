@@ -46,7 +46,7 @@ fn insert_data(
     query_string: &str,
 ) {
     let snapshot = storage.clone().open_snapshot_write();
-    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new(0))));
+    let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     let query = typeql::parse_query(query_string).unwrap().into_pipeline();
     let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query, query_string)
@@ -119,7 +119,7 @@ fetch {
 
     let pipeline = query.into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new(0))))
+    let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new())))
         .prepare_read_pipeline(
             snapshot.clone(),
             &type_manager,
