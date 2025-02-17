@@ -18,7 +18,7 @@ use storage::snapshot::WritableSnapshot;
 use crate::{
     batch::Batch,
     pipeline::{
-        insert::prepare_insert_output_rows,
+        insert::prepare_output_rows,
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
@@ -62,7 +62,7 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
 
-        let mut batch = match prepare_insert_output_rows(executable.output_width() as u32, previous_iterator) {
+        let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
         };

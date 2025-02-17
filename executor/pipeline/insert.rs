@@ -61,7 +61,7 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
 
-        let mut batch = match prepare_insert_output_rows(executable.output_width() as u32, previous_iterator) {
+        let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
         };
@@ -93,7 +93,7 @@ where
     }
 }
 
-pub(crate) fn prepare_insert_output_rows(
+pub(crate) fn prepare_output_rows(
     output_width: u32,
     input_iterator: impl StageIterator,
 ) -> Result<Batch, Box<PipelineExecutionError>> {
