@@ -144,13 +144,17 @@ impl StepProfile {
 
 impl fmt::Display for StepProfileData {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let rows = self.rows.load(Ordering::Relaxed);
+        let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
+        let micros_per_row: f64 = micros as f64 / rows as f64;
         write!(
             f,
-            "{}\n    ==> batches: {}, rows: {}, micros: {}",
+            "{}\n    ==> batches: {}, rows: {}, micros: {}, micros/row: {:.1}",
             &self.description,
             self.batches.load(Ordering::Relaxed),
-            self.rows.load(Ordering::Relaxed),
-            Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros(),
+            rows,
+            micros,
+            micros_per_row,
         )
     }
 }
