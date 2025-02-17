@@ -334,7 +334,7 @@ impl RelationType {
         type_manager.get_relation_type_related_role_type_constraints(snapshot, *self, role_type)
     }
 
-    pub(crate) fn get_related_role_type_constraint_abstract(
+    pub fn get_related_role_type_constraint_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -343,7 +343,7 @@ impl RelationType {
         type_manager.get_type_relates_abstract_constraint(snapshot, *self, role_type)
     }
 
-    pub(crate) fn get_related_role_type_constraints_cardinality(
+    pub fn get_related_role_type_constraints_cardinality(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

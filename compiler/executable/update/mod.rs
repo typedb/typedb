@@ -6,3 +6,4 @@
 
 pub mod executable;
 pub mod instructions;
+pub mod type_check;

@@ -5,9 +5,11 @@
  */
 
 use std::sync::Arc;
-use compiler::executable::insert::instructions::ConceptInstruction;
 
-use compiler::executable::update::{executable::UpdateExecutable, instructions::ConnectionInstruction};
+use compiler::executable::{
+    insert::instructions::ConceptInstruction,
+    update::{executable::UpdateExecutable, instructions::ConnectionInstruction},
+};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
@@ -124,8 +126,8 @@ fn execute_update(
             ConnectionInstruction::Has(has) => {
                 has.execute(snapshot, thing_manager, parameters, row)?;
             }
-            ConnectionInstruction::Links(role_player) => {
-                role_player.execute(snapshot, thing_manager, parameters, row)?;
+            ConnectionInstruction::Links(links) => {
+                links.execute(snapshot, thing_manager, parameters, row)?;
             }
         };
         measurement.end(&step_profile, 1, 1);

@@ -9,17 +9,20 @@ use std::{
     sync::Arc,
 };
 
-use answer::variable::Variable;
-use concept::type_::type_manager::TypeManager;
+use answer::{variable::Variable, Type};
+use concept::type_::{constraint::Constraint as TypeConstraint, type_manager::TypeManager, OwnerAPI, TypeAPI};
 use ir::{
     pattern::constraint::{Constraint, Has, Links},
     pipeline::block::Block,
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::annotation::{
-    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
-    TypeInferenceError,
+use crate::{
+    annotation::{
+        type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
+        TypeInferenceError,
+    },
+    executable::insert,
 };
 
 pub fn check_annotations(
@@ -33,7 +36,7 @@ pub fn check_annotations(
     for constraint in block.conjunction().constraints() {
         match constraint {
             Constraint::Has(has) => {
-                validate_has_insertable(
+                validate_has_updatable(
                     snapshot,
                     type_manager,
                     has,
@@ -43,7 +46,7 @@ pub fn check_annotations(
                 )?;
             }
             Constraint::Links(links) => {
-                validate_links_insertable(
+                validate_links_updatable(
                     snapshot,
                     type_manager,
                     links,
@@ -54,28 +57,28 @@ pub fn check_annotations(
             }
 
             Constraint::Isa(_)
-            | Constraint::Kind(_)
-            | Constraint::Label(_)
-            | Constraint::RoleName(_)
-            | Constraint::Sub(_)
-            | Constraint::ExpressionBinding(_)
-            | Constraint::FunctionCallBinding(_)
             | Constraint::Is(_)
             | Constraint::Comparison(_)
+            | Constraint::LinksDeduplication(_)
+            | Constraint::ExpressionBinding(_)
+            | Constraint::FunctionCallBinding(_)
+            | Constraint::RoleName(_) => (),
+
+            Constraint::Kind(_)
+            | Constraint::Label(_)
+            | Constraint::Sub(_)
             | Constraint::Owns(_)
             | Constraint::Relates(_)
             | Constraint::Plays(_)
             | Constraint::Value(_)
-            | Constraint::LinksDeduplication(_) => (),
-
-            Constraint::Iid(_) => unreachable!("iid in insert should have been rejected by now"),
+            | Constraint::Iid(_) => unreachable!("{constraint:?} in update should have been rejected by now"),
             Constraint::IndexedRelation(_) => unreachable!("Indexed relations can only appear after type inference"),
         }
     }
     Ok(())
 }
 
-pub(crate) fn validate_has_insertable(
+fn validate_has_updatable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     has: &Has<Variable>,
@@ -83,8 +86,14 @@ pub(crate) fn validate_has_insertable(
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right: &LeftRightAnnotations,
 ) -> Result<(), TypeInferenceError> {
-    // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
-    // Esp when doing queries using type variables.
+    insert::type_check::validate_has_insertable(
+        snapshot,
+        type_manager,
+        has,
+        input_annotations_variables,
+        input_annotations_constraints,
+        left_right,
+    )?;
 
     let input_owner_types = input_annotations_variables.get(&has.owner().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
@@ -98,41 +107,16 @@ pub(crate) fn validate_has_insertable(
             source_span: has.source_span(),
         },
     )?;
-
-    let mut invalid_iter = input_owner_types.iter().flat_map(|left_type| {
-        input_attr_types
-            .iter()
-            .filter(|right_type| {
-                !left_right
-                    .left_to_right()
-                    .get(left_type)
-                    .map(|valid_right_types| valid_right_types.contains(right_type))
-                    .unwrap_or(false)
-            })
-            .map(|right_type| (*left_type, *right_type))
-    });
-    if let Some((left_type, right_type)) = invalid_iter.next() {
-        Err(TypeInferenceError::IllegalInsertableTypes {
-            constraint_name: Constraint::Has(has.clone()).name().to_string(),
-            left_type: left_type
-                .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
-                .scoped_name()
-                .as_str()
-                .to_string(),
-            right_type: right_type
-                .get_label(snapshot, type_manager)
-                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
-                .scoped_name()
-                .as_str()
-                .to_string(),
-            source_span: has.source_span(),
-        })?;
+    for left_type in input_owner_types.iter() {
+        for right_type in input_attr_types.iter() {
+            validate_has_cardinality(snapshot, type_manager, has, left_type, right_type)?;
+        }
     }
+
     Ok(())
 }
 
-pub(crate) fn validate_links_insertable(
+fn validate_links_updatable(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     links: &Links<Variable>,
@@ -140,19 +124,18 @@ pub(crate) fn validate_links_insertable(
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right_filtered: &LinksAnnotations,
 ) -> Result<(), TypeInferenceError> {
-    // TODO: Should we check uniqueness of inferred role-types here instead of at compilation?
-    // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
-    // Esp when doing queries using type variables.
+    insert::type_check::validate_links_insertable(
+        snapshot,
+        type_manager,
+        links,
+        input_annotations_variables,
+        input_annotations_constraints,
+        left_right_filtered,
+    )?;
 
     let input_relation_types = input_annotations_variables.get(&links.relation().as_variable().unwrap()).ok_or(
         TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
             variable: links.relation().as_variable().unwrap(),
-            source_span: links.source_span(),
-        },
-    )?;
-    let input_player_types = input_annotations_variables.get(&links.player().as_variable().unwrap()).ok_or(
-        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: links.player().as_variable().unwrap(),
             source_span: links.source_span(),
         },
     )?;
@@ -162,48 +145,99 @@ pub(crate) fn validate_links_insertable(
             source_span: links.source_span(),
         },
     )?;
+    for left_type in input_relation_types.iter() {
+        for right_type in input_role_types.iter() {
+            validate_links_cardinality(snapshot, type_manager, links, left_type, right_type)?;
+        }
+    }
 
-    let invalid_relation_role_iter = input_relation_types.iter().flat_map(|relation_type| {
-        input_role_types
-            .iter()
-            .filter(|role_type| {
-                !left_right_filtered
-                    .relation_to_role()
-                    .get(relation_type)
-                    .map(|valid_role_types| valid_role_types.contains(role_type))
-                    .unwrap_or(false)
-            })
-            .map(|role_type| (*relation_type, *role_type))
-    });
-    let invalid_player_role_iter = input_player_types.iter().flat_map(|player_type| {
-        input_role_types
-            .iter()
-            .filter(|role_type| {
-                !left_right_filtered
-                    .player_to_role()
-                    .get(player_type)
-                    .map(|valid_role_types| valid_role_types.contains(role_type))
-                    .unwrap_or(false)
-            })
-            .map(|role_type| (*player_type, *role_type))
-    });
-    if let Some((left_type, right_type)) = invalid_relation_role_iter.chain(invalid_player_role_iter).next() {
-        Err(TypeInferenceError::IllegalInsertableTypes {
-            constraint_name: Constraint::Links(links.clone()).name().to_string(),
-            left_type: left_type
+    Ok(())
+}
+
+fn validate_has_cardinality(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    has: &Has<Variable>,
+    object_type: &Type,
+    interface_type: &Type,
+) -> Result<(), TypeInferenceError> {
+    let object_type = object_type.as_object_type();
+    let attribute_type = interface_type.as_attribute_type();
+    let incorrect_cardinality = object_type
+        .get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, attribute_type)
+        .map_err(|typedb_source| TypeInferenceError::ConceptRead { typedb_source })?
+        .into_iter()
+        .filter_map(|constraint| {
+            constraint
+                .source()
+                .attribute()
+                .eq(&attribute_type)
+                .then(|| constraint.description().unwrap_cardinality().expect("Expected cardinality"))
+        })
+        .find(|cardinality| !cardinality.is_bounded_to_one());
+
+    if incorrect_cardinality.is_some() {
+        Err(TypeInferenceError::IllegalUpdatableTypesDueToCardinality {
+            constraint_name: Constraint::Has(has.clone()).name().to_string(),
+            left_type: object_type
                 .get_label(snapshot, type_manager)
                 .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
                 .scoped_name()
                 .as_str()
                 .to_string(),
-            right_type: right_type
+            right_type: attribute_type
+                .get_label(snapshot, type_manager)
+                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
+                .scoped_name()
+                .as_str()
+                .to_string(),
+            source_span: has.source_span(),
+        })
+    } else {
+        Ok(())
+    }
+}
+
+fn validate_links_cardinality(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    links: &Links<Variable>,
+    relation_type: &Type,
+    role_type: &Type,
+) -> Result<(), TypeInferenceError> {
+    let relation_type = relation_type.as_relation_type();
+    let role_type = role_type.as_role_type();
+    let incorrect_cardinality = relation_type
+        .get_related_role_type_constraints_cardinality(snapshot, type_manager, role_type)
+        .map_err(|typedb_source| TypeInferenceError::ConceptRead { typedb_source })?
+        .into_iter()
+        .filter_map(|constraint| {
+            constraint
+                .source()
+                .role()
+                .eq(&role_type)
+                .then(|| constraint.description().unwrap_cardinality().expect("Expected cardinality"))
+        })
+        .find(|cardinality| !cardinality.is_bounded_to_one());
+
+    if incorrect_cardinality.is_some() {
+        Err(TypeInferenceError::IllegalUpdatableTypesDueToCardinality {
+            constraint_name: Constraint::Links(links.clone()).name().to_string(),
+            left_type: relation_type
+                .get_label(snapshot, type_manager)
+                .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
+                .scoped_name()
+                .as_str()
+                .to_string(),
+            right_type: role_type
                 .get_label(snapshot, type_manager)
                 .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
                 .scoped_name()
                 .as_str()
                 .to_string(),
             source_span: links.source_span(),
-        })?;
+        })
+    } else {
+        Ok(())
     }
-    Ok(())
 }

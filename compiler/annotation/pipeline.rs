@@ -46,7 +46,7 @@ use crate::{
         type_inference::resolve_value_types,
         AnnotationError,
     },
-    executable::{insert::type_check::check_annotations, reduce::ReduceInstruction},
+    executable::{insert, reduce::ReduceInstruction, update},
 };
 
 pub struct AnnotatedPipeline {
@@ -286,28 +286,48 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block, source_span } => {
-            let annotations = annotate_and_check_insertables(
+            let annotations = annotate_insertables(
                 running_variable_annotations,
                 variable_registry,
                 snapshot,
                 type_manager,
                 annotated_function_signatures,
-                running_constraint_annotations,
                 &block,
             )?;
+
+            insert::type_check::check_annotations(
+                snapshot,
+                type_manager,
+                &block,
+                running_variable_annotations,
+                running_constraint_annotations,
+                &annotations,
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
             Ok(AnnotatedStage::Insert { block, annotations, source_span })
         }
 
         TranslatedStage::Update { block, source_span } => {
-            let annotations = annotate_and_check_insertables(
+            let annotations = annotate_insertables(
                 running_variable_annotations,
                 variable_registry,
                 snapshot,
                 type_manager,
                 annotated_function_signatures,
-                running_constraint_annotations,
                 &block,
             )?;
+
+            update::type_check::check_annotations(
+                snapshot,
+                type_manager,
+                &block,
+                running_variable_annotations,
+                running_constraint_annotations,
+                &annotations,
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
             Ok(AnnotatedStage::Update { block, annotations, source_span })
         }
 
@@ -408,13 +428,12 @@ pub fn validate_sort_variables_comparable(
     Ok(())
 }
 
-fn annotate_and_check_insertables(
+fn annotate_insertables(
     running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     variable_registry: &mut VariableRegistry,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
-    running_constraint_annotations: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
     block: &Block,
 ) -> Result<TypeAnnotations, AnnotationError> {
     let annotations = infer_types(
@@ -427,6 +446,7 @@ fn annotate_and_check_insertables(
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
@@ -452,16 +472,6 @@ fn annotate_and_check_insertables(
         }
         _ => (),
     });
-
-    check_annotations(
-        snapshot,
-        type_manager,
-        &block,
-        running_variable_annotations,
-        running_constraint_annotations,
-        &annotations,
-    )
-    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
     Ok(annotations)
 }

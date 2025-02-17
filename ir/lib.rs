@@ -217,13 +217,13 @@ typedb_error! {
         ),
         UpdateVariableUnavailable(
             39,
-            "The variable '{variable}' referenced in the update stage is unavailable.",
+            "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",
             variable: String,
             source_span: Option<Span>,
         ),
         DeleteVariableUnavailable(
             40,
-            "The variable '{variable}' referenced in the delete stage is unavailable.",
+            "The variable '{variable}' referenced in the delete stage is unavailable. It should be bound in the previous stage.",
             variable: String,
             source_span: Option<Span>,
         ),

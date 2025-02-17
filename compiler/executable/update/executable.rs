@@ -15,8 +15,12 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         insert::{
-            executable::collect_role_type_bindings, get_thing_input_position, prepare_output_row_schema,
-            resolve_links_role, VariableSource,
+            executable::{
+                add_inserted_concepts, collect_role_type_bindings, get_thing_input_position, prepare_output_row_schema,
+                resolve_links_role,
+            },
+            instructions::ConceptInstruction,
+            VariableSource,
         },
         next_executable_id,
         update::instructions::{ConnectionInstruction, Has, Links},
@@ -24,13 +28,12 @@ use crate::{
     },
     filter_variants, VariablePosition,
 };
-use crate::executable::insert::executable::add_inserted_concepts;
-use crate::executable::insert::instructions::ConceptInstruction;
 
 #[derive(Debug)]
 pub struct UpdateExecutable {
     pub executable_id: u64,
-    pub concept_instructions: Vec<ConceptInstruction>, // TODO: Insert instruction?
+    // Reuse the insert's concept instruction for attributes. Other isas should be validated earlier
+    pub concept_instructions: Vec<ConceptInstruction>,
     pub connection_instructions: Vec<ConnectionInstruction>,
     pub output_row_schema: Vec<Option<(Variable, VariableSource)>>,
 }
