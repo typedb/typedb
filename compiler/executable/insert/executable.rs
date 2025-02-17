@@ -18,16 +18,14 @@ use ir::{
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
-use tracing::Instrument;
 use typeql::common::Span;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         insert::{
-            get_kinds_from_types, get_thing_input_position,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
-            prepare_output_row_schema, resolve_links_role, ThingPosition, TypeSource, ValueSource, VariableSource,
+            ThingPosition, TypeSource, ValueSource, VariableSource,
         },
         next_executable_id, WriteCompilationError,
     },

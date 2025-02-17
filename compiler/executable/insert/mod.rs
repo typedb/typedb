@@ -4,22 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{BTreeSet, HashMap, HashSet},
-    error::Error,
-};
+use std::error::Error;
 
-use answer::{variable::Variable, Type};
-use encoding::graph::type_::Kind;
-use error::typedb_error;
-use ir::{
-    pattern::{constraint, constraint::Comparator, ParameterID, Vertex},
-    pipeline::VariableRegistry,
-};
+use ir::pattern::ParameterID;
 use itertools::Itertools;
-use typeql::common::Span;
 
-use crate::{annotation::type_annotations::TypeAnnotations, executable::WriteCompilationError, VariablePosition};
+use crate::VariablePosition;
 
 pub mod executable;
 pub mod instructions;

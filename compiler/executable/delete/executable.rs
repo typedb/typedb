@@ -19,7 +19,10 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
-        insert::{executable::collect_role_type_bindings, get_thing_input_position, ThingPosition, TypeSource},
+        insert::{
+            executable::{collect_role_type_bindings, get_thing_input_position},
+            ThingPosition, TypeSource,
+        },
         next_executable_id, WriteCompilationError,
     },
     VariablePosition,
