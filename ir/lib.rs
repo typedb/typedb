@@ -215,14 +215,21 @@ typedb_error! {
             rhs_category: VariableCategory,
             source_span: Option<Span>,
         ),
-        UpdateVariableUnavailable(39,
+        UpdateVariableUnavailable(
+            39,
             "The variable '{variable}' referenced in the update stage is unavailable",
             variable: String,
             source_span: Option<Span>,
         ),
-        DeleteVariableUnavailable(40,
+        DeleteVariableUnavailable(
+            40,
             "The variable '{variable}' referenced in the delete stage is unavailable",
             variable: String,
+            source_span: Option<Span>,
+        ),
+        IllegalStatementForUpdate(
+            41,
+            "Illegal statement provided for an update stage. Only 'update $0 has $1' and 'update $0 links $1' are allowed.",
             source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(

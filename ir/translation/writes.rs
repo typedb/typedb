@@ -101,7 +101,7 @@ fn validate_update_statements_and_variables(
                 Head::Variable(variable) => {
                     verify_variable_available!(context, variable => UpdateVariableUnavailable)?;
                 }
-                Head::Relation(_, _) => todo!("Return error here?"),
+                Head::Relation(_, relation) => return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: relation.span })),
             }
 
             for constraint in &thing_statement.constraints {
@@ -124,11 +124,12 @@ fn validate_update_statements_and_variables(
                             }
                         })?;
                     }
-                    Constraint::Isa(_) | Constraint::Iid(_) => todo!("Return error here?"),
+                    Constraint::Isa(isa) => return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: isa.span })),
+                    Constraint::Iid(iid) => return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: iid.span })),
                 }
             }
         } else {
-            todo!("Return error here?")
+            return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: statement.span() }));
         }
         Ok(())
     })
@@ -149,7 +150,7 @@ fn validate_update_expression_variables_availability(
         }
         Expression::Value(value) => Ok(()),
         Expression::Function(function_call) => {
-            // TODO: Verify function names here or later? What happens if I don't?
+            // TODO: Verify function names here or later? What happens if we don't?
             function_call
                 .args
                 .iter()
