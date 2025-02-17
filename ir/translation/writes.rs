@@ -23,7 +23,7 @@ use crate::{
 
 macro_rules! verify_variable_available {
     ($context:ident, $var:expr => $error:ident ) => {
-        match $context.get_variable($var.name().unwrap()) {
+        match $context.get_variable($var.name().ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: $var.span() }))?) {
             Some(translated) => Ok(translated),
             None => Err(Box::new(RepresentationError::$error {
                 variable: $var.name().unwrap().to_owned(),

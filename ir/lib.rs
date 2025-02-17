@@ -183,7 +183,7 @@ typedb_error! {
         ),
         UnboundVariable(
             25,
-            "Invalid query containing unbound concept variable {variable}",
+            "Invalid query containing unbound concept variable {variable}.",
             variable: String,
             source_span: Option<Span>,
         ),
@@ -196,19 +196,19 @@ typedb_error! {
         ),
         ReservedKeywordAsIdentifier(
             27,
-            "A reserved keyword '{identifier}' was used as identifier",
+            "A reserved keyword '{identifier}' was used as identifier.",
             identifier: typeql::Identifier,
             source_span: Option<Span>,
         ),
         ReservedValueTypeAsTypeName(
             28,
-            "A reserved value-type name '{value_type}' was used as type name",
+            "A reserved value-type name '{value_type}' was used as type name.",
             value_type: typeql::type_::BuiltinValueType,
             source_span: Option<Span>,
         ),
         VariableCategoryMismatchInIs(
             29,
-            "The variable categories for the is statement are incompatible",
+            "The variable categories for the is statement are incompatible.",
             lhs_variable: String,
             rhs_variable: String,
             lhs_category: VariableCategory,
@@ -217,24 +217,29 @@ typedb_error! {
         ),
         UpdateVariableUnavailable(
             39,
-            "The variable '{variable}' referenced in the update stage is unavailable",
+            "The variable '{variable}' referenced in the update stage is unavailable.",
             variable: String,
             source_span: Option<Span>,
         ),
         DeleteVariableUnavailable(
             40,
-            "The variable '{variable}' referenced in the delete stage is unavailable",
+            "The variable '{variable}' referenced in the delete stage is unavailable.",
             variable: String,
             source_span: Option<Span>,
         ),
-        IllegalStatementForUpdate(
+        NonAnonymousVariableExpected(
             41,
+            "A non-anonymous variable is expected in this statement for the query.",
+            source_span: Option<Span>,
+        ),
+        IllegalStatementForUpdate(
+            42,
             "Illegal statement provided for an update stage. Only 'update $0 has $1' and 'update $0 links $1' are allowed.",
             source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(
             254,
-            "The language feature is not yet implemented: {feature}",
+            "The language feature is not yet implemented: {feature}.",
             feature: error::UnimplementedFeature,
         ),
         UnimplementedOptionalType(
