@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
+use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
