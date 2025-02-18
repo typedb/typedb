@@ -96,6 +96,7 @@ pub fn compile(
                                         .get(&links.player().as_variable().unwrap())
                                         .cloned()
                                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                                    // TODO: It prints `[RoleType:[0000]], [RoleType:[0001]]`, get labels somehow
                                     role_types: annotations.iter().join(", "),
                                     source_span: links.source_span(),
                                 })?;
