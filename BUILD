@@ -322,9 +322,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.snapshot.repository"],
     ),
-    # TODO: Substitute after version file testing
-#    tag = "$(version)",
-    tag_file = "//:VERSION",
+    tag_file = "//docker:version-snapshot-x86_64",
     target_compatible_with = constraint_linux_x86_64,
 )
 
@@ -337,9 +335,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.snapshot.repository"],
     ),
-    # TODO: Substitute after version file testing
-#    tag = "$(version)",
-    tag_file = "//:VERSION",
+    tag_file = "//docker:version-snapshot-arm64",
     target_compatible_with = constraint_linux_arm64,
 )
 
@@ -352,7 +348,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.release.repository"],
     ),
-    tag_file = "//docker:version-x86_64",
+    tag_file = "//docker:version-release-x86_64",
     target_compatible_with = constraint_linux_x86_64,
 )
 
@@ -365,7 +361,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.release.repository"],
     ),
-    tag_file = "//docker:version-arm64",
+    tag_file = "//docker:version-release-arm64",
     target_compatible_with = constraint_linux_arm64,
 )
 

@@ -138,9 +138,7 @@ commands:
     steps:
       - run: |
           docker login -u $REPO_DOCKER_USERNAME -p $REPO_DOCKER_PASSWORD
-          # TODO: Substitute after testing
-          # export VERSION=$(git rev-parse HEAD)
-          export VERSION=$(cat VERSION)
+          export VERSION=$(git rev-parse HEAD)
           export DOCKER_ORG="typedb"
           export DOCKER_REPO="typedb-snapshot"
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:$VERSION --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
@@ -455,7 +453,7 @@ workflows:
       - sync-to-typedb-benchmark:
           filters:
             branches:
-              only: [ "3.0", "3.0-docker-snapshot" ]
+              only: [ "3.0" ]
           requires:
             - test-deploy-snapshot-linux-x86_64
   release:
