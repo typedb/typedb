@@ -123,7 +123,7 @@ pub(crate) fn translate_function_block(
                 typedb_source: err,
             })?;
 
-    let mut illegal_stages = stages.iter().filter(|stage| match stage {
+    let has_illegal_stages = stages.iter().any(|stage| match stage {
         TranslatedStage::Insert { .. } | TranslatedStage::Update { .. } | TranslatedStage::Delete { .. } => true,
         TranslatedStage::Match { .. }
         | TranslatedStage::Distinct(_)
