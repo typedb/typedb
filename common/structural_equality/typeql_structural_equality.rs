@@ -72,8 +72,8 @@ impl StructuralEquality for NamedTypeAny {
             mem::discriminant(self).hash(),
             match self {
                 Self::Simple(inner) => inner.hash(),
-                Self::Optional(inner) => inner.inner.hash() ^ 1,
-                Self::List(inner) => inner.inner.hash() ^ 2,
+                Self::Optional(inner) => inner.inner.hash(),
+                Self::List(inner) => inner.inner.hash(),
             },
         )
     }
