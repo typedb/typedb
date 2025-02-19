@@ -322,7 +322,8 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.snapshot.repository"],
     ),
-    tag = "$(cont-version)",
+    # using $(version) propagates to `assemble-docker` and breaks the image so it doesn't boot
+    tag = "$(container-version)",
     target_compatible_with = constraint_linux_x86_64,
     tags = ["manual"],
 )
@@ -336,7 +337,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.snapshot.repository"],
     ),
-    tag = "$(cont-version)",
+    tag = "$(container-version)",
     target_compatible_with = constraint_linux_arm64,
     tags = ["manual"],
 )
