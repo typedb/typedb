@@ -51,7 +51,7 @@ docker_container_run_and_commit(
     name = "typedb-ubuntu-22.04-arm64",
     image = "@ubuntu-22.04-arm64//image",
     commands = docker_image_prepare_commands,
-#    target_compatible_with = constraint_linux_arm64,
+    target_compatible_with = constraint_linux_arm64,
     tags = ["manual"],
 )
 
