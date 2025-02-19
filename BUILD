@@ -322,7 +322,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.snapshot.repository"],
     ),
-    tag = "$(version)",
+    tag = "$(cont-version)",
     target_compatible_with = constraint_linux_x86_64,
     tags = ["manual"],
 )
@@ -336,7 +336,7 @@ docker_container_push(
         deployment_docker["docker.organisation"],
         deployment_docker["docker.snapshot.repository"],
     ),
-    tag = "$(version)",
+    tag = "$(cont-version)",
     target_compatible_with = constraint_linux_arm64,
     tags = ["manual"],
 )
