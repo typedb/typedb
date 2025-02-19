@@ -170,10 +170,6 @@ features = {}
 	name = "test_attributetype"
 
 [[test]]
-	path = "tests/behaviour/concept/migration/function.rs"
-	name = "test_function"
-
-[[test]]
 	path = "tests/behaviour/concept/migration/data_validation.rs"
 	name = "test_data_validation"
 
