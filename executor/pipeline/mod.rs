@@ -26,6 +26,7 @@ pub mod modifiers;
 pub mod pipeline;
 pub mod reduce;
 pub mod stage;
+pub mod update;
 
 // Can be used as normal lending iterator, or optimally collect into owned using `collect_owned()`
 pub struct WrittenRowsIterator {

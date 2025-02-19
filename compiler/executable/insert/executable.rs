@@ -4,12 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::{
+        constraint,
         constraint::{Comparator, Constraint},
         expression::Expression,
         ParameterID, Vertex,
@@ -17,18 +18,16 @@ use ir::{
     pipeline::VariableRegistry,
 };
 use itertools::Itertools;
-use tracing::Instrument;
 use typeql::common::Span;
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         insert::{
-            get_kinds_from_types, get_thing_input_position,
             instructions::{ConceptInstruction, ConnectionInstruction, Has, Links, PutAttribute, PutObject},
-            ThingPosition, TypeSource, ValueSource, VariableSource, WriteCompilationError,
+            ThingPosition, TypeSource, ValueSource, VariableSource,
         },
-        next_executable_id,
+        next_executable_id, WriteCompilationError,
     },
     filter_variants, VariablePosition,
 };
@@ -72,23 +71,17 @@ pub fn compile(
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
-    add_role_players(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
-
-    let output_width = variables.values().map(|i| i.position + 1).max().unwrap_or(0);
-    let mut output_row_schema = vec![None; output_width as usize];
-    variables.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
-        output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
-    });
+    add_links(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
 
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema,
+        output_row_schema: prepare_output_row_schema(&variables),
     })
 }
 
-fn add_inserted_concepts(
+pub(crate) fn add_inserted_concepts(
     constraints: &[Constraint<Variable>],
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
@@ -237,7 +230,7 @@ fn add_has(
     })
 }
 
-fn add_role_players(
+fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
@@ -258,33 +251,29 @@ fn add_role_players(
             variable_registry,
             links.source_span(),
         )?;
-        let &Vertex::Variable(role_variable) = links.role_type() else { unreachable!() };
-
-        let role = match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
-            (Some(&input), None) => TypeSource::InputVariable(input),
-            (None, Some(type_)) => TypeSource::Constant(*type_),
-            (None, None) => {
-                // TODO: Do we want to support inserts with unspecified role-types?
-                let annotations = type_annotations.vertex_annotations_of(&Vertex::Variable(role_variable)).unwrap();
-                if annotations.len() == 1 {
-                    TypeSource::Constant(*annotations.iter().find(|_| true).unwrap())
-                } else {
-                    return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
-                        player_variable: variable_registry
-                            .variable_names()
-                            .get(&links.relation().as_variable().unwrap())
-                            .cloned()
-                            .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                        role_types: annotations.iter().join(", "),
-                        source_span: links.source_span(),
-                    }));
-                }
-            }
-            (Some(_), Some(_)) => unreachable!(),
-        };
+        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
+}
+
+pub(crate) fn get_thing_input_position(
+    input_variables: &HashMap<Variable, VariablePosition>,
+    variable: Variable,
+    variable_registry: &VariableRegistry,
+    source_span: Option<Span>,
+) -> Result<ThingPosition, Box<WriteCompilationError>> {
+    match input_variables.get(&variable) {
+        Some(input) => Ok(ThingPosition(*input)),
+        None => Err(Box::new(WriteCompilationError::MissingExpectedInput {
+            variable: variable_registry
+                .variable_names()
+                .get(&variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+            source_span,
+        })),
+    }
 }
 
 fn resolve_value_variable_for_inserted_attribute<'a>(
@@ -332,6 +321,53 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
     }
 }
 
+pub(crate) fn resolve_links_role(
+    type_annotations: &TypeAnnotations,
+    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_registry: &VariableRegistry,
+    named_role_types: &HashMap<Variable, Type>,
+    links: &constraint::Links<Variable>,
+) -> Result<TypeSource, Box<WriteCompilationError>> {
+    let &Vertex::Variable(role_variable) = links.role_type() else { unreachable!() };
+    match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
+        (Some(&input), None) => Ok(TypeSource::InputVariable(input)),
+        (None, Some(type_)) => Ok(TypeSource::Constant(*type_)),
+        (None, None) => {
+            // TODO: Do we want to support inserts with unspecified role-types?
+            let annotations = type_annotations.vertex_annotations_of(&Vertex::Variable(role_variable)).unwrap();
+            if annotations.len() == 1 {
+                Ok(TypeSource::Constant(*annotations.iter().find(|_| true).unwrap()))
+            } else {
+                return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
+                    player_variable: variable_registry
+                        .variable_names()
+                        .get(&links.relation().as_variable().unwrap())
+                        .cloned()
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+                    role_types: annotations.iter().join(", "),
+                    source_span: links.source_span(),
+                }));
+            }
+        }
+        (Some(_), Some(_)) => unreachable!(),
+    }
+}
+
+pub(crate) fn get_kinds_from_types(types: &BTreeSet<Type>) -> HashSet<Kind> {
+    types.iter().map(Type::kind).collect()
+}
+
+pub(crate) fn prepare_output_row_schema(
+    input_variables: &HashMap<Variable, VariablePosition>,
+) -> Vec<Option<(Variable, VariableSource)>> {
+    let output_width = input_variables.values().map(|i| i.position + 1).max().unwrap_or(0);
+    let mut output_row_schema = vec![None; output_width as usize];
+    input_variables.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
+        output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
+    });
+    output_row_schema
+}
+
 fn collect_value_bindings(
     constraints: &[Constraint<Variable>],
 ) -> Result<HashMap<&Vertex<Variable>, ParameterID>, Box<WriteCompilationError>> {
@@ -341,7 +377,9 @@ fn collect_value_bindings(
     filter_variants!(Constraint::ExpressionBinding : constraints)
         .map(|expr| {
             let &Expression::Constant(constant) = expr.expression().get_root() else {
-                unreachable!("The grammar does not allow compound expressions")
+                return Err(Box::new(WriteCompilationError::UnsupportedCompoundExpressions {
+                    source_span: expr.source_span(),
+                }));
             };
             #[cfg(debug_assertions)]
             {

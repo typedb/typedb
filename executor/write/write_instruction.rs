@@ -8,7 +8,10 @@ use compiler::executable::insert::{
     instructions::{PutAttribute, PutObject},
     ThingPosition, TypeSource, ValueSource,
 };
-use concept::thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI};
+use concept::{
+    error::ConceptReadError,
+    thing::{attribute::Attribute, object::ObjectAPI, thing_manager::ThingManager, ThingAPI},
+};
 use encoding::value::value::Value;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
@@ -73,7 +76,7 @@ impl AsWriteInstruction for PutAttribute {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
             .create_attribute(snapshot, *attribute_type, get_value(row, parameters, self.value).clone())
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         let ThingPosition(write_to) = &self.write_to;
         row.set(*write_to, VariableValue::Thing(Thing::Attribute(inserted)));
         Ok(())
@@ -92,13 +95,13 @@ impl AsWriteInstruction for PutObject {
             Type::Entity(entity_type) => {
                 let inserted = thing_manager
                     .create_entity(snapshot, *entity_type)
-                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+                    .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
                 Thing::Entity(inserted)
             }
             Type::Relation(relation_type) => {
                 let inserted = thing_manager
                     .create_relation(snapshot, *relation_type)
-                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+                    .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
                 Thing::Relation(inserted)
             }
             Type::Attribute(_) | Type::RoleType(_) => unreachable!(),
@@ -122,7 +125,7 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Has {
         owner_thing
             .as_object()
             .set_has_unordered(snapshot, thing_manager, attribute.as_attribute())
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         Ok(())
     }
 }
@@ -140,7 +143,80 @@ impl AsWriteInstruction for compiler::executable::insert::instructions::Links {
         let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
         relation_thing
             .add_player(snapshot, thing_manager, *role_type, player_thing)
-            .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
+        Ok(())
+    }
+}
+
+impl AsWriteInstruction for compiler::executable::update::instructions::Has {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+    ) -> Result<(), Box<WriteError>> {
+        let owner = get_thing(row, &self.owner).as_object();
+        let new_attribute = get_thing(row, &self.attribute).as_attribute();
+
+        let mut old_attributes = owner.get_has_type_unordered(snapshot, thing_manager, new_attribute.type_());
+        if let Some(old_attribute) = old_attributes.next() {
+            match old_attribute {
+                Ok((old_attribute, count)) => {
+                    debug_assert_eq!(
+                        count, 1,
+                        "Can only update unordered has with card up to 1 (got count {count}). Update for lists!"
+                    );
+                    owner
+                        .unset_has_unordered(snapshot, thing_manager, &old_attribute)
+                        .map_err(|typedb_source| Box::new(WriteError::ConceptWrite { typedb_source }))?;
+                }
+                Err(typedb_source) => return Err(Box::new(WriteError::ConceptRead { typedb_source })),
+            }
+        }
+        debug_assert!(
+            old_attributes.next().is_none(),
+            "Can only update unordered has with card up to 1. Update for lists!"
+        );
+
+        owner
+            .set_has_unordered(snapshot, thing_manager, new_attribute)
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
+        Ok(())
+    }
+}
+
+impl AsWriteInstruction for compiler::executable::update::instructions::Links {
+    fn execute(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        thing_manager: &ThingManager,
+        _parameters: &ParameterRegistry,
+        row: &mut Row<'_>,
+    ) -> Result<(), Box<WriteError>> {
+        let relation = try_unwrap_as!(answer::Thing::Relation : get_thing(row, &self.relation)).unwrap();
+        let new_player = get_thing(row, &self.player).as_object();
+        let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
+
+        let mut old_players = relation.get_players_role_type(snapshot, thing_manager, *role_type);
+        if let Some(old_player) = old_players.next() {
+            match old_player {
+                Ok(old_player) => {
+                    relation
+                        .remove_player_single(snapshot, thing_manager, *role_type, old_player)
+                        .map_err(|typedb_source| Box::new(WriteError::ConceptWrite { typedb_source }))?;
+                }
+                Err(typedb_source) => return Err(Box::new(WriteError::ConceptRead { typedb_source })),
+            }
+        }
+        debug_assert!(
+            old_players.next().is_none(),
+            "Can only update unordered links with card up to 1. Update for lists!"
+        );
+
+        relation
+            .add_player(snapshot, thing_manager, *role_type, new_player)
+            .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
         Ok(())
     }
 }
@@ -158,17 +234,17 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::ThingIns
             Thing::Entity(entity) => {
                 entity
                     .delete(snapshot, thing_manager)
-                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+                    .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
             }
             Thing::Relation(relation) => {
                 relation
                     .delete(snapshot, thing_manager)
-                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+                    .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
             }
             Thing::Attribute(attribute) => {
                 attribute
                     .delete(snapshot, thing_manager)
-                    .map_err(|source| WriteError::ConceptWrite { typedb_source: source })?;
+                    .map_err(|typedb_source| WriteError::ConceptWrite { typedb_source })?;
             }
         }
         let ThingPosition(position) = &self.thing;

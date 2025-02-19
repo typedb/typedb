@@ -5,7 +5,12 @@
 */
 
 use answer::variable::Variable;
-use typeql::{common::Spanned, query::stage::delete::DeletableKind, statement::thing::RolePlayer};
+use typeql::{
+    common::{Span, Spanned},
+    query::stage::delete::DeletableKind,
+    statement::thing::{Constraint, HasValue, Head, RolePlayer},
+    Expression, Identifier, Statement,
+};
 
 use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
@@ -15,6 +20,21 @@ use crate::{
     },
     RepresentationError,
 };
+
+macro_rules! verify_variable_available {
+    ($context:ident, $var:expr => $error:ident ) => {
+        match $context.get_variable(
+            $var.name()
+                .ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: $var.span() }))?,
+        ) {
+            Some(translated) => Ok(translated),
+            None => Err(Box::new(RepresentationError::$error {
+                variable: $var.name().unwrap().to_owned(),
+                source_span: $var.span(),
+            })),
+        }
+    };
+}
 
 pub fn translate_insert(
     context: &mut TranslationContext,
@@ -29,43 +49,18 @@ pub fn translate_insert(
     builder.finish()
 }
 
-fn verify_deleted_variables_available(
+pub fn translate_update(
     context: &mut TranslationContext,
-    delete: &typeql::query::stage::Delete,
-) -> Result<(), Box<RepresentationError>> {
-    fn verify_variable_available(
-        context: &TranslationContext,
-        var: &typeql::Variable,
-    ) -> Result<Variable, Box<RepresentationError>> {
-        match context.get_variable(var.name().unwrap()) {
-            Some(translated) => Ok(translated),
-            None => Err(Box::new(RepresentationError::DeleteVariableUnavailable {
-                variable: var.name().unwrap().to_owned(),
-                source_span: var.span(),
-            })),
-        }
+    value_parameters: &mut ParameterRegistry,
+    update: &typeql::query::stage::Update,
+) -> Result<Block, Box<RepresentationError>> {
+    validate_update_statements_and_variables(context, update)?;
+    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let function_index = HashMapFunctionSignatureIndex::empty();
+    for statement in &update.statements {
+        add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
     }
-    delete.deletables.iter().try_for_each(|deletable| {
-        match &deletable.kind {
-            DeletableKind::Has { owner, attribute } => {
-                verify_variable_available(context, owner)?;
-                verify_variable_available(context, attribute)?;
-            }
-            DeletableKind::Links { relation, players } => {
-                verify_variable_available(context, relation)?;
-                players.role_players.iter().try_for_each(|rp| match rp {
-                    RolePlayer::Typed(_, player) | RolePlayer::Untyped(player) => {
-                        verify_variable_available(context, player).map(|_| ())
-                    }
-                })?;
-            }
-            DeletableKind::Concept { variable } => {
-                let translated = verify_variable_available(context, variable)?;
-                context.variable_registry.set_deleted_variable_category(translated)?;
-            }
-        };
-        Ok(())
-    })
+    builder.finish()
 }
 
 pub fn translate_delete(
@@ -73,7 +68,7 @@ pub fn translate_delete(
     value_parameters: &mut ParameterRegistry,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
-    verify_deleted_variables_available(context, delete)?;
+    validate_deleted_variables_availability(context, delete)?;
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let mut conjunction = builder.conjunction_mut();
     let mut constraints = conjunction.constraints_mut();
@@ -97,4 +92,119 @@ pub fn translate_delete(
         }
     }
     Ok((builder.finish()?, deleted_concepts))
+}
+
+fn validate_update_statements_and_variables(
+    context: &mut TranslationContext,
+    update: &typeql::query::stage::Update,
+) -> Result<(), Box<RepresentationError>> {
+    update.statements.iter().try_for_each(|statement| {
+        if let Statement::Thing(thing_statement) = statement {
+            match &thing_statement.head {
+                Head::Variable(variable) => {
+                    verify_variable_available!(context, variable => UpdateVariableUnavailable)?;
+                }
+                Head::Relation(_, relation) => {
+                    return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: relation.span }))
+                }
+            }
+
+            for constraint in &thing_statement.constraints {
+                match constraint {
+                    Constraint::Has(has_constraint) => match &has_constraint.value {
+                        HasValue::Variable(variable) => {
+                            verify_variable_available!(context, variable => UpdateVariableUnavailable)?;
+                        }
+                        HasValue::Expression(expression) => {
+                            validate_update_expression_variables_availability(context, expression)?
+                        }
+                        HasValue::Comparison(comparison) => {
+                            validate_update_expression_variables_availability(context, &comparison.rhs)?
+                        }
+                    },
+                    Constraint::Links(links_constraint) => {
+                        links_constraint.relation.role_players.iter().try_for_each(|rp| match rp {
+                            RolePlayer::Typed(_, player) | RolePlayer::Untyped(player) => {
+                                verify_variable_available!(context, player => UpdateVariableUnavailable).map(|_| ())
+                            }
+                        })?;
+                    }
+                    Constraint::Isa(isa) => {
+                        return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: isa.span }))
+                    }
+                    Constraint::Iid(iid) => {
+                        return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: iid.span }))
+                    }
+                }
+            }
+        } else {
+            return Err(Box::new(RepresentationError::IllegalStatementForUpdate { source_span: statement.span() }));
+        }
+        Ok(())
+    })
+}
+
+fn validate_update_expression_variables_availability(
+    context: &mut TranslationContext,
+    expression: &Expression,
+) -> Result<(), Box<RepresentationError>> {
+    match expression {
+        Expression::Variable(variable) => {
+            verify_variable_available!(context, variable => DeleteVariableUnavailable)?;
+            Ok(())
+        }
+        Expression::ListIndex(list_index) => {
+            verify_variable_available!(context, list_index.variable => DeleteVariableUnavailable)?;
+            validate_update_expression_variables_availability(context, &list_index.index)
+        }
+        Expression::Value(value) => Ok(()),
+        Expression::Function(function_call) => {
+            // TODO: We may want to verify user-defined function names here as well.
+            // They are generally not supported in the execution, so we skip it now.
+            function_call
+                .args
+                .iter()
+                .try_fold((), |_, arg| validate_update_expression_variables_availability(context, &arg))
+        }
+        Expression::Operation(operation) => {
+            validate_update_expression_variables_availability(context, &operation.left)?;
+            validate_update_expression_variables_availability(context, &operation.right)
+        }
+        Expression::Paren(paren) => validate_update_expression_variables_availability(context, &paren.inner),
+        Expression::List(list) => {
+            list.items.iter().try_fold((), |_, item| validate_update_expression_variables_availability(context, &item))
+        }
+        Expression::ListIndexRange(list_index_range) => {
+            verify_variable_available!(context, list_index_range.var => DeleteVariableUnavailable)?;
+            validate_update_expression_variables_availability(context, &list_index_range.from)?;
+            validate_update_expression_variables_availability(context, &list_index_range.to)
+        }
+    }
+}
+
+fn validate_deleted_variables_availability(
+    context: &mut TranslationContext,
+    delete: &typeql::query::stage::Delete,
+) -> Result<(), Box<RepresentationError>> {
+    delete.deletables.iter().try_for_each(|deletable| {
+        match &deletable.kind {
+            DeletableKind::Has { owner, attribute } => {
+                verify_variable_available!(context, owner => DeleteVariableUnavailable)?;
+                verify_variable_available!(context, attribute => DeleteVariableUnavailable)?;
+            }
+            DeletableKind::Links { relation, players } => {
+                verify_variable_available!(context, relation => DeleteVariableUnavailable)?;
+                players.role_players.iter().try_for_each(|rp| match rp {
+                    RolePlayer::Typed(_, player) | RolePlayer::Untyped(player) => {
+                        verify_variable_available!(context, player => DeleteVariableUnavailable).map(|_| ())
+                    }
+                })?;
+            }
+            DeletableKind::Concept { variable } => {
+                let translated = verify_variable_available!(context, variable => DeleteVariableUnavailable)?;
+                context.variable_registry.set_deleted_variable_category(translated)?;
+            }
+        };
+        Ok(())
+    })
 }

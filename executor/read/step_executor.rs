@@ -337,7 +337,7 @@ pub(super) fn create_executors_for_function_pipeline_stages(
             );
             Ok(vec![StepExecutors::CollectingStage(step)])
         }
-        ExecutableStage::Insert(_) | ExecutableStage::Delete(_) => {
+        ExecutableStage::Insert(_) | ExecutableStage::Update(_) | ExecutableStage::Delete(_) => {
             unreachable!(
                 "Not allowed in function pipelines. TODO: Accept flag for whether this is a write pipeline & port the write stages here."
             )

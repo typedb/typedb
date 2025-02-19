@@ -78,6 +78,8 @@ impl Relation {
         thing_manager.get_role_players(snapshot, self)
     }
 
+    // TODO: It is basically the same as `get_players_role_type`, but with counts. Do we need to return counts?
+    // `has`-related Object's methods return counts. Please refactor when working on lists.
     pub fn get_players_by_role(
         self,
         snapshot: &impl ReadableSnapshot,

@@ -163,7 +163,7 @@ typedb_error!(
             name: String,
             source_span: Option<Span>,
         ),
-        IllegalInsertTypes(
+        IllegalInsertableTypes(
             4,
             "Left type '{left_type}' across constraint '{constraint_name}' is not compatible with right type '{right_type}'.",
             constraint_name: String,
@@ -171,27 +171,36 @@ typedb_error!(
             right_type: String,
             source_span: Option<Span>,
         ),
-        DetectedUnsatisfiablePattern(
+        IllegalUpdatableTypesDueToCardinality(
             5,
+            "Left type '{left_type}' across constraint '{constraint_name}' is not compatible with right type '{right_type}': schema cardinality should not exceed 1 for safe and precise updates.",
+            constraint_name: String,
+            left_type: String,
+            right_type: String,
+            source_span: Option<Span>,
+        ),
+        DetectedUnsatisfiablePattern(
+            6,
             "Type-inference derived an empty-set for some variable"
         ),
         InternalValueTypeOfNonAttributeType(
-            6,
+            7,
             "Attempted to resolve value type for a non-attribute type: {label}",
             label: String
         ),
         InternalAttributeTypeWithoutValueType(
-            7,
+            8,
             "Attempted to get a value type for an attribute-type without defined value type: {label}",
             label: String,
         ),
         ValueTypeNotFound(
-            8,
+            9,
             "Value type '{name}' was not found.",
             name: String,
             source_span: Option<Span>,
         ),
-        AnnotationsUnavailableForVariableInInsert(9,
+        AnnotationsUnavailableForVariableInWrite(
+            10,
             "Typing information for the variable '{variable}' is not available. Check if the variable is available from a previous stage or is inserted in this stage.",
             variable: Variable,
             source_span: Option<Span>,

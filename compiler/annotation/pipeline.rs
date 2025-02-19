@@ -46,7 +46,7 @@ use crate::{
         type_inference::resolve_value_types,
         AnnotationError,
     },
-    executable::{insert::type_check::check_annotations, reduce::ReduceInstruction},
+    executable::{insert, reduce::ReduceInstruction, update},
 };
 
 pub struct AnnotatedPipeline {
@@ -65,6 +65,11 @@ pub enum AnnotatedStage {
         source_span: Option<Span>,
     },
     Insert {
+        block: Block,
+        annotations: TypeAnnotations,
+        source_span: Option<Span>,
+    },
+    Update {
         block: Block,
         annotations: TypeAnnotations,
         source_span: Option<Span>,
@@ -93,6 +98,7 @@ impl AnnotatedStage {
         let variables: Box<dyn Iterator<Item = Variable> + '_> = match self {
             AnnotatedStage::Match { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Insert { block, .. } => Box::new(block.variables()),
+            AnnotatedStage::Update { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Delete { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
             AnnotatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_variable| sort_variable.variable())),
@@ -280,53 +286,49 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block, source_span } => {
-            let insert_annotations = infer_types(
-                snapshot,
-                &block,
-                variable_registry,
-                type_manager,
+            let annotations = annotate_insertables(
                 running_variable_annotations,
+                variable_registry,
+                snapshot,
+                type_manager,
                 annotated_function_signatures,
-                true,
-            )
-            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            block.conjunction().constraints().iter().for_each(|constraint| match constraint {
-                Constraint::Isa(isa) => {
-                    running_variable_annotations.insert(
-                        isa.thing().as_variable().unwrap(),
-                        insert_annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
-                    );
-                }
-                Constraint::RoleName(role_name) => {
-                    running_variable_annotations.insert(
-                        role_name.type_().as_variable().unwrap(),
-                        insert_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
-                    );
-                }
-                Constraint::Links(links) => {
-                    if let Some(variable) = links.role_type().as_variable() {
-                        if !running_variable_annotations.contains_key(&variable)
-                            && insert_annotations.vertex_annotations_of(links.role_type()).is_some()
-                        {
-                            running_variable_annotations.insert(
-                                variable,
-                                insert_annotations.vertex_annotations_of(links.role_type()).unwrap().clone(),
-                            );
-                        }
-                    }
-                }
-                _ => (),
-            });
-            check_annotations(
+                &block,
+            )?;
+
+            insert::type_check::check_annotations(
                 snapshot,
                 type_manager,
                 &block,
                 running_variable_annotations,
                 running_constraint_annotations,
-                &insert_annotations,
+                &annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            Ok(AnnotatedStage::Insert { block, annotations: insert_annotations, source_span })
+
+            Ok(AnnotatedStage::Insert { block, annotations, source_span })
+        }
+
+        TranslatedStage::Update { block, source_span } => {
+            let annotations = annotate_insertables(
+                running_variable_annotations,
+                variable_registry,
+                snapshot,
+                type_manager,
+                annotated_function_signatures,
+                &block,
+            )?;
+
+            update::type_check::check_annotations(
+                snapshot,
+                type_manager,
+                &block,
+                running_variable_annotations,
+                running_constraint_annotations,
+                &annotations,
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
+            Ok(AnnotatedStage::Update { block, annotations, source_span })
         }
 
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
@@ -424,6 +426,54 @@ pub fn validate_sort_variables_comparable(
         }
     }
     Ok(())
+}
+
+fn annotate_insertables(
+    running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    variable_registry: &mut VariableRegistry,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
+    block: &Block,
+) -> Result<TypeAnnotations, AnnotationError> {
+    let annotations = infer_types(
+        snapshot,
+        &block,
+        variable_registry,
+        type_manager,
+        running_variable_annotations,
+        annotated_function_signatures,
+        true,
+    )
+    .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
+    block.conjunction().constraints().iter().for_each(|constraint| match constraint {
+        Constraint::Isa(isa) => {
+            running_variable_annotations.insert(
+                isa.thing().as_variable().unwrap(),
+                annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
+            );
+        }
+        Constraint::RoleName(role_name) => {
+            running_variable_annotations.insert(
+                role_name.type_().as_variable().unwrap(),
+                annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
+            );
+        }
+        Constraint::Links(links) => {
+            if let Some(variable) = links.role_type().as_variable() {
+                if !running_variable_annotations.contains_key(&variable)
+                    && annotations.vertex_annotations_of(links.role_type()).is_some()
+                {
+                    running_variable_annotations
+                        .insert(variable, annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
+                }
+            }
+        }
+        _ => (),
+    });
+
+    Ok(annotations)
 }
 
 pub fn resolve_reducer_by_value_type(

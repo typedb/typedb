@@ -25,6 +25,7 @@ use crate::{
             SortStageExecutor, SortStageIterator,
         },
         reduce::ReduceStageExecutor,
+        update::UpdateStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
     },
     profile::QueryProfile,
@@ -233,6 +234,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Initial(Box<InitialStage<Snapshot>>),
     Match(Box<MatchStageExecutor<WritePipelineStage<Snapshot>>>),
     Insert(Box<InsertStageExecutor<WritePipelineStage<Snapshot>>>),
+    Update(Box<UpdateStageExecutor<WritePipelineStage<Snapshot>>>),
     Delete(Box<DeleteStageExecutor<WritePipelineStage<Snapshot>>>),
     Sort(Box<SortStageExecutor<WritePipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<WritePipelineStage<Snapshot>>>),
@@ -263,6 +265,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 Ok((WriteStageIterator::Match(Box::new(iterator)), context))
             }
             WritePipelineStage::Insert(stage) => {
+                let (iterator, context) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Write(iterator), context))
+            }
+            WritePipelineStage::Update(stage) => {
                 let (iterator, context) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }
