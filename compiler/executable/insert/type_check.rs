@@ -22,7 +22,7 @@ use crate::annotation::{
     TypeInferenceError,
 };
 
-pub fn check_annotations(
+pub fn check_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     block: &Block,
@@ -33,7 +33,7 @@ pub fn check_annotations(
     for constraint in block.conjunction().constraints() {
         match constraint {
             Constraint::Has(has) => {
-                validate_has_insertable(
+                validate_has_type_combinations_for_write(
                     snapshot,
                     type_manager,
                     has,
@@ -43,7 +43,7 @@ pub fn check_annotations(
                 )?;
             }
             Constraint::Links(links) => {
-                validate_links_insertable(
+                validate_links_type_combinations_for_write(
                     snapshot,
                     type_manager,
                     links,
@@ -77,7 +77,7 @@ pub fn check_annotations(
     Ok(())
 }
 
-pub(crate) fn validate_has_insertable(
+pub(crate) fn validate_has_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     has: &Has<Variable>,
@@ -114,7 +114,7 @@ pub(crate) fn validate_has_insertable(
             .map(|right_type| (*left_type, *right_type))
     });
     if let Some((left_type, right_type)) = invalid_iter.next() {
-        Err(TypeInferenceError::IllegalInsertableTypes {
+        Err(TypeInferenceError::IllegalTypeCombinationForWrite {
             constraint_name: Constraint::Has(has.clone()).name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)
@@ -134,7 +134,7 @@ pub(crate) fn validate_has_insertable(
     Ok(())
 }
 
-pub(crate) fn validate_links_insertable(
+pub(crate) fn validate_links_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     links: &Links<Variable>,
@@ -190,7 +190,7 @@ pub(crate) fn validate_links_insertable(
             .map(|role_type| (*player_type, *role_type))
     });
     if let Some((left_type, right_type)) = invalid_relation_role_iter.chain(invalid_player_role_iter).next() {
-        Err(TypeInferenceError::IllegalInsertableTypes {
+        Err(TypeInferenceError::IllegalTypeCombinationForWrite {
             constraint_name: Constraint::Links(links.clone()).name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)

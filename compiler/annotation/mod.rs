@@ -160,7 +160,7 @@ typedb_error!(
             name: String,
             source_span: Option<Span>,
         ),
-        IllegalInsertableTypes(
+        IllegalTypeCombinationForWrite(
             4,
             "Left type '{left_type}' across constraint '{constraint_name}' is not compatible with right type '{right_type}'.",
             constraint_name: String,

@@ -89,7 +89,7 @@ fn validate_has_updatable(
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right: &LeftRightAnnotations,
 ) -> Result<(), TypeInferenceError> {
-    insert::type_check::validate_has_insertable(
+    insert::type_check::validate_has_type_combinations_for_write(
         snapshot,
         type_manager,
         has,
@@ -127,7 +127,7 @@ fn validate_links_updatable(
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right_filtered: &LinksAnnotations,
 ) -> Result<(), TypeInferenceError> {
-    insert::type_check::validate_links_insertable(
+    insert::type_check::validate_links_type_combinations_for_write(
         snapshot,
         type_manager,
         links,

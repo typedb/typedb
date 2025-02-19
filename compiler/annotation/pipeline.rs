@@ -48,6 +48,7 @@ use crate::{
     },
     executable::{insert, reduce::ReduceInstruction, update},
 };
+use crate::executable::insert::type_check::check_type_combinations_for_write;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
@@ -295,7 +296,7 @@ fn annotate_stage(
                 &block,
             )?;
 
-            insert::type_check::check_annotations(
+            insert::type_check::check_type_combinations_for_write(
                 snapshot,
                 type_manager,
                 &block,
@@ -340,6 +341,36 @@ fn annotate_stage(
                 running_variable_annotations,
                 annotated_function_signatures,
                 true,
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            block.conjunction().constraints().iter().for_each(|constraint| match constraint {
+                Constraint::RoleName(role_name) => {
+                    running_variable_annotations.insert(
+                        role_name.type_().as_variable().unwrap(),
+                        delete_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
+                    );
+                }
+                Constraint::Links(links) => {
+                    if let Some(variable) = links.role_type().as_variable() {
+                        if !running_variable_annotations.contains_key(&variable)
+                            && delete_annotations.vertex_annotations_of(links.role_type()).is_some()
+                        {
+                            running_variable_annotations.insert(
+                                variable,
+                                delete_annotations.vertex_annotations_of(links.role_type()).unwrap().clone(),
+                            );
+                        }
+                    }
+                }
+                _ => (),
+            });
+            check_type_combinations_for_write(
+                snapshot,
+                type_manager,
+                &block,
+                running_variable_annotations,
+                running_constraint_annotations,
+                &delete_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             deleted_variables.iter().for_each(|v| {
