@@ -324,6 +324,7 @@ docker_container_push(
     ),
     tag = "$(version)",
     target_compatible_with = constraint_linux_x86_64,
+    tags = ["manual"],
 )
 
 docker_container_push(
@@ -337,6 +338,7 @@ docker_container_push(
     ),
     tag = "$(version)",
     target_compatible_with = constraint_linux_arm64,
+    tags = ["manual"],
 )
 
 docker_container_push(
