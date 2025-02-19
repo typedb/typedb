@@ -159,7 +159,7 @@ fn make_builder<'a>(
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
-        conjunction.declared_variables(block_context),
+        conjunction.local_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);

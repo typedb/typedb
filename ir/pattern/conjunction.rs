@@ -12,6 +12,7 @@ use std::{
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -58,30 +59,43 @@ impl Conjunction {
         let self_scope = self.scope_id;
         self.referenced_variables().filter(move |var| {
             let scope = block_context.get_scope(var).unwrap();
-            block_context.is_parent_scope(scope, self_scope) || self_scope != scope && !var.is_anonymous()
+            block_context.is_child_scope(self_scope, scope) || self_scope != scope && !var.is_anonymous()
         })
     }
 
-    pub fn declared_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        let self_scope = self.scope_id;
-        block_context
-            .get_variable_scopes()
-            .filter(move |&(var, scope)| {
-                scope == self_scope || block_context.is_visible_child(self_scope, scope) && !var.is_anonymous()
-            })
-            .map(|(var, _)| var)
+    pub fn captured_required_variables<'a>(
+        &'a self,
+        block_context: &'a BlockContext,
+    ) -> impl Iterator<Item = Variable> + 'a {
+        let producible_variables = self.producible_variables(block_context);
+        self.referenced_variables()
+            .filter(|v| block_context.is_variable_available(self.scope_id(), *v))
+            .filter(move |v| !producible_variables.contains(v))
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.constraints().iter().flat_map(|constraint| constraint.ids()).chain(self.nested_patterns.iter().flat_map(
-            |nested| -> Box<dyn Iterator<Item = Variable>> {
+        self.constraints()
+            .iter()
+            .flat_map(|constraint| constraint.ids())
+            .chain(self.nested_patterns.iter().flat_map(|nested| -> Box<dyn Iterator<Item = Variable>> {
                 match nested {
                     NestedPattern::Disjunction(disjunction) => Box::new(disjunction.referenced_variables()),
                     NestedPattern::Negation(negation) => Box::new(negation.referenced_variables()),
                     NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
                 }
-            },
-        ))
+            }))
+            .unique()
+    }
+
+    pub fn local_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        let self_scope = self.scope_id;
+        block_context
+            .get_variable_scopes()
+            .filter(move |&(var, scope)| {
+                scope == self_scope || block_context.is_visible_child(scope, self_scope) && !var.is_anonymous()
+            })
+            .map(|(var, _)| var)
+            .unique()
     }
 
     fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
@@ -101,16 +115,6 @@ impl Conjunction {
                 produced_variables.insert(v);
             });
         produced_variables
-    }
-
-    pub fn captured_required_variables<'a>(
-        &'a self,
-        block_context: &'a BlockContext,
-    ) -> impl Iterator<Item = Variable> + 'a {
-        let available_referenced_variables =
-            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v));
-        let producible_variables: HashSet<_> = self.producible_variables(block_context);
-        available_referenced_variables.filter(move |v| !producible_variables.contains(v))
     }
 }
 

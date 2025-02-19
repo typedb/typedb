@@ -277,7 +277,7 @@ fn compile_stage(
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
             let mut removed_positions =
-                HashSet::with_capacity(input_variables.len().checked_sub(select.variables.len()).unwrap_or(0));
+                HashSet::with_capacity(input_variables.len().saturating_sub(select.variables.len()));
             let mut output_row_mapping = HashMap::with_capacity(select.variables.len());
             for (&variable, &pos) in input_variables.iter() {
                 if select.variables.contains(&variable) {

@@ -134,10 +134,10 @@ pub(crate) fn translate_function_block(
         | TranslatedStage::Limit(_)
         | TranslatedStage::Reduce(_) => false,
     });
-    if illegal_stages.next().is_some() {
+
+    if has_illegal_stages {
         return Err(FunctionRepresentationError::IllegalStages { declaration: function_block.clone() });
     }
-
     if fetch.is_some() {
         return Err(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() });
     }
