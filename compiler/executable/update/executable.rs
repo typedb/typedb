@@ -64,7 +64,7 @@ pub fn compile(
     let mut connection_inserts = Vec::with_capacity(constraints.len());
 
     add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
-    add_role_players(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
+    add_links(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
 
     Ok(UpdateExecutable {
         executable_id: next_executable_id(),
@@ -98,7 +98,7 @@ fn add_has(
     })
 }
 
-fn add_role_players(
+fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
