@@ -57,7 +57,7 @@ pub fn compile(
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
-    let mut selected_variables = HashSet::from_iter(selected_variables.iter().copied());
+    let mut selected_variables: HashSet<_> = selected_variables.iter().copied().collect();
     selected_variables.extend(variable_registry.variable_names().keys().copied());
 
     Ok(plan_conjunction(
@@ -71,7 +71,7 @@ pub fn compile(
         call_cost_provider,
     )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .lower(input_variables.keys().copied(), selected_variables.into_iter(), &assigned_identities, variable_registry)
+    .lower(input_variables.keys().copied(), selected_variables.iter().copied(), &assigned_identities, variable_registry)
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry))
 }
