@@ -8,7 +8,10 @@ use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    executable::{
+        function::ExecutableFunctionRegistry,
+        pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    },
     transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -309,6 +312,7 @@ impl QueryManager {
             snapshot,
             variable_registry.variable_names(),
             thing_manager,
+            Arc::new(executable_functions),
             executable_stages,
             executable_fetch,
             Arc::new(value_parameters),

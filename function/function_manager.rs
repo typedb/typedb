@@ -26,6 +26,7 @@ use encoding::{
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
     pipeline::{
+        function::ReturnOperation,
         function_signature::{
             FunctionID, FunctionIDAPI, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
@@ -328,7 +329,7 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
         validate_no_cycles_impl(called_id, functions, active, complete, current_stratum.add(1, 1))?;
     }
 
-    let this_stage_has_operator = function.function_body.stages.iter().any(|stage| {
+    let has_aggregate_stage = function.function_body.stages.iter().any(|stage| {
         matches!(
             stage,
             TranslatedStage::Sort(_)
@@ -338,7 +339,12 @@ fn validate_no_cycles_impl<ID: FunctionIDAPI + Ord + Eq>(
                 | TranslatedStage::Reduce(_)
         )
     });
-    let unnegated_stratum = if this_stage_has_operator { current_stratum.add(1, 1) } else { current_stratum.add(0, 1) };
+    let has_aggregate_return = match function.function_body.return_operation {
+        ReturnOperation::Stream(_, _) | ReturnOperation::Single(_, _, _) => false,
+        ReturnOperation::ReduceCheck(_) | ReturnOperation::ReduceReducer(_, _) => true,
+    };
+    let unnegated_stratum =
+        if has_aggregate_stage || has_aggregate_return { current_stratum.add(1, 1) } else { current_stratum.add(0, 1) };
     for called_id in unnegated_function_calls(function) {
         validate_no_cycles_impl(called_id, functions, active, complete, unnegated_stratum)?;
     }
