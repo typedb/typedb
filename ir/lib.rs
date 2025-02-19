@@ -187,27 +187,14 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        ScopedValueTypeName(
-            26,
-            "Value type names cannot have scopes. Provided illegal name: '{scope}:{name}'.",
-            scope: String,
-            name: String,
-            source_span: Option<Span>,
-        ),
         ReservedKeywordAsIdentifier(
             27,
             "A reserved keyword '{identifier}' was used as identifier.",
             identifier: typeql::Identifier,
             source_span: Option<Span>,
         ),
-        ReservedValueTypeAsTypeName(
-            28,
-            "A reserved value-type name '{value_type}' was used as type name.",
-            value_type: typeql::type_::BuiltinValueType,
-            source_span: Option<Span>,
-        ),
         VariableCategoryMismatchInIs(
-            29,
+            28,
             "The variable categories for the is statement are incompatible.",
             lhs_variable: String,
             rhs_variable: String,

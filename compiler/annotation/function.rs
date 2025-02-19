@@ -16,6 +16,7 @@ use encoding::{
     graph::definition::definition_key::DefinitionKey,
     value::{label::Label, value_type::ValueType},
 };
+use error::needs_update_when_feature_is_implemented;
 use ir::{
     pattern::Vertex,
     pipeline::{
@@ -28,10 +29,8 @@ use ir::{
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
     common::{Span, Spanned},
-    parser::Rule::sign,
     schema::definable::function::{Output, SingleSelector},
-    type_::NamedType,
-    TypeRef, TypeRefAny,
+    type_::{NamedType, NamedTypeAny},
 };
 
 use crate::{
@@ -532,17 +531,20 @@ fn get_function_parameter<V: From<Variable> + Ord>(
 fn get_annotations_from_labels(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    typeql_label: &TypeRefAny,
+    typeql_label: &NamedTypeAny,
 ) -> Result<FunctionParameterAnnotation, TypeInferenceError> {
-    let type_ref = match typeql_label {
-        TypeRefAny::Type(inner) => inner,
-        TypeRefAny::Optional(typeql::type_::Optional { .. }) => {
-            return Err(TypeInferenceError::OptionalTypesUnsupported {})
+    let named_type = match typeql_label {
+        NamedTypeAny::Simple(inner) => inner,
+        NamedTypeAny::Optional(typeql::type_::NamedTypeOptional { .. }) => {
+            needs_update_when_feature_is_implemented!(Optionals);
+            return Err(TypeInferenceError::OptionalTypesUnsupported {});
         }
-        TypeRefAny::List(typeql::type_::List { .. }) => return Err(TypeInferenceError::ListTypesUnsupported {}),
+        NamedTypeAny::List(typeql::type_::NamedTypeList { .. }) => {
+            needs_update_when_feature_is_implemented!(Lists);
+            return Err(TypeInferenceError::ListTypesUnsupported {});
+        }
     };
-    let TypeRef::Named(inner_type) = type_ref else { unreachable!("Function return labels cannot be variable.") };
-    match inner_type {
+    match named_type {
         NamedType::Label(label) => {
             // TODO: could be a struct value type in the future!
             let types = type_seeder::get_type_annotation_and_subtypes_from_label(
@@ -557,7 +559,6 @@ fn get_annotations_from_labels(
             let value = translate_value_type(&value_type.token);
             Ok(FunctionParameterAnnotation::Value(value))
         }
-        NamedType::Role(_) => unreachable!("A function return label was wrongly parsed as role-type."),
     }
 }
 

@@ -11,7 +11,7 @@ use std::{
 
 use typeql::{
     schema::definable::function::{Output, Single, SingleSelector, Stream},
-    type_::NamedType,
+    type_::{NamedType, NamedTypeAny},
     TypeRef, TypeRefAny, Variable,
 };
 
@@ -48,12 +48,6 @@ impl StructuralEquality for NamedType {
         mem::discriminant(self).hash()
             ^ match self {
                 NamedType::Label(label) => label.ident.as_str_unchecked().hash(),
-                NamedType::Role(scoped_label) => {
-                    let mut hasher = DefaultHasher::new();
-                    scoped_label.name.ident.as_str_unchecked().hash_into(&mut hasher);
-                    scoped_label.scope.ident.as_str_unchecked().hash_into(&mut hasher);
-                    hasher.finish()
-                }
                 NamedType::BuiltinValueType(builtin_value_type) => builtin_value_type.token.as_str().hash(),
             }
     }
@@ -63,15 +57,34 @@ impl StructuralEquality for NamedType {
             (Self::Label(inner), Self::Label(other_inner)) => {
                 inner.ident.as_str_unchecked().equals(other_inner.ident.as_str_unchecked())
             }
-            (Self::Role(inner), Self::Role(other_inner)) => {
-                inner.name.ident.as_str_unchecked().equals(other_inner.name.ident.as_str_unchecked())
-                    && inner.scope.ident.as_str_unchecked().equals(other_inner.scope.ident.as_str_unchecked())
-            }
             (Self::BuiltinValueType(inner), Self::BuiltinValueType(other_inner)) => {
                 inner.token.as_str().equals(other_inner.token.as_str())
             }
             // note: this style forces updating the match when the variants change
-            (Self::Label { .. }, _) | (Self::BuiltinValueType { .. }, _) | (Self::Role { .. }, _) => false,
+            (Self::Label { .. }, _) | (Self::BuiltinValueType { .. }, _) => false,
+        }
+    }
+}
+
+impl StructuralEquality for NamedTypeAny {
+    fn hash(&self) -> u64 {
+        ordered_hash_combine(
+            mem::discriminant(self).hash(),
+            match self {
+                Self::Simple(inner) => inner.hash(),
+                Self::Optional(inner) => inner.inner.hash(),
+                Self::List(inner) => inner.inner.hash(),
+            },
+        )
+    }
+
+    fn equals(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Simple(inner), Self::Simple(other_inner)) => inner.equals(other_inner),
+            (Self::Optional(inner), Self::Optional(other_inner)) => inner.inner.equals(&other_inner.inner),
+            (Self::List(inner), Self::List(other_inner)) => inner.inner.equals(&other_inner.inner),
+            // note: this style forces updating the match when the variants change
+            (Self::Simple { .. }, _) | (Self::Optional { .. }, _) | (Self::List { .. }, _) => false,
         }
     }
 }
@@ -82,7 +95,13 @@ impl StructuralEquality for TypeRef {
         ordered_hash_combine(
             mem::discriminant(self).hash(),
             match self {
-                TypeRef::Named(named_type) => named_type.hash(),
+                TypeRef::Label(label) => label.ident.as_str_unchecked().hash(),
+                TypeRef::Scoped(scoped_label) => {
+                    let mut hasher = DefaultHasher::new();
+                    scoped_label.name.ident.as_str_unchecked().hash_into(&mut hasher);
+                    scoped_label.scope.ident.as_str_unchecked().hash_into(&mut hasher);
+                    hasher.finish()
+                }
                 TypeRef::Variable(variable) => variable.hash(),
             },
         )
@@ -90,10 +109,16 @@ impl StructuralEquality for TypeRef {
 
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
-            (TypeRef::Named(inner), TypeRef::Named(other_inner)) => inner.equals(other_inner),
+            (TypeRef::Label(inner), TypeRef::Label(other_inner)) => {
+                inner.ident.as_str_unchecked().equals(other_inner.ident.as_str_unchecked())
+            }
+            (TypeRef::Scoped(inner), TypeRef::Scoped(other_inner)) => {
+                inner.name.ident.as_str_unchecked().equals(other_inner.name.ident.as_str_unchecked())
+                    && inner.scope.ident.as_str_unchecked().equals(other_inner.scope.ident.as_str_unchecked())
+            }
             (TypeRef::Variable(inner), TypeRef::Variable(other_inner)) => inner.equals(other_inner),
             // note: this style forces updating the match when the variants change
-            (Self::Named { .. }, _) | (Self::Variable { .. }, _) => false,
+            (Self::Label { .. }, _) | (Self::Variable { .. }, _) | (Self::Scoped(_), _) => false,
         }
     }
 }
@@ -104,7 +129,6 @@ impl StructuralEquality for TypeRefAny {
             mem::discriminant(self).hash(),
             match self {
                 TypeRefAny::Type(type_ref) => type_ref.hash(),
-                TypeRefAny::Optional(optional) => optional.inner.hash(),
                 TypeRefAny::List(list) => list.inner.hash(),
             },
         )
@@ -113,10 +137,9 @@ impl StructuralEquality for TypeRefAny {
     fn equals(&self, other: &Self) -> bool {
         match (self, other) {
             (Self::Type(inner), Self::Type(other_inner)) => inner.equals(other_inner),
-            (Self::Optional(inner), Self::Optional(other_inner)) => inner.inner.equals(&other_inner.inner),
             (Self::List(inner), Self::List(other_inner)) => inner.inner.equals(&other_inner.inner),
             // note: this style forces updating the match when the variants change
-            (Self::Type { .. }, _) | (Self::Optional { .. }, _) | (Self::List { .. }, _) => false,
+            (Self::Type { .. }, _) | (Self::List { .. }, _) => false,
         }
     }
 }

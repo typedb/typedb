@@ -9,10 +9,7 @@ use concept::error::ConceptReadError;
 use encoding::value::{label::Label, value_type::ValueTypeCategory};
 use error::typedb_error;
 use expression::ExpressionCompileError;
-use ir::pattern::constraint::Constraint;
 use typeql::common::Span;
-
-use crate::annotation::expression::compiled_expression::ExpressionValueType;
 
 pub mod expression;
 pub mod fetch;

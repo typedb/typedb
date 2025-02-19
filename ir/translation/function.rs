@@ -5,6 +5,7 @@
  */
 
 use answer::variable::Variable;
+use error::needs_update_when_feature_is_implemented;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::{
@@ -12,8 +13,7 @@ use typeql::{
     schema::definable::function::{
         FunctionBlock, Output, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream,
     },
-    type_::NamedType,
-    TypeRef, TypeRefAny,
+    type_::{NamedType, NamedTypeAny},
 };
 
 use crate::{
@@ -55,7 +55,11 @@ pub fn translate_function_from(
         .args
         .iter()
         .map(|arg| {
-            (arg.var.name().unwrap().to_owned(), arg.var.span(), type_any_to_category_and_optionality(&arg.type_).0)
+            (
+                arg.var.name().unwrap().to_owned(),
+                arg.var.span(),
+                named_type_any_to_category_and_optionality(&arg.type_).0,
+            )
         })
         .collect::<Vec<_>>();
     let (mut context, arguments) = TranslationContext::new_with_function_arguments(args_sources_categories);
@@ -155,7 +159,7 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
         .signature
         .args
         .iter()
-        .map(|arg| type_any_to_category_and_optionality(&arg.type_).0)
+        .map(|arg| named_type_any_to_category_and_optionality(&arg.type_).0)
         .collect::<Vec<_>>();
 
     let return_is_stream = matches!(function.signature.output, Output::Stream(_));
@@ -164,34 +168,37 @@ pub fn build_signature(function_id: FunctionID, function: &typeql::Function) -> 
         Output::Single(single) => &single.types,
     }
     .iter()
-    .map(type_any_to_category_and_optionality)
+    .map(named_type_any_to_category_and_optionality)
     .collect::<Vec<_>>();
     FunctionSignature::new(function_id.clone(), args, returns, return_is_stream)
 }
 
-fn type_any_to_category_and_optionality(type_any: &TypeRefAny) -> (VariableCategory, VariableOptionality) {
-    let (inner, is_list, optionality) = match type_any {
-        TypeRefAny::Type(inner) => (inner, false, VariableOptionality::Required),
-        TypeRefAny::Optional(optional) => (&optional.inner, false, VariableOptionality::Optional),
-        TypeRefAny::List(list) => (&list.inner, true, VariableOptionality::Required),
+fn named_type_any_to_category_and_optionality(
+    named_type_any: &NamedTypeAny,
+) -> (VariableCategory, VariableOptionality) {
+    let (inner, is_list, optionality) = match named_type_any {
+        NamedTypeAny::Simple(inner) => (inner, false, VariableOptionality::Required),
+        NamedTypeAny::Optional(optional) => (&optional.inner, false, VariableOptionality::Optional),
+        NamedTypeAny::List(list) => (&list.inner, true, VariableOptionality::Required),
     };
     let category = match inner {
-        TypeRef::Named(NamedType::Label(_)) => {
+        NamedType::Label(_) => {
+            needs_update_when_feature_is_implemented!(
+                Structs,
+                "This could be a struct label. Implement a ThingOrStructValue category"
+            );
             if is_list {
                 VariableCategory::ThingList
             } else {
                 VariableCategory::Thing
             }
         }
-        TypeRef::Named(NamedType::BuiltinValueType(_)) => {
+        NamedType::BuiltinValueType(_) => {
             if is_list {
                 VariableCategory::ValueList
             } else {
                 VariableCategory::Value
             }
-        }
-        TypeRef::Named(NamedType::Role(_)) | TypeRef::Variable(_) => {
-            unreachable!("This is used for return & argument labelling")
         }
     };
     (category, optionality)

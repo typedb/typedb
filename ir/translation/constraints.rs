@@ -126,7 +126,7 @@ fn add_type_statement(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_statement: &typeql::statement::Type,
 ) -> Result<(), Box<RepresentationError>> {
-    let type_ = register_typeql_type_any(constraints, &type_statement.type_)?;
+    let type_ = register_typeql_type(constraints, &type_statement.type_)?;
     if let Some(kind) = type_statement.kind {
         let Vertex::Variable(var) = type_ else {
             return Err(Box::new(RepresentationError::LabelWithKind { source_span: type_statement.span() }));
@@ -207,10 +207,6 @@ fn register_typeql_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         TypeRefAny::Type(type_) => register_typeql_type(constraints, type_),
-        TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
-            source_span: type_.span(),
-            feature: UnimplementedFeature::Optionals,
-        })),
         TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
             source_span: list.span(),
             feature: UnimplementedFeature::Lists,
@@ -223,16 +219,8 @@ fn register_typeql_type(
     type_: &TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        TypeRef::Named(NamedType::Label(label)) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
-        TypeRef::Named(NamedType::Role(scoped_label)) => {
-            Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
-        }
-        TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
-            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
-                value_type: value_type.clone(),
-                source_span: value_type.span(),
-            }))
-        }
+        TypeRef::Label(label) => Ok(Vertex::Label(register_type_label(constraints, label)?)),
+        TypeRef::Scoped(scoped_label) => Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?)),
         TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -243,10 +231,6 @@ fn register_typeql_role_type_any(
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
         TypeRefAny::Type(type_) => register_typeql_role_type(constraints, type_),
-        TypeRefAny::Optional(optional) => Err(Box::new(RepresentationError::UnimplementedOptionalType {
-            source_span: optional.span(),
-            feature: UnimplementedFeature::Optionals,
-        })),
         TypeRefAny::List(list) => Err(Box::new(RepresentationError::UnimplementedListType {
             source_span: list.span(),
             feature: error::UnimplementedFeature::Lists,
@@ -259,18 +243,8 @@ fn register_typeql_role_type(
     type_: &TypeRef,
 ) -> Result<Vertex<Variable>, Box<RepresentationError>> {
     match type_ {
-        TypeRef::Named(NamedType::Label(label)) => {
-            Ok(Vertex::Variable(register_type_role_name_var(constraints, label)?))
-        }
-        TypeRef::Named(NamedType::Role(scoped_label)) => {
-            Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?))
-        }
-        TypeRef::Named(NamedType::BuiltinValueType(value_type)) => {
-            Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
-                value_type: value_type.clone(),
-                source_span: value_type.span(),
-            }))
-        }
+        TypeRef::Label(label) => Ok(Vertex::Variable(register_type_role_name_var(constraints, label)?)),
+        TypeRef::Scoped(scoped_label) => Ok(Vertex::Label(register_type_scoped_label(constraints, scoped_label)?)),
         TypeRef::Variable(var) => Ok(Vertex::Variable(register_typeql_var(constraints, var)?)),
     }
 }
@@ -305,11 +279,6 @@ fn register_typeql_value_type(
     value_type: &TypeQLValueType,
 ) -> Result<ValueType, Box<RepresentationError>> {
     match &value_type.value_type {
-        NamedType::Role(scoped_label) => Err(Box::new(RepresentationError::ScopedValueTypeName {
-            scope: scoped_label.scope.ident.as_str_unchecked().to_owned(),
-            name: scoped_label.name.ident.as_str_unchecked().to_owned(),
-            source_span: value_type.span(),
-        })),
         NamedType::Label(label) => Ok(ValueType::Struct(checked_identifier(&label.ident)?.to_owned())),
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
             Ok(ValueType::Builtin(translate_value_type(token)))
@@ -332,7 +301,7 @@ fn add_typeql_sub(
     sub: &typeql::statement::type_::Sub,
 ) -> Result<(), Box<RepresentationError>> {
     let kind = sub.kind.into();
-    let type_ = register_typeql_type_any(constraints, &sub.supertype)?;
+    let type_ = register_typeql_type(constraints, &sub.supertype)?;
     constraints.add_sub(kind, subtype, type_, sub.span())?;
     Ok(())
 }
@@ -540,29 +509,16 @@ pub(super) fn add_typeql_relation(
         match role_player {
             typeql::statement::thing::RolePlayer::Typed(type_ref, player_var) => {
                 let type_ = match type_ref {
-                    TypeRefAny::Type(TypeRef::Named(NamedType::Label(name))) => {
-                        register_type_role_name_var(constraints, name)?
-                    }
+                    TypeRefAny::Type(TypeRef::Label(name)) => register_type_role_name_var(constraints, name)?,
                     TypeRefAny::Type(TypeRef::Variable(var)) => register_typeql_var(constraints, var)?,
-                    TypeRefAny::Type(TypeRef::Named(NamedType::Role(name))) => {
+                    TypeRefAny::Type(TypeRef::Scoped(name)) => {
                         return Err(Box::new(RepresentationError::ScopedRoleNameInRelation {
                             source_span: name.span(),
-                        }));
-                    }
-                    TypeRefAny::Optional(_) => {
-                        return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                            feature: error::UnimplementedFeature::Optionals,
                         }));
                     }
                     TypeRefAny::List(_) => {
                         return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
                             feature: error::UnimplementedFeature::Lists,
-                        }));
-                    }
-                    TypeRefAny::Type(TypeRef::Named(NamedType::BuiltinValueType(value_type))) => {
-                        return Err(Box::new(RepresentationError::ReservedValueTypeAsTypeName {
-                            value_type: value_type.clone(),
-                            source_span: value_type.span(),
                         }));
                     }
                 };

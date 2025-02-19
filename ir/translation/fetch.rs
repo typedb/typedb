@@ -23,7 +23,6 @@ use typeql::{
         Fetch as TypeQLFetch,
     },
     schema::definable::function::{FunctionBlock, SingleSelector},
-    type_::NamedType,
     value::StringLiteral,
     Expression, TypeRef, TypeRefAny, Variable as TypeQLVariable,
 };
@@ -44,7 +43,7 @@ use crate::{
         expression::{add_user_defined_function_call, build_expression},
         fetch::FetchRepresentationError::{
             AnonymousVariableEncountered, InvalidAttributeLabelEncountered, NamedVariableEncountered,
-            OptionalVariableEncountered, VariableNotAvailable,
+            VariableNotAvailable,
         },
         function::translate_function_block,
         literal::FromTypeQLLiteral,
@@ -282,36 +281,25 @@ fn translate_fetch_single(
 fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, Label), Box<FetchRepresentationError>> {
     match &fetch_attribute.attribute {
         TypeRefAny::Type(type_ref) => match &type_ref {
-            TypeRef::Named(type_) => match type_ {
-                NamedType::Label(label) => {
-                    let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
-                        Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
-                    })?;
-                    Ok((false, Label::parse_from(checked_label, label.span())))
-                }
-                NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
-                    Err(Box::new(InvalidAttributeLabelEncountered { declaration: type_ref.clone() }))
-                }
-            },
+            TypeRef::Label(label) => {
+                let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
+                    Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
+                })?;
+                Ok((false, Label::parse_from(checked_label, label.span())))
+            }
+            TypeRef::Scoped(_) => Err(Box::new(InvalidAttributeLabelEncountered { declaration: type_ref.clone() })),
             TypeRef::Variable(_) => Err(Box::new(NamedVariableEncountered { declaration: type_ref.clone() })),
         },
         TypeRefAny::List(list) => match &list.inner {
-            TypeRef::Named(named_type) => match named_type {
-                NamedType::Label(label) => {
-                    let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
-                        Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
-                    })?;
-                    Ok((true, Label::parse_from(checked_label, label.span())))
-                }
-                NamedType::Role(_) | NamedType::BuiltinValueType(_) => {
-                    Err(Box::new(InvalidAttributeLabelEncountered { declaration: list.inner.clone() }))
-                }
-            },
+            TypeRef::Label(label) => {
+                let checked_label = checked_identifier(&label.ident).map_err(|typedb_source| {
+                    Box::new(FetchRepresentationError::SubFetchRepresentation { typedb_source })
+                })?;
+                Ok((true, Label::parse_from(checked_label, label.span())))
+            }
+            TypeRef::Scoped(_) => Err(Box::new(InvalidAttributeLabelEncountered { declaration: list.inner.clone() })),
             TypeRef::Variable(_) => Err(Box::new(NamedVariableEncountered { declaration: list.inner.clone() })),
         },
-        TypeRefAny::Optional(_) => {
-            Err(Box::new(OptionalVariableEncountered { declaration: fetch_attribute.attribute.clone() }))
-        }
     }
 }
 
@@ -547,11 +535,6 @@ typedb_error! {
             1,
             "Encountered anonymous variable where it is not permitted.\nSource:\n{declaration}",
             declaration: TypeQLVariable
-        ),
-        OptionalVariableEncountered(
-            2,
-            "Encountered optional variable where it is not permitted.\nSource:\n{declaration}",
-            declaration: TypeRefAny
         ),
         NamedVariableEncountered(
             3,

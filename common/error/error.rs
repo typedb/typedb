@@ -383,3 +383,10 @@ macro_rules! ensure_unimplemented_unused {
         compile_error!("Implement this path before making the function usable")
     };
 }
+
+#[macro_export]
+macro_rules! needs_update_when_feature_is_implemented {
+    // Nothing, we just need the compile error when the feature is deleted
+    ($feature:ident) => {};
+    ($feature:ident, $msg:literal) => {};
+}
