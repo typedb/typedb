@@ -44,11 +44,11 @@ use crate::{
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
+        write_type_check::check_type_combinations_for_write,
         AnnotationError,
     },
     executable::{insert, reduce::ReduceInstruction, update},
 };
-use crate::executable::insert::type_check::check_type_combinations_for_write;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
@@ -296,7 +296,7 @@ fn annotate_stage(
                 &block,
             )?;
 
-            insert::type_check::check_type_combinations_for_write(
+            check_type_combinations_for_write(
                 snapshot,
                 type_manager,
                 &block,

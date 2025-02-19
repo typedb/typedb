@@ -13,7 +13,6 @@ use crate::VariablePosition;
 
 pub mod executable;
 pub mod instructions;
-pub mod type_check;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {

@@ -19,6 +19,7 @@ pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
+pub(crate) mod write_type_check;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {

@@ -158,10 +158,11 @@ pub(crate) fn add_inserted_concepts(
             }
             if output_variables.contains_key(&thing) {
                 return Err(Box::new(WriteCompilationError::MultipleInsertsForSameVariable {
-                    variable: variable_registry.get_variable_name(thing).unwrap().clone()
+                    variable: variable_registry.get_variable_name(thing).unwrap().clone(),
                 }));
             }
-            let write_to = VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
+            let write_to =
+                VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingPosition(write_to) });
             concept_instructions.push(instruction);
@@ -203,10 +204,11 @@ pub(crate) fn add_inserted_concepts(
             };
             if output_variables.contains_key(&thing) {
                 return Err(Box::new(WriteCompilationError::MultipleInsertsForSameVariable {
-                    variable: variable_registry.get_variable_name(thing).unwrap().clone()
+                    variable: variable_registry.get_variable_name(thing).unwrap().clone(),
                 }));
             }
-            let write_to = VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
+            let write_to =
+                VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
             output_variables.insert(thing, write_to);
             let instruction =
                 ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingPosition(write_to) });
