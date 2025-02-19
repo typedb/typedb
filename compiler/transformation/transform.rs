@@ -5,7 +5,7 @@
  */
 
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope, Vertex};
+use ir::pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

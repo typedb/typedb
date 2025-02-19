@@ -49,7 +49,7 @@ impl TypeListExecutor {
     ) -> Self {
         debug_assert!(!variable_modes.all_inputs());
         let types = type_.types().iter().cloned().sorted().collect_vec();
-        debug_assert!(!types.is_empty());
+        // This instruction that needs to supports empty type-lists
         let TypeListInstruction { type_var, checks, .. } = type_;
         debug_assert_eq!(type_var, _sort_by);
         let tuple_positions = TuplePositions::Single([Some(type_var)]);
