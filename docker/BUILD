@@ -18,23 +18,7 @@ platform(
 )
 
 genrule(
-  name = "version-snapshot-arm64",
-  srcs = ["//:VERSION"],
-  outs = ["version-arm64.txt"],
-  tools = [],
-  cmd = "VERSION=$(git rev-parse HEAD); echo \"$$VERSION-arm64\" > $@"
-)
-
-genrule(
-  name = "version-snapshot-x86_64",
-  srcs = ["//:VERSION"],
-  outs = ["version-x86_64.txt"],
-  tools = [],
-  cmd = "VERSION=$(git rev-parse HEAD); echo \"$$VERSION-x86_64\" > $@"
-)
-
-genrule(
-  name = "version-release-arm64",
+  name = "version-arm64",
   srcs = ["//:VERSION"],
   outs = ["version-arm64.txt"],
   tools = [],
@@ -42,7 +26,7 @@ genrule(
 )
 
 genrule(
-  name = "version-release-x86_64",
+  name = "version-x86_64",
   srcs = ["//:VERSION"],
   outs = ["version-x86_64.txt"],
   tools = [],
