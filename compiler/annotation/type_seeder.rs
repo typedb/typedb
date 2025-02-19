@@ -123,18 +123,17 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
 
         // Now we recurse into the nested negations & optionals
-        self.seed_types_in_nested_negations_and_optionals(graph, context);
-        Ok(())
+        self.seed_types_in_nested_negations_and_optionals(graph, context)
     }
 
     fn seed_types_in_nested_negations_and_optionals(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
         context: &BlockContext,
-    ) -> Result<(), TypeInferenceError>{
+    ) -> Result<(), TypeInferenceError> {
         let TypeInferenceGraph { vertices, nested_disjunctions, nested_negations, nested_optionals, .. } = graph;
         for nested_graph in nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut()) {
-            self.seed_types_in_nested_negations_and_optionals(nested_graph, context).unwrap()
+            self.seed_types_in_nested_negations_and_optionals(nested_graph, context)?;
         }
         for nested_graph in nested_negations {
             self.seed_types(nested_graph, context, vertices)?;

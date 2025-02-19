@@ -171,7 +171,10 @@ pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
 }
 
 fn prune_types_for_nested_negations_and_optionals(graph: &mut TypeInferenceGraph<'_>) {
-    graph.nested_disjunctions.iter_mut().flat_map(|disjunction| disjunction.disjunction.iter_mut())
+    graph
+        .nested_disjunctions
+        .iter_mut()
+        .flat_map(|disjunction| disjunction.disjunction.iter_mut())
         .for_each(|nested| prune_types_for_nested_negations_and_optionals(nested));
     chain(graph.nested_negations.iter_mut(), graph.nested_optionals.iter_mut()).for_each(|nested| {
         for (vertex, parent_annotations) in &graph.vertices.annotations {

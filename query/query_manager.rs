@@ -8,7 +8,10 @@ use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
-    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    executable::{
+        function::ExecutableFunctionRegistry,
+        pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    },
     transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -25,7 +28,6 @@ use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
-use compiler::executable::function::ExecutableFunctionRegistry;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 

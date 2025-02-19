@@ -5,12 +5,11 @@
  */
 
 use std::{collections::HashMap, sync::Arc};
-use answer::variable_value::VariableValue;
 
+use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
-use encoding::value::value::Value;
+use encoding::{graph::definition::definition_key_generator::DefinitionKeyGenerator, value::value::Value};
 use executor::{
     pipeline::{stage::ExecutionContext, PipelineExecutionError},
     row::MaybeOwnedRow,
@@ -511,13 +510,15 @@ fn fibonacci() {
 
 #[test]
 fn write_pipelines() {
-    let context = setup_common(r#"
+    let context = setup_common(
+        r#"
         define
             relation edge relates begin, relates end;
             entity node, plays edge:begin, plays edge:end, owns id @key;
             attribute id, value integer;
             attribute number @independent, value integer;
-    "#);
+    "#,
+    );
     let insert_query = r#"insert
         $n0  isa number  0;
         $n1  isa number  1;
