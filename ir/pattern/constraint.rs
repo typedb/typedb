@@ -768,14 +768,14 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_relates(&self) -> Option<&Relates<ID>> {
+    pub fn as_relates(&self) -> Option<&Relates<ID>> {
         match self {
             Constraint::Relates(relates) => Some(relates),
             _ => None,
         }
     }
 
-    pub(crate) fn as_plays(&self) -> Option<&Plays<ID>> {
+    pub fn as_plays(&self) -> Option<&Plays<ID>> {
         match self {
             Constraint::Plays(plays) => Some(plays),
             _ => None,
