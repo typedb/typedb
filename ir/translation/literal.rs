@@ -11,7 +11,7 @@ use chrono_tz::Tz;
 use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
     decimal_value::Decimal,
-    duration_value::{Duration, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
+    duration_value::{Duration, DAYS_PER_WEEK, MONTHS_PER_YEAR, NANOS_PER_HOUR, NANOS_PER_MINUTE, NANOS_PER_SEC},
     timezone::TimeZone,
     value::Value,
 };
@@ -260,55 +260,47 @@ impl FromTypeQLLiteral for Duration {
         let mut nanos = 0;
 
         match literal {
-            DurationLiteral::Weeks(weeks) => days += 7 * u32::from_typeql_literal(weeks, source_span)?,
+            DurationLiteral::Weeks(weeks) => days = DAYS_PER_WEEK * u32::from_typeql_literal(weeks, source_span)?,
             DurationLiteral::DateAndTime(date_part, time_part) => {
-                months += MONTHS_PER_YEAR
-                    * date_part
-                        .years
-                        .as_ref()
-                        .map(|v| u32::from_typeql_literal(v, source_span))
-                        .transpose()?
-                        .unwrap_or(0);
-                months += date_part
-                    .months
-                    .as_ref()
-                    .map(|v| u32::from_typeql_literal(v, source_span))
-                    .transpose()?
-                    .unwrap_or(0);
-                days +=
-                    date_part.days.as_ref().map(|v| u32::from_typeql_literal(v, source_span)).transpose()?.unwrap_or(0);
-
+                months = MONTHS_PER_YEAR * parse_optional_int(&date_part.years, source_span)?.unwrap_or(0);
+                months += parse_optional_int(&date_part.months, source_span)?.unwrap_or(0);
+                days = parse_optional_int(&date_part.days, source_span)?.unwrap_or(0);
                 if let Some(time_part) = time_part {
-                    nanos += NANOS_PER_HOUR
-                        * time_part
-                            .hours
-                            .as_ref()
-                            .map(|v| u64::from_typeql_literal(v, source_span))
-                            .transpose()?
-                            .unwrap_or(0);
-                    nanos += NANOS_PER_MINUTE
-                        * time_part
-                            .minutes
-                            .as_ref()
-                            .map(|v| u64::from_typeql_literal(v, source_span))
-                            .transpose()?
-                            .unwrap_or(0);
-
-                    let seconds_decimal = (time_part.seconds.as_ref())
-                        .map(|seconds| parse_primitive::<Decimal>(&seconds.value, source_span))
-                        .transpose()?
-                        .unwrap_or_default();
-
-                    nanos += seconds_decimal.integer_part() as u64 * NANOS_PER_SEC;
-
-                    let nanos_decimal = (seconds_decimal - seconds_decimal.integer_part()) * NANOS_PER_SEC;
-                    debug_assert_eq!(nanos_decimal.fractional_part(), 0);
-                    nanos += nanos_decimal.integer_part() as u64;
+                    nanos = duration_time_part_to_nanos(time_part, source_span)?;
                 }
             }
+            DurationLiteral::Time(time_part) => nanos = duration_time_part_to_nanos(time_part, source_span)?,
         }
 
         Ok(Duration::new(months, days, nanos))
+    }
+}
+
+fn duration_time_part_to_nanos(
+    time_part: &typeql::value::DurationTime,
+    source_span: Option<Span>,
+) -> Result<u64, LiteralParseError> {
+    let mut nanos = 0;
+    nanos += NANOS_PER_HOUR * parse_optional_int(&time_part.hours, source_span)?.unwrap_or(0);
+    nanos += NANOS_PER_MINUTE * parse_optional_int(&time_part.minutes, source_span)?.unwrap_or(0);
+    let seconds_decimal = (time_part.seconds.as_ref())
+        .map(|seconds| parse_primitive::<Decimal>(&seconds.value, source_span))
+        .transpose()?
+        .unwrap_or_default();
+    nanos += seconds_decimal.integer_part() as u64 * NANOS_PER_SEC;
+    let nanos_decimal = (seconds_decimal - seconds_decimal.integer_part()) * NANOS_PER_SEC;
+    debug_assert_eq!(nanos_decimal.fractional_part(), 0);
+    nanos += nanos_decimal.integer_part() as u64;
+    Ok(nanos)
+}
+
+fn parse_optional_int<I: FromTypeQLLiteral<TypeQLLiteral = IntegerLiteral>>(
+    literal: &Option<IntegerLiteral>,
+    source_span: Option<Span>,
+) -> Result<Option<I>, LiteralParseError> {
+    match literal {
+        Some(literal) => I::from_typeql_literal(literal, source_span).map(Some),
+        None => Ok(None),
     }
 }
 
