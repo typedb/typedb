@@ -8,6 +8,8 @@ use std::{
     collections::{BTreeMap, BTreeSet, HashMap},
     sync::Arc,
 };
+use itertools::Itertools;
+use answer::Type;
 
 use answer::variable::Variable;
 use concept::type_::type_manager::TypeManager;
@@ -80,42 +82,52 @@ pub fn check_type_combinations_for_write(
 pub(crate) fn validate_has_type_combinations_for_write(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    has: &Has<Variable>,
+    insert_has: &Has<Variable>,
     input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<answer::Type>>>,
     input_annotations_constraints: &HashMap<Constraint<Variable>, ConstraintTypeAnnotations>, // Future use
     left_right: &LeftRightAnnotations,
 ) -> Result<(), TypeInferenceError> {
     // TODO: Improve. This is extremely coarse and likely to rule out many valid combinations
     // Esp when doing queries using type variables.
+    let mut applicable_constraint_annotations = input_annotations_constraints.iter()
+        .filter_map(|(constraint,_)| {
+            match constraint {
+                Constraint::Has(match_has) => Some((match_has.owner(), match_has.attribute(), constraint)),
+                Constraint::Owns(match_owns) => Some((match_owns.owner(), match_owns.attribute(), constraint)),
+                _ => None
+            }
+        })
+        .filter(|(match_owner, match_attribute, _)| match_owner == &insert_has.owner() && match_attribute == &insert_has.attribute())
+        .map(|(_, _, constraint)| input_annotations_constraints.get(constraint).unwrap().as_left_right().left_to_right());
+    let mut match_pairs = if let Some(match_type_pairs) = may_intersect_all(applicable_constraint_annotations) {
+        match_type_pairs
+    } else {
+        let input_owner_types = input_annotations_variables.get(&insert_has.owner().as_variable().unwrap()).ok_or(
+            TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
+                variable: insert_has.owner().as_variable().unwrap(),
+                source_span: insert_has.source_span(),
+            },
+        )?;
+        let input_attr_types = input_annotations_variables.get(&insert_has.attribute().as_variable().unwrap()).ok_or(
+            TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
+                variable: insert_has.attribute().as_variable().unwrap(),
+                source_span: insert_has.source_span(),
+            },
+        )?;
+        input_owner_types.iter().cloned().cartesian_product(input_attr_types.iter().cloned()).collect()
+    };
 
-    let input_owner_types = input_annotations_variables.get(&has.owner().as_variable().unwrap()).ok_or(
-        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: has.owner().as_variable().unwrap(),
-            source_span: has.source_span(),
-        },
-    )?;
-    let input_attr_types = input_annotations_variables.get(&has.attribute().as_variable().unwrap()).ok_or(
-        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-            variable: has.attribute().as_variable().unwrap(),
-            source_span: has.source_span(),
-        },
-    )?;
-
-    let mut invalid_iter = input_owner_types.iter().flat_map(|left_type| {
-        input_attr_types
-            .iter()
-            .filter(|right_type| {
-                !left_right
-                    .left_to_right()
-                    .get(left_type)
-                    .map(|valid_right_types| valid_right_types.contains(right_type))
-                    .unwrap_or(false)
-            })
-            .map(|right_type| (*left_type, *right_type))
+    let mut invalid_iter = match_pairs.iter().filter(|(left_type, right_type)| {
+        !left_right
+            .left_to_right()
+            .get(left_type)
+            .map(|valid_right_types| valid_right_types.contains(right_type))
+            .unwrap_or(false)
     });
+
     if let Some((left_type, right_type)) = invalid_iter.next() {
         Err(TypeInferenceError::IllegalTypeCombinationForWrite {
-            constraint_name: Constraint::Has(has.clone()).name().to_string(),
+            constraint_name: Constraint::Has(insert_has.clone()).name().to_string(),
             left_type: left_type
                 .get_label(snapshot, type_manager)
                 .map_err(|err| TypeInferenceError::ConceptRead { typedb_source: err })?
@@ -128,7 +140,7 @@ pub(crate) fn validate_has_type_combinations_for_write(
                 .scoped_name()
                 .as_str()
                 .to_string(),
-            source_span: has.source_span(),
+            source_span: insert_has.source_span(),
         })?;
     }
     Ok(())
@@ -208,4 +220,46 @@ pub(crate) fn validate_links_type_combinations_for_write(
         })?;
     }
     Ok(())
+}
+
+fn may_intersect_all<T: ContainsAndIterOnType>(
+    mut constraint_annotations: impl Iterator<Item=Arc<BTreeMap<Type, T>>>,
+) -> Option<BTreeSet<(Type, Type)>> {
+    if let Some(first) = constraint_annotations.next() {
+        let mut combinations = first.iter().flat_map(|(left, right_set)| {
+            right_set._iter().map(|right| (left.clone(), right.clone()))
+        }).collect::<BTreeSet<_>>();
+        while let Some(annotations) = constraint_annotations.next() {
+            combinations.retain(|(left,right)| annotations.get(left).map(|right_set| right_set._contains(right)).unwrap_or(false));
+        }
+        Some(combinations)
+    } else {
+        None
+    }
+}
+
+
+trait ContainsAndIterOnType {
+    fn _contains(&self, item: &answer::Type) -> bool;
+    fn _iter(&self) -> impl Iterator<Item=&answer::Type> + '_;
+}
+
+impl ContainsAndIterOnType for Vec<Type> {
+    fn _contains(&self, item: &Type) -> bool {
+        self.contains(item)
+    }
+
+    fn _iter(&self) -> impl Iterator<Item=&Type> + '_ {
+        self.iter()
+    }
+}
+
+impl ContainsAndIterOnType for BTreeSet<Type> {
+    fn _contains(&self, item: &Type) -> bool {
+        self.contains(item)
+    }
+
+    fn _iter(&self) -> impl Iterator<Item=&Type> + '_ {
+        self.iter()
+    }
 }
