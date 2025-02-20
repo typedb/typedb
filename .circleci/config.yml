@@ -145,6 +145,7 @@ commands:
           export DOCKER_REPO="typedb-snapshot"
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:$VERSION --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:$VERSION
+          docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
   deploy-docker-release-for-arch:
@@ -169,6 +170,7 @@ commands:
           export DOCKER_REPO="typedb"
           docker manifest create $DOCKER_ORG/$DOCKER_REPO:$VERSION --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:$VERSION
+          docker manifest create $DOCKER_ORG/$DOCKER_REPO:latest --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-x86_64 --amend $DOCKER_ORG/$DOCKER_REPO:$VERSION-arm64
           docker manifest push $DOCKER_ORG/$DOCKER_REPO:latest
 
 jobs:
