@@ -9,7 +9,6 @@ use std::{
     collections::HashSet,
     fmt,
     hash::{Hash, Hasher},
-    io::Read,
     iter,
     sync::{Arc, OnceLock},
 };
@@ -17,10 +16,7 @@ use std::{
 use bytes::Bytes;
 use encoding::{
     graph::{
-        thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse},
-            vertex_attribute::AttributeVertex,
-        },
+        thing::{edge::ThingEdgeHasReverse, vertex_attribute::AttributeVertex},
         type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
         Typed,
     },
@@ -30,16 +26,13 @@ use encoding::{
 };
 use iterator::State;
 use itertools::Itertools;
-use lending_iterator::{higher_order::Hkt, LendingIterator};
+use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
-    key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::{StorageKey, StorageKeyArray},
+    key_value::StorageKey,
     snapshot::{
-        buffer::BufferRangeIterator,
-        iterator::SnapshotRangeIterator,
-        write::{Write, WriteCategory},
-        ReadableSnapshot, WritableSnapshot,
+        buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::WriteCategory, ReadableSnapshot,
+        WritableSnapshot,
     },
 };
 
@@ -47,7 +40,7 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
-    type_::{attribute_type::AttributeType, ObjectTypeAPI, TypeAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI},
     ConceptAPI, ConceptStatus,
 };
 

@@ -89,9 +89,6 @@ use crate::{
         constraint::{get_checked_constraints, Constraint},
         entity_type::EntityType,
         object_type::ObjectType,
-        owns::Owns,
-        plays::Plays,
-        relates::Relates,
         relation_type::RelationType,
         role_type::RoleType,
         type_manager::TypeManager,
@@ -2538,15 +2535,23 @@ impl ThingManager {
     }
 
     pub(crate) fn delete_entity(&self, snapshot: &mut impl WritableSnapshot, entity: Entity) {
-        let key = entity.vertex().into_storage_key().into_owned_array();
-        snapshot.unmodifiable_lock_remove(&key);
-        snapshot.delete(key)
+        self.delete_object(snapshot, entity.vertex().into_storage_key());
     }
 
     pub(crate) fn delete_relation(&self, snapshot: &mut impl WritableSnapshot, relation: Relation) {
-        let key = relation.vertex().into_storage_key().into_owned_array();
+        self.delete_object(snapshot, relation.vertex().into_storage_key());
+    }
+
+    fn delete_object(&self, snapshot: &mut impl WritableSnapshot, key: StorageKey<'_, BUFFER_KEY_INLINE>) {
+        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()));
+        let key = key.into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
-        snapshot.delete(key)
+        match status {
+            ConceptStatus::Inserted => snapshot.uninsert(key),
+            ConceptStatus::Persisted => snapshot.delete(key),
+            ConceptStatus::Deleted => (),
+            ConceptStatus::Put => unreachable!("Encountered a `put` object"),
+        }
     }
 
     pub(crate) fn delete_attribute(
@@ -2555,23 +2560,16 @@ impl ThingManager {
         attribute: Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
         let key = attribute.vertex().into_storage_key().into_owned_array();
-        snapshot.delete(key);
+        match attribute.get_status(snapshot, self) {
+            ConceptStatus::Put => self.unput_attribute(snapshot, &attribute)?,
+            ConceptStatus::Persisted => snapshot.delete(key),
+            ConceptStatus::Deleted => (),
+            ConceptStatus::Inserted => unreachable!("Encountered an `insert`ed attribute"),
+        }
         Ok(())
     }
 
-    pub(crate) fn uninsert_entity(&self, snapshot: &mut impl WritableSnapshot, entity: Entity) {
-        let key = entity.vertex().into_storage_key().into_owned_array();
-        snapshot.unmodifiable_lock_remove(&key);
-        snapshot.uninsert(key)
-    }
-
-    pub(crate) fn uninsert_relation(&self, snapshot: &mut impl WritableSnapshot, relation: Relation) {
-        let key = relation.vertex().into_storage_key().into_owned_array();
-        snapshot.unmodifiable_lock_remove(&key);
-        snapshot.uninsert(key)
-    }
-
-    pub(crate) fn unput_attribute(
+    fn unput_attribute(
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute: &Attribute,

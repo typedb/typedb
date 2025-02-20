@@ -105,11 +105,7 @@ impl ThingAPI for Entity {
             thing_manager.unset_links(snapshot, relation, self, role)?;
         }
 
-        if self.get_status(snapshot, thing_manager) == ConceptStatus::Inserted {
-            thing_manager.uninsert_entity(snapshot, self);
-        } else {
-            thing_manager.delete_entity(snapshot, self);
-        }
+        thing_manager.delete_entity(snapshot, self);
         Ok(())
     }
 
