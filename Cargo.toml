@@ -48,7 +48,7 @@ features = {}
 
 	[dev-dependencies.typeql]
 		features = []
-		rev = "a84767c1849029c9d6cd74a00ec1d29f3ab76b80"
+		rev = "2a90021b1c51a6cadc21ac41d0e0a942eb2a6ff0"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -168,10 +168,6 @@ features = {}
 [[test]]
 	path = "tests/behaviour/concept/type/attribute_type.rs"
 	name = "test_attributetype"
-
-[[test]]
-	path = "tests/behaviour/concept/migration/function.rs"
-	name = "test_function"
 
 [[test]]
 	path = "tests/behaviour/concept/migration/data_validation.rs"
