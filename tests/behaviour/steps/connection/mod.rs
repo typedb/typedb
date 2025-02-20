@@ -13,7 +13,7 @@ use std::{
 use macro_rules_attribute::apply;
 use server::{parameters::config::Config, typedb};
 use test_utils::{create_tmp_dir, TempDir};
-use tokio::{runtime::Runtime, sync::OnceCell};
+use tokio::sync::OnceCell;
 
 use crate::{generic_step, Context};
 
