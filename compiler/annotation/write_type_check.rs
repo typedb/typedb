@@ -9,6 +9,7 @@ use std::{
     sync::Arc,
 };
 use itertools::Itertools;
+use typeql::common::Span;
 use answer::Type;
 
 use answer::variable::Variable;
@@ -17,6 +18,7 @@ use ir::{
     pattern::constraint::{Constraint, Has, Links},
     pipeline::block::Block,
 };
+use ir::pattern::Vertex;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -99,22 +101,9 @@ pub(crate) fn validate_has_type_combinations_for_write(
         })
         .filter(|(match_owner, match_attribute, _)| match_owner == &insert_has.owner() && match_attribute == &insert_has.attribute())
         .map(|(_, _, constraint)| input_annotations_constraints.get(constraint).unwrap().as_left_right().left_to_right());
-    let mut match_pairs = if let Some(match_type_pairs) = may_intersect_all(applicable_constraint_annotations) {
-        match_type_pairs
-    } else {
-        let input_owner_types = input_annotations_variables.get(&insert_has.owner().as_variable().unwrap()).ok_or(
-            TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-                variable: insert_has.owner().as_variable().unwrap(),
-                source_span: insert_has.source_span(),
-            },
-        )?;
-        let input_attr_types = input_annotations_variables.get(&insert_has.attribute().as_variable().unwrap()).ok_or(
-            TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
-                variable: insert_has.attribute().as_variable().unwrap(),
-                source_span: insert_has.source_span(),
-            },
-        )?;
-        input_owner_types.iter().cloned().cartesian_product(input_attr_types.iter().cloned()).collect()
+    let mut match_pairs = match may_intersect_all(applicable_constraint_annotations) {
+        Some(pairs) => pairs,
+        None => pairs_from_vertex_annotations(input_annotations_variables, insert_has.owner(), insert_has.attribute(), insert_has.source_span())?,
     };
 
     let mut invalid_iter = match_pairs.iter().filter(|(left_type, right_type)| {
@@ -236,6 +225,27 @@ fn may_intersect_all<T: ContainsAndIterOnType>(
     } else {
         None
     }
+}
+
+fn pairs_from_vertex_annotations(
+    input_annotations_variables: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
+    left: &Vertex<Variable>,
+    right: &Vertex<Variable>,
+    source_span: Option<Span>,
+) -> Result<BTreeSet<(Type, Type)>, TypeInferenceError> {
+    let left_types = input_annotations_variables.get(left.as_variable().as_ref().unwrap()).ok_or(
+        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
+            variable: right.as_variable().unwrap(),
+            source_span,
+        },
+    )?;
+    let right_types = input_annotations_variables.get(right.as_variable().as_ref().unwrap()).ok_or(
+        TypeInferenceError::AnnotationsUnavailableForVariableInWrite {
+            variable: right.as_variable().unwrap(),
+            source_span,
+        },
+    )?;
+    Ok(left_types.iter().cloned().cartesian_product(right_types.iter().cloned()).collect())
 }
 
 
