@@ -5,6 +5,7 @@
 deployment = {
   'docker.index': 'index.docker.io',
   'docker.organisation': 'typedb',
+  'docker.snapshot.repository': 'typedb-snapshot',
   'docker.release.repository': 'typedb',
   'github.organisation': 'typedb',
   'github.repository': 'typedb'

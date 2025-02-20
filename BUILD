@@ -311,6 +311,37 @@ docker_container_image(
     target_compatible_with = constraint_linux_arm64,
 )
 
+# TODO: Make a typedb-distribution rule similar to `deploy_apt`
+
+docker_container_push(
+    name = "deploy-docker-snapshot-x86_64",
+    format = "Docker",
+    image = ":assemble-docker-x86_64",
+    registry = deployment_docker["docker.index"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.snapshot.repository"],
+    ),
+    # using $(version) propagates to `assemble-docker` and breaks the image so it doesn't boot
+    tag = "$(container-version)",
+    target_compatible_with = constraint_linux_x86_64,
+    tags = ["manual"],
+)
+
+docker_container_push(
+    name = "deploy-docker-snapshot-arm64",
+    format = "Docker",
+    image = ":assemble-docker-arm64",
+    registry = deployment_docker["docker.index"],
+    repository = "{}/{}".format(
+        deployment_docker["docker.organisation"],
+        deployment_docker["docker.snapshot.repository"],
+    ),
+    tag = "$(container-version)",
+    target_compatible_with = constraint_linux_arm64,
+    tags = ["manual"],
+)
+
 docker_container_push(
     name = "deploy-docker-release-x86_64",
     format = "Docker",
