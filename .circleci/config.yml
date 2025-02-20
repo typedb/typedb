@@ -133,7 +133,6 @@ commands:
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
             --define container-version="$VERSION-<<parameters.image-arch>>" //:deploy-docker-snapshot-<<parameters.image-arch>>
-          # TODO after beta: bazel run //:deploy-docker-snapshot-overwrite-latest-tag
 
   # TODO: Migrate to bazel sh_binary
   deploy-docker-snapshot-multiarch:
@@ -158,7 +157,6 @@ commands:
           bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
           bazel run --jobs=8 --@io_bazel_rules_docker//transitions:enable=false --platforms=//docker:linux-<<parameters.image-arch>> \
             //:deploy-docker-release-<<parameters.image-arch>> --compilation_mode=opt --//server:mode=published
-          # TODO after beta: bazel run //:deploy-docker-release-overwrite-latest-tag
 
   # TODO: Migrate to bazel sh_binary
   deploy-docker-release-multiarch:
