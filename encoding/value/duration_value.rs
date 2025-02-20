@@ -10,7 +10,7 @@ use std::{
     str::FromStr,
 };
 
-use chrono::{DateTime, Days, Months, NaiveDateTime, TimeDelta, TimeZone};
+use chrono::{DateTime, Days, MappedLocalTime, Months, NaiveDateTime, Offset, TimeDelta, TimeZone};
 
 pub const NANOS_PER_SEC: u64 = 1_000_000_000;
 pub const NANOS_PER_MINUTE: u64 = 60 * NANOS_PER_SEC;
@@ -97,8 +97,7 @@ impl<Tz: TimeZone> Add<Duration> for DateTime<Tz> {
     type Output = Self;
 
     fn add(self, rhs: Duration) -> Self::Output {
-        self + Months::new(rhs.months)
-            + Days::new(rhs.days as u64)
+        resolve_date_time(self.naive_local() + Months::new(rhs.months) + Days::new(rhs.days as u64), self.timezone())
             + TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
     }
 }
@@ -126,9 +125,35 @@ impl<Tz: TimeZone> Sub<Duration> for DateTime<Tz> {
     type Output = Self;
 
     fn sub(self, rhs: Duration) -> Self::Output {
-        self - Months::new(rhs.months)
-            - Days::new(rhs.days as u64)
+        resolve_date_time(self.naive_local() - Months::new(rhs.months) - Days::new(rhs.days as u64), self.timezone())
             - TimeDelta::new((rhs.nanos / NANOS_PER_SEC) as i64, (rhs.nanos % NANOS_PER_SEC) as u32).unwrap()
+    }
+}
+
+// helper: find a datetime in a given timezone closest to provided local time
+// in case of ambiguity (fold), take the earlier datetime
+// in case where datetime does not exists in a time zone (gap), advance by the length of the gap
+fn resolve_date_time<Tz: TimeZone>(local: NaiveDateTime, tz: Tz) -> DateTime<Tz> {
+    match tz.from_local_datetime(&local) {
+        MappedLocalTime::Single(dt) | MappedLocalTime::Ambiguous(dt, _) => dt,
+        MappedLocalTime::None => {
+            // fake it until `GapInfo` is released in `chrono-tz` in 0.11.0 or 0.10.2
+
+            // assuming no time zone changes within a span of 72 hours
+            // assuming no gaps longer than 72 hours
+            const SAFE_SHIFT: TimeDelta = TimeDelta::hours(72);
+
+            let earlier = local - SAFE_SHIFT;
+            let later = local + SAFE_SHIFT;
+            let before_offset = tz.offset_from_utc_datetime(&earlier).fix();
+            let after_offset = tz.offset_from_utc_datetime(&later).fix();
+            debug_assert!(
+                after_offset.local_minus_utc() > before_offset.local_minus_utc(),
+                "Unexpected offset direction around a gap: transition from {before_offset} to {after_offset} around {local}"
+            );
+
+            tz.from_local_datetime(&(local - before_offset + after_offset)).unwrap()
+        }
     }
 }
 
@@ -345,17 +370,16 @@ mod tests {
             .unwrap()
             .and_hms_opt(12, 0, 0)
             .unwrap()
-            .and_local_timezone(TimeZone::IANA(chrono_tz::Tz::Pacific__Apia))
+            .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
             .unwrap();
         let _2011_12_31__12_00_00_Apia = NaiveDate::from_ymd_opt(2011, 12, 31)
             .unwrap()
             .and_hms_opt(12, 0, 0)
             .unwrap()
-            .and_local_timezone(TimeZone::IANA(chrono_tz::Tz::Pacific__Apia))
+            .and_local_timezone(chrono_tz::Tz::Pacific__Apia)
             .unwrap();
 
-        // FIXME crashes: `DateTime + Days` out of range
-        // assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(1), _2011_12_31__12_00_00_Apia);
+        assert_eq!(_2011_12_29__12_00_00__Apia + Duration::days(1), _2011_12_31__12_00_00_Apia);
 
         assert_eq!(_2011_12_29__12_00_00__Apia + Duration::hours(24), _2011_12_31__12_00_00_Apia);
     }
