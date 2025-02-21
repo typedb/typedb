@@ -287,7 +287,7 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block, source_span } => {
-            let annotations = annotate_insertables(
+            let annotations = annotate_write_stage(
                 running_variable_annotations,
                 variable_registry,
                 snapshot,
@@ -310,7 +310,7 @@ fn annotate_stage(
         }
 
         TranslatedStage::Update { block, source_span } => {
-            let annotations = annotate_insertables(
+            let annotations = annotate_write_stage(
                 running_variable_annotations,
                 variable_registry,
                 snapshot,
@@ -333,37 +333,14 @@ fn annotate_stage(
         }
 
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
-            let delete_annotations = infer_types(
-                snapshot,
-                &block,
-                variable_registry,
-                type_manager,
+            let delete_annotations = annotate_write_stage(
                 running_variable_annotations,
+                variable_registry,
+                snapshot,
+                type_manager,
                 annotated_function_signatures,
-                true,
-            )
-            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            block.conjunction().constraints().iter().for_each(|constraint| match constraint {
-                Constraint::RoleName(role_name) => {
-                    running_variable_annotations.insert(
-                        role_name.type_().as_variable().unwrap(),
-                        delete_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
-                    );
-                }
-                Constraint::Links(links) => {
-                    if let Some(variable) = links.role_type().as_variable() {
-                        if !running_variable_annotations.contains_key(&variable)
-                            && delete_annotations.vertex_annotations_of(links.role_type()).is_some()
-                        {
-                            running_variable_annotations.insert(
-                                variable,
-                                delete_annotations.vertex_annotations_of(links.role_type()).unwrap().clone(),
-                            );
-                        }
-                    }
-                }
-                _ => (),
-            });
+                &block,
+            )?;
             check_type_combinations_for_write(
                 snapshot,
                 type_manager,
@@ -376,7 +353,6 @@ fn annotate_stage(
             deleted_variables.iter().for_each(|v| {
                 running_variable_annotations.remove(v);
             });
-            // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
@@ -459,7 +435,7 @@ pub fn validate_sort_variables_comparable(
     Ok(())
 }
 
-fn annotate_insertables(
+fn annotate_write_stage(
     running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     variable_registry: &mut VariableRegistry,
     snapshot: &impl ReadableSnapshot,
@@ -478,6 +454,7 @@ fn annotate_insertables(
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
+    // Extend running annotations for variables introduced in this stage.
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
