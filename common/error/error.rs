@@ -327,8 +327,6 @@ pub enum UnimplementedFeature {
     LetInBuiltinCall,
     Subkey,
 
-    ComparatorContains,
-    ComparatorLike,
     UnsortedJoin,
 
     PipelineStageInFunction(&'static str),

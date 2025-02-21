@@ -36,6 +36,7 @@ rust_library(
         # For the parsing of literals
         "@crates//:chrono",
         "@crates//:chrono-tz",
+        "@crates//:regex",
 
         "//util/test:test_utils", # dev dependency
     ],

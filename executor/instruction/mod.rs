@@ -875,8 +875,14 @@ impl<T> Checker<T> {
                         Comparator::Greater => |a, b| a > b,
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
-                        Comparator::Like => unimplemented_feature!(ComparatorLike),
-                        Comparator::Contains => unimplemented_feature!(ComparatorContains), // |a,b| a.unwrap_string_ref().contains(b.unwrap_string_ref()),
+                        Comparator::Like => |a, b| {
+                            regex::Regex::new(b.unwrap_string_ref())
+                                .expect("Invalid regex should have been caught at compile time")
+                                .is_match(a.unwrap_string_ref())
+                        },
+                        Comparator::Contains => |a, b| {
+                            a.unwrap_string_ref().to_lowercase().contains(b.unwrap_string_ref().to_lowercase().as_str())
+                        },
                     };
                     filters.push(Box::new(move |value| {
                         let lhs = lhs(value);

@@ -13,7 +13,6 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::UnimplementedFeature;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -278,17 +277,23 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         comparator: Comparator,
         source_span: Option<Span>,
     ) -> Result<&Comparison<Variable>, Box<RepresentationError>> {
-        let lhs_var = lhs.as_variable();
-        let rhs_var = rhs.as_variable();
-        let comparison = Comparison::new(lhs, rhs, comparator, source_span);
-
-        if let Some(lhs) = lhs_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs));
-            self.context.set_variable_category(lhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
+        comparator.validate_arguments(&lhs, &rhs, self.parameters(), source_span)?;
+        let comparison = Comparison::new(lhs.clone(), rhs.clone(), comparator, source_span);
+        if let Vertex::Variable(lhs_var) = lhs {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, lhs_var));
+            self.context.set_variable_category(
+                lhs_var,
+                VariableCategory::AttributeOrValue,
+                comparison.clone().into(),
+            )?;
         }
-        if let Some(rhs) = rhs_var {
-            debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs));
-            self.context.set_variable_category(rhs, VariableCategory::AttributeOrValue, comparison.clone().into())?;
+        if let Vertex::Variable(rhs_var) = rhs {
+            debug_assert!(self.context.is_variable_available(self.constraints.scope, rhs_var));
+            self.context.set_variable_category(
+                rhs_var,
+                VariableCategory::AttributeOrValue,
+                comparison.clone().into(),
+            )?;
         }
 
         let as_ref = self.constraints.add_constraint(comparison);
@@ -2127,6 +2132,36 @@ impl Comparator {
             Comparator::Contains => typeql::token::Comparator::Contains.as_str(),
         }
     }
+
+    pub(crate) fn validate_arguments(
+        &self,
+        lhs: &Vertex<Variable>,
+        rhs: &Vertex<Variable>,
+        parameters: &mut ParameterRegistry,
+        source_span: Option<Span>,
+    ) -> Result<(), Box<RepresentationError>> {
+        match self {
+            Comparator::Equal
+            | Comparator::NotEqual
+            | Comparator::Less
+            | Comparator::Greater
+            | Comparator::LessOrEqual
+            | Comparator::GreaterOrEqual
+            | Comparator::Contains => Ok(()),
+            Comparator::Like => match rhs.as_parameter().and_then(|pid| parameters.value(pid)) {
+                Some(encoding::value::value::Value::String(value)) => {
+                    regex::Regex::new(value).map(|_| ()).map_err(|source| {
+                        Box::new(RepresentationError::RegexFailedCompilation {
+                            value: (**value).to_owned(),
+                            source,
+                            source_span,
+                        })
+                    })
+                }
+                _ => Err(Box::new(RepresentationError::RegexExpectedStringLiteral { source_span })),
+            },
+        }
+    }
 }
 
 impl TryFrom<typeql::token::Comparator> for Comparator {
@@ -2142,18 +2177,8 @@ impl TryFrom<typeql::token::Comparator> for Comparator {
             typeql::token::Comparator::Gte => Self::GreaterOrEqual,
             typeql::token::Comparator::Lt => Self::Less,
             typeql::token::Comparator::Lte => Self::LessOrEqual,
-            typeql::token::Comparator::Contains => {
-                //Self::Contains,
-                return Err(LiteralParseError::UnimplementedLanguageFeature {
-                    feature: UnimplementedFeature::ComparatorContains,
-                });
-            }
-            typeql::token::Comparator::Like => {
-                //Self::Like,
-                return Err(LiteralParseError::UnimplementedLanguageFeature {
-                    feature: UnimplementedFeature::ComparatorLike,
-                });
-            }
+            typeql::token::Comparator::Contains => Self::Contains,
+            typeql::token::Comparator::Like => Self::Like,
         })
     }
 }
