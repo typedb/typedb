@@ -1082,9 +1082,6 @@ impl TransactionService {
                     }
                 }
             }
-            if query_profile.is_enabled() {
-                event!(Level::INFO, "Write query completed.\n{}", query_profile);
-            }
             (Arc::into_inner(snapshot).unwrap(), Ok(Either::Right((parameters, documents))))
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
@@ -1113,9 +1110,6 @@ impl TransactionService {
                     })),
                 ),
             };
-            if query_profile.is_enabled() {
-                event!(Level::INFO, "Write query completed.\n{}", query_profile);
-            }
             result
         }
     }

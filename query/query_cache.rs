@@ -65,7 +65,7 @@ impl QueryCache {
         let last_statistics_guard = self.last_statistics.lock().unwrap();
         let largest_change = last_statistics_guard.largest_difference_frac(new_statistics);
         if largest_change > QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION {
-            event!(Level::INFO, "Invalidating query cache given a statistic change of {}.", largest_change);
+            event!(Level::TRACE, "Invalidating query cache given a statistic change of {}.", largest_change);
             drop(last_statistics_guard);
             self.force_reset(new_statistics);
         }
