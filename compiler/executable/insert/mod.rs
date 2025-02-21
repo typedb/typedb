@@ -31,5 +31,5 @@ pub enum ValueSource {
     Parameter(ParameterID),
 }
 
-#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub struct ThingPosition(pub VariablePosition);

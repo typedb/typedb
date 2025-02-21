@@ -10,7 +10,9 @@ use error::typedb_error;
 use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
 
-use crate::executable::{fetch::executable::FetchCompilationError, match_::planner::MatchCompilationError};
+use crate::executable::{
+    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::MatchCompilationError,
+};
 
 pub mod delete;
 pub mod fetch;
@@ -46,10 +48,12 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        MultipleInsertsForSameVariable(
+        ConflcitingTypesForInsertOfSameVariable(
             2,
-            "Found multiple insert statements for the variable '{variable}'.",
+            "Found conflicting types for inserting the variable '{variable}'.",
             variable: String,
+            first: TypeSource,
+            second: TypeSource,
         ),
         InsertVariableAmbiguousAttributeOrObject(
             3,

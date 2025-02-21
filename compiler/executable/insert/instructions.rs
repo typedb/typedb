@@ -13,7 +13,20 @@ pub enum ConceptInstruction {
     PutObject(PutObject),
     PutAttribute(PutAttribute),
 }
-
+impl ConceptInstruction {
+    pub(crate) fn inserted_type(&self) -> &TypeSource {
+        match self {
+            ConceptInstruction::PutObject(inner) => &inner.type_,
+            ConceptInstruction::PutAttribute(inner) => &inner.type_,
+        }
+    }
+    pub(crate) fn inserted_position(&self) -> &ThingPosition {
+        match self {
+            ConceptInstruction::PutObject(inner) => &inner.write_to,
+            ConceptInstruction::PutAttribute(inner) => &inner.write_to,
+        }
+    }
+}
 impl fmt::Display for ConceptInstruction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {

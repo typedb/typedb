@@ -51,13 +51,13 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
-    let mut attributes_inserts = Vec::with_capacity(constraints.len());
-    let variables = add_inserted_concepts(
+    let mut variables = input_variables.clone();
+    let mut attributes_inserts = add_inserted_concepts(
         constraints,
-        input_variables,
         type_annotations,
         variable_registry,
-        &mut attributes_inserts,
+        input_variables,
+        &mut variables,
         source_span,
     )?;
 
