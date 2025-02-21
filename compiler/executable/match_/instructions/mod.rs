@@ -729,7 +729,7 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
                 write!(f, "{lhs} {comparator} {rhs}")?;
             }
             Self::Unsatisfiable => {
-                write!(f, "fail")?;
+                write!(f, "unsatisfiable")?;
             }
         }
         write!(f, "] ")
