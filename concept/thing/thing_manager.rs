@@ -2559,10 +2559,15 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         attribute: Attribute,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let key = attribute.vertex().into_storage_key().into_owned_array();
-        match attribute.get_status(snapshot, self) {
-            ConceptStatus::Put => self.unput_attribute(snapshot, &attribute)?,
-            ConceptStatus::Persisted => snapshot.delete(key),
+        let key = attribute.vertex().into_storage_key();
+        match self.get_status(snapshot, StorageKey::Reference(key.as_reference())) {
+            ConceptStatus::Put => {
+                self.unput_attribute(snapshot, &attribute)?;
+                if self.instance_exists(snapshot, &attribute)? {
+                    snapshot.delete(key.into_owned_array());
+                }
+            }
+            ConceptStatus::Persisted => snapshot.delete(key.into_owned_array()),
             ConceptStatus::Deleted => (),
             ConceptStatus::Inserted => unreachable!("Encountered an `insert`ed attribute"),
         }
