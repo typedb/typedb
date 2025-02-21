@@ -15,7 +15,6 @@ use compiler::{
         match_inference::infer_types,
     },
     executable::function::ExecutableFunctionRegistry,
-    transformation::transform::apply_transformations,
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},

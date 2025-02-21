@@ -537,7 +537,7 @@ impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
     }
 
     fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
-        [].into_iter()
+        iter::empty()
     }
 }
 

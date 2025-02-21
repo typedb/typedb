@@ -250,7 +250,10 @@ impl TypeInferenceGraph<'_> {
         .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
     }
 
-    fn check_thing_constraints_satisfiable(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+    fn check_thing_constraints_satisfiable(
+        &self,
+        variable_registry: &VariableRegistry,
+    ) -> Result<(), TypeInferenceError> {
         let mut thing_variable_present = false;
         let mut any_variable_empty = false;
         self.vertices.annotations.iter().filter_map(|(var, types)| var.as_variable().map(|v| (v, types))).for_each(

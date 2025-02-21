@@ -66,13 +66,6 @@ fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block
 pub fn optimize_away_statically_unsatisfiable_conjunctions(
     conjunction: &mut Conjunction,
     block_annotations: &TypeAnnotations,
-) {
-    optimize_away_statically_unsatisfiable_conjunctions_impl(conjunction, block_annotations);
-}
-
-fn optimize_away_statically_unsatisfiable_conjunctions_impl(
-    conjunction: &mut Conjunction,
-    block_annotations: &TypeAnnotations,
 ) -> bool {
     let mut must_optimise_away = false;
     for nested in conjunction.nested_patterns_mut() {
@@ -80,7 +73,7 @@ fn optimize_away_statically_unsatisfiable_conjunctions_impl(
             NestedPattern::Disjunction(disjunction) => {
                 let mut optimised_unsatisfiable_branch_ids = Vec::new();
                 for branch in disjunction.conjunctions_mut().iter_mut() {
-                    if optimize_away_statically_unsatisfiable_conjunctions_impl(branch, block_annotations) {
+                    if optimize_away_statically_unsatisfiable_conjunctions(branch, block_annotations) {
                         optimised_unsatisfiable_branch_ids.push(branch.scope_id())
                     }
                 }
@@ -88,10 +81,10 @@ fn optimize_away_statically_unsatisfiable_conjunctions_impl(
                 must_optimise_away = must_optimise_away || disjunction.conjunctions().is_empty();
             }
             NestedPattern::Negation(negation) => {
-                optimize_away_statically_unsatisfiable_conjunctions_impl(negation.conjunction_mut(), block_annotations);
+                optimize_away_statically_unsatisfiable_conjunctions(negation.conjunction_mut(), block_annotations);
             }
             NestedPattern::Optional(optional) => {
-                optimize_away_statically_unsatisfiable_conjunctions_impl(optional.conjunction_mut(), block_annotations);
+                optimize_away_statically_unsatisfiable_conjunctions(optional.conjunction_mut(), block_annotations);
             }
         }
     }

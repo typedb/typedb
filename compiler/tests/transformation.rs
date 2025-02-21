@@ -11,8 +11,7 @@ use compiler::{
         function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
     },
     transformation::{
-        relation_index::relation_index_transformation,
-        transform::{apply_transformations, optimize_away_statically_unsatisfiable_conjunctions},
+        relation_index::relation_index_transformation, transform::optimize_away_statically_unsatisfiable_conjunctions,
     },
 };
 use concept::type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI};
