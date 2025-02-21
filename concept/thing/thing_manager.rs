@@ -60,7 +60,7 @@ use resource::constants::{
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
-    key_value::{StorageKey, StorageKeyArray},
+    key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
 };
 
@@ -2680,17 +2680,10 @@ impl ThingManager {
         let has_reverse_array =
             ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()).into_storage_key().into_owned_array();
 
-        if let Some(has_write) = snapshot.get_write(has.as_reference()).cloned() {
-            match has_write {
-                Write::Put { value, .. } => {
-                    snapshot.unput_val(has_array.clone(), value.clone());
-                    snapshot.unput_val(has_reverse_array.clone(), value);
-                }
-                Write::Delete => {}
-                Write::Insert { .. } => {
-                    unreachable!("Encountered an `insert` has. Owner: {owner:?}, attribute: {attribute:?}.")
-                }
-            }
+        let snapshot_value_opt = Self::get_snapshot_put_value(snapshot, has.as_reference());
+        if let Some(snapshot_value) = snapshot_value_opt {
+            snapshot.unput_val(has_array.clone(), snapshot_value.clone());
+            snapshot.unput_val(has_reverse_array.clone(), snapshot_value);
         }
 
         if owner_status != ConceptStatus::Inserted {
@@ -2826,17 +2819,12 @@ impl ThingManager {
                 .into_storage_key()
                 .into_owned_array();
 
-        if let Some(links_write) = snapshot.get_write(links.as_reference()).cloned() {
-            match links_write {
-                Write::Put { value, .. } => {
-                    snapshot.unput_val(links_array.clone(), value.clone());
-                    snapshot.unput_val(links_reverse_array.clone(), value);
-                }
-                Write::Delete => {}
-                Write::Insert { .. } => {
-                    unreachable!("Encountered an `insert` links. Relation: {relation:?}, player: {player:?}.")
-                }
-            }
+        let mut was_persisted = false;
+
+        let snapshot_value_opt = Self::get_snapshot_put_value(snapshot, links.as_reference());
+        if let Some(snapshot_value) = snapshot_value_opt {
+            snapshot.unput_val(links_array.clone(), snapshot_value.clone());
+            snapshot.unput_val(links_reverse_array.clone(), snapshot_value);
         }
 
         if relation_status != ConceptStatus::Inserted {
@@ -2844,6 +2832,7 @@ impl ThingManager {
                 .has_role_player(snapshot, relation, player, role_type)
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
             {
+                was_persisted = true;
                 snapshot.delete(links_array);
                 snapshot.delete(links_reverse_array);
             }
@@ -2854,7 +2843,7 @@ impl ThingManager {
             .relation_index_available(snapshot, relation.type_())
             .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
-            self.relation_index_player_deleted(snapshot, relation, player, role_type)?;
+            self.relation_index_player_links_unset(snapshot, relation, player, role_type, was_persisted)?;
         }
         Ok(())
     }
@@ -2931,35 +2920,57 @@ impl ThingManager {
     //   (create role type, set cardinality annotation, unset cardinality annotation, ...)
     // * Clean up all parts of a relation index to do with a specific role player
     //   after the player has been deleted.
-    pub(crate) fn relation_index_player_deleted(
+    pub(crate) fn relation_index_player_links_unset(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
+        is_index_persisted: bool, // An optimization to avoid another storage lookup
     ) -> Result<(), Box<ConceptWriteError>> {
         let players = relation
             .get_players(snapshot, self)
             .map_ok(|(roleplayer, _count)| (roleplayer.player(), roleplayer.role_type()));
         for rp in players {
             let (rp_player, rp_role_type) = rp?;
-            debug_assert!(!(rp_player == Object::new(player.vertex()) && role_type == rp_role_type));
+
             let index = ThingEdgeIndexedRelation::new(
                 player.vertex(),
                 rp_player.vertex(),
                 relation.vertex(),
                 role_type.vertex().type_id_(),
                 rp_role_type.vertex().type_id_(),
-            );
-            snapshot.delete(index.into_storage_key().into_owned_array());
+            )
+            .into_storage_key();
+            let snapshot_index_value_opt = Self::get_snapshot_put_value(snapshot, index.as_reference());
+            let index_array = index.into_owned_array();
+            if let Some(snapshot_index_value) = snapshot_index_value_opt {
+                snapshot.unput_val(index_array.clone(), snapshot_index_value);
+            }
+
             let index_reverse = ThingEdgeIndexedRelation::new(
                 rp_player.vertex(),
                 player.vertex(),
                 relation.vertex(),
                 rp_role_type.vertex().type_id_(),
                 role_type.vertex().type_id_(),
-            );
-            snapshot.delete(index_reverse.into_storage_key().into_owned_array());
+            )
+            .into_storage_key();
+            let snapshot_index_reverse_value_opt = Self::get_snapshot_put_value(snapshot, index_reverse.as_reference());
+            let index_reverse_array = index_reverse.into_owned_array();
+            if let Some(snapshot_index_reverse_value) = snapshot_index_reverse_value_opt {
+                snapshot.unput_val(index_reverse_array.clone(), snapshot_index_reverse_value);
+            }
+
+            if is_index_persisted {
+                let is_same_rp = rp_player == Object::new(player.vertex()) && rp_role_type == role_type;
+                if is_same_rp {
+                    snapshot.delete(index_array);
+                } else {
+                    snapshot.delete(index_array);
+                    snapshot.delete(index_reverse_array);
+                }
+            }
         }
         Ok(())
     }
@@ -3023,5 +3034,21 @@ impl ThingManager {
             }
         }
         Ok(())
+    }
+
+    pub(crate) fn get_snapshot_put_value(
+        snapshot: &mut impl WritableSnapshot,
+        key: StorageKeyReference<'_>,
+    ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
+        match snapshot.get_write(key).cloned() {
+            Some(index_write) => match index_write {
+                Write::Put { value, .. } => Some(value),
+                Write::Delete => None,
+                Write::Insert { .. } => {
+                    unreachable!("Encountered an `insert` while a `put` was expected in the snapshot.")
+                }
+            },
+            None => None,
+        }
     }
 }
