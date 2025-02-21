@@ -17,7 +17,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(super) struct Disjunction {
+pub struct Disjunction {
     pub branches: Vec<PatternExecutor>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
@@ -36,12 +36,12 @@ impl Disjunction {
 }
 
 #[derive(Debug)]
-pub(super) struct Negation {
+pub struct Negation {
     pub inner: PatternExecutor,
 }
 
 #[derive(Debug)]
-pub(super) struct InlinedFunction {
+pub struct InlinedFunction {
     pub inner: PatternExecutor,
     pub arg_mapping: Vec<VariablePosition>,
     pub assignment_positions: Vec<VariablePosition>,
@@ -57,7 +57,7 @@ impl InlinedFunction {
             .iter()
             .enumerate()
             .map(|(src, &dst)| (VariablePosition::new(src as u32), dst))
-            .filter(|(src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
+            .filter(|(_src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
             .collect(); // TODO: Can we move this to compilation?
         for return_index in 0..batch.len() {
             let returned_row = batch.get_row(return_index);
@@ -79,7 +79,7 @@ impl InlinedFunction {
 }
 
 #[derive(Debug)]
-pub(crate) enum NestedPatternExecutor {
+pub enum NestedPatternExecutor {
     Disjunction(Disjunction),
     Negation(Negation),
     InlinedFunction(InlinedFunction),
@@ -90,6 +90,7 @@ impl From<NestedPatternExecutor> for StepExecutors {
         StepExecutors::Nested(val)
     }
 }
+
 impl NestedPatternExecutor {
     pub(crate) fn new_negation(inner: PatternExecutor) -> Self {
         Self::Negation(Negation { inner })

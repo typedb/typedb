@@ -127,7 +127,7 @@ pub(crate) fn translate_function_block(
                 typedb_source: err,
             })?;
 
-    let mut illegal_stages = stages.iter().filter(|stage| match stage {
+    let has_illegal_stages = stages.iter().any(|stage| match stage {
         TranslatedStage::Insert { .. } | TranslatedStage::Update { .. } | TranslatedStage::Delete { .. } => true,
         TranslatedStage::Match { .. }
         | TranslatedStage::Distinct(_)
@@ -138,10 +138,10 @@ pub(crate) fn translate_function_block(
         | TranslatedStage::Limit(_)
         | TranslatedStage::Reduce(_) => false,
     });
-    if illegal_stages.next().is_some() {
+
+    if has_illegal_stages {
         return Err(FunctionRepresentationError::IllegalStages { declaration: function_block.clone() });
     }
-
     if fetch.is_some() {
         return Err(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() });
     }

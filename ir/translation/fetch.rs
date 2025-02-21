@@ -194,12 +194,8 @@ fn translate_fetch_list(
                     declaration: block.clone(),
                 }));
             }
-            Ok(FetchSome::ListFunction(create_anonymous_function(
-                local_context,
-                value_parameters.clone(),
-                find_function_body_arguments(parent_context, &body),
-                body,
-            )))
+            let args = find_function_body_arguments(parent_context, &body);
+            Ok(FetchSome::ListFunction(create_anonymous_function(local_context, value_parameters.clone(), args, body)))
         }
     }
 }

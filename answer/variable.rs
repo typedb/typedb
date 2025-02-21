@@ -22,6 +22,10 @@ impl Variable {
     pub fn new_anonymous(id: u16) -> Self {
         Self { id: VariableId { id }, anonymous: true }
     }
+
+    pub fn is_anonymous(&self) -> bool {
+        self.anonymous
+    }
 }
 
 impl fmt::Display for Variable {

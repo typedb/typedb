@@ -36,10 +36,10 @@ pub(crate) fn add_patterns(
         typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
         typeql::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
         typeql::Pattern::Optional(optional) => {
-            return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-                feature: error::UnimplementedFeature::Optionals,
-            }));
             // add_optional(function_index, conjunction, optional)
+            Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                feature: error::UnimplementedFeature::Optionals,
+            }))
         }
         typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;

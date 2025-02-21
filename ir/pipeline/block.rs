@@ -220,22 +220,21 @@ impl BlockContext {
 
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
-        match variable_scope {
-            None => false,
-            Some(variable_scope) => is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope),
+        variable_scope
+            .is_some_and(|variable_scope| is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope))
+    }
+
+    pub fn is_child_scope(&self, child: ScopeId, ancestor: ScopeId) -> bool {
+        let Some(&parent) = self.scope_parents.get(&child) else { return false };
+        parent == ancestor || self.is_child_scope(parent, ancestor)
+    }
+
+    pub fn is_visible_child(&self, child: ScopeId, ancestor: ScopeId) -> bool {
+        if !self.is_transparent(child) {
+            return false;
         }
-    }
-
-    pub fn is_parent_scope(&self, scope: ScopeId, child: ScopeId) -> bool {
-        self.scope_parents.get(&child).is_some_and(|&parent| scope == parent || self.is_parent_scope(scope, parent))
-    }
-
-    pub fn is_visible_child(&self, child: ScopeId, candidate: ScopeId) -> bool {
-        self.is_transparent(child)
-            && self
-                .scope_parents
-                .get(&child)
-                .is_some_and(|&parent| candidate == parent || self.is_visible_child(parent, candidate))
+        let Some(&parent) = self.scope_parents.get(&child) else { return false };
+        parent == ancestor || self.is_visible_child(parent, ancestor)
     }
 
     pub fn get_variable_scopes(&self) -> impl Iterator<Item = (Variable, ScopeId)> + '_ {

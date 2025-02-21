@@ -25,7 +25,7 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Scope, Vertex,
+        Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -150,7 +150,6 @@ fn make_builder<'a>(
             NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
         }
     }
-    // Compute variables which must be bound from a parent scope.
 
     let mut plan_builder = ConjunctionPlanBuilder::new(
         Vec::from_iter(conjunction.captured_required_variables(block_context)),
@@ -160,7 +159,7 @@ fn make_builder<'a>(
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
-        conjunction.declared_variables(block_context),
+        conjunction.local_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
@@ -170,7 +169,7 @@ fn make_builder<'a>(
 }
 
 #[derive(Clone, Copy, Default, Hash, PartialEq, Eq, PartialOrd, Ord)]
-pub(super) struct VariableVertexId(usize);
+pub(crate) struct VariableVertexId(usize);
 
 impl fmt::Debug for VariableVertexId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -756,14 +755,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self {
-            required_inputs: _,
-            shared_variables,
-            graph,
-            type_annotations,
-            statistics: _,
-            mut planner_statistics,
-        } = self;
+        let Self { shared_variables, graph, type_annotations, mut planner_statistics, .. } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {
@@ -1313,7 +1305,7 @@ impl ConjunctionPlan<'_> {
                             .all(|pat| self.element_to_order[&VertexId::Pattern(pat)] <= order);
                         if is_last_consumer {
                             match_builder.finish_one();
-                            match_builder.remove_output(self.graph.index_to_variable[&input])
+                            match_builder.remove_output(self.graph.index_to_variable[&input]);
                         }
                     }
                     for output in self.outputs_of_pattern(pattern) {
@@ -1328,7 +1320,7 @@ impl ConjunctionPlan<'_> {
                         }
                     }
                     if self.outputs_of_pattern(pattern).next().is_none() {
-                        self.may_make_check_step(&mut match_builder, pattern, variable_registry);
+                        self.may_make_check_step(&mut match_builder, pattern, variable_registry)?;
                     }
                 }
             }
@@ -1436,7 +1428,8 @@ impl ConjunctionPlan<'_> {
                             match_builder.position_mapping(),
                             variable_registry,
                         )?;
-                    let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
+                    let variable_positions =
+                        step_builder.branches.iter().flat_map(|x| x.index.iter().map(|(&k, &v)| (k, v))).collect();
                     match_builder
                         .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into());
                 }
@@ -1446,19 +1439,13 @@ impl ConjunctionPlan<'_> {
                         .assigned()
                         .iter()
                         .map(|variable| {
-                            match_builder
-                                .index
-                                .get(&variable.as_variable().unwrap())
-                                .unwrap()
-                                .clone()
-                                .as_position()
-                                .unwrap()
+                            match_builder.index[&variable.as_variable().unwrap()].clone().as_position().unwrap()
                         })
                         .collect();
                     let arguments = call_binding
                         .function_call()
                         .argument_ids()
-                        .map(|variable| match_builder.index.get(&variable).unwrap().clone().as_position().unwrap())
+                        .map(|variable| match_builder.index[&variable].clone().as_position().unwrap())
                         .collect();
                     let step_builder = StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
                         function_id: call_binding.function_call().function_id(),
@@ -1470,7 +1457,8 @@ impl ConjunctionPlan<'_> {
                 }
             }
         }
-        Ok(match_builder.finish_one())
+        match_builder.finish_one();
+        Ok(())
     }
 
     fn may_make_check_step(
@@ -1508,7 +1496,7 @@ impl ConjunctionPlan<'_> {
                     assigned,
                     output_width: match_builder.next_output.position,
                 });
-                Ok(match_builder.push_step(&HashMap::new(), step_builder.into()))
+                match_builder.push_step(&HashMap::new(), step_builder.into());
             }
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
@@ -1520,18 +1508,18 @@ impl ConjunctionPlan<'_> {
                 let variable_positions: HashMap<Variable, ExecutorVariable> = negation
                     .index
                     .iter()
-                    .filter_map(|(k, v)| match_builder.current_outputs.get(k).map(|_| (k.clone(), v.clone())))
+                    .filter_map(|(&k, &v)| match_builder.current_outputs.contains(&k).then_some((k, v)))
                     .collect();
-                Ok(match_builder.push_step(
-                    &&variable_positions,
+                match_builder.push_step(
+                    &variable_positions,
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
-                ))
+                )
             }
             PlannerVertex::Is(is) => {
                 let lhs = is.is().lhs().as_variable().unwrap();
                 let rhs = is.is().rhs().as_variable().unwrap();
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
-                Ok(match_builder.push_check(&[lhs, rhs], check))
+                match_builder.push_check(&[lhs, rhs], check)
             }
             PlannerVertex::LinksDeduplication(deduplication) => {
                 let role1 = deduplication.links_deduplication().links1().role_type().as_variable().unwrap();
@@ -1540,7 +1528,7 @@ impl ConjunctionPlan<'_> {
                 let player2 = deduplication.links_deduplication().links2().player().as_variable().unwrap();
                 let check = CheckInstruction::LinksDeduplication { role1, player1, role2, player2 }
                     .map(match_builder.position_mapping());
-                Ok(match_builder.push_check(&[role1, player1, role2, player2], check))
+                match_builder.push_check(&[role1, player1, role2, player2], check)
             }
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();
@@ -1572,9 +1560,9 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
-                Ok(match_builder.push_check(&vars, check))
+                match_builder.push_check(&vars, check)
             }
-            PlannerVertex::Constraint(constraint) => Ok(self.lower_constraint_check(match_builder, constraint)),
+            PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
             }
@@ -1590,10 +1578,10 @@ impl ConjunctionPlan<'_> {
                         variable_registry,
                     )?;
                 let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
-                Ok(match_builder
-                    .push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into()))
+                match_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into())
             }
         }
+        Ok(())
     }
 
     fn lower_constraint(
@@ -1786,7 +1774,7 @@ impl ConjunctionPlan<'_> {
                         ),
                     )
                 };
-                let sort_variable = sort_variable.or(Some(instruction.first_unbound_component())).unwrap();
+                let sort_variable = sort_variable.unwrap_or(instruction.first_unbound_component());
                 let instruction = ConstraintInstruction::IndexedRelation(instruction);
                 match_builder.push_instruction(sort_variable, instruction);
             }

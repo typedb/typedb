@@ -62,7 +62,9 @@ impl<'a> Row<'a> {
         mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
     ) {
         for (src, dst) in mapping {
-            self.set(dst, row.get(src).clone().into_owned());
+            if row.len() > src.as_usize() {
+                self.set(dst, row.get(src).clone().into_owned());
+            }
         }
         *self.multiplicity = *row.multiplicity;
     }

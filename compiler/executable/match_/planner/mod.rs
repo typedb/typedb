@@ -11,7 +11,6 @@ use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
-use typeql::common::Span;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -54,10 +53,12 @@ pub fn compile(
 ) -> Result<MatchExecutable, MatchCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
-    debug_assert!(conjunction.captured_variables(block_context).all(|var| input_variables.contains_key(&var)));
 
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
+
+    let mut selected_variables: HashSet<_> = selected_variables.iter().copied().collect();
+    selected_variables.extend(variable_registry.variable_names().keys().copied());
 
     Ok(plan_conjunction(
         conjunction,
@@ -70,7 +71,7 @@ pub fn compile(
         call_cost_provider,
     )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .lower(input_variables.keys().copied(), selected_variables.to_vec(), &assigned_identities, variable_registry)
+    .lower(input_variables.keys().copied(), selected_variables.iter().copied(), &assigned_identities, variable_registry)
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry))
 }
@@ -326,10 +327,10 @@ impl MatchExecutableBuilder {
             return;
         }
 
-        // all variables are inputs
         if self.current.as_ref().is_some_and(|builder| !builder.builder.is_check()) {
             self.finish_one();
         }
+
         if self.current.is_none() {
             self.current = Some(Box::new(StepBuilder {
                 selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
