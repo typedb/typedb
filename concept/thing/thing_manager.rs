@@ -2819,8 +2819,6 @@ impl ThingManager {
                 .into_storage_key()
                 .into_owned_array();
 
-        let mut was_persisted = false;
-
         let snapshot_value_opt = Self::get_snapshot_put_value(snapshot, links.as_reference());
         if let Some(snapshot_value) = snapshot_value_opt {
             snapshot.unput_val(links_array.clone(), snapshot_value.clone());
@@ -2832,7 +2830,6 @@ impl ThingManager {
                 .has_role_player(snapshot, relation, player, role_type)
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
             {
-                was_persisted = true;
                 snapshot.delete(links_array);
                 snapshot.delete(links_reverse_array);
             }
