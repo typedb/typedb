@@ -149,7 +149,7 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    graph.check_thing_variables_have_types(variable_registry)?;
+    graph.check_thing_constraints_satisfiable(variable_registry)?;
     Ok(graph)
 }
 
@@ -250,7 +250,7 @@ impl TypeInferenceGraph<'_> {
         .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
     }
 
-    fn check_thing_variables_have_types(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
+    fn check_thing_constraints_satisfiable(&self, variable_registry: &VariableRegistry) -> Result<(), TypeInferenceError> {
         let mut thing_variable_present = false;
         let mut any_variable_empty = false;
         self.vertices.annotations.iter().filter_map(|(var, types)| var.as_variable().map(|v| (v, types))).for_each(
@@ -268,7 +268,7 @@ impl TypeInferenceGraph<'_> {
             .flat_map(|d| d.disjunction.iter())
             .chain(self.nested_optionals.iter())
             .chain(self.nested_negations.iter())
-            .try_for_each(|graph| graph.check_thing_variables_have_types(variable_registry))?;
+            .try_for_each(|graph| graph.check_thing_constraints_satisfiable(variable_registry))?;
         Ok(())
     }
 }
