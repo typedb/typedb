@@ -110,13 +110,11 @@ impl IntoIterator for FixedBatch {
     type Item = MaybeOwnedRow<'static>;
 
     fn into_iter(self) -> Self::IntoIter {
-        let rows = self
-            .data
-            .into_iter()
-            .chunks(self.width as usize)
-            .into_iter()
-            .map(|chunk| chunk.collect_vec())
-            .collect_vec();
+        let rows = if self.width == 0 {
+            vec![vec![]; self.entries as usize]
+        } else {
+            self.data.into_iter().chunks(self.width as usize).into_iter().map(|chunk| chunk.collect_vec()).collect_vec()
+        };
         rows.into_iter()
             .zip(self.multiplicities)
             .take(self.entries as usize)
