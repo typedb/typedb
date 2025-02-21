@@ -21,8 +21,8 @@ def typedb_dependencies():
 def typeql():
     git_repository(
         name = "typeql",
-        remote = "https://github.com/dmitrii-ubskii/typeql",
-        commit = "2a90021b1c51a6cadc21ac41d0e0a942eb2a6ff0",
+        remote = "https://github.com/typedb/typeql",
+        commit = "c3651b6d3b82f6dc8a0db499592cb22e60e79b49",
     )
 
 def typedb_protocol():
