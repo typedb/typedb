@@ -3040,15 +3040,12 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         key: StorageKeyReference<'_>,
     ) -> Option<ByteArray<BUFFER_VALUE_INLINE>> {
-        match snapshot.get_write(key).cloned() {
-            Some(index_write) => match index_write {
-                Write::Put { value, .. } => Some(value),
-                Write::Delete => None,
-                Write::Insert { .. } => {
-                    unreachable!("Encountered an `insert` while a `put` was expected in the snapshot.")
-                }
-            },
-            None => None,
+        match snapshot.get_write(key).cloned()? {
+            Write::Put { value, .. } => Some(value),
+            Write::Delete => None,
+            Write::Insert { .. } => {
+                unreachable!("Encountered an `insert` while a `put` was expected in the snapshot.")
+            }
         }
     }
 }
