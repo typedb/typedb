@@ -389,11 +389,7 @@ impl ThingAPI for Relation {
             ));
         }
 
-        if self.get_status(snapshot, thing_manager) == ConceptStatus::Inserted {
-            thing_manager.uninsert_relation(snapshot, self);
-        } else {
-            thing_manager.delete_relation(snapshot, self);
-        }
+        thing_manager.delete_relation(snapshot, self);
         Ok(())
     }
 
