@@ -2843,7 +2843,7 @@ impl ThingManager {
             .relation_index_available(snapshot, relation.type_())
             .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
-            self.relation_index_player_links_unset(snapshot, relation, player, role_type, was_persisted)?;
+            self.relation_index_player_links_unset(snapshot, relation, player, role_type)?;
         }
         Ok(())
     }
@@ -2926,7 +2926,6 @@ impl ThingManager {
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
-        is_index_persisted: bool, // An optimization to avoid another storage lookup
     ) -> Result<(), Box<ConceptWriteError>> {
         let players = relation
             .get_players(snapshot, self)
@@ -2943,7 +2942,7 @@ impl ThingManager {
             )
             .into_storage_key();
             let snapshot_index_value_opt = Self::get_snapshot_put_value(snapshot, index.as_reference());
-            let index_array = index.into_owned_array();
+            let index_array = index.clone().into_owned_array();
             if let Some(snapshot_index_value) = snapshot_index_value_opt {
                 snapshot.unput_val(index_array.clone(), snapshot_index_value);
             }
@@ -2962,12 +2961,15 @@ impl ThingManager {
                 snapshot.unput_val(index_reverse_array.clone(), snapshot_index_reverse_value);
             }
 
-            if is_index_persisted {
+            let is_persisted = snapshot
+                .get_mapped(index.as_reference(), |_| true)
+                .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
+                .unwrap_or(false);
+
+            if is_persisted {
                 let is_same_rp = rp_player == Object::new(player.vertex()) && rp_role_type == role_type;
-                if is_same_rp {
-                    snapshot.delete(index_array);
-                } else {
-                    snapshot.delete(index_array);
+                snapshot.delete(index_array);
+                if !is_same_rp {
                     snapshot.delete(index_reverse_array);
                 }
             }
