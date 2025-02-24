@@ -1555,7 +1555,7 @@ impl ConjunctionPlan<'_> {
 
                 let lhs_var = lhs.as_variable();
                 let rhs_var = rhs.as_variable();
-                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                let num_input_variables = [lhs_var, rhs_var].into_iter().flatten().dedup().count();
                 assert!(num_input_variables > 0);
 
                 let order = self.element_to_order[&VertexId::Pattern(pattern)];

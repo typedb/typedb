@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
-    mem,
+    iter, mem,
     ops::Deref,
 };
 
@@ -583,12 +583,12 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
-            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
+            Constraint::Comparison(_) => Box::new(iter::empty()),
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
-            Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
+            Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
         }
     }
