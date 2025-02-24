@@ -153,7 +153,7 @@ fn make_builder<'a>(
     }
 
     let mut plan_builder = ConjunctionPlanBuilder::new(
-        Vec::from_iter(conjunction.captured_required_variables(block_context)),
+        conjunction.captured_required_variables(block_context).collect(),
         type_annotations,
         statistics,
     );
