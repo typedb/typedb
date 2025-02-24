@@ -11,7 +11,7 @@ use structural_equality::StructuralEquality;
 
 use super::conjunction::ConjunctionBuilder;
 use crate::{
-    pattern::{conjunction::Conjunction, ScopeId},
+    pattern::{conjunction::Conjunction, Scope, ScopeId},
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
 
@@ -35,6 +35,10 @@ impl Disjunction {
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
+    }
+
+    pub fn optimise_away_failing_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
+        self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
     }
 }
 

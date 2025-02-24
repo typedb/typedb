@@ -71,8 +71,11 @@ pub fn check_annotations(
             | Constraint::Relates(_)
             | Constraint::Plays(_)
             | Constraint::Value(_)
-            | Constraint::Iid(_) => unreachable!("{constraint:?} in update should have been rejected by now"),
+            | Constraint::Iid(_) => unreachable!("{constraint} in update should have been rejected by now"),
             Constraint::IndexedRelation(_) => unreachable!("Indexed relations can only appear after type inference"),
+            Constraint::Unsatisfiable(_) => {
+                unreachable!("OptimisedToUnsatisfiable can only appear after type inference")
+            }
         }
     }
     Ok(())

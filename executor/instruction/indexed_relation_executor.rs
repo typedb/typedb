@@ -118,6 +118,9 @@ impl IndexedRelationExecutor {
             role_start_types,
             role_end_types,
         } = indexed_relation;
+        debug_assert!([role_start, role_end, player_start, player_end, relation]
+            .iter()
+            .all(|v| { variable_modes.get(*v).is_some() }));
         let iterate_mode =
             IndexedRelationIterateMode::new(player_start, player_end, relation, &variable_modes, sort_by);
         let filter_fn = create_indexed_players_filter(
@@ -577,7 +580,6 @@ impl IndexedRelationIterateMode {
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
     ) -> Self {
-        debug_assert!(var_modes.len() == 5);
         debug_assert!(!var_modes.all_inputs());
         let is_start_bound = var_modes.get(player_start) == Some(VariableMode::Input);
         let is_end_bound = var_modes.get(player_end) == Some(VariableMode::Input);

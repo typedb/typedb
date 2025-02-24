@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
+use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
@@ -114,10 +114,6 @@ pub fn infer_types(
         annotated_function_signatures,
         is_write_stage,
     )?;
-    // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
-        return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
-    }
     let mut vertex_annotations = BTreeMap::new();
     let mut constraint_annotations = HashMap::new();
     graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
@@ -153,11 +149,8 @@ pub(crate) fn compute_type_inference_graph<'graph>(
     .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
-    if graph.vertices.iter().any(|(_, types)| types.is_empty()) {
-        Err(TypeInferenceError::DetectedUnsatisfiablePattern {})
-    } else {
-        Ok(graph)
-    }
+    graph.check_thing_constraints_satisfiable(variable_registry)?;
+    Ok(graph)
 }
 
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
@@ -255,6 +248,31 @@ impl TypeInferenceGraph<'_> {
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
         .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
+    }
+
+    fn check_thing_constraints_satisfiable(
+        &self,
+        variable_registry: &VariableRegistry,
+    ) -> Result<(), TypeInferenceError> {
+        let mut thing_variable_present = false;
+        let mut any_variable_empty = false;
+        self.vertices.annotations.iter().filter_map(|(var, types)| var.as_variable().map(|v| (v, types))).for_each(
+            |(var, types)| {
+                thing_variable_present =
+                    thing_variable_present || variable_registry.get_variable_category(var).unwrap().is_category_thing();
+                any_variable_empty = any_variable_empty || types.is_empty();
+            },
+        );
+        if any_variable_empty && thing_variable_present {
+            return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
+        }
+        self.nested_disjunctions
+            .iter()
+            .flat_map(|d| d.disjunction.iter())
+            .chain(self.nested_optionals.iter())
+            .chain(self.nested_negations.iter())
+            .try_for_each(|graph| graph.check_thing_constraints_satisfiable(variable_registry))?;
+        Ok(())
     }
 }
 

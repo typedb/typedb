@@ -6,7 +6,7 @@
 
 use std::{
     borrow::Cow,
-    collections::{BTreeMap, BTreeSet},
+    collections::{BTreeMap, BTreeSet, HashSet},
     iter::zip,
     sync::Arc,
 };
@@ -96,8 +96,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         context: &BlockContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
+        let vars_in_pattern =
+            graph.conjunction.referenced_variables().map(|v| Vertex::Variable(v)).collect::<HashSet<_>>();
         for (vertex, parent_annotations) in parent_vertices.iter() {
-            graph.vertices.insert(vertex.clone(), parent_annotations.clone());
+            if vars_in_pattern.contains(vertex) {
+                graph.vertices.insert(vertex.clone(), parent_annotations.clone());
+            }
         }
 
         // Seed vertices in root & disjunctions
@@ -117,7 +121,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         }
 
         // Prune abstract types from type annotations of thing variables
-        self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph);
+        self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
 
         // Seed edges in root & disjunctions
         self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
@@ -236,6 +240,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::LinksDeduplication(_) => (),
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
+                }
+                Constraint::Unsatisfiable(_) => {
+                    unreachable!("OptimisedToUnsatisfiable are only generated after type inference")
                 }
             }
         }
@@ -403,6 +410,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_) => false,
             Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference"),
+            Constraint::Unsatisfiable(_) => unreachable!("OptimisedToUnsatisfiable are only generated after type inference"),
         };
         Ok(any_modified)
     }
@@ -543,6 +551,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 | Constraint::LinksDeduplication(_) => (), // Do nothing
                 Constraint::IndexedRelation(_) => {
                     unreachable!("Indexed relations are only generated after type inference")
+                }
+                Constraint::Unsatisfiable(_) => {
+                    unreachable!("OptimisedToUnsatisfiable are only generated after type inference")
                 }
             }
         }

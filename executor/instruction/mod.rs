@@ -308,7 +308,7 @@ impl LinksIterateMode {
         var_modes: &VariableModes,
         sort_by: ExecutorVariable,
     ) -> LinksIterateMode {
-        debug_assert!(var_modes.len() == 3);
+        debug_assert!(var_modes.len() == 3 || from_vertex == to_vertex);
         debug_assert!(!var_modes.all_inputs());
 
         let is_from_bound = match from_vertex {
@@ -898,6 +898,8 @@ impl<T> Checker<T> {
                         }
                     }));
                 }
+
+                CheckInstruction::Unsatisfiable => filters.push(Box::new(|value| Ok(false))),
             }
         }
 

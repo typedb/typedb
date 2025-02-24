@@ -5,15 +5,17 @@
  */
 
 use concept::type_::type_manager::TypeManager;
-use ir::pattern::{conjunction::Conjunction, constraint::Constraint};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    annotation::{
-        pipeline::{AnnotatedPipeline, AnnotatedStage},
-        type_annotations::TypeAnnotations,
+    annotation::pipeline::{AnnotatedPipeline, AnnotatedStage},
+    transformation::{
+        redundant_constraints::{
+            optimize_away_statically_unsatisfiable_conjunctions, prune_redundant_roleplayer_deduplication,
+        },
+        relation_index::relation_index_transformation,
+        StaticOptimiserError,
     },
-    transformation::{relation_index::relation_index_transformation, StaticOptimiserError},
 };
 
 pub fn apply_transformations(
@@ -23,6 +25,7 @@ pub fn apply_transformations(
 ) -> Result<(), StaticOptimiserError> {
     for stage in &mut pipeline.annotated_stages {
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
+            optimize_away_statically_unsatisfiable_conjunctions(block.conjunction_mut(), block_annotations);
             prune_redundant_roleplayer_deduplication(block.conjunction_mut(), block_annotations);
             relation_index_transformation(block.conjunction_mut(), block_annotations, type_manager, snapshot)?;
         }
@@ -35,29 +38,4 @@ pub fn apply_transformations(
     // - function inlining v1: if a function does not have recursion or sort/offset/limit, we could inline the function into the query
     // - function inlining v2: we could try to inline/lift some constraints from recursive calls into the parent query to dramatically cut the search space
     // - function inlining v3: we could introduce new sub-patterns that include sort/offset/limit that let us more generally inline functions?
-}
-
-fn prune_redundant_roleplayer_deduplication(conjunction: &mut Conjunction, block_annotations: &mut TypeAnnotations) {
-    conjunction.constraints_mut().constraints_mut().retain(|constraint| {
-        if let Constraint::LinksDeduplication(dedup) = constraint {
-            let first = block_annotations
-                .constraint_annotations_of(Constraint::Links(dedup.links1().clone()))
-                .unwrap()
-                .as_links()
-                .player_to_role();
-            let second = block_annotations
-                .constraint_annotations_of(Constraint::Links(dedup.links2().clone()))
-                .unwrap()
-                .as_links()
-                .player_to_role();
-            first.iter().any(|(player, role_types)| {
-                return second
-                    .get(&player)
-                    .map(|type_set| role_types.iter().any(|role_type| type_set.contains(role_type)))
-                    .unwrap_or(false);
-            })
-        } else {
-            true
-        }
-    });
 }

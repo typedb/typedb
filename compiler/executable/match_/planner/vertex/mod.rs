@@ -12,7 +12,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication},
+    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
     Vertex,
 };
 use itertools::{chain, Itertools};
@@ -43,6 +43,7 @@ pub(super) enum PlannerVertex<'a> {
     Is(IsPlanner<'a>),
     LinksDeduplication(LinksDeduplicationPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
+    OptimisedToUnsatisfiable(OptimisedToUnsatisfiablePlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
     FunctionCall(FunctionCallPlanner<'a>),
@@ -72,6 +73,7 @@ impl PlannerVertex<'_> {
             }
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
+            Self::OptimisedToUnsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
         }
     }
 
@@ -86,6 +88,7 @@ impl PlannerVertex<'_> {
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
+            Self::OptimisedToUnsatisfiable(inner) => Box::new(inner.variables()),
         }
     }
 
@@ -161,6 +164,9 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Disjunction(_) => {
                 write!(f, "|Disjunction|")
             } //TODO
+            PlannerVertex::OptimisedToUnsatisfiable(_) => {
+                write!(f, "|OptimisedToUnsatisfiable|")
+            }
         }
     }
 }
@@ -238,6 +244,7 @@ impl Costed for PlannerVertex<'_> {
 
             Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::OptimisedToUnsatisfiable(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
 }
@@ -507,6 +514,41 @@ impl Costed for ComparisonPlanner<'_> {
         _graph: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
         Ok((Cost::MEM_COMPLEX_OUTPUT_1, CostMetaData::None))
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(super) struct OptimisedToUnsatisfiablePlanner<'a> {
+    unsatisfiable: &'a Unsatisfiable,
+}
+
+impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
+    pub(crate) fn from_constraint(
+        optimised_unsatisfiable: &'a Unsatisfiable,
+        variable_index: &HashMap<Variable, VariableVertexId>,
+        _type_annotations: &TypeAnnotations,
+        _statistics: &Statistics,
+    ) -> Self {
+        Self { unsatisfiable: optimised_unsatisfiable }
+    }
+
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        true
+    }
+
+    fn variables(&self) -> impl Iterator<Item = VariableVertexId> {
+        iter::empty()
+    }
+}
+
+impl Costed for OptimisedToUnsatisfiablePlanner<'_> {
+    fn cost_and_metadata(
+        &self,
+        _: &[VertexId],
+        _: Option<Direction>,
+        _: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((Cost::in_mem_simple_with_ratio(Cost::MIN_IO_RATIO), CostMetaData::None))
     }
 }
 

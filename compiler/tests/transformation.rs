@@ -7,19 +7,30 @@
 use std::{collections::BTreeMap, sync::Arc};
 
 use compiler::{
-    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
-    transformation::relation_index::relation_index_transformation,
+    annotation::{
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
+    },
+    transformation::{
+        redundant_constraints::optimize_away_statically_unsatisfiable_conjunctions,
+        relation_index::relation_index_transformation,
+    },
 };
-use concept::type_::{Ordering, OwnerAPI, PlayerAPI};
+use concept::type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI};
 use encoding::value::label::Label;
 use ir::{
-    pattern::Vertex,
+    pattern::{conjunction::Conjunction, constraint::Constraint, Vertex},
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{match_::translate_match, TranslationContext},
 };
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use itertools::Itertools;
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadableSnapshot},
+    MVCCStorage,
+};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
+use typeql::Query;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const DOG_LABEL: Label = Label::new_static("dog");
@@ -263,3 +274,96 @@ fn test_relation_index_transformation_not_applied_ternary() {
 //
 //     println!("{}", &conjunction);
 // }
+
+#[test]
+fn test_optimise_away() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+    let (type_manager, _thing_manager) = load_managers(storage.clone(), None);
+    let snapshot = storage.clone().open_snapshot_read();
+    {
+        let query = "match $p sub person, plays dog-ownership:owner;";
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        assert!(
+            conjunction.constraints().len() == 2
+                && conjunction.constraints().iter().any(|c| matches!(c, Constraint::Plays(_)))
+                && conjunction.constraints().iter().any(|c| matches!(c, Constraint::Sub(_)))
+        );
+    }
+    {
+        let query = "match $p sub person, plays dog-ownership:dog;";
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Unsatisfiable(_)));
+    }
+
+    {
+        let query = "match $p sub person; { $p plays dog-ownership:dog; } or { $p plays dog-ownership:owner; };";
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
+        let must_be_plays = conjunction
+            .nested_patterns()
+            .iter()
+            .exactly_one()
+            .unwrap()
+            .as_disjunction()
+            .unwrap()
+            .conjunctions()
+            .iter()
+            .exactly_one()
+            .unwrap()
+            .constraints()
+            .iter()
+            .exactly_one()
+            .unwrap();
+        assert!(matches!(must_be_plays, Constraint::Plays(_)))
+    }
+
+    {
+        let query = "match $p sub person; not { $p plays dog-ownership:dog; };";
+        let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
+        optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
+        assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Sub(_)));
+        let must_be_optimised_to_unsatisfiable = conjunction
+            .nested_patterns()
+            .iter()
+            .exactly_one()
+            .unwrap()
+            .as_negation()
+            .unwrap()
+            .conjunction()
+            .constraints()
+            .iter()
+            .exactly_one()
+            .unwrap();
+        assert!(matches!(must_be_optimised_to_unsatisfiable, Constraint::Unsatisfiable(_)))
+    }
+}
+
+fn translate_and_annotate(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    query: &str,
+) -> (Conjunction, TypeAnnotations) {
+    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let mut context = TranslationContext::new();
+    let mut parameters = ParameterRegistry::new();
+    let translated =
+        translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
+
+    let block = translated.finish().unwrap();
+    let mut type_annotations = infer_types(
+        snapshot,
+        &block,
+        &context.variable_registry,
+        type_manager,
+        &BTreeMap::new(),
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+    let mut conjunction = block.into_conjunction();
+    (conjunction, type_annotations)
+}
