@@ -116,11 +116,9 @@ fn validate_conjunction(
     conjunction: &Conjunction,
     variable_registry: &VariableRegistry,
 ) -> Result<(), Box<RepresentationError>> {
-    let unbound =
-        conjunction.referenced_variables().find(|&variable| match variable_registry.get_variable_category(variable) {
-            Some(VariableCategory::AttributeOrValue) | None => true,
-            _ => false,
-        });
+    let unbound = conjunction.referenced_variables().find(|&variable| {
+        matches!(variable_registry.get_variable_category(variable), Some(VariableCategory::AttributeOrValue) | None)
+    });
     if let Some(variable) = unbound {
         return Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
@@ -185,14 +183,21 @@ impl BlockContext {
     ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
         self.add_referenced_variable(var);
-        let recorded_scope = self.variable_declaration.get_mut(&var).unwrap();
-        if is_equal_or_parent_scope(&self.scope_parents, scope, *recorded_scope) {
+        let recorded_scope = self.variable_declaration[&var];
+        if is_equal_or_parent_scope(&self.scope_parents, scope, recorded_scope) {
             // Parent defines same name: ok, reuse the variable
-        } else if is_child_scope(&self.scope_parents, scope, *recorded_scope) {
+        } else if is_child_scope(&self.scope_parents, scope, recorded_scope) {
             // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
-            *recorded_scope = scope;
+            *self.variable_declaration.get_mut(&var).unwrap() = scope;
         } else {
-            *recorded_scope = common_ancestor(&self.scope_parents, *recorded_scope, scope);
+            let ancestor = common_ancestor(&self.scope_parents, recorded_scope, scope);
+            if !self.is_visible_child(scope, ancestor) || !self.is_visible_child(recorded_scope, ancestor) {
+                return Err(Box::new(RepresentationError::DisjointVariableReuse {
+                    name: var_name.to_owned(),
+                    source_span,
+                }));
+            }
+            *self.variable_declaration.get_mut(&var).unwrap() = ancestor;
         }
         Ok(())
     }
@@ -367,9 +372,7 @@ fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_chi
 }
 
 fn common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, right: ScopeId) -> ScopeId {
-    if left == right {
-        left
-    } else if is_child_scope(parents, left, right) {
+    if left == right || is_child_scope(parents, left, right) {
         left
     } else if is_child_scope(parents, right, left) {
         right

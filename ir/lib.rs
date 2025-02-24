@@ -26,7 +26,7 @@ typedb_error! {
     pub RepresentationError(component = "Representation", prefix = "REP") {
         DisjointVariableReuse(
             0,
-            "Variable '{name}' is re-used across different branches of the query. Variables that do not represent the same concept must be named uniquely, to prevent clashes within answers.",
+            "Variable '{name}' is re-used across a negation boundary. Unable to unify the variable scope.",
             name: String,
             source_span: Option<Span>,
         ),
