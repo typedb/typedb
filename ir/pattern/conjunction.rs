@@ -8,16 +8,17 @@ use std::{
     collections::HashSet,
     fmt,
     hash::{DefaultHasher, Hasher},
+    slice::Iter,
 };
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
-use itertools::Itertools;
+use itertools::{ExactlyOneError, Itertools};
 use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
-        constraint::{Constraint, Constraints, ConstraintsBuilder, OptimisedToUnsatisfiable},
+        constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
         disjunction::{Disjunction, DisjunctionBuilder},
         negation::Negation,
         nested_pattern::NestedPattern,
@@ -55,12 +56,17 @@ impl Conjunction {
         &mut self.nested_patterns
     }
 
-    pub fn optimise_away(&mut self) {
+    pub fn set_unsatisfiable(&mut self) {
         let mut swapped_conjunction = Self::new(self.scope_id);
         std::mem::swap(self, &mut swapped_conjunction);
-        self.constraints
-            .constraints_mut()
-            .push(Constraint::OptimisedToUnsatisfiable(OptimisedToUnsatisfiable::new(swapped_conjunction)));
+        self.constraints.constraints_mut().push(Constraint::Unsatisfiable(Unsatisfiable::new(swapped_conjunction)));
+    }
+
+    pub fn is_set_to_unsatisfiable(&self) -> bool {
+        match self.constraints().iter().exactly_one() {
+            Ok(Constraint::Unsatisfiable(_)) => true,
+            Ok(_) | Err(_) => false,
+        }
     }
 
     pub fn captured_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {

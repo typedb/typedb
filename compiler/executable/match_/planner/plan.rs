@@ -21,8 +21,7 @@ use ir::{
         conjunction::Conjunction,
         constraint::{
             Comparator, Comparison, Constraint, ExpressionBinding, FunctionCallBinding, Has, Iid, IndexedRelation, Is,
-            Isa, Kind, Label, Links, LinksDeduplication, OptimisedToUnsatisfiable, Owns, Plays, Relates, RoleName, Sub,
-            Value,
+            Isa, Kind, Label, Links, LinksDeduplication, Owns, Plays, Relates, RoleName, Sub, Unsatisfiable, Value,
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
@@ -412,7 +411,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Is(is) => self.register_is(is),
                 Constraint::Comparison(comparison) => self.register_comparison(comparison),
                 Constraint::LinksDeduplication(dedup) => self.register_links_deduplication(dedup),
-                Constraint::OptimisedToUnsatisfiable(optimised_unsatisfiable) => {
+                Constraint::Unsatisfiable(optimised_unsatisfiable) => {
                     self.register_optimised_to_unsatisfiable(optimised_unsatisfiable)
                 }
             }
@@ -592,7 +591,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
     }
 
-    fn register_optimised_to_unsatisfiable(&mut self, optimised_unsatisfiable: &'a OptimisedToUnsatisfiable) {
+    fn register_optimised_to_unsatisfiable(&mut self, optimised_unsatisfiable: &'a Unsatisfiable) {
         let planner = OptimisedToUnsatisfiablePlanner::from_constraint(
             optimised_unsatisfiable,
             &self.graph.variable_index,

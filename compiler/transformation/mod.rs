@@ -10,7 +10,7 @@ use ir::pattern::conjunction::Conjunction;
 
 use crate::annotation::pipeline::AnnotatedPipeline;
 
-mod redundant_constraints;
+pub mod redundant_constraints;
 pub mod relation_index;
 pub mod transform;
 

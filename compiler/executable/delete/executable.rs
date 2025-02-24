@@ -123,7 +123,7 @@ pub fn compile(
             | Constraint::Value(_)
             | Constraint::FunctionCallBinding(_)
             | Constraint::IndexedRelation(_)
-            | Constraint::OptimisedToUnsatisfiable(_) => {
+            | Constraint::Unsatisfiable(_) => {
                 unreachable!()
             }
         }

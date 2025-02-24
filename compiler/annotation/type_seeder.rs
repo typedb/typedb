@@ -241,7 +241,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::IndexedRelation(_) => {
                     unreachable!("IndexedRelations are only generated after type inference")
                 }
-                Constraint::OptimisedToUnsatisfiable(_) => {
+                Constraint::Unsatisfiable(_) => {
                     unreachable!("OptimisedToUnsatisfiable are only generated after type inference")
                 }
             }
@@ -410,7 +410,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_) => false,
             Constraint::IndexedRelation(_) => unreachable!("Indexed relations are only generated after type inference"),
-            Constraint::OptimisedToUnsatisfiable(_) => unreachable!("OptimisedToUnsatisfiable are only generated after type inference"),
+            Constraint::Unsatisfiable(_) => unreachable!("OptimisedToUnsatisfiable are only generated after type inference"),
         };
         Ok(any_modified)
     }
@@ -552,7 +552,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                 Constraint::IndexedRelation(_) => {
                     unreachable!("Indexed relations are only generated after type inference")
                 }
-                Constraint::OptimisedToUnsatisfiable(_) => {
+                Constraint::Unsatisfiable(_) => {
                     unreachable!("OptimisedToUnsatisfiable are only generated after type inference")
                 }
             }

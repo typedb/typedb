@@ -12,7 +12,7 @@ use std::{
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
 use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, OptimisedToUnsatisfiable},
+    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
     Vertex,
 };
 use itertools::{chain, Itertools};
@@ -519,12 +519,12 @@ impl Costed for ComparisonPlanner<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct OptimisedToUnsatisfiablePlanner<'a> {
-    optimised_unsatisfiable: &'a OptimisedToUnsatisfiable,
+    optimised_unsatisfiable: &'a Unsatisfiable,
 }
 
 impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
     pub(crate) fn from_constraint(
-        optimised_unsatisfiable: &'a OptimisedToUnsatisfiable,
+        optimised_unsatisfiable: &'a Unsatisfiable,
         variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,

@@ -11,7 +11,8 @@ use compiler::{
         function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
     },
     transformation::{
-        relation_index::relation_index_transformation, transform::optimize_away_statically_unsatisfiable_conjunctions,
+        redundant_constraints::optimize_away_statically_unsatisfiable_conjunctions,
+        relation_index::relation_index_transformation,
     },
 };
 use concept::type_::{type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI};
@@ -294,10 +295,7 @@ fn test_optimise_away() {
         let query = "match $p sub person, plays dog-ownership:dog;";
         let (mut conjunction, type_annotations) = translate_and_annotate(&snapshot, &type_manager, query);
         optimize_away_statically_unsatisfiable_conjunctions(&mut conjunction, &type_annotations);
-        assert!(matches!(
-            conjunction.constraints().iter().exactly_one().unwrap(),
-            Constraint::OptimisedToUnsatisfiable(_)
-        ));
+        assert!(matches!(conjunction.constraints().iter().exactly_one().unwrap(), Constraint::Unsatisfiable(_)));
     }
 
     {
@@ -340,7 +338,7 @@ fn test_optimise_away() {
             .iter()
             .exactly_one()
             .unwrap();
-        assert!(matches!(must_be_optimised_to_unsatisfiable, Constraint::OptimisedToUnsatisfiable(_)))
+        assert!(matches!(must_be_optimised_to_unsatisfiable, Constraint::Unsatisfiable(_)))
     }
 }
 
