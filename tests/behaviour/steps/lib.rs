@@ -117,6 +117,7 @@ pub struct Context {
 
 impl Context {
     pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
+        logger::initialise_logging_global();
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()
