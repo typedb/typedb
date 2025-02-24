@@ -185,17 +185,16 @@ impl BlockContext {
     ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
         self.add_referenced_variable(var);
-        let existing_scope = self.variable_declaration.get_mut(&var).unwrap();
-        if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
+        let recorded_scope = self.variable_declaration.get_mut(&var).unwrap();
+        if is_equal_or_parent_scope(&self.scope_parents, scope, *recorded_scope) {
             // Parent defines same name: ok, reuse the variable
-            Ok(())
-        } else if is_child_scope(&self.scope_parents, scope, *existing_scope) {
+        } else if is_child_scope(&self.scope_parents, scope, *recorded_scope) {
             // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
-            *existing_scope = scope;
-            Ok(())
+            *recorded_scope = scope;
         } else {
-            Err(Box::new(RepresentationError::DisjointVariableReuse { name: var_name.to_string(), source_span }))
+            *recorded_scope = common_ancestor(&self.scope_parents, *recorded_scope, scope);
         }
+        Ok(())
     }
 
     pub fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
@@ -302,15 +301,15 @@ impl<'a> BlockBuilderContext<'a> {
                 self.variable_names_index.insert(name.to_string(), variable);
                 Ok(variable)
             }
-            Some(existing_variable) => self
-                .block_context
-                .may_update_declaration_scope(
-                    *existing_variable,
+            Some(&existing_variable) => {
+                self.block_context.may_update_declaration_scope(
+                    existing_variable,
                     name,
-                    self.variable_registry.source_span(*existing_variable),
+                    self.variable_registry.source_span(existing_variable),
                     scope,
-                )
-                .map(|_| *existing_variable),
+                )?;
+                Ok(existing_variable)
+            }
         }
     }
 
@@ -365,4 +364,16 @@ fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId,
 
 fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {
     parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
+}
+
+fn common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, right: ScopeId) -> ScopeId {
+    if left == right {
+        left
+    } else if is_child_scope(parents, left, right) {
+        left
+    } else if is_child_scope(parents, right, left) {
+        right
+    } else {
+        common_ancestor(parents, parents[&left], parents[&right])
+    }
 }
