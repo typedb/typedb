@@ -43,7 +43,7 @@ pub(super) enum PlannerVertex<'a> {
     Is(IsPlanner<'a>),
     LinksDeduplication(LinksDeduplicationPlanner<'a>),
     Comparison(ComparisonPlanner<'a>),
-    OptimisedToUnsatisfiable(OptimisedToUnsatisfiablePlanner<'a>),
+    Unsatisfiable(UnsatisfiablePlanner<'a>),
 
     Expression(ExpressionPlanner<'a>),
     FunctionCall(FunctionCallPlanner<'a>),
@@ -73,7 +73,7 @@ impl PlannerVertex<'_> {
             }
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
-            Self::OptimisedToUnsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Unsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
         }
     }
 
@@ -88,7 +88,7 @@ impl PlannerVertex<'_> {
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
-            Self::OptimisedToUnsatisfiable(inner) => Box::new(inner.variables()),
+            Self::Unsatisfiable(inner) => Box::new(inner.variables()),
         }
     }
 
@@ -164,8 +164,8 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             PlannerVertex::Disjunction(_) => {
                 write!(f, "|Disjunction|")
             } //TODO
-            PlannerVertex::OptimisedToUnsatisfiable(_) => {
-                write!(f, "|OptimisedToUnsatisfiable|")
+            PlannerVertex::Unsatisfiable(_) => {
+                write!(f, "|Unsatisfiable|")
             }
         }
     }
@@ -244,7 +244,7 @@ impl Costed for PlannerVertex<'_> {
 
             Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
-            Self::OptimisedToUnsatisfiable(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Unsatisfiable(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
 }
@@ -518,11 +518,11 @@ impl Costed for ComparisonPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(super) struct OptimisedToUnsatisfiablePlanner<'a> {
+pub(super) struct UnsatisfiablePlanner<'a> {
     unsatisfiable: &'a Unsatisfiable,
 }
 
-impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
+impl<'a> UnsatisfiablePlanner<'a> {
     pub(crate) fn from_constraint(
         optimised_unsatisfiable: &'a Unsatisfiable,
         variable_index: &HashMap<Variable, VariableVertexId>,
@@ -541,7 +541,7 @@ impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
     }
 }
 
-impl Costed for OptimisedToUnsatisfiablePlanner<'_> {
+impl Costed for UnsatisfiablePlanner<'_> {
     fn cost_and_metadata(
         &self,
         _: &[VertexId],

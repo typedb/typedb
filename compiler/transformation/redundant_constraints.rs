@@ -68,7 +68,7 @@ pub fn optimize_away_statically_unsatisfiable_conjunctions(
                         optimised_unsatisfiable_branch_ids.push(branch.scope_id())
                     }
                 }
-                disjunction.optimise_away_failing_branches(optimised_unsatisfiable_branch_ids);
+                disjunction.optimise_away_unsatisfiable_branches(optimised_unsatisfiable_branch_ids);
                 must_optimise_away = must_optimise_away || disjunction.conjunctions().is_empty();
             }
             NestedPattern::Negation(negation) => {

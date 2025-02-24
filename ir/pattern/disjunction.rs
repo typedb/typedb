@@ -37,7 +37,7 @@ impl Disjunction {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }
 
-    pub fn optimise_away_failing_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
+    pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
         self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
     }
 }

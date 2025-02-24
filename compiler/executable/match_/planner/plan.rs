@@ -57,7 +57,7 @@ use crate::{
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                     ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
                     FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NegationPlanner,
-                    OptimisedToUnsatisfiablePlanner, PlannerVertex,
+                    UnsatisfiablePlanner, PlannerVertex,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
                 MatchExecutableBuilder, NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -592,7 +592,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_optimised_to_unsatisfiable(&mut self, optimised_unsatisfiable: &'a Unsatisfiable) {
-        let planner = OptimisedToUnsatisfiablePlanner::from_constraint(
+        let planner = UnsatisfiablePlanner::from_constraint(
             optimised_unsatisfiable,
             &self.graph.variable_index,
             self.type_annotations,
@@ -1409,7 +1409,7 @@ impl ConjunctionPlan<'_> {
                     match_builder.push_instruction(variable, instruction);
                 }
                 PlannerVertex::Comparison(_) => unreachable!("encountered comparison registered as producing variable"),
-                PlannerVertex::OptimisedToUnsatisfiable(_) => {
+                PlannerVertex::Unsatisfiable(_) => {
                     unreachable!("encountered optimised-away registered as producing variable")
                 }
                 PlannerVertex::Constraint(constraint) => {
@@ -1580,7 +1580,7 @@ impl ConjunctionPlan<'_> {
                 match_builder.push_check(&vars, check)
             }
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
-            PlannerVertex::OptimisedToUnsatisfiable(_) => {
+            PlannerVertex::Unsatisfiable(_) => {
                 match_builder.push_check(&Vec::new(), CheckInstruction::Unsatisfiable)
             }
             PlannerVertex::Expression(_) => {
@@ -2045,11 +2045,11 @@ impl<'a> Graph<'a> {
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Comparison(comparison));
     }
 
-    fn push_optimised_to_unsatisfiable(&mut self, optimised_unsatisfiable: OptimisedToUnsatisfiablePlanner<'a>) {
+    fn push_optimised_to_unsatisfiable(&mut self, optimised_unsatisfiable: UnsatisfiablePlanner<'a>) {
         let pattern_index = self.next_pattern_index();
         self.pattern_to_variable.entry(pattern_index).or_default();
         self.elements
-            .insert(VertexId::Pattern(pattern_index), PlannerVertex::OptimisedToUnsatisfiable(optimised_unsatisfiable));
+            .insert(VertexId::Pattern(pattern_index), PlannerVertex::Unsatisfiable(optimised_unsatisfiable));
     }
 
     fn push_expression(&mut self, output: VariableVertexId, expression: ExpressionPlanner<'a>) {
