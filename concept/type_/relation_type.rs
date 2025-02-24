@@ -374,7 +374,7 @@ impl RelationType {
         type_manager.get_type_relates_distinct_constraints(snapshot, *self, role_type)
     }
 
-    pub(crate) fn is_related_role_type_abstract(
+    pub fn is_related_role_type_abstract(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

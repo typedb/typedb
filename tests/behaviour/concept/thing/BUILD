@@ -50,13 +50,13 @@ rust_test(
 )
 
 rust_test(
-    name = "test_roleplayer",
-    srcs = ["roleplayer.rs"],
+    name = "test_links",
+    srcs = ["links.rs"],
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
     ],
-    data = ["@typedb_behaviour//concept/thing:roleplayer.feature"],
+    data = ["@typedb_behaviour//concept/thing:links.feature"],
     crate_features = ["bazel"],
 )
 

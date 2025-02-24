@@ -59,45 +59,43 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
-    let mut concept_inserts = Vec::with_capacity(constraints.len());
-    let variables = add_inserted_concepts(
+    let mut variable_positions = input_variables.clone();
+    let concept_inserts = add_inserted_concepts(
         constraints,
-        input_variables,
         type_annotations,
         variable_registry,
-        &mut concept_inserts,
+        input_variables,
+        &mut variable_positions,
         source_span,
     )?;
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
-    add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
-    add_links(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
+    add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
+    add_links(constraints, type_annotations, &variable_positions, variable_registry, &mut connection_inserts)?;
 
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema: prepare_output_row_schema(&variables),
+        output_row_schema: prepare_output_row_schema(&variable_positions),
     })
 }
 
 pub(crate) fn add_inserted_concepts(
     constraints: &[Constraint<Variable>],
-    input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
-    vertex_instructions: &mut Vec<ConceptInstruction>,
+    input_variables: &HashMap<Variable, VariablePosition>,
+    output_variables: &mut HashMap<Variable, VariablePosition>,
     stage_source_span: Option<Span>,
-) -> Result<HashMap<Variable, VariablePosition>, Box<WriteCompilationError>> {
+) -> Result<Vec<ConceptInstruction>, Box<WriteCompilationError>> {
     let first_inserted_variable_position =
-        input_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
-    let mut output_variables = input_variables.clone();
+        output_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
-
+    let mut concept_instructions = HashMap::<Variable, ConceptInstruction>::new();
     for isa in filter_variants!(Constraint::Isa: constraints) {
         let &Vertex::Variable(thing) = isa.thing() else { unreachable!() };
-
         if input_variables.contains_key(&thing) {
             return Err(Box::new(WriteCompilationError::InsertIsaStatementForInputVariable {
                 variable: variable_registry
@@ -156,10 +154,21 @@ pub(crate) fn add_inserted_concepts(
                     source_span: isa.source_span(),
                 }));
             }
-            let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
-            output_variables.insert(thing, write_to);
-            let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingPosition(write_to) });
-            vertex_instructions.push(instruction);
+            if let Some(exisiting) = concept_instructions.get(&thing) {
+                if exisiting.inserted_type() != &type_ {
+                    return Err(Box::new(WriteCompilationError::ConflcitingTypesForInsertOfSameVariable {
+                        variable: variable_registry.get_variable_name(thing).unwrap().clone(),
+                        first: exisiting.inserted_type().clone(),
+                        second: type_,
+                    }));
+                } // else let the original be
+            } else {
+                let write_to =
+                    VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
+                output_variables.insert(thing, write_to);
+                let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingPosition(write_to) });
+                concept_instructions.insert(thing, instruction);
+            }
         } else {
             debug_assert!(kinds.len() == 1 && kinds.contains(&Kind::Attribute));
             let value_variable = resolve_value_variable_for_inserted_attribute(
@@ -196,14 +205,27 @@ pub(crate) fn add_inserted_concepts(
                     source_span: isa.source_span(),
                 }));
             };
-            let write_to = VariablePosition::new((first_inserted_variable_position + vertex_instructions.len()) as u32);
-            output_variables.insert(thing, write_to);
-            let instruction =
-                ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingPosition(write_to) });
-            vertex_instructions.push(instruction);
+            if let Some(exisiting) = concept_instructions.get(&thing) {
+                if exisiting.inserted_type() != &type_ {
+                    return Err(Box::new(WriteCompilationError::ConflcitingTypesForInsertOfSameVariable {
+                        variable: variable_registry.get_variable_name(thing).unwrap().clone(),
+                        first: exisiting.inserted_type().clone(),
+                        second: type_,
+                    }));
+                } // else let the original be
+            } else {
+                let write_to =
+                    VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
+                output_variables.insert(thing, write_to);
+                let instruction =
+                    ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingPosition(write_to) });
+                concept_instructions.insert(thing, instruction);
+            }
         };
     }
-    Ok(output_variables)
+    let concept_instructions_vec =
+        concept_instructions.into_values().sorted_by(|a, b| a.inserted_position().cmp(b.inserted_position())).collect();
+    Ok(concept_instructions_vec)
 }
 
 fn add_has(

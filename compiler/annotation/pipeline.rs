@@ -44,6 +44,7 @@ use crate::{
         match_inference::infer_types,
         type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
+        write_type_check::check_type_combinations_for_write,
         AnnotationError,
     },
     executable::{insert, reduce::ReduceInstruction, update},
@@ -286,7 +287,7 @@ fn annotate_stage(
         }
 
         TranslatedStage::Insert { block, source_span } => {
-            let annotations = annotate_insertables(
+            let annotations = annotate_write_stage(
                 running_variable_annotations,
                 variable_registry,
                 snapshot,
@@ -295,7 +296,7 @@ fn annotate_stage(
                 &block,
             )?;
 
-            insert::type_check::check_annotations(
+            check_type_combinations_for_write(
                 snapshot,
                 type_manager,
                 &block,
@@ -309,7 +310,7 @@ fn annotate_stage(
         }
 
         TranslatedStage::Update { block, source_span } => {
-            let annotations = annotate_insertables(
+            let annotations = annotate_write_stage(
                 running_variable_annotations,
                 variable_registry,
                 snapshot,
@@ -332,20 +333,26 @@ fn annotate_stage(
         }
 
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
-            let delete_annotations = infer_types(
-                snapshot,
-                &block,
-                variable_registry,
-                type_manager,
+            let delete_annotations = annotate_write_stage(
                 running_variable_annotations,
+                variable_registry,
+                snapshot,
+                type_manager,
                 annotated_function_signatures,
-                true,
+                &block,
+            )?;
+            check_type_combinations_for_write(
+                snapshot,
+                type_manager,
+                &block,
+                running_variable_annotations,
+                running_constraint_annotations,
+                &delete_annotations,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             deleted_variables.iter().for_each(|v| {
                 running_variable_annotations.remove(v);
             });
-            // TODO: check_annotations on deletes. Can only delete links or has for types that actually are linked or owned
             Ok(AnnotatedStage::Delete { block, deleted_variables, annotations: delete_annotations, source_span })
         }
         TranslatedStage::Sort(sort) => {
@@ -428,7 +435,7 @@ pub fn validate_sort_variables_comparable(
     Ok(())
 }
 
-fn annotate_insertables(
+fn annotate_write_stage(
     running_variable_annotations: &mut BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     variable_registry: &mut VariableRegistry,
     snapshot: &impl ReadableSnapshot,
@@ -447,6 +454,7 @@ fn annotate_insertables(
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
+    // Extend running annotations for variables introduced in this stage.
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(

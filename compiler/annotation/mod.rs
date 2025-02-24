@@ -19,6 +19,7 @@ pub mod pipeline;
 pub mod type_annotations;
 pub mod type_inference;
 mod type_seeder;
+pub(crate) mod write_type_check;
 
 typedb_error!(
     pub AnnotationError(component = "Query annotation", prefix = "QUA") {
@@ -160,7 +161,7 @@ typedb_error!(
             name: String,
             source_span: Option<Span>,
         ),
-        IllegalInsertableTypes(
+        IllegalTypeCombinationForWrite(
             4,
             "Left type '{left_type}' across constraint '{constraint_name}' is not compatible with right type '{right_type}'.",
             constraint_name: String,

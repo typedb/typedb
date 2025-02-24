@@ -261,7 +261,6 @@ impl AsWriteInstruction for compiler::executable::delete::instructions::Has {
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
     ) -> Result<(), Box<WriteError>> {
-        // TODO: Lists
         let attribute = get_thing(row, &self.attribute).as_attribute();
         let owner = get_thing(row, &self.owner).as_object();
         owner

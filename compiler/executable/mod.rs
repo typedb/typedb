@@ -10,7 +10,9 @@ use error::typedb_error;
 use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
 
-use crate::executable::{fetch::executable::FetchCompilationError, match_::planner::MatchCompilationError};
+use crate::executable::{
+    fetch::executable::FetchCompilationError, insert::TypeSource, match_::planner::MatchCompilationError,
+};
 
 pub mod delete;
 pub mod fetch;
@@ -46,71 +48,78 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        InsertVariableAmbiguousAttributeOrObject(
+        ConflcitingTypesForInsertOfSameVariable(
             2,
+            "Found conflicting types for inserting the variable '{variable}'.",
+            variable: String,
+            first: TypeSource,
+            second: TypeSource,
+        ),
+        InsertVariableAmbiguousAttributeOrObject(
+            3,
             "Insert variable '{variable}' is ambiguously an attribute or an object (entity/relation).",
             variable: String,
             source_span: Option<Span>,
         ),
         InsertVariableUnknownType(
-            3,
+            4,
             "Could not determine the type of the insert variable '{variable}'.",
             variable: String,
             source_span: Option<Span>,
         ),
         InsertAttributeMissingValue(
-            4,
+            5,
             "Could not determine the value of the insert attribute '{variable}'.",
             variable: String,
             source_span: Option<Span>,
         ),
         InsertIllegalPredicate(
-            5,
+            6,
             "Illegal predicate in insert for variable '{variable}' with comparator '{comparator}'.",
             variable: String,
             comparator: Comparator,
             source_span: Option<Span>,
         ),
         MissingExpectedInput(
-            6,
+            7,
             "Missing expected input variable in compilation data '{variable}'.",
             variable: String,
             source_span: Option<Span>,
         ),
         AmbiguousRoleType(
-            7,
+            8,
             "Could not uniquely resolve the role type for variable '{variable}'. Possible role types are: {role_types}.",
             variable: String,
             role_types: String,
             source_span: Option<Span>,
         ),
         InsertLinksAmbiguousRoleType(
-            8,
+            9,
             "Links insert for player '{player_variable}' requires unambiguous role type, but inferred: {role_types}.",
             player_variable: String,
             role_types: String,
             source_span: Option<Span>,
         ),
         DeleteIllegalRoleVariable(
-            9,
+            10,
             "Illegal delete for variable '{variable}', which represents role types.",
             variable: String,
             source_span: Option<Span>,
         ),
         InsertIllegalRole(
-            10,
+            11,
             "Illegal role type insert for variable '{variable}'.",
             variable: String,
             source_span: Option<Span>,
         ),
         DeletedThingWasNotInInput(
-            11,
+            12,
             "Deleted variable '{variable}' is not available as input from previous stages.",
             variable: String,
             source_span: Option<Span>,
         ),
         UnsupportedCompoundExpressions(
-            12,
+            13,
             "Compound expressions are not supported in these statements yet.",
             source_span: Option<Span>,
         ),

@@ -14,6 +14,7 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::{
     error::ConceptReadError,
+    thing::thing_manager::validation::DataValidationError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
@@ -1594,13 +1595,13 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        relation
-            .get_relates(seeder.snapshot, seeder.type_manager)?
-            .iter()
-            .map(|relates| TypeAnnotation::RoleType(relates.role()))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        for relates in relation.get_relates(seeder.snapshot, seeder.type_manager)?.iter() {
+            let is_write_stage_and_relates_is_abstract = seeder.is_write_stage
+                && relation.is_related_role_type_abstract(seeder.snapshot, seeder.type_manager, relates.role())?;
+            if !is_write_stage_and_relates_is_abstract {
+                collector.insert(TypeAnnotation::RoleType(relates.role()));
+            }
+        }
         Ok(())
     }
 
@@ -1610,19 +1611,19 @@ impl BinaryConstraint for RelationRoleEdge<'_> {
         right_type: &TypeAnnotation,
         collector: &mut BTreeSet<TypeAnnotation>,
     ) -> Result<(), Box<ConceptReadError>> {
-        let role_type = match right_type {
+        let role = match right_type {
             TypeAnnotation::RoleType(role_type) => role_type,
             _ => {
                 return Ok(());
             } // It can't be another type => Do nothing and let type-inference clean it up
         };
-        role_type
-            .get_relation_types(seeder.snapshot, seeder.type_manager)?
-            .keys()
-            .map(|relation_type| TypeAnnotation::Relation(*relation_type))
-            .for_each(|type_| {
-                collector.insert(type_);
-            });
+        for (relation, _) in role.get_relation_types(seeder.snapshot, seeder.type_manager)?.iter() {
+            let is_write_stage_and_relates_is_abstract = seeder.is_write_stage
+                && relation.is_related_role_type_abstract(seeder.snapshot, seeder.type_manager, role.clone())?;
+            if !is_write_stage_and_relates_is_abstract {
+                collector.insert(TypeAnnotation::Relation(*relation));
+            }
+        }
         Ok(())
     }
 }
