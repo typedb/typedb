@@ -519,7 +519,7 @@ impl Costed for ComparisonPlanner<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct OptimisedToUnsatisfiablePlanner<'a> {
-    optimised_unsatisfiable: &'a Unsatisfiable,
+    unsatisfiable: &'a Unsatisfiable,
 }
 
 impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
@@ -529,7 +529,7 @@ impl<'a> OptimisedToUnsatisfiablePlanner<'a> {
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        Self { optimised_unsatisfiable }
+        Self { unsatisfiable: optimised_unsatisfiable }
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
