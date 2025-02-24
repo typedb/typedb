@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::Type;
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::LinksReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -35,7 +35,6 @@ use crate::{
             LinksTupleIteratorSingle, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
         min_max_types,
-        owns_executor::OwnsExecutor,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
             links_to_tuple_role_relation_player, TuplePositions,
@@ -233,9 +232,14 @@ impl LinksReverseExecutor {
             LinksIterateMode::BoundFrom => {
                 let player = self.links.player().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > player.as_usize());
+                let player = match row.get(player) {
+                    VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Empty => return Ok(TupleIterator::empty()),
+                    _ => unreachable!("Links player must be a object."),
+                };
                 let iterator = thing_manager.get_links_reverse_by_player_and_relation_type_range(
                     snapshot,
-                    row.get(player).as_thing().as_object(),
+                    player,
                     &self.relation_type_range,
                 );
                 let as_tuples: LinksTupleIteratorSingle =
@@ -252,8 +256,16 @@ impl LinksReverseExecutor {
                 let player = self.links.player().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > player.as_usize());
                 debug_assert!(row.len() > relation.as_usize());
-                let relation = row.get(relation).as_thing().as_relation();
-                let player = row.get(player).as_thing().as_object();
+                let relation = match row.get(relation) {
+                    &VariableValue::Thing(Thing::Relation(relation)) => relation,
+                    VariableValue::Empty => return Ok(TupleIterator::empty()),
+                    _ => unreachable!("Links relation must be a relation."),
+                };
+                let player = match row.get(player) {
+                    VariableValue::Thing(thing) => thing.as_object(),
+                    VariableValue::Empty => return Ok(TupleIterator::empty()),
+                    _ => unreachable!("Links player must be a object."),
+                };
                 let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player); // NOTE: not reverse, no difference
                 let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_role_relation_player);

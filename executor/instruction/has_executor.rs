@@ -29,7 +29,6 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        has_reverse_executor::HasReverseExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions},
@@ -234,6 +233,7 @@ impl HasExecutor {
                     VariableValue::Thing(Thing::Relation(relation)) => {
                         relation.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
                     }
+                    VariableValue::Empty => return Ok(TupleIterator::empty()),
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let as_tuples: HasUnboundedTupleIteratorSingle =

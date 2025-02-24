@@ -27,7 +27,6 @@ use crate::{
             OwnsFilterFn, OwnsFilterMapFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE,
             EXTRACT_OWNER,
         },
-        plays_executor::PlaysExecutor,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -164,7 +163,8 @@ impl OwnsReverseExecutor {
             BinaryIterateMode::BoundFrom => {
                 let attribute_type =
                     type_from_row_or_annotations(self.owns.attribute(), row, self.attribute_owner_types.keys())
-                        .as_attribute_type();
+                        .map(|ty| ty.as_attribute_type());
+                let Some(attribute_type) = attribute_type else { return Ok(TupleIterator::empty()) };
                 let type_manager = context.type_manager();
                 let owns = attribute_type
                     .get_owner_types(snapshot, type_manager)?

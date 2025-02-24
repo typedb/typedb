@@ -23,7 +23,6 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        relates_reverse_executor::RelatesReverseExecutor,
         tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -165,6 +164,7 @@ impl RelatesExecutor {
             BinaryIterateMode::BoundFrom => {
                 let relation =
                     type_from_row_or_annotations(self.relates.relation(), row, self.relation_role_types.keys());
+                let Some(relation) = relation else { return Ok(TupleIterator::empty()) };
                 let type_manager = context.type_manager();
                 let relates = self.get_relates_for_relation(snapshot, type_manager, relation)?;
 

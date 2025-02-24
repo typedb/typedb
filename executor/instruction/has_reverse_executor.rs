@@ -11,7 +11,7 @@ use std::{
     vec,
 };
 
-use answer::Type;
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::HasReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -28,7 +28,6 @@ use super::has_executor::HasFilterMapFn;
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        iid_executor::IidExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},
@@ -221,13 +220,18 @@ impl HasReverseExecutor {
                     )))
                 }
             }
+
             BinaryIterateMode::BoundFrom => {
                 let attribute = self.has.attribute().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > attribute.as_usize());
-                let variable_value = row.get(attribute);
+                let attribute = match row.get(attribute) {
+                    VariableValue::Thing(Thing::Attribute(attribute)) => attribute,
+                    VariableValue::Empty => return Ok(TupleIterator::empty()),
+                    _ => unreachable!("The left hand side of `has` must be an attribute"),
+                };
                 let iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                     snapshot,
-                    variable_value.as_thing().as_attribute(),
+                    attribute,
                     &self.owner_type_range,
                 );
                 let as_tuples: HasReverseTupleIteratorSingle =

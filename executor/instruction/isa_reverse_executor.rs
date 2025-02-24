@@ -137,6 +137,7 @@ impl IsaReverseExecutor {
             }
             BinaryIterateMode::BoundFrom => {
                 let type_ = type_from_row_or_annotations(self.isa.type_(), row, self.type_to_instance_types.keys());
+                let Some(type_) = type_ else { return Ok(TupleIterator::empty()) };
                 let iterator = instances_of_types_chained(
                     snapshot,
                     thing_manager,
