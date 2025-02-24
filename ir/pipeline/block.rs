@@ -246,8 +246,9 @@ impl BlockContext {
     }
 
     pub fn visible_variables(&self, root: ScopeId) -> impl Iterator<Item = Variable> + '_ {
-        self.get_variable_scopes()
-            .filter_map(move |(var, scope)| (scope == root || self.is_visible_child(scope, root)).then_some(var))
+        self.get_variable_scopes().filter_map(move |(var, scope)| {
+            (scope == ScopeId::INPUT || scope == root || self.is_visible_child(scope, root)).then_some(var)
+        })
     }
 }
 
