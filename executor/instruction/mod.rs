@@ -374,6 +374,8 @@ pub(crate) struct Checker<T: 'static> {
     _phantom_data: PhantomData<T>,
 }
 
+type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>>;
+
 impl<T> Checker<T> {
     pub(crate) fn new(
         checks: Vec<CheckInstruction<ExecutorVariable>>,
@@ -507,413 +509,43 @@ impl<T> Checker<T> {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
     ) -> Box<FilterFn<T>> {
-        type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>>;
         let mut filters: Vec<Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>>> =
             Vec::with_capacity(self.checks.len());
 
         for check in &self.checks {
-            match check {
-                &CheckInstruction::Iid { var, iid } => {
-                    let maybe_var_extractor = self.extractors.get(&var);
-                    let var: BoxExtractor<T> = match maybe_var_extractor {
-                        Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(&CheckVertex::Variable(var), row, context),
-                    };
-                    let iid = context.parameters().iid(iid).unwrap().clone();
-                    filters.push(Box::new(move |value| {
-                        let value = var(value);
-                        match value {
-                            VariableValue::Thing(thing) => match thing {
-                                Thing::Entity(entity) => Ok(*iid == *entity.vertex().to_bytes()),
-                                Thing::Relation(relation) => Ok(*iid == *relation.vertex().to_bytes()),
-                                Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().to_bytes()),
-                            },
-                            VariableValue::Empty => Ok(false),
-                            VariableValue::Type(_) => Ok(false),
-                            VariableValue::Value(_) => Ok(false), // or unreachable?
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-                        }
-                    }))
-                }
-
+            let filter = match check {
+                &CheckInstruction::Iid { var, iid } => self.filter_iid(context, row, var, iid),
                 &CheckInstruction::TypeList { type_var, ref types } => {
-                    let maybe_type_extractor = self.extractors.get(&type_var);
-                    let type_: BoxExtractor<T> = match maybe_type_extractor {
-                        Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(&CheckVertex::Variable(type_var), row, context),
-                    };
-                    let types = types.clone();
-                    filters.push(Box::new(move |value| Ok(types.contains(type_(value).as_type()))));
+                    self.filter_type_list(context, row, type_var, types)
                 }
-
                 &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
-                    let maybe_subtype_extractor = subtype.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_supertype_extractor = supertype.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
-                        Some(&subtype) => Box::new(subtype),
-                        None => make_const_extractor(subtype, row, context),
-                    };
-                    let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
-                        Some(&supertype) => Box::new(supertype),
-                        None => make_const_extractor(supertype, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            let subtype = subtype(value);
-                            let supertype = supertype(value);
-                            match sub_kind {
-                                SubKind::Subtype => subtype.as_type().is_transitive_subtype_of(
-                                    supertype.as_type(),
-                                    &*snapshot,
-                                    thing_manager.type_manager(),
-                                ),
-                                SubKind::Exact => subtype.as_type().is_direct_subtype_of(
-                                    supertype.as_type(),
-                                    &*snapshot,
-                                    thing_manager.type_manager(),
-                                ),
-                            }
-                        }
-                    }));
+                    self.filter_sub(context, row, sub_kind, subtype, supertype)
                 }
-
-                CheckInstruction::Owns { owner, attribute } => {
-                    let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
-                        Some(&owner) => Box::new(owner),
-                        None => make_const_extractor(owner, row, context),
-                    };
-                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
-                        Some(&attribute) => Box::new(attribute),
-                        None => make_const_extractor(attribute, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            (owner(value).as_type().as_object_type())
-                                .get_owns_attribute(
-                                    &*snapshot,
-                                    thing_manager.type_manager(),
-                                    attribute(value).as_type().as_attribute_type(),
-                                )
-                                .map(|owns| owns.is_some())
-                        }
-                    }));
-                }
-
+                CheckInstruction::Owns { owner, attribute } => self.filter_owns(context, row, owner, attribute),
                 CheckInstruction::Relates { relation, role_type } => {
-                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
-                        Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, row, context),
-                    };
-                    let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
-                        Some(&role_type) => Box::new(role_type),
-                        None => make_const_extractor(role_type, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            (relation(value).as_type().as_relation_type())
-                                .get_relates_role(
-                                    &*snapshot,
-                                    thing_manager.type_manager(),
-                                    role_type(value).as_type().as_role_type(),
-                                )
-                                .map(|relates| relates.is_some())
-                        }
-                    }));
+                    self.filter_relates(context, row, relation, role_type)
                 }
-
-                CheckInstruction::Plays { player, role_type } => {
-                    let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let player: BoxExtractor<T> = match maybe_player_extractor {
-                        Some(&player) => Box::new(player),
-                        None => make_const_extractor(player, row, context),
-                    };
-                    let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
-                        Some(&role_type) => Box::new(role_type),
-                        None => make_const_extractor(role_type, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            (player(value).as_type().as_object_type())
-                                .get_plays_role(
-                                    &*snapshot,
-                                    thing_manager.type_manager(),
-                                    role_type(value).as_type().as_role_type(),
-                                )
-                                .map(|plays| plays.is_some())
-                        }
-                    }));
-                }
-
+                CheckInstruction::Plays { player, role_type } => self.filter_plays(context, row, player, role_type),
                 &CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
-                    let maybe_thing_extractor = thing.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_type_extractor = type_.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let thing: BoxExtractor<T> = match maybe_thing_extractor {
-                        Some(&thing) => Box::new(thing),
-                        None => make_const_extractor(thing, row, context),
-                    };
-                    let type_: BoxExtractor<T> = match maybe_type_extractor {
-                        Some(&type_) => Box::new(type_),
-                        None => make_const_extractor(type_, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            let actual = thing(value).as_thing().type_();
-                            let expected = type_(value);
-                            if isa_kind == IsaKind::Exact && &actual != expected.as_type() {
-                                Ok(false)
-                            } else {
-                                actual.is_transitive_subtype_of(
-                                    expected.as_type(),
-                                    &*snapshot,
-                                    thing_manager.type_manager(),
-                                )
-                            }
-                        }
-                    }));
+                    self.filter_isa(context, row, isa_kind, type_, thing)
                 }
-
-                CheckInstruction::Has { owner, attribute } => {
-                    let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let owner: BoxExtractor<T> = match maybe_owner_extractor {
-                        Some(&owner) => Box::new(owner),
-                        None => make_const_extractor(owner, row, context),
-                    };
-                    let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
-                        Some(&attribute) => Box::new(attribute),
-                        None => make_const_extractor(attribute, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            owner(value).as_thing().as_object().has_attribute(
-                                &*snapshot,
-                                &thing_manager,
-                                attribute(value).as_thing().as_attribute(),
-                            )
-                        }
-                    }));
-                }
-
+                CheckInstruction::Has { owner, attribute } => self.filter_has(context, row, owner, attribute),
                 CheckInstruction::Links { relation, player, role } => {
-                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_role_extractor = role.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let relation: BoxExtractor<T> = match maybe_relation_extractor {
-                        Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, row, context),
-                    };
-                    let player: BoxExtractor<T> = match maybe_player_extractor {
-                        Some(&player) => Box::new(player),
-                        None => make_const_extractor(player, row, context),
-                    };
-                    let role: BoxExtractor<T> = match maybe_role_extractor {
-                        Some(&role) => Box::new(role),
-                        None => make_const_extractor(role, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            relation(value).as_thing().as_relation().has_role_player(
-                                &*snapshot,
-                                &thing_manager,
-                                player(value).as_thing().as_object(),
-                                role(value).as_type().as_role_type(),
-                            )
-                        }
-                    }));
+                    self.filter_links(context, row, relation, player, role)
                 }
-
                 CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
-                    let maybe_start_player_extractor =
-                        start_player.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_start_role_extractor = start_role.as_variable().and_then(|var| self.extractors.get(&var));
-                    let maybe_end_role_extractor = end_role.as_variable().and_then(|var| self.extractors.get(&var));
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let start_player_extractor: BoxExtractor<T> = match maybe_start_player_extractor {
-                        Some(&player) => Box::new(player),
-                        None => make_const_extractor(start_player, row, context),
-                    };
-                    let end_player_extractor: BoxExtractor<T> = match maybe_end_player_extractor {
-                        Some(&player) => Box::new(player),
-                        None => make_const_extractor(end_player, row, context),
-                    };
-                    let relation_extractor: BoxExtractor<T> = match maybe_relation_extractor {
-                        Some(&relation) => Box::new(relation),
-                        None => make_const_extractor(relation, row, context),
-                    };
-                    let start_role_extractor: BoxExtractor<T> = match maybe_start_role_extractor {
-                        Some(&role) => Box::new(role),
-                        None => make_const_extractor(start_role, row, context),
-                    };
-                    let end_role_extractor: BoxExtractor<T> = match maybe_end_role_extractor {
-                        Some(&role) => Box::new(role),
-                        None => make_const_extractor(end_role, row, context),
-                    };
-                    filters.push(Box::new({
-                        move |value| {
-                            start_player_extractor(value).as_thing().as_object().has_indexed_relation_player(
-                                &*snapshot,
-                                &thing_manager,
-                                end_player_extractor(value).as_thing().as_object(),
-                                relation_extractor(value).as_thing().as_relation(),
-                                start_role_extractor(value).as_type().as_role_type(),
-                                end_role_extractor(value).as_type().as_role_type(),
-                            )
-                        }
-                    }));
+                    self.filter_indexed_relation(context, row, start_player, end_player, relation, start_role, end_role)
                 }
-
-                &CheckInstruction::Is { lhs, rhs } => {
-                    let maybe_lhs_extractor = self.extractors.get(&lhs);
-                    let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
-                        Some(&lhs) => Box::new(lhs),
-                        None => {
-                            let ExecutorVariable::RowPosition(pos) = lhs else { unreachable!() };
-                            let value = row.get(pos).as_reference().into_owned();
-                            Box::new(move |_| value.clone())
-                        }
-                    };
-                    let maybe_rhs_extractor = self.extractors.get(&rhs);
-                    let rhs: BoxExtractor<T> = match maybe_rhs_extractor {
-                        Some(&rhs) => Box::new(rhs),
-                        None => {
-                            let ExecutorVariable::RowPosition(pos) = rhs else { unreachable!() };
-                            let value = row.get(pos).as_reference().into_owned();
-                            Box::new(move |_| value.clone())
-                        }
-                    };
-                    filters.push(Box::new(move |value| Ok(lhs(value) == rhs(value))));
-                }
-
+                &CheckInstruction::Is { lhs, rhs } => self.filter_is(row, lhs, rhs),
                 &CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
-                    let maybe_role1_extractor = self.extractors.get(&role1);
-                    let role1: BoxExtractor<T> = match maybe_role1_extractor {
-                        Some(&role1) => Box::new(role1),
-                        None => {
-                            let ExecutorVariable::RowPosition(pos) = role1 else { unreachable!() };
-                            let value = row.get(pos).as_reference().into_owned();
-                            Box::new(move |_| value.clone())
-                        }
-                    };
-                    let maybe_player1_extractor = self.extractors.get(&player1);
-                    let player1: BoxExtractor<T> = match maybe_player1_extractor {
-                        Some(&player1) => Box::new(player1),
-                        None => {
-                            let ExecutorVariable::RowPosition(pos) = player1 else { unreachable!() };
-                            let value = row.get(pos).as_reference().into_owned();
-                            Box::new(move |_| value.clone())
-                        }
-                    };
-                    let maybe_role2_extractor = self.extractors.get(&role2);
-                    let role2: BoxExtractor<T> = match maybe_role2_extractor {
-                        Some(&role2) => Box::new(role2),
-                        None => {
-                            let ExecutorVariable::RowPosition(pos) = role2 else { unreachable!() };
-                            let value = row.get(pos).as_reference().into_owned();
-                            Box::new(move |_| value.clone())
-                        }
-                    };
-                    let maybe_player2_extractor = self.extractors.get(&player2);
-                    let player2: BoxExtractor<T> = match maybe_player2_extractor {
-                        Some(&player2) => Box::new(player2),
-                        None => {
-                            let ExecutorVariable::RowPosition(pos) = player2 else { unreachable!() };
-                            let value = row.get(pos).as_reference().into_owned();
-                            Box::new(move |_| value.clone())
-                        }
-                    };
-                    filters.push(Box::new(move |value| {
-                        Ok(!(role1(value) == role2(value) && player1(value) == player2(value)))
-                    }));
+                    self.filter_links_dedup(row, role1, player1, role2, player2)
                 }
-
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
-                    let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
-                        Some(&lhs) => Box::new(lhs),
-                        None => make_const_extractor(lhs, row, context),
-                    };
-                    let rhs = match rhs {
-                        &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
-                        &CheckVertex::Variable(_) => unreachable!(),
-                        &CheckVertex::Parameter(param) => {
-                            VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
-                        }
-                        CheckVertex::Type(_) => unreachable!(),
-                    };
-                    let snapshot = context.snapshot.clone();
-                    let thing_manager = context.thing_manager.clone();
-                    let rhs = match rhs {
-                        VariableValue::Thing(Thing::Attribute(attr)) => {
-                            attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
-                        }
-                        VariableValue::Value(value) => Ok(value.into_owned()),
-                        VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-                        VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
-                    };
-                    let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
-                        Comparator::Equal => |a, b| a == b,
-                        Comparator::NotEqual => |a, b| a != b,
-                        Comparator::Less => |a, b| a < b,
-                        Comparator::Greater => |a, b| a > b,
-                        Comparator::LessOrEqual => |a, b| a <= b,
-                        Comparator::GreaterOrEqual => |a, b| a >= b,
-                        Comparator::Like => |a, b| {
-                            // TODO: Avoid recompiling the regex every time.
-                            regex::Regex::new(b.unwrap_string_ref())
-                                .expect("Invalid regex should have been caught at compile time")
-                                .is_match(a.unwrap_string_ref())
-                        },
-                        Comparator::Contains => |a, b| {
-                            let a_unicase = UniCase::new(a.unwrap_string_ref()).to_folded_case();
-                            let b_unicase = UniCase::new(b.unwrap_string_ref()).to_folded_case();
-                            a_unicase.contains(b_unicase.as_str())
-                        },
-                    };
-                    filters.push(Box::new(move |value| {
-                        let lhs = lhs(value);
-                        let lhs = match lhs {
-                            VariableValue::Thing(Thing::Attribute(attr)) => {
-                                attr.get_value(&*snapshot, &thing_manager)?.into_owned()
-                            }
-                            VariableValue::Value(value) => value,
-                            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-                            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
-                        };
-                        let rhs = rhs.clone()?;
-                        if rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
-                            Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
-                        } else if lhs.value_type().is_trivially_castable_to(&rhs.value_type()) {
-                            Ok(cmp(&lhs.cast(&rhs.value_type()).unwrap(), &rhs))
-                        } else {
-                            return Ok(false);
-                        }
-                    }));
+                    self.filter_comparison(context, row, lhs, rhs, comparator)
                 }
-
-                CheckInstruction::Unsatisfiable => filters.push(Box::new(|_| Ok(false))),
-            }
+                CheckInstruction::Unsatisfiable => Box::new(|_: &T| Ok(false)),
+            };
+            filters.push(filter);
         }
 
         Box::new(move |res| {
@@ -924,6 +556,479 @@ impl<T> Checker<T> {
                 }
             }
             Ok(true)
+        })
+    }
+
+    fn filter_iid(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        var: ExecutorVariable,
+        iid: ir::pattern::ParameterID,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_var_extractor = self.extractors.get(&var);
+        let var: BoxExtractor<T> = match maybe_var_extractor {
+            Some(&subtype) => Box::new(subtype),
+            None => make_const_extractor(&CheckVertex::Variable(var), row, context),
+        };
+        let iid = context.parameters().iid(iid).unwrap().clone();
+        Box::new(move |value: &T| {
+            let value = var(value);
+            match value {
+                VariableValue::Thing(thing) => match thing {
+                    Thing::Entity(entity) => Ok(*iid == *entity.vertex().to_bytes()),
+                    Thing::Relation(relation) => Ok(*iid == *relation.vertex().to_bytes()),
+                    Thing::Attribute(attribute) => Ok(*iid == *attribute.vertex().to_bytes()),
+                },
+                VariableValue::Empty => Ok(false),
+                VariableValue::Type(_) => Ok(false),
+                VariableValue::Value(_) => Ok(false), // or unreachable?
+                VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+            }
+        })
+    }
+
+    fn filter_type_list(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        type_var: ExecutorVariable,
+        types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_type_extractor = self.extractors.get(&type_var);
+        let type_: BoxExtractor<T> = match maybe_type_extractor {
+            Some(&subtype) => Box::new(subtype),
+            None => make_const_extractor(&CheckVertex::Variable(type_var), row, context),
+        };
+        let types = types.clone();
+        Box::new(move |value: &T| Ok(types.contains(type_(value).as_type())))
+    }
+
+    fn filter_sub(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        sub_kind: SubKind,
+        subtype: &CheckVertex<ExecutorVariable>,
+        supertype: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_subtype_extractor = subtype.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_supertype_extractor = supertype.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let subtype: BoxExtractor<T> = match maybe_subtype_extractor {
+            Some(&subtype) => Box::new(subtype),
+            None => make_const_extractor(subtype, row, context),
+        };
+        let supertype: BoxExtractor<T> = match maybe_supertype_extractor {
+            Some(&supertype) => Box::new(supertype),
+            None => make_const_extractor(supertype, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                let subtype = subtype(value);
+                let supertype = supertype(value);
+                match sub_kind {
+                    SubKind::Subtype => subtype.as_type().is_transitive_subtype_of(
+                        supertype.as_type(),
+                        &*snapshot,
+                        thing_manager.type_manager(),
+                    ),
+                    SubKind::Exact => subtype.as_type().is_direct_subtype_of(
+                        supertype.as_type(),
+                        &*snapshot,
+                        thing_manager.type_manager(),
+                    ),
+                }
+            }
+        })
+    }
+
+    fn filter_owns(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        owner: &CheckVertex<ExecutorVariable>,
+        attribute: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let owner: BoxExtractor<T> = match maybe_owner_extractor {
+            Some(&owner) => Box::new(owner),
+            None => make_const_extractor(owner, row, context),
+        };
+        let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+            Some(&attribute) => Box::new(attribute),
+            None => make_const_extractor(attribute, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                (owner(value).as_type().as_object_type())
+                    .get_owns_attribute(
+                        &*snapshot,
+                        thing_manager.type_manager(),
+                        attribute(value).as_type().as_attribute_type(),
+                    )
+                    .map(|owns| owns.is_some())
+            }
+        })
+    }
+
+    fn filter_relates(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        relation: &CheckVertex<ExecutorVariable>,
+        role_type: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let relation: BoxExtractor<T> = match maybe_relation_extractor {
+            Some(&relation) => Box::new(relation),
+            None => make_const_extractor(relation, row, context),
+        };
+        let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
+            Some(&role_type) => Box::new(role_type),
+            None => make_const_extractor(role_type, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                (relation(value).as_type().as_relation_type())
+                    .get_relates_role(
+                        &*snapshot,
+                        thing_manager.type_manager(),
+                        role_type(value).as_type().as_role_type(),
+                    )
+                    .map(|relates| relates.is_some())
+            }
+        })
+    }
+
+    fn filter_plays(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        player: &CheckVertex<ExecutorVariable>,
+        role_type: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_role_type_extractor = role_type.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let player: BoxExtractor<T> = match maybe_player_extractor {
+            Some(&player) => Box::new(player),
+            None => make_const_extractor(player, row, context),
+        };
+        let role_type: BoxExtractor<T> = match maybe_role_type_extractor {
+            Some(&role_type) => Box::new(role_type),
+            None => make_const_extractor(role_type, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                (player(value).as_type().as_object_type())
+                    .get_plays_role(&*snapshot, thing_manager.type_manager(), role_type(value).as_type().as_role_type())
+                    .map(|plays| plays.is_some())
+            }
+        })
+    }
+
+    fn filter_isa(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        isa_kind: IsaKind,
+        type_: &CheckVertex<ExecutorVariable>,
+        thing: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_thing_extractor = thing.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_type_extractor = type_.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let thing: BoxExtractor<T> = match maybe_thing_extractor {
+            Some(&thing) => Box::new(thing),
+            None => make_const_extractor(thing, row, context),
+        };
+        let type_: BoxExtractor<T> = match maybe_type_extractor {
+            Some(&type_) => Box::new(type_),
+            None => make_const_extractor(type_, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                let actual = thing(value).as_thing().type_();
+                let expected = type_(value);
+                if isa_kind == IsaKind::Exact && &actual != expected.as_type() {
+                    Ok(false)
+                } else {
+                    actual.is_transitive_subtype_of(expected.as_type(), &*snapshot, thing_manager.type_manager())
+                }
+            }
+        })
+    }
+
+    fn filter_has(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        owner: &CheckVertex<ExecutorVariable>,
+        attribute: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let owner: BoxExtractor<T> = match maybe_owner_extractor {
+            Some(&owner) => Box::new(owner),
+            None => make_const_extractor(owner, row, context),
+        };
+        let attribute: BoxExtractor<T> = match maybe_attribute_extractor {
+            Some(&attribute) => Box::new(attribute),
+            None => make_const_extractor(attribute, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                owner(value).as_thing().as_object().has_attribute(
+                    &*snapshot,
+                    &thing_manager,
+                    attribute(value).as_thing().as_attribute(),
+                )
+            }
+        })
+    }
+
+    fn filter_links(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        relation: &CheckVertex<ExecutorVariable>,
+        player: &CheckVertex<ExecutorVariable>,
+        role: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_role_extractor = role.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let relation: BoxExtractor<T> = match maybe_relation_extractor {
+            Some(&relation) => Box::new(relation),
+            None => make_const_extractor(relation, row, context),
+        };
+        let player: BoxExtractor<T> = match maybe_player_extractor {
+            Some(&player) => Box::new(player),
+            None => make_const_extractor(player, row, context),
+        };
+        let role: BoxExtractor<T> = match maybe_role_extractor {
+            Some(&role) => Box::new(role),
+            None => make_const_extractor(role, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                relation(value).as_thing().as_relation().has_role_player(
+                    &*snapshot,
+                    &thing_manager,
+                    player(value).as_thing().as_object(),
+                    role(value).as_type().as_role_type(),
+                )
+            }
+        })
+    }
+
+    fn filter_indexed_relation(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        start_player: &CheckVertex<ExecutorVariable>,
+        end_player: &CheckVertex<ExecutorVariable>,
+        relation: &CheckVertex<ExecutorVariable>,
+        start_role: &CheckVertex<ExecutorVariable>,
+        end_role: &CheckVertex<ExecutorVariable>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_start_player_extractor = start_player.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_start_role_extractor = start_role.as_variable().and_then(|var| self.extractors.get(&var));
+        let maybe_end_role_extractor = end_role.as_variable().and_then(|var| self.extractors.get(&var));
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let start_player_extractor: BoxExtractor<T> = match maybe_start_player_extractor {
+            Some(&player) => Box::new(player),
+            None => make_const_extractor(start_player, row, context),
+        };
+        let end_player_extractor: BoxExtractor<T> = match maybe_end_player_extractor {
+            Some(&player) => Box::new(player),
+            None => make_const_extractor(end_player, row, context),
+        };
+        let relation_extractor: BoxExtractor<T> = match maybe_relation_extractor {
+            Some(&relation) => Box::new(relation),
+            None => make_const_extractor(relation, row, context),
+        };
+        let start_role_extractor: BoxExtractor<T> = match maybe_start_role_extractor {
+            Some(&role) => Box::new(role),
+            None => make_const_extractor(start_role, row, context),
+        };
+        let end_role_extractor: BoxExtractor<T> = match maybe_end_role_extractor {
+            Some(&role) => Box::new(role),
+            None => make_const_extractor(end_role, row, context),
+        };
+        Box::new({
+            move |value: &T| {
+                start_player_extractor(value).as_thing().as_object().has_indexed_relation_player(
+                    &*snapshot,
+                    &thing_manager,
+                    end_player_extractor(value).as_thing().as_object(),
+                    relation_extractor(value).as_thing().as_relation(),
+                    start_role_extractor(value).as_type().as_role_type(),
+                    end_role_extractor(value).as_type().as_role_type(),
+                )
+            }
+        })
+    }
+
+    fn filter_is(
+        &self,
+        row: &MaybeOwnedRow<'_>,
+        lhs: ExecutorVariable,
+        rhs: ExecutorVariable,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_lhs_extractor = self.extractors.get(&lhs);
+        let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
+            Some(&lhs) => Box::new(lhs),
+            None => {
+                let ExecutorVariable::RowPosition(pos) = lhs else { unreachable!() };
+                let value = row.get(pos).as_reference().into_owned();
+                Box::new(move |_| value.clone())
+            }
+        };
+        let maybe_rhs_extractor = self.extractors.get(&rhs);
+        let rhs: BoxExtractor<T> = match maybe_rhs_extractor {
+            Some(&rhs) => Box::new(rhs),
+            None => {
+                let ExecutorVariable::RowPosition(pos) = rhs else { unreachable!() };
+                let value = row.get(pos).as_reference().into_owned();
+                Box::new(move |_| value.clone())
+            }
+        };
+        Box::new(move |value: &T| Ok(lhs(value) == rhs(value)))
+    }
+
+    fn filter_links_dedup(
+        &self,
+        row: &MaybeOwnedRow<'_>,
+        role1: ExecutorVariable,
+        player1: ExecutorVariable,
+        role2: ExecutorVariable,
+        player2: ExecutorVariable,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_role1_extractor = self.extractors.get(&role1);
+        let role1: BoxExtractor<T> = match maybe_role1_extractor {
+            Some(&role1) => Box::new(role1),
+            None => {
+                let ExecutorVariable::RowPosition(pos) = role1 else { unreachable!() };
+                let value = row.get(pos).as_reference().into_owned();
+                Box::new(move |_| value.clone())
+            }
+        };
+        let maybe_player1_extractor = self.extractors.get(&player1);
+        let player1: BoxExtractor<T> = match maybe_player1_extractor {
+            Some(&player1) => Box::new(player1),
+            None => {
+                let ExecutorVariable::RowPosition(pos) = player1 else { unreachable!() };
+                let value = row.get(pos).as_reference().into_owned();
+                Box::new(move |_| value.clone())
+            }
+        };
+        let maybe_role2_extractor = self.extractors.get(&role2);
+        let role2: BoxExtractor<T> = match maybe_role2_extractor {
+            Some(&role2) => Box::new(role2),
+            None => {
+                let ExecutorVariable::RowPosition(pos) = role2 else { unreachable!() };
+                let value = row.get(pos).as_reference().into_owned();
+                Box::new(move |_| value.clone())
+            }
+        };
+        let maybe_player2_extractor = self.extractors.get(&player2);
+        let player2: BoxExtractor<T> = match maybe_player2_extractor {
+            Some(&player2) => Box::new(player2),
+            None => {
+                let ExecutorVariable::RowPosition(pos) = player2 else { unreachable!() };
+                let value = row.get(pos).as_reference().into_owned();
+                Box::new(move |_| value.clone())
+            }
+        };
+        Box::new(move |value: &T| Ok(!(role1(value) == role2(value) && player1(value) == player2(value))))
+    }
+
+    fn filter_comparison(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        lhs: &CheckVertex<ExecutorVariable>,
+        rhs: &CheckVertex<ExecutorVariable>,
+        comparator: &Comparator,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
+        let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
+            Some(&lhs) => Box::new(lhs),
+            None => make_const_extractor(lhs, row, context),
+        };
+        let rhs = match rhs {
+            &CheckVertex::Variable(ExecutorVariable::RowPosition(pos)) => row.get(pos).as_reference(),
+            &CheckVertex::Variable(_) => unreachable!(),
+            &CheckVertex::Parameter(param) => {
+                VariableValue::Value(context.parameters().value_unchecked(param).as_reference())
+            }
+            CheckVertex::Type(_) => unreachable!(),
+        };
+        let snapshot = context.snapshot.clone();
+        let thing_manager = context.thing_manager.clone();
+        let rhs = match rhs {
+            VariableValue::Thing(Thing::Attribute(attr)) => {
+                attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
+            }
+            VariableValue::Value(value) => Ok(value.into_owned()),
+            VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+        };
+        let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
+            Comparator::Equal => |a, b| a == b,
+            Comparator::NotEqual => |a, b| a != b,
+            Comparator::Less => |a, b| a < b,
+            Comparator::Greater => |a, b| a > b,
+            Comparator::LessOrEqual => |a, b| a <= b,
+            Comparator::GreaterOrEqual => |a, b| a >= b,
+            Comparator::Like => |a, b| {
+                // TODO: Avoid recompiling the regex every time.
+                regex::Regex::new(b.unwrap_string_ref())
+                    .expect("Invalid regex should have been caught at compile time")
+                    .is_match(a.unwrap_string_ref())
+            },
+            Comparator::Contains => |a, b| {
+                let a_unicase = UniCase::new(a.unwrap_string_ref()).to_folded_case();
+                let b_unicase = UniCase::new(b.unwrap_string_ref()).to_folded_case();
+                a_unicase.contains(b_unicase.as_str())
+            },
+        };
+        Box::new(move |value: &T| {
+            let lhs = lhs(value);
+            let lhs = match lhs {
+                VariableValue::Thing(Thing::Attribute(attr)) => {
+                    attr.get_value(&*snapshot, &thing_manager)?.into_owned()
+                }
+                VariableValue::Value(value) => value,
+                VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+                VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+            };
+            let rhs = rhs.clone()?;
+            if rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
+                Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
+            } else if lhs.value_type().is_trivially_castable_to(&rhs.value_type()) {
+                Ok(cmp(&lhs.cast(&rhs.value_type()).unwrap(), &rhs))
+            } else {
+                Ok(false)
+            }
         })
     }
 }
