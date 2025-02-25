@@ -11,6 +11,7 @@ use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
 use itertools::Itertools;
+use ir::pattern::constraint::ExpressionBinding;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -47,7 +48,7 @@ pub fn compile(
     selected_variables: &[Variable],
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
+    expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
 ) -> Result<MatchExecutable, MatchCompilationError> {

@@ -85,7 +85,7 @@ pub(crate) fn plan_conjunction<'a>(
     variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
+    expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
     call_cost_provider: &'a impl FunctionCallCostProvider,
 ) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
@@ -108,7 +108,7 @@ fn make_builder<'a>(
     variable_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
+    expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
 ) -> Result<ConjunctionPlanBuilder<'a>, QueryPlanningError> {
@@ -384,7 +384,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_constraints(
         &mut self,
         conjunction: &'a Conjunction,
-        expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
+        expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         call_cost_provider: &impl FunctionCallCostProvider,
     ) {
         for constraint in conjunction.constraints() {
@@ -507,11 +507,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     fn register_expression_binding(
         &mut self,
         expression: &ExpressionBinding<Variable>,
-        expressions: &'a HashMap<Variable, ExecutableExpression<Variable>>,
+        expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     ) {
         let variable = expression.left().as_variable().unwrap();
         let output = self.graph.variable_index[&variable];
-        let expression = &expressions[&variable];
+        let expression = &expressions[expression];
         let inputs = expression.variables().iter().map(|&var| self.graph.variable_index[&var]).unique().collect_vec();
         self.graph.push_expression(output, ExpressionPlanner::from_expression(expression, inputs, output));
     }

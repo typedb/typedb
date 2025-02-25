@@ -28,6 +28,7 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
+use ir::pattern::constraint::ExpressionBinding;
 
 use crate::{
     annotation::{
@@ -47,7 +48,7 @@ use crate::{
         write_type_check::check_type_combinations_for_write,
         AnnotationError,
     },
-    executable::{insert, reduce::ReduceInstruction, update},
+    executable::{reduce::ReduceInstruction, update},
 };
 
 pub struct AnnotatedPipeline {
@@ -62,7 +63,7 @@ pub enum AnnotatedStage {
         block: Block,
         block_annotations: TypeAnnotations,
         // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
-        executable_expressions: HashMap<Variable, ExecutableExpression<Variable>>,
+        executable_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         source_span: Option<Span>,
     },
     Insert {
@@ -275,8 +276,11 @@ fn annotate_stage(
                 running_value_variable_assigned_types,
             )
             .map_err(|typedb_source| AnnotationError::ExpressionCompilation { typedb_source })?;
-            compiled_expressions.iter().for_each(|(&variable, expr)| {
-                running_value_variable_assigned_types.insert(variable, expr.return_type().clone());
+            compiled_expressions.iter().for_each(|(binding, compiled)| {
+                let existing = running_value_variable_assigned_types.insert(
+                    binding.left().as_variable().unwrap(), compiled.return_type().clone()
+                );
+                debug_assert!(existing.is_none() || existing == Some(compiled.return_type().clone()))
             });
             Ok(AnnotatedStage::Match {
                 block,

@@ -8,6 +8,7 @@ use std::{collections::HashMap, fmt};
 
 use encoding::value::value_type::ValueType;
 use ir::pattern::{IrID, ParameterID};
+use ir::pattern::variable_category::VariableCategory;
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
@@ -34,6 +35,12 @@ impl<ID> ExecutableExpression<ID> {
 
     pub fn return_type(&self) -> &ExpressionValueType {
         &self.return_type
+    }
+    pub(crate) fn return_category(&self) -> VariableCategory {
+        match &self.return_type {
+            ExpressionValueType::Single(_) => VariableCategory::Value,
+            ExpressionValueType::List(_) => VariableCategory::ValueList,
+        }
     }
 }
 
