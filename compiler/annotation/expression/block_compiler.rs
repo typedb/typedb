@@ -78,8 +78,10 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         compiled_expressions: HashMap::new(),
     };
     let mut expression_index = index_expressions_conjunction(&context, block.conjunction())?;
-    if expression_index.keys().any(|var| input_value_type_annotations.contains_key(var)) {
-        todo!("Assigning to already bound variable");
+    if let Some(var) = expression_index.keys().find(|var| input_value_type_annotations.contains_key(var)) {
+        return Err(Box::new(ExpressionCompileError::ReassigningValueVariable {
+            variable: context.variable_name(var),
+        }));
     }
     for (var, _) in &expression_index {
         if !context.visited_expressions.contains(var) {
