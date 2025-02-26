@@ -326,17 +326,20 @@ fn function_binary() {
 #[test]
 fn quadratic_reachability_in_tree() {
     // Note: Otherwise fails in cargo because of a stack overflow.
-    std::thread::Builder::new().stack_size(32 * 1024 * 1024).name("quadratic_reachability_in_tree".to_owned()).spawn(|| {
-        let custom_schema = r#"define
+    std::thread::Builder::new()
+        .stack_size(32 * 1024 * 1024)
+        .name("quadratic_reachability_in_tree".to_owned())
+        .spawn(|| {
+            let custom_schema = r#"define
             attribute name value string;
             entity node, owns name @card(0..), plays edge:start, plays edge:end;
             relation edge, relates start, relates end;
         "#;
-        let context = setup_common(custom_schema);
+            let context = setup_common(custom_schema);
 
-        let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
-        assert_eq!(1, rows.len());
-        let query_template = r#"
+            let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
+            assert_eq!(1, rows.len());
+            let query_template = r#"
                 with
                 fun reachable($start: node) -> { node }:
                 match
@@ -349,44 +352,47 @@ fn quadratic_reachability_in_tree() {
                     $start isa node, has name "<<NODE_NAME>>";
                     let $to in reachable($start);
             "#;
-        let placeholder_start_node = "<<NODE_NAME>>";
-        {
-            // Chain
-            let query = query_template.replace(placeholder_start_node, "c1");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(rows.len(), 2);
+            let placeholder_start_node = "<<NODE_NAME>>";
+            {
+                // Chain
+                let query = query_template.replace(placeholder_start_node, "c1");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(rows.len(), 2);
 
-            let query = query_template.replace(placeholder_start_node, "c2");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(rows.len(), 1);
-        }
+                let query = query_template.replace(placeholder_start_node, "c2");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(rows.len(), 1);
+            }
 
-        {
-            // tree
-            let query = query_template.replace(placeholder_start_node, "t1");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(6, rows.len());
+            {
+                // tree
+                let query = query_template.replace(placeholder_start_node, "t1");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(6, rows.len());
 
-            let query = query_template.replace(placeholder_start_node, "t2");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(2, rows.len());
-        }
+                let query = query_template.replace(placeholder_start_node, "t2");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(2, rows.len());
+            }
 
-        {
-            // ant
-            let query = query_template.replace(placeholder_start_node, "e1");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(8, rows.len()); // all except e1
+            {
+                // ant
+                let query = query_template.replace(placeholder_start_node, "e1");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(8, rows.len()); // all except e1
 
-            let query = query_template.replace(placeholder_start_node, "e9");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(0, rows.len()); // none
+                let query = query_template.replace(placeholder_start_node, "e9");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(0, rows.len()); // none
 
-            let query = query_template.replace(placeholder_start_node, "e2");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(8, rows.len()); // all except e1. e2 should be reachable from itself
-        }
-    }).unwrap().join().unwrap();
+                let query = query_template.replace(placeholder_start_node, "e2");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(8, rows.len()); // all except e1. e2 should be reachable from itself
+            }
+        })
+        .unwrap()
+        .join()
+        .unwrap();
 }
 
 // Note: Fails in cargo because of a stack overflow. Bazel sets a larger stack size

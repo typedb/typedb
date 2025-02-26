@@ -151,11 +151,14 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
         .into_iter()
         .flat_map(|branch_index| branch_index.into_iter())
         .for_each(|(var, expressions)| combined_indices.entry(var).or_default().extend(expressions));
-    combined_indices.into_iter().try_for_each(|(var, expressions)| match index.insert(var, expressions) {
-        Some(_) => Err(ExpressionCompileError::MultipleAssignmentsForVariable {
-            variable: context.variable_name(&var),
-            source_span: None,
-        }),
+    combined_indices.into_iter().try_for_each(|(var, expressions)| match index.insert(var.clone(), expressions) {
+        Some(_) => {
+            debug_assert!(index.get(&var).unwrap().len() > 0);
+            Err(ExpressionCompileError::MultipleAssignmentsForVariable {
+                variable: context.variable_name(&var),
+                source_span: index.get(&var).unwrap().first().unwrap().source_span(),
+            })
+        }
         None => Ok(()),
     })?;
     Ok(())
@@ -166,18 +169,18 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
     expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
-    source_span: Option<Span>,
+    assignment_span: Option<Span>,
 ) -> Result<ExpressionValueType, Box<ExpressionCompileError>> {
     if let Some(value) = context.variable_value_types.get(&variable) {
         Ok(value.clone())
     } else if let Some(value) = try_value_type_from_assignments(context, variable, expression_assignments)? {
         Ok(value)
-    } else if let Some(value) = try_value_type_from_type_annotations(context, variable)? {
+    } else if let Some(value) = try_value_type_from_type_annotations(context, variable, assignment_span)? {
         Ok(value)
     } else {
         Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
             variable: context.variable_name(&variable),
-            source_span, // TODO: this can be improved?
+            source_span: assignment_span,
         }))
     }
 }
@@ -187,7 +190,7 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
     variable: Variable,
     expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
-    if expression_assignments.contains_key(&variable) {
+    if let Some(assignments_for_variable) = expression_assignments.get(&variable) {
         if !context.visited_expressions.insert(variable) {
             return Err(Box::new(ExpressionCompileError::CircularDependency {
                 variable: context.variable_name(&variable),
@@ -195,7 +198,7 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
             }));
         }
         let mut return_types = HashSet::new();
-        for assignment in expression_assignments.get(&variable).unwrap() {
+        for assignment in assignments_for_variable {
             assignment.expression().variables().try_for_each(|var| {
                 resolve_type_for_variable(context, var, expression_assignments, assignment.source_span()).map(|_| ())
             })?;
@@ -226,6 +229,7 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
 fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'_, Snapshot>,
     variable: Variable,
+    source_span: Option<Span>,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
     let Some(annotations) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) else {
         return Ok(None);
@@ -238,14 +242,14 @@ fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
             return Err(Box::new(ExpressionCompileError::VariableMustBeValueOrAttribute {
                 variable: context.variable_name(&variable),
                 category: variable_category,
-                source_span: None, // TODO: this can be improved?
+                source_span,
             }));
         }
     };
     let value_types = resolve_value_types(annotations, context.snapshot, context.type_manager).map_err(|_source| {
         Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
             variable: context.variable_name(&variable),
-            source_span: None, // TODO: this can be improved?
+            source_span,
         })
     })?;
     let unique_value_type = value_types
@@ -255,7 +259,7 @@ fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
             Box::new(ExpressionCompileError::VariableMultipleValueTypes {
                 variable: context.variable_name(&variable),
                 value_types: value_types.iter().join(", "),
-                source_span: None, // TODO: this can be improved?
+                source_span,
             })
         })?
         .clone();
