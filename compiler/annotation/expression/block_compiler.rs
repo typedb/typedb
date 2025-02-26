@@ -86,7 +86,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     }
     for (var, _) in &expression_index {
         if !context.visited_expressions.contains(var) {
-            let _value_type = try_value_type_from_expression_assignments(&mut context, *var, &expression_index)?;
+            let _value_type = try_value_type_from_assignments(&mut context, *var, &expression_index)?;
             debug_assert!(_value_type.is_some());
         }
     }
@@ -170,10 +170,9 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
 ) -> Result<ExpressionValueType, Box<ExpressionCompileError>> {
     if let Some(value) = context.variable_value_types.get(&variable) {
         Ok(value.clone())
-    } else if let Some(value) = try_value_type_from_expression_assignments(context, variable, expression_assignments)? {
+    } else if let Some(value) = try_value_type_from_assignments(context, variable, expression_assignments)? {
         Ok(value)
     } else if let Some(value) = try_value_type_from_type_annotations(context, variable)? {
-        context.variable_value_types.insert(variable, value.clone());
         Ok(value)
     } else {
         Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
@@ -183,7 +182,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     }
 }
 
-fn try_value_type_from_expression_assignments<'a, Snapshot: ReadableSnapshot>(
+fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
     expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
