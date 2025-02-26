@@ -376,6 +376,13 @@ pub(crate) struct Checker<T: 'static> {
 
 type BoxExtractor<T> = Box<dyn for<'a> Fn(&'a T) -> VariableValue<'a>>;
 
+macro_rules! unwrap_or_bail {
+    ($value:expr => $variant:ident) => {{
+        let VariableValue::$variant(x) = $value else { return Ok(false) };
+        x
+    }};
+}
+
 impl<T> Checker<T> {
     pub(crate) fn new(
         checks: Vec<CheckInstruction<ExecutorVariable>>,
@@ -601,7 +608,7 @@ impl<T> Checker<T> {
             None => make_const_extractor(&CheckVertex::Variable(type_var), row, context),
         };
         let types = types.clone();
-        Box::new(move |value: &T| Ok(types.contains(type_(value).as_type())))
+        Box::new(move |value: &T| Ok(types.contains(&unwrap_or_bail!(type_(value) => Type))))
     }
 
     fn filter_sub(
@@ -624,22 +631,14 @@ impl<T> Checker<T> {
             Some(&supertype) => Box::new(supertype),
             None => make_const_extractor(supertype, row, context),
         };
-        Box::new({
-            move |value: &T| {
-                let subtype = subtype(value);
-                let supertype = supertype(value);
-                match sub_kind {
-                    SubKind::Subtype => subtype.as_type().is_transitive_subtype_of(
-                        supertype.as_type(),
-                        &*snapshot,
-                        thing_manager.type_manager(),
-                    ),
-                    SubKind::Exact => subtype.as_type().is_direct_subtype_of(
-                        supertype.as_type(),
-                        &*snapshot,
-                        thing_manager.type_manager(),
-                    ),
+        Box::new(move |value: &T| {
+            let subtype = unwrap_or_bail!(subtype(value) => Type);
+            let supertype = unwrap_or_bail!(supertype(value) => Type);
+            match sub_kind {
+                SubKind::Subtype => {
+                    subtype.is_transitive_subtype_of(supertype, &*snapshot, thing_manager.type_manager())
                 }
+                SubKind::Exact => subtype.is_direct_subtype_of(supertype, &*snapshot, thing_manager.type_manager()),
             }
         })
     }
@@ -663,16 +662,10 @@ impl<T> Checker<T> {
             Some(&attribute) => Box::new(attribute),
             None => make_const_extractor(attribute, row, context),
         };
-        Box::new({
-            move |value: &T| {
-                (owner(value).as_type().as_object_type())
-                    .get_owns_attribute(
-                        &*snapshot,
-                        thing_manager.type_manager(),
-                        attribute(value).as_type().as_attribute_type(),
-                    )
-                    .map(|owns| owns.is_some())
-            }
+        Box::new(move |value: &T| {
+            let owner = unwrap_or_bail!(owner(value) => Type).as_object_type();
+            let attribute = unwrap_or_bail!(attribute(value) => Type).as_attribute_type();
+            owner.get_owns_attribute(&*snapshot, thing_manager.type_manager(), attribute).map(|owns| owns.is_some())
         })
     }
 
@@ -695,16 +688,12 @@ impl<T> Checker<T> {
             Some(&role_type) => Box::new(role_type),
             None => make_const_extractor(role_type, row, context),
         };
-        Box::new({
-            move |value: &T| {
-                (relation(value).as_type().as_relation_type())
-                    .get_relates_role(
-                        &*snapshot,
-                        thing_manager.type_manager(),
-                        role_type(value).as_type().as_role_type(),
-                    )
-                    .map(|relates| relates.is_some())
-            }
+        Box::new(move |value: &T| {
+            let relation_type = unwrap_or_bail!(relation(value) => Type).as_relation_type();
+            let role_type = unwrap_or_bail!(role_type(value) => Type).as_role_type();
+            relation_type
+                .get_relates_role(&*snapshot, thing_manager.type_manager(), role_type)
+                .map(|relates| relates.is_some())
         })
     }
 
@@ -729,8 +718,10 @@ impl<T> Checker<T> {
         };
         Box::new({
             move |value: &T| {
-                (player(value).as_type().as_object_type())
-                    .get_plays_role(&*snapshot, thing_manager.type_manager(), role_type(value).as_type().as_role_type())
+                let object_type = unwrap_or_bail!(player(value) => Type).as_object_type();
+                let role_type = unwrap_or_bail!(role_type(value) => Type).as_role_type();
+                object_type
+                    .get_plays_role(&*snapshot, thing_manager.type_manager(), role_type)
                     .map(|plays| plays.is_some())
             }
         })
@@ -758,12 +749,12 @@ impl<T> Checker<T> {
         };
         Box::new({
             move |value: &T| {
-                let actual = thing(value).as_thing().type_();
-                let expected = type_(value);
-                if isa_kind == IsaKind::Exact && &actual != expected.as_type() {
-                    Ok(false)
+                let actual = unwrap_or_bail!(thing(value) => Thing).type_();
+                let expected = unwrap_or_bail!(type_(value) => Type);
+                if isa_kind == IsaKind::Exact {
+                    Ok(actual == expected)
                 } else {
-                    actual.is_transitive_subtype_of(expected.as_type(), &*snapshot, thing_manager.type_manager())
+                    actual.is_transitive_subtype_of(expected, &*snapshot, thing_manager.type_manager())
                 }
             }
         })
@@ -790,11 +781,10 @@ impl<T> Checker<T> {
         };
         Box::new({
             move |value: &T| {
-                owner(value).as_thing().as_object().has_attribute(
-                    &*snapshot,
-                    &thing_manager,
-                    attribute(value).as_thing().as_attribute(),
-                )
+                let owner = unwrap_or_bail!(owner(value) => Thing).as_object();
+                let attribute = attribute(value);
+                let attribute = unwrap_or_bail!(&attribute => Thing).as_attribute();
+                owner.has_attribute(&*snapshot, &thing_manager, attribute)
             }
         })
     }
@@ -826,12 +816,10 @@ impl<T> Checker<T> {
         };
         Box::new({
             move |value: &T| {
-                relation(value).as_thing().as_relation().has_role_player(
-                    &*snapshot,
-                    &thing_manager,
-                    player(value).as_thing().as_object(),
-                    role(value).as_type().as_role_type(),
-                )
+                let relation = unwrap_or_bail!(relation(value) => Thing).as_relation();
+                let player = unwrap_or_bail!(player(value) => Thing).as_object();
+                let role = unwrap_or_bail!(role(value) => Type).as_role_type();
+                relation.has_role_player(&*snapshot, &thing_manager, player, role)
             }
         })
     }
@@ -875,13 +863,18 @@ impl<T> Checker<T> {
         };
         Box::new({
             move |value: &T| {
-                start_player_extractor(value).as_thing().as_object().has_indexed_relation_player(
+                let object = unwrap_or_bail!(start_player_extractor(value) => Thing).as_object();
+                let end_player = unwrap_or_bail!(end_player_extractor(value) => Thing).as_object();
+                let relation = unwrap_or_bail!(relation_extractor(value) => Thing).as_relation();
+                let start_role = unwrap_or_bail!(start_role_extractor(value) => Type).as_role_type();
+                let end_role = unwrap_or_bail!(end_role_extractor(value) => Type).as_role_type();
+                object.has_indexed_relation_player(
                     &*snapshot,
                     &thing_manager,
-                    end_player_extractor(value).as_thing().as_object(),
-                    relation_extractor(value).as_thing().as_relation(),
-                    start_role_extractor(value).as_type().as_role_type(),
-                    end_role_extractor(value).as_type().as_role_type(),
+                    end_player,
+                    relation,
+                    start_role,
+                    end_role,
                 )
             }
         })
@@ -911,6 +904,7 @@ impl<T> Checker<T> {
                 Box::new(move |_| value.clone())
             }
         };
+        // NOTE: Empty is Empty matches
         Box::new(move |value: &T| Ok(lhs(value) == rhs(value)))
     }
 
@@ -985,12 +979,13 @@ impl<T> Checker<T> {
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
         let rhs = match rhs {
+            VariableValue::Empty => Ok(None),
             VariableValue::Thing(Thing::Attribute(attr)) => {
-                attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
+                attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned).map(Some)
             }
-            VariableValue::Value(value) => Ok(value.into_owned()),
+            VariableValue::Value(value) => Ok(Some(value.into_owned())),
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+            VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
         };
         let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
             Comparator::Equal => |a, b| a == b,
@@ -1012,16 +1007,18 @@ impl<T> Checker<T> {
             },
         };
         Box::new(move |value: &T| {
+            // NOTE: Empty <op> Empty never matches
             let lhs = lhs(value);
             let lhs = match lhs {
+                VariableValue::Empty => return Ok(false),
                 VariableValue::Thing(Thing::Attribute(attr)) => {
                     attr.get_value(&*snapshot, &thing_manager)?.into_owned()
                 }
                 VariableValue::Value(value) => value,
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-                VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
             };
-            let rhs = rhs.clone()?;
+            let Some(rhs) = rhs.clone()? else { return Ok(false) };
             if rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
                 Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
             } else if lhs.value_type().is_trivially_castable_to(&rhs.value_type()) {

@@ -160,8 +160,8 @@ impl Type {
     }
 
     pub fn is_direct_subtype_of(
-        &self,
-        supertype: &Self,
+        self,
+        supertype: Self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
@@ -181,8 +181,8 @@ impl Type {
     }
 
     pub fn is_transitive_subtype_of(
-        &self,
-        supertype: &Self,
+        self,
+        supertype: Self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<bool, Box<ConceptReadError>> {
