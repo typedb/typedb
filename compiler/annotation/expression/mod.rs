@@ -99,7 +99,7 @@ typedb_error! {
             "Cannot infer inner value types of an empty list constructor.",
             source_span: Option<Span>,
         ),
-        ReassigningValueVariable(
+        ReassigningValueVariableFromPreviousStage(
             18,
             "The variable '{variable}' cannot be assigned to, as it was already assigned in a the previous stage.",
             variable: String,

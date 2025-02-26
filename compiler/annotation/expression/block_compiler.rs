@@ -77,9 +77,10 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
     };
-    let mut expression_index = index_expressions_conjunction(&context, block.conjunction())?;
+    let mut expression_index = HashMap::new();
+    index_expressions_conjunction(&context, block.conjunction(), &mut expression_index)?;
     if let Some(var) = expression_index.keys().find(|var| input_value_type_annotations.contains_key(var)) {
-        return Err(Box::new(ExpressionCompileError::ReassigningValueVariable {
+        return Err(Box::new(ExpressionCompileError::ReassigningValueVariableFromPreviousStage {
             variable: context.variable_name(var),
         }));
     }
@@ -104,15 +105,6 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
 fn index_expressions_conjunction<'block, Snapshot: ReadableSnapshot>(
     context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     conjunction: &'block Conjunction,
-) -> Result<HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>, Box<ExpressionCompileError>> {
-    let mut expression_index = HashMap::new();
-    index_expressions_conjunction_into(context, conjunction, &mut expression_index)?;
-    Ok(expression_index)
-}
-
-fn index_expressions_conjunction_into<'block, Snapshot: ReadableSnapshot>(
-    context: &BlockExpressionsCompilationContext<'_, Snapshot>,
-    conjunction: &'block Conjunction,
     index: &mut HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>,
 ) -> Result<(), Box<ExpressionCompileError>> {
     for expression_binding in conjunction.constraints().iter().filter_map(|c| c.as_expression_binding()) {
@@ -128,20 +120,20 @@ fn index_expressions_conjunction_into<'block, Snapshot: ReadableSnapshot>(
     for nested in conjunction.nested_patterns() {
         match nested {
             NestedPattern::Disjunction(disjunction) => {
-                index_expressions_disjunction_into(context, disjunction, index)?;
+                index_expressions_disjunction(context, disjunction, index)?;
             }
             NestedPattern::Negation(negation) => {
-                index_expressions_conjunction_into(context, negation.conjunction(), index)?;
+                index_expressions_conjunction(context, negation.conjunction(), index)?;
             }
             NestedPattern::Optional(optional) => {
-                index_expressions_conjunction_into(context, optional.conjunction(), index)?;
+                index_expressions_conjunction(context, optional.conjunction(), index)?;
             }
         }
     }
     Ok(())
 }
 
-fn index_expressions_disjunction_into<'block, Snapshot: ReadableSnapshot>(
+fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
     context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     disjunction: &'block Disjunction,
     index: &mut HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>,
@@ -150,7 +142,10 @@ fn index_expressions_disjunction_into<'block, Snapshot: ReadableSnapshot>(
     let mut branch_indices = disjunction
         .conjunctions()
         .iter()
-        .map(|branch| index_expressions_conjunction(context, branch))
+        .map(|branch| {
+            let mut branch_index = HashMap::new();
+            index_expressions_conjunction(context, branch, &mut branch_index).map(|_| branch_index)
+        })
         .collect::<Result<Vec<_>, _>>()?;
     branch_indices
         .into_iter()
