@@ -3005,7 +3005,7 @@ Context for variables (this "context" describes properties of the variables), us
 
 part of a query pipeline
 
-### Block
+### Scope
 
 `{ pattern }` 
 
