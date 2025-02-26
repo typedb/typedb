@@ -11,6 +11,7 @@ use typeql::{
     statement::thing::{Constraint, HasValue, Head, RolePlayer},
     Expression, Identifier, Statement,
 };
+use typeql::query::stage::Put;
 
 use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
@@ -58,6 +59,20 @@ pub fn translate_update(
     let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
     let function_index = HashMapFunctionSignatureIndex::empty();
     for statement in &update.statements {
+        add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
+    }
+    builder.finish()
+}
+
+
+pub fn translate_put(
+    context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
+    put: &Put
+) -> Result<Block, Box<RepresentationError>> {
+    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let function_index = HashMapFunctionSignatureIndex::empty();
+    for statement in &put.statements {
         add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
     }
     builder.finish()

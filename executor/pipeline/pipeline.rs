@@ -144,6 +144,9 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                 ExecutableStage::Update(_) => {
                     return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Update".to_string() }))
                 }
+                ExecutableStage::Put(_) => {
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Put".to_string() }))
+                }
                 ExecutableStage::Delete(_) => {
                     return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Delete".to_string() }))
                 }
@@ -215,6 +218,11 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                 ExecutableStage::Update(update_executable) => {
                     let update_stage = UpdateStageExecutor::new(update_executable, last_stage);
                     last_stage = WritePipelineStage::Update(Box::new(update_stage));
+                }
+                ExecutableStage::Put(_) => {
+                    todo!()
+                    // let update_stage = PutStageExecutor::new(put_executable, last_stage);
+                    // last_stage = WritePipelineStage::Put(Box::new(update_stage));
                 }
                 ExecutableStage::Delete(delete_executable) => {
                     let delete_stage = DeleteStageExecutor::new(delete_executable, last_stage);

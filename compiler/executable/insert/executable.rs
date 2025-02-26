@@ -57,9 +57,11 @@ pub fn compile(
     input_variables: &HashMap<Variable, VariablePosition>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
+    desired_output_variable_positions: Option<HashMap<Variable, VariablePosition>>,
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
     let mut variable_positions = input_variables.clone();
+    compile_error!("Figure out how to accept desire output positions");
     let concept_inserts = add_inserted_concepts(
         constraints,
         type_annotations,

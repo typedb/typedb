@@ -36,6 +36,7 @@ use crate::{
     },
     VariablePosition,
 };
+use crate::executable::put::PutExecutable;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
@@ -49,6 +50,7 @@ pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
     Update(Arc<UpdateExecutable>),
+    Put(Arc<(PutExecutable)>),
     Delete(Arc<DeleteExecutable>),
 
     Select(Arc<SelectExecutable>),
@@ -91,6 +93,7 @@ impl ExecutableStage {
             ExecutableStage::Require(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Distinct(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Reduce(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Put(executable) => executable.output_row_mapping.clone(),
         }
     }
 }
@@ -261,6 +264,35 @@ fn compile_stage(
             )
             .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Update(Arc::new(plan)))
+        }
+        AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
+            // TODO: How do we ensure the fresh variables go to the same positions?
+            //  ^ Maybe we give the insert_executable a hint?
+            let match_plan = crate::executable::match_::planner::compile(
+                block,
+                input_variables,
+                selected_variables,
+                match_annotations,
+                variable_registry,
+                &HashMap::new(),
+                statistics,
+                call_cost_provider,
+            )
+            .map_err(|source| ExecutableCompilationError::PutMatchCompilation { typedb_source: source })?;
+            let insert_positions = match_plan.variable_positions().iter().filter(|(var, _)| {
+                !input_variables.contains_key(var)
+            }).collect();
+
+            let insert_plan = crate::executable::insert::executable::compile(
+                block.conjunction().constraints(),
+                input_variables,
+                insert_annotations,
+                variable_registry,
+                insert_positions,
+                *source_span,
+            )
+            .map_err(|typedb_source| ExecutableCompilationError::PutInsertCompilation { typedb_source })?;
+            Ok(ExecutableStage::Put(Arc::new(PutExecutable::new(match_plan, insert_plan, input_variables))))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {
             let plan = crate::executable::delete::executable::compile(
