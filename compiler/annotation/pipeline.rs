@@ -15,7 +15,11 @@ use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
 use encoding::value::value_type::{ValueType, ValueTypeCategory};
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern},
+    pattern::{
+        conjunction::Conjunction,
+        constraint::{Constraint, ExpressionBinding},
+        nested_pattern::NestedPattern,
+    },
     pipeline::{
         block::Block,
         fetch::FetchObject,
@@ -28,7 +32,6 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
-use ir::pattern::constraint::ExpressionBinding;
 
 use crate::{
     annotation::{
@@ -277,10 +280,9 @@ fn annotate_stage(
             )
             .map_err(|typedb_source| AnnotationError::ExpressionCompilation { typedb_source })?;
             compiled_expressions.iter().for_each(|(binding, compiled)| {
-                let existing = running_value_variable_assigned_types.insert(
-                    binding.left().as_variable().unwrap(), compiled.return_type().clone()
-                );
-                debug_assert!(existing.is_none() || existing == Some(compiled.return_type().clone()))
+                let _existing = running_value_variable_assigned_types
+                    .insert(binding.left().as_variable().unwrap(), compiled.return_type().clone());
+                debug_assert!(_existing.is_none() || _existing == Some(compiled.return_type().clone()))
             });
             Ok(AnnotatedStage::Match {
                 block,

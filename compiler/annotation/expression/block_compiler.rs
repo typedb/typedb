@@ -12,6 +12,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction,
         constraint::{Constraint, ExpressionBinding},
+        disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
         Vertex,
@@ -19,9 +20,8 @@ use ir::{
     pipeline::{block::Block, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
-use typeql::common::Span;
-use ir::pattern::disjunction::Disjunction;
 use storage::snapshot::ReadableSnapshot;
+use typeql::common::Span;
 
 use crate::annotation::{
     expression::{
@@ -85,7 +85,8 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     }
     for (var, _) in &expression_index {
         if !context.visited_expressions.contains(var) {
-            compile_expressions_recursive(&mut context, *var, &expression_index)?;
+            let _value_type = try_value_type_from_expression_assignments(&mut context, *var, &expression_index)?;
+            debug_assert!(_value_type.is_some());
         }
     }
 
@@ -146,44 +147,22 @@ fn index_expressions_disjunction_into<'block, Snapshot: ReadableSnapshot>(
     index: &mut HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>,
 ) -> Result<(), Box<ExpressionCompileError>> {
     let mut combined_indices = HashMap::<Variable, Vec<&'block ExpressionBinding<Variable>>>::new();
-    let mut branch_indices = disjunction.conjunctions().iter().map(|branch| {
-        index_expressions_conjunction(context, branch)
-    }).collect::<Result<Vec<_>, _>>()?;
-    branch_indices.into_iter().flat_map(|branch_index| branch_index.into_iter())
-        .for_each(|(var, expressions)| {
-            combined_indices.entry(var).or_default().extend(expressions)
-        });
-    combined_indices.into_iter().try_for_each(|(var, expressions)| {
-        match index.insert(var, expressions) {
-            Some(_) => Err(ExpressionCompileError::MultipleAssignmentsForVariable {
-                variable: context.variable_name(&var),
-                source_span: None
-            }),
-            None => Ok(())
-        }
-    })?;
-    Ok(())
-}
-
-fn compile_expressions_recursive<'a, Snapshot: ReadableSnapshot>(
-    context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
-    assigned: Variable,
-    expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
-) -> Result<(), Box<ExpressionCompileError>> {
-    if !context.visited_expressions.insert(assigned) {
-        return Err(Box::new(ExpressionCompileError::CircularDependency {
-            variable: context.variable_name(&assigned),
+    let mut branch_indices = disjunction
+        .conjunctions()
+        .iter()
+        .map(|branch| index_expressions_conjunction(context, branch))
+        .collect::<Result<Vec<_>, _>>()?;
+    branch_indices
+        .into_iter()
+        .flat_map(|branch_index| branch_index.into_iter())
+        .for_each(|(var, expressions)| combined_indices.entry(var).or_default().extend(expressions));
+    combined_indices.into_iter().try_for_each(|(var, expressions)| match index.insert(var, expressions) {
+        Some(_) => Err(ExpressionCompileError::MultipleAssignmentsForVariable {
+            variable: context.variable_name(&var),
             source_span: None,
-        }));
-    }
-    for assignment in expression_assignments.get(&assigned).unwrap() {
-        assignment.expression().variables().try_for_each(|var| {
-            resolve_type_for_variable(context, var, expression_assignments, assignment.source_span())
-                .map(|_| ())
-        })?;
-        let compiled = ExpressionCompilationContext::compile(assignment.expression(), &context.variable_value_types, context.parameters)?;
-        context.compiled_expressions.insert((*assignment).clone(), compiled);
-    }
+        }),
+        None => Ok(()),
+    })?;
     Ok(())
 }
 
@@ -212,20 +191,34 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
 fn try_value_type_from_expression_assignments<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
-    expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>
+    expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
     if expression_assignments.contains_key(&variable) {
-        compile_expressions_recursive(context, variable, expression_assignments)?;
-        let mut return_types = expression_assignments.get(&variable).unwrap().iter()
-            .map(|binding| context.compiled_expressions.get(&binding).unwrap().return_type.clone())
-            .collect::<Vec<_>>();
-        if return_types.len() == 1 {
-            let value_type = return_types.pop().unwrap();
+        if !context.visited_expressions.insert(variable) {
+            return Err(Box::new(ExpressionCompileError::CircularDependency {
+                variable: context.variable_name(&variable),
+                source_span: None,
+            }));
+        }
+        let mut return_types = HashSet::new();
+        for assignment in expression_assignments.get(&variable).unwrap() {
+            assignment.expression().variables().try_for_each(|var| {
+                resolve_type_for_variable(context, var, expression_assignments, assignment.source_span()).map(|_| ())
+            })?;
+            let compiled = ExpressionCompilationContext::compile(
+                assignment.expression(),
+                &context.variable_value_types,
+                context.parameters,
+            )?;
+            return_types.insert(compiled.return_type.clone());
+            context.compiled_expressions.insert((*assignment).clone(), compiled);
+        }
+        if let Ok(value_type) = return_types.iter().exactly_one() {
             context.variable_value_types.insert(variable, value_type.clone());
-            Ok(Some(value_type))
+            Ok(Some(value_type.clone()))
         } else {
             debug_assert!(return_types.len() > 1);
-            Err(Box::new(ExpressionCompileError::VariableMultipleValueTypes {
+            Err(Box::new(ExpressionCompileError::ValueVariableConflictingAssignmentTypes {
                 variable: context.variable_name(&variable),
                 value_types: return_types.iter().join(", "),
                 source_span: None,
@@ -236,8 +229,8 @@ fn try_value_type_from_expression_assignments<'a, Snapshot: ReadableSnapshot>(
     }
 }
 
-fn try_value_type_from_type_annotations<'a, Snapshot: ReadableSnapshot>(
-    context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
+fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
+    context: &mut BlockExpressionsCompilationContext<'_, Snapshot>,
     variable: Variable,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
     let Some(annotations) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) else {
@@ -255,20 +248,23 @@ fn try_value_type_from_type_annotations<'a, Snapshot: ReadableSnapshot>(
             }));
         }
     };
-    let value_types = resolve_value_types(annotations, context.snapshot, context.type_manager)
-        .map_err(|_source| {
-            Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
-                variable: context.variable_name(&variable),
-                source_span: None, // TODO: this can be improved?
-            })
-        })?;
-    let unique_value_type = value_types.iter().exactly_one().map_err(|_| {
-        Box::new(ExpressionCompileError::VariableMultipleValueTypes {
+    let value_types = resolve_value_types(annotations, context.snapshot, context.type_manager).map_err(|_source| {
+        Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
             variable: context.variable_name(&variable),
-            value_types: value_types.iter().join(", "),
             source_span: None, // TODO: this can be improved?
         })
-    })?.clone();
+    })?;
+    let unique_value_type = value_types
+        .iter()
+        .exactly_one()
+        .map_err(|_| {
+            Box::new(ExpressionCompileError::VariableMultipleValueTypes {
+                variable: context.variable_name(&variable),
+                value_types: value_types.iter().join(", "),
+                source_span: None, // TODO: this can be improved?
+            })
+        })?
+        .clone();
     let expression_value_type = match is_list {
         true => ExpressionValueType::List(unique_value_type),
         false => ExpressionValueType::Single(unique_value_type),

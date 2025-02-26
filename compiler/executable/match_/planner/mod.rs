@@ -9,9 +9,11 @@ use std::collections::{hash_map, HashMap, HashSet};
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
-use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
+use ir::{
+    pattern::constraint::ExpressionBinding,
+    pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
+};
 use itertools::Itertools;
-use ir::pattern::constraint::ExpressionBinding;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
