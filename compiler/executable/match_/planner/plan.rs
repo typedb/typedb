@@ -56,8 +56,8 @@ use crate::{
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
                     ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NegationPlanner,
-                    UnsatisfiablePlanner, PlannerVertex,
+                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NegationPlanner, PlannerVertex,
+                    UnsatisfiablePlanner,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
                 MatchExecutableBuilder, NegationBuilder, StepBuilder, StepInstructionsBuilder,
@@ -1580,9 +1580,7 @@ impl ConjunctionPlan<'_> {
                 match_builder.push_check(&vars, check)
             }
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
-            PlannerVertex::Unsatisfiable(_) => {
-                match_builder.push_check(&Vec::new(), CheckInstruction::Unsatisfiable)
-            }
+            PlannerVertex::Unsatisfiable(_) => match_builder.push_check(&Vec::new(), CheckInstruction::Unsatisfiable),
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
             }
@@ -2048,8 +2046,7 @@ impl<'a> Graph<'a> {
     fn push_optimised_to_unsatisfiable(&mut self, optimised_unsatisfiable: UnsatisfiablePlanner<'a>) {
         let pattern_index = self.next_pattern_index();
         self.pattern_to_variable.entry(pattern_index).or_default();
-        self.elements
-            .insert(VertexId::Pattern(pattern_index), PlannerVertex::Unsatisfiable(optimised_unsatisfiable));
+        self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Unsatisfiable(optimised_unsatisfiable));
     }
 
     fn push_expression(&mut self, output: VariableVertexId, expression: ExpressionPlanner<'a>) {

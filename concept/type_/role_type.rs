@@ -108,7 +108,7 @@ impl TypeAPI for RoleType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.delete_role_type(snapshot, thing_manager, self)
+        type_manager.delete_role_type(snapshot, thing_manager, self, false)
     }
 
     fn get_label<'m>(

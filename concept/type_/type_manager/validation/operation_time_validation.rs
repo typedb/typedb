@@ -66,7 +66,7 @@ macro_rules! for_type_and_subtypes_transitive {
     ($snapshot:ident, $type_manager:ident, $type_:ident, $closure:expr) => {
         let subtypes = $type_
             .get_subtypes_transitive($snapshot, $type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         TypeAPI::chain_types($type_.clone(), subtypes.into_iter().cloned())
             .try_for_each(|subtype| $closure(subtype))?;
     };
@@ -136,11 +136,11 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
         ) -> Result<(), Box<SchemaValidationError>> {
             if let Some(supertype) = object_type
                 .get_supertype(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             {
                 let supertype_capabilities =
                     TypeReader::get_capabilities::<$capability_type>(snapshot, supertype, false)
-                        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                        .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 if supertype_capabilities.iter().any(|capability| &capability.interface() == &interface_type) {
                     return Ok(());
                 }
@@ -153,7 +153,7 @@ macro_rules! cannot_unset_capability_with_existing_instances_validation {
                 object_type.clone(),
                 interface_type.clone(),
             )
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             if type_having_instances.is_some() {
                 Err(Box::new(SchemaValidationError::CannotUnsetCapabilityWithExistingInstances {
@@ -194,7 +194,7 @@ macro_rules! cannot_change_supertype_as_capability_with_existing_instances_is_lo
                     subtype.clone(),
                     interface_type.clone(),
                 )
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
                 if type_having_instances.is_some() {
                     return Err(Box::new(
@@ -227,7 +227,7 @@ macro_rules! new_acquired_capability_instances_validation {
                 capability
                     .object()
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
@@ -237,7 +237,7 @@ macro_rules! new_acquired_capability_instances_validation {
                 capability
                     .interface()
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
@@ -275,7 +275,7 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
                 capability
                     .object()
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
@@ -285,7 +285,7 @@ macro_rules! new_annotation_constraints_compatible_with_capability_instances_val
                 capability
                     .interface()
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
@@ -327,20 +327,20 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                 type_.clone(),
                 type_
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
             .collect();
             let type_capabilities_declared =
                 TypeReader::get_capabilities_declared::<$capability_type>(snapshot, type_.clone())
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let type_capabilities =
                 TypeReader::get_capabilities::<$capability_type>(snapshot, type_.clone(), false)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let new_capabilities =
                 TypeReader::get_capabilities::<$capability_type>(snapshot, new_supertype.clone(), false)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for new_capability in new_capabilities.into_iter() {
                 let affected_interface_types = TypeAPI::chain_types(
@@ -348,7 +348,7 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                     new_capability
                         .interface()
                         .get_subtypes_transitive(snapshot, type_manager)
-                        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                        .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                         .into_iter()
                         .cloned(),
                 )
@@ -356,7 +356,7 @@ macro_rules! updated_constraints_compatible_with_capability_instances_on_object_
                 let mut constraints = get_operation_time_checked_constraints(
                     new_capability
                         .get_constraints(snapshot, type_manager)
-                        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                        .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                         .into_iter()
                         .cloned(),
                 );
@@ -414,7 +414,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
         ) -> Result<(), Box<SchemaValidationError>> {
             let unset_supertype = if let Some(type_) = interface_type
                 .get_supertype(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             {
                 type_
             } else {
@@ -431,7 +431,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 unset_supertype.clone(),
                 &mut objects_with_interface_supertypes_and_constraints,
             )
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             let mut objects_with_interface_subtypes_and_constraints: HashSet<
                 <$capability_type as Capability>::ObjectType,
@@ -442,15 +442,15 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 interface_type.clone(),
                 &mut objects_with_interface_subtypes_and_constraints,
             )
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             let unset_supertype_root = unset_supertype
                 .get_supertype_root(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .unwrap_or(unset_supertype);
             let unset_supertype_root_subtypes = unset_supertype_root
                 .get_subtypes_transitive(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let affected_interface_types =
                 TypeAPI::chain_types(unset_supertype_root, unset_supertype_root_subtypes.into_iter().cloned())
                     .collect();
@@ -501,7 +501,7 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
         ) -> Result<(), Box<SchemaValidationError>> {
             if let Some(old_supertype) = interface_type
                 .get_supertype(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             {
                 if &old_supertype == &interface_supertype {
                     return Ok(());
@@ -520,11 +520,11 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 interface_supertype.clone(),
                 &mut objects_with_interface_supertypes_and_constraints,
             )
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             let _all_interface_supertype_subtypes = interface_supertype
                 .get_subtypes_transitive(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             let mut objects_with_interface_subtypes_and_constraints: HashSet<
                 <$capability_type as Capability>::ObjectType,
@@ -535,20 +535,20 @@ macro_rules! affected_constraints_compatible_with_capability_instances_on_interf
                 interface_type.clone(),
                 &mut objects_with_interface_subtypes_and_constraints,
             )
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             let supertype_root = interface_supertype
                 .get_supertype_root(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .unwrap_or(interface_supertype.clone());
             let supertype_root_subtypes = supertype_root
                 .get_subtypes_transitive(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let all_supertype_root_subtypes =
                 TypeAPI::chain_types(supertype_root, supertype_root_subtypes.into_iter().cloned());
             let interface_subtypes = interface_type
                 .get_subtypes_transitive(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             let all_interface_subtypes =
                 TypeAPI::chain_types(interface_type.clone(), interface_subtypes.into_iter().cloned());
 
@@ -596,7 +596,7 @@ macro_rules! new_annotation_constraints_compatible_with_type_and_sub_instances_v
                 type_.clone(),
                 type_
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
@@ -625,7 +625,7 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
             let constraints = get_operation_time_checked_constraints(
                 new_supertype
                     .get_constraints(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             );
@@ -645,7 +645,7 @@ macro_rules! updated_constraints_compatible_with_type_and_sub_instances_on_super
                 type_.clone(),
                 type_
                     .get_subtypes_transitive(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .into_iter()
                     .cloned(),
             )
@@ -720,7 +720,7 @@ impl OperationTimeValidation {
         type_: impl TypeAPI,
     ) -> Result<(), Box<SchemaValidationError>> {
         TypeReader::get_label(snapshot, type_)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         Ok(())
     }
 
@@ -731,7 +731,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let no_subtypes = type_
             .get_subtypes(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_empty();
         if no_subtypes {
             Ok(())
@@ -747,7 +747,7 @@ impl OperationTimeValidation {
         new_label: &Label,
     ) -> Result<(), Box<SchemaValidationError>> {
         if TypeReader::get_labelled_type::<AttributeType>(snapshot, new_label)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some()
         {
             Err(Box::new(SchemaValidationError::LabelShouldBeUnique {
@@ -755,7 +755,7 @@ impl OperationTimeValidation {
                 existing_kind: Kind::Attribute,
             }))
         } else if TypeReader::get_labelled_type::<RelationType>(snapshot, new_label)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some()
         {
             Err(Box::new(SchemaValidationError::LabelShouldBeUnique {
@@ -763,7 +763,7 @@ impl OperationTimeValidation {
                 existing_kind: Kind::Relation,
             }))
         } else if TypeReader::get_labelled_type::<EntityType>(snapshot, new_label)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some()
         {
             Err(Box::new(SchemaValidationError::LabelShouldBeUnique {
@@ -783,10 +783,10 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_relation_supertypes = relation_type
             .get_supertypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let existing_relation_subtypes = relation_type
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         validate_role_name_uniqueness_non_transitive(snapshot, type_manager, relation_type, label)?;
         for relation_supertype in existing_relation_supertypes.into_iter() {
@@ -824,12 +824,12 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let relation_supertype_supertypes = relation_supertype
             .get_supertypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let affected_supertypes =
             TypeAPI::chain_types(relation_supertype, relation_supertype_supertypes.into_iter().cloned()).collect_vec();
         let subtype_relates_root = relation_subtype
             .get_relates_root(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for subtype_relates in subtype_relates_root.into_iter() {
             let role = subtype_relates.role();
@@ -848,7 +848,7 @@ impl OperationTimeValidation {
         name: &str,
     ) -> Result<(), Box<SchemaValidationError>> {
         let struct_clash = TypeReader::get_struct_definition_key(snapshot, name)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .is_some();
         // TODO: Check other types clash?
 
@@ -864,10 +864,10 @@ impl OperationTimeValidation {
         definition_key: &DefinitionKey,
     ) -> Result<(), Box<SchemaValidationError>> {
         let struct_definition = TypeReader::get_struct_definition(snapshot, definition_key.clone())
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         let usages_in_attribute_types = TypeReader::get_struct_definition_usages_in_attribute_types(snapshot)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         if let Some(owners) = usages_in_attribute_types.get(definition_key) {
             return Err(Box::new(SchemaValidationError::StructCannotBeDeletedAsItsUsedAsValueTypeForAttributeTypes {
                 name: struct_definition.name.to_owned(),
@@ -877,7 +877,7 @@ impl OperationTimeValidation {
 
         let usages_in_struct_definition_fields =
             TypeReader::get_struct_definition_usages_in_struct_definitions(snapshot)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         if let Some(owners) = usages_in_struct_definition_fields.get(definition_key) {
             return Err(Box::new(SchemaValidationError::StructCannotBeDeletedAsItsUsedAsValueTypeForStructs {
                 name: struct_definition.name.to_owned(),
@@ -897,15 +897,15 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let subtype_declared_value_type = subtype
             .get_value_type_declared(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let subtype_transitive_value_type = subtype
             .get_value_type_without_source(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let supertype_value_type = match &supertype {
             None => None,
             Some(supertype) => supertype
                 .get_value_type_without_source(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         };
 
         match (&subtype_declared_value_type, &subtype_transitive_value_type, &supertype_value_type) {
@@ -946,7 +946,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let value_type_with_source = attribute_type
             .get_value_type(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         match value_type_with_source {
             Some((value_type, source_type)) => {
                 if source_type != attribute_type {
@@ -959,12 +959,12 @@ impl OperationTimeValidation {
 
                 let attribute_supertype = attribute_type
                     .get_supertype(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 match &attribute_supertype {
                     Some(supertype) => {
                         let supertype_value_type_with_source = supertype
                             .get_value_type(snapshot, type_manager)
-                            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                         match supertype_value_type_with_source {
                             Some(_) => Ok(()),
                             None => Self::validate_when_attribute_type_loses_value_type_transitive(
@@ -999,7 +999,7 @@ impl OperationTimeValidation {
         let is_abstract = abstract_set.unwrap_or(
             attribute_type
                 .is_abstract(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         );
 
         match &value_type {
@@ -1073,11 +1073,11 @@ impl OperationTimeValidation {
         let constraint_description = ConstraintDescription::Regex(regex);
         if let Some(supertype) = attribute_type
             .get_supertype(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
         {
             let supertype_constraints = supertype
                 .get_constraints_regex(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for supertype_constraint in supertype_constraints.into_iter() {
                 supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
@@ -1112,11 +1112,11 @@ impl OperationTimeValidation {
         let constraint_description = ConstraintDescription::Range(range);
         if let Some(supertype) = attribute_type
             .get_supertype(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
         {
             let supertype_constraints = supertype
                 .get_constraints_range(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for supertype_constraint in supertype_constraints.into_iter() {
                 supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
@@ -1151,11 +1151,11 @@ impl OperationTimeValidation {
         let constraint_description = ConstraintDescription::Values(values);
         if let Some(supertype) = attribute_type
             .get_supertype(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
         {
             let supertype_constraints = supertype
                 .get_constraints_values(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for supertype_constraint in supertype_constraints.into_iter() {
                 supertype_constraint.validate_narrowed_by_strictly_same_type(&constraint_description).map_err(
@@ -1190,11 +1190,11 @@ impl OperationTimeValidation {
         let constraint_description = ConstraintDescription::Regex(regex);
         let subtypes = attribute_type
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for subtype in subtypes.into_iter() {
             let regex_constraints = subtype
                 .get_constraints_regex(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             for regex_constraint in regex_constraints {
                 regex_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(
                     |typedb_source| {
@@ -1228,11 +1228,11 @@ impl OperationTimeValidation {
         let constraint_description = ConstraintDescription::Range(range);
         let subtypes = attribute_type
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for subtype in subtypes.into_iter() {
             let range_constraints = subtype
                 .get_constraints_range(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             for range_constraint in range_constraints {
                 range_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(
                     |typedb_source| {
@@ -1266,11 +1266,11 @@ impl OperationTimeValidation {
         let constraint_description = ConstraintDescription::Values(values);
         let subtypes = attribute_type
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for subtype in subtypes.into_iter() {
             let values_constraints = subtype
                 .get_constraints_regex(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             for values_constraint in values_constraints {
                 values_constraint.validate_narrows_strictly_same_type(&constraint_description).map_err(
                     |typedb_source| {
@@ -1321,12 +1321,12 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
             .get_owns(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for owns in all_owns.into_iter() {
             let regex_constraints = owns
                 .get_constraints_regex(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             for regex_constraint in regex_constraints {
                 regex_constraint.validate_narrows_strictly_same_type(type_constraint_description)
                     .map_err(|typedb_source| {
@@ -1370,12 +1370,12 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
             .get_owns(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for owns in all_owns.into_iter() {
             let range_constraints = owns
                 .get_constraints_range(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             for range_constraint in range_constraints {
                 range_constraint.validate_narrows_strictly_same_type(type_constraint_description)
                     .map_err(|typedb_source| {
@@ -1419,12 +1419,12 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
             .get_owns(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for owns in all_owns.into_iter() {
             let values_constraints = owns
                 .get_constraints_values(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             for values_constraint in values_constraints {
                 values_constraint.validate_narrows_strictly_same_type(type_constraint_description)
                     .map_err(|typedb_source| {
@@ -1452,7 +1452,7 @@ impl OperationTimeValidation {
         let attribute_type_regex_constraints = owns
             .attribute()
             .get_constraints_regex(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for regex_constraint in attribute_type_regex_constraints {
             regex_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
                 .map_err(|typedb_source| {
@@ -1485,7 +1485,7 @@ impl OperationTimeValidation {
         let attribute_type_range_constraints = owns
             .attribute()
             .get_constraints_range(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for range_constraint in attribute_type_range_constraints {
             range_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
                 .map_err(|typedb_source| {
@@ -1518,7 +1518,7 @@ impl OperationTimeValidation {
         let attribute_type_values_constraints = owns
             .attribute()
             .get_constraints_values(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for values_constraint in attribute_type_values_constraints {
             values_constraint.validate_narrowed_by_strictly_same_type(&capability_constraint_description)
                 .map_err(|typedb_source| {
@@ -1581,81 +1581,6 @@ impl OperationTimeValidation {
         }
     }
 
-    // TODO: Capabilities constraints narrowing checks are currently disabled
-    pub(crate) fn validate_cardinality_of_inheritance_line_with_updated_capabilities<CAP: Capability>(
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
-        _capability: CAP,
-        _is_set: bool,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        // let mut validation_errors = vec![];
-        // let updated_capabilities = HashMap::from([(capability.clone(), is_set)]);
-        // let object_and_subtypes = once(capability.object()).chain(capability.object().get_subtypes_transitive(snapshot, type_manager)?.into_iter());
-        //
-        // for object_type in object_and_subtypes {
-        //     validate_capabilities_cardinalities_narrowing::<CAP>(
-        //         snapshot,
-        //         type_manager,
-        //         object_type,
-        //         &updated_capabilities,
-        //         &HashMap::new(), // read all cardinalities from storage as it's not changed
-        //         &HashMap::new(), // read all hidden from storage as it's not changed
-        //         &mut validation_errors,
-        //     )
-        //     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source}) )?;
-        //
-        //     if let Some(error) = validation_errors.first() {
-        //         return Err(error.clone());
-        //     }
-        // }
-
-        Ok(())
-    }
-
-    // TODO: Capabilities constraints narrowing checks are currently disabled
-    pub(crate) fn validate_cardinality_of_inheritance_line_with_updated_cardinality<CAP: Capability>(
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
-        _capability: CAP,
-        _cardinality: AnnotationCardinality,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        // let mut validation_errors = vec![];
-        // let updated_cardinalities = HashMap::from([(capability.clone(), cardinality)]);
-        // let object_and_subtypes = once(capability.object())
-        //     .chain(capability.object().get_subtypes_transitive(snapshot, type_manager)?.into_iter());
-        //
-        // for object_type in object_and_subtypes {
-        //     validate_capabilities_cardinalities_narrowing::<CAP>(
-        //         snapshot,
-        //         type_manager,
-        //         object_type,
-        //         &HashMap::new(), // read all capabilities from storage as it's not changed
-        //         &updated_cardinalities,
-        //         &HashMap::new(), // read all hidden from storage as it's not changed
-        //         &mut validation_errors,
-        //     )
-        //     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { source}) )?;
-        //
-        //     if let Some(error) = validation_errors.first() {
-        //         return Err(error.clone());
-        //     }
-        // }
-
-        Ok(())
-    }
-
-    // TODO: Capabilities constraints narrowing checks are currently disabled
-    pub(crate) fn validate_cardinality_of_inheritance_line_with_updated_interface_type_supertype<CAP: Capability>(
-        _snapshot: &impl ReadableSnapshot,
-        _type_manager: &TypeManager,
-        _interface_type: CAP::InterfaceType,
-        _new_supertype: Option<CAP::InterfaceType>,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        // TODO: Implement
-
-        Ok(())
-    }
-
     pub(crate) fn validate_type_supertype_abstractness_to_set_abstract_annotation<T: KindAPI>(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
@@ -1678,7 +1603,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         type_
             .get_subtypes(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .into_iter()
             .try_for_each(|subtype| {
                 validate_type_supertype_abstractness(
@@ -1700,10 +1625,10 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         if relates
             .is_implicit(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
         {
             Err(Box::new(SchemaValidationError::CannotUnsetRelatesAbstractnessAsItIsASpecialisingRelates {
-                role: relates.role().get_label(snapshot, type_manager).unwrap().clone(),
+                role: get_label_or_schema_err(snapshot, type_manager, relates.role())?,
             }))
         } else {
             Ok(())
@@ -1720,35 +1645,34 @@ impl OperationTimeValidation {
             None => MaybeOwns::Owned(HashSet::new()),
             Some(relation_supertype) => relation_supertype
                 .get_relates(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         };
 
         let subtype_relates_declared = relation_subtype
             .get_relates_declared(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let subtype_relates = relation_subtype
             .get_relates(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for subtype_capability in &subtype_relates_declared {
             if let Some(subtype_role_supertype) = subtype_capability
                 .role()
                 .get_supertype(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             {
                 let subtype_role_supertype_relates = subtype_role_supertype
                     .get_relates_explicit(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 if !supertype_relates
                     .iter()
                     .any(|supertype_relates| supertype_relates == &subtype_role_supertype_relates)
                 {
                     return Err(Box::new(
                         SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
-                            relation: relation_subtype.get_label(snapshot, type_manager).unwrap().clone(),
-                            // relation_supertype,
-                            role_1: subtype_capability.role().get_label(snapshot, type_manager).unwrap().clone(),
-                            role_2: subtype_role_supertype.get_label(snapshot, type_manager).unwrap().clone(),
+                            relation: get_label_or_schema_err(snapshot, type_manager, relation_subtype)?,
+                            role_1: get_label_or_schema_err(snapshot, type_manager, subtype_capability.role())?,
+                            role_2: get_label_or_schema_err(snapshot, type_manager, subtype_role_supertype)?,
                         },
                     ));
                 }
@@ -1757,21 +1681,21 @@ impl OperationTimeValidation {
 
         let subtype_subtypes = relation_subtype
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for subsubtype in subtype_subtypes.into_iter() {
             let subsubtype_relates_declared = subsubtype
                 .get_relates_declared(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             for subsubtype_relates in subsubtype_relates_declared.into_iter() {
                 if let Some(subtype_role_supertype) = subsubtype_relates
                     .role()
                     .get_supertype(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 {
                     let subtype_role_supertype_relates = subtype_role_supertype
                         .get_relates_explicit(snapshot, type_manager)
-                        .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                        .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                     let is_in_subtype = subtype_relates.contains(&subtype_role_supertype_relates);
                     let is_in_subtype_declared = subtype_relates_declared.contains(&subtype_role_supertype_relates);
                     let is_lost = is_in_subtype && !is_in_subtype_declared;
@@ -1782,10 +1706,9 @@ impl OperationTimeValidation {
                     {
                         return Err(Box::new(
                             SchemaValidationError::CannotChangeRelationTypeSupertypeAsRelatesSpecialiseIsLost {
-                                relation: relation_subtype.get_label(snapshot, type_manager).unwrap().clone(),
-                                // relation_supertype,
-                                role_1: subsubtype_relates.role().get_label(snapshot, type_manager).unwrap().clone(),
-                                role_2: subtype_role_supertype.get_label(snapshot, type_manager).unwrap().clone(),
+                                relation: get_label_or_schema_err(snapshot, type_manager, relation_subtype)?,
+                                role_1: get_label_or_schema_err(snapshot, type_manager, subsubtype_relates.role())?,
+                                role_2: get_label_or_schema_err(snapshot, type_manager, subtype_role_supertype)?,
                             },
                         ));
                     }
@@ -1804,7 +1727,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_ordering = existing_owns
             .get_ordering(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         if existing_ordering == new_owns_ordering {
             Ok(())
         } else {
@@ -1826,7 +1749,7 @@ impl OperationTimeValidation {
         let owner_subtypes = owns
             .owner()
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let affected_owner_types = TypeAPI::chain_types(owns.owner(), owner_subtypes.into_iter().cloned());
 
         for owner_type in affected_owner_types {
@@ -1844,19 +1767,19 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let attribute_type_owners = attribute_type
             .get_owner_types(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let new_supertype_owners = new_supertype
             .get_owner_types(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for (attribute_type_owner, attribute_type_owns) in attribute_type_owners.into_iter() {
             if let Some(new_supertype_owns) = new_supertype_owners.get(attribute_type_owner) {
                 let attribute_type_ordering = attribute_type_owns
                     .get_ordering(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 let new_supertype_ordering = new_supertype_owns
                     .get_ordering(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
                 if attribute_type_ordering != new_supertype_ordering {
                     return Err(Box::new(
                         SchemaValidationError::OrderingDoesNotMatchWithCapabilityOfSupertypeInterface {
@@ -1892,12 +1815,12 @@ impl OperationTimeValidation {
         let role = relates.role();
         let ordering = ordering.unwrap_or(
             TypeReader::get_type_ordering(snapshot, role)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         );
         let distinct_set = distinct_set.unwrap_or(
             relates
                 .get_annotations_declared(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .contains(&RelatesAnnotation::Distinct(AnnotationDistinct)),
         );
 
@@ -1921,11 +1844,11 @@ impl OperationTimeValidation {
         let attribute = owns.attribute();
         let ordering = ordering.unwrap_or(
             owns.get_ordering(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         );
         let distinct_set = distinct_set.unwrap_or(
             owns.get_annotations_declared(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .contains(&OwnsAnnotation::Distinct(AnnotationDistinct)),
         );
 
@@ -1995,7 +1918,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_supertypes = supertype
             .get_supertypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         if supertype == type_ || existing_supertypes.contains(&type_) {
             Err(Box::new(SchemaValidationError::CycleFoundInTypeHierarchy {
                 start: get_label_or_schema_err(snapshot, type_manager, type_)?,
@@ -2014,18 +1937,18 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let supertype = relation_type
             .get_supertype(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         if let Some(supertype) = supertype {
             let all_supertype_relates = supertype
                 .get_relates(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             if all_supertype_relates.contains(&relates) {
                 return Ok(());
             }
         }
         Err(Box::new(SchemaValidationError::RelatesNotInheritedForSpecialisation {
-            relation: relation_type.get_label(snapshot, type_manager).unwrap().clone(),
-            role: relates.role().get_label(snapshot, type_manager).unwrap().clone(),
+            relation: get_label_or_schema_err(snapshot, type_manager, relation_type)?,
+            role: get_label_or_schema_err(snapshot, type_manager, relates.role())?,
         }))
     }
 
@@ -2037,13 +1960,13 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         if !specialised_relates
             .is_implicit(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
         } else {
             Err(Box::new(SchemaValidationError::RelatesIsAlreadySpecialisedByASupertype {
-                relation: relation_type.get_label(snapshot, type_manager).unwrap().clone(),
-                role: specialised_relates.role().get_label(snapshot, type_manager).unwrap().clone(),
+                relation: get_label_or_schema_err(snapshot, type_manager, relation_type)?,
+                role: get_label_or_schema_err(snapshot, type_manager, specialised_relates.role())?,
             }))
         }
     }
@@ -2055,13 +1978,100 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         if !relates
             .is_implicit(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
         } else {
             Err(Box::new(SchemaValidationError::CannotManageAnnotationsForSpecialisingRelates {
-                role: relates.role().get_label(snapshot, type_manager).unwrap().clone(),
+                role: get_label_or_schema_err(snapshot, type_manager, relates.role())?,
             }))
+        }
+    }
+
+    pub(crate) fn validate_non_abstract_relation_type_has_other_role_types_to_delete_role_type(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relation_type: RelationType,
+        role_type: RoleType,
+    ) -> Result<(), Box<SchemaValidationError>> {
+        if relation_type
+            .is_abstract(snapshot, type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
+        {
+            return Ok(());
+        }
+
+        let related_role_types = relation_type
+            .get_related_role_types(snapshot, type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
+        if related_role_types.iter().any(|related_role_type| related_role_type != &role_type) {
+            Ok(())
+        } else {
+            Err(Box::new(SchemaValidationError::CannotDeleteTheOnlyRoleTypeOfNonAbstractRelationType {
+                relation: get_label_or_schema_err(snapshot, type_manager, relation_type)?,
+                role: get_label_or_schema_err(snapshot, type_manager, role_type)?,
+            }))
+        }
+    }
+
+    pub(crate) fn validate_relation_type_non_abstract_subtypes_have_other_role_types_to_delete_role_type(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relation_type: RelationType,
+        role_type: RoleType,
+    ) -> Result<(), Box<SchemaValidationError>> {
+        let relation_subtypes = relation_type
+            .get_subtypes_transitive(snapshot, type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
+        for relation_subtype in relation_subtypes.iter() {
+            Self::validate_non_abstract_relation_type_has_other_role_types_to_delete_role_type(
+                snapshot,
+                type_manager,
+                *relation_subtype,
+                role_type,
+            )?;
+        }
+        Ok(())
+    }
+
+    pub(crate) fn validate_non_abstract_relation_type_has_role_types_after_supertype_unset(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relation_type: RelationType,
+    ) -> Result<(), Box<SchemaValidationError>> {
+        if relation_type
+            .is_abstract(snapshot, type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
+        {
+            return Ok(());
+        }
+
+        let related_role_types = relation_type
+            .get_related_role_types_declared(snapshot, type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
+        if related_role_types.is_empty() {
+            Err(Box::new(SchemaValidationError::CannotUnsetRelationSupertypeBecauseAllRoleTypesAreLost {
+                relation: get_label_or_schema_err(snapshot, type_manager, relation_type)?,
+            }))
+        } else {
+            Ok(())
+        }
+    }
+
+    pub(crate) fn validate_relation_type_has_role_types_to_unset_abstract(
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+        relation_type: RelationType,
+    ) -> Result<(), Box<SchemaValidationError>> {
+        let related_role_types = relation_type
+            .get_related_role_types(snapshot, type_manager)
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
+        if related_role_types.is_empty() {
+            Err(Box::new(SchemaValidationError::CannotUnsetAbstractnessOfRelationTypeWithoutRoleTypes {
+                relation: get_label_or_schema_err(snapshot, type_manager, relation_type)?,
+            }))
+        } else {
+            Ok(())
         }
     }
 
@@ -2073,7 +2083,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let inherited_value_type_with_source = attribute_type
             .get_value_type(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         match inherited_value_type_with_source {
             Some((inherited_value_type, inherited_value_type_source)) => {
                 if inherited_value_type == value_type || inherited_value_type_source == attribute_type {
@@ -2099,11 +2109,11 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let subtypes = attribute_type
             .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for subtype in subtypes.into_iter() {
             if let Some(subtype_value_type) = subtype
                 .get_value_type_declared(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             {
                 if subtype_value_type != value_type {
                     return Err(Box::new(SchemaValidationError::ValueTypeNotCompatibleWithInheritedValueType {
@@ -2127,7 +2137,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let mut affected_sources: HashSet<AttributeType> = attribute_type
             .get_supertypes_transitive(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
             .into_iter()
             .cloned()
             .collect();
@@ -2135,7 +2145,7 @@ impl OperationTimeValidation {
         for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             let type_value_type_with_source = type_
                 .get_value_type(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
             if let Some((type_value_type, type_value_type_source)) = type_value_type_with_source {
                 if affected_sources.contains(&type_value_type_source) {
                     debug_assert!(value_type.clone().unwrap_or(type_value_type.clone()) == type_value_type);
@@ -2201,7 +2211,7 @@ impl OperationTimeValidation {
     //         relation_type.clone(),
     //         AnnotationCategory::Cascade,
     //     )
-    //     .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+    //     .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
     //     match old_annotation_with_source {
     //         None => {
     //             let new_supertype_annotation = type_get_annotation_with_source_by_category(
@@ -2210,7 +2220,7 @@ impl OperationTimeValidation {
     //                 new_supertype.clone(),
     //                 AnnotationCategory::Cascade,
     //             )
-    //             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+    //             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
     //             match new_supertype_annotation {
     //                 None => Ok(()),
     //                 Some(_) => {
@@ -2225,11 +2235,11 @@ impl OperationTimeValidation {
     //                                 type_.clone(),
     //                                 AnnotationCategory::Cascade,
     //                             )
-    //                             .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+    //                             .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
     //                             if type_annotation.is_none() {
     //                                 let type_has_instances =
     //                                     Self::has_instances_of_type(snapshot, thing_manager, type_.clone())
-    //                                         .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+    //                                         .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
     //                                 if type_has_instances {
     //                                     return Err(Box::new(SchemaValidationError::ChangingRelationSupertypeLeadsToImplicitCascadeAnnotationAcquisitionAndUnexpectedDataLoss(
     //                                     get_label_or_schema_err(snapshot, type_manager, relation_type.clone())?,
@@ -2261,7 +2271,7 @@ impl OperationTimeValidation {
             type_manager,
             attribute_type
                 .get_constraints_independent(snapshot, type_manager)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                 .iter(),
         );
         let supertype_constraint_source = match &new_supertype {
@@ -2271,7 +2281,7 @@ impl OperationTimeValidation {
                 type_manager,
                 new_supertype
                     .get_constraints_independent(snapshot, type_manager)
-                    .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?
+                    .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
                     .iter(),
             ),
         };
@@ -2337,7 +2347,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = owner
             .get_owns(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let found_owns = all_owns.iter().find(|owns| owns.attribute() == attribute_type);
 
         match found_owns {
@@ -2364,7 +2374,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_plays = player
             .get_plays(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let found_plays = all_plays.iter().find(|plays| plays.role() == role_type);
 
         match found_plays {
@@ -2391,7 +2401,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_annotations = type_
             .get_annotations_declared(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for existing_annotation in existing_annotations.into_iter() {
             let existing_annotation_category = existing_annotation.clone().into().category();
@@ -2415,7 +2425,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let existing_annotations = capability
             .get_annotations_declared(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for existing_annotation in existing_annotations.into_iter() {
             let existing_annotation_category = existing_annotation.clone().into().category();
@@ -2495,7 +2505,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let annotations = attribute_type
             .get_annotations_declared(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for annotation in annotations.into_iter() {
             match annotation {
                 AttributeTypeAnnotation::Regex(regex) => {
@@ -2557,7 +2567,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let all_owns = attribute_type
             .get_owns(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         for owns in all_owns.into_iter() {
             Self::validate_owns_value_type_compatible_with_annotations(
@@ -2578,7 +2588,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         let annotations = owns
             .get_annotations_declared(snapshot, type_manager)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         for annotation in annotations.into_iter() {
             match annotation {
                 OwnsAnnotation::Unique(_) => Self::validate_owns_value_type_compatible_with_unique_annotation(
@@ -2633,7 +2643,7 @@ impl OperationTimeValidation {
         type_: impl KindAPI,
     ) -> Result<(), Box<SchemaValidationError>> {
         let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         if has_instances {
             Err(Box::new(SchemaValidationError::CannotDeleteTypeWithExistingInstances {
@@ -2652,7 +2662,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             if has_instances {
                 Err(Box::new(SchemaValidationError::CannotChangeValueTypeWithExistingInstances {
@@ -2673,7 +2683,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<SchemaValidationError>> {
         for_type_and_subtypes_transitive!(snapshot, type_manager, attribute_type, |type_: AttributeType| {
             let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, type_)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
             if has_instances {
                 Err(Box::new(SchemaValidationError::CannotUnsetValueTypeWithExistingInstances {
@@ -2693,7 +2703,7 @@ impl OperationTimeValidation {
         role_type: RoleType,
     ) -> Result<(), Box<SchemaValidationError>> {
         let has_instances = Self::has_instances_of_type(snapshot, type_manager, thing_manager, role_type)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         if has_instances {
             Err(Box::new(SchemaValidationError::CannotSetRoleOrderingWithExistingInstances {
@@ -2711,7 +2721,7 @@ impl OperationTimeValidation {
         owns: Owns,
     ) -> Result<(), Box<SchemaValidationError>> {
         let has_instances = Self::has_instances_of_owns(snapshot, thing_manager, owns.owner(), owns.attribute())
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
 
         if has_instances {
             Err(Box::new(SchemaValidationError::CannotSetOwnsOrderingWithExistingInstances {
@@ -3626,11 +3636,11 @@ impl OperationTimeValidation {
         let new_inherited_capabilities = match new_supertype {
             None => HashSet::new(),
             Some(new_supertype) => TypeReader::get_capabilities::<CAP>(snapshot, new_supertype, false)
-                .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?,
+                .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?,
         };
 
         let current_capabilities = TypeReader::get_capabilities::<CAP>(snapshot, type_, false)
-            .map_err(|source| Box::new(SchemaValidationError::ConceptRead { typedb_source: source }))?;
+            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
         let current_inherited_capabilities =
             current_capabilities.iter().filter(|capability| capability.object() != type_);
 

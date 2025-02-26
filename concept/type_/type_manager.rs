@@ -1298,11 +1298,6 @@ impl TypeManager {
         let exists = relation_type.get_relates(snapshot, self)?.contains(&relates);
 
         if !exists && !is_implicit {
-            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot, self, relates, true, // new relates is set
-            )
-            .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
-
             let ordering = relates.role().get_ordering(snapshot, self)?;
 
             OperationTimeValidation::validate_new_acquired_relates_compatible_with_instances(
@@ -1390,7 +1385,7 @@ impl TypeManager {
 
         let declared_relates = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
         for relates in declared_relates.iter() {
-            self.delete_role_type(snapshot, thing_manager, relates.role())?;
+            self.delete_role_type(snapshot, thing_manager, relates.role(), true)?;
         }
         self.delete_object_type_capabilities_unchecked(snapshot, relation_type.into_object_type())?;
         self.delete_type(snapshot, relation_type)
@@ -1417,15 +1412,24 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        is_cascade_delete: bool,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, role_type)?;
 
         let relates = role_type.get_relates_explicit(snapshot, self)?;
 
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-            snapshot, self, relates, false,
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        if !is_cascade_delete {
+            OperationTimeValidation::validate_non_abstract_relation_type_has_other_role_types_to_delete_role_type(
+                snapshot,
+                self,
+                relates.relation(),
+                role_type,
+            )
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        }
+
+        OperationTimeValidation::validate_relation_type_non_abstract_subtypes_have_other_role_types_to_delete_role_type(snapshot, self, relates.relation(), role_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         // Should be the same as in validate_delete_type, but leaving for consistency
         OperationTimeValidation::validate_no_corrupted_instances_to_unset_relates(
@@ -1785,16 +1789,6 @@ impl TypeManager {
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_interface_type_supertype::<
-            Owns,
-        >(
-            snapshot,
-            self,
-            subtype,
-            None, // supertype is unset
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
         OperationTimeValidation::validate_affected_constraints_compatible_with_owns_instances_on_attribute_supertype_unset(
             snapshot,
             self,
@@ -1919,6 +1913,10 @@ impl TypeManager {
         subtype: RelationType,
         supertype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
+        // We could check that either the subtype has declared role types or the supertype has some role types,
+        // but it feels redundant as it is the responsibility of the supertype to have at least one role (which will be inherited).
+        // It is checked at commit. Implement it the lack of this check strange in practice.
+
         OperationTimeValidation::validate_role_names_compatible_with_new_relation_supertype_transitive(
             snapshot, self, subtype, supertype,
         )
@@ -1978,6 +1976,11 @@ impl TypeManager {
         thing_manager: &ThingManager,
         subtype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
+        OperationTimeValidation::validate_non_abstract_relation_type_has_role_types_after_supertype_unset(
+            snapshot, self, subtype,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+
         OperationTimeValidation::validate_relates_specialises_compatible_with_new_supertype_transitive(
             snapshot, self, subtype, None, // supertype
         )
@@ -2019,11 +2022,6 @@ impl TypeManager {
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot, self, owns, true,
-            )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
             OperationTimeValidation::validate_new_acquired_owns_compatible_with_instances(
                 snapshot,
                 self,
@@ -2050,11 +2048,6 @@ impl TypeManager {
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         if let Some(owns) = owner.get_owns_attribute_declared(snapshot, self, attribute_type)? {
-            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot, self, owns, false,
-            )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
             OperationTimeValidation::validate_no_corrupted_instances_to_unset_owns(
                 snapshot,
                 self,
@@ -2082,11 +2075,6 @@ impl TypeManager {
         let exists = player.get_plays(snapshot, self)?.contains(&plays);
 
         if !exists {
-            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot, self, plays, true,
-            )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
             OperationTimeValidation::validate_new_acquired_plays_compatible_with_instances(
                 snapshot,
                 self,
@@ -2112,11 +2100,6 @@ impl TypeManager {
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         if let Some(plays) = player.get_plays_role_declared(snapshot, self, role_type)? {
-            OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_capabilities(
-                snapshot, self, plays, false,
-            )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
             OperationTimeValidation::validate_no_corrupted_instances_to_unset_plays(
                 snapshot,
                 self,
@@ -2302,6 +2285,9 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
+        OperationTimeValidation::validate_relation_type_has_role_types_to_unset_abstract(snapshot, self, relation_type)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+
         self.unset_type_annotation_abstract(snapshot, relation_type)
     }
 
@@ -2555,23 +2541,6 @@ impl TypeManager {
         thing_manager: &ThingManager,
         role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_interface_type_supertype::<
-            Relates,
-        >(
-            snapshot, self, role_type, None, // supertype is unset
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_interface_type_supertype::<
-            Plays,
-        >(
-            snapshot,
-            self,
-            role_type,
-            None, // supertype is unset
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
         OperationTimeValidation::validate_affected_constraints_compatible_with_relates_instances_on_role_supertype_unset(
             snapshot,
             self,
@@ -2729,8 +2698,6 @@ impl TypeManager {
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.validate_updated_capability_cardinality_against_schema(snapshot, owns, AnnotationKey::CARDINALITY)?;
-
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
             snapshot,
             self,
@@ -2755,7 +2722,8 @@ impl TypeManager {
             let updated_cardinality = Owns::get_default_cardinality(owns.get_ordering(snapshot, self)?);
 
             if updated_cardinality != owns.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(snapshot, owns, updated_cardinality)?;
+                OperationTimeValidation::validate_cardinality_arguments(updated_cardinality)
+                    .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
                     snapshot,
@@ -2781,7 +2749,9 @@ impl TypeManager {
         let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, owns, annotation.clone())?;
-        self.validate_updated_capability_cardinality_against_schema(snapshot, owns, cardinality)?;
+
+        OperationTimeValidation::validate_cardinality_arguments(cardinality)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
             snapshot,
@@ -2807,7 +2777,8 @@ impl TypeManager {
             let updated_cardinality = Owns::get_default_cardinality(owns.get_ordering(snapshot, self)?);
 
             if updated_cardinality != owns.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(snapshot, owns, updated_cardinality)?;
+                OperationTimeValidation::validate_cardinality_arguments(updated_cardinality)
+                    .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_owns_instances(
                     snapshot,
@@ -2833,7 +2804,9 @@ impl TypeManager {
         let annotation = Annotation::Cardinality(cardinality);
 
         self.validate_set_capability_annotation_general(snapshot, plays, annotation.clone())?;
-        self.validate_updated_capability_cardinality_against_schema(snapshot, plays, cardinality)?;
+
+        OperationTimeValidation::validate_cardinality_arguments(cardinality)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_plays_instances(
             snapshot,
@@ -2859,7 +2832,8 @@ impl TypeManager {
             let updated_cardinality = Plays::get_default_cardinality();
 
             if updated_cardinality != plays.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(snapshot, plays, updated_cardinality)?;
+                OperationTimeValidation::validate_cardinality_arguments(updated_cardinality)
+                    .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_plays_instances(
                     snapshot,
@@ -2888,7 +2862,8 @@ impl TypeManager {
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.validate_set_capability_annotation_general(snapshot, relates, annotation.clone())?;
-        self.validate_updated_capability_cardinality_against_schema(snapshot, relates, cardinality)?;
+        OperationTimeValidation::validate_cardinality_arguments(cardinality)
+            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         OperationTimeValidation::validate_new_annotation_constraints_compatible_with_relates_instances(
             snapshot,
@@ -2918,7 +2893,8 @@ impl TypeManager {
                 Relates::get_default_cardinality_for_explicit(relates.role().get_ordering(snapshot, self)?);
 
             if updated_cardinality != relates.get_cardinality(snapshot, self)? {
-                self.validate_updated_capability_cardinality_against_schema(snapshot, relates, updated_cardinality)?;
+                OperationTimeValidation::validate_cardinality_arguments(updated_cardinality)
+                    .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
                 OperationTimeValidation::validate_new_annotation_constraints_compatible_with_relates_instances(
                     snapshot,
@@ -3385,26 +3361,6 @@ impl TypeManager {
 
         OperationTimeValidation::validate_declared_type_annotation_is_compatible_with_declared_annotations(
             snapshot, self, type_, category,
-        )
-        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
-        Ok(())
-    }
-
-    fn validate_updated_capability_cardinality_against_schema(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        capability: impl Capability,
-        cardinality: AnnotationCardinality,
-    ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_cardinality_arguments(cardinality)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-
-        OperationTimeValidation::validate_cardinality_of_inheritance_line_with_updated_cardinality(
-            snapshot,
-            self,
-            capability,
-            cardinality,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 

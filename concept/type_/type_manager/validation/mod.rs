@@ -66,7 +66,7 @@ typedb_error!(
         ValueTypeNotCompatibleWithInheritedValueType(38, "Value type '{value_type}' for '{label}' is not compatible with inherited value type '{super_value_type}' of '{super_label}'.", label: Label, value_type: ValueType, super_label: Label, super_value_type: ValueType),
         CannotRedeclareInheritedValueTypeWithoutSpecialisation(39, "Cannot redeclare inherited value type '{value_type}' for '{label}' without specialising inheritance from {super_label}'.", label: Label, super_label: Label, value_type: ValueType),
         AnnotationIsNotCompatibleWithDeclaredAnnotation(40, "Annotation '{annotation}' is not compatible with declared annotation '{declared_annotation}' for '{label}'.", annotation: AnnotationCategory, declared_annotation: AnnotationCategory, label: Label),
-        RelationTypeMustRelateAtLeastOneRole(41, "Relation type '{relation}' must relate at least one role.", relation: Label),
+        NonAbstractRelationTypeMustRelateAtLeastOneRole(41, "Non abstract relation type '{relation}' must relate at least one role.", relation: Label),
         CannotRedeclareInheritedCapabilityWithoutSpecialisation(42, "Cannot redeclare inherited capability '{cap} {interface}' from '{supertype}' on subtype '{subtype}' without specialisation.", cap: CapabilityKind, interface: Label, supertype: Label, subtype: Label),
         CannotRedeclareConstraintOnSubtypeWithoutSpecialisation(43, "Cannot redeclare constraint '{constraint}' on subtype '{subtype}' without specialisation.", constraint: ConstraintDescription, subtype: Label),
         CapabilityConstraintAlreadyExistsForTheWholeInterfaceType(44, "Capability constraint '{constraint}' already exists for the whole interface type '{cap}' on '{label}'.", cap: CapabilityKind, label: Label, constraint: ConstraintDescription),
@@ -122,5 +122,8 @@ typedb_error!(
             "Cannot change superty as the resulting schema constraints would be not be compatible with existing instances.",
             typedb_source: Box<DataValidationError>
         ),
+        CannotDeleteTheOnlyRoleTypeOfNonAbstractRelationType(60, "Cannot delete role type '{role}' because it is the only role type of non-abstract relation type '{relation}'.", relation: Label, role: Label),
+        CannotUnsetAbstractnessOfRelationTypeWithoutRoleTypes(61, "Cannot unset abstractness of relation type '{relation}' because it does not have role types.", relation: Label),
+        CannotUnsetRelationSupertypeBecauseAllRoleTypesAreLost(62, "Cannot unset supertype of relation type '{relation}' because the relation type will not have any role types related.", relation: Label),
     }
 );
