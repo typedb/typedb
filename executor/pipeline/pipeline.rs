@@ -220,7 +220,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                     last_stage = WritePipelineStage::Update(Box::new(update_stage));
                 }
                 ExecutableStage::Put(_) => {
-                    todo!()
+                    compile_error!("todo");
                     // let update_stage = PutStageExecutor::new(put_executable, last_stage);
                     // last_stage = WritePipelineStage::Put(Box::new(update_stage));
                 }

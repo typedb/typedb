@@ -60,8 +60,10 @@ pub fn compile(
     desired_output_variable_positions: Option<HashMap<Variable, VariablePosition>>,
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
-    let mut variable_positions = input_variables.clone();
-    compile_error!("Figure out how to accept desire output positions");
+    debug_assert!(desired_output_variable_positions.clone().map(|positions| {
+            input_variables.iter().all(|(k,v)| positions.get(k).unwrap() == v)
+        }).unwrap_or(true));
+    let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());
     let concept_inserts = add_inserted_concepts(
         constraints,
         type_annotations,
@@ -91,7 +93,7 @@ pub(crate) fn add_inserted_concepts(
     output_variables: &mut HashMap<Variable, VariablePosition>,
     stage_source_span: Option<Span>,
 ) -> Result<Vec<ConceptInstruction>, Box<WriteCompilationError>> {
-    let first_inserted_variable_position =
+    let mut next_insert_position =
         output_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
@@ -165,10 +167,12 @@ pub(crate) fn add_inserted_concepts(
                     }));
                 } // else let the original be
             } else {
-                let write_to =
-                    VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
-                output_variables.insert(thing, write_to);
-                let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to: ThingPosition(write_to) });
+                if !output_variables.contains_key(&thing) {
+                    output_variables.insert(thing, VariablePosition::new(next_insert_position as u32));
+                    next_insert_position += 1;
+                };
+                let write_to = ThingPosition(*output_variables.get(&thing).unwrap());
+                let instruction = ConceptInstruction::PutObject(PutObject { type_, write_to });
                 concept_instructions.insert(thing, instruction);
             }
         } else {
@@ -216,11 +220,13 @@ pub(crate) fn add_inserted_concepts(
                     }));
                 } // else let the original be
             } else {
-                let write_to =
-                    VariablePosition::new((first_inserted_variable_position + concept_instructions.len()) as u32);
-                output_variables.insert(thing, write_to);
+                if !output_variables.contains_key(&thing) {
+                    output_variables.insert(thing, VariablePosition::new(next_insert_position as u32));
+                    next_insert_position += 1;
+                };
+                let write_to = ThingPosition(*output_variables.get(&thing).unwrap());
                 let instruction =
-                    ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to: ThingPosition(write_to) });
+                    ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to });
                 concept_instructions.insert(thing, instruction);
             }
         };
@@ -382,11 +388,11 @@ pub(crate) fn get_kinds_from_types(types: &BTreeSet<Type>) -> HashSet<Kind> {
 }
 
 pub(crate) fn prepare_output_row_schema(
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
 ) -> Vec<Option<(Variable, VariableSource)>> {
-    let output_width = input_variables.values().map(|i| i.position + 1).max().unwrap_or(0);
+    let output_width = variable_positions.values().map(|i| i.position + 1).max().unwrap_or(0);
     let mut output_row_schema = vec![None; output_width as usize];
-    input_variables.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
+    variable_positions.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
         output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
     });
     output_row_schema

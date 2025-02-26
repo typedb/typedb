@@ -9,6 +9,7 @@ use std::sync::Arc;
 use answer::variable::Variable;
 use crate::executable::insert::executable::InsertExecutable;
 use crate::executable::match_::planner::match_executable::MatchExecutable;
+use crate::executable::next_executable_id;
 use crate::VariablePosition;
 
 #[derive(Debug)]
@@ -16,15 +17,21 @@ pub struct PutExecutable {
     pub executable_id: u64,
     pub match_: MatchExecutable,
     pub insert: InsertExecutable,
-    pub output_row_mapping: HashMap<Variable, VariablePosition>,
 }
 
 impl PutExecutable {
-    pub(crate) fn new(
-        match_executable: MatchExecutable,
-        insert_executable: InsertExecutable,
-        input_variables: &HashMap<Variable, VariablePosition>)
-    -> PutExecutable {
-        todo!()
+    pub(crate) fn new(match_: MatchExecutable, insert: InsertExecutable) -> PutExecutable {
+        debug_assert!(match_.variable_positions() == &insert
+                .output_row_schema
+                .iter()
+                .enumerate()
+                .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
+                .map(|(i, v)| (v, VariablePosition::new(i as u32)))
+                .collect::<HashMap<_,_>>());
+        Self { executable_id: next_executable_id(), match_, insert }
+    }
+
+    pub(crate) fn output_row_mapping(&self) -> &HashMap<Variable, VariablePosition> {
+        self.match_.variable_positions()
     }
 }

@@ -179,6 +179,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         &entry_annotations,
         &translation_context.variable_registry,
         None,
+        None,
     )
     .unwrap();
 
