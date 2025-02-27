@@ -36,6 +36,7 @@ rust_library(
         "@crates//:regex",
         "@crates//:tracing",
         "@crates//:tokio",
+        "@crates//:unicase",
     ],
 )
 

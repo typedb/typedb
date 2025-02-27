@@ -46,7 +46,7 @@ features = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.11.0"
+		version = "1.14.0"
 		default-features = false
 
 	[dependencies.rand]
@@ -56,7 +56,7 @@ features = {}
 
 	[dependencies.prost]
 		features = ["default", "derive", "prost-derive", "std"]
-		version = "0.13.4"
+		version = "0.13.5"
 		default-features = false
 
 	[dependencies.chrono-tz]
@@ -102,7 +102,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.42.0"
+		version = "1.43.0"
 		default-features = false
 
 	[dependencies.tracing]
@@ -173,7 +173,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.24"
+		version = "4.5.30"
 		default-features = false
 
 	[dependencies.bytes]

@@ -32,6 +32,7 @@ use ir::{
     pipeline::ParameterRegistry,
 };
 use itertools::{Itertools, MinMaxResult};
+use unicase::UniCase;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -881,7 +882,9 @@ impl<T> Checker<T> {
                                 .is_match(a.unwrap_string_ref())
                         },
                         Comparator::Contains => |a, b| {
-                            a.unwrap_string_ref().to_lowercase().contains(b.unwrap_string_ref().to_lowercase().as_str())
+                            let a_unicase = UniCase::new(a.unwrap_string_ref()).to_folded_case();
+                            let b_unicase = UniCase::new(b.unwrap_string_ref()).to_folded_case();
+                            a_unicase.contains(b_unicase.as_str())
                         },
                     };
                     filters.push(Box::new(move |value| {
