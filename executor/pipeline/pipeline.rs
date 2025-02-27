@@ -222,7 +222,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                     last_stage = WritePipelineStage::Update(Box::new(update_stage));
                 }
                 ExecutableStage::Put(put_executable) => {
-                    let put_stage = PutStageExecutor::new(put_executable, last_stage);
+                    let put_stage = PutStageExecutor::new(put_executable, last_stage, executable_functions.clone());
                     last_stage = WritePipelineStage::Put(Box::new(put_stage));
                 }
                 ExecutableStage::Delete(delete_executable) => {

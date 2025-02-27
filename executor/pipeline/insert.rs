@@ -115,7 +115,7 @@ pub(crate) fn prepare_output_rows(
     Ok(output_batch)
 }
 
-fn execute_insert(
+pub(crate) fn execute_insert(
     executable: &InsertExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
