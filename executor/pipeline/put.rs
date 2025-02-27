@@ -4,21 +4,26 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
 use answer::variable_value::VariableValue;
-use compiler::executable::function::ExecutableFunctionRegistry;
-use compiler::executable::insert::VariableSource;
-use compiler::executable::put::PutExecutable;
-use compiler::VariablePosition;
+use compiler::{
+    executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
+    VariablePosition,
+};
 use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
-use crate::batch::Batch;
-use crate::ExecutionInterrupt;
-use crate::match_executor::MatchExecutor;
-use crate::pipeline::{PipelineExecutionError, WrittenRowsIterator};
-use crate::pipeline::stage::{ExecutionContext, StageAPI};
-use crate::row::MaybeOwnedRow;
+
+use crate::{
+    batch::Batch,
+    match_executor::MatchExecutor,
+    pipeline::{
+        stage::{ExecutionContext, StageAPI},
+        PipelineExecutionError, WrittenRowsIterator,
+    },
+    row::MaybeOwnedRow,
+    ExecutionInterrupt,
+};
 
 pub struct PutStageExecutor<PreviousStage> {
     executable: Arc<PutExecutable>,
@@ -27,7 +32,11 @@ pub struct PutStageExecutor<PreviousStage> {
 }
 
 impl<PreviousStage> PutStageExecutor<PreviousStage> {
-    pub fn new(executable: Arc<PutExecutable>, previous: PreviousStage, function_registry: Arc<ExecutableFunctionRegistry>) -> Self {
+    pub fn new(
+        executable: Arc<PutExecutable>,
+        previous: PreviousStage,
+        function_registry: Arc<ExecutableFunctionRegistry>,
+    ) -> Self {
         Self { executable, previous, function_registry }
     }
 
@@ -37,13 +46,19 @@ impl<PreviousStage> PutStageExecutor<PreviousStage> {
 }
 
 impl<Snapshot, PreviousStage> StageAPI<Snapshot> for PutStageExecutor<PreviousStage>
-    where
-        Snapshot: WritableSnapshot + 'static,
-        PreviousStage: StageAPI<Snapshot>,
+where
+    Snapshot: WritableSnapshot + 'static,
+    PreviousStage: StageAPI<Snapshot>,
 {
     type OutputIterator = WrittenRowsIterator;
 
-    fn into_iterator(self, mut interrupt: ExecutionInterrupt) -> Result<(Self::OutputIterator, ExecutionContext<Snapshot>), (Box<PipelineExecutionError>, ExecutionContext<Snapshot>)> {
+    fn into_iterator(
+        self,
+        mut interrupt: ExecutionInterrupt,
+    ) -> Result<
+        (Self::OutputIterator, ExecutionContext<Snapshot>),
+        (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
+    > {
         let Self { previous: previous_stage, executable, function_registry } = self;
         let (mut previous_iterator, mut context) = previous_stage.into_iterator(interrupt.clone())?;
 
@@ -52,13 +67,16 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for PutStageExecutor<PreviousSt
         let mut output_batch = Batch::new(executable.output_width() as u32, 10); // We don't know how many ahead of time
         let mut must_insert = Vec::new();
         let empty_output_row = vec![VariableValue::Empty; executable.output_width()];
-        let input_output_mapping = executable.insert.output_row_schema.iter().enumerate()
-            .filter_map(|(i, entry_opt)| {
-                match entry_opt {
-                    Some((_, VariableSource::InputVariable(pos))) => Some((*pos, VariablePosition::new(i as u32))),
-                    _ => None
-                }
-            }).collect::<HashMap<_,_>>();
+        let input_output_mapping = executable
+            .insert
+            .output_row_schema
+            .iter()
+            .enumerate()
+            .filter_map(|(i, entry_opt)| match entry_opt {
+                Some((_, VariableSource::InputVariable(pos))) => Some((*pos, VariablePosition::new(i as u32))),
+                _ => None,
+            })
+            .collect::<HashMap<_, _>>();
         while let Some(input_result) = previous_iterator.next() {
             let input_row = match input_result {
                 Ok(row) => row,
@@ -73,13 +91,12 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for PutStageExecutor<PreviousSt
                 function_registry.clone(),
                 &context.profile,
             )
-                .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }));
+            .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }));
             let mut match_iterator = match executor {
-                Ok(executor) => {
-                    crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(
-                        executor.into_iterator(context.clone(), interrupt.clone()),
-                    )).peekable()
-                }
+                Ok(executor) => crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(
+                    executor.into_iterator(context.clone(), interrupt.clone()),
+                ))
+                .peekable(),
                 Err(err) => return Err((err, context)),
             };
             // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
@@ -92,10 +109,9 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for PutStageExecutor<PreviousSt
                         output_batch.append(row);
                         must_insert.push(false);
                     }
-                    Err(typedb_source) => return Err((
-                        Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source }),
-                        context)
-                    ),
+                    Err(typedb_source) => {
+                        return Err((Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source }), context))
+                    }
                 }
             }
             if size_before == output_batch.len() {
@@ -103,7 +119,10 @@ impl<Snapshot, PreviousStage> StageAPI<Snapshot> for PutStageExecutor<PreviousSt
                 let multiplicity = input_row.multiplicity();
                 for _ in 0..multiplicity {
                     output_batch.append(MaybeOwnedRow::new_borrowed(&empty_output_row, &1));
-                    output_batch.get_row_mut(output_batch.len()).copy_mapped(input_row.as_reference(), input_output_mapping.iter().map(|(s,d)| (s.clone(), d.clone())));
+                    output_batch.get_row_mut(output_batch.len()).copy_mapped(
+                        input_row.as_reference(),
+                        input_output_mapping.iter().map(|(s, d)| (s.clone(), d.clone())),
+                    );
                     must_insert.push(true);
                 }
             }

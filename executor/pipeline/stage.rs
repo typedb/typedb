@@ -24,6 +24,7 @@ use crate::{
             OffsetStageIterator, RequireStageExecutor, RequireStageIterator, SelectStageExecutor, SelectStageIterator,
             SortStageExecutor, SortStageIterator,
         },
+        put::PutStageExecutor,
         reduce::ReduceStageExecutor,
         update::UpdateStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
@@ -32,7 +33,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::pipeline::put::PutStageExecutor;
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {

@@ -354,7 +354,8 @@ fn annotate_stage(
                 running_variable_annotations,
                 annotated_function_signatures,
                 false,
-            ).map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
             let insert_annotations = annotate_write_stage(
                 running_variable_annotations,
                 variable_registry,
@@ -371,7 +372,7 @@ fn annotate_stage(
                 running_constraint_annotations,
                 &insert_annotations,
             )
-                .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
             // Update running annotations based on match annotations as they will be less strict.
             match_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {

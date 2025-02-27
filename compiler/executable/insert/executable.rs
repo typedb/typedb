@@ -60,9 +60,10 @@ pub fn compile(
     desired_output_variable_positions: Option<HashMap<Variable, VariablePosition>>,
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
-    debug_assert!(desired_output_variable_positions.clone().map(|positions| {
-            input_variables.iter().all(|(k,v)| positions.get(k).unwrap() == v)
-        }).unwrap_or(true));
+    debug_assert!(desired_output_variable_positions
+        .clone()
+        .map(|positions| { input_variables.iter().all(|(k, v)| positions.get(k).unwrap() == v) })
+        .unwrap_or(true));
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());
     let concept_inserts = add_inserted_concepts(
         constraints,
@@ -93,8 +94,7 @@ pub(crate) fn add_inserted_concepts(
     output_variables: &mut HashMap<Variable, VariablePosition>,
     stage_source_span: Option<Span>,
 ) -> Result<Vec<ConceptInstruction>, Box<WriteCompilationError>> {
-    let mut next_insert_position =
-        output_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
+    let mut next_insert_position = output_variables.values().map(|pos| pos.position + 1).max().unwrap_or(0) as usize;
     let type_bindings = collect_type_bindings(constraints, type_annotations)?;
     let value_bindings = collect_value_bindings(constraints)?;
     let mut concept_instructions = HashMap::<Variable, ConceptInstruction>::new();
@@ -225,8 +225,7 @@ pub(crate) fn add_inserted_concepts(
                     next_insert_position += 1;
                 };
                 let write_to = ThingPosition(*output_variables.get(&thing).unwrap());
-                let instruction =
-                    ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to });
+                let instruction = ConceptInstruction::PutAttribute(PutAttribute { type_, value, write_to });
                 concept_instructions.insert(thing, instruction);
             }
         };

@@ -37,12 +37,11 @@ use crate::{
             translate_distinct, translate_limit, translate_offset, translate_require, translate_select, translate_sort,
         },
         reduce::translate_reduce,
-        writes::{translate_delete, translate_insert, translate_update},
+        writes::{translate_delete, translate_insert, translate_put, translate_update},
         TranslationContext,
     },
     RepresentationError,
 };
-use crate::translation::writes::translate_put;
 
 #[derive(Debug, Clone)]
 pub struct TranslatedPipeline {

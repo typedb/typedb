@@ -128,7 +128,10 @@ pub(crate) fn translate_function_block(
             })?;
 
     let has_illegal_stages = stages.iter().any(|stage| match stage {
-        TranslatedStage::Insert { .. } | TranslatedStage::Update { .. } | TranslatedStage::Put { .. } | TranslatedStage::Delete { .. } => true,
+        TranslatedStage::Insert { .. }
+        | TranslatedStage::Update { .. }
+        | TranslatedStage::Put { .. }
+        | TranslatedStage::Delete { .. } => true,
         TranslatedStage::Match { .. }
         | TranslatedStage::Distinct(_)
         | TranslatedStage::Require(_)

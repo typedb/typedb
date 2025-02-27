@@ -30,13 +30,13 @@ use crate::{
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
+        put::PutExecutable,
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         update::executable::UpdateExecutable,
         ExecutableCompilationError,
     },
     VariablePosition,
 };
-use crate::executable::put::PutExecutable;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {

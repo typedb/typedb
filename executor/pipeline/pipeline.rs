@@ -8,7 +8,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
-    executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
+    executable::{
+        fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage,
+        put::PutExecutable,
+    },
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
@@ -16,7 +19,6 @@ use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::common::Span;
-use compiler::executable::put::PutExecutable;
 
 use crate::{
     document::ConceptDocument,
@@ -30,6 +32,7 @@ use crate::{
             DistinctStageExecutor, LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor,
             SortStageExecutor,
         },
+        put::PutStageExecutor,
         reduce::ReduceStageExecutor,
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
         update::UpdateStageExecutor,
@@ -38,7 +41,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-use crate::pipeline::put::PutStageExecutor;
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),

@@ -4,13 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
+
 use answer::variable::Variable;
-use crate::executable::insert::executable::InsertExecutable;
-use crate::executable::match_::planner::match_executable::MatchExecutable;
-use crate::executable::next_executable_id;
-use crate::VariablePosition;
+
+use crate::{
+    executable::{
+        insert::executable::InsertExecutable, match_::planner::match_executable::MatchExecutable, next_executable_id,
+    },
+    VariablePosition,
+};
 
 #[derive(Debug)]
 pub struct PutExecutable {
@@ -21,13 +24,16 @@ pub struct PutExecutable {
 
 impl PutExecutable {
     pub(crate) fn new(match_: MatchExecutable, insert: InsertExecutable) -> PutExecutable {
-        debug_assert!(match_.variable_positions() == &insert
-                .output_row_schema
-                .iter()
-                .enumerate()
-                .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
-                .map(|(i, v)| (v, VariablePosition::new(i as u32)))
-                .collect::<HashMap<_,_>>());
+        debug_assert!(
+            match_.variable_positions()
+                == &insert
+                    .output_row_schema
+                    .iter()
+                    .enumerate()
+                    .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
+                    .map(|(i, v)| (v, VariablePosition::new(i as u32)))
+                    .collect::<HashMap<_, _>>()
+        );
         Self { executable_id: next_executable_id(), match_, insert }
     }
 
