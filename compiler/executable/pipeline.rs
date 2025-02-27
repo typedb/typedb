@@ -13,7 +13,6 @@ use std::{
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::pipeline::{reduce::AssignedReduction, VariableRegistry};
-use itertools::Itertools;
 
 use crate::{
     annotation::{
@@ -24,8 +23,10 @@ use crate::{
     executable::{
         delete::executable::DeleteExecutable,
         fetch::executable::{compile_fetch, ExecutableFetch},
-        function::{executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
-        insert::executable::InsertExecutable,
+        function::{
+            executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider,
+        },
+        insert::{self, executable::InsertExecutable},
         match_::planner::{match_executable::MatchExecutable, vertex::Cost},
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
@@ -50,7 +51,7 @@ pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
     Update(Arc<UpdateExecutable>),
-    Put(Arc<(PutExecutable)>),
+    Put(Arc<PutExecutable>),
     Delete(Arc<DeleteExecutable>),
 
     Select(Arc<SelectExecutable>),
@@ -65,21 +66,14 @@ pub enum ExecutableStage {
 impl ExecutableStage {
     pub fn output_row_mapping(&self) -> HashMap<Variable, VariablePosition> {
         match self {
-            ExecutableStage::Match(executable) => executable.variable_positions().to_owned(),
-            ExecutableStage::Insert(executable) => executable
-                .output_row_schema
+            ExecutableStage::Match(executable) => executable
+                .variable_positions()
                 .iter()
-                .enumerate()
-                .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
-                .map(|(i, v)| (v, VariablePosition::new(i as u32)))
+                .filter(|(_, pos)| executable.selected_variables().contains(pos))
+                .map(|(&var, &pos)| (var, pos))
                 .collect(),
-            ExecutableStage::Update(executable) => executable
-                .output_row_schema
-                .iter()
-                .enumerate()
-                .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
-                .map(|(i, v)| (v, VariablePosition::new(i as u32)))
-                .collect(),
+            ExecutableStage::Insert(executable) => insert_row_schema_to_mapping(&executable.output_row_schema),
+            ExecutableStage::Update(executable) => insert_row_schema_to_mapping(&executable.output_row_schema),
             ExecutableStage::Delete(executable) => executable
                 .output_row_schema
                 .iter()
@@ -96,6 +90,17 @@ impl ExecutableStage {
             ExecutableStage::Put(executable) => executable.output_row_mapping().clone(),
         }
     }
+}
+
+fn insert_row_schema_to_mapping(
+    output_row_schema: &[Option<(Variable, insert::VariableSource)>],
+) -> HashMap<Variable, VariablePosition> {
+    output_row_schema
+        .iter()
+        .enumerate()
+        .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
+        .map(|(i, v)| (v, VariablePosition::new(i as u32)))
+        .collect()
 }
 
 pub fn compile_pipeline_and_functions(
@@ -143,14 +148,13 @@ pub fn compile_stages_and_fetch(
     (HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Option<Arc<ExecutableFetch>>),
     ExecutableCompilationError,
 > {
-    let selected_variables = variable_registry.variable_names().keys().copied().collect_vec();
     let (input_positions, executable_stages, _) = compile_pipeline_stages(
         statistics,
         variable_registry,
         available_functions,
         annotated_stages,
-        input_variables.iter().cloned(),
-        &selected_variables,
+        input_variables.iter().copied(),
+        None,
     )?;
     let stages_variable_positions =
         executable_stages.last().map(|stage: &ExecutableStage| stage.output_row_mapping()).unwrap_or(HashMap::new());
@@ -171,7 +175,7 @@ pub(crate) fn compile_pipeline_stages(
     call_cost_provider: &impl FunctionCallCostProvider,
     annotated_stages: Vec<AnnotatedStage>,
     input_variables: impl Iterator<Item = Variable>,
-    selected_variables: &[Variable],
+    function_return: Option<&[Variable]>,
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Cost), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
@@ -179,27 +183,16 @@ pub(crate) fn compile_pipeline_stages(
 
     for stage in annotated_stages {
         // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
-        let selected_variables = selected_variables
-            .iter()
-            .cloned()
-            .chain(stage.named_referenced_variables(variable_registry))
-            .unique()
-            .collect_vec();
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => compile_stage(
-                statistics,
-                variable_registry,
-                call_cost_provider,
-                &row_mapping,
-                &selected_variables,
-                stage,
-            )?,
+            Some(row_mapping) => {
+                compile_stage(statistics, variable_registry, call_cost_provider, &row_mapping, function_return, stage)?
+            }
             None => compile_stage(
                 statistics,
                 variable_registry,
                 call_cost_provider,
                 &input_variable_positions,
-                &selected_variables,
+                function_return,
                 stage,
             )?,
         };
@@ -225,15 +218,18 @@ fn compile_stage(
     variable_registry: &VariableRegistry,
     call_cost_provider: &impl FunctionCallCostProvider,
     input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &[Variable],
+    function_return: Option<&[Variable]>,
     annotated_stage: AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
     match &annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
+            let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
+            selected_variables.extend(input_variables.keys().copied());
+            selected_variables.extend(block.conjunction().named_output_variables(block.block_context()));
             let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
-                selected_variables,
+                &selected_variables,
                 block_annotations,
                 variable_registry,
                 executable_expressions,
@@ -267,10 +263,13 @@ fn compile_stage(
             Ok(ExecutableStage::Update(Arc::new(plan)))
         }
         AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
+            let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
+            selected_variables.extend(input_variables.keys().copied());
+            selected_variables.extend(block.conjunction().named_output_variables(block.block_context()));
             let match_plan = crate::executable::match_::planner::compile(
                 block,
                 input_variables,
-                selected_variables,
+                &selected_variables,
                 match_annotations,
                 variable_registry,
                 &HashMap::new(),

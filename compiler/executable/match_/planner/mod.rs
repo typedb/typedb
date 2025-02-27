@@ -14,6 +14,7 @@ use ir::{
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
+use tracing::{debug, trace};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -47,7 +48,7 @@ typedb_error! {
 pub fn compile(
     block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &[Variable],
+    selected_variables: &HashSet<Variable>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -57,14 +58,12 @@ pub fn compile(
     let conjunction = block.conjunction();
     let block_context = block.block_context();
 
+    debug!("Planning conjunction:\n{conjunction}");
+
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
-    let mut selected_variables: HashSet<_> =
-        selected_variables.iter().copied().filter(Variable::is_anonymous).collect();
-    selected_variables.extend(block_context.visible_variables(ScopeId::ROOT).filter(Variable::is_named));
-
-    Ok(plan_conjunction(
+    let plan = plan_conjunction(
         conjunction,
         block_context,
         input_variables,
@@ -77,7 +76,12 @@ pub fn compile(
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .lower(input_variables.keys().copied(), selected_variables.iter().copied(), &assigned_identities, variable_registry)
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .finish(variable_registry))
+    .finish(variable_registry);
+
+    trace!("Finished planning conjunction:\n{conjunction}");
+    debug!("Lowered plan:\n{plan}");
+
+    Ok(plan)
 }
 
 #[derive(Debug)]

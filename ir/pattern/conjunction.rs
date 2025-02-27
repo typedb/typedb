@@ -8,12 +8,12 @@ use std::{
     collections::HashSet,
     fmt,
     hash::{DefaultHasher, Hasher},
-    slice::Iter,
+    iter,
 };
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
-use itertools::{ExactlyOneError, Itertools};
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 
 use crate::{
@@ -131,6 +131,10 @@ impl Conjunction {
                 produced_variables.insert(v);
             });
         produced_variables
+    }
+
+    pub fn named_output_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        block_context.visible_variables(self.scope_id).filter(Variable::is_named)
     }
 }
 

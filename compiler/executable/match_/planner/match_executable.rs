@@ -65,11 +65,18 @@ impl MatchExecutable {
     pub fn planner_statistics(&self) -> &PlannerStatistics {
         &self.planner_statistics
     }
+
+    pub fn selected_variables(&self) -> &[VariablePosition] {
+        let Some(last) = self.steps().last() else { return &[] };
+        last.selected_variables()
+    }
 }
 
 impl fmt::Display for MatchExecutable {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Match executable plan:")?;
+        let selected = self.selected_variables();
+        let output_width = self.steps().last().map(|s| s.output_width()).unwrap_or(0);
+        write!(f, "Match executable plan [selected={:?}, output_width={}]:", selected, output_width)?;
         for (i, step) in self.steps().iter().enumerate() {
             write!(f, "\n  {i}: {step}")?;
         }
@@ -204,7 +211,7 @@ impl IntersectionStep {
         &'a self,
         map: &'a HashMap<ExecutorVariable, Variable>,
     ) -> VarMappedIntersectionStep<'a> {
-        VarMappedIntersectionStep { step: &self, map }
+        VarMappedIntersectionStep { step: self, map }
     }
 }
 
@@ -212,8 +219,8 @@ impl fmt::Display for IntersectionStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "Sorted Iterator Intersection [bound_vars={:?}, output_size={}, sort_by={}]",
-            &self.bound_variables, self.output_width, self.sort_variable
+            "Sorted Iterator Intersection [bound_vars={:?}, selected={:?}, output_size={}, sort_by={}]",
+            self.bound_variables, self.selected_variables, self.output_width, self.sort_variable
         )?;
         for (instruction, modes) in &self.instructions {
             write!(f, "\n      {instruction} with ({modes})")?;
@@ -306,7 +313,11 @@ impl UnsortedJoinStep {
 
 impl fmt::Display for UnsortedJoinStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Unsorted Iterate [bound_vars={:?}, output_size={:?}]", &self.bound_variables, self.output_width)?;
+        write!(
+            f,
+            "Unsorted Iterate [bound_vars={:?}, selected={:?}, output_size={:?}]",
+            self.bound_variables, self.selected_variables, self.output_width
+        )?;
         write!(f, "\n      {}", &self.iterate_instruction)?;
         // TODO: do we need these at all?
         write!(f, "\n      {:?}", &self.check_instructions)
@@ -347,7 +358,11 @@ impl AssignmentStep {
 
 impl fmt::Display for AssignmentStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Assignment [inputs={:?}, output_size={}]", &self.input_positions, self.output_width)?;
+        write!(
+            f,
+            "Assignment [inputs={:?}, selected={:?}, output_size={}]",
+            self.input_positions, self.selected_variables, self.output_width
+        )?;
         // TODO: Display expression
         write!(f, "\n      {:?}", &self.expression)
     }
@@ -380,7 +395,7 @@ impl CheckStep {
 
 impl fmt::Display for CheckStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Check")?;
+        write!(f, "Check [selected={:?}, output_width={}]", self.selected_variables, self.output_width)?;
         for check in &self.check_instructions {
             write!(f, "\n      {}", check)?;
         }
@@ -422,7 +437,7 @@ impl DisjunctionStep {
 
 impl fmt::Display for DisjunctionStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Disjunction [output_size={}]", self.output_width)?;
+        write!(f, "Disjunction [selected={:?}, output_size={}]", self.selected_variables, self.output_width)?;
         for branch in &self.branches {
             write!(f, "\n      --- Start branch ---")?;
             write!(f, "{}", branch)?;
