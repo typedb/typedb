@@ -1337,12 +1337,12 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         object_type: ObjectType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for owns in TypeReader::get_capabilities_declared::<Owns>(snapshot, object_type)? {
-            self.unset_owns_unchecked(snapshot, owns)?;
+        for owns in object_type.get_owns_declared(snapshot, self)?.iter() {
+            self.unset_owns_unchecked(snapshot, *owns)?;
         }
 
-        for plays in TypeReader::get_capabilities_declared::<Plays>(snapshot, object_type)? {
-            self.unset_plays_unchecked(snapshot, plays)?;
+        for plays in object_type.get_plays_declared(snapshot, self)?.iter() {
+            self.unset_plays_unchecked(snapshot, *plays)?;
         }
 
         Ok(())
@@ -1383,10 +1383,10 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, relation_type)?;
 
-        let declared_relates = TypeReader::get_capabilities_declared::<Relates>(snapshot, relation_type)?;
-        for relates in declared_relates.iter() {
-            self.delete_role_type(snapshot, thing_manager, relates.role(), true)?;
+        for explicit_relates in relation_type.get_relates_explicit_declared(snapshot, self)?.iter() {
+            self.delete_role_type(snapshot, thing_manager, explicit_relates.role())?;
         }
+
         self.delete_object_type_capabilities_unchecked(snapshot, relation_type.into_object_type())?;
         self.delete_type(snapshot, relation_type)
     }
@@ -1399,8 +1399,8 @@ impl TypeManager {
     ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, attribute_type)?;
 
-        for owns in TypeReader::get_capabilities_for_interface::<Owns>(snapshot, attribute_type)? {
-            self.unset_owns_unchecked(snapshot, owns)?;
+        for owns in attribute_type.get_owns(snapshot, self)?.iter() {
+            self.unset_owns_unchecked(snapshot, *owns)?;
         }
 
         self.unset_value_type_unchecked(snapshot, attribute_type)?;
@@ -1412,24 +1412,10 @@ impl TypeManager {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
-        is_cascade_delete: bool,
     ) -> Result<(), Box<ConceptWriteError>> {
         self.validate_delete_type(snapshot, thing_manager, role_type)?;
 
         let relates = role_type.get_relates_explicit(snapshot, self)?;
-
-        if !is_cascade_delete {
-            OperationTimeValidation::validate_non_abstract_relation_type_has_other_role_types_to_delete_role_type(
-                snapshot,
-                self,
-                relates.relation(),
-                role_type,
-            )
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
-        }
-
-        OperationTimeValidation::validate_relation_type_non_abstract_subtypes_have_other_role_types_to_delete_role_type(snapshot, self, relates.relation(), role_type)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         // Should be the same as in validate_delete_type, but leaving for consistency
         OperationTimeValidation::validate_no_corrupted_instances_to_unset_relates(
@@ -1441,21 +1427,25 @@ impl TypeManager {
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        self.delete_relates_and_its_role_type_unchecked(snapshot, relates)
-    }
+        let old_supertype = role_type.get_supertype(snapshot, self)?;
 
-    fn delete_relates_and_its_role_type_unchecked(
-        &self,
-        snapshot: &mut impl WritableSnapshot,
-        relates: Relates,
-    ) -> Result<(), Box<ConceptWriteError>> {
-        for plays in TypeReader::get_capabilities_for_interface::<Plays>(snapshot, relates.role())? {
-            self.unset_plays_unchecked(snapshot, plays)?;
+        for plays in relates.role().get_plays(snapshot, self)?.iter() {
+            self.unset_plays_unchecked(snapshot, *plays)?;
         }
 
         self.unset_relates_unchecked(snapshot, relates)?;
         TypeWriter::storage_delete_type_vertex_property::<Ordering>(snapshot, relates.role());
-        self.delete_type(snapshot, relates.role())
+        self.delete_type(snapshot, relates.role())?;
+
+        if let Some(old_supertype) = old_supertype {
+            self.unset_specialising_relates_if_no_sub_role_types_from_relation_type(
+                snapshot,
+                relates.relation(),
+                old_supertype,
+            )?;
+        }
+
+        Ok(())
     }
 
     fn delete_type(
@@ -1913,10 +1903,6 @@ impl TypeManager {
         subtype: RelationType,
         supertype: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        // We could check that either the subtype has declared role types or the supertype has some role types,
-        // but it feels redundant as it is the responsibility of the supertype to have at least one role (which will be inherited).
-        // It is checked at commit. Implement it the lack of this check strange in practice.
-
         OperationTimeValidation::validate_role_names_compatible_with_new_relation_supertype_transitive(
             snapshot, self, subtype, supertype,
         )
@@ -2448,7 +2434,7 @@ impl TypeManager {
         self.set_relates_annotation_abstract(snapshot, thing_manager, specialising_relates, false)?;
 
         if let Some(old_supertype) = old_supertype {
-            self.unset_specialising_relates_when_unset_specialise_if_no_subtypes(
+            self.unset_specialising_relates_if_no_sub_role_types_from_relation_type(
                 snapshot,
                 relates.relation(),
                 old_supertype,
@@ -2458,22 +2444,29 @@ impl TypeManager {
         Ok(())
     }
 
-    fn unset_specialising_relates_when_unset_specialise_if_no_subtypes(
+    fn unset_specialising_relates_if_no_sub_role_types_from_relation_type(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
         specialised_role_type: RoleType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        if specialised_role_type.get_subtypes(snapshot, self)?.len() == 0 {
+        let has_sub_role_types_in_relation_type = relation_type
+            .get_related_role_types_declared(snapshot, self)?
+            .iter()
+            .find_map(|relation_role_type| match relation_role_type.get_supertype(snapshot, self) {
+                Ok(Some(relation_role_supertype)) if relation_role_supertype == specialised_role_type => Some(Ok(true)),
+                Ok(_) => None,
+                Err(err) => Some(Err(err)),
+            })
+            .unwrap_or(Ok(false))?;
+
+        if !has_sub_role_types_in_relation_type {
             let specialising_relates = relation_type
-                .get_relates_role_name_declared(
-                    snapshot,
-                    self,
-                    specialised_role_type.get_label(snapshot, self)?.name.as_str(),
-                )?
+                .get_relates_role_declared(snapshot, self, specialised_role_type)?
                 .ok_or_else(|| Box::new(ConceptReadError::InternalMissingSpecialisingRelatesForRole {}))?;
             self.unset_relates_unchecked(snapshot, specialising_relates)?;
         }
+
         Ok(())
     }
 
@@ -2530,7 +2523,11 @@ impl TypeManager {
         let relation_type = relates.relation();
         if let Some(supertype) = role_type.get_supertype(snapshot, self)? {
             self.unset_role_type_supertype(snapshot, thing_manager, role_type)?;
-            self.unset_specialising_relates_when_unset_specialise_if_no_subtypes(snapshot, relation_type, supertype)?;
+            self.unset_specialising_relates_if_no_sub_role_types_from_relation_type(
+                snapshot,
+                relation_type,
+                supertype,
+            )?;
         }
         Ok(())
     }

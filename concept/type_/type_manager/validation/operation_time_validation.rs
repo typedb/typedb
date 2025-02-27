@@ -1988,52 +1988,6 @@ impl OperationTimeValidation {
         }
     }
 
-    pub(crate) fn validate_non_abstract_relation_type_has_other_role_types_to_delete_role_type(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        relation_type: RelationType,
-        role_type: RoleType,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        if relation_type
-            .is_abstract(snapshot, type_manager)
-            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?
-        {
-            return Ok(());
-        }
-
-        let related_role_types = relation_type
-            .get_related_role_types(snapshot, type_manager)
-            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-        if related_role_types.iter().any(|related_role_type| related_role_type != &role_type) {
-            Ok(())
-        } else {
-            Err(Box::new(SchemaValidationError::CannotDeleteTheOnlyRoleTypeOfNonAbstractRelationType {
-                relation: get_label_or_schema_err(snapshot, type_manager, relation_type)?,
-                role: get_label_or_schema_err(snapshot, type_manager, role_type)?,
-            }))
-        }
-    }
-
-    pub(crate) fn validate_relation_type_non_abstract_subtypes_have_other_role_types_to_delete_role_type(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        relation_type: RelationType,
-        role_type: RoleType,
-    ) -> Result<(), Box<SchemaValidationError>> {
-        let relation_subtypes = relation_type
-            .get_subtypes_transitive(snapshot, type_manager)
-            .map_err(|typedb_source| Box::new(SchemaValidationError::ConceptRead { typedb_source }))?;
-        for relation_subtype in relation_subtypes.iter() {
-            Self::validate_non_abstract_relation_type_has_other_role_types_to_delete_role_type(
-                snapshot,
-                type_manager,
-                *relation_subtype,
-                role_type,
-            )?;
-        }
-        Ok(())
-    }
-
     pub(crate) fn validate_non_abstract_relation_type_has_role_types_after_supertype_unset(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,

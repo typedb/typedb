@@ -224,6 +224,36 @@ pub async fn relation_declared_roles_contain(
 }
 
 #[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get explicit declared relates {contains_or_doesnt}:")]
+pub async fn relation_explicit_declared_roles_contain(
+    context: &mut Context,
+    type_label: params::Label,
+    contains: params::ContainsOrDoesnt,
+    step: &Step,
+) {
+    let expected_labels: Vec<String> = util::iter_table(step).map(|str| str.to_owned()).collect::<Vec<String>>();
+    with_read_tx!(context, |tx| {
+        let type_ =
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let actual_labels = type_
+            .get_relates_explicit_declared(tx.snapshot.as_ref(), &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|relates| {
+                relates
+                    .role()
+                    .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .scoped_name()
+                    .as_str()
+                    .to_owned()
+            })
+            .collect_vec();
+        contains.check(&expected_labels, &actual_labels);
+    });
+}
+
+#[apply(generic_step)]
 #[step(expr = r"relation\({type_label}\) get declared relates {is_empty_or_not}")]
 pub async fn relation_declared_roles_is_empty(
     context: &mut Context,
@@ -235,6 +265,34 @@ pub async fn relation_declared_roles_is_empty(
             tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let actual_labels = type_
             .get_relates_declared(tx.snapshot.as_ref(), &tx.type_manager)
+            .unwrap()
+            .iter()
+            .map(|relates| {
+                relates
+                    .role()
+                    .get_label(tx.snapshot.as_ref(), &tx.type_manager)
+                    .unwrap()
+                    .scoped_name()
+                    .as_str()
+                    .to_owned()
+            })
+            .collect_vec();
+        is_empty_or_not.check(actual_labels.is_empty());
+    });
+}
+
+#[apply(generic_step)]
+#[step(expr = r"relation\({type_label}\) get explicit declared relates {is_empty_or_not}")]
+pub async fn relation_explicit_declared_roles_is_empty(
+    context: &mut Context,
+    type_label: params::Label,
+    is_empty_or_not: params::IsEmptyOrNot,
+) {
+    with_read_tx!(context, |tx| {
+        let type_ =
+            tx.type_manager.get_relation_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
+        let actual_labels = type_
+            .get_relates_explicit_declared(tx.snapshot.as_ref(), &tx.type_manager)
             .unwrap()
             .iter()
             .map(|relates| {

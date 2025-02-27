@@ -122,8 +122,7 @@ typedb_error!(
             "Cannot change superty as the resulting schema constraints would be not be compatible with existing instances.",
             typedb_source: Box<DataValidationError>
         ),
-        CannotDeleteTheOnlyRoleTypeOfNonAbstractRelationType(60, "Cannot delete role type '{role}' because it is the only role type of non-abstract relation type '{relation}'.", relation: Label, role: Label),
-        CannotUnsetAbstractnessOfRelationTypeWithoutRoleTypes(61, "Cannot unset abstractness of relation type '{relation}' because it does not have role types.", relation: Label),
-        CannotUnsetRelationSupertypeBecauseAllRoleTypesAreLost(62, "Cannot unset supertype of relation type '{relation}' because the relation type will not have any role types related.", relation: Label),
+        CannotUnsetAbstractnessOfRelationTypeWithoutRoleTypes(60, "Cannot unset abstractness of relation type '{relation}' because it does not have any role types related.", relation: Label),
+        CannotUnsetRelationSupertypeBecauseAllRoleTypesAreLost(61, "Cannot unset supertype of relation type '{relation}' because the relation type will not have any role types related.", relation: Label),
     }
 );
