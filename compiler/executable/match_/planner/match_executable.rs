@@ -106,7 +106,7 @@ impl ExecutionStep {
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
             ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
-            ExecutionStep::FunctionCall(function_call) => function_call.assigned.as_slice(),
+            ExecutionStep::FunctionCall(step) => &step.selected_variables,
         }
     }
 
@@ -493,6 +493,7 @@ pub struct FunctionCallStep {
     pub function_id: FunctionID,
     pub assigned: Vec<VariablePosition>,
     pub arguments: Vec<VariablePosition>,
+    pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
@@ -506,8 +507,8 @@ impl fmt::Display for FunctionCallStep {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, output_size={}]",
-            self.function_id, &self.assigned, &self.arguments, self.output_width
+            "Function Call [fn_id={}, assigned={:?}, arguments={:?}, selected={:?}, output_size={}]",
+            self.function_id, &self.assigned, self.arguments, self.selected_variables, self.output_width,
         )
     }
 }
