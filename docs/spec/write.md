@@ -12,8 +12,8 @@ An `insert` clause comprises collection of _insert statements_
     * the clause is **executed** for each row `r` in the stream individually
 
 * _Extending input row_: Insert clauses can extend bindings of the input concept row `r` in two ways
-    * `$x` is the subject of an `isa` statement in the `insert` clause, in which case $`r(x) =`$ _newly-inserted-concept_ (see "Case **ISA_INS**")
-    * `$x` is the subject of an `let` assignment statement in the `insert` clause, in which case $`r(x) =`$ _assigned-value_ (see "Case **LET_INS**")
+    * `$x` is the subject of an `isa` statement in the `insert` clause, in which case `r(x) =` _newly-inserted-concept_ (see "Case **ISA_INS**")
+    * `$x` is the subject of an `let` assignment statement in the `insert` clause, in which case `r(x) =` _assigned-value_ (see "Case **LET_INS**")
 
 #### (Theory) Execution
 
@@ -46,25 +46,25 @@ _Execution_: An `insert` clause is executed by executing its statements individu
 ### Insert statements
 
 #### **Case LET_INS**
-* 🔷 `let $x = <EXPR>` adds nothing to the DB, and but sets $`r(x) = v_r(expr)`$ in the in put crow
+* ➖`let $x = <EXPR>` adds nothing to the DB, and but sets `r(x) = v_r(expr)` in the in put crow
 
 _System property_:
 
-1. 🔷 `$x` cannot be insert-bound elsewhere (i.e. no other `isa` or `let`)
-2. 🔷 _Acyclicity_ All `isa` or `let` statements must be acyclic. For example we cannot have:
+1. ➖`$x` cannot be insert-bound elsewhere (i.e. no other `isa` or `let`)
+2. ➖_Acyclicity_ All `isa` or `let` statements must be acyclic. For example we cannot have:
     ```
     insert
       let $x = $y;
       $y isa name $x;
     ```
-3. 🔷 _No reading_ `<EXPR>` cannot contain function calls.
+3. ➖_No reading_ `<EXPR>` cannot contain function calls.
 
 _Note_. All **EXPR_INS** statements are executed first as described in the previous section.
 
 #### **Case ISA_INS**
-* ➖ `$x isa $T` adds new $`a :_! r(T)`$, $`r(T) : \mathbf{ERA}`$, and sets $`r(x) = a`$
-* 🔶 `$x isa $T ($R: $y, ...)` adds new $`a :_! r(T)(r(y):r(R))`$, $`r(T) : \mathbf{Rel}`$, and sets $`r(x) = a`$
-* 🔶 `$x isa $T <EXPR>` adds new $`a :_! r(T)`$, $`r(T) : \mathbf{Att}`$, and sets $`r(x) = a`$ and $`\mathsf{val}(a) = v_r(expr)`$
+* ➖ `$x isa $T` adds new `a :! r(T)`, `r(T) : ERA`, and sets `r(x) = a`
+* 🔶 `$x isa $T ($R: $y, ...)` adds new `a :! r(T)(r(y):r(R))`, `r(T) : REL`, and sets `r(x) = a`
+* 🔶 `$x isa $T <EXPR>` adds new `a :! r(T)`, `r(T) : ATT`, and sets `r(x) = a` and `_val(a) = v_r(expr)`
 
 _System property_:
 
@@ -80,56 +80,56 @@ _System property_:
 
 #### **Case LINKS_INS**
 
-* ➖ `$x links ($I: $y)` replaces $`r(x) :_! A(a : J, b : K, ...)`$ by $`r(x) :_! A(r(y)a : r(I), b : K, ...)`$
+* ➖ `$x links ($I: $y)` replaces `r(x) :! A(a : J, b : K, ...)` by `r(x) :! A(r(y)a : r(I), b : K, ...)`
 
 _Remark_. Set semantics for traits means that inserts become idempotent when inserting the same role players twice.
 
 _System property_:
 
 1. ➖ _Capability check_.
-    * Must have $`T(x) \leq B : \mathbf{Rel}(r(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(r(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
-    * Must have $`T(y) \leq B <_! r(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! r(I))`$ is not true for the minimal $`B`$ satisfying the former.
+    * Must have `T(x) <= B : REL(r(I))` **non-abstractly**, i.e. `# (B : REL(r(I)))` is not true for the minimal choice of `B` satisfying the former
+    * Must have `T(y) <= B <! r(I)` **non-abstractly**, i.e. `# (B <! r(I))` is not true for the minimal `B` satisfying the former.
 
 #### **Case LINKS_LIST_INS**
-* 🔶 `$x links ($I[]: <T_LIST>)` replaces $`r(x) :_! A()`$ by $`r(x) :_! A(l : [r(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* 🔶 `$x links ($I[]: <T_LIST>)` replaces `r(x) :! A()` by `r(x) :! A(l : [r(I)])` for `<T_LIST>` evaluating to `l = [l_0, l_1, ...]`
 
 _System property_:
 
-1. 🔶 _System cardinality bound: **1 list per relation per role**_. Transaction will fail if $`r(x) :_! A(...)`$ already has a roleplayer list. (In this case, user should `update` instead!)
+1. 🔶 _System cardinality bound: **1 list per relation per role**_. Transaction will fail if `r(x) :! A(...)` already has a roleplayer list. (In this case, user should `update` instead!)
 1. 🔶 _Capability check_.
-    * Must have $`T(x) \leq B : \mathbf{Rel}(r(I))`$ **non-abstractly**, i.e. $`\diamond (B : \mathbf{Rel}(r(I)))`$ is not true for the minimal choice of $`B`$ satisfying the former
-    * Must have $`l_i : T_i \leq B <_! r(I)`$ **non-abstractly**, i.e. $`\diamond (B <_! r(I))`$ is not true for the minimal $`B`$ satisfying the former.
+    * Must have `T(x) <= B : REL(r(I))` **non-abstractly**, i.e. `# (B : REL(r(I)))` is not true for the minimal choice of `B` satisfying the former
+    * Must have `l_i : T_i <= B <! r(I)` **non-abstractly**, i.e. `# (B <! r(I))` is not true for the minimal `B` satisfying the former.
 
 #### **Case HAS_INS**
-* ➖ `$x has $A $y` adds new $`a :_! r(A)(r(x) : O_{r(A)})`$ and
-    * If `$y` is instance add the new cast $`\mathsf{val}(a) = \mathsf{val}(y)`$
-    * If `$y` is value var set $`\mathsf{val}(a) = r(a)`$
-* 🔷 `$x has $A == <VAL_EXPR>` adds new element $`a :_! r(A)(r(x) : O_{r(A)})`$ and add cast $`\mathsf{val}(a) = v_r(val\_expr)`$
-* 🔷 `$x has $A <NV_VAL_EXPR>` is shorthand for `$x has $A == <NV_VAL_EXPR>` (recall `NV_VAL_EXPR` is an expression that's not a sole variable)
+* ➖ `$x has $A $y` adds new `a :! r(A)(r(x) : r(A).O)` and
+    * If `$y` is instance add the new cast `_val(a) = _val(y)`
+    * If `$y` is value var set `_val(a) = r(a)`
+* ➖`$x has $A == <VAL_EXPR>` adds new element `a :! r(A)(r(x) : r(A).O)` and add cast `_val(a) = v_r(val\_expr)`
+* ➖`$x has $A <NV_VAL_EXPR>` is shorthand for `$x has $A == <NV_VAL_EXPR>` (recall `NV_VAL_EXPR` is an expression that's not a sole variable)
 
 _System property_:
 
-1. ➖ _Idempotency_. If $`a :_! r(A)`$ with $`\mathsf{val}(a) = \mathsf{val}(b)`$ then we equate $`a = b`$ (this actually follows from the "Attribute identity rule", see "Type system").
-1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)})`$ is not true for the minimal choice of $`B`$ satisfying  $`T(x) \leq B <_! O_{r(A)}`$
-1. 🔶 _Type check_. Value $`v`$ of newly inserted attribute must be of right value type (up to implicit casts, see "Expression evaluation"). Also must have $`T(y) \leq r(A)`$ if $`y`$ is given.
+1. ➖ _Idempotency_. If `a :! r(A)` with `_val(a) = _val(b)` then we equate `a = b` (this actually follows from the "Attribute identity rule", see "Type system").
+1. 🔶 _Capability check_. Must have `T(x) <= B <! r(A).O` **non-abstractly**, i.e. `# (B <! r(A).O)` is not true for the minimal choice of `B` satisfying  `T(x) <= B <! r(A).O`
+1. 🔶 _Type check_. Value `v` of newly inserted attribute must be of right value type (up to implicit casts, see "Expression evaluation"). Also must have `T(y) <= r(A)` if `y` is given.
 
-_Remark_: ⛔ Previously we had the constraint that we cannot add $`r(y) :_! A(r(x) : O_A)`$ if there exists any subtype $`B \lneq A`$.
+_Remark_: ⛔ Previously we had the constraint that we cannot add `r(y) :! A(r(x) : A.O)` if there exists any subtype `B < A`.
 
 #### **Case HAS_LIST_INS**
-* 🔶 `$x has $A[] == <LIST_EXPR>` adds new list $`l = [l_1, l_2, ...] :_! [r(A)](r(x) : O_{r(A)[]})`$ **and** new attributes $`l_i :_! r(A)(r(x) : O_{r(A)})`$ where
-    * denote by $`[v_1,v_2, ...] = v_r(list\_expr)`$ the evaluation of the list expression (relative to crow $`r`$)
-    * the list $`l`$ has the same length as $`[x_1,x_2, ...] = v_r(list\_expr)`$
-        * if $`y_i = x_i`$ is an attribute instance, we add new cast $`\mathsf{val}(l_i) = \mathsf{val}(v_i)`$
-        * if $`v_i = x_i`$ is a value, we add new cast $`\mathsf{val}(l_i) = v_i`$
+* 🔶 `$x has $A[] == <LIST_EXPR>` adds new list `l = [l_1, l_2, ...] :! [r(A)](r(x) : A[].O})` **and** new attributes `l_i :! r(A)(r(x) : r(A).O)` where
+    * denote by `[v_1,v_2, ...] = v_r(list\_expr)` the evaluation of the list expression (relative to crow `r`)
+    * the list `l` has the same length as `[x_1,x_2, ...] = v_r(list\_expr)`
+        * if `y_i = x_i` is an attribute instance, we add new cast `_val(l_i) = _val(v_i)`
+        * if `v_i = x_i` is a value, we add new cast `_val(l_i) = v_i`
 * 🔶 `$x has $A[] <NV_LIST_EXPR>` is shorthand for `$x has $A == <NV_LIST_EXPR>` (recall `NV_LIST_EXPR` is an expression that's not a sole variable)
-* 🔶 `$x has $A[] $y` is shorthand for `$x has $A == $y` but infers that the type of `$y` is a subtype of $`[r(A)]`$ (and thus we must have $`y_i = x_i`$ for all $`i`$ above)
+* 🔶 `$x has $A[] $y` is shorthand for `$x has $A == $y` but infers that the type of `$y` is a subtype of `[r(A)]` (and thus we must have `y_i = x_i` for all `i` above)
 
 _System property_:
 
 1. ➖ _Idempotency_. Idempotency is automatic for (since lists are identified by their list elements) and enforced for new attributes as before.
-1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have any $`k : [r(A)](r(x) : O_{r(A)[]})`$ with $`k \neq l`$. (Users should use "Update" instead!)
-1. 🔶 _Capability check_. Must have $`T(x) \leq B <_! O_{r(A)[]}`$ **non-abstractly**, i.e. $`\diamond (B <_! O_{r(A)[]})`$ is not true for the minimal choice of $`B`$ satisfying $`T(x) \leq B <_! O_{r(A)[]}`$
-1. 🔶 _Type check_. For each list element, must have either $`T(v_i) : V`$ (up implicit casts) or $`T(y) \leq r(A)`$.
+1. 🔶 _System cardinality bound: **1 list per owner**_. We cannot have any `k : [r(A)](r(x) : A[].O})` with `k != l`. (Users should use "Update" instead!)
+1. 🔶 _Capability check_. Must have `T(x) <= B <! r(A)[].O` **non-abstractly**, i.e. `# (B <! r(A)[].O)` is not true for the minimal choice of `B` satisfying `T(x) <= B <! r(A)[].O`
+1. 🔶 _Type check_. For each list element, must have either `T(v_i) : V` (up implicit casts) or `T(y) <= r(A)`.
 
 ### Optional inserts
 
@@ -152,10 +152,10 @@ A `delete` clause comprises collection of _delete statements_.
 * _Updating input rows_: Delete clauses can update bindings of their input concept row `r`
     * Executing `delete $x;` will remove `$x` from `r` (but `$x` may still appear in other crows `r'` of the input stream)
 
-_Remark_: Previously, it was suggested: if `$x` is in `r` and $`r(x)`$ is deleted from $`T_r(x)`$ by the end of the execution of the clause (for _all_ input rows of the input stream) then we set $`r(x) = \emptyset`$ and $`T_r(x) = \emptyset`$.
+_Remark_: Previously, it was suggested: if `$x` is in `r` and `r(x)` is deleted from `T_r(x)` by the end of the execution of the clause (for _all_ input rows of the input stream) then we set `r(x) = ()` and `T_r(x) = ()`.
 Fundamental question: **is it better to silently remove vars? Or throw an error if vars pointing to deleted concepts are used?** (STICKY)
 * Only for `delete $x;` can we statically say that `$x` must not be re-used
-* Other question: would this interact with try? idea: take $`r(x) = \emptyset`$ if it points to a previously deleted concept
+* Other question: would this interact with try? idea: take `r(x) = ()` if it points to a previously deleted concept
 
 <!--
 match 
@@ -200,28 +200,28 @@ delete
 ### Delete statements
 
 #### **Case CONCEPT_DEL**
-* ➖ `$x;` removes $`r(x) :_! A(...)`$. If $`r(x)`$ is an object, we also:
-    * replaces any $`b :_! B(r(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ for all such dependencies on $`r(x)`$
+* ➖ `$x;` removes `r(x) :! A(...)`. If `r(x)` is an object, we also:
+    * replaces any `b :! B(r(x) : I, z : J, ...)` by `b :! B(z : J, ...)` for all such dependencies on `r(x)`
 
-_Remark 1_. This applies both to $`B : \mathbf{Rel}`$ and $`B : \mathbf{Att}`$.
+_Remark 1_. This applies both to `B : REL` and `B : ATT`.
 
-_Remark 2_. The resulting $`r(x) :_! r(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
+_Remark 2_. The resulting `r(x) :! r(A)(z : J, ...)` must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
 _System property_:
 
-1. 🔷 If $`r(x) : A : \mathbf{Att}`$ and $`A`$ is _not_ marked `@independent` then the transaction will fail.
+1. ➖If `r(x) : A : ATT` and `A` is _not_ marked `@independent` then the transaction will fail.
 
 
 #### **Modifier: CASCADE_DEL**
 * 🔮 `delete` clause keyword can be modified with a `@cascade(<LABEL>,...)` annotation, which acts as follows:
 
-  If `@cascade(C, D, ...)` is specified, and `$x` is delete then we not only remove $`r(x) :_! A(...)`$ but (assuming $`r(x)`$ is an object) we also:
-    * whenever we replace $`b :_! B(r(x) : I, z : J, ...)`$ by $`b :_! B(z : J, ...)`$ and the following are _both_ satisfied:
+  If `@cascade(C, D, ...)` is specified, and `$x` is delete then we not only remove `r(x) :! A(...)` but (assuming `r(x)` is an object) we also:
+    * whenever we replace `b :! B(r(x) : I, z : J, ...)` by `b :! B(z : J, ...)` and the following are _both_ satisfied:
 
-        1. the new axiom $`b :_! B(...)`$ violates trait cardinality of $`B`$,
-        2. $`B`$ is among the listed types `C, D, ...`
+        1. the new axiom `b :! B(...)` violates trait cardinality of `B`,
+        2. `B` is among the listed types `C, D, ...`
 
-      then delete $`b`$ and _its_ depenencies (the cascade may recurse).
+      then delete `b` and _its_ depenencies (the cascade may recurse).
 
 _Remark_. In an earlier version of the spec, condition (1.) for the recursive delete was omitted—however, there are two good reasons to include it:
 
@@ -229,25 +229,25 @@ _Remark_. In an earlier version of the spec, condition (1.) for the recursive de
 2. The extra condition ensure that deletes cannot interfere with one another, i.e. the order of deletion does not matter.
 
 #### **Case ROL_OF_DEL**
-* ➖ `($I: $y) of $x` replaces $`r(x) :_! r(A)(r(y) : r(I), z : J, ...)`$ by $`r(x) :_! r(A)(z : J, ...)`$
+* ➖ `($I: $y) of $x` replaces `r(x) :! r(A)(r(y) : r(I), z : J, ...)` by `r(x) :! r(A)(z : J, ...)`
 
-_Remark_. The resulting $`r(x) :_! r(A)(z : J, ...)`$ must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
+_Remark_. The resulting `r(x) :! r(A)(z : J, ...)` must be within schema constraints, or the transaction will fail. This will follow from the general mechanism for checking schema constraints; see "Transactions".
 
 #### **Case ROL_LIST_OF_DEL**
-* 🔶 `($I[]: <T_LIST>) of $x` replaces $`r(x) :_! r(A)(l : r(I))`$ by $`r(x) :_! r(A)()`$ for $`l`$ being the evaluation of `T_LIST`.
+* 🔶 `($I[]: <T_LIST>) of $x` replaces `r(x) :! r(A)(l : r(I))` by `r(x) :! r(A)()` for `l` being the evaluation of `T_LIST`.
 
 #### **Case ATT_OF_DEL**
-* 🔶 `$y of $x` replaces any $`r(y) :_! T(y)(r(x) : O_{r(B)})`$ by $`r(y) :_! T(y)()`$
-* 🔷 `$B of $x` replaces any $`a :_! r(B)(r(x) : O_{r(B)})`$ by $`a :_! r(B)()`$
+* 🔶 `$y of $x` replaces any `r(y) :! T(y)(r(x) : r(B).O)` by `r(y) :! T(y)()`
+* ➖`$B of $x` replaces any `a :! r(B)(r(x) : r(B).O)` by `a :! r(B)()`
 
 _System property_
 * 🔶 _Capability check_. Cannot have that `T($y) owns r($B)[]` (in this case, must delete entire lists instead!)
-* 🔷 _Type check_ Must have $`T(y) = r(B)`$.
+* ➖_Type check_ Must have `T(y) = r(B)`.
 
 #### **Case ATT_LIST_OF_DEL**
-* 🔶 `$y of $x` deletes any $`r(y) = [l_1, l_2, ... ] :_! [A](r(x) : O_{A[]})`$ where we must have $`A(y) = [A]`$ for some $`A : \mathbf{Att}`$, and
-  replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
-* 🔷 `$B[] of $x` deletes any $`l = [l_1, l_2, ... ] :_! r(B)(r(x) : O_{r(B)})`$ and replaces any $`l_i :_! r(B)(r(x) : O_{r(B)})`$ by $`l_i :_! B'()`$
+* 🔶 `$y of $x` deletes any `r(y) = [l_1, l_2, ... ] :! [A](r(x) : A[].O)` where we must have `A(y) = [A]` for some `A : ATT`, and
+  replaces any `l_i :! r(B)(r(x) : r(B).O)` by `l_i :! B'()`
+* ➖`$B[] of $x` deletes any `l = [l_1, l_2, ... ] :! r(B)(r(x) : r(B).O)` and replaces any `l_i :! r(B)(r(x) : r(B).O)` by `l_i :! B'()`
 
 ### Clean-up
 
@@ -280,7 +280,7 @@ A `update` clause comprises collection of _update statements_.
 ### Update statements
 
 #### **Case LINKS_UP**
-* 🔶 `$x links ($I: $y);` updates $`r(x) :_! A(b:J)`$ to $`r(x) :_! A(r(x) : r(I))`$
+* 🔶 `$x links ($I: $y);` updates `r(x) :! A(b:J)` to `r(x) :! A(r(x) : r(I))`
 
 _System property_:
 
@@ -288,7 +288,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction. (STICKY: discuss!)
 
 #### **Case LINKS_LIST_UP**
-* 🔶 `$x links ($I[]: <T_LIST>)` updates $`r(x) :_! A(j : [r(I)])`$ to $`r(x) :_! A(l : [r(I)])`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* 🔶 `$x links ($I[]: <T_LIST>)` updates `r(x) :! A(j : [r(I)])` to `r(x) :! A(l : [r(I)])` for `<T_LIST>` evaluating to `l = [l_0, l_1, ...]`
 
 _System property_:
 
@@ -296,7 +296,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction.
 
 #### **Case HAS_UP**
-* 🔶 `$x has $B $y;` updates $`b :_! r(B)(x:O_{r(B)})`$ to $`r(y) :_! r(B)(x:O_{r(B)})`$
+* 🔶 `$x has $B $y;` updates `b :! r(B)(x:r(B).O)` to `r(y) :! r(B)(x:r(B).O)`
 
 _System property_:
 
@@ -304,7 +304,7 @@ _System property_:
 1. 🔶 Require that each update happens at most once, or fail the transaction.
 
 #### **Case HAS_LIST_UP**
-* 🔶 `$x has $A[] <T_LIST>` updates $`j :_! [r(A)](r(x) : O_{r(A)})`$ to $`l :_! [r(A)](r(x) : O_{r(A)})`$ for `<T_LIST>` evaluating to $`l = [l_0, l_1, ...]`$
+* 🔶 `$x has $A[] <T_LIST>` updates `j :! [r(A)](r(x) : r(A).O)` to `l :! [r(A)](r(x) : r(A).O)` for `<T_LIST>` evaluating to `l = [l_0, l_1, ...]`
 
 _System property_:
 

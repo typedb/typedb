@@ -71,17 +71,19 @@ An element in the answer set of a pattern.
 
 ### Schema query
 
-(Loosely:) Query pertaining to schema manipulation
+Query pertaining to schema manipulation
 
-### Data query
+### Data pipeline
 
-(Loosely:) Query pertaining to data manipulation or retrieval
+Query pertaining to data manipulation or retrieval
 
-### Clause / Stream clause
+### Stage
+
+#### Data manipulation stage
 
 * `match`, `insert`, `delete`, `define`, `undefine`,
 
-### Operators / Stream operator
+#### Stream modifier stage
 
 * `select`, `sort`, ...
 
@@ -89,11 +91,11 @@ An element in the answer set of a pattern.
 
 Callable `match-return` query.
 
-* scalar function: returns a concept 1-tuple. signature: -> A
-* tuple function: returns a concept n-tuple, n > 1. signature -> A, B, C
-* stream function: returns a stream of concept tuples. signature -> { A, ... }
-* (scalar stream function: returns a stream of concept 1-tuples. signature -> { A })
-* (tuple stream function: returns a stream of concept n-tuples, n > 1. signature -> { A, B, C})
+* scalar function: returns a concept 1-tuple. signature: `-> A`
+* tuple function: returns a concept n-tuple, n > 1. signature `-> A, B, C`
+* stream function: returns a stream of concept tuples. signature `-> { A, ... }`
+* (scalar stream function: returns a stream of concept 1-tuples. `signature -> { A }`)
+* (tuple stream function: returns a stream of concept n-tuples, n > 1. signature `-> { A, B, C}`)
 
 ### Statement
 
