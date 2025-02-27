@@ -118,8 +118,8 @@ where
                 // copy out row multiplicity M, set it to 1, then append the row M times
                 let multiplicity = input_row.multiplicity();
                 for _ in 0..multiplicity {
-                    output_batch.append(MaybeOwnedRow::new_borrowed(&empty_output_row, &1));
-                    output_batch.get_row_mut(output_batch.len()).copy_mapped(
+                    output_batch.append(MaybeOwnedRow::new_borrowed(&empty_output_row, &1)); // Insert an empty row
+                    output_batch.get_row_mut(output_batch.len()-1).copy_mapped( // Copy over input_row
                         input_row.as_reference(),
                         input_output_mapping.iter().map(|(s, d)| (s.clone(), d.clone())),
                     );
