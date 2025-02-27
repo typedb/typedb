@@ -32,6 +32,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::pipeline::put::PutStageExecutor;
 
 #[derive(Debug)]
 pub struct ExecutionContext<Snapshot> {
@@ -235,6 +236,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Match(Box<MatchStageExecutor<WritePipelineStage<Snapshot>>>),
     Insert(Box<InsertStageExecutor<WritePipelineStage<Snapshot>>>),
     Update(Box<UpdateStageExecutor<WritePipelineStage<Snapshot>>>),
+    Put(Box<PutStageExecutor<WritePipelineStage<Snapshot>>>),
     Delete(Box<DeleteStageExecutor<WritePipelineStage<Snapshot>>>),
     Sort(Box<SortStageExecutor<WritePipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<WritePipelineStage<Snapshot>>>),
@@ -269,6 +271,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Update(stage) => {
+                let (iterator, context) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Write(iterator), context))
+            }
+            WritePipelineStage::Put(stage) => {
                 let (iterator, context) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }

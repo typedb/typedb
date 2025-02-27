@@ -16,6 +16,7 @@ use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::common::Span;
+use compiler::executable::put::PutExecutable;
 
 use crate::{
     document::ConceptDocument,
@@ -37,6 +38,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::pipeline::put::PutStageExecutor;
 
 pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     Unfetched(Nonterminals, HashMap<String, VariablePosition>),
@@ -219,10 +221,9 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                     let update_stage = UpdateStageExecutor::new(update_executable, last_stage);
                     last_stage = WritePipelineStage::Update(Box::new(update_stage));
                 }
-                ExecutableStage::Put(_) => {
-                    compile_error!("todo");
-                    // let update_stage = PutStageExecutor::new(put_executable, last_stage);
-                    // last_stage = WritePipelineStage::Put(Box::new(update_stage));
+                ExecutableStage::Put(put_executable) => {
+                    let put_stage = PutStageExecutor::new(put_executable, last_stage);
+                    last_stage = WritePipelineStage::Put(Box::new(put_stage));
                 }
                 ExecutableStage::Delete(delete_executable) => {
                     let delete_stage = DeleteStageExecutor::new(delete_executable, last_stage);

@@ -34,4 +34,8 @@ impl PutExecutable {
     pub(crate) fn output_row_mapping(&self) -> &HashMap<Variable, VariablePosition> {
         self.match_.variable_positions()
     }
+
+    pub fn output_width(&self) -> usize {
+        self.insert.output_width()
+    }
 }
