@@ -105,7 +105,7 @@ impl AnnotatedStage {
     pub fn named_referenced_variables<'a>(
         &'a self,
         variable_registry: &'a VariableRegistry,
-    ) -> impl Iterator<Item = Variable> + '_ {
+    ) -> impl Iterator<Item = Variable> + 'a {
         let variables: Box<dyn Iterator<Item = Variable> + '_> = match self {
             AnnotatedStage::Match { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Insert { block, .. } => Box::new(block.variables()),
@@ -496,7 +496,7 @@ fn annotate_write_stage(
 ) -> Result<TypeAnnotations, AnnotationError> {
     let annotations = infer_types(
         snapshot,
-        &block,
+        block,
         variable_registry,
         type_manager,
         running_variable_annotations,
