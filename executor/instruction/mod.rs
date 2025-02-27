@@ -877,6 +877,7 @@ impl<T> Checker<T> {
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
                         Comparator::Like => |a, b| {
+                            // TODO: Avoid recompiling the regex every time.
                             regex::Regex::new(b.unwrap_string_ref())
                                 .expect("Invalid regex should have been caught at compile time")
                                 .is_match(a.unwrap_string_ref())
