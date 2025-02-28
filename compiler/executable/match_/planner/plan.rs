@@ -405,7 +405,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Constraint::Links(links) => self.register_links(links),
                 Constraint::IndexedRelation(indexed_relation) => self.register_indexed_relation(indexed_relation),
 
-                Constraint::ExpressionBinding(expression) => self.register_expression_binding(expression, expressions),
+                Constraint::ExpressionBinding(binding) => self.register_expression_binding(binding, expressions),
                 Constraint::FunctionCallBinding(call) => self.register_function_call_binding(call, call_cost_provider),
 
                 Constraint::Is(is) => self.register_is(is),
@@ -506,12 +506,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_expression_binding(
         &mut self,
-        expression: &ExpressionBinding<Variable>,
+        binding: &ExpressionBinding<Variable>,
         expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     ) {
-        let variable = expression.left().as_variable().unwrap();
+        let variable = binding.left().as_variable().unwrap();
         let output = self.graph.variable_index[&variable];
-        let expression = &expressions[expression];
+        let expression = &expressions[binding];
         let inputs = expression.variables().iter().map(|&var| self.graph.variable_index[&var]).unique().collect_vec();
         self.graph.push_expression(output, ExpressionPlanner::from_expression(expression, inputs, output));
     }
