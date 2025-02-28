@@ -13,6 +13,7 @@ use ir::{
         constraint,
         constraint::{Comparator, Constraint},
         expression::Expression,
+        variable_category::VariableCategory,
         ParameterID, Vertex,
     },
     pipeline::VariableRegistry,
@@ -65,6 +66,7 @@ pub fn compile(
         .map(|positions| { input_variables.iter().all(|(k, v)| positions.get(k).unwrap() == v) })
         .unwrap_or(true));
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());
+
     let concept_inserts = add_inserted_concepts(
         constraints,
         type_annotations,
@@ -74,15 +76,27 @@ pub fn compile(
         source_span,
     )?;
 
+    #[cfg(debug_assertions)]
+    let mut variable_positions_tmp = variable_positions
+        .iter()
+        .filter(|(var, _)| {
+            !(variable_registry.get_variable_name(**var).is_none()
+                && variable_registry.get_variable_category(**var).unwrap() == VariableCategory::RoleType)
+        })
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect::<HashMap<_, _>>();
+    #[cfg(not(debug_assertions))]
+    compile_error!("Remove the above");
+
     let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
-    add_links(constraints, type_annotations, &variable_positions, variable_registry, &mut connection_inserts)?;
+    add_links(constraints, type_annotations, &variable_positions_tmp, variable_registry, &mut connection_inserts)?;
 
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
         concept_instructions: concept_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema: prepare_output_row_schema(&variable_positions),
+        output_row_schema: prepare_output_row_schema(input_variables, &variable_positions),
     })
 }
 
@@ -237,19 +251,19 @@ pub(crate) fn add_inserted_concepts(
 
 fn add_has(
     constraints: &[Constraint<Variable>],
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
-        let owner = get_thing_input_position(
-            input_variables,
+        let owner = get_thing_position(
+            variable_positions,
             has.owner().as_variable().unwrap(),
             variable_registry,
             has.source_span(),
         )?;
-        let attribute = get_thing_input_position(
-            input_variables,
+        let attribute = get_thing_position(
+            variable_positions,
             has.attribute().as_variable().unwrap(),
             variable_registry,
             has.source_span(),
@@ -262,31 +276,32 @@ fn add_has(
 fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
+    let named_role_types = collect_named_role_type_bindings(constraints, type_annotations, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
-        let relation = get_thing_input_position(
-            input_variables,
+        let relation = get_thing_position(
+            variable_positions,
             links.relation().as_variable().unwrap(),
             variable_registry,
             links.source_span(),
         )?;
-        let player = get_thing_input_position(
-            input_variables,
+        let player = get_thing_position(
+            variable_positions,
             links.player().as_variable().unwrap(),
             variable_registry,
             links.source_span(),
         )?;
-        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
+        let role =
+            resolve_links_role(type_annotations, variable_positions, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
 }
 
-pub(crate) fn get_thing_input_position(
+pub(crate) fn get_thing_position(
     input_variables: &HashMap<Variable, VariablePosition>,
     variable: Variable,
     variable_registry: &VariableRegistry,
@@ -387,13 +402,18 @@ pub(crate) fn get_kinds_from_types(types: &BTreeSet<Type>) -> HashSet<Kind> {
 }
 
 pub(crate) fn prepare_output_row_schema(
-    variable_positions: &HashMap<Variable, VariablePosition>,
+    input_positions: &HashMap<Variable, VariablePosition>,
+    output_positions: &HashMap<Variable, VariablePosition>,
 ) -> Vec<Option<(Variable, VariableSource)>> {
-    let output_width = variable_positions.values().map(|i| i.position + 1).max().unwrap_or(0);
+    let output_width = output_positions.values().map(|i| i.position + 1).max().unwrap_or(0);
     let mut output_row_schema = vec![None; output_width as usize];
-    variable_positions.iter().map(|(v, i)| (i, v)).for_each(|(&i, &v)| {
-        output_row_schema[i.position as usize] = Some((v, VariableSource::InputVariable(i)));
+    output_positions.iter().for_each(|(var, pos)| {
+        let source =
+            input_positions.get(var).map(|pos| VariableSource::Input(*pos)).unwrap_or(VariableSource::Inserted);
+        output_row_schema[pos.position as usize] = Some((*var, source));
     });
+    // This assumption is made in prepare_output_rows, though it's likely to be violated only for put which doesn't make that assumption.
+    debug_assert!(input_positions.iter().all(|(k, v)| output_positions.get(k) == Some(v)));
     output_row_schema
 }
 
@@ -456,7 +476,7 @@ fn collect_type_bindings(
         .collect()
 }
 
-pub(crate) fn collect_role_type_bindings(
+pub(crate) fn collect_named_role_type_bindings(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,

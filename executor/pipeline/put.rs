@@ -60,12 +60,13 @@ where
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
         let Self { previous: previous_stage, executable, function_registry } = self;
-        let (mut previous_iterator, mut context) = previous_stage.into_iterator(interrupt.clone())?;
 
-        let ExecutionContext { snapshot, thing_manager, profile, .. } = &context;
-        let stage_profile = context.profile.profile_stage(|| String::from("Put"), executable.executable_id);
         let mut output_batch = Batch::new(executable.output_width() as u32, 10); // We don't know how many ahead of time
         let mut must_insert = Vec::new();
+
+        let (mut previous_iterator, mut context) = previous_stage.into_iterator(interrupt.clone())?;
+        let ExecutionContext { snapshot, thing_manager, profile, .. } = &context;
+        let stage_profile = profile.profile_stage(|| String::from("Put"), executable.executable_id);
         let empty_output_row = vec![VariableValue::Empty; executable.output_width()];
         let input_output_mapping = executable
             .insert
@@ -73,7 +74,7 @@ where
             .iter()
             .enumerate()
             .filter_map(|(i, entry_opt)| match entry_opt {
-                Some((_, VariableSource::InputVariable(pos))) => Some((*pos, VariablePosition::new(i as u32))),
+                Some((_, VariableSource::Input(pos))) => Some((*pos, VariablePosition::new(i as u32))),
                 _ => None,
             })
             .collect::<HashMap<_, _>>();
@@ -119,7 +120,8 @@ where
                 let multiplicity = input_row.multiplicity();
                 for _ in 0..multiplicity {
                     output_batch.append(MaybeOwnedRow::new_borrowed(&empty_output_row, &1)); // Insert an empty row
-                    output_batch.get_row_mut(output_batch.len()-1).copy_mapped( // Copy over input_row
+                    output_batch.get_row_mut(output_batch.len() - 1).copy_mapped(
+                        // Copy over input_row
                         input_row.as_reference(),
                         input_output_mapping.iter().map(|(s, d)| (s.clone(), d.clone())),
                     );
@@ -127,6 +129,7 @@ where
                 }
             }
         }
+        drop(previous_iterator);
         debug_assert_eq!(output_batch.len(), must_insert.len());
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();

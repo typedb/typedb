@@ -30,7 +30,7 @@ impl PutExecutable {
                     .output_row_schema
                     .iter()
                     .enumerate()
-                    .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
+                    .filter_map(|(i, opt)| opt.clone().map(|(v, _)| (i, v)))
                     .map(|(i, v)| (v, VariablePosition::new(i as u32)))
                     .collect::<HashMap<_, _>>()
         );

@@ -20,7 +20,7 @@ use crate::{
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
-            executable::{collect_role_type_bindings, get_thing_input_position},
+            executable::{collect_named_role_type_bindings, get_thing_position},
             ThingPosition, TypeSource,
         },
         next_executable_id, WriteCompilationError,
@@ -45,19 +45,19 @@ pub fn compile(
     deleted_concepts: &[Variable],
     source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
+    let named_role_types = collect_named_role_type_bindings(constraints, type_annotations, variable_registry)?;
     let mut connection_deletes = Vec::new();
     for constraint in constraints {
         match constraint {
             Constraint::Has(has) => {
                 connection_deletes.push(ConnectionInstruction::Has(Has {
-                    owner: get_thing_input_position(
+                    owner: get_thing_position(
                         input_variables,
                         has.owner().as_variable().unwrap(),
                         variable_registry,
                         has.source_span(),
                     )?,
-                    attribute: get_thing_input_position(
+                    attribute: get_thing_position(
                         input_variables,
                         has.attribute().as_variable().unwrap(),
                         variable_registry,
@@ -66,13 +66,13 @@ pub fn compile(
                 }));
             }
             Constraint::Links(links) => {
-                let relation = get_thing_input_position(
+                let relation = get_thing_position(
                     input_variables,
                     links.relation().as_variable().unwrap(),
                     variable_registry,
                     links.source_span(),
                 )?;
-                let player = get_thing_input_position(
+                let player = get_thing_position(
                     input_variables,
                     links.player().as_variable().unwrap(),
                     variable_registry,

@@ -8,15 +8,17 @@ use std::error::Error;
 
 use ir::pattern::ParameterID;
 use itertools::Itertools;
+use typeql::match_;
 
 use crate::VariablePosition;
 
 pub mod executable;
 pub mod instructions;
 
-#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {
-    InputVariable(VariablePosition), // TODO: This needs to be renamed
+    Input(VariablePosition),
+    Inserted,
 }
 
 #[derive(Clone, Debug, Hash, Eq, PartialEq)]

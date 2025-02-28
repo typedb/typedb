@@ -16,7 +16,7 @@ use crate::{
     executable::{
         insert::{
             executable::{
-                add_inserted_concepts, collect_role_type_bindings, get_thing_input_position, prepare_output_row_schema,
+                add_inserted_concepts, collect_named_role_type_bindings, get_thing_position, prepare_output_row_schema,
                 resolve_links_role,
             },
             instructions::ConceptInstruction,
@@ -51,44 +51,44 @@ pub fn compile(
     variable_registry: &VariableRegistry,
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
-    let mut variables = input_variables.clone();
+    let mut variable_positions = input_variables.clone();
     let mut attributes_inserts = add_inserted_concepts(
         constraints,
         type_annotations,
         variable_registry,
         input_variables,
-        &mut variables,
+        &mut variable_positions,
         source_span,
     )?;
 
     let mut connection_inserts = Vec::with_capacity(constraints.len());
 
-    add_has(constraints, &variables, variable_registry, &mut connection_inserts)?;
-    add_links(constraints, type_annotations, &variables, variable_registry, &mut connection_inserts)?;
+    add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
+    add_links(constraints, type_annotations, &variable_positions, variable_registry, &mut connection_inserts)?;
 
     Ok(UpdateExecutable {
         executable_id: next_executable_id(),
         concept_instructions: attributes_inserts,
         connection_instructions: connection_inserts,
-        output_row_schema: prepare_output_row_schema(&variables),
+        output_row_schema: prepare_output_row_schema(input_variables, &variable_positions),
     })
 }
 
 fn add_has(
     constraints: &[Constraint<Variable>],
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
     filter_variants!(Constraint::Has: constraints).try_for_each(|has| {
-        let owner = get_thing_input_position(
-            input_variables,
+        let owner = get_thing_position(
+            variable_positions,
             has.owner().as_variable().unwrap(),
             variable_registry,
             has.source_span(),
         )?;
-        let attribute = get_thing_input_position(
-            input_variables,
+        let attribute = get_thing_position(
+            variable_positions,
             has.attribute().as_variable().unwrap(),
             variable_registry,
             has.source_span(),
@@ -101,25 +101,26 @@ fn add_has(
 fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-    input_variables: &HashMap<Variable, VariablePosition>,
+    variable_positions: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let named_role_types = collect_role_type_bindings(constraints, type_annotations, variable_registry)?;
+    let named_role_types = collect_named_role_type_bindings(constraints, type_annotations, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
-        let relation = get_thing_input_position(
-            input_variables,
+        let relation = get_thing_position(
+            variable_positions,
             links.relation().as_variable().unwrap(),
             variable_registry,
             links.source_span(),
         )?;
-        let player = get_thing_input_position(
-            input_variables,
+        let player = get_thing_position(
+            variable_positions,
             links.player().as_variable().unwrap(),
             variable_registry,
             links.source_span(),
         )?;
-        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
+        let role =
+            resolve_links_role(type_annotations, variable_positions, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
