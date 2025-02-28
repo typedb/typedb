@@ -1,296 +1,218 @@
 # Reading data
 
-Specification of how to modify database schema. On this page:
+Specification of how to read data from database. On this page:
 
-_**Query processing steps**_
+_**Query PROCESSING**_
 
-1. **Variable categorization**: categorize variables before evaluation
-2. **Plannability check**: pattern needs to be plannable
-3. **Let-binding check**: check for let-binding uniqueness
+1. **Variable categorization**:
+   2. We distinguish by input/output/checked variables
+   3. We distinguish by "vartype" (whether type, instance, list, or value)
+2. **Plannability check**:
+   1. Variables must be "produceable", 
+   2. Subqueries must be "acyclic"
+3. **Let-binding check**: let-bindings must be unique
+4. **Type check**: non-type variables must be typable
 
-_**Pattern evaluation steps**_
+_**Query EVALUATION**_
 
-1. **Pattern operators**
-2. **Statement semantics**
-3. **Recursion evaluation**
+1. **Pattern** evaluation
+2. **Modifier** evaluation
+3. **Nested negation** evaluation
+4. **Function** evaluation
+
+_**Answer FORMATTING**_
+
+1. **Fetch** JSON
+
+# PROCESSING
 
 ## Variable categorization
 
-### IO categorization algorithm
+### IO Categorization algorithm
 
-Given a pattern `P` and set `IN` of input variables, its **io categorization** categorizes a variable `$x` in `P` as
+#### For stages with patterns
 
-* **input variable** if `$x` is in `IN` (write `$x : IN`)
-* **output variable** if `$x` appears anywhere in `P` which is not `not`-scope (write `$x : OUT`)
-* **internal variable** otherwise (write `$x : NOT`)
+Given a stage with pattern `P` and set `IN` of input variables, we categorize variables `$x` for that stage as follows
+
+* **Input variables** `$x : IN`
+* **Produced variable** `$x : PROD`, if `$x` is not an input and appears anywhere in `P` which is not in a `not`-scope
+* **Output variables** `$x : OUT = IN + PROD`
+* **Checked variable** `$x : CHECK` otherwise
+
+#### For stages without patterns (modifiers)
+
+Straight-forward
 
 ### Vartype categorization algorithm
 
-There are four vartypes: `Vartype = { type_, inst_, val_, list_ }`. Given a set of variables `S`, a **vartype categorization** of `S` is a function `f : S -> Vartype`. We define vartype categorization on:
+There are four vartypes: `Vartype = { type_, inst_, val_, list_ }`. Given a set of variables `S`, a **vartype categorization** of `S` is a function `_cat : VARS -> Vartype`. 
 
-1. patterns with inputs
-1. nested negations in those patterns
-1. functions
+#### For match stage with inputs
 
-#### Patterns with inputs
-Given a pattern `P` and set `IN` of **input variables** with a vartype categorization `i : IN -> Vartype`, extend this to a categorization `p : IN + OUT -> Vartype` as follows:
+Given a pattern `P` and set `IN` of **input variables** with a vartype categorization `_cat : IN -> Vartype`, extend this to a categorization `_cat : IN + PROD -> Vartype` as follows:
 
-* set `p($x) = type_` exactly if `i($x) = type_` or `$x` is used in _any_ **type binding position** in `P`
-* set `p($x) = val_` exactly if `i($x) = val_` or `$x` is used in _any_ **value binding position**: 
-* set `p($x) = list_` exactly if `i($x) = list_` or `$x` is used in _any_ **list binding position**
-* set `p($x) = inst_` exactly if `i($x) = inst_` or `$x` is used in _any_ **concept binding position** and _no_ value binding position and _no_ list binding position
+* set `_cat($x) = type_` exactly if `_cat($x) = type_` or `$x` is used in _any_ **type binding position** in `P`
+* set `_cat($x) = val_` exactly if `_cat($x) = val_` or `$x` is used in _any_ **value binding position**: 
+* 🔶 set `_cat($x) = list_` exactly if `_cat($x) = list_` or `$x` is used in _any_ **list binding position**
+* set `_cat($x) = inst_` exactly if `_cat($x) = inst_` or `$x` is used in _any_ **concept binding position** and _no_ value binding position and _no_ list binding position
 
 If this does not define a function `p` (either because the assignment is defined multiple times or not at all), **reject** the pattern based on failed vartype categorization. Note that variable categorization happens **globally** disregarding scopes (e.g. of branches in a disjunction).
 
-#### Nested negations
-Run the above with vartype categorization of the outer pattern as input.
+#### For nested negations
 
-#### Functions
-Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***).
+Run the above for the negated pattern, with the vartype categorization of the **outer pattern as input**.
+
+#### For other stages
+
+Straight-forward.
+
+#### For functions and pipelines
+
+Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple stages then propagate outputs of earlier stages as inputs to later stages.
+
+A read pipeline is just a function with no inputs.
 
 ## Plannability
 
-### Production dependency check
+### Variable produceability check
 
-Disjunction
+We define the **variable produceability check** algorithm.
 
+#### For match stage with inputs
 
+Assume a pattern `P` with input variables. Let `P_0 + P_1 + ... + P_k` be the **DNF** of `P`. For each `$x : PROD` run the following:
 
-### Subquery dependency check
+1. For each non-negated statement `S` in `P`:
+   * If `S` does not contain `$x`, say `S` **ignores** `$x`
+   * If `S` contains `$x` in a binding position, say `S` **produces** `$x`
+   * If `S` contains `$x` in a non-binding position, say `S` **requires** `$x`
+2. For each `P_i = S_1; S_2; ...; S_n;`
+   * If at least one `S_j` requires `$x` but no `S_j` produces `$x` *reject*
+   * otherwise *accept*.
 
-A query is program that can be evaluated in a single compute graph, even if this requires expanding the graph indefinitely (see [executor spec](executor.md)). A subquery is a query called from a parent query that must be evaluated to **termination** before continuing with the parent query. Subqueries arise in two ways:
+_Remark_. (1) Function arguments of **inlineable functions** could be considered to "produces" their argument variables if these arguments are produced in the function body, see [planner spec](planner.md). (2) If each `P_i` contains `$x` you can think of `$x` as "**non-optional**", and otherwise as "**optional**". But these distinctions aren't needed to specify the desired behavior.
+
+#### For nested negations
+
+Run the above for the negated pattern, with the input and output of the **outer pattern as input**.
+
+#### For other stages
+
+Straight-forward.
+
+#### For functions and pipelines
+
+For functions, run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple stages then propagate outputs of earlier stages as inputs to later stages.
+
+A read pipeline is just a function with no inputs.
+
+### Acyclic subquery dependency check
+
+A **query computation** is a program represented by evaluating a single **compute graph**, even if this requires expanding the graph indefinitely, see [executor spec](executor.md). A **subquery** is a computation started from a parent query that must be evaluated to **termination** before continuing with the parent query. Subqueries arise in two ways:
 
 * `not` (need to exhaustively search to proof non-existence)
 * `reduce` (need to compute all results to compute the aggregate)
 
 Since we allow called functions **recursively**, we must check that subquerying is acyclic: i.e., no subquery can depend on itself. Otherwise, reject the query.
 
-## Binding uniqueness
+## Let-binding uniqueness
 
-## Pattern operators 
+We define the **let-binding uniqueness check** algorithm.
 
-## Statements
+#### Match stage with inputs
 
-## Recursion evaluation
+Assume a pattern `P` with input variables `IN`. Let `P_0 + P_1 + ... + P_k` be the **DNF** of `P`. 
 
+* For each `$x : IN` ensure `P` contains no non-negated `let` statements `$x`, otherwise _reject_
+* For each `$x : PROD` ensure each `P_i` contains at most one non-negated `let` statement binding `$x`, otherwise _reject_
 
+#### For nested negations
 
----
---- OLD ---
+Run the above for the negated pattern, with input and output of the **outer pattern as input**.
 
-# Pattern matching language
+#### For other stages
 
-This section first describes the pattern matching language of TypeDB, which relies on _variables_.
+Straight-forward.
 
-## Basics: Patterns, variables, concept rows, satisfaction
+#### For Functions and pipelines
 
-### (Theory) Statements and pattern
+Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple `match` stages then propagate outputs of earlier stages as inputs to later stages.
 
-* **statements:** syntactic units of TypeQL (see Glossary)
-* **patterns:** collection of statements, combined with logical connectives.
+A read pipeline is just a function with no inputs.
 
-### (Feature) Pattern operations
+## Type check
 
-#### **Case AND_PATT**
+We define a **type-checking** algorithm.
 
-* ➖_Conjunction_ `<PATT1> <PATT2>`
-  > We match "`<PATT1>` **and** `<PATT2>`"
+#### Match stage with inputs
 
-    * _Note:_ Any `<PATT>` is terminated with a `;`
+Assume a pattern `P` with input variables `IN`. Let `P_0 + P_1 + ... + P_k` be the **DNF** of `P`.
 
-#### **Case OR_PATT**
+* For each `$x : IN` ensure `P` contains no non-negated `let` statements `$x`, otherwise _reject_
+* For each `$x : PROD` ensure each `P_i` contains at most one non-negated `let` statement binding `$x`, otherwise _reject_
 
-* ➖_Disjunction_ `{ <PATT1> } or { <PATT2> };`
-  > We **either** match `<PATT1>` or `<PATT2>`
+#### For nested negations
 
-  _Note_ This extends to `k` patterns chained with interleaving `or`.
+Run the above for the negated pattern, with input and output of the **outer pattern as input**.
 
-#### **Case NOT_PATT**
+#### For other stages
 
-* ➖_Negation_. `not { <PATT> };`
-  > We ensure `<PATT>` has **no match**.
+Straight-forward.
 
-  _Note_ `<PATT>` may have **quantified variables**
+#### For Functions and pipelines
 
-#### **Case TRY_PATT**
+Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple `match` stages then propagate outputs of earlier stages as inputs to later stages.
 
-* ➖_Optional pattern_ `try { PATT };`
-  > We **optionally** match `PATT` whenever possible
+A read pipeline is just a function with no inputs.
 
-_Terminology_ What's inside `<OP> { ... }` is called a **`<OP>`-block**.
+# EVALUATION
 
+We define the **evaluation algorithm**, which produces mult-sets (i.e. sets _with duplicates_) of **concept rows**, in three cases:
 
-### (Theory) Pattern branches
+1. **patterns** with inputs:
+   1. an inductive **algorithm** for their evaluation, using
+   3. evaluation of **nested negations**
+   2. satisfiability of **statement**
+3. **modifiers** with in inputs
+4. **functions** with inputs
 
-A **disjunctive normal (DNF) of a pattern `<PATT>`** is a pattern obtained by recursively applying transformations of the form
-```
-<PATT1> { <PATT2> } or {<PATT3> };
---transforms to-->
-{ <PATT1> <PATT2> } or { <PATT1> <PATT3> };
-```
-The resulting DNF of `<PATT>` will itself be a pattern of the form:
-```
-{ <BRANCH1> } or { <BRANCH2> } or ... ;
-```
+## Patterns
 
-**Important**. The patterns `<BRANCHi>` are _unique_ up to re-ordering them. We call them the **branches** of `<PATT>`.
+Given a pattern `P` with input variables `IN` and a concept row multiset `ROWS` whose rows contain all variables of `IN` but no variables of `PROD` or `CHECK`, we define the evaluation of `P` to be the multiset, obtained by
 
-_Note_. The transformation also applies _inside_ `not` and `try` blocks.
+* for each row `r` in `ROWS`, obtain the (**deduplicated**!) answer _set_ `EV(P[IN/r])` by the procedure described in the next sections
+* take the multiset union of `EV(P[IN/r])` for all `r` in `ROWS`
 
+### Algorithm
 
-### (Theory) Variables and bindings
+Let `P = P_1 + P_2 + ... P_m` be the DNF of `P`. We evaluate `P` branch by branch (see [planner spec](planner.md) for how to make this **more efficient**). 
 
-Variables appear in statements. They fall in different categories, which can be recognized as follows.
+* `EV(P[r])` is defined and the deduplicated union of all `EV(P_i[r])`
 
-* **Syntax**: variables in patterns `PATT` are ``-prefixed labels
-    * _Examples_: `$x`, `$y`, `$person`
+Assume `P_i = S_1; S_2; ...; S_n`.
 
-#### **Variable categories**
+* First, note that each `S_j` is either a **statement** or a **nested negation**
 
-* **Categories** indicate what type of concept a variable can hold. In a pattern `PATT`, any variable will belong to one of four _categories_ based on the following rules.
+    _Note on **try**_: We expand `try { Q }` to `{ Q } or { not { Q }; }`.
+* By the variable produceability check we can pick an order in which `S_j` requires only variable that have been produced by some `S_k`, `k < j`
+* Inductively, define `EV(S_1; S_2; ...; S_j[r])` to be the set of rows obtained by:
+  * taking a row `s` from `EV(S_1; S_2; ...; S_{j-1}[r])`
+  * if `S_j` is a statement, return extensions of `s` that add variable so that `S_j` is **satisfied**, see next sections (there may be zero such extension)
+  * if `S_j` is a nested negation, return `s` iff `S_j[s]` evaluates to **true**, see next sections.
 
-    * **Type variables** (**tvar**, uppercase convention in this spec)
-        * Any variable used in a type position in a statement
+### Nested negations
 
-    * **Value variables** (**vvar**, lowercase convention in this spec)
-        * Any variable assigned (with `=`) to the output of an non-list expression
-        * Any variable assigned (with `=` or `in`) to the output of a function in a position with value output type is a value variable
+Given `S = not { Q }` with input row `s`, then `S[s]` is true iff `EV(Q[s])` is empty.
 
-    * **List variables** (**lvar**, lowercase convention in this spec)
-        * Any variable assigned (with `=`) to a list expression.
-        * Any variable typed with a list type (e.g., `... has name[] $l`)
+### Statements
 
-    * **Instance variables** (**ivar**, lowercase convention in this spec)
-        * Any remaining variable must be an instance var.
+## Modifiers
 
-... the last three together comprise _element vars_ (**evars**). Evars are those variables that can be in the signature and return statement of a function.
+## Recursive queries
 
-_Remark 1_. The code variable `$x` will be written as `x` in math notation (without `\`).
 
-#### **Bound variables and valid patterns**
-
-* **Bounds** ensure variables are tied to database concepts. (**#BDD**)
-
-    * A variable is **bound** if it appears in a _bound position_ of at least one statement.
-        * _Note_. Most statements bind their variables: this is why we will mainly highlight _non-bound positions_
-
-    * A pattern `PATT` is **valid** if ***all variables are bound***.
-        * _(Fun fact: otherwise, we may have to solve provably unsolvable problems)_
-
-_Going forward, we always work with valid patterns_
-
-#### **Variable modes and unambiguous patterns**
-
-* **Modes of variables** indicate how to compute answers for variables. In a valid pattern `PATT`, a variable appear in various _modes_ based on the following rules.
-
-    * **Retrievable variables** are variables that are bound in _some_ statement that is _not_ `not`-gated (i.e. it is not enclosed in a not `not` block).
-
-    * **Negation-bound variables** are variables that are bound _only_ in statements that are `not`-gated (i.e. they are enclosed in a parent `not` block).
-
-    * **Optional variables** are variables that are
-        * retrievable
-        * are bound only in `try`-gated statements
-
-* **Principles of unambiguity**. A valid pattern is **unambiguous** if it satifies the following.
-
-    * _No [alpha-conversion](https://en.wikipedia.org/wiki/Lambda_calculus#%CE%B1-conversion) needed!_ No negation-bound or optional variable appears bound in **sibling blocks** in the **same branch** (see "DNF") of the pattern without also being bound in a joint parent block.
-        * _Note_ This applies to `?`-marked variables, as these unpack into `try` as outlined in **IN_FUN_PATT** and **LET_FUN_PATT**
-
-    * _No negated try's_ We dissallow `try`'s which are `not`-gated (i.e. cannot `try` inside a `not`).
-
-#### **Anonymous variables**
-
-* _Anon vars_: anon vars start with `$_`. They behave like normal variables, but leave the variables name implicit and are automatically discarded and results of the pattern they appear in are deduplicated. In other words:
-```
-[input]               // incoming stream with variables $a, $b, $c
-match <PATT>          // binds $x, $y, $z, $_1
-```
-is equivalent to
-```
-for each (a,b,c) in [input] {
-  match [set $a=a, $b=b, $c=c, $_1=$var1 in <PATT>]
-  deselect $var1;     // equivalent to "select $x, $y, $z"
-  distinct;           // deduplicate new results
-  return { $a=a, $b=b, $c=c, $x, $y, $z };  // incorporate in parent stream
-}
-```
-(note that this is very much pseudo code, not actual TypeQL)
-
-* _Remark_: Anon vars can be both **tvar**s and **evar**s
-
-
-### (Theory) Typed concept rows
-
-* _Concepts_. A **concept** is a type or an element in a type.
-* _Typed concept rows_. An **typed concept row** (abbreviated 'crow') is a mapping of named variables (the **column names**) to _unapplied_ typed concepts (the **row entries**). A crow `r` may be written as:
-  ```
-  r = ($x->a:T, $y->b:S, ...)
-  ```
-
-  To emphasize: By definition, types in crows are **unapplied** (see "Applying dependencies")
-  > In other words, the definition dissallows using types with applied dependencies like `$x -> a : T($y : I)`. Instead, we only allow `$x -> a:T` for bare symbols "T". (This is because we don't expose dependencies as such to the user)
-
-    * _Assigned concepts_. Write `r($x)` (math. notation `r(x)`) for the concept that `r` assigns to `$x`.
-    * _Assigned types_. Write `T($x)` (math. notation `T_r(x)`) for the type that `r` assigns to `$x`.
-        * _Special case: assigned kinds_. Note that `T($x)` may be `Ent`, `Rel`, `Att`, `Trait` (`Rol`), or `Val` (for value types) when `$x` is assigned a type as a concept — we speak of `T($x)` as the **type kind** of `r($x)` in this case.
-
-
-### Input crows for patterns
-
-An **input crow** `r` for a pattern `PATT` is
-
-* a crow,
-* with subset of its variables marked as **input**,
-
-<!-- Examples for the typing algorithm:
-fun a($x: person) -> name[]:
-match
-  $x has firstname $f;
-  $x has lastname $l;
-  $namelist = [$f, $l]; // type as `[$f] + [$l]`
-return $namelist;
-
-match
-  $x has color $y;
-  $x has name $y; // "violet"
-  $y isa color;
-
-// 2x2 matrix:
-// no:
-$y isa name;
-$y isa color;
-// no:
-$x has name $y;
-$y isa color;
-// no:
-$y isa name;
-$x has color $y;
-// yes:
-$x has name $y;
-$x has color $y;
-// STICKY: are we happy with this?
--->
 
 ## Pattern semantics
-
-### Satisfaction and answers
-
-* Given an input crow `r` for `PATT` ***satisfies*** `PATT` if
-
-    * **Type satisfaction**. the typing assignemt of `r` satisfies the typing condition below.
-    * **Pattern semantics**. the concept assignment of `r` satisfis the pattern conditions below.
-
-  > Intuitively, this means substituting the variables in `PATT` with the concepts assigned in `r` yields statements that are true in our type system.
-
-* A crow `r` is an **answer** to a pattern `PATT` if the following are satisfied:
-
-    * **Retrievable domain**. Each non-input variable in `r` must be a retrievable variable of `PATT`
-    * **Satisfaction**. `r` must satisfy the pattern (as outlined in next sections)
-    * **Minimality**. No subset of `r` with the same input-marked variables satisfies the `PATT`
-
-      > In other words, `r` is a _minimal extension_ of the given input.
-
-_Example_: Consider the pattern `$x isa Person;` (i.e. a pattern comprising a single statement). The crow `($x -> p)` satisfies the pattern if `p` is an element of the type `Person`. The crow `($x -> p, $y -> p)` also satisfies the pattern, but it is not minimal... unless `$y` was marked as an input, in which case it _does_ satisfy the pattern.
 
 ### Typing satisfaction
 

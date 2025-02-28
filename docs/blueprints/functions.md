@@ -14,3 +14,7 @@ TODO: scalar/tuple/stream terminology
 * and single row assignment `$x?, $y = ...`  succeeds if a row is assigned, even if it may be missing the optional variables
 * and multi row assignment `$x, $y in ...`  fails if no row is assigned
 * and multi row assignment `$x?, $y in ...`  succeeds if one or more row are assigned, even if they may be missing the optional variables
+
+## Syntax
+
+return `first` `last`

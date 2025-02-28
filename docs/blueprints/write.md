@@ -1,8 +1,59 @@
-# Write
+# Writing data
 
-Data write stages modify data.
+Specification of how to write data to database in read-write pipelines. On this page:
 
-## Insert behavior
+_**Query PROCESSING**_
+
+1. **Variable categorization**: this is exactly as in [read spec](read.md) but extended to patterns in write stages
+2. **Type check**: this is exactly as in [read spec](read.md) but extended to patterns in write stages
+
+_**Query OPERATION**_
+
+1. **Insert** operation
+2. **Delete** operation
+2. **Update** operation
+2. **Put** operation
+
+_**Answer FORMATTING**_
+
+1. **Fetch** JSON: this is exactly as in [read spec](read.md) but extended to patterns in write stages
+
+# PROCESSING
+
+See [read spec](read.md), nothing to add (for now).
+
+# EVALUATION
+
+## Insert
+
+### Overview
+
+### Statements
+
+## Delete
+
+### Overview
+
+### Statements
+
+## Update
+
+### Overview
+
+### Statements
+
+## Put
+
+### Overview
+
+### Statements
+
+# FORMATTING
+
+See [read spec](read.md), nothing to add (for now).
+
+---
+OLD
 
 ### Basics of inserting
 
