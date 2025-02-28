@@ -32,6 +32,7 @@ use ir::{
     pipeline::ParameterRegistry,
 };
 use itertools::{Itertools, MinMaxResult};
+use unicase::UniCase;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -875,8 +876,17 @@ impl<T> Checker<T> {
                         Comparator::Greater => |a, b| a > b,
                         Comparator::LessOrEqual => |a, b| a <= b,
                         Comparator::GreaterOrEqual => |a, b| a >= b,
-                        Comparator::Like => unimplemented_feature!(ComparatorLike),
-                        Comparator::Contains => unimplemented_feature!(ComparatorContains), // |a,b| a.unwrap_string_ref().contains(b.unwrap_string_ref()),
+                        Comparator::Like => |a, b| {
+                            // TODO: Avoid recompiling the regex every time.
+                            regex::Regex::new(b.unwrap_string_ref())
+                                .expect("Invalid regex should have been caught at compile time")
+                                .is_match(a.unwrap_string_ref())
+                        },
+                        Comparator::Contains => |a, b| {
+                            let a_unicase = UniCase::new(a.unwrap_string_ref()).to_folded_case();
+                            let b_unicase = UniCase::new(b.unwrap_string_ref()).to_folded_case();
+                            a_unicase.contains(b_unicase.as_str())
+                        },
                     };
                     filters.push(Box::new(move |value| {
                         let lhs = lhs(value);

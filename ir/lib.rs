@@ -8,6 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
 
+use encoding::value::value::Value;
 use error::typedb_error;
 use typeql::{common::Span, statement::InIterable, token, value::StringLiteral};
 
@@ -223,6 +224,16 @@ typedb_error! {
             42,
             "Illegal statement provided for an update stage. Only 'update $0 has $1' and 'update $0 links $1' are allowed.",
             source_span: Option<Span>,
+        ),
+        RegexExpectedStringLiteral(50,
+            "Expected a string literal as regex.",
+            source_span: Option<Span>
+        ),
+        RegexFailedCompilation(51,
+            "The regular expression failed compilation: '{value}'.",
+            value: String,
+            source: regex::Error,
+            source_span: Option<Span>
         ),
         UnimplementedLanguageFeature(
             254,

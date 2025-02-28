@@ -33,8 +33,10 @@ rust_library(
         "@typeql//rust:typeql",
 
         "@crates//:itertools",
+        "@crates//:regex",
         "@crates//:tracing",
         "@crates//:tokio",
+        "@crates//:unicase",
     ],
 )
 

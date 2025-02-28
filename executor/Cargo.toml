@@ -48,7 +48,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.42.0"
+		version = "1.43.0"
 		default-features = false
 
 	[dependencies.tracing]
@@ -59,6 +59,11 @@ features = {}
 	[dependencies.primitive]
 		path = "../common/primitive"
 		features = []
+		default-features = false
+
+	[dependencies.unicase]
+		features = []
+		version = "2.8.1"
 		default-features = false
 
 	[dependencies.resource]
@@ -104,6 +109,11 @@ features = {}
 	[dependencies.iterator]
 		path = "../common/iterator"
 		features = []
+		default-features = false
+
+	[dependencies.regex]
+		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
+		version = "1.11.1"
 		default-features = false
 
 	[dependencies.answer]

@@ -568,8 +568,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Comparator::NotEqual => (), // no tangible impact on traversal costs
                 Comparator::Less | Comparator::LessOrEqual => lhs.add_upper_bound(rhs),
                 Comparator::Greater | Comparator::GreaterOrEqual => lhs.add_lower_bound(rhs),
-                Comparator::Like => unimplemented_feature!(ComparatorLike),
-                Comparator::Contains => unimplemented_feature!(ComparatorContains),
+                Comparator::Like => (),
+                Comparator::Contains => (),
             }
         }
         if let Input::Variable(rhs) = rhs {
@@ -579,8 +579,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 Comparator::NotEqual => (), // no tangible impact on traversal costs
                 Comparator::Less | Comparator::LessOrEqual => rhs.add_upper_bound(lhs),
                 Comparator::Greater | Comparator::GreaterOrEqual => rhs.add_lower_bound(lhs),
-                Comparator::Like => unimplemented_feature!(ComparatorLike),
-                Comparator::Contains => unimplemented_feature!(ComparatorContains),
+                Comparator::Like => (),
+                Comparator::Contains => (),
             }
         }
         self.graph.push_comparison(ComparisonPlanner::from_constraint(
