@@ -1,19 +1,14 @@
 # README
 
-## Type system
+## Blueprints
 
-* Concise rule set to define types _and_ data in types
+Descriptions of TypeDB's type system, query processing, and evaluation algorithms.
 
-## Schema
+## Decisions
 
-* modifies types
+Architecture decision log. Use provided python script as follows
+```bash
+python new_log <title>
+```
+to generate a new log.
 
-## Read
-
-* read data and type labels
-* All *subqueries* are read
-
-## Write
-
-* modifies data stored in types
-* cannot be nested in 
