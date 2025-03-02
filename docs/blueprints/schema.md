@@ -46,106 +46,111 @@ Invariants hold true in any valid database system state. We usually express the 
 
 ### Types
 
-* ➖ `entity A` adds `A : ENT`
-* ➖ `(entity) A sub B` adds `A : ENT, A <! B`
+* `entity A` adds `A : ENT`
+* `(entity) A sub B` adds `A : ENT, A <! B`
 
-* ➖ `relation A` adds `A : REL`
-* ➖ `(relation) A sub B` adds `A : REL, A <! B` where `B : REL` 
-* ➖ `(relation) A relates I` adds `A : REL(I)` and `I : TRAIT`.
-* ➖ `(relation) A relates I as J` adds `A : REL(I)`, `I <! J` where `B : REL(J)` and `A <! B`
+* `relation A` adds `A : REL`
+* `(relation) A sub B` adds `A : REL, A <! B` where `B : REL` 
+* `(relation) A relates I` adds `A : REL(I)` and `I : TRAIT`.
+* `(relation) A relates I as J` adds `A : REL(I)`, `I <! J` where `B : REL(J)` and `A <! B`
 * 🔶 `(relation) A relates I[]` adds `A : REL([I])`
 * 🔶 `(relation) A relates I[] as J[]` adds `A : REL([I])`, `I <! J` where `B : REL([J])` and `A <! B`
 
-* ➖ `attribute A` adds both:
+* `attribute A` adds both:
   * `A : ATT(A.O)` and `A.O : TRAIT`
   * `[A] : LIST(A[].O)` and `A[].O : TRAIT`
-* ➖ `(attribute) A sub B` adds both:
+* `(attribute) A sub B` adds both:
   * `A : ATT(A.O)`, `A <! B` and `A.O <! B.O` where `B : ATT(B.O)`
   * `[A] : LIST(A[].O)`, `[A] <! [B]` and `A[].O <! B[].O` where `B : ATT(B.O)`
-* ➖ `(attribute) A value V` adds `_val : A -> V` where `V : VAL`
+* `(attribute) A value V` adds `_val : A -> V` where `V : VAL`
 
-* ➖ `A plays B:I` adds `A <! I` where `B relates! I`.
+* `A plays B:I` adds `A <! I` where `B relates! I`.
 
-* ➖ `A owns B` adds `A <! B.O` where `B: ATT(B.O)`, `A :OBJ`
+* `A owns B` adds `A <! B.O` where `B: ATT(B.O)`, `A :OBJ`
 * 🔶 `A owns B[]` adds `A <! B[].O` where `B: ATT(B.O)`, `A :OBJ`
-
-### Constraints
-
-Constraints add additional invariants to our system. 
-
-* ➖ `A relates I @card(n..m)` 
-  * **defaults** to `@card(1..1)` if omitted ("one")
-  * **invariant**: `n <= k <= m` whenever `a :! A'({x_1, ..., x_k} : I)`, `A' <= A`,
-* ➖ `A plays B:I @card(n..m)`
-  * **defaults** to `@card(0..)` if omitted ("many")
-  * **invariant**: `n <= _size(B(a:I)) <= m` for all `a : A`
-* ➖ `A owns B @card(n...m)`
-  * **defaults** to `@card(0..1)` if omitted ("one or null")
-  * **invariant**: `n <= _size(B(a:I)) <= m` for all `a : A`
-
-* ➖ `A relates I[] @card(n..m)`
-  * **defaults** to `@card(0..)` if omitted ("many")
-  * **invariant**: `n <= _len(l) <= m` whenever `a :! A'(l : [I])`, `A' <= A`, `A' : REL([I])`
-* ➖ `A owns B[] @card(n...m)`
-  * **defaults** to `@card(0..)` if omitted ("many")
-  * **invariant**: `n <= _len(l) <= m` whenever `l : [B](a:B.O)` for `a : A`
-
-_Remarks_. (1) Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities. (2) When we have direct subtraits `I_i <! J`, for `i = 1,...,n`, and each `I_i` has `card(n_i..m_i)` while J has `card(n..m)` then we must have `sum(n_i) <= m` and `n <= sum(m_i)` for the schema to be usable.
-
-* ➖`A owns B @unique`
-  * **invariant**: if `b : B(a:B.O)` for some `a : A` then this `a` is unique (for fixed `b`).
-* ➖`A owns B @key`
-  * **invariant**: if `b : B(a:B.O)` for some `a : A` then this `a` is unique, and also `|B(a:B.O)| = 1`.
-* 🔶 `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)`
-  * **invariant**: if `b_1 : B_1(a:B_1.O), b_2 : B_2(a:B_2.O)` for some `a : A` then this `a` is unique for the given tuple `(b_1, b_2)`, and also `_size((B_1(a:B_1.O), B_2(a:B_2.O))) = 1`.
-  * this **generalizes** to `n` subkeys.
-* ➖ `A owns B[] @distinct`
-  * **invariant**:  when `[b_1, ..., b_n] : [B]` then all `b_i` are distinct.
-* ➖ `B relates I[] @distinct`
-  * **invariant**:  when `[x_1, ..., x_n] : [I]` then all `x_i` are distinct.
-
-* ➖`A owns B @values(v1, v2)`
-  * **invariant**:  if `a : A` then `_val(a) in {v_1, v_2}` , where `A : ATT`, `_val : A -> V`, `v_i : V`,
-* ➖ `A owns B[] @values(v1, v2)`
-  * **invariant**:  if `l : [A]` and `a in l` then `a in {v_1, v_2}` , where `A : ATT`, `_val : A -> V`, `v_i : V`,
-  * this **generalizes** to `n` values.
-* ➖`A owns B @regex(<REGEX>)`
-  * **invariant**:  if `a : A` then `a` conforms with regex `<EXPR>`.
-* ➖ `A owns B[] @regex(<REGEX>)`
-  * **invariant**:  ... (similar, but for individual list members)
-* ➖`A owns B @range(v1..v2)`
-  * **invariant**:  if `a : A` then `a in [v_1,v_2]` (conditions as before).
-* ➖ `A owns B[] @range(v1..v2)`
-  * **invariant**:  ... (similar, but for individual list members)
-
-* ➖`A value B @values(v1, v2)`
-  * **invariant**: if `a : A` then `_val(a) in {v_1, v_2}` , where:
-    * either `A : ATT`, `_val : A -> V`, `v_i : V`,
-    * or `A` is the component of a struct, see section on struct defs.
-  * this **generalizes** to `n` values.
-* ➖`A value B @regex(<REGEX>)`
-  * **invariant**: if `a : A` then `a` conforms with regex `<REGEX>`, where:
-    * either `A : ATT`, `_val : A -> V`,
-    * or `A` is the component of a struct, see section on struct defs.
-* ➖`A value B @range(v1..v2)`
-  * **invariant**: if `a : A` then `a in [v_1,v_2]` (conditions as before), where:
-    * either `A : ATT`, `_val : A -> V`,
-    * or `A` is the component of a struct, see section on struct defs.
 
 ### Abstractness
 
 Abstractness adds additional invariants to our system, **but it also adds** abstractly true axioms to our type system.
 
-* ➖`(kind) A @abstract` adds `#(A : KIND)` and
+* `(kind) A @abstract` adds ***nothing*** (we just remember schema definition), but enforces
   * **invariant**: no `a :! A(...)` can exist
-* ➖`A relates I @abstract` adds `#(A : REL(I))` and
+
+  _Note_:  abstractness for types themselves is not directly recorded in [type system](type_system.md) ... its rules are simple enough to deal with it "verbally".
+* `A relates I @abstract` adds `#(A : REL(I))` and enforces
   * **invariant**: no `a :! A(... : I, ...)` can exist
-* ➖ `A relates I[] @abstract` adds `#(A : REL([I]))` and
+* 🔶 `A relates I[] @abstract` adds `#(A : REL([I]))` and enforces
   * **invariant**: no `a :! A(... : I[], ...)` can exist
-* ➖ `A plays B:I @abstract` adds `#(A <! I)` and
-  * **invariant**: no `a :! A(... : I[], ...)` can exist
-* ➖ `A owns B @abstract` adds `#(A <! B.O)` which affects `insert` behavior.
-* ➖ `A owns B[] @abstract` adds `#(A <! B[].O)` which affects `insert` behavior.
+* `A plays B:I @abstract` adds `#(A <! I)` and enforces
+  * if `B : REL(I)` then **invariant**: no `... :! B(a : I, ...)` can exist
+  * 🔶if `B : REL(I[])` then **invariant**: no `... :! B(a : I[], ...)` can exist
+* `A owns B @abstract` adds `#(A <! B.O)` and enforces
+  * **invariant**: no `... :! B(a : B.O)` can exist
+* 🔶 `A owns B[] @abstract` adds `#(A <! B[].O)` and enforces
+  * **invariant**: no `... :! B[](a : B.O)` can exist
+
+### Constraints
+
+Constraints add additional invariants to our system. 
+
+* `A relates I @card(n..m)` 
+  * **defaults** to `@card(1..1)` if omitted ("one")
+  * **invariant**: `n <= k <= m` whenever `a :! A'({x_1, ..., x_k} : I)`, `A' <= A`,
+* `A plays B:I @card(n..m)`
+  * **defaults** to `@card(0..)` if omitted ("many")
+  * **invariant**: `n <= _size(B(a:I)) <= m` for all `a : A`
+* `A owns B @card(n...m)`
+  * **defaults** to `@card(0..1)` if omitted ("one or null")
+  * **invariant**: `n <= _size(B(a:I)) <= m` for all `a : A`
+
+* 🔶 `A relates I[] @card(n..m)`
+  * **defaults** to `@card(0..)` if omitted ("many")
+  * **invariant**: `n <= _len(l) <= m` whenever `a :! A'(l : [I])`, `A' <= A`, `A' : REL([I])`
+* 🔶 `A owns B[] @card(n...m)`
+  * **defaults** to `@card(0..)` if omitted ("many")
+  * **invariant**: `n <= _len(l) <= m` whenever `l : [B](a:B.O)` for `a : A`
+
+_Remarks_. (1) Upper bounds can be omitted, writing `@card(2..)`, to allow for arbitrary large cardinalities. (2) When we have direct subtraits `I_i <! J`, for `i = 1,...,n`, and each `I_i` has `card(n_i..m_i)` while J has `card(n..m)` then we must have `sum(n_i) <= m` and `n <= sum(m_i)` for the schema to be usable.
+
+* `A owns B @unique`
+  * **invariant**: if `b : B(a:B.O)` for some `a : A` then this `a` is unique (for fixed `b`).
+* `A owns B @key`
+  * **invariant**: if `b : B(a:B.O)` for some `a : A` then this `a` is unique, and also `|B(a:B.O)| = 1`.
+* 🔶 `A owns B1 @subkey(<LABEL>); A owns B2 @subkey(<LABEL>)`
+  * **invariant**: if `b_1 : B_1(a:B_1.O), b_2 : B_2(a:B_2.O)` for some `a : A` then this `a` is unique for the given tuple `(b_1, b_2)`, and also `_size((B_1(a:B_1.O), B_2(a:B_2.O))) = 1`.
+  * this **generalizes** to `n` subkeys.
+* 🔶 `A owns B[] @distinct`
+  * **invariant**:  when `[b_1, ..., b_n] : [B]` then all `b_i` are distinct.
+* 🔶 `B relates I[] @distinct`
+  * **invariant**:  when `[x_1, ..., x_n] : [I]` then all `x_i` are distinct.
+
+* `A owns B @values(v1, v2)`
+  * **invariant**:  if `a : A` then `_val(a) in {v_1, v_2}` , where `A : ATT`, `_val : A -> V`, `v_i : V`,
+* 🔶 `A owns B[] @values(v1, v2)`
+  * **invariant**:  if `l : [A]` and `a in l` then `a in {v_1, v_2}` , where `A : ATT`, `_val : A -> V`, `v_i : V`,
+  * this **generalizes** to `n` values.
+* `A owns B @regex(<REGEX>)`
+  * **invariant**:  if `a : A` then `a` conforms with regex `<EXPR>`.
+* 🔶 `A owns B[] @regex(<REGEX>)`
+  * **invariant**:  ... (similar, but for individual list members)
+* `A owns B @range(v1..v2)`
+  * **invariant**:  if `a : A` then `a in [v_1,v_2]` (conditions as before).
+* 🔶 `A owns B[] @range(v1..v2)`
+  * **invariant**:  ... (similar, but for individual list members)
+
+* `A value B @values(v1, v2)`
+  * **invariant**: if `a : A` then `_val(a) in {v_1, v_2}` , where:
+    * either `A : ATT`, `_val : A -> V`, `v_i : V`,
+    * or `A` is the component of a struct, see section on struct defs.
+  * this **generalizes** to `n` values.
+* `A value B @regex(<REGEX>)`
+  * **invariant**: if `a : A` then `a` conforms with regex `<REGEX>`, where:
+    * either `A : ATT`, `_val : A -> V`,
+    * or `A` is the component of a struct, see section on struct defs.
+* `A value B @range(v1..v2)`
+  * **invariant**: if `a : A` then `a in [v_1,v_2]` (conditions as before), where:
+    * either `A : ATT`, `_val : A -> V`,
+    * or `A` is the component of a struct, see section on struct defs.
 
 ### Structs and functions
 
@@ -161,7 +166,7 @@ Abstractness adds additional invariants to our system, **but it also adds** abst
     * _Projections_ (as usual for product types): when `s : S` then `s.C1 : V1?` and `s.C2 : V2?`
     * ... all this **generalizes** to n fields in the struct
 
-* ➖ **Function** definition takes the form:
+* **Function** definition takes the form:
     ```
     struct ;
       <read-pipeline>
@@ -181,62 +186,62 @@ Abstractness adds additional invariants to our system, **but it also adds** abst
 
 ### Types
 
-* ➖ `entity A` removes `A : ENT`
-* ➖ `sub B from (entity) A` removes `A <! B`
+* `entity A` removes `A : ENT`
+* `sub B from (entity) A` removes `A <! B`
 
-* ➖ `relation A` removes `A : REL`
-* ➖ `sub B from (relation) A` removes `A <= B`
-* ➖ `relates I from (relation) A` removes `A : REL(I)`
-* ➖ `as J from (relation) A relates I` removes `I <! J` 
+* `relation A` removes `A : REL`
+* `sub B from (relation) A` removes `A <= B`
+* `relates I from (relation) A` removes `A : REL(I)`
+* `as J from (relation) A relates I` removes `I <! J` 
 * 🔶 `relates I[] from (relation) A` removes `A : REL([I])$
 * 🔶 `as J[] from (relation) A relates I[]` removes `I <! J`
 
-* ➖ `attribute A` removes `A : ATT` and `A : ATT(A.O)`
-* ➖ `value V from (attribute) A value V` removes `_val : A -> V`
-* ➖ `sub B from (attribute) A` removes `A <! B` and `A.O <! B.O`
+* `attribute A` removes `A : ATT` and `A : ATT(A.O)`
+* `value V from (attribute) A value V` removes `_val : A -> V`
+* `sub B from (attribute) A` removes `A <! B` and `A.O <! B.O`
 
-* ➖ `plays B:I from (kind) A` removes `A <! I` 
+* `plays B:I from (kind) A` removes `A <! I` 
 
-* ➖ `owns B from (kind) A` removes `A <! B.O` 
+* `owns B from (kind) A` removes `A <! B.O` 
 * 🔶 `owns B[] from (kind) A` removes `A <! B[].O`
 
 ### Constraints
 
-_In each case, `undefine` removes the additional invariant (minor exception: subkey).
+_In each case, `undefine` removes the additional invariant (minor exception is `subkey`, which _changes_ the invariant by shrinking the domain of the composite key).
 
-* ➖ `@card(n..m) from A relates I`
-* ➖ `@card(n..m) from A plays B:I`
-* ➖ `@card(n...m) from A owns B`
+* `@card(n..m) from A relates I`
+* `@card(n..m) from A plays B:I`
+* `@card(n...m) from A owns B`
 
 * 🔶 `@card(n..m) from A relates I[]`
 * 🔶 `@card(n...m) from A owns B[]`
 
-* ➖`@unique from A owns B`
-* ➖`@key from A owns B`
-* ➖`@subkey(<LABEL>) from A owns B` removes `B` as part of the `<LABEL>` key of `A`
+* `@unique from A owns B`
+* `@key from A owns B`
+* `@subkey(<LABEL>) from A owns B` removes `B` as part of the `<LABEL>` key of `A`
 
 * 🔶 `@distinct from A owns B[]`
 * 🔶 `@distinct from B relates I[]`
 
-* ➖`@values(v1, v2) from A owns B` 
-* ➖`@range(v1..v2) from A owns B`
+* `@values(v1, v2) from A owns B` 
+* `@range(v1..v2) from A owns B`
 
-* ➖`@values(v1, v2) from A value B` 
-* ➖`@range(v1..v2) from A value B`
+* `@values(v1, v2) from A value B` 
+* `@range(v1..v2) from A value B`
 
 ### Abtractness
 
-* ➖`@abstract from (kind) B`
-* ➖`@abstract from A plays B:I`
-* ➖`@abstract from A owns B`
-* ➖ `@abstract from A owns B[]`
-* ➖`@abstract from A relates I`
+* `@abstract from (kind) B`
+* `@abstract from A plays B:I`
+* `@abstract from A owns B`
+* `@abstract from A owns B[]`
+* `@abstract from A relates I`
 * 🔶 `@abstract from A relates I[]`
 
 ### Structs and fucntions
 
 * 🔶 `struct S;` removes `S : TYPE` if possible (i.e. not used in other definitions)
-* ➖ `fun F;` removes function if possible (i.e. not used in other definitions)
+* `fun F;` removes function if possible (i.e. not used in other definitions)
 
 ## Redefine 
 
@@ -249,15 +254,15 @@ _In each case, `undefine` removes the additional invariant (minor exception: sub
 ### Type axioms
 
 * **cannot** redefine `entity A`
-* ➖ `(entity) A sub B` redefines `A <= B`
+* `(entity) A sub B` redefines `A <= B`
 * **cannot** redefine `relation A` 
-* ➖ `(relation) A sub B` redefines `A <= B`, ***requiring*** 
+* `(relation) A sub B` redefines `A <= B`, ***requiring*** 
   * either `A <! B' != B` (to be redefined)
   * or `A` has no direct super-type
 * 🔶 `(relation) A relates I` redefines `A : REL(I)`, ***requiring*** that `A : REL([I])` (to be redefined)
   * _Inherited cardinality_: inherits card (default: `@card(0..)`) 
   * _Data transformation_: moves any `a : A(l : [I])` with `l = [l_0, l_1, ..., l_{k-1}]` to `a : A({l_0,l_1,...,l_{k-1}} : I`
-* ➖ `(relation) A relates I as J` redefines `I <! J`, ***requiring*** that either `I <! J' != J` or `I` has no direct super-role
+* `(relation) A relates I as J` redefines `I <! J`, ***requiring*** that either `I <! J' != J` or `I` has no direct super-role
 * 🔶 `(relation) A relates I[]` redefines `A : REL([I])`, ***requiring*** that `A : REL(I)` (to be redefined)
   * _Inherited cardinality_: inherits card (default: `@card(1..1)`) (STICKY)
   * _Data transformation_: moves any `a : A(l : [I])` with `l = [l_0, l_1, ..., l_{k-1}]` to `a : A({l_0,l_1,...,l_{k-1}} : I`
@@ -279,17 +284,17 @@ _In each case, `undefine` removes the additional invariant (minor exception: sub
 
 _In each case, `redefine` redefines the postulated condition._
 
-* ➖ `A relates I @card(n..m)`
-* ➖  `A plays B:I @card(n..m)`
-* ➖ `A owns B @card(n...m)`
-* ➖ `A relates I[] @card(n..m)`
-* ➖ `A owns B[] @card(n...m)`
-* ➖`A owns B @values(v1, v2)`
-* ➖`A owns B @regex(<EXPR>)`
-* ➖`A owns B @range(v1..v2)`
-* ➖`A value B @values(v1, v2)`
-* ➖`A value B @regex(<EXPR>)`
-* ➖`A value B @range(v1..v2)`
+* `A relates I @card(n..m)`
+*  `A plays B:I @card(n..m)`
+* `A owns B @card(n...m)`
+* `A relates I[] @card(n..m)`
+* `A owns B[] @card(n...m)`
+* `A owns B @values(v1, v2)`
+* `A owns B @regex(<EXPR>)`
+* `A owns B @range(v1..v2)`
+* `A value B @values(v1, v2)`
+* `A value B @regex(<EXPR>)`
+* `A value B @range(v1..v2)`
 
 **Cannot** redefine `@unique`, `@key`, `@abstract`, or `@distinct`.
 

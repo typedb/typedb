@@ -15,6 +15,7 @@ The issue with TypeQL is that meaning is sometimes overloaded/ambiguous. Therefo
 | `all rel. types`                        | `REL`                 |
 | `all att. types`                        | `ATT`                 |
 | `all trait types`                       | `TRAIT`               |
+| `primitive value types`                 | `PRIM`                |
 | `all value types` (incl. structs)       | `VAL`                 |
 | `all list types`                        | `LIST`                |
 | **kind** of type `A`                    | `_kind(T)`            |
@@ -24,7 +25,7 @@ The issue with TypeQL is that meaning is sometimes overloaded/ambiguous. Therefo
 | `Option of A`                           | `A?`                  |
 | `List of A`                             | `A[]`                 |
 | **length** of list `l : A[]`            | `_len(l)`             |
-| **membership** of `a` in list `l : A[]` | `a in l`              |
+| **membership** of `a` in list `l : A[]` | `a _in l`             |
 | **size** of type `A : KIND`             | `_size(A)`            |
 | **value** of attribute `a : A`          | `_val(a)`             |
 
@@ -78,30 +79,47 @@ This document introduces TypeDB's type system in two stages (which is common)
 
 TypeDB's type is **open**, in that we allow dynamically adding new true statements ("**axioms**") it. Namely, this happens via definitions and data writes. The rules above can be used to derive statements that are consequences of these statements.
 
+---
+
 ## THE SYNTAX
 
-### Type kinds
+This section explains the main syntax elements of the type system (we **omit** some common syntax, like equality (`a = b`) and **function syntax** (`f(a)`), all **expression syntax** (`a + b`, `a - b` ...), **list syntax** (`a _in l`, `l + h`, `[a, b, ...]`), etc.).
 
-* **Ordinary type kinds**. We write
+### Types
+
+* **Type symbols and kinds**. We write
   `A : KIND` to mean the statement:
   > `A` is a type of kind `KIND`.
 
-  The type system allows six cases of **type kinds**:
+  The type system allows the following cases of **type kinds**, in which we can insert "type symbols" (see small difference with "user-labelled" types below: these exclude `OWN`)
   * `ENT` (collection of **entity types**)
   * `REL` (collection of **relation types**)
   * `ATT` (collection of **attribute types**)
-  * `TRAIT` (collection of **trait types**)
-  * `VAL` (collection of **value types**)
-  * `LIST` (collection of **list types**)
+  * `ROL` (collection of **role trait types**)
+  * `OWN` (collection of **ownership trait types**)
+  * `PRIM` (collection of **primitive value types**)
+  
+  _**Note**_: all other types (**structs**, **lists**, ...) are constructed by type operations (sums, products, list operator, ...) from these type symbols.
 
-  _Example_: `Person : ENT` means `Person` an entity type.
+  _**Notation**_: given a type symbol `A` in our type, write `_kind(A)` to extract its type kind from the list above.
+
+  _**Example**_: `Person : ENT` means `Person` an entity type. So `_kind(Peron) = ENT`.
 
 * **Combined kinds notation**. The following are useful abbreviations:
   * `OBJ = ENT + REL` (collection of **object types**)
   * `OBJ} = REL + ATT` (collection of **dependent types**)
   * `ERA = ENT + REL + ATT` (collection of **ERA types**)
-  * `LABEL = ERA + TRAIT + VAL` (collection of all **labeled types**)
-  * `ALG = OP*(LABEL)` (collection of all **algebraic types**, obtained by closing simple types under operators: sum, product, option... see "Type operators" below) *[USE-CASE: type-inference]*
+  * `VAL = PRIM + STRUCT` (collection of all **value types**),
+    * _Note_: a `STRUCT` type is obtained using **product** and **option** type operations on `PRIM`s and other `STRUCT`s
+  * `LABEL = ERA + ROL + VAL` (collection of all **user-labeled types**)
+  * `TRAIT = ROL + OWN` (collection of all **trait types**)
+  * `ALG = OP*(LABEL)` (collection of all **algebraic types**,
+    * _Note_: a `ALG`ebraic type is obtained by recursively constructing types under operators: **sum**, **product**, **option**... see "Type operators" below.
+    * _Why is `ALG` useful?_
+      * main use case of sums: type checking
+      * main use case of option types: option types
+      * main use case of products: structs (exte)
+  
   * `TYPE = ALG + LIST` (collection of all **types**)
 
 * **Dependent type kinds**. We write `A : KIND(I,J,...)` to mean:
@@ -120,24 +138,28 @@ TypeDB's type is **open**, in that we allow dynamically adding new true statemen
 
 We discuss the syntax for statements relating to types, and explain them in natural language statements.
 
-* **Typing of elements**
-  If `A` is a type, then we may write `a : A` to mean the statement:
+* **Typing**: If `A` is a type, then we may write `a : A` to mean the statement:
   > `a` is an element in type `A`.
 
   _Example_: `p : Person` means `p` is of type `Person`
 
 * **Direct typing**: We write `a :! A` to mean:
-  > `a` was declared as an element of `A` by the user (we speak of a ***direct typing***).
+  > `a` was declared directly as an element of `A` by the user (we speak of a ***direct typing***).
 
   _Remark_. The notion of direct typing might be confusing at first. Mathematically, it is merely an additional statement in our type system. Intuively, you can think of it as a way of keeping track of the _user-provided_ information. A similar remark applies to direct subtyping (`<!`) below.
 
-* **Dependent typing**.  We write `a : A(x : I, y : J,...)` to mean:
+* **Dependent typing**:  We write `a : A(x : I, y : J,...)` to mean:
   > `a` lives in the type "`A` of `x` (cast as `I`), and `y` (cast as `J`), and ...".
 
-* **Direct dependent typing**.  We write `a :! A(x : I, y : J,...)` to mean:
-  > `a` was directly in the type "`A` with the exact dependencies on `x` (cast as `I`), and `y` (cast as `J`), and ...".
+* **Direct dependent typing**:  We write `a :! A(x : I, y : J,...)` to mean:
+  > `a` was declared directly in the type "`A` with the exact dependencies on `x` (cast as `I`), and `y` (cast as `J`), and ...".
 
-* **Subtyping**. We write `A <= B` to mean:
+* **"Direct dependency"**: Whenever we write `... :! A(x : I, y : J,...)` like in the previous item, then we implicitly also mean
+  > `A` depends directly on `I, J, ...`
+
+  _Note_. We do not introduce special notation for this in our type system, but in TypeQL this would be something like `A relates! I, relates! J, ...`.
+
+* **Subtyping**: We write `A <= B` to mean:
   > Implicit casts from `A` to `B` are possible.
 
   _Example_ The `Child <= Person` means children `c` can cast into persons `c`.
@@ -157,7 +179,7 @@ We discuss the syntax for statements relating to types, and explain them in natu
   _Example_ The `_val : Name -> string` means names `n` can be cast to string `_val(n)`.
 
 
-### Dependencies
+### Conventions and notations
 
 * **Dependency deduplication (+set notation)**:  Our type system rewrites dependencies by removing duplicates in the same trait, i.e. `a : A(x : I, y : I, y : I)` is rewritten to (and identified `a : A(x : I, y : I)`. In other words:
   > We **deduplicate** dependencies on the same element in the same trait.
@@ -213,7 +235,7 @@ We discuss the syntax for statements relating to list types, and explain them in
 
 _Remark for nerds: list types are not algebraic types... they are so-called inductive types!_
 
-### Abstract modality
+### Abstractness modality
 
 The following is purely for keeping track of certain information in the type system.
 
@@ -223,55 +245,61 @@ The following is purely for keeping track of certain information in the type sys
 
 _Remark_: **Key**, **subkey**, **unique** could also be modalities, but adding them as such would add complexity to the type system language. We only add abstractness, because it's the most complicated language-wise. The rest is easy.
 
+---
+
 ## THE RULES
 
-This section describes the **rules** that govern the interaction of statements.
+This section describes the **rules** that govern the interaction of statements. This allows to **derive new statements** from existing statements. (We also state a few "invariants" which doesn't derive any new statements itself, but correlates derivable statements.)
 
 ### Types and subtypes
 
-* **Direct typing rule**: The statement `a :! A` implies the statement `a : A`. (The converse is not true!)
+* **Direct typing rule**: From the statement `a :! A` the system can derive the statement `a : A`. (The converse is not true!)
 
   _Example_. `p :! Child` means the user has inserted `p` into the type `Child`. Our type system may derive `p : Person` from this (but _not_ `p :! Person`)
 
-* **Subtyping rule**: If `A <= B` is true and `a : A` is true, then this *implies* `a : B` is true.
+* **Direct dependent typing rule**: Similarly, from the statement `a :! A(x : I, y : J, ...)` the system can derive the statement `a : A(x : I, y : J, ...)`. (The converse is not true!)
 
-* **Explicit casting rule**: If `f : A -> B` is true and `a : A` is true, then this *implies* `f(a) : B` is true.
+* **Direct dependency invariant** (this is not a rule but a property of the type system): Whenever `a :! A(x : I)` and `B : KIND(I)` in the system then `B <= A` must also be true. In words: _`I` is a "direct dependency" of `A`_.
 
-* **Direct-to-general rule**: `A <! B` *implies* `A <= B`.
+* **Subtyping rule**: If `A <= B` is true and `a : A`, then we can derive `a : B`.
+
+* **Explicit casting rule**: If `f : A -> B` and `a : A`, then we can derive `f(a) : B` (where `f(a)` is syntax for _"`f` applied to `a`"_)
+
+* **Direct subtyping rule**: From `A <! B` we can derive `A <= B`.
 
 ### Dependencies
 
 We often give our rules for 1 or 2 dependencies, but they similarly apply for `k > 0` dependencies.
 
-* **Applying type dependencies rule**: When `A : KIND(I,J)` and `x: I, y: J` then `A(x:I, y:J) : KIND` is a valid type. In words:
+* **Applying type dependencies rule**: When `A : KIND(I,J)` and `x: I, y: J` then we can derive `A(x:I, y:J) : KIND` as a valid type in our system. In words:
   > We say `A(x:I)` is the type `A` with "applied dependency" `x : I`. In contrast, `A` by itself is an "unapplied" type.
 
-* **Combining type dependencies rule**: Given `A : KIND(I)` and `A : KIND(J)` then `A : KIND(I,J)` is a valid dependent type. In words:
-  > If a type separately depends on `I` and on `J`, then it may jointly depend on `I` and `J`$! 
+* **Combining type dependencies rule**: Given `A : KIND(I)` and `A : KIND(J)` then derive `A : KIND(I,J)` is a valid dependent type. In words:
+  > If a type separately depends on `I` and on `J`, then it may jointly depend on `I` and `J`! 
 
-  _Example_: `HeteroMarriage : REL(Husband)` and `HeteroMarriage : REL(Wife)` then `HeteroMarriage : REL(Husband,Wife)`
+  _Example_: `HeteroMarriage : REL(Husband)` and `HeteroMarriage : REL(Wife)` then derive `HeteroMarriage : REL(Husband,Wife)`
 
-* **Weakening type dependencies rule**: Given `A : KIND(I,J)`, this *implies* `A : KIND(I)`. In words:
+* **Weakening type dependencies rule**: From `A : KIND(I,J)` we can derive `A : KIND(I)`. In words:
   > Dependencies can be simply ignored (note: this is a coarse rule — we later discuss more fine-grained constraints, e.g. cardinality).
 
-  _Example_: `Marriage : REL(Spouse)` implies `Marriage : REL(Spouse)` and also `Marriage : REL` (we identify the empty brackets "`()`$" with no brackets).
+  _Example_: From `Marriage : REL(Spouse)` we can derive `Marriage : REL(Spouse)` and also `Marriage : REL` (we identify the empty brackets "`()`$" with no brackets).
 
-* **Inheriting type dependencies rule**: If `A : KIND`, `B : KIND(I)`, `A <= B` and `A` has no trait strictly specializing `I` then `A : KIND(I)` ("strictly" meaning "not equal to `I`$"). In words:
+* **Inheriting type dependencies rule**: If `A : KIND`, `B : KIND(I)`, `A <= B` and `A` has no trait strictly specializing `I` then derive `A : KIND(I)` ("strictly" meaning "not equal to `I`$"). In words:
   > Dependencies that are not specialized are inherited.
 
-* **Projecting dependent terms rule**: If `a : A(x:I, y:J)` then this *implies* `a : A(x:I)`. In other words:
+* **Projecting dependent terms rule**: If `a : A(x:I, y:J)` then derive `a : A(x:I)`. In other words:
     > Elements in `A(I,J)` casts into elements of `A(I)`.
 
     * _Example_: If `m : Marriage({x,y} :Spouse)` then both `m : Marriage(x:Spouse)` and `m : Marriage(y:Spouse)`
 
-* **Upcasting dependent terms rule**: If `A(J) <= B(I)` (see "trait specialization" in syntax above) and `a : A(x:I)` then this _implies_ `a : B(x:J)`. In other words:
+* **Upcasting dependent terms rule**: If `A(J) <= B(I)` (see "trait specialization" in syntax above) and `a : A(x:I)` then derive `a : B(x:J)`. In other words:
     > When `A` casts to `B`, and `I` to `J`, then `A(x : I)` casts to `B(x : J)`.
 
     _Example_: If `r : HeteroMarriage(x:Husband, y:Wife)` then `m : Marriage({x,y} :Spouse)`
 
 The next rule is special to attributes, describing their interactions with value types.
 
-* **Attribute identity rule**. If `V : VAL`, `A : ATT`, `_val : A -> V`, and `a, b :! A` such that `_val(a) =_val(b)`  then we identify `a = b` for all purposes.
+* **Attribute identity rule**. If `V : VAL`, `A : ATT`, `_val : A -> V`, and `a, b :! A` such that `_val(a) =_val(b)` then derive `a = b` (which is syntax for equality)
 
 ### Algebraic type operators
 
@@ -310,19 +338,14 @@ _Note 2_. List types also interact with subtyping in the obvious way: when `A <=
   * _Invariant_: In a commited schema, **it is never possible** that both `#(statement)` and `statement` are both true the same time (and _neither implies the other_).
   * _Remark_: The purposse of abstractness is always to *constrain `insert` behavior.*
 
-* **Abstract type rules**. `#(A : KIND)` means 
-  > `A` is an "abstract type" of some `KIND`
-
-  * There are no rules, but some invariants. See [schema](schema.md) spec.
-
-* **Abstractly declared trait rules** `#(A <! I)` where `T : KIND(I)` means
+* **Abstractly declared traits** `#(A <! I)` where `T : KIND(I)` means
   > `A` was declared to implement trait `I` abstractly.
 
   * _Direct-to-general_ When `#(A <! I)` then `#(A < I)` (the latter meaning "`A` implements trait `I` abstractly")
   * _Inheritance_: When `#(C <! I)`, `A < C`, and there is no `B` with `A <= B < C` and `B <! I` then `#(A < I)` (note that otherwise, by rules above, `A` inherits `A < I` from `B`)
   * _Un-ordering rule_: When `A < B[].O` then `#(A < B.O)`
  
-* **Abstract role rules** `#(A : REL(I))` means:
+* **Abstract roles** `#(A : REL(I))` means:
   > Relation `A` depends on role type `I` abstractly
  
   * _Un-specialization rule_: When `A : REL(I)`, `I < J`, (i.e., `A relates I as J`) then `#(A : REL(J[]))`

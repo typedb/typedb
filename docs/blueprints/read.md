@@ -6,7 +6,7 @@ _**Query PROCESSING**_
 
 1. **Variable categorization**:
    2. We distinguish by input/output/checked variables
-   3. We distinguish by "vartype" (whether type, instance, list, or value)
+   3. We distinguish by "varcategory" (whether type, instance, list, or value)
 2. **Plannability check**:
    1. Variables must be "produceable", 
    2. Subqueries must be "acyclic"
@@ -15,10 +15,9 @@ _**Query PROCESSING**_
 
 _**Query EVALUATION**_
 
-1. **Pattern** evaluation
-2. **Modifier** evaluation
-3. **Nested negation** evaluation
-4. **Function** evaluation
+1. **Match stage** evaluation
+2. **Other stage** evaluation
+4. **Function and pipeline** evaluation
 
 _**Answer FORMATTING**_
 
@@ -43,24 +42,28 @@ Given a stage with pattern `P` and set `IN` of input variables, we categorize va
 
 Straight-forward
 
-### Vartype categorization algorithm
+### Varcategory categorization algorithm
 
-There are four vartypes: `Vartype = { type_, inst_, val_, list_ }`. Given a set of variables `S`, a **vartype categorization** of `S` is a function `_cat : VARS -> Vartype`. 
+There are four varcategories: `Varcategory = { Type_, Inst_, Val_, List_ }`. Given a set of variables `S`, a **varcategory categorization** of `S` is a function `_cat : VARS -> Varcategory`. 
+
+We define an algorithm to derive the varcategory categorization of variables in the stages of a function or pipeline as follows.
 
 #### For match stage with inputs
 
-Given a pattern `P` and set `IN` of **input variables** with a vartype categorization `_cat : IN -> Vartype`, extend this to a categorization `_cat : IN + PROD -> Vartype` as follows:
+Given a pattern `P` and set `IN` of **input variables** with a varcategory categorization `_cat : IN -> Varcategory`, extend this to a categorization `_cat : IN + PROD -> Varcategory` as follows:
 
-* set `_cat($x) = type_` exactly if `_cat($x) = type_` or `$x` is used in _any_ **type binding position** in `P`
-* set `_cat($x) = val_` exactly if `_cat($x) = val_` or `$x` is used in _any_ **value binding position**: 
-* 🔶 set `_cat($x) = list_` exactly if `_cat($x) = list_` or `$x` is used in _any_ **list binding position**
-* set `_cat($x) = inst_` exactly if `_cat($x) = inst_` or `$x` is used in _any_ **concept binding position** and _no_ value binding position and _no_ list binding position
+* set `_cat($x) = Type_` exactly if `_cat($x) = Type_` or `$x` is used in _any_ **type binding position** in `P`
+* set `_cat($x) = Val_` exactly if `_cat($x) = Val_` or `$x` is used in _any_ **value binding position**: 
+* 🔶 set `_cat($x) = List_` exactly if `_cat($x) = List_` or `$x` is used in _any_ **list binding position**
+* set `_cat($x) = Inst_` exactly if `_cat($x) = Inst_` or `$x` is used in _any_ **concept binding position** and _no_ value binding position and _no_ list binding position
 
-If this does not define a function `p` (either because the assignment is defined multiple times or not at all), **reject** the pattern based on failed vartype categorization. Note that variable categorization happens **globally** disregarding scopes (e.g. of branches in a disjunction).
+If this does not define a function `p` (either because the assignment is defined multiple times or not at all), then varcategory categorization **fails**. 
+
+Note that variable categorization happens **globally** disregarding scopes (e.g. of branches in a disjunction).
 
 #### For nested negations
 
-Run the above for the negated pattern, with the vartype categorization of the **outer pattern as input**.
+Run the above for the negated pattern, with the varcategory categorization of the **outer pattern as input**.
 
 #### For other stages
 
@@ -68,15 +71,17 @@ Straight-forward.
 
 #### For functions and pipelines
 
-Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple stages then propagate outputs of earlier stages as inputs to later stages.
+Run the above algorithm **stage by stage** with the function's arguments as initial inputs (***input types determine varcategories***). Propagate outputs of earlier stages as inputs to later stages.
 
 A read pipeline is just a function with no inputs.
+
+_Reject_ if varcategorization fails.
 
 ## Plannability
 
 ### Variable produceability check
 
-We define the **variable produceability check** algorithm.
+We define the **variable produceability check** algorithm that checks produceability of variables in stages of a function or pipeline as follows.
 
 #### For match stage with inputs
 
@@ -87,8 +92,8 @@ Assume a pattern `P` with input variables. Let `P_0 + P_1 + ... + P_k` be the **
    * If `S` contains `$x` in a binding position, say `S` **produces** `$x`
    * If `S` contains `$x` in a non-binding position, say `S` **requires** `$x`
 2. For each `P_i = S_1; S_2; ...; S_n;`
-   * If at least one `S_j` requires `$x` but no `S_j` produces `$x` *reject*
-   * otherwise *accept*.
+   * If at least one `S_j` requires `$x` but no `S_j` produces `$x` **fail**
+   * otherwise **succeed**.
 
 _Remark_. (1) Function arguments of **inlineable functions** could be considered to "produces" their argument variables if these arguments are produced in the function body, see [planner spec](planner.md). (2) If each `P_i` contains `$x` you can think of `$x` as "**non-optional**", and otherwise as "**optional**". But these distinctions aren't needed to specify the desired behavior.
 
@@ -98,13 +103,17 @@ Run the above for the negated pattern, with the input and output of the **outer 
 
 #### For other stages
 
-Straight-forward.
+Not applicable (only `match` stage produces variable in read pipeline). 
+
+_Note_. For **write pipelines**, `insert` may also produce variables, but the produceability check is trivial: no statement in an insert requires variables; inserts only contain producing statements.
 
 #### For functions and pipelines
 
-For functions, run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple stages then propagate outputs of earlier stages as inputs to later stages.
+Run the above algorithm **stage by stage** with the function's arguments as initial inputs. Propagate outputs of earlier stages as inputs to later stages.
 
 A read pipeline is just a function with no inputs.
+
+_Reject_ if produceability check fails.
 
 ### Acyclic subquery dependency check
 
@@ -117,14 +126,14 @@ Since we allow called functions **recursively**, we must check that subquerying 
 
 ## Let-binding uniqueness
 
-We define the **let-binding uniqueness check** algorithm.
+We define the **let-binding uniqueness check** algorithm, that checks let-binding uniqueness for variables in stages of a function or pipeline as follows.
 
 #### Match stage with inputs
 
 Assume a pattern `P` with input variables `IN`. Let `P_0 + P_1 + ... + P_k` be the **DNF** of `P`. 
 
-* For each `$x : IN` ensure `P` contains no non-negated `let` statements `$x`, otherwise _reject_
-* For each `$x : PROD` ensure each `P_i` contains at most one non-negated `let` statement binding `$x`, otherwise _reject_
+* For each `$x : IN` ensure `P` contains no non-negated `let` statements `$x`, otherwise **fail**
+* For each `$x : PROD` ensure each `P_i` contains at most one non-negated `let` statement binding `$x`, otherwise **fail**
 
 #### For nested negations
 
@@ -132,38 +141,68 @@ Run the above for the negated pattern, with input and output of the **outer patt
 
 #### For other stages
 
-Straight-forward.
+Not applicable (`let` binding only appear in `match`).
 
 #### For Functions and pipelines
 
-Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple `match` stages then propagate outputs of earlier stages as inputs to later stages.
+Run the above algorithm with the function's arguments as inputs (***input types determine varcategories***). If the function as multiple `match` stages then propagate outputs of earlier stages as inputs to later stages.
 
 A read pipeline is just a function with no inputs.
+
+_Reject_ if check fails.
 
 ## Type check
 
-We define a **type-checking** algorithm.
+A **type assignment** of a set of variables `VAR` is a function `_type` that assigns to each `$x : VAR` a type in our type system. The exact assignment depends on the varcategory:
+* `_cat($x) = Type_` then `_type($x)` is a list of labelled types `[A_1, A_2, ...]`, `A_i : LABEL` (see [LABEL in type system](type_system.md)), Note: the list **may be empty**.
+* `_cat($x) = List_` then `_type($x)` is a list types `(A_1 + A_2 + ...)[] : LIST`, `A_i : ALG` (see [LIST in type system](type_system.md)), sum can never be empty
+* `_cat($x) = Value_` then `_type($x)` is a sum of values types `A_1 + A_2 + ... : ALG`, `A_i : VAL` (see [VAL in type system](type_system.md)), sum can never be empty
+* `_cat($x) = Inst_` then `_type($x)` is a sum of ERA types `A_1 + A_2 + ... : ALG`, `A_i : ERA` (see [ERA in type system](type_system.md)), sum can never be empty
+
+We define a **type-checking** algorithm that derives a type assignment for non-type variables in stages of a function or pipeline as follows.
 
 #### Match stage with inputs
 
-Assume a pattern `P` with input variables `IN`. Let `P_0 + P_1 + ... + P_k` be the **DNF** of `P`.
+Assume a pattern `P` with input variables `IN` and a typing `_type` of those input variables. Let `P_0 + P_1 + ... + P_k` be the **DNF** of `P`. Since variables have _consistent varcategories_ across branches of the DNF, we define typing by
 
-* For each `$x : IN` ensure `P` contains no non-negated `let` statements `$x`, otherwise _reject_
-* For each `$x : PROD` ensure each `P_i` contains at most one non-negated `let` statement binding `$x`, otherwise _reject_
+* First construct `_type_i($x)` for each `P_i` separately as detailed below
+* Then set `_type($x)` to be the sum `_type_1($x) + _type_2($x) + ...`, where the `+` means:
+  * for varcat `Type_`, summing `+` is list concatenation
+  * for varcat `List_`, summing `+` is `A[] + B[] = (A + B)[]`
+  * for varcat `Val_`, summing `+` is just regular sum types
+  * for varcat `Inst_`, summing `+` is just regular sum types
+
+For each `P_i = S_1; S_2; ...` determine `_type_i($x)` as follows
+* First:
+  * If `$x` is input set `_type_i($x) = _type($x)` from input
+  * Otherwise, set:
+    * for varcat `Type_`, start with all of `[ERA]` 
+    * for varcat `List_`, start with all of `(LABEL)[]`
+    * for varcat `Val_`, start with all of `VAL`
+    * for varcat `Inst_`, start with all of `ERA`
+* Inductively construct a "next version" of `_type_i($x)` for the subpattern `S_1; S_2; ...; S_j;` from the "previous version" `_type_i($x)` for the subpattern `S_i; S_2; ...; S_{j-1}` as follows:
+  * If `S_j` is a statement containing variable `$x, $y, ...` keep only possible type combinations in `_type_i` for those variable. _Note_: it might make sense for planning and execution to keep track of the possible **"type tuples"** `(A, B, ...)` for vars `$x, $y, ...` in the statement
+  * If `S_j` is a nested negation, proceed as below, with previous `_type_i` as input, constructing the next version of `_type_i`
+
+_Note_: We need **not reorder** `S_1; S_2; ...` so that `S_j`'s requiring `$x` came after `S_i`'s that produce `$x`. Keep the order as is can be used for improved **error messaging**.
 
 #### For nested negations
 
-Run the above for the negated pattern, with input and output of the **outer pattern as input**.
+Run the above for the negated pattern, with input and typing (as construct at the time in point when the negation is encountered) and output of the **outer pattern as input**.
 
-#### For other stages
+#### For other stages with inputs
 
-Straight-forward.
+Straight-forward. 
 
-#### For Functions and pipelines
+_Note_: similar applies to patterns in write stages.
 
-Run the above algorithm with the function's arguments as inputs (***input types determine vartypes***). If the function as multiple `match` stages then propagate outputs of earlier stages as inputs to later stages.
+#### For functions and pipelines
+
+Run the above algorithm **stage by stage** with the function's arguments and types as initial inputs (**for input types subtypes should be added** as well to typing `_type`). Propagate outputs of earlier stages as inputs to later stages.
 
 A read pipeline is just a function with no inputs.
+
+_Reject_ if non-type variables have no possible types.
 
 # EVALUATION
 
@@ -176,18 +215,20 @@ We define the **evaluation algorithm**, which produces mult-sets (i.e. sets _wit
 3. **modifiers** with in inputs
 4. **functions** with inputs
 
-## Patterns
+## Match stage
 
 Given a pattern `P` with input variables `IN` and a concept row multiset `ROWS` whose rows contain all variables of `IN` but no variables of `PROD` or `CHECK`, we define the evaluation of `P` to be the multiset, obtained by
 
-* for each row `r` in `ROWS`, obtain the (**deduplicated**!) answer _set_ `EV(P[IN/r])` by the procedure described in the next sections
-* take the multiset union of `EV(P[IN/r])` for all `r` in `ROWS`
+* for each row `r` in `ROWS`, obtain the (**deduplicated**!) answer _set_ `EV(P @ r)` by the procedure described in the next sections
+* take the multiset union of `EV(P @ r)` for all `r` in `ROWS`
+
+***Notation***. `EXPR @ s` means something like _"substitute all applicable mappings of `s` in `EXPR`"_.
 
 ### Algorithm
 
 Let `P = P_1 + P_2 + ... P_m` be the DNF of `P`. We evaluate `P` branch by branch (see [planner spec](planner.md) for how to make this **more efficient**). 
 
-* `EV(P[r])` is defined and the deduplicated union of all `EV(P_i[r])`
+* `EV(P @ r)` is defined and the deduplicated union of all `EV(P_i @ r)`
 
 Assume `P_i = S_1; S_2; ...; S_n`.
 
@@ -195,699 +236,223 @@ Assume `P_i = S_1; S_2; ...; S_n`.
 
     _Note on **try**_: We expand `try { Q }` to `{ Q } or { not { Q }; }`.
 * By the variable produceability check we can pick an order in which `S_j` requires only variable that have been produced by some `S_k`, `k < j`
-* Inductively, define `EV(S_1; S_2; ...; S_j[r])` to be the set of rows obtained by:
-  * taking a row `s` from `EV(S_1; S_2; ...; S_{j-1}[r])`
-  * if `S_j` is a statement, return extensions of `s` that add variable so that `S_j` is **satisfied**, see next sections (there may be zero such extension)
-  * if `S_j` is a nested negation, return `s` iff `S_j[s]` evaluates to **true**, see next sections.
+* Inductively, define `EV((S_1; S_2; ...; S_j) @ r)` to be the set of rows obtained by:
+  * taking a row `s` from `EV((S_1; S_2; ...; S_{j-1}) @ r)`
+  * if `S_j` is a statement, return extensions `r` of `s` that add variable so that `S_j` is **satisfied**, see next sections (there may be zero such extension)
+  * if `S_j` is a nested negation, return `s` iff `S_j @ s` evaluates to **true**, see next sections.
 
 ### Nested negations
 
-Given `S = not { Q }` with input row `s`, then `S[s]` is true iff `EV(Q[s])` is empty.
+Given `S = not { Q }` with input row `s`, then `S @ s` is true iff `EV(Q @ s)` is empty.
 
 ### Statements
 
-## Modifiers
+For row `r` extending `s` in algorithmic step above, we define what this means for `r` to **satisfy** statement `S_j` (note this covers both the case of "producing")
 
-## Recursive queries
+#### Type variable statements
 
+* `kind $A` is satisfied if `$A @ r: KIND` (can have `KIND = ENTITY | RELATION | ATTRIBUTE`)
+* `$A sub $B` is satisfied if `_kind($A @ r) = _kind($B @ r)` and `$A @ s < $B @ s` (***here***: can have `KIND = ENTITY | RELATION | ATTRIBUTE | ROL`)
+  * `$A sub! $B` is satisfied if `$A @ r : KIND`, `$B @ r : KIND`, `$A @ r <! $B @ r`
+* `$A value $V` is satisfied if `$A @ r <= B` and `_val : B -> $V @ r`
+* `$A relates $I` is satisfied either if `$A @ r : REL($I @ r)` ***or*** `#($A @ r : REL($I @ r))` (***abstract branch***), [for `#(...)` notation see type system](type_system.md)
+  * `$A relates! $I` is satisfied if `$A relates $I` ***and*** `B : REL($I @ r)` or `#(B : REL($I @ r))` necessarily implies `B <= $A @ r`
+  * `$A relates $I as $J` is satisfied if `$A relates $I` ***and*** there exists `B relates $J` such that `A$ @ r <= B` and `$I @ r <= $J @ r`
+  * `$A relates! $I as $J` is satisfied if `$A relates $I as $J` ***and*** `$A relates! $I`
+* 🔶 `$A relates $I[]` is satisfied either `$A @ r : REL($I[] @ r])` ***or*** `#($A @ r : REL($I[] @ r))` (***abstract branch***)
+  * 🔶 `$A relates! $I[]` is satisfied if `$A relates $I[]` ***and*** `B : REL($I[] @ r)` or `#(B : REL($I[] @ r))` necessarily implies `B <= $A @ r`
+  * 🔶 `$A relates $I[] as $J[]` is satisfied if `$A relates $I[]` ***and*** there exists `B relates $J[]` such that `A$ @ r <= B` and `$I @ r <= $J @ r`
+  * 🔶 `$A relates! $I[] as $J[]` is satisfied if `$A relates $I[] as $J[]` ***and*** `$A relates! $I[]`
+* `$A plays $I` is satisfied if `$A @ r <= B`, `B : _kind($A @ r)`, and `B <! $I @ r` **or** `#(B <! $I @ r)` (***abstract branch***)
+  * `$A plays! $I` is satisfied if `$A plays $I` and `B plays $I` necessarily implies `B <= $A @ r`
+* `$A owns $B` is satisfied if `$A @ r <= C`, `C : _kind($A @ r)`, and either `C <! $B.O @ r)` ***or*** `#(C <! $B.O @ r)`  (***abstract branch***)
+  * `$A owns! $B` is satisfied if `$A owns $B` and `C owns $B @ r` implies `C <= $A @ r`
+* 🔶 `$A owns $B[]` is satisfied if `$A @ r <= C`, `C : _kind($A @ r)`, and `C <! $B[].O @ r` ***or*** `#(C <! $B[].O @ r)`  (***abstract branch***)
+  * 🔶 `$A owns! $B[]` is satisfied if `$A owns $B[]` and `C owns $B[] @ r` implies `C <= $A @ r`
+* `$A label <LABEL>` is satisfied if `$A @ r` has primary label or alias `<LABEL>`
 
+#### Abstractness in type variable statements
 
-## Pattern semantics
+* `kind $B @abstract` is satisfied if `kind $B @ r @abstract` is defined in the schema (note, abstractness for type identity is not directly recorded in [type system](type_system.md))
+* `<statement> @abstract` is satisfied if `<statement>` holds as defined above but the **abstract branch of the satisfaction condition** is taken. This applies to:
+  * `$A relates $I @abstract`
+  * `$A relates! $I @abstract`
+  * 🔶 `$A relates $I[] @abstract`
+  * 🔶 `$A relates! $I[] @abstract`
+  * `$A plays $B:$I @abstract`
+  * `$A plays! $B:$I @abstract`
+  * `$A owns $B @abstract`
+  * `$A owns! $B @abstract`
+  * 🔶 `$A owns $B[] @abstract`
+  * 🔶 `$A owns! $B[] @abstract`
 
-### Typing satisfaction
+_Remark_. To indicate we mean the opposite (non-abstract) branch of the satisfaction condition, could consider `@nonabstract` or `@concrete` (just for `match` pattern statements).
 
-* For tvars `$X` in `PATT`, `T($X)` is a type kind (`entity`, `attribute`, `relation`, `trait`, `value`)
-* For vvars `$x` in `PATT`, `T($x)` is a value type (primitive or struct)
-* For lvars `$x` in `PATT`, `T($x)` is a list type `A[]` for ***minimal*** `A` a type such that `A` is the minimal upper bounds of the types of the list elements `<EL>` in the list `r($x) = [<EL>, <EL>, ...]` (note: our type system does have minimal upper bounds thanks to sums)
-* For ivars `$x` in `PATT`, `T($x)` is a schema type `A` such that `r(x) :! A` isa **direct typing**
+#### Constraints in type variable statements
 
-### Pattern satisfaction
+* ***cannot match*** `@card(n..m)` (STICKY: there's just not much point to do so ... rather have normalized schema dump. discuss `@card($n..$m)`??)
 
-#### Block-level bindings
+* ***cannot match*** `@values/@regex/@range` (STICKY: there's just not much point to do so ... rather have normalized schema dump)
 
-Given a (valid and unambiguous) pattern `PATT` in DNF, we define for subpatterns
+For `@MODE = @unique | @key | @subkey(<LABEL>) | @distinct`:
 
-* `not { SUBPATT };`
-* `try { SUBPATT };`
+* `$A owns $B @MODE` is satisfied if, for some `C`, `$A @ r sub C` and `C owns $B @ r @MODE` is in defined in schema
+* `$A owns! $B @MODE` is satisfied if `A @ r owns $B @ r @MODE` is in defined in schema
+* 🔶 `$A owns $B[] @MODE` is satisfied if, for some `C`, `$A @ r sub C` and `C owns $B[] @ r @MODE` is in defined in schema
+* 🔶 `$A owns! $B[] @MODE` is satisfied if `A @ r owns $B[] @ r @MODE` is in defined in schema
+* `$A relates $I @MODE` is satisfied if, for some `C`, `$A @ r sub C` and `C relates $I @ r @MODE` is in defined in schema
+* `$A relates! $I @MODE` is satisfied if `A @ r relates $I @ r @MODE` is in defined in schema
+* 🔶 `$A relates $I[] @MODE` is satisfied if, for some `C`, `$A @ r sub C` and `C relates $I[] @ r @MODE` is in defined in schema
+* 🔶 `$A relates! $I @MODE` is satisfied if `A @ r relates $I @ r @MODE` is in defined in schema
 
-a variable `$x` in `SUBPATT` is **block-level** if its bound in statements that appears unnested in a branch of `SUBPATT` but not a parent block.
+#### Non-type (data) variable statements
 
-#### Recursive definition
+* `$x isa $T` is satisfied if `$x @ r : $T @ r` for `$T @ r : ERA`
+    * `$x isa! $T` is satisfied if `$x @ r :! $T @ r` for `$T @ r : ERA`
+    * `$T` is equivalent to `$_ isa $T`
+* `$x isa $T ($I: $y, $J: $z, ...)` is satisfied if `$x @ r : $T ($y : $I, $z : $J, ...) @ r` for `$T @ r : REL`
+    * `$x isa! $T ($I: $y, $J: $z, ...)` is satisfied if `$x @ r :! $T ($y : $I, $z : $J, ...) @ r` for `$T @ r : REL`
+    * `$T ($I: $y, $J: $z, ...)` is equivalent to `$_ isa $T ($I: $y, $J: $z, ...)`
+* `$x isa $T EXPR` is satisfied if `$x @ r : $T @ r`, `_val($x @ r) = EXPR @ r` for `$T @ r : ATT` (**reject** if `EXPR` is a single variable of varcat `Inst_`)
+    * `$x isa! $T EXPR` is satisfied if `$x @ r :! $T @ r`, `_val($x @ r) = EXPR @ r` for `$T @ r : ATT` (**reject** if `EXPR` is a single variable of varcat `Inst_`)
+    * `$T EXPR` is equivalent to `$_ isa $T EXPR` (**reject** if `EXPR` is a single variable of varcat `Inst_`)
+* `$x links ($I: $y, $J: $z, ...)` is satisfied if `$x @ r : A($y : $I, $z : $J, ...) @ r` for some `A : REL($I @ r, $J @ r, ...)`.
+    * `$x links! ($I: $y)` is satisfied if `$x @ r :! A($y : $I, $z : $J, ...) @ r` for some `A : REL($I @ r, $J @ r, ...)`.
+    * `$x links ($y)` is equivalent to `$x links ($_: $y)` 
+* 🔶 `$x links ($I[]: $y, ...)` is satisfied if `$x @ r : A($y : $I[]) @ r` for some `A : REL($I[], ...) @ r`.
+    * 🔶 `$x links ($I[]: <LIST_EXPR>, ...)` is equivalent to `$x links ($I[]: $_y, ...); $_y == <LIST_EXPR>;` for anonymous `$_y`
+    * 🔶 `$x links! ($I[]: $y, ...)` is satisfied if `$x @ r :! A($y : $I[] , ...) @ r` for some `A : REL($I[] @ r)`.
+* `$x has $B $y` is satisfied if `$y @ r : $B ($x : $B.O) @ r` for `$B @ r : ATT`.
+    * `$x has! $B $y` is satisfied if `$y @ r :! $B @ r($x @ r:$B.O @ r)` for some `$B @ r : ATT`.
+    * `$x has(!) $B EXPR` is satisfied if `$x @ r :(!) $T @ r`, `_val($x @ r) = EXPR @ r` for `$T @ r : ATT` (**reject** if `EXPR` is a single variable of varcat `Inst_`)
+    * `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
 
-We define satisfication of a pattern `PATT` in DNF by an input crow `r`. The definition recursively destructures the pattern into subpatterns `P` (to begin, set `P = PATT`).
+    _Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes.
 
-* If `P = STMT; SUBPATT` then `r` satisfies `P` if:
-    * The statement **<STMT>** is satisfied by `r` as outlined in the _next sections_.
-    * `r` satisfies `SUBPATT`;
+* 🔶 `$x has $B[] $y` is satisfied if `$y @ r : $B[]($x : $B[].O) @ r` for some `$B @ r : ATT`.
+    * 🔶 `$x has! $B[] $y` is satisfied  if `$y @ r :! $B[]($x : $B[].O) @ r`, for some `$B @ r : ATT`
+    * 🔶 `$x has(!) $B[] EXPR` is satisfied  if `a :(!) $B[]($x : $B[].O) @ r`, `a = EXPR @ r` for some `$B @ r : ATT` (**reject** if `EXPR` is a single variable of varcat `Inst_`)
 
-* If `P = { SUBPATT_1 } or { SUBPATT_2 } or ... ;` then `r` satisfies `P` if:
-    * `r` satisfies `SUBPATT_i` for any `i`
+* `$x is $y` is satisfied if `_cat($x) = _cat($y)` and `$x @ r = $y @ r` (**reject** if `_cat($x) = Val_`)
 
-* If `P = not { SUBPATT };` then `r` satisfies `P` if:
-    * `r` does _not contain any_ block-level bound variables of the block _except_ input vars
-    * `r` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
+#### Expression, values, functions
 
-* If `P = try { SUBPATT };` then `r` satisfies `P` if:
-    * `r` _contains all_ block-level bound variables of the block
-    * and:
-        * either: `r` satisfies `SUBPATT`
-        * or:
-            * all block-level bound variables are assigned `()` (i.e. empty concept) by `r` _except_ input vars
-            * after obtain `r'` from `r` by removing block-level bound, non-input variables, `r'` cannot be completed with entries for block-level bound variable to satisfy `SUBPATT`
+**_Note_**: `EXPR @ r` is evaluated using usual expression semantics, and:
 
-### `Let` declarations in patterns
+* we **cast** any attribute `a` to its value `_val(a)` if it appears in a value position in an expression;
+* this casting also applies in **function arguments** which have value types (function are after closely related to expressions, e.g. `$x + $y = add($x, $y)`)
 
-_System property_
+In the following expression evaluation is largely left implicit:
 
-The keyword `let` has two special properties:
-
-* 🔶 `let` assignments must be acyclic
-* 🔶 No variable can be `let` assigned twice
-
-## Satisfaction semantics of...
-
-We discuss the satisfaction semantics of various classes of statements.
-
-_Math. notation (Replacing **var**s with concepts)_. When discussing pattern semantics, we always consider **fully variablized** statements (e.g. `$x isa $X`, `$X sub $Y`). This also determines satisfaction of **partially assigned** versions of these statements (e.g. `$x isa A`, `$X sub A`, `A sub $Y`, or `x isa $A`).
-
-## ... Function statements
-
-### **Case LET_FUN_PATT**
-
-_Remark_ the following can be said in less space, but we chose the more principled longer route, via "single returns".
-
-* 🔶 `let _, ..., _, $x, _, ..., _ = f($a, $b, ...)` (where `$x` is in $i$th position of the comma-separated list of length $n$, and all other positions are "blanks" `_`). This statement is satisfied if:
-    * denoting *function evalution* (see "Function evaluation") with inputs from the crow `r` by `ev(f(r(a), r(b), ...)`,
-    * `_ev(f(r(a), r(b), ...)` contains exactly one row `w` of length `n` (if it contains no row we reject)
-    * `r(x)` is the $i$th entry of `w` (corresponding to `$x` being used in `i`$th position on the LHS)
-
-  _Note_. This is equivalent to `$x in F_i($a, $b, ...)` where `F_i` modifies `F` with an additional selection of the `i`th variable.
-
-* 🔶 `let $x, $y?, ..., $w = f($a, $b, ...)` is satisfied if the following pattern is satisfied:
+* `EXPR_1 == EXPR_2` is satisfied if `EXPR_1 @ r = EXPR_2 @ r`
+* `EXPR_1 != EXPR_2` is satisfied if not `EXPR_1 @ r = EXPR_2 @ r`
+* `EXPR_1 COMP EXPR_2`, where `COMP` is a comparison, is satisfied based on the usual comparison semantics
+* `EXPR isnt;` is satisfied if  `EXPR @ r == ()`, **requires** all its vars
+* `let $x = EXPR;` is satisfied if  `$x` in `EXPR @ r`
+* `let $x = f($y);` is satisfied if  `$x` in `EV(f($y) @ r)` (with evaluation for functions/pipelines as defined above)
+* `let $x? = f($y);` equivalent to `{ let $x in f($y); } or { f($y) isnt; };`.
+* `let DESTRUCT = STRUCT` with grammar
     ```
-    let $x,_,...,_ in F($a, $b, ...);               // first var (non-optional!)
-    try { let _, $y, ...,_ in F($a, $b, ...); };    // second var (optional!)
-    ...                                             // ...
-    let _, _, ...,$w in F($a, $b, ...);             // last var
+    STRUCT   ::=  VAR 
+                  | { LABEL: (VAL|VAR|STRUCT), ... }
+                  | HINT { : (VAL|VAR|STRUCT), ... }
+    DESTRUCT ::=  { LABEL: (VAR|VAR?|DESTRUCT), ... }        
     ```
-
-  _Note_. `?`-marked variables are retrieved with **separate** `try`-blocks.
-
-* 🔶 `let $x, $y?, ..., $w = F($a, <EXPR_b>, ...)>` is satisfied if the following pattern is satisfied:
-    ```
-    let $_b = <EXPR_b>;
-    ...
-    let $x, $y?, ..., $w in F($a, $_b, ...)
-    ```
-
-_System property_
-
-* 🔶 _Output type_ Function call must be to a **single-return** function, i.e. have output type `T, ...`.
-* 🔶 _Boundedness_ All variable arguments (or variables in expression arguments) to `f` must be set in the crow `r` (i.e. should be bound somewhere else in the pattern).
-* 🔶 _Acyclicity (pattern-level constraint)_ All let statements must be acyclic, e.g. we **cannot have**
-    ```
-    let $x = f($y); 
-    let $y = f($x);
-    ```
-
-### **Case LET_IN_FUN_PATT**
-
-* 🔶 `let $x, $y?, ..., $w in F($a, <EXPR_b>, ...)>` is satisfied if, for some choice of row `w in _ev(F(r(a),v_r(expr_b),...)` in the evaluation set of the function call such that the following pattern is satisfied:
-    ```
-    let $x, $y?, ..., $w = f($a, <EXPR_b>, ...)
-    ```
-
-  where `f($a, <EXPR_b>, ...)` denotes a single-return function call ***defined*** to evaluate to row `w`.
-
-_System property_
-
-* 🔶 _Output type_ Function call must be to a **stream-return** function, i.e. have output type `{ T, ... }`.
-* 🔶 _Boundedness_ All variable arguments (or variables in expression arguments) to `F` must be set in the crow `r` (i.e. should be bound somewhere else in the pattern).
-* 🔶 _Acyclicity (pattern-level constraint)_ All let statements must be acyclic, e.g. we **cannot have**
-    ```
-    let $x in F($y); 
-    let $y in F($x);
-    ```
-
-## ... Type statements
-
-### **Case TYPE_DEF_PATT**
-* ➖ `Kind $A` (for `Kind` in `{entity, relation, attribute}`) is satisfied if `r(A) : KIND`
-
-* ➖ `(Kind) $A sub $B` is satisfied if `r(A) : KIND`, `r(B) : KIND`, `r(A) < r(B)`
-* ➖  `(Kind) $A sub! $B` is satisfied if `r(A) : KIND`, `r(B) : KIND`, `r(A) <! r(B)`
-
-_Remark_: `sub!` is convenient, but could actually be expressed with `sub`, `not`, and `is`. Similar remarks apply to **all** other `!`-variations of TypeQL key words below.
-
-### **Case REL_PATT**
-* ➖ `$A relates $I` is satisfied
-    * either if `r(A) : REL(r(I))`
-    * or if `#(r(A) : REL(r(I)))`
-
-* ➖ `$A relates $I as $J` is satisfied if
-    * `r(A) : REL(r(I))` or `#(r(A) : REL(r(I)))`
-    * there exists `B : REL(r(J))` or `#(B : REL(r(J)))`
-    * `A <= B` and `r(I) <= r(J)`.
-
-* 🔶 `$A relates $I[]` is satisfied if `r(A) : REL(r([I]))` and
-    * either if `r(A) : REL([r(I)])`
-    * or if `#(r(A) : REL([r(I)]))`
-
-* 🔶 `$A relates $I[] as $J[]` is satisfied if
-    * `r(A) : REL(r([I]))` or `#(r(A) : REL(r([I]))`
-    * there exists `B : REL(r([J]))` or `#(B : REL(r([J])))`
-    * `A <= B` and `r(I) <= r(J)`.
-
-### **Case DIRECT_REL_PATT**
-
-* 🔮 `$A relates! $I` is satisfied if
-    * `r(A) : REL(r(I))` and **not** `r(A) < B : REL(r(I))`
-    * or if `#(r(A) : REL(r(I)))` and **not** `#(r(A) < B : REL(r(I)))`
-
-* 🔮 `$A relates(!) $I as! $J` is satisfied if `$A relates(!) $I` and
-    * there exists `B : REL(r(J))` or `#(B : REL(r(J)))`
-    * `A <! B` and `r(I) <! r(J)`
-
-* 🔮 `$A relates! $I[]` is satisfied if
-    * `r(A) : REL(r([I]))` and **not** `r(A) < r(B) : REL(r([I]))`
-    * or if `#(r(A) : REL(r([I])))` and **not** `#(r(A) < r(B) : REL(r([I])))`
-
-* 🔮 `$A relates $I[] as! $J[]` is satisfied if `$A relates(!) $I[]` and
-    * there exists `B : REL(r([J]))` or `#(B : REL(r([J])))`
-    * `A <! B` and `r(I) <! r(J)`
-
-### **Case PLAYS_PATT**
-
-* ➖ `$A plays $I` is satisfied if
-    * either `r(A) <= A'` and `A' <! r(I)`
-    * or if `r(A) <= A'` and `#(A' <! r(I))`
-
-### **Case DIRECT_PLAYS_PATT**
-
-* 🔮 `$A plays! $I` is satisfied if `r(A) <! r(I)`
-    * `A <! r(I)`
-    * _(to match `@abstract` for `plays!` must use annotation, see **PLAYS_ABSTRACT_PATT**)_
-
-### **Case VALUE_PATT**
-
-* ➖ `$A value $V` is satisfied if `r(A) <= A'` and `_val : A' -> r(V)`
-
-### **Case OWNS_PATT**
-
-* ➖ `$A owns $B` is satisfied if
-    * either `r(A) <= A'` and `A' <! r(B).O)`
-    * or `r(A) <= A'` and `#(A' <! r(B).O)`
-
-* 🔶 `$A owns $B[]` is satisfied if `r(A) <= A' <! r(B.O)` (for `A'` **not** an trait type)
-    * either `r(A) <= A'` and `A' <! r(B[].O)`
-    * or `r(A) <= A'` and `#(A' <! r(B[].O))`
-
-_Remark_. In particular, if `A owns B[]` has been declared, then `$X owns B` will match the answer `r($X) = A`.
-
-### **Case DIRECT_OWNS_PATT**
-
-* 🔮 `$A owns! $B` is satisfied if
-    * `r(A) <! r(B.O)`
-    * or `#(r(A) <! r(B.O))`
-
-* 🔮 `$A owns! $B[]` is satisfied if `r(A) <! r(B.O)`
-    * `r(A) <! r(B.O)`
-    * or if `#(r(A) <! r(B.O))`
-
-### **Cases TYP_IS_PATT and LABEL_PATT**
-* ➖`$A is $B` is satisfied if `r(A) = r(B)` (this is actually covered by the later case `IS_PATT`)
-* ➖`$A label <LABEL>` is satisfied if `r(A)` has **primary label or alias** `<LABEL>`
-
-## ... Type constraint statements
-
-### Cardinality
-
-_To discuss: the usefulness of constraint patterns seems overall low, could think of a different way to retrieve full schema or at least annotations (this would be more useful than, say,having to find cardinalities by "trialing and erroring" through matching)._
-
-#### **Case CARD_PATT**
-* ➖ cannot match `@card(n..m)` (STICKY: there's just not much point to do so ... rather have normalized schema dump. discuss `@card($n..$m)`??)
-<!-- 
-* `A relates I @card(n..m)` is satisfied if `r(A) : REL(r(I))` and schema allows `|a|_I` to be any number in range `n..m`.
-* `A plays B:I @card(n..m)` is satisfied if ...
-* `A owns B @card(n...m)` is satisfied if ...
-* `$A relates $I[] @card(n..m)` is satisfied if ...
-* `$A owns $B[] @card(n...m)` is satisfied if ...
--->
-
-### Modalities
-
-#### **Case UNIQUE_PATT**
-* 🔶 `$A owns $B @unique` is satisfied if `r(A) <= A' <! r(B.O)` (for `A'` **not** an trait type), and schema directly contains constraint `A' owns r($B) @key`.
-
-* 🔶 `$A owns! $B @unique` is satisfied if `r(A) <! r(B.O)`, and schema directly contains constraint `r($A) owns r($B) @unique`.
-
-#### **Case KEY_PATT**
-* 🔶 `$A owns $B @key` is satisfied if `r(A) <= A' <! r(B.O)` (for `A'` **not** an trait type), and schema directly contains constraint `A' owns r($B) @key`.
-
-* 🔶 `$A owns! $B @key` is satisfied if `r(A) <! r(B.O)`, and schema directly contains constraint `r($A) owns r($B) @key`.
-
-#### **Case SUBKEY_PATT**
-* 🔶 `$A owns $B @subkey(<LABEL>)` is satisfied if `r(A) <= A' <! r(B.O)` (for `A'` **not** an trait type), and schema directly contains constraint `A' owns r($B) @subkey(<LABEL>)`.
-
-#### **Case TYP_ABSTRACT_PATT**
-* 🔶 `(kind) $B @abstract` is satisfied if schema directly contains `(kind) r($B) @abstract`.
-
-#### **Case REL_ABSTRACT_PATT**
-* 🔶 `$B relates $I @abstract` is satisfied if:
-    * `r(B) <= B'` and `#(B' : REL(I)`
-    * **not** `r(B) <= B'' <= B'` such that `#(B' : REL(I)`
-
-* 🔮 `$B relates! $I @abstract` is satisfied if `#(r(B) : REL(I)`
-
-* 🔶 `$B relates $I[] @abstract` is satisfied if:
-    * `r(B) <= B'` and `#(r(B) : REL([I])`
-    * **not** `r(B) <= B'' <= B'` such that `B' : REL([I])`
-
-* 🔮 `$B relates! $I[] @abstract` is satisfied if `#(r(B) : REL([I])`
-
-#### **Case PLAYS_ABSTRACT_PATT**
-* 🔶 `$A plays $B:$I @abstract` is satisfied if:
-    * `r(A) <= A'` and `#(A' <! r(I))`
-    * **not** `r(A) <= A'' <= A'` such that `A'' <! r(I)`
-
-  where `r(B) REL(r(I))`
-
-* 🔮 `$A plays! $B:$I @abstract` is satisfied if `#(r(A) <! r(I))`, where `r(B) REL(r(I))`
-
-#### **Case OWNS_ABSTRACT_PATT**
-* 🔶 `$A owns $B @abstract` is satisfied if
-    * `r(A) <= A'` and `#(A' <! r(B).O)`
-    * **not** `r(A) <= A'' <= A'` such that `A'' <!  r(B).O)`
-
-* 🔮 `$A owns! $B @abstract` is satisfied if `#(r(A) <! r(B).O)`
-
-* 🔶 `$A owns $B[] @abstract` is satisfied if
-    * `r(A) <= A'` and `#(A' <! r(B)[].O)`
-    * **not** `r(A) <= A'' <= A'` such that `A'' <!  r(B)[].O)`
-
-* 🔮 `$A owns! $B[] @abstract` is satisfied if `#(r(A) <! r(B)[].O)`
-
-#### **Case DISTINCT_PATT**
-* 🔮 `$A owns $B[] @distinct` is satisfied if `r(A) <= A` schema directly contains constraint `A' owns r($B)[] @distinct`.
-* 🔮 `$A owns! $B[] @distinct` is satisfied if schema directly contains constraint `r($A) owns r($B)[] @distinct`.
-* 🔮 `$B relates $I[] @distinct` is satisfied if `r(B) : REL(r([I]))`, `B <= B'` and schema directly contains `B' relates r($I)[] @distinct`.
-* 🔮 `$B relates! $I[] @distinct` is satisfied if schema directly contains `r($B) relates r($I)[] @distinct`.
-
-### Values constraints
-
-#### **Cases VALUE_VALUES_PATT and OWNS_VALUES_PATT**
-* cannot match `@values/@regex/@range` (STICKY: there's just not much point to do so ... rather have normalized schema dump)
-<!--
-* `A owns B @values(v1, v2)` is satisfied if 
-* `A owns B @regex(<EXPR>)` is satisfied if 
-* `A owns B @range(v1..v2)` is satisfied if 
-* `A value B @values(v1, v2)` is satisfied if 
-* `A value B @regex(<EXPR>)` is satisfied if 
-* `A value B @range(v1..v2)` is satisfied if 
--->
-
-## ... Element statements
-
-### **Case ISA_PATT**
-* ➖ `$x isa $T` is satisfied if `r(x) : r(T)` for `r(T) : ERA`
-* 🔶 `$x isa $T ($I: $y)` is equivalent to `$x isa $T; $x links ($I: $y);`
-* 🔶 `$x isa $T <EXPR>` is equivalent to `$x isa $T; $x == <EXPR>;`
-
-### **Case ANON_ISA_PATT**
-* 🔶 `$T` is equivalent to `$_ isa $T`
-* 🔶 `$T ($R: $y, ...)`  is equivalent to `$_ isa $T ($R: $y, ...)`
-* 🔶 `$T <EXPR>` is equivalent to `$_ isa $T <EXPR>`
-
-### **Case DIRECT_ISA_PATT**
-
-* ➖ `$x isa! $T` is satisfied if `r(x) :! r(T)` for `r(T) : ERA`
-* 🔶 `$x isa! $T ($I: $y)` is equivalent to `$x isa! $T; $x links ($I: $y);`
-* 🔶 `$x isa! $T <EXPR>` is equivalent to `$x isa! $T; $x == <EXPR>;`
-
-### **Case LINKS_PATT**
-* ➖ `$x links ($I: $y)` is satisfied if `r(x) : A(r(y):r(I))` for some `A : REL(r(I))`.
-* ➖ `$x links ($y)` is equivalent to `$x links ($_: $y)` for anonymous `$_` (See "Syntactic Sugar")
-
-
-### **Case LINKS_LIST_PATT**
-* 🔶 `$x links ($I[]: $y)` is satisfied if `r(x) : A(r(y):[r(I)])` for some `A : REL([r(I)])`.
-* 🔶 `$x links ($I[]: <LIST_EXPR>)` is equivalent to `$x links ($I[]: $_y); $_y == <LIST_EXPR>;` for anonymous `$_y`
-
-### **Case DIRECT_LINKS_PATT**
-* 🔮 `$x links! ($I: $y)` is satisfied if `r(x) :! A(r(y):r(I))` for some `A : REL(r(I))`.
-* 🔮 `$x links! ($I[]: $y)` is satisfied if `r(x) :! A(r(y):[r(I)])` for some `A : REL([r(I)])`.
-
-### **Case HAS_PATT**
-* ➖ `$x has $B $y` is satisfied if `r(y) : r(B)(r(x):r(B).O)` for some `r(B) : ATT`.
-* ➖ `$x has $B == <VAL_EXPR>` is equivalent to `$x has $B $_y; $_y == <VAL_EXPR>` for anonymous `$_y` (see "Expressions")
-* ➖ `$x has $B <NV_VAL_EXPR>` is equivalent to  `$x has $B == <NV_VAL_EXPR>` (see "Expressions"; `NV_EXPR` is a "non-variable expression")
-* ➖ `$x has $y` is equivalent to `$x has $_ $y` for anonymous `$_`
-
-_Remark_. Note that `$x has $B $y` will match the individual list elements of list attributes (e.g. when `r(x) : A` and `A <! B.O`).
-
-### **Case HAS_LIST_PATT**
-
-* 🔶 `$x has $B[] $y` is satisfied if `r(y) : [r(B)](r(x):r(B)[].O)` for some `r(B) : ATT`.
-* 🔶 `$x has $B[] == <LIST_EXPR>` is equivalent to `$x has $B[] $_y; $_y == <LIST_EXPR>` for anonymous `$_y`
-* 🔶 `$x has $B[] <NV_LIST_EXPR>`is equivalent to  `$x has $B[] == <NV_VAL_EXPR>`.
-
-### **Case DIRECT_HAS_PATT**
-
-* 🔮 `$x has! $B $y` is satisfied if `r(y) :! r(B)(r(x):r(B).O)` for some `r(B) : ATT`.
-* 🔮 `$x has! $B[] $y` is satisfied if `r(y) :! [r(B)](r(x):r(B)[].O)` for some `r(B) : ATT`.
-
-### **Case IS_PATT**
-* ➖`$x is $y` is satisfied if:
-    * `$x` and `$y` are both **ivars** and: `r(x), r(y) :! A` and `r(x) = r(y)` for `A : ERA`
-    * `$x` and `$y` are both **lvars** and: `r(x), r(y) : [A]` and `r(x) = r(y)` for (sum type) `A = \sum_i A_i`, `A_i : ERA` (**#BDD**)
-    * `$x` and `$y` are both **tvars** and: `r(x), r(y) : ERA` and `r(x) = r(y)` (**#BDD**)
-
-_System property_
-
-1. ➖In the `is` pattern, neither left nor right variables are **not bound**.
-
-_Remark_: In the `is` pattern we cannot syntactically distinguish whether we are in the "type" or "element" case (it's the only such pattern where tvars and evars can be in the same position!) but this is alleviated by the pattern being non-binding, i.e. we require further statements which bind these variables, which then determines them to be tvars are evars.
-
-## ... Expression and list statements
-
-### Expressions grammar
-
-_Expression composition_
-
-```javascript
-BOOL        ::= VAR | bool                                     // VAR = variable
-INT         ::= VAR | long | ( INT ) | INT (+|-|*|/|%) INT 
-                | (ceil|floor|round)( DBL ) | abs( INT ) | len( T_LIST )
-                | (max|min) ( INT ,..., INT )
-DBL         ::= VAR | double | ( DBL ) | DBL (+|-|*|/) DBL 
-                | (max|min) ( DBL ,..., DBL ) |                
-DEC         ::= VAR | dec | ...                                // similar to DBL
-STRING      ::= VAR | string | string + string
-DUR         ::= VAR | time | DUR (+|-) DUR 
-DATE        ::= VAR | datetime | DATETIME (+|-) DUR 
-DATETIME    ::= VAR | datetime | DATETIME (+|-) DUR 
-PRIM        ::= <any-expr-above>
-STRUCT      ::= VAR | { <COMP>: (value|VAR|STRUCT), ... }      // <COMP> = struct component
-                | <HINT> { <COMP>: (value|VAR|STRUCT), ... }   // <HINT> = struct label
-DESTRUCT    ::= { T_COMP: (VAR|VAR?|DESTRUCT), ... }           
-VAL         ::= PRIM | STRUCT |                   
-<T>         ::= <T> | <T>_LIST [ INT ]                         // T : Val
-                | <T_FCALL>                                    // fun call returning T/T?
-                | STRUCT.<T_COMP>                              // component of type T/T?
-<T>_LIST    ::= VAR | [ <T> ,..., <T> ] | <T>_LIST + <T>_LIST  // includes empty list []
-                T_LIST [ INT .. INT ]
-INT_LIST    ::= INT_LIST | [ INT .. INT ]
-VAL_EXPR    ::= <T> | STRUCT                                   // "value expression"
-LIST_EXPR   ::= <T>_LIST | INT_LIST                            // "list expression"
-EXPR        ::= VAL_EXPR | LIST_EXPR
-```
-
-As a special case, consider expression that are not single variables (i.e., exclude `$x` but allow `($x + 1)` or even `($x)`)
-```
-NV_VAL_EXPR ::= VAL_EXPR - VAR                                 // exclude sole variable
-NV_LIST_EXPR::= LIST_EXPR - VAR                                // exclude sole variable
-NV_EXPR     ::= EXPR - VAR                                     
-```
-
-_Value formats_
-
-```
-  long       ::=   (0..9)*
-  double     ::=   (0..9)*\.(0..9)+
-  dec        ::=   (0..9)*\.(0..9)+dec
-  date       ::=   ___Y__M__D
-  datetime   ::=   ___Y__M__DT__h__m__s
-                 | ___Y__M__DT__h__m__s:___
-  datetimetz ::= ...
-  duration   ::=   P___Y__M__D              
-                 | P___Y__M__DT__h__m__s
-                 | P___Y__M__DT__h__m__s:___
-```
-
-_Remarks_
-
-* Careful: the generic case `<T>` modify earlier parts of the
-* `T`-functions (`T_FUN`) are function calls to *single-return* functions with non-tupled output type `T` or `T?`
-
-_Explicit casts_. 🔮 Introduce explicit castings between types to our grammar. For example:
-* `long(1.0) == 1`
-* `double(10) / double(3) == 3.3333`)
-
-### Expression evaluation
-
-Given a crow `r` that assign all vars in an `<EXPR>` we define
-* value evaluation `vev@r(<EXPR>)` (math. notation `v_r(expr)`)
-* type evaluation `Tev@r(<EXPR>)` (math. notation `T_r(expr)`)]
-
-as follows. First note that we can unambiguously distinguish **value** from **list** expressions in our grammar. We evaluate each of those as follows.
-
-#### Value expressions
-
-* 🔶 The _value expressions_ `VAL_EXPR` is evaluated as follows:
-    * **Substitute** all vars `$x` by `r($x)`
-    * If `r($x)` isa attribute instance, **replace** by `val(r($x))`
-    * `v_r(expr)` is the result of evaluating all operations with their **usual semantics**
-        * `1 + 1 == 2`
-        * `10 / 3 == 3` (integer division satisfies `p/q + p%q = p`)
-    * `T_r(expr)` is the **unique type** of the substituted expression, noting:
-        * We allow **implicit casts** of `long -> dec -> double`.
-        * This is always unique except possibly for the `STRUCT` case (see property below)!
-
-_System property_.
-
-* 🔶 If `T_r(expr)` is non-unique for a `STRUCT` expression (which may be the case because, `STRUCT` may share fields) we require the expression to have a `HINT`, or otherwise throw an error (***see Grammar above***, case `STRUCT`).
-
-_Remark_. Struct values are semantically considered up to reordering their components.
-
-#### List expressions
-
-* 🔶 The _list expressions_ `LIST_EXPR` is evaluated as follows:
-    * Substitute all vars `$x` by `r($x)`
-    * (**Do not replace** attributes!)
-    * `v_r(expr)` is the result of concatenation and sublist operations with their **usual semantics**
-        * e.g. `[a] + [a,b,c][1..2] = [a,b,c]` (`[1..2]` includes indices `[1,2]`)
-        * or `([a] + [a,b,c])[1..2] = [a,b]`
-    * `T_r(expr)` is the **minimal type** of all the list elements (usually some sum type)
-
-**Note**: While the type checker cannot statically determine `T_r(expr)`, it can statically construct an upper bound of that type.
-
-### (Feature) Boundedness of variables in expressions
-
-1. 🔶 Generally, variables in expressions `<EXPR>` are **never bound**, except ...
-    * 🔶 the exception are **single-variable list indices**, i.e. `$list[$index]`; in this case `$index` is bound. (This makes sense, since `$list` must be bound elsewhere, and then `$index` is bound to range over the length of the list) (**#BDD**)
-3. 🔶 Struct components are considered to be unordered: i.e., `{ x: $x, y: $y}` is equal to `{ y: $y, x: $x }`.
-
-_Remark_: The exception for list indices is mainly for convenience. Indeed, you could always explicitly bind `$index` with the pattern `$index in [0..len($list)-1];`. See "Case **LET_IN_LIST_PATT**" below.
-
-### Simple expression patterns
-
-#### **Case LET_PATT**
-* ➖`let $x = <EXPR>` is satisfied if **both**
-    * `r($x)` equals `v_r(expr)`
-    * `T($x)` equals `T_r(expr)`
-
-_System property_
-
-1. _Assignments bind_. The left-hand variable is bound by the pattern.
-2. _Assign once, to vars only_. Any variable can be assigned only once within a pattern—importantly, the left hand side _must be_ a variable (replacing it with a concept will throw an error; this implicitly applies to "Match semantics").
-3. _Acyclicity (pattern-level constraint)_. All let statements must be acyclic, i.e. the graph of variables with directed edges from RHS vars to LHS vars in let statements is acyclic (e.g. we cannot have `$x = $x + $y; $y = $y - $x;`)
-
-#### **Case LET_DESTRUCT_PATT**
-* 🔶 `let <DESTRUCT> = <STRUCT>` is satisfied if, after substituting concepts from `r`, the left hand side (up to potentially omitting components whose variables are marked as optional) matched the structure of the right and side, and each variable on the left matches the evaluated expression of the correponding position on the right.
-
-_System property_
-
-1. 🔶 _Assignments bind_. The left-hand variable is bound by the pattern.
-2. _Acyclicity (pattern-level constraint)_. All let statements must be acyclic, i.e. the graph of variables with directed edges from RHS vars to LHS vars in let statements is acyclic.
-
-#### **Case EQ_PATT**
-* ➖ `<EXPR1> == <EXPR2>` is satisfied if `v_r(expr_1) = v_r(expr_2)`
-* ➖ `<EXPR1> != <EXPR2>` is equivalent to `not { <EXPR1> != <EXPR2> }` (see "Patterns")
-
-_System property_
-
-1. All variables are bound **not bound**.
-
-#### **Case COMP_PATT**
-
-The following are all kind of obvious (for `<COMP>` one of `<`,`<=`,`>`,`>=`):
-
-* ➖ `<INT> <COMP> <INT>`
-* ➖ `<BOOl> <COMP> <BOOL>` (`false`<`true`)
-* ➖ `<STRING> <COMP> <STRING>` (lexicographic comparison)
-* ➖ `<DATETIME> <COMP> <DATETIME>` (usual datetime order)
-* ➖ `<TIME> <COMP> <TIME>` (usual time order)
-* ➖ `<STRING> contains <STRING>`
-* ➖`<STRING> like <REGEX>` (where `<REGEX>` is a regex string without variables)
-
-_System property_
-
-1. In all the above patterns all variables are **not bound**.
-
-### List expression patterns
-
-### **Case LET_IN_LIST_PATT**
-* ➖`let $x in $l` is satisfied if `r(x) in r(l)`
-* 🔶 `let $x in <LIST_EXPR>` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar")
-
-_System property_
-
-1. The right-hand side variable(s) of the pattern are **not bound**. (The left-hand side variable is bound.)
-1. _Acyclicity (pattern-level constraint)_.  All let statements must be acyclic, i.e. the graph of variables with directed edges from RHS vars to LHS vars in let statements is acyclic.
-
-### **Case LIST_CONTAINS_PATT**
+  where `HINT` is a schema-defined **struct name**, and `COMP` is a schema-defined **component name**:
+
+  The statement is satisfied if `DESTRUCT @ r = STRUCT @ r` **and** only variables marked with `?` in `DESTRUCT` may be assigned `()`.
+* 🔶`let $x in $l` is satisfied if `$x @ r _in $l @ r`
+    * 🔶 `let $x in LIST_EXPR` is equivalent to `$l = <LIST_EXPR>; $x in $l` (see "Syntactic Sugar")
 * 🔶 `$l contains $x` is satisfied if `r(x) in r(l)`
-* 🔶 `<LIST_EXPR contains $x` is equivalent to `$l = <LIST_EXPR>; $l contains $x` (see "Syntactic Sugar")
+    * 🔶 `LIST_EXPR contains $x` is equivalent to `let $_l = <LIST_EXPR>; $_l contains $x;`
 
-_System property_
+## Other stages
 
-1. _Boundedness_ no side of the patterns is binding (this is in effect a comparator).
+Other stages are mainly straight-forward. (Feel free to add notes about their intricacies here):
 
+* `select`
+* `limit`
+* `offset`
+* `reduce`
+* `distinct`
 
-# Data manipulation language
+## Functions and pipelines
 
-## Match semantics
+Evaluate functions stage by stage. For recursive functions, augment recursive calls with "depth" (instead of `f` calling `f`, let `f_n` call `f_{n-1}`) which breaks the recursion. Then evaluation becomes easy to describe: to evaluate a call to `f` up to recursive depth, say, `1000`, replace the call with a call to `f_1000`.
 
-* _Syntax_ The `match` clause has syntax
+Recursion can be more elegantly described in terms of "cycle-breaking" expansions of computation graph, see [executor spec](executor.md).
+
+# FORMATTING
+
+## Fetch JSON
+
+A `fetch JSON` clause is of the form
+
+  ```
+  fetch { 
+   KV-STATEMENT;
+   ...
+   KV-STATEMENT;
+  }
+  ```
+with the following KV statement cases:
+
+* `"key": $x`
+* `"key": EXPR`
+* `"key": $x.A` where `A : ATT`
+* `"key": [ $x.A ]` where `A : ATT`
+* `"key": $x.A[]` where `A : ATT`
+* `"key": { $x.* }` where `A : ATT` and we format individual attributes as:
+    * `"att_label" : [ <atts> ]`
+    * `"att_label[]" : <att-list>`.
+* `"key": fun(...)` where `fun` is **scalar** value
+* `"key": [ fun(...) ]` where `fun` is **scalar stream** value
+* Fetch list of JSON sub-documents:
     ```
-    match <PATTERN>
+    "key": [ 
+      <READ_PIPELINE>
+      fetch { <FETCH> }
+    ]
     ```
-
-* _Input crows_: The clause can take as input a stream `{ r }` of concept rows `r`.
-
-* _Output crows_: For each `r`:
-    * replace all patterns in `PATT` with concepts from `r`.
-    * Compute the **set** of answers `{ r' }`.
-    * The final output stream will be `{ (r,r') }`.
-
-
-## Function semantics
-
-### Function signature
-
-#### **Case SIGNATURE_STREAM_FUN**
-
-* 🔶 Stream-return function signature syntax:
-  _Syntax_:
+* Fetch single-value:
     ```
-    fun F ($x: A, $y: B[]) -> { C, D[], E? } :
+    "key": ( 
+      <READ_PIPELINE>
+      return <SINGLE> <VAR>; 
+    )
     ```
-  where
-    * types `A, B, C, D, E` can be available entity, relation, attribute, value types (both structure and primitive).
-
-_Remark: see GH issue on trais (Could have `A | B | plays C` input types)._
-
-_Terminology_ If the function returns a single types (`{ C }`) then we call it a **singleton** function.
-
-#### **Case SIGNATURE_SINGLE_FUN**
-
-* 🔶 Single-return function signature syntax:
+* Fetch single-value:
     ```
-    fun F ($x: A, $y: B[]) -> C, D[], E? :
+    "key": [ 
+      <READ_PIPELINE>
+      return { <VAR> }; 
+    ]
     ```
-  where
-    * types `A, B, C, D, E` can be available entity, relation, attribute, value types (both structure and primitive).
-
-_STICKY: allow types to be optional in args (this extends types to sum types, trait types, etc.)_
-
-_Terminology_ If the function returns a single types (`C`) then we call it a **singleton** function.
-
-### Function body
-
-#### **Case READ_PIPELINE_FUN**
-
-* 🔶 Function body syntax:
-  _Syntax_:
+* Fetch stream as list:
     ```
-    <READ_PIPELINE>
-    ```
-
-_System property_
-
-* 🔶 _Read only_. Pipeline must be read-only, i.e. cannot use write clauses (`insert`, `delete`, `update`, `put`)
-* 🔶 _Require crow stream output_ Pipeline must be non-terminal (e.g. cannot end in `fetch`).
-
-### Function return
-
-#### **Case RETURN_STREAM_FUN**
-
-The return clause corresponds to its output type signature.
-
-* 🔶 When function output type is `{ A, B, ... }` then return clause of the form:
-    ```
-    return { $a, $b, ... };
+    "key": [ 
+      <READ_PIPELINE>
+      return <AGG>, ... , <AGG>; 
+    ]
     ```
 
-_System property_
-
-* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the pipeline (taken into account any variable selections through `select` and `reduce` operators).
-
-#### **Case RETURN_SINGLE_FUN**
-
-* 🔶 When function output type is `A, B?, ... ` then return clause of the form:
-  _Syntax_:
+    This is short hand for:
     ```
-    return <SINGLE> $x, $y, ...;
+    "key": [ 
+      <READ_PIPELINE>
+      reduce $_1? = <AGG>, ... , $_n? = <AGG>; 
+      return first $_1, ..., $_n; 
+    ]
+    ``` 
+* Specify JSON sub-document:
     ```
-  where `<SINGLE>` can be:
-    * `first`
-    * `last`
-    * `random`
-
-_System property_.
-
-* 🔶 `?` on output types correspond exactly to those variables in the return clause that are optional in the function body.
-* 🔶 _Require bindings_ all vars (`$x`, `$y`, ...) must be bound in the read pipeline of the function body (taken into account any variable selections through `select` and `reduce` operators).
-
-#### **Case RETURN_AGG_SINGLE_FUN**
-
-* 🔶 When function output type is `A?, B?, ... ` then return clause of the form:
-    ```
-    return <AGG>, <AGG>, ...;
-    ```
-  is short-hand for:
-    ```
-    reduce $_1? = <AGG>, $_2? = <AGG>, ... ;
-    return first $_1, $_2, ... ;
+    "key" : { 
+      <FETCH-KV-STATEMENT>;
+      ...
+      <FETCH-KV-STATEMENT>;
+    }
     ```
 
-_Remark_
-Note the optionality `?`, which ensures that the reduce step will not yield an empty crow stream.
+## Fetch GRAPH
 
-### (Theory) Function semantics
-
-***Typing***
-
-* `?` marks variables in the row that can be optional
-    * this applies both to output types: `{ A?, B }` and `A?, B`
-    * and it applies to variables assignments: `$x?, $y in ...` and `$x?, $y = ...`
-* **single-row returning** functions return 0 or 1 rows
-* **multi-row returning** ("stream-returning") functions return 0 or more rows.
-
-***Matching***
-
-* single row assignment `$x, $y = ...`  fails if no row is assigned
-* single row assignment `$x?, $y = ...`  succeeds if a row is assigned, even if it may be missing the optional variables
-* multi row assignment `$x, $y in ...`  fails if no row is assigned
-* multi row assignment `$x?, $y in ...`  succeeds if one or more row are assigned, even if they may be missing the optional variables
-
-***Evaluation***
-
-* A function `F` counts as ***evaluated*** on a call `F_CALL` when we completely computed its output stream as follows:
-    1. provide input arguments from the call `F_CALL` as a single crow, which is the starting point of the body `READ_PIPELINE`
-    2. Then act like an ordinary pipeline, outputting a stream (see "Pipelines")
-    3. perform `return` transformation outlined below for final output which is effectively a `select`.
-        4. For **single(-row) return** functions we first pick the **first**, **last** or a **random** crow in the stream, making the final output an at-most-single-row output
-    4. Denote the output stream by `ev(F_CALL)`
-* When negations are use, function in lower strata must be evaluated (on all relevant calls) before function in higher strata (see below)
-
-### (Theory) Order of execution (and recursion)
-
-Since functions can only be called from `match` stages in pipelines, evaluation is deterministic and does not depend on any choices of execution order (i.e. which statements in the pattern we retrieve first), except for **negation**: here, execution order _does_ matter.
-
-* 🔮 **Recursion** Functions can be called recursively, as long as negation can be **stratified**:
-
-    * The set of all defined functions is divided into groups called "strata" which are ordered
-    * If a function `F` calls a function `G` if must be a in an equal or higher stratum. Moreover, if `G` appears behind an odd number of `not { ... }` in the body of `F`, then `F` must be in a strictly higher stratum.
-
-  _Note_: The semantics in this case is computed "stratum by stratum" from lower strata to higher strata. New facts in our type systems (`t : T`) are derived in a bottom-up fashion for each stratum separately.
+TBD
