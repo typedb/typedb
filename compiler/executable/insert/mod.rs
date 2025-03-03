@@ -15,7 +15,7 @@ use crate::VariablePosition;
 pub mod executable;
 pub mod instructions;
 
-#[derive(Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
 pub enum VariableSource {
     Input(VariablePosition),
     Inserted,
