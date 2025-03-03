@@ -509,6 +509,61 @@ fn fibonacci() {
 }
 
 #[test]
+fn reduce_depends_on_cyclic_function() {
+    let custom_schema = r#"define
+        attribute name value string;
+        attribute weight value integer;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end, owns weight;
+        relation edge, relates start, relates end;
+    "#;
+    let context = setup_common(custom_schema);
+    let data = r#"
+    insert
+        # Chain
+        $c1 isa node, has name "c1", has weight 12;
+        $c2 isa node, has name "c2", has weight 34;
+        $c3 isa node, has name "c3", has weight 56;
+
+        (start: $c1, end: $c2) isa edge;
+        (start: $c2, end: $c3) isa edge;
+
+    "#;
+    let (rows, _positions) = run_write_query(&context, data).unwrap();
+    assert_eq!(1, rows.len());
+
+    let placeholder_start_node = "<<NODE_NAME>>";
+    let query_template = r#"
+            with
+            fun reachable($start: node) -> { node }:
+            match
+                $return-me has name $name;
+                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
+            return { $return-me };
+
+            with
+            fun f($start: node) -> integer:
+            match
+                let $to in reachable($start);
+                $to has weight $w;
+            return sum($w); # 34 + 56
+
+            match
+            $start isa node, has name "<<NODE_NAME>>";
+            let $sum = f($start);
+        "#;
+
+    {
+        // Chain
+        let query = query_template.replace(placeholder_start_node, "c1");
+        let (rows, positions) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get(*positions.get("sum").unwrap()), &VariableValue::Value(Value::Integer(90)));
+
+    }
+}
+
+#[test]
 fn write_pipelines() {
     let context = setup_common(
         r#"

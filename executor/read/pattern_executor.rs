@@ -155,6 +155,7 @@ impl PatternExecutor {
                     negation_suspensions.record_nested_pattern_exit();
                     match result {
                         None => {
+                            compile_error!("We have to track table size here for termination");
                             if !negation_suspensions.is_empty() {
                                 tabled_functions.may_prepare_to_retry_suspended();
                                 negation_suspensions.prepare_restoring_from_suspending();
@@ -242,6 +243,7 @@ impl PatternExecutor {
                     match result {
                         None => {
                             if !inner_suspensions.is_empty() {
+                                compile_error!("We have to track table size here for termination");
                                 tabled_functions.may_prepare_to_retry_suspended();
                                 inner_suspensions.prepare_restoring_from_suspending();
                                 inner.prepare_to_restore_from_suspension(0);
