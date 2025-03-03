@@ -101,7 +101,7 @@ typedb_error! {
         ),
         ReassigningValueVariableFromPreviousStage(
             18,
-            "The variable '{variable}' cannot be assigned to, as it was already assigned in a the previous stage.",
+            "The variable '{variable}' cannot be assigned to, as it was already assigned in a previous stage.",
             variable: String,
         ),
         ValueVariableConflictingAssignmentTypes(
