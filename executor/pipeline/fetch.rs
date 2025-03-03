@@ -12,7 +12,7 @@ use compiler::{
         fetch::executable::{
             ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
         },
-        function::{ExecutableFunction, ExecutableFunctionRegistry},
+        function::{executable::ExecutableFunction, ExecutableFunctionRegistry},
         next_executable_id,
     },
     VariablePosition,

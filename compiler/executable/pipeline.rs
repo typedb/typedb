@@ -24,7 +24,7 @@ use crate::{
     executable::{
         delete::executable::DeleteExecutable,
         fetch::executable::{compile_fetch, ExecutableFetch},
-        function::{compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
+        function::{executable::compile_functions, ExecutableFunctionRegistry, FunctionCallCostProvider},
         insert::executable::InsertExecutable,
         match_::planner::{match_executable::MatchExecutable, vertex::Cost},
         modifiers::{

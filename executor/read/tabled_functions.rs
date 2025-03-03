@@ -9,7 +9,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use compiler::executable::function::{ExecutableFunctionRegistry, ExecutableReturn};
+use compiler::executable::function::{executable::ExecutableReturn, ExecutableFunctionRegistry};
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
