@@ -516,7 +516,19 @@ fn restore_suspension(
                         input: input_row.into_owned(),
                     }))
                 }
-                StepExecutors::StreamModifier(_) => unreachable!("Any other modifier should be illegal"),
+                StepExecutors::StreamModifier(StreamModifierExecutor::Select { inner, removed_positions }) => {
+                    inner.prepare_to_restore_from_suspension(depth);
+                    control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                        index: executor_index,
+                        mapper: StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone())),
+                        input: input_row.into_owned(),
+                    }))
+                }
+                StepExecutors::StreamModifier(StreamModifierExecutor::Offset { .. })
+                | StepExecutors::StreamModifier(StreamModifierExecutor::Limit { .. })
+                | StepExecutors::StreamModifier(StreamModifierExecutor::Last { .. })=> {
+                    unreachable!("Illegal stream modifier in recursive function")
+                },
                 StepExecutors::Immediate(_)
                 | StepExecutors::CollectingStage(_)
                 | StepExecutors::TabledCall(_)
