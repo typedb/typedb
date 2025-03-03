@@ -14,6 +14,7 @@ use std::{
 };
 
 use answer::variable::Variable;
+use constraint::Constraint;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -346,5 +347,66 @@ impl fmt::Display for ValueType {
             Self::Builtin(var) => fmt::Display::fmt(var, f),
             Self::Struct(name) => fmt::Display::fmt(name, f),
         }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum AssignmentMode<'a> {
+    Assigned(&'a Constraint<Variable>),
+    MultipleAssignments(Vec<&'a Constraint<Variable>>),
+}
+
+impl AssignmentMode<'_> {
+    fn and_assign(&mut self, other: Self) {
+        match (&mut *self, other) {
+            (&mut Self::Assigned(place), Self::Assigned(other_place)) => {
+                *self = Self::MultipleAssignments(vec![place, other_place])
+            }
+            (Self::Assigned(place), Self::MultipleAssignments(mut other_places)) => {
+                other_places.push(place);
+                *self = Self::MultipleAssignments(other_places);
+            }
+            (Self::MultipleAssignments(places), Self::Assigned(other_place)) => {
+                places.push(other_place);
+            }
+            (Self::MultipleAssignments(places), Self::MultipleAssignments(other_places)) => {
+                places.extend(other_places);
+            }
+        }
+    }
+
+    fn or_assign(&mut self, other: Self) {
+        // we only really need to preserve one assignment across branches for diagnostic purposes
+        // or the branch with multiple assignments
+        if matches!((&self, &other), (Self::Assigned(_), Self::MultipleAssignments(_))) {
+            *self = other
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) enum DependencyMode<'a> {
+    Required(Vec<&'a Constraint<Variable>>),
+    Produced,
+}
+
+impl DependencyMode<'_> {
+    fn and_assign(&mut self, other: Self) {
+        match (&mut *self, other) {
+            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
+            (Self::Produced, _) | (_, Self::Produced) => *self = Self::Produced,
+        }
+    }
+
+    fn or_assign(&mut self, other: Self) {
+        match (&mut *self, other) {
+            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
+            (Self::Required(_), _) | (_, Self::Required(_)) => *self = Self::Produced,
+            (Self::Produced, Self::Produced) => (),
+        }
+    }
+
+    fn is_required(&self) -> bool {
+        matches!(self, Self::Required(_))
     }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId,
+        AssignmentMode, DependencyMode, Scope, ScopeId,
     },
     pipeline::block::BlockBuilderContext,
 };
@@ -44,6 +44,14 @@ impl Negation {
 
     pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
+    }
+
+    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+        self.conjunction.variable_dependency_modes().into_iter().filter(|(_, mode)| mode.is_required()).collect()
+    }
+
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+        self.conjunction.variable_assignment_modes()
     }
 }
 

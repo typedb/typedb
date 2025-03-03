@@ -4,11 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, mem};
+use std::{collections::HashMap, fmt, mem};
 
+use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
+use crate::pattern::{
+    disjunction::Disjunction, negation::Negation, optional::Optional, AssignmentMode, DependencyMode,
+};
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {
@@ -57,6 +60,22 @@ impl NestedPattern {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
+        }
+    }
+
+    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+        match self {
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency_modes(),
+            NestedPattern::Negation(negation) => negation.variable_dependency_modes(),
+            NestedPattern::Optional(optional) => optional.variable_dependency_modes(),
+        }
+    }
+
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+        match self {
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_assignment_modes(),
+            NestedPattern::Negation(negation) => negation.variable_assignment_modes(),
+            NestedPattern::Optional(optional) => optional.variable_assignment_modes(),
         }
     }
 }

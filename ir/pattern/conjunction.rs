@@ -5,10 +5,9 @@
  */
 
 use std::{
-    collections::HashSet,
+    collections::{hash_map, HashMap, HashSet},
     fmt,
     hash::{DefaultHasher, Hasher},
-    iter,
 };
 
 use answer::variable::Variable;
@@ -23,7 +22,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Scope, ScopeId,
+        AssignmentMode, DependencyMode, Scope, ScopeId,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -114,6 +113,10 @@ impl Conjunction {
             .unique()
     }
 
+    pub fn named_output_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        block_context.visible_variables(self.scope_id).filter(Variable::is_named)
+    }
+
     fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
         let mut produced_variables: HashSet<Variable> =
             self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
@@ -133,8 +136,36 @@ impl Conjunction {
         produced_variables
     }
 
-    pub fn named_output_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        block_context.visible_variables(self.scope_id).filter(Variable::is_named)
+    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+        let mut data_modes = self.constraints.variable_dependency_modes();
+        for nested in self.nested_patterns.iter() {
+            let nested_pattern_data_modes = nested.variable_dependency_modes();
+            for (var, mode) in nested_pattern_data_modes {
+                match data_modes.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(mode),
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(mode);
+                    }
+                }
+            }
+        }
+        data_modes
+    }
+
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+        let mut assignment_modes = self.constraints.variable_assignment_modes();
+        for nested in self.nested_patterns.iter() {
+            let nested_pattern_assignment_modes = nested.variable_assignment_modes();
+            for (var, mode) in nested_pattern_assignment_modes {
+                match assignment_modes.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(mode),
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(mode);
+                    }
+                }
+            }
+        }
+        assignment_modes
     }
 }
 

@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{hash_map, HashMap},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     iter, mem,
@@ -13,7 +13,8 @@ use std::{
 };
 
 use answer::variable::Variable;
-use itertools::Itertools;
+use error::UnimplementedFeature;
+use itertools::{Either, Itertools};
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
@@ -23,7 +24,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, Scope, ScopeId, ValueType, Vertex,
+        AssignmentMode, DependencyMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     LiteralParseError, RepresentationError,
@@ -63,6 +64,59 @@ impl Constraints {
         let constraint = constraint.into();
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
+    }
+
+    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+        self.constraints().iter().fold(HashMap::new(), |mut acc, c| {
+            let ids_produced = c.produced_ids();
+            for var in ids_produced {
+                match acc.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(DependencyMode::Produced),
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(DependencyMode::Produced);
+                    }
+                }
+            }
+            acc
+        })
+    }
+
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+        self.constraints().iter().fold(HashMap::new(), |mut acc, c| {
+            let ids_assigned = match c {
+                Constraint::ExpressionBinding(expression_binding) => Either::Left(expression_binding.ids_assigned()),
+                Constraint::FunctionCallBinding(function_call_binding) => {
+                    Either::Right(function_call_binding.ids_assigned())
+                }
+                Constraint::Is(_)
+                | Constraint::Kind(_)
+                | Constraint::Label(_)
+                | Constraint::RoleName(_)
+                | Constraint::Sub(_)
+                | Constraint::Isa(_)
+                | Constraint::Iid(_)
+                | Constraint::Links(_)
+                | Constraint::IndexedRelation(_)
+                | Constraint::Has(_)
+                | Constraint::Comparison(_)
+                | Constraint::Owns(_)
+                | Constraint::Relates(_)
+                | Constraint::Plays(_)
+                | Constraint::Value(_)
+                | Constraint::LinksDeduplication(_)
+                | Constraint::Unsatisfiable(_) => return acc,
+            };
+
+            for var in ids_assigned {
+                match acc.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(AssignmentMode::Assigned(c)),
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(AssignmentMode::Assigned(c));
+                    }
+                }
+            }
+            acc
+        })
     }
 }
 
@@ -590,6 +644,30 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Value(value) => Box::new(value.ids()),
             Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
+        }
+    }
+
+    pub fn required_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+        match self {
+            Constraint::Is(is) => todo!(),
+            | Constraint::Kind(_)
+            | Constraint::Label(_)
+            | Constraint::RoleName(_)
+            | Constraint::Sub(_)
+            | Constraint::Isa(_)
+            | Constraint::Iid(_)
+            | Constraint::Links(_)
+            | Constraint::IndexedRelation(_)
+            | Constraint::Has(_)
+            | Constraint::Owns(_)
+            | Constraint::Relates(_)
+            | Constraint::Plays(_)
+            | Constraint::Value(_)
+            | Constraint::LinksDeduplication(_)
+            | Constraint::Unsatisfiable(_) => Box::new(iter::empty()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.ids_accepted()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_accepted()),
+            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
     }
 
@@ -1966,6 +2044,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
         [&self.left].into_iter()
     }
 
+    pub fn ids_accepted(&self) -> impl Iterator<Item = ID> + '_ {
+        self.expression.variables()
+    }
+
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         self.left.as_variable().into_iter()
     }
@@ -1978,8 +2060,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
     where
         F: FnMut(ID),
     {
-        self.ids_assigned().for_each(|id| function(id));
-        self.expression().variables().for_each(|id| function(id));
+        self.ids_assigned().for_each(&mut function);
+        self.expression().variables().for_each(function);
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
@@ -2072,6 +2154,10 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.ids_assigned().chain(self.function_call.argument_ids())
+    }
+
+    pub fn ids_accepted(&self) -> impl Iterator<Item = ID> + '_ {
+        self.function_call.argument_ids()
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {

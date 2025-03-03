@@ -4,14 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{
+    collections::{hash_map, HashMap},
+    fmt,
+};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use super::conjunction::ConjunctionBuilder;
 use crate::{
-    pattern::{conjunction::Conjunction, Scope, ScopeId},
+    pattern::{
+        conjunction::{Conjunction, ConjunctionBuilder},
+        AssignmentMode, DependencyMode, Scope, ScopeId,
+    },
     pipeline::block::{BlockBuilderContext, ScopeTransparency},
 };
 
@@ -40,6 +45,42 @@ impl Disjunction {
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
         self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
     }
+
+    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+        if self.conjunctions.is_empty() {
+            return HashMap::new();
+        }
+        let mut data_modes = self.conjunctions[0].variable_dependency_modes();
+        for branch in &self.conjunctions[1..] {
+            for (var, mode) in branch.variable_dependency_modes() {
+                match data_modes.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().or_assign(mode),
+                    hash_map::Entry::Vacant(entry) => {
+                        entry.insert(mode);
+                    }
+                }
+            }
+        }
+        data_modes
+    }
+
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+        if self.conjunctions.is_empty() {
+            return HashMap::new();
+        }
+        let mut assignment_modes = self.conjunctions[0].variable_assignment_modes();
+        for branch in &self.conjunctions[1..] {
+            for (var, mode) in branch.variable_assignment_modes() {
+                match assignment_modes.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().or_assign(mode),
+                    hash_map::Entry::Vacant(entry) => {
+                        entry.insert(mode);
+                    }
+                }
+            }
+        }
+        assignment_modes
+    }
 }
 
 impl StructuralEquality for Disjunction {
@@ -54,7 +95,7 @@ impl StructuralEquality for Disjunction {
 
 impl fmt::Display for Disjunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        debug_assert!(self.conjunctions.len() > 0);
+        debug_assert!(!self.conjunctions.is_empty());
         write!(f, "{}", self.conjunctions[0])?;
         for i in 1..self.conjunctions.len() {
             write!(f, " or {}", self.conjunctions[i])?;
