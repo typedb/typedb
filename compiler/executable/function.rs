@@ -121,15 +121,15 @@ pub(crate) fn compile_single_untabled_function(
 pub(crate) fn compile_functions<FIDType: FunctionIDAPI>(
     statistics: &Statistics,
     cached_plans: &ExecutableFunctionRegistry,
-    mut to_compile: HashMap<FIDType, AnnotatedFunction>,
+    to_compile: HashMap<FIDType, AnnotatedFunction>,
 ) -> Result<HashMap<FIDType, ExecutableFunction>, ExecutableCompilationError> {
     // TODO: Cache compiled schema functions?
     let (post_order, dependencies, tabling_types) = determine_dependencies_and_tabling_types(&to_compile)?;
     let mut context = FunctionCompilationContext::new(cached_plans, to_compile, dependencies, tabling_types);
-    // Now plan & compile this function.
 
+    // Compiling functions in post-order ensures dependencies are compiled first, and we have a cost available.
     for fid in post_order {
-        // Going in post-order ensures dependencies are compiled first, and we have a cost available.
+        debug_assert!(context.to_compile.contains_key(&fid)); // occurs exactly-once in post_order
         if let Some(function) = context.to_compile.remove(&fid) {
             let compiled_function = compile_function(statistics, function, &context, context.tabling_types.get(&fid).unwrap().clone())?;
             context.compiled.insert(fid.clone(), compiled_function);
@@ -181,84 +181,107 @@ impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompilatio
     }
 }
 
+
 fn determine_dependencies_and_tabling_types<FIDType: FunctionIDAPI>(
     to_compile: &HashMap<FIDType, AnnotatedFunction>,
 ) -> Result<(Vec<FIDType>, HashMap<FIDType, HashSet<FIDType>>, HashMap<FIDType, FunctionTablingType>), ExecutableCompilationError> {
     // Quick kosaraju for SCC finding
-    let mut forward_dependency_graph = HashMap::new();
-    let mut reverse_dependency_graph = HashMap::new();
+    let mut forward_dependencies = HashMap::new();
+    to_compile.keys().try_for_each(|fid| {
+        collect_dependencies(to_compile, &mut forward_dependencies, fid)
+    })?;
+
+    //
     let mut order = Vec::new();
-    for fid in to_compile.keys() {
-        construct_dependency_graphs(&to_compile, fid.clone(), &mut forward_dependency_graph, &mut reverse_dependency_graph, &mut order)?;
-    }
+    let mut cycle_breakers = HashSet::new();
+    to_compile.keys().for_each(|fid| {
+        determine_post_order_and_cycle_breakers(&forward_dependencies, &mut order, &mut cycle_breakers, &mut HashSet::new(), &mut HashSet::new(), fid);
+    });
     debug_assert!(to_compile.keys().all(|k| order.contains(k)));
-    let mut scc = HashSet::new();
-    let mut scc_mapping = HashMap::new();
-    for root in order.iter().rev()  {
-        if scc_mapping.contains_key(root) {
-            continue;
+
+
+    let mut reverse_dependencies = to_compile.keys().map(|k| (k.clone(), HashSet::new())).collect::<HashMap<_, _>>();
+    forward_dependencies.iter().for_each(|(k, v_set)| {
+        v_set.iter().for_each(|v| { reverse_dependencies.get_mut(v).unwrap().insert(k.clone()); });
+    });
+    let mut scc_mapping : HashMap<FIDType, FIDType> = HashMap::new();
+    order.iter().rev().for_each(|root| {
+        assign_scc(&reverse_dependencies, &mut scc_mapping, root, root);
+    });
+
+    let tabling_types = to_compile.keys().cloned().map(|fid| {
+        match cycle_breakers.contains(&fid) {
+            true => (fid.clone(), FunctionTablingType::Tabled(scc_mapping.get(&fid).unwrap().clone().into())),
+            false => (fid, FunctionTablingType::Untabled),
         }
-        scc.clear();
-        collect_scc(root.clone(), &reverse_dependency_graph, &mut scc);
-        scc.iter().for_each(|fid| {
-            scc_mapping.insert(fid.clone(), root);
-        });
-    }
+    }).collect::<HashMap<_, _>>();
 
-    let mut tabling_types = HashMap::new();
-    let mut open = HashSet::new();
-    let mut closed = HashSet::new();
-    for fid in forward_dependency_graph.keys() {
-        determine_tabling_types(&forward_dependency_graph, &scc_mapping, &mut tabling_types, &mut open, &mut closed, fid);
-    }
-
-    Ok((order, forward_dependency_graph, tabling_types))
+    Ok((order, forward_dependencies, tabling_types))
 }
 
-fn construct_dependency_graphs<FIDType: FunctionIDAPI>(
+fn collect_dependencies<FIDType: FunctionIDAPI>(
     to_compile: &HashMap<FIDType, AnnotatedFunction>,
-    fid: FIDType,
     forward_dependencies: &mut HashMap<FIDType, HashSet<FIDType>>,
-    reversed_dependencies: &mut HashMap<FIDType, HashSet<FIDType>>,
-    post_order: &mut Vec<FIDType>,
+    fid: &FIDType,
 ) -> Result<(), ExecutableCompilationError> {
     if forward_dependencies.contains_key(&fid) {
-        debug_assert!(reversed_dependencies.contains_key(&fid));
         return Ok(());
     }
-    debug_assert!(!reversed_dependencies.contains_key(&fid));
-    reversed_dependencies.insert(fid.clone(), HashSet::new());
 
     let function = to_compile.get(&fid).unwrap();
-    let mut all_called_ids = all_calls_in_pipeline(function.stages.as_slice())
+    let all_called_ids = all_calls_in_pipeline(function.stages.as_slice())
         .iter()
         .filter_map(|id| FIDType::try_from(id.clone()).ok())
         .filter(|id| to_compile.contains_key(id))
         .collect::<HashSet<_>>();
     forward_dependencies.insert(fid.clone(), all_called_ids.clone());
 
-    for called_id in &all_called_ids {
-        construct_dependency_graphs(to_compile, called_id.clone(), forward_dependencies, reversed_dependencies, post_order);
-        reversed_dependencies.get_mut(called_id).unwrap().insert(fid.clone());
-    }
-    post_order.push(fid);
+    all_called_ids.iter().try_for_each(|dep| collect_dependencies(to_compile, forward_dependencies, dep))?;
     Ok(())
 }
 
-
-fn collect_scc<FIDType: FunctionIDAPI>(
-    fid: FIDType,
-    reversed_dependency_graph: &HashMap<FIDType, HashSet<FIDType>>,
-    scc: &mut HashSet<FIDType>,
-) {
-    if scc.insert(fid.clone()) {
-        for other_fid in reversed_dependency_graph.get(&fid).unwrap() {
-            collect_scc(other_fid.clone(), reversed_dependency_graph, scc);
-        }
+fn determine_post_order_and_cycle_breakers<FIDType: FunctionIDAPI>(
+    forward_dependencies: &HashMap<FIDType, HashSet<FIDType>>,
+    post_order: &mut Vec<FIDType>,
+    cycle_breakers: &mut HashSet<FIDType>,
+    open: &mut HashSet<FIDType>,
+    closed: &mut HashSet<FIDType>,
+    fid: &FIDType,
+)  {
+    if closed.contains(fid) {
+        return;
     }
+    if open.contains(fid) {
+        cycle_breakers.insert(fid.clone());
+        return;
+    }
+
+    open.insert(fid.clone());
+    forward_dependencies.get(fid).unwrap().iter().for_each(|dep| {
+        determine_post_order_and_cycle_breakers(forward_dependencies, post_order, cycle_breakers, open, closed, dep);
+    });
+    open.remove(fid);
+    closed.insert(fid.clone());
+
+    post_order.push(fid.clone());
 }
 
-fn determine_tabling_types<FIDType:FunctionIDAPI>(
+fn assign_scc<FIDType: FunctionIDAPI>(
+    reversed_dependencies: &HashMap<FIDType, HashSet<FIDType>>,
+    scc_mapping: &mut HashMap<FIDType, FIDType>,
+    root: &FIDType,
+    fid: &FIDType,
+) {
+    if scc_mapping.contains_key(fid) {
+        return;
+    }
+    scc_mapping.insert(fid.clone(), root.clone());
+    reversed_dependencies.get(fid).unwrap().iter().for_each(|rdep| {
+        assign_scc(reversed_dependencies, scc_mapping, root, rdep);
+    })
+}
+
+fn determine_tabling_types<FIDType: FunctionIDAPI>(
     dependencies: &HashMap<FIDType, HashSet<FIDType>>,
     scc_mapping: &HashMap<FIDType, &FIDType>,
     tabling_types: &mut HashMap<FIDType, FunctionTablingType>,
