@@ -151,31 +151,25 @@ impl PatternExecutor {
                     };
                     let mut negation_suspensions = QueryPatternSuspensions::new();
                     negation_suspensions.record_nested_pattern_entry();
-                    match inner.batch_continue(context, interrupt, tabled_functions, &mut negation_suspensions)? {
+                    let result = inner.batch_continue(context, interrupt, tabled_functions, &mut negation_suspensions)?;
+                    negation_suspensions.record_nested_pattern_exit();
+                    match result {
                         None => {
-                            debug_assert!(negation_suspensions.is_empty()); // TODO: I don't think I've handled this case
-                            self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
+                            if !negation_suspensions.is_empty() {
+                                for function_state in tabled_functions.iterate_states() {
+                                    let mut guard = function_state.executor_state.try_lock().unwrap();
+                                    if guard.pattern_executor.has_empty_control_stack() {
+                                        guard.prepare_to_retry_suspended();
+                                    }
+                                }
+                                negation_suspensions.prepare_restoring_from_suspending();
+                                inner.prepare_to_restore_from_suspension(0);
+                            } else {
+                                self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
+                            }
                         }
                         Some(_) => inner.reset(), // fail
                     };
-                    negation_suspensions.record_nested_pattern_exit();
-                    if !negation_suspensions.is_empty() {
-                        // TODO: I'm not sure this is right. Shouldn't this be done before the match on batch_continue?
-                        for function_state in tabled_functions.iterate_states() {
-                            let mut guard = function_state.executor_state.try_lock().unwrap();
-                            if guard.pattern_executor.has_empty_control_stack() {
-                                guard.prepare_to_retry_suspended();
-                            }
-                            negation_suspensions.prepare_restoring_from_suspending();
-                            // Re-borrow inner to keep borrow-checker happy.
-                            let StepExecutors::Nested(NestedPatternExecutor::Negation(Negation { inner })) =
-                                &mut self.executors[index.0]
-                            else {
-                                unreachable!();
-                            };
-                            inner.prepare_to_restore_from_suspension(0);
-                        }
-                    }
                 }
                 ControlInstruction::ExecuteDisjunction(ExecuteDisjunction { index, branch_index, input }) => {
                     let NestedPatternExecutor::Disjunction(disjunction) = &mut executors[index.0].unwrap_nested()
