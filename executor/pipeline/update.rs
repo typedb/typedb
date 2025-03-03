@@ -12,18 +12,16 @@ use compiler::executable::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
-use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::Batch,
     pipeline::{
         insert::prepare_output_rows,
         stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, WrittenRowsIterator,
     },
     profile::StageProfile,
-    row::{MaybeOwnedRow, Row},
+    row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
