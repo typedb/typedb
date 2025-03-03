@@ -55,7 +55,7 @@ impl StreamModifierExecutor {
         Self::Last { inner }
     }
 
-    pub(crate) fn get_inner(&mut self) -> &mut PatternExecutor {
+    pub(crate) fn inner(&mut self) -> &mut PatternExecutor {
         match self {
             Self::Select { inner, .. } => inner,
             Self::Offset { inner, .. } => inner,
@@ -65,8 +65,28 @@ impl StreamModifierExecutor {
         }
     }
 
+    pub(crate) fn create_mapper(&self) -> StreamModifierResultMapper {
+        match self {
+            StreamModifierExecutor::Select { removed_positions, .. } => {
+                StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()))
+            }
+            StreamModifierExecutor::Offset { offset, .. } => {
+                StreamModifierResultMapper::Offset(OffsetMapper::new(*offset))
+            }
+            StreamModifierExecutor::Limit { limit, .. } => {
+                StreamModifierResultMapper::Limit(LimitMapper::new(*limit))
+            }
+            StreamModifierExecutor::Distinct { output_width, .. } => {
+                StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width))
+            }
+            StreamModifierExecutor::Last { .. } => {
+                StreamModifierResultMapper::Last(LastMapper::new())
+            }
+        }
+    }
+
     pub(crate) fn reset(&mut self) {
-        self.get_inner().reset()
+        self.inner().reset()
     }
 }
 

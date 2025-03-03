@@ -210,7 +210,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
-                    let inner = &mut executors[index.0].unwrap_stream_modifier().get_inner();
+                    let inner = &mut executors[index.0].unwrap_stream_modifier().inner();
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let unmapped = inner.batch_continue(context, interrupt, tabled_functions, suspensions)?;
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
@@ -234,18 +234,28 @@ impl PatternExecutor {
                     self.execute_tabled_call(context, interrupt, tabled_functions, suspensions, index)?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
-                    let (pattern, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
-                    match pattern.batch_continue(context, interrupt, tabled_functions, suspensions)? {
+                    let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    let mut inner_suspensions = QueryPatternSuspensions::new();
+                    inner_suspensions.record_nested_pattern_entry();
+                    let result = inner.batch_continue(context, interrupt, tabled_functions, &mut inner_suspensions)?;
+                    inner_suspensions.record_nested_pattern_exit();
+                    match result {
+                        None => {
+                            if !inner_suspensions.is_empty() {
+                                tabled_functions.may_prepare_to_retry_suspended();
+                                inner_suspensions.prepare_restoring_from_suspending();
+                                inner.prepare_to_restore_from_suspension(0);
+                            } else {
+                                let iterator = collector.collected_to_iterator(context);
+                                self.control_stack
+                                    .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
+                            }
+                        }
                         Some(batch) => {
                             collector.accept(context, batch);
                             self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index }))
-                        }
-                        None => {
-                            let iterator = collector.collected_to_iterator(context);
-                            self.control_stack
-                                .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }))
-                        }
-                    }
+                        },
+                    };
                 }
                 ControlInstruction::StreamCollected(StreamCollected { index, mut iterator }) => {
                     if let Some(batch) = iterator.batch_continue()? {
@@ -354,53 +364,11 @@ impl PatternExecutor {
                 }
             }
         } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
-            match stream_modifier {
-                StreamModifierExecutor::Select { inner, removed_positions } => {
-                    let mapper = StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()));
-                    inner.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                        index,
-                        mapper,
-                        input: input.clone().into_owned(),
-                    }));
-                }
-                StreamModifierExecutor::Offset { inner, offset } => {
-                    let mapper = StreamModifierResultMapper::Offset(OffsetMapper::new(*offset));
-                    inner.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                        index,
-                        mapper,
-                        input: input.clone().into_owned(),
-                    }));
-                }
-                StreamModifierExecutor::Limit { inner, limit } => {
-                    let mapper = StreamModifierResultMapper::Limit(LimitMapper::new(*limit));
-                    inner.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                        index,
-                        mapper,
-                        input: input.clone().into_owned(),
-                    }));
-                }
-                StreamModifierExecutor::Distinct { inner, output_width, .. } => {
-                    let mapper = StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width));
-                    inner.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                        index,
-                        mapper,
-                        input: input.clone().into_owned(),
-                    }));
-                }
-                StreamModifierExecutor::Last { inner } => {
-                    let mapper = StreamModifierResultMapper::Last(LastMapper::new());
-                    inner.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                        index,
-                        mapper,
-                        input: input.clone().into_owned(),
-                    }));
-                }
-            }
+            stream_modifier.inner().prepare(FixedBatch::from(input.as_reference()));
+            let mapper = stream_modifier.create_mapper();
+            self.control_stack.push(ControlInstruction::ExecuteStreamModifier( ExecuteStreamModifier {
+                index, mapper, input: input.clone().into_owned()
+            }));
         } else {
             unreachable!();
         }
@@ -497,27 +465,14 @@ fn restore_suspension(
                         }))
                     }
                 },
-                StepExecutors::StreamModifier(StreamModifierExecutor::Distinct { inner, output_width }) => {
-                    inner.prepare_to_restore_from_suspension(depth);
+                StepExecutors::StreamModifier(modifier) => {
+                    modifier.inner().prepare_to_restore_from_suspension(depth);
                     control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index: executor_index,
-                        mapper: StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width)),
+                        mapper: modifier.create_mapper(),
                         input: input_row.into_owned(),
                     }))
                 }
-                StepExecutors::StreamModifier(StreamModifierExecutor::Select { inner, removed_positions }) => {
-                    inner.prepare_to_restore_from_suspension(depth);
-                    control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                        index: executor_index,
-                        mapper: StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone())),
-                        input: input_row.into_owned(),
-                    }))
-                }
-                StepExecutors::StreamModifier(StreamModifierExecutor::Offset { .. })
-                | StepExecutors::StreamModifier(StreamModifierExecutor::Limit { .. })
-                | StepExecutors::StreamModifier(StreamModifierExecutor::Last { .. })=> {
-                    unreachable!("Illegal stream modifier in recursive function")
-                },
                 StepExecutors::Immediate(_)
                 | StepExecutors::CollectingStage(_)
                 | StepExecutors::TabledCall(_)
