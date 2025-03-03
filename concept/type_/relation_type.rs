@@ -302,14 +302,10 @@ impl RelationType {
         self.get_relates_declared(snapshot, type_manager)?
             .iter()
             .filter_map(|relates| {
-                let is_explicit = match relates.is_implicit(snapshot, type_manager) {
-                    Ok(is_implicit) => !is_implicit,
+                match relates.is_implicit(snapshot, type_manager) {
+                    Ok(false) => Some(Ok(*relates)),
+                    Ok(true) => None,
                     Err(err) => return Some(Err(err)),
-                };
-                if is_explicit {
-                    Some(Ok(*relates))
-                } else {
-                    None
                 }
             })
             .try_collect()
@@ -331,14 +327,10 @@ impl RelationType {
         self.get_relates(snapshot, type_manager)?
             .iter()
             .filter_map(|relates| {
-                let is_explicit = match relates.is_implicit(snapshot, type_manager) {
-                    Ok(is_implicit) => !is_implicit,
+                match relates.is_implicit(snapshot, type_manager) {
+                    Ok(false) => Some(Ok(*relates)),
+                    Ok(true) => None,
                     Err(err) => return Some(Err(err)),
-                };
-                if is_explicit {
-                    Some(Ok(*relates))
-                } else {
-                    None
                 }
             })
             .try_collect()
