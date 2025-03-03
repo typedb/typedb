@@ -57,9 +57,9 @@ pub enum ExecutableReturn {
     Reduce(Arc<ReduceRowsExecutable>),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionTablingType {
-    Tabled,
+    Tabled(FunctionID),
     Untabled,
 }
 
@@ -110,16 +110,46 @@ impl FunctionCallCostProvider for ExecutableFunctionRegistry {
     }
 }
 
-struct FunctionCompiler<'a, FIDType: FunctionIDAPI> {
+pub(crate) fn compile_single_untabled_function(
+    statistics: &Statistics,
+    cached_plans: &ExecutableFunctionRegistry,
+    to_compile: AnnotatedFunction,
+) -> Result<ExecutableFunction, ExecutableCompilationError> {
+    compile_function(statistics, to_compile, cached_plans, FunctionTablingType::Untabled)
+}
+
+pub(crate) fn compile_functions<FIDType: FunctionIDAPI>(
+    statistics: &Statistics,
+    cached_plans: &ExecutableFunctionRegistry,
+    mut to_compile: HashMap<FIDType, AnnotatedFunction>,
+) -> Result<HashMap<FIDType, ExecutableFunction>, ExecutableCompilationError> {
+    // TODO: Cache compiled schema functions?
+    let (post_order, dependencies, tabling_types) = determine_dependencies_and_tabling_types(&to_compile)?;
+    let mut context = FunctionCompilationContext::new(cached_plans, to_compile, dependencies, tabling_types);
+    // Now plan & compile this function.
+
+    for fid in post_order {
+        // Going in post-order ensures dependencies are compiled first, and we have a cost available.
+        if let Some(function) = context.to_compile.remove(&fid) {
+            let compiled_function = compile_function(statistics, function, &context, context.tabling_types.get(&fid).unwrap().clone())?;
+            context.compiled.insert(fid.clone(), compiled_function);
+        }
+    }
+    Ok(context.compiled)
+}
+
+// Private
+struct FunctionCompilationContext<'a, FIDType: FunctionIDAPI> {
     precompiled: &'a ExecutableFunctionRegistry,
     to_compile: HashMap<FIDType, AnnotatedFunction>,
     compiled: HashMap<FIDType, ExecutableFunction>,
-    must_table: HashSet<FIDType>,
+    dependencies: HashMap<FIDType, HashSet<FIDType>>,
+    tabling_types: HashMap<FIDType, FunctionTablingType>,
 }
 
-impl<'a, FIDType: FunctionIDAPI> FunctionCompiler<'a, FIDType> {
-    fn new(cached_plans: &'a ExecutableFunctionRegistry, to_compile: HashMap<FIDType, AnnotatedFunction>) -> Self {
-        FunctionCompiler { precompiled: cached_plans, to_compile, compiled: HashMap::new(), must_table: HashSet::new() }
+impl<'a, FIDType: FunctionIDAPI> FunctionCompilationContext<'a, FIDType> {
+    fn new(cached_plans: &'a ExecutableFunctionRegistry, to_compile: HashMap<FIDType, AnnotatedFunction>, dependencies: HashMap<FIDType, HashSet<FIDType>>, tabling_types: HashMap<FIDType, FunctionTablingType>) -> Self {
+        FunctionCompilationContext { precompiled: cached_plans, to_compile, compiled: HashMap::new(), dependencies, tabling_types }
     }
 
     pub(crate) fn get_executable_function(&self, function_id: &FunctionID) -> Option<&ExecutableFunction> {
@@ -137,13 +167,13 @@ impl<'a, FIDType: FunctionIDAPI> FunctionCompiler<'a, FIDType> {
     }
 }
 
-impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompiler<'a, FIDType> {
+impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompilationContext<'a, FIDType> {
     fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
         if let Some(function) = self.get_executable_function(function_id) {
             function.single_call_cost.clone()
         } else {
             debug_assert!(matches!(
-                FIDType::try_from(function_id.clone()).map(|id| self.must_table.contains(&id)),
+                FIDType::try_from(function_id.clone()).map(|id| matches!(self.tabling_types.get(&id), Some(FunctionTablingType::Tabled(_)))),
                 Ok(true)
             ));
             self.cycle_breaking_cost()
@@ -151,66 +181,110 @@ impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompiler<'
     }
 }
 
-pub(crate) fn compile_functions<FIDType: FunctionIDAPI>(
-    statistics: &Statistics,
-    cached_plans: &ExecutableFunctionRegistry,
-    mut to_compile: HashMap<FIDType, AnnotatedFunction>,
-) -> Result<HashMap<FIDType, ExecutableFunction>, ExecutableCompilationError> {
-    // TODO: Cache compiled schema functions?
-    let mut planner = FunctionCompiler::new(cached_plans, to_compile);
-    let mut cycle_detection = HashSet::new();
-    while !planner.to_compile.is_empty() {
-        let id = planner.to_compile.keys().find_or_first(|_| true).unwrap().clone();
-        compile_functions_impl(statistics, &mut planner, &mut cycle_detection, id)?;
+fn determine_dependencies_and_tabling_types<FIDType: FunctionIDAPI>(
+    to_compile: &HashMap<FIDType, AnnotatedFunction>,
+) -> Result<(Vec<FIDType>, HashMap<FIDType, HashSet<FIDType>>, HashMap<FIDType, FunctionTablingType>), ExecutableCompilationError> {
+    // Quick kosaraju for SCC finding
+    let mut forward_dependency_graph = HashMap::new();
+    let mut reverse_dependency_graph = HashMap::new();
+    let mut order = Vec::new();
+    for fid in to_compile.keys() {
+        construct_dependency_graphs(&to_compile, fid.clone(), &mut forward_dependency_graph, &mut reverse_dependency_graph, &mut order)?;
+    }
+    debug_assert!(to_compile.keys().all(|k| order.contains(k)));
+    let mut scc = HashSet::new();
+    let mut scc_mapping = HashMap::new();
+    for root in order.iter().rev()  {
+        if scc_mapping.contains_key(root) {
+            continue;
+        }
+        scc.clear();
+        collect_scc(root.clone(), &reverse_dependency_graph, &mut scc);
+        scc.iter().for_each(|fid| {
+            scc_mapping.insert(fid.clone(), root);
+        });
     }
 
-    Ok(planner.compiled)
+    let mut tabling_types = HashMap::new();
+    let mut open = HashSet::new();
+    let mut closed = HashSet::new();
+    for fid in forward_dependency_graph.keys() {
+        determine_tabling_types(&forward_dependency_graph, &scc_mapping, &mut tabling_types, &mut open, &mut closed, fid);
+    }
+
+    Ok((order, forward_dependency_graph, tabling_types))
 }
 
-fn compile_functions_impl<'a, FIDType: FunctionIDAPI>(
-    statistics: &Statistics,
-    planner: &mut FunctionCompiler<'a, FIDType>,
-    cycle_detection: &mut HashSet<FIDType>,
-    current: FIDType,
+fn construct_dependency_graphs<FIDType: FunctionIDAPI>(
+    to_compile: &HashMap<FIDType, AnnotatedFunction>,
+    fid: FIDType,
+    forward_dependencies: &mut HashMap<FIDType, HashSet<FIDType>>,
+    reversed_dependencies: &mut HashMap<FIDType, HashSet<FIDType>>,
+    post_order: &mut Vec<FIDType>,
 ) -> Result<(), ExecutableCompilationError> {
-    let function = planner.to_compile.remove(&current).unwrap();
-    cycle_detection.insert(current.clone());
-    let all_calls = all_calls_in_pipeline(function.stages.as_slice());
-    // Plan all dependencies or cycle break.
-    for called_fid in all_calls {
-        if planner.get_executable_function(&called_fid).is_some() {
-            continue;
-        } else {
-            let Ok(as_id) = FIDType::try_from(called_fid) else { unreachable!("Has to be in get_executable_function") };
-            if cycle_detection.contains(&as_id) {
-                planner.must_table.insert(as_id);
-                // We compile this when we return all the way. The FunctionCostProvider should return a default cost for any uncompiled in must_table
-            } else {
-                debug_assert!(planner.to_compile.contains_key(&as_id));
-                compile_functions_impl(statistics, planner, cycle_detection, as_id.clone())?;
-            }
-        }
+    if forward_dependencies.contains_key(&fid) {
+        debug_assert!(reversed_dependencies.contains_key(&fid));
+        return Ok(());
     }
-    cycle_detection.remove(&current); // I don't think we have to remove from cycle detection for correctness.
+    debug_assert!(!reversed_dependencies.contains_key(&fid));
+    reversed_dependencies.insert(fid.clone(), HashSet::new());
 
-    // Now plan & compile this function.
-    let must_table =
-        if planner.must_table.contains(&current) { FunctionTablingType::Tabled } else { FunctionTablingType::Untabled };
-    let compiled_function = compile_function(statistics, function, planner, must_table)?;
-    planner.compiled.insert(current.clone(), compiled_function);
+    let function = to_compile.get(&fid).unwrap();
+    let mut all_called_ids = all_calls_in_pipeline(function.stages.as_slice())
+        .iter()
+        .filter_map(|id| FIDType::try_from(id.clone()).ok())
+        .filter(|id| to_compile.contains_key(id))
+        .collect::<HashSet<_>>();
+    forward_dependencies.insert(fid.clone(), all_called_ids.clone());
+
+    for called_id in &all_called_ids {
+        construct_dependency_graphs(to_compile, called_id.clone(), forward_dependencies, reversed_dependencies, post_order);
+        reversed_dependencies.get_mut(called_id).unwrap().insert(fid.clone());
+    }
+    post_order.push(fid);
     Ok(())
 }
 
-pub(crate) fn compile_single_untabled_function(
-    statistics: &Statistics,
-    cached_plans: &ExecutableFunctionRegistry,
-    to_compile: AnnotatedFunction,
-) -> Result<ExecutableFunction, ExecutableCompilationError> {
-    let planner = FunctionCompiler::new(cached_plans, HashMap::<usize, _>::new());
-    compile_function(statistics, to_compile, &planner, FunctionTablingType::Untabled)
+
+fn collect_scc<FIDType: FunctionIDAPI>(
+    fid: FIDType,
+    reversed_dependency_graph: &HashMap<FIDType, HashSet<FIDType>>,
+    scc: &mut HashSet<FIDType>,
+) {
+    if scc.insert(fid.clone()) {
+        for other_fid in reversed_dependency_graph.get(&fid).unwrap() {
+            collect_scc(other_fid.clone(), reversed_dependency_graph, scc);
+        }
+    }
 }
 
-pub(crate) fn compile_function(
+fn determine_tabling_types<FIDType:FunctionIDAPI>(
+    dependencies: &HashMap<FIDType, HashSet<FIDType>>,
+    scc_mapping: &HashMap<FIDType, &FIDType>,
+    tabling_types: &mut HashMap<FIDType, FunctionTablingType>,
+    open: &mut HashSet<FIDType>,
+    closed: &mut HashSet<FIDType>,
+    fid: &FIDType,
+) {
+    if closed.contains(fid) {
+        return;
+    }
+    if open.contains(fid) {
+        tabling_types.insert(fid.clone(), FunctionTablingType::Tabled((*scc_mapping.get(fid).unwrap()).clone().into()));
+        return;
+    }
+    open.insert(fid.clone());
+    dependencies.get(fid).unwrap().iter().for_each(|dependency_fid| {
+        determine_tabling_types(dependencies, scc_mapping, tabling_types, open, closed, dependency_fid);
+    });
+    open.remove(&fid);
+    closed.insert(fid.clone());
+    if !tabling_types.contains_key(fid) {
+        tabling_types.insert(fid.clone(), FunctionTablingType::Untabled);
+    }
+}
+
+fn compile_function(
     statistics: &Statistics,
     function: AnnotatedFunction,
     call_cost_provider: &impl FunctionCallCostProvider,
