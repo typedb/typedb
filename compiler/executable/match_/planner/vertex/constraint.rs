@@ -687,14 +687,13 @@ impl Costed for HasPlanner<'_> {
             attribute_size,
             attribute_selectivity,
         );
-        let cost: f64;
-        let direction = fix_dir.unwrap_or(Direction::canonical_if(scan_size_canonical <= scan_size_reverse));
 
-        if direction == Direction::Canonical {
-            cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical;
+        let direction = fix_dir.unwrap_or(Direction::canonical_if(scan_size_canonical <= scan_size_reverse));
+        let cost = if direction == Direction::Canonical {
+            OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_canonical
         } else {
-            cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
-        }
+            OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse
+        };
         Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
     }
 }

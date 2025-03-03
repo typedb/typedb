@@ -1486,6 +1486,7 @@ impl ConjunctionPlan<'_> {
     ) -> Result<(), QueryPlanningError> {
         match &self.graph.elements()[&VertexId::Pattern(pattern)] {
             PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
+
             PlannerVertex::FunctionCall(call_planner) => {
                 // We push exactly the same as if it weren't a check.
                 let call_binding = call_planner.call_binding;
@@ -1515,6 +1516,7 @@ impl ConjunctionPlan<'_> {
                 });
                 match_builder.push_step(&HashMap::new(), step_builder.into());
             }
+
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
                     match_builder.current_outputs.iter().copied(),
@@ -1532,12 +1534,14 @@ impl ConjunctionPlan<'_> {
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
                 )
             }
+
             PlannerVertex::Is(is) => {
                 let lhs = is.is().lhs().as_variable().unwrap();
                 let rhs = is.is().rhs().as_variable().unwrap();
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
                 match_builder.push_check(&[lhs, rhs], check)
             }
+
             PlannerVertex::LinksDeduplication(deduplication) => {
                 let role1 = deduplication.links_deduplication().links1().role_type().as_variable().unwrap();
                 let player1 = deduplication.links_deduplication().links1().player().as_variable().unwrap();
@@ -1547,6 +1551,7 @@ impl ConjunctionPlan<'_> {
                     .map(match_builder.position_mapping());
                 match_builder.push_check(&[role1, player1, role2, player2], check)
             }
+
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();
                 let lhs = comparison.lhs();
@@ -1579,11 +1584,15 @@ impl ConjunctionPlan<'_> {
                 let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
                 match_builder.push_check(&vars, check)
             }
+
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
+
             PlannerVertex::Unsatisfiable(_) => match_builder.push_check(&Vec::new(), CheckInstruction::Unsatisfiable),
+
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
             }
+
             PlannerVertex::Disjunction(disjunction) => {
                 let step_builder = disjunction
                     .builder()
