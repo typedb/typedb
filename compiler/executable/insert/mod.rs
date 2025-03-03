@@ -8,7 +8,6 @@ use std::error::Error;
 
 use ir::pattern::ParameterID;
 use itertools::Itertools;
-use typeql::match_;
 
 use crate::VariablePosition;
 
