@@ -5,11 +5,9 @@
  */
 
 use std::sync::Arc;
+use answer::variable::Variable;
 
-use compiler::executable::insert::{
-    executable::InsertExecutable,
-    instructions::{ConceptInstruction, ConnectionInstruction},
-};
+use compiler::executable::insert::{executable::InsertExecutable, instructions::{ConceptInstruction, ConnectionInstruction}, VariableSource};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
@@ -61,6 +59,13 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
 
+        // prepare_output_rows copies unmapped
+        debug_assert!(executable.output_row_schema.iter().enumerate().all(|(i, source_opt)| {
+            match source_opt {
+                Some((_, VariableSource::Input(position))) => position.as_usize() == i,
+                None | Some((_, VariableSource::Inserted)) => true,
+            }
+        }));
         let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),

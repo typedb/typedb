@@ -61,8 +61,7 @@ pub fn compile(
     desired_output_variable_positions: Option<HashMap<Variable, VariablePosition>>,
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
-    debug_assert!(desired_output_variable_positions
-        .clone()
+    debug_assert!(desired_output_variable_positions.as_ref()
         .map(|positions| { input_variables.iter().all(|(k, v)| positions.get(k).unwrap() == v) })
         .unwrap_or(true));
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());
@@ -412,8 +411,6 @@ pub(crate) fn prepare_output_row_schema(
             input_positions.get(var).map(|pos| VariableSource::Input(*pos)).unwrap_or(VariableSource::Inserted);
         output_row_schema[pos.position as usize] = Some((*var, source));
     });
-    // This assumption is made in prepare_output_rows, though it's likely to be violated only for put which doesn't make that assumption.
-    debug_assert!(input_positions.iter().all(|(k, v)| output_positions.get(k) == Some(v)));
     output_row_schema
 }
 

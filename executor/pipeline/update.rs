@@ -10,6 +10,7 @@ use compiler::executable::{
     insert::instructions::ConceptInstruction,
     update::{executable::UpdateExecutable, instructions::ConnectionInstruction},
 };
+use compiler::executable::insert::VariableSource;
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
@@ -60,6 +61,13 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
 
+        // prepare_output_rows copies unmapped
+        debug_assert!(executable.output_row_schema.iter().enumerate().all(|(i, source_opt)| {
+            match source_opt {
+                Some((_, VariableSource::Input(position))) => position.as_usize() == i,
+                None | Some((_, VariableSource::Inserted)) => true,
+            }
+        }));
         let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
             Ok(output_rows) => output_rows,
             Err(err) => return Err((err, context)),
