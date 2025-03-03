@@ -19,6 +19,7 @@ use encoding::{
     value::label::Label,
     Prefixed,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::constants::snapshot::BUFFER_KEY_INLINE;
@@ -293,12 +294,46 @@ impl RelationType {
         type_manager.get_relation_type_relates_declared(snapshot, *self)
     }
 
+    pub fn get_relates_explicit_declared(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
+        self.get_relates_declared(snapshot, type_manager)?
+            .iter()
+            .filter_map(|relates| {
+                match relates.is_implicit(snapshot, type_manager) {
+                    Ok(false) => Some(Ok(*relates)),
+                    Ok(true) => None,
+                    Err(err) => return Some(Err(err)),
+                }
+            })
+            .try_collect()
+    }
+
     pub fn get_relates<'m>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<Relates>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_relates(snapshot, *self)
+    }
+
+    pub fn get_relates_explicit(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
+        self.get_relates(snapshot, type_manager)?
+            .iter()
+            .filter_map(|relates| {
+                match relates.is_implicit(snapshot, type_manager) {
+                    Ok(false) => Some(Ok(*relates)),
+                    Ok(true) => None,
+                    Err(err) => return Some(Err(err)),
+                }
+            })
+            .try_collect()
     }
 
     pub fn get_relates_with_specialised<'m>(
@@ -314,7 +349,7 @@ impl RelationType {
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
     ) -> Result<HashSet<RoleType>, Box<ConceptReadError>> {
-        Ok(self.get_relates_declared(snapshot, type_manager)?.iter().map(|relates| relates.role()).collect())
+        Ok(self.get_relates_explicit_declared(snapshot, type_manager)?.iter().map(|relates| relates.role()).collect())
     }
 
     pub fn get_related_role_types(

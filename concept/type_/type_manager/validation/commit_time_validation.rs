@@ -118,7 +118,7 @@ impl CommitTimeValidation {
         Self::validate_type_constraints(snapshot, type_manager, type_, validation_errors)?;
         Self::validate_object_type(snapshot, type_manager, type_.into_object_type(), validation_errors)?;
 
-        Self::validate_relation_type_has_relates(snapshot, type_manager, type_, validation_errors)?;
+        Self::validate_non_abstract_relation_type_has_relates(snapshot, type_manager, type_, validation_errors)?;
         Self::validate_relation_type_role_types(snapshot, type_manager, type_, validation_errors)?;
 
         Self::validate_relates(snapshot, type_manager, type_, validation_errors)?;
@@ -449,18 +449,21 @@ impl CommitTimeValidation {
         Ok(())
     }
 
-    fn validate_relation_type_has_relates(
+    fn validate_non_abstract_relation_type_has_relates(
         snapshot: &impl ReadableSnapshot,
         type_manager: &TypeManager,
         relation_type: RelationType,
         validation_errors: &mut Vec<Box<SchemaValidationError>>,
     ) -> Result<(), Box<ConceptReadError>> {
-        let relates = relation_type.get_relates(snapshot, type_manager)?;
-
-        if relates.is_empty() {
-            validation_errors.push(Box::new(SchemaValidationError::RelationTypeMustRelateAtLeastOneRole {
-                relation: get_label_or_concept_read_err(snapshot, type_manager, relation_type)?,
-            }));
+        if !relation_type.is_abstract(snapshot, type_manager)? {
+            let relates = relation_type.get_relates(snapshot, type_manager)?;
+            if relates.is_empty() {
+                validation_errors.push(Box::new(
+                    SchemaValidationError::NonAbstractRelationTypeMustRelateAtLeastOneRole {
+                        relation: get_label_or_concept_read_err(snapshot, type_manager, relation_type)?,
+                    },
+                ));
+            }
         }
 
         Ok(())
