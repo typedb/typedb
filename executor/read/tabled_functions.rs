@@ -72,6 +72,15 @@ impl TabledFunctions {
     pub(crate) fn total_table_size(&self) -> usize {
         self.state.values().map(|state| state.table.read().unwrap().answers.len()).sum()
     }
+
+    pub(crate) fn may_prepare_to_retry_suspended(&self) {
+        for function_state in self.iterate_states() {
+            let mut guard = function_state.executor_state.try_lock().unwrap();
+            if guard.pattern_executor.has_empty_control_stack() {
+                guard.prepare_to_retry_suspended();
+            }
+        }
+    }
 }
 
 pub(crate) struct TabledFunctionState {
@@ -87,7 +96,7 @@ pub(crate) struct TabledFunctionPatternExecutorState {
 }
 
 impl TabledFunctionPatternExecutorState {
-    pub(crate) fn prepare_to_retry_suspended(&mut self) {
+    fn prepare_to_retry_suspended(&mut self) {
         debug_assert!(self.pattern_executor.has_empty_control_stack());
         self.pattern_executor.reset();
         if !self.suspensions.is_empty() {

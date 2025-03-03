@@ -84,10 +84,8 @@ impl MatchExecutor {
             //  when the function returns None, AND it's possibly the head of a cycle.
             while return_batch.is_none() && !self.suspensions.is_empty() {
                 self.last_seen_table_size = self.tabled_functions.total_table_size();
-                for function_state in self.tabled_functions.iterate_states() {
-                    let mut guard = function_state.executor_state.try_lock().unwrap();
-                    guard.prepare_to_retry_suspended();
-                }
+                debug_assert!(self.tabled_functions.iterate_states().all(|state| state.executor_state.try_lock().unwrap().pattern_executor.has_empty_control_stack()));
+                self.tabled_functions.may_prepare_to_retry_suspended();
                 // And on the entry
                 self.suspensions.prepare_restoring_from_suspending();
                 self.entry.prepare_to_restore_from_suspension(0);

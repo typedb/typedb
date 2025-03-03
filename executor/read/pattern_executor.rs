@@ -156,12 +156,7 @@ impl PatternExecutor {
                     match result {
                         None => {
                             if !negation_suspensions.is_empty() {
-                                for function_state in tabled_functions.iterate_states() {
-                                    let mut guard = function_state.executor_state.try_lock().unwrap();
-                                    if guard.pattern_executor.has_empty_control_stack() {
-                                        guard.prepare_to_retry_suspended();
-                                    }
-                                }
+                                tabled_functions.may_prepare_to_retry_suspended();
                                 negation_suspensions.prepare_restoring_from_suspending();
                                 inner.prepare_to_restore_from_suspension(0);
                             } else {
