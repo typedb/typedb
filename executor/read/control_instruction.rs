@@ -52,6 +52,7 @@ pub(super) struct ExecuteInlinedFunction {
 pub(super) struct ExecuteNegation {
     pub(super) index: ExecutorIndex,
     pub(super) input: MaybeOwnedRow<'static>,
+    pub(super) last_seen_table_size: Option<usize>,
 }
 
 #[derive(Debug)]
@@ -69,6 +70,7 @@ pub(super) struct TabledCall {
 #[derive(Debug)]
 pub(super) struct CollectingStage {
     pub(super) index: ExecutorIndex,
+    pub(super) last_seen_table_size: Option<usize>,
 }
 
 #[derive(Debug)]

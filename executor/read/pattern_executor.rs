@@ -143,7 +143,7 @@ impl PatternExecutor {
                         self.push_nested_pattern(index, unmapped_input);
                     }
                 }
-                ControlInstruction::ExecuteNegation(ExecuteNegation { index, input }) => {
+                ControlInstruction::ExecuteNegation(ExecuteNegation { index, input, last_seen_table_size: previous_table_size }) => {
                     let StepExecutors::Nested(NestedPatternExecutor::Negation(Negation { inner })) =
                         &mut executors[index.0]
                     else {
@@ -155,11 +155,18 @@ impl PatternExecutor {
                     negation_suspensions.record_nested_pattern_exit();
                     match result {
                         None => {
-                            compile_error!("We have to track table size here for termination");
                             if !negation_suspensions.is_empty() {
-                                tabled_functions.may_prepare_to_retry_suspended();
-                                negation_suspensions.prepare_restoring_from_suspending();
-                                inner.prepare_to_restore_from_suspension(0);
+                                let current_table_size = tabled_functions.total_table_size();
+                                if previous_table_size != Some(current_table_size) {
+                                    // retry
+                                    tabled_functions.may_prepare_to_retry_suspended();
+                                    negation_suspensions.prepare_restoring_from_suspending();
+                                    inner.prepare_to_restore_from_suspension(0);
+                                    self.control_stack.push(ControlInstruction::ExecuteNegation(ExecuteNegation { index, input, last_seen_table_size: Some(current_table_size) }))
+                                } else {
+                                    // There are no answers to be found.
+                                    self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
+                                }
                             } else {
                                 self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
                             }
@@ -234,8 +241,9 @@ impl PatternExecutor {
                 ControlInstruction::ExecuteTabledCall(TabledCall { index }) => {
                     self.execute_tabled_call(context, interrupt, tabled_functions, suspensions, index)?;
                 }
-                ControlInstruction::CollectingStage(CollectingStage { index }) => {
+                ControlInstruction::CollectingStage(CollectingStage { index, last_seen_table_size: previous_table_size }) => {
                     let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    compile_error!("We throw this inner_suspensions off in the retry if we find answers");
                     let mut inner_suspensions = QueryPatternSuspensions::new();
                     inner_suspensions.record_nested_pattern_entry();
                     let result = inner.batch_continue(context, interrupt, tabled_functions, &mut inner_suspensions)?;
@@ -243,19 +251,30 @@ impl PatternExecutor {
                     match result {
                         None => {
                             if !inner_suspensions.is_empty() {
-                                compile_error!("We have to track table size here for termination");
-                                tabled_functions.may_prepare_to_retry_suspended();
-                                inner_suspensions.prepare_restoring_from_suspending();
-                                inner.prepare_to_restore_from_suspension(0);
+                                let current_table_size = tabled_functions.total_table_size();
+                                if previous_table_size != Some(current_table_size) {
+                                    // retry
+                                    tabled_functions.may_prepare_to_retry_suspended();
+                                    inner_suspensions.prepare_restoring_from_suspending();
+                                    inner.prepare_to_restore_from_suspension(0);
+                                    self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index, last_seen_table_size: Some(current_table_size) }))
+                                } else {
+                                    // There are no answers to be found.
+                                    let iterator = collector.collected_to_iterator(context);
+                                    self.control_stack
+                                        .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
+                                }
                             } else {
+                                debug_assert!(inner_suspensions.is_empty());
                                 let iterator = collector.collected_to_iterator(context);
                                 self.control_stack
                                     .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
                             }
                         }
                         Some(batch) => {
+                            debug_assert!(inner_suspensions.is_empty()); // Fails
                             collector.accept(context, batch);
-                            self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index }))
+                            self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index, last_seen_table_size: None }))
                         },
                     };
                 }
@@ -317,7 +336,7 @@ impl PatternExecutor {
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     self.control_stack
-                        .push(ControlInstruction::CollectingStage(CollectingStage { index: next_executor_index }));
+                        .push(ControlInstruction::CollectingStage(CollectingStage { index: next_executor_index, last_seen_table_size: None }));
                 }
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ControlInstruction::ReshapeForReturn(ReshapeForReturn {
@@ -351,6 +370,7 @@ impl PatternExecutor {
                     self.control_stack.push(ControlInstruction::ExecuteNegation(ExecuteNegation {
                         index,
                         input: input.clone().into_owned(),
+                        last_seen_table_size: None,
                     }));
                 }
                 NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, arg_mapping, .. }) => {
