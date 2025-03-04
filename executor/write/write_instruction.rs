@@ -11,6 +11,8 @@ use compiler::executable::insert::{
 use concept::thing::{object::ObjectAPI, thing_manager::ThingManager, ThingAPI};
 use encoding::value::value::Value;
 use ir::pipeline::ParameterRegistry;
+use itertools::Itertools;
+use resource::profile::StorageCounters;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{row::Row, write::WriteError};
@@ -156,7 +158,11 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Has {
         let owner = get_thing(row, &self.owner).as_object();
         let new_attribute = get_thing(row, &self.attribute).as_attribute();
 
-        let mut old_attributes = owner.get_has_type_unordered(snapshot, thing_manager, new_attribute.type_());
+        let mut old_attributes = owner
+            .get_has_type_unordered(snapshot, thing_manager, new_attribute.type_(), StorageCounters::DISABLED)
+            .take(2)
+            .collect_vec()
+            .into_iter();
         if let Some(old_attribute) = old_attributes.next() {
             match old_attribute {
                 Ok((old_attribute, count)) => {
@@ -195,7 +201,8 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Links {
         let new_player = get_thing(row, &self.player).as_object();
         let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
 
-        let mut old_players = relation.get_players_role_type(snapshot, thing_manager, role_type);
+        let mut old_players =
+            relation.get_players_role_type(snapshot, thing_manager, *role_type, StorageCounters::DISABLED);
         if let Some(old_player) = old_players.next() {
             match old_player {
                 Ok(old_player) => {

@@ -385,7 +385,7 @@ where
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         let target_links = (self.from_tuple_fn)(&target, &self.fixed_bounds);
-        println!("Links seek target: {:?}", &target_links);
+        // println!("Links seek target: {:?}", &target_links);
         let target_pair = (target_links, 0);
         lending_iterator::Seekable::seek(&mut self.inner, &Ok(target_pair));
         Ok(())

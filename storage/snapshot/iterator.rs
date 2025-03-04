@@ -58,8 +58,10 @@ impl SnapshotRangeIterator {
             if peek < key {
                 self.ready_item_source = None;
                 if let Some(iter) = self.buffered_iterator.as_mut() {
+                    // buffered iterators check that the seek is in ascending order internally
                     iter.seek(key.bytes())
                 }
+                // storage iterators check that the seek is in ascending order internally
                 self.storage_iterator.as_mut().unwrap().seek(key.bytes());
                 self.find_next_state();
             }

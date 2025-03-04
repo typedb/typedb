@@ -11,46 +11,36 @@ Feature: Debugging Space
     Given connection has 0 databases
     Given connection create database: typedb
     Given connection open schema transaction for database: typedb
-
     Given typeql schema query
       """
       define
-      entity nothing;
-      entity person
+      entity person,
         plays friendship:friend,
-        plays employment:employee,
-        owns name @card(0..),
-        owns person-name @card(0..),
-        owns age @card(0..1),
-        owns karma @card(0..2),
+        plays parentship:parent,
+        plays parentship:child,
+        owns name,
         owns ref @key;
-      entity company
-        plays employment:employer,
-        owns company-name @card(1..1),
-        owns description @card(1..1000),
-        owns achievement @card(0..1),
-        owns company-achievement @card(0..),
+      relation friendship,
+        relates friend,
         owns ref @key;
-      relation friendship
-        relates friend @card(0..),
-        owns ref @key;
-      relation employment
-        relates employee,
-        relates employer,
-        owns ref @key,
-        owns start-date @card(0..),
-        owns end-date @card(0..);
-      attribute name @abstract, value string;
-      attribute person-name sub name;
-      attribute company-name sub name;
-      attribute description, value string;
-      attribute age value integer;
-      attribute karma value double;
-      attribute ref value integer;
-      attribute start-date value datetime;
-      attribute end-date value datetime;
-      attribute achievement @abstract;
-      attribute company-achievement sub achievement, value string;
+      relation parentship,
+        relates parent,
+        relates child,
+        owns ref;
+      attribute name value string;
+      attribute ref @independent, value integer;
+      """
+    Given transaction commits
+    Given connection open write transaction for database: typedb
+
+  Scenario: Update queries can update multiple 'links'es in a single query
+    Given transaction closes
+    Given connection open schema transaction for database: typedb
+    Given typeql schema query
+      """
+      define
+        person plays friendship:youngest-friend, plays friendship:oldest-friend;
+        friendship relates youngest-friend, relates oldest-friend;
       """
     Given transaction commits
 
@@ -58,93 +48,115 @@ Feature: Debugging Space
     Given typeql write query
       """
       insert
-      $n isa nothing;
-      $p1 isa person, has person-name "Alice", has person-name "Allie", has age 10, has karma 123.4567891, has ref 0;
-      $p2 isa person, has person-name "Bob", has ref 1;
-      $c1 isa company, has company-name "TypeDB", has ref 2, has description "Nice and shy guys", has company-achievement "Green BDD tests for fetch";
-      $f1 links (friend: $p1, friend: $p2), isa friendship, has ref 3;
-      $e1 links (employee: $p1, employer: $c1), isa employment, has ref 4, has start-date 2020-01-01T13:13:13.999, has end-date 2021-01-01;
+        $f0 isa friendship, has ref 0,
+          links (oldest-friend: $p0, youngest-friend: $p1, friend: $p0);
+        $f1 isa friendship, has ref 1,
+          links (oldest-friend: $p1, youngest-friend: $p0, friend: $p2);
+        $p0 isa person, has ref 0;
+        $p1 isa person, has ref 1;
+        $p2 isa person, has ref 2;
       """
-    Given transaction commits
-    Given connection open read transaction for database: typedb
+#    Given get answers of typeql read query
+#      """
+#      match $f isa friendship, links ($r: $p);
+#      """
+#    Given uniquely identify answer concepts
+#      | f         | p         | r                                |
+#      | key:ref:0 | key:ref:0 | label:friendship:friend          |
+#      | key:ref:0 | key:ref:0 | label:friendship:oldest-friend   |
+#      | key:ref:0 | key:ref:1 | label:friendship:youngest-friend |
+#      | key:ref:1 | key:ref:2 | label:friendship:friend          |
+#      | key:ref:1 | key:ref:1 | label:friendship:oldest-friend   |
+#      | key:ref:1 | key:ref:0 | label:friendship:youngest-friend |
 
-
-  Scenario: an attribute and a value can be fetched
-    When get answers of typeql read query
+    When get answers of typeql write query
       """
       match
-      $a isa person-name;
+        $p isa person, has ref 1;
+        $f isa friendship, links (youngest-friend: $p);
       """
-    Then answer size is: 3
-#    Then answer contains document:
-#      """
-#      {
-#        "person": "Alice"
-#      }
-#      """
-#    Then answer contains document:
-#      """
-#      {
-#        "person": "Allie"
-#      }
-#      """
-#    Then answer contains document:
-#      """
-#      {
-#        "person": "Bob"
-#      }
-#      """
-#
+    Then uniquely identify answer concepts
+      | f         | p         |
+      | key:ref:0 | key:ref:1 |
 #    When get answers of typeql read query
 #      """
+#      match $f isa friendship, links ($r: $p);
+#      """
+#    Then uniquely identify answer concepts
+#      | f         | p         | r                                |
+#      | key:ref:0 | key:ref:1 | label:friendship:friend          |
+#      | key:ref:0 | key:ref:1 | label:friendship:oldest-friend   |
+#      | key:ref:0 | key:ref:1 | label:friendship:youngest-friend |
+#      | key:ref:1 | key:ref:2 | label:friendship:friend          |
+#      | key:ref:1 | key:ref:1 | label:friendship:oldest-friend   |
+#      | key:ref:1 | key:ref:0 | label:friendship:youngest-friend |
+#
+#    When get answers of typeql write query
+#      """
+#      insert
+#        $p isa person, has ref 3;
 #      match
-#      $a isa name;
-#      let $v = $a;
-#      fetch {
-#        "value": $v,
-#        "attribute": $a
-#      };
+#        $f isa friendship, links (youngest-friend: $p-youngest);
+#      update
+#        $f links (youngest-friend: $p, oldest-friend: $p-youngest);
 #      """
-#    Then answer size is: 4
-#    Then answer contains document:
+#    Then uniquely identify answer concepts
+#      | f         | p         | p-youngest |
+#      | key:ref:0 | key:ref:3 | key:ref:1  |
+#      | key:ref:1 | key:ref:3 | key:ref:0  |
+#    When get answers of typeql read query
 #      """
-#      {
-#        "value": "Alice",
-#        "attribute": "Alice"
-#      }
+#      match $f isa friendship, links ($r: $p);
 #      """
-#    Then answer contains document:
+#    Then uniquely identify answer concepts
+#      | f         | p         | r                                |
+#      | key:ref:0 | key:ref:1 | label:friendship:friend          |
+#      | key:ref:0 | key:ref:1 | label:friendship:oldest-friend   |
+#      | key:ref:0 | key:ref:3 | label:friendship:youngest-friend |
+#      | key:ref:1 | key:ref:2 | label:friendship:friend          |
+#      | key:ref:1 | key:ref:0 | label:friendship:oldest-friend   |
+#      | key:ref:1 | key:ref:3 | label:friendship:youngest-friend |
+#
+#    When typeql write query
 #      """
-#      {
-#        "value": "Allie",
-#        "attribute": "Allie"
-#      }
+#      match
+#        $p1 isa person, has ref 1;
+#        $p3 isa person, has ref 3;
+#        $f isa friendship, links (youngest-friend: $p3);
+#      update
+#        $f links (youngest-friend: $p1), links (friend: $p3);
 #      """
-#    Then answer contains document:
+#    When get answers of typeql read query
 #      """
-#      {
-#        "value": "Bob",
-#        "attribute": "Bob"
-#      }
+#      match $f isa friendship, links ($r: $p);
 #      """
-#    Then answer contains document:
+#    Then uniquely identify answer concepts
+#      | f         | p         | r                                |
+#      | key:ref:0 | key:ref:3 | label:friendship:friend          |
+#      | key:ref:0 | key:ref:1 | label:friendship:oldest-friend   |
+#      | key:ref:0 | key:ref:1 | label:friendship:youngest-friend |
+#      | key:ref:1 | key:ref:3 | label:friendship:friend          |
+#      | key:ref:1 | key:ref:0 | label:friendship:oldest-friend   |
+#      | key:ref:1 | key:ref:1 | label:friendship:youngest-friend |
+#
+#    When typeql write query
 #      """
-#      {
-#        "value": "TypeDB",
-#        "attribute": "TypeDB"
-#      }
+#      match
+#        $p0 isa person, has ref 0;
+#        $p2 isa person, has ref 2;
+#        $f isa friendship, links (oldest-friend: $_);
+#      update
+#        $f links (youngest-friend: $p0), links (friend: $p2);
 #      """
-#    Then answer does not contain document:
+#    When get answers of typeql read query
 #      """
-#      {
-#        "value": "value",
-#        "attribute": "value"
-#      }
+#      match $f isa friendship, links ($r: $p);
 #      """
-#    Then answer does not contain document:
-#      """
-#      {
-#        "value": "Allie",
-#        "attribute": "Alice"
-#      }
-#      """
+#    Then uniquely identify answer concepts
+#      | f         | p         | r                                |
+#      | key:ref:0 | key:ref:2 | label:friendship:friend          |
+#      | key:ref:0 | key:ref:1 | label:friendship:oldest-friend   |
+#      | key:ref:0 | key:ref:0 | label:friendship:youngest-friend |
+#      | key:ref:1 | key:ref:2 | label:friendship:friend          |
+#      | key:ref:1 | key:ref:0 | label:friendship:oldest-friend   |
+#      | key:ref:1 | key:ref:0 | label:friendship:youngest-friend |

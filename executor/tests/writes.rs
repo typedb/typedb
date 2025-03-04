@@ -389,7 +389,7 @@ fn relation() {
             .unwrap();
     assert_eq!(1, relations.len());
     let role_players = relations[0]
-        .get_players(&snapshot, &thing_manager)
+        .get_players(&snapshot, &thing_manager, StorageCounters::DISABLED)
         .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
@@ -439,7 +439,7 @@ fn relation_with_inferred_roles() {
             .unwrap();
     assert_eq!(1, relations.len());
     let role_players = relations[0]
-        .get_players(&snapshot, &thing_manager)
+        .get_players(&snapshot, &thing_manager, StorageCounters::DISABLED)
         .map(|item| item.map(|(roleplayer, _)| (roleplayer.player(), roleplayer.role_type())))
         .try_collect::<_, Vec<_>, _>()
         .unwrap();
@@ -487,7 +487,7 @@ fn test_has_with_input_rows() {
     let age_of_p10 = p10
         .as_thing()
         .as_object()
-        .get_has_type_unordered(&snapshot, &thing_manager, age_type)
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type, StorageCounters::DISABLED)
         .map(|result| result.unwrap().0.clone())
         .collect::<Vec<_>>();
     assert_eq!(a10.as_thing().as_attribute(), &age_of_p10[0]);
@@ -532,7 +532,14 @@ fn delete_has() {
     snapshot.commit().unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    assert_eq!(1, Iterator::count(p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager)));
+    assert_eq!(
+        1,
+        Iterator::count(p10.as_thing().as_object().get_has_unordered(
+            &snapshot,
+            &thing_manager,
+            StorageCounters::DISABLED
+        ))
+    );
     let (_, snapshot) = execute_delete(
         snapshot,
         type_manager.clone(),
@@ -546,6 +553,13 @@ fn delete_has() {
     snapshot.commit().unwrap();
 
     let snapshot = storage.clone().open_snapshot_read();
-    assert_eq!(0, Iterator::count(p10.as_thing().as_object().get_has_unordered(&snapshot, &thing_manager)));
+    assert_eq!(
+        0,
+        Iterator::count(p10.as_thing().as_object().get_has_unordered(
+            &snapshot,
+            &thing_manager,
+            StorageCounters::DISABLED
+        ))
+    );
     snapshot.close_resources()
 }

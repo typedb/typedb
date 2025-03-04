@@ -321,7 +321,7 @@ fn create_links_filter_relations_players_roles(
     relation_to_role: Arc<BTreeMap<Type, BTreeSet<Type>>>,
 ) -> Arc<LinksFilterFn> {
     Arc::new(move |result| {
-        let (links) = match result {
+        let links = match result {
             Ok((links, _)) => links,
             Err(err) => return Err(err.clone()),
         };

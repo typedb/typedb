@@ -10,7 +10,7 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
-use lending_iterator::{AsLendingIterator, Peekable};
+use lending_iterator::AsLendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

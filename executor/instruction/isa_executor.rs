@@ -25,7 +25,7 @@ use ir::pattern::{
     Vertex,
 };
 use itertools::Itertools;
-use lending_iterator::{AsLendingIterator, LendingIterator, Peekable, Seekable};
+use lending_iterator::{AsLendingIterator, LendingIterator};
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use typeql::token::Keyword::Or;

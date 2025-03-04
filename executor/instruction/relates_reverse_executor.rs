@@ -18,7 +18,7 @@ use concept::{
     type_::{relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
-use lending_iterator::{AsLendingIterator, Peekable};
+use lending_iterator::AsLendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

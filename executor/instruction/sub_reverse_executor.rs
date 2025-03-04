@@ -15,14 +15,14 @@ use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
-use lending_iterator::{AsLendingIterator, Peekable};
+use lending_iterator::AsLendingIterator;
 use storage::snapshot::ReadableSnapshot;
 use typeql::parser::Rule::annotation_subkey;
 
 use crate::{
     instruction::{
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
-        sub_executor::{SubExecutor, SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
+        sub_executor::{SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },

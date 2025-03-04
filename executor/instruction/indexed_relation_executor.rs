@@ -787,7 +787,7 @@ where
 {
     fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
         let target = self.tuple_to_indexed(&target);
-        println!("Indexed relation seek target: {:?}", &target);
+        // println!("Indexed relation seek target: {:?}", &target);
         lending_iterator::Seekable::seek(&mut self.inner, &Ok((target, 0)));
         Ok(())
     }
