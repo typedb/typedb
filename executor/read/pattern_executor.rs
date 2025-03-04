@@ -402,12 +402,13 @@ impl PatternExecutor {
                     tabled_functions,
                     function_suspensions,
                 )?;
-                let suspension_count_after = function_suspensions.record_nested_pattern_exit();
+                let _suspension_count_after = function_suspensions.record_nested_pattern_exit();
                 if let Some(batch) = batch_opt {
                     let deduplicated_batch = executor.add_batch_to_table(&function_state, batch);
                     Some(deduplicated_batch)
                 } else {
-                    if suspension_count_after.0 > 0 {
+                    // Don't use suspend_count_before == suspend_count_after, since we can get away with just one.
+                    if !function_suspensions.is_empty() {
                         // TODO: Consider retrying here. For now, just record a suspension point for ourselves.
                         query_suspensions.push_tabled_call(index, executor);
                     }
