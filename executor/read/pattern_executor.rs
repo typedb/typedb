@@ -30,18 +30,16 @@ use crate::{
     ExecutionInterrupt,
 };
 
-macro_rules! unwrap_as_mut {
-    ($variant:path : $item:expr) => {
-        if let $variant(inner) = &mut $item {
-            inner
-        } else {
-            unreachable!("Bad unwrap")
-        }
-    };
-}
-
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct BranchIndex(pub usize);
+
+impl std::ops::Deref for BranchIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct ExecutorIndex(pub usize);
@@ -49,6 +47,14 @@ pub(crate) struct ExecutorIndex(pub usize);
 impl ExecutorIndex {
     fn next(&self) -> ExecutorIndex {
         ExecutorIndex(self.0 + 1)
+    }
+}
+
+impl std::ops::Deref for ExecutorIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
@@ -136,7 +142,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteImmediate(ExecuteImmediate { index }) => {
-                    let executor = executors[index.0].unwrap_immediate();
+                    let executor = executors[*index].unwrap_immediate();
                     if let Some(batch) = executor.batch_continue(context, interrupt)? {
                         control_stack.push(ControlInstruction::ExecuteImmediate(ExecuteImmediate { index }));
                         self.push_next_instruction(context, index.next(), batch)?;
@@ -151,7 +157,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteNegation(ExecuteNegation { index, input }) => {
-                    let NegationExecutor { inner } = &mut executors[index.0].unwrap_negation();
+                    let NegationExecutor { inner } = &mut executors[*index].unwrap_negation();
                     let mut negation_suspensions = QueryPatternSuspensions::new_root();
                     let result =
                         inner.compute_next_batch(context, interrupt, tabled_functions, &mut negation_suspensions)?;
@@ -165,8 +171,8 @@ impl PatternExecutor {
                 }
                 ControlInstruction::ExecuteDisjunction(execute_disjunction) => {
                     let ExecuteDisjunction { index, branch_index, input } = &execute_disjunction;
-                    let disjunction = &mut executors[index.0].unwrap_disjunction();
-                    let branch = &mut disjunction.branches[execute_disjunction.branch_index.0];
+                    let disjunction = &mut executors[**index].unwrap_disjunction();
+                    let branch = &mut disjunction.branches[**branch_index];
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let batch_opt = branch.batch_continue(context, interrupt, tabled_functions, suspensions)?;
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
@@ -180,7 +186,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }) => {
-                    let executor = &mut executors[index.0].unwrap_inlined_call();
+                    let executor = &mut executors[*index].unwrap_inlined_call();
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let unmapped_opt = executor.inner.batch_continue(
                         &context.clone_with_replaced_parameters(executor.parameter_registry.clone()),
@@ -199,7 +205,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
-                    let inner = &mut executors[index.0].unwrap_stream_modifier().inner();
+                    let inner = &mut executors[*index].unwrap_stream_modifier().inner();
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let unmapped = inner.batch_continue(context, interrupt, tabled_functions, suspensions)?;
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
@@ -230,7 +236,7 @@ impl PatternExecutor {
                     )?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
-                    let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
+                    let (inner, collector) = executors[*index].unwrap_collecting_stage().to_parts_mut();
                     let mut inner_suspensions = QueryPatternSuspensions::new_root();
                     while let Some(batch) =
                         inner.compute_next_batch(context, interrupt, tabled_functions, &mut inner_suspensions)?
@@ -249,7 +255,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ReshapeForReturn(ReshapeForReturn { index, to_reshape: batch }) => {
-                    let return_positions = executors[index.0].unwrap_reshape();
+                    let return_positions = executors[*index].unwrap_reshape();
                     let mut output_batch = FixedBatch::new(return_positions.len() as u32);
                     for row in batch {
                         output_batch.append(|mut write_to| {
@@ -281,10 +287,10 @@ impl PatternExecutor {
         if batch.is_empty() {
             return Ok(());
         }
-        if next_executor_index.0 >= self.executors.len() {
+        if *next_executor_index >= self.executors.len() {
             self.control_stack.push(ControlInstruction::Yield(Yield { batch }));
         } else {
-            match &mut self.executors[next_executor_index.0] {
+            match &mut self.executors[*next_executor_index] {
                 StepExecutors::Immediate(executable) => {
                     executable.prepare(batch, context)?;
                     self.control_stack
@@ -317,7 +323,7 @@ impl PatternExecutor {
     }
 
     fn push_nested_pattern(&mut self, index: ExecutorIndex, input: MaybeOwnedRow<'_>) {
-        match &mut self.executors[index.0] {
+        match &mut self.executors[*index] {
             StepExecutors::TabledCall(tabled_call) => {
                 tabled_call.prepare(input.clone().into_owned());
                 self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index, last_seen_table_size: None }));
@@ -372,7 +378,7 @@ impl PatternExecutor {
         index: ExecutorIndex,
         table_size_at_last_restore: Option<usize>,
     ) -> Result<(), ReadExecutionError> {
-        let executor = self.executors[index.0].unwrap_tabled_call();
+        let executor = self.executors[*index].unwrap_tabled_call();
         let call_key = executor.active_call_key().unwrap();
         let function_state = tabled_functions.get_or_create_function_state(context, call_key)?;
         let found = match executor.try_read_next_batch(&function_state) {
@@ -441,7 +447,7 @@ fn restore_suspension(
     match point {
         PatternSuspension::AtTabledCall(suspended_call) => {
             let TabledCallSuspension { executor_index, next_table_row, input_row, .. } = suspended_call;
-            let executor = executors[executor_index.0].unwrap_tabled_call();
+            let executor = executors[*executor_index].unwrap_tabled_call();
             executor.restore_from_suspension(input_row, next_table_row);
             // last_seen_table_size is None because a suspension is within a cycle, not at the entry. last_seen_table_size is set only for entry
             control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall {
@@ -452,12 +458,12 @@ fn restore_suspension(
         PatternSuspension::AtNestedPattern(suspended_nested) => {
             let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
             let nested_pattern_depth = depth + 1;
-            match &mut executors[executor_index.0] {
+            match &mut executors[*executor_index] {
                 StepExecutors::Negation(_) => {
                     unreachable!("Stratification must have been violated")
                 }
                 StepExecutors::Disjunction(disjunction) => {
-                    disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(nested_pattern_depth);
+                    disjunction.branches[*branch_index].prepare_to_restore_from_suspension(nested_pattern_depth);
                     control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
                         index: executor_index,
                         branch_index,
