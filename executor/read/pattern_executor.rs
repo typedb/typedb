@@ -81,7 +81,6 @@ impl PatternExecutor {
                 }
             }
         }
-        // debug_assert!(state_after == state_before); // TODO: Enable once we figure out retries at the calls. // As long as compute_next_batch is only called for the entry.
         Ok(result)
     }
 
