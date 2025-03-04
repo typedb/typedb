@@ -68,12 +68,21 @@ impl Constraints {
 
     pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, c| {
-            let ids_produced = c.produced_ids();
-            for var in ids_produced {
+            for var in c.produced_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(DependencyMode::Produced),
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(DependencyMode::Produced);
+                    }
+                }
+            }
+            for var in c.required_ids() {
+                match acc.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        entry.get_mut().and_assign(DependencyMode::Required(vec![c]))
+                    }
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(DependencyMode::Required(vec![c]));
                     }
                 }
             }

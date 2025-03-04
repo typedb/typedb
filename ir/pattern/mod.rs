@@ -388,21 +388,26 @@ impl AssignmentMode<'_> {
 pub(crate) enum DependencyMode<'a> {
     Required(Vec<&'a Constraint<Variable>>),
     Produced,
+    None,
 }
 
 impl DependencyMode<'_> {
     fn and_assign(&mut self, other: Self) {
         match (&mut *self, other) {
-            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
             (Self::Produced, _) | (_, Self::Produced) => *self = Self::Produced,
+            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
+            (Self::None, other) => *self = other,
+            (_, Self::None) => (),
         }
     }
 
     fn or_assign(&mut self, other: Self) {
         match (&mut *self, other) {
-            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::Required(_), _) | (_, Self::Required(_)) => *self = Self::Produced,
             (Self::Produced, Self::Produced) => (),
+            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
+            (Self::Required(_), Self::Produced | Self::None) => (),
+            (Self::Produced | Self::None, other @ Self::Required(_)) => *self = other,
+            (Self::None, _) | (_, Self::None) => *self = Self::None,
         }
     }
 
