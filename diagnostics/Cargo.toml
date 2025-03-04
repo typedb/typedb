@@ -61,7 +61,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "c3651b6d3b82f6dc8a0db499592cb22e60e79b49"
+		rev = "b369c2cb515b4a468d4d5bc8d71b565e0c02e759"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -71,8 +71,8 @@ features = {}
 		default-features = false
 
 	[dependencies.chrono]
-		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
-		version = "0.4.39"
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.hyper]
@@ -82,7 +82,7 @@ features = {}
 
 	[dependencies.serde_json]
 		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
-		version = "1.0.139"
+		version = "1.0.140"
 		default-features = false
 
 	[dependencies.hyper-rustls]
