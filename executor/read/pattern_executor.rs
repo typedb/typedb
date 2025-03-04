@@ -20,7 +20,7 @@ use crate::{
             ExecuteNegation, ExecuteStreamModifier, MapRowBatchToRowForNested, PatternStart, ReshapeForReturn,
             RestoreSuspension, StreamCollected, TabledCall, Yield,
         },
-        nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
         step_executor::StepExecutors,
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
@@ -29,6 +29,16 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+
+macro_rules! unwrap_as_mut {
+    ($variant:path : $item:expr) => {
+        if let $variant(inner) = &mut $item {
+            inner
+        } else {
+            unreachable!("Bad unwrap")
+        }
+    };
+}
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct BranchIndex(pub usize);
@@ -75,10 +85,12 @@ impl PatternExecutor {
         self.reset();
         for executor in &mut self.executors {
             match executor {
-                StepExecutors::Nested(inner) => inner.reset(),
+                StepExecutors::Immediate(inner) => inner.reset(),
+                StepExecutors::Negation(inner) => inner.reset(),
+                StepExecutors::Disjunction(inner) => inner.reset(),
+                StepExecutors::InlinedCall(inner) => inner.reset(),
                 StepExecutors::StreamModifier(inner) => inner.reset(),
                 StepExecutors::CollectingStage(inner) => inner.reset(),
-                StepExecutors::Immediate(inner) => inner.reset(),
                 StepExecutors::TabledCall(_) | StepExecutors::ReshapeForReturn(_) => {}
             }
         }
@@ -119,7 +131,8 @@ impl PatternExecutor {
                 ControlInstruction::RestoreSuspension(RestoreSuspension { depth }) => {
                     debug_assert!(depth == suspensions.current_depth()); // Smell. The depth in the step is redundant
                     if let Some(point) = suspensions.next_restore_point_at_current_depth() {
-                        restore_suspension(control_stack, executors, depth, point);
+                        control_stack.push(ControlInstruction::RestoreSuspension(RestoreSuspension { depth }));
+                        restore_suspension(control_stack, executors, point);
                     }
                 }
                 ControlInstruction::ExecuteImmediate(ExecuteImmediate { index }) => {
@@ -138,11 +151,7 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ExecuteNegation(ExecuteNegation { index, input }) => {
-                    let StepExecutors::Nested(NestedPatternExecutor::Negation(Negation { inner })) =
-                        &mut executors[index.0]
-                    else {
-                        unreachable!();
-                    };
+                    let NegationExecutor { inner } = &mut executors[index.0].unwrap_negation();
                     let mut negation_suspensions = QueryPatternSuspensions::new_root();
                     let result =
                         inner.compute_next_batch(context, interrupt, tabled_functions, &mut negation_suspensions)?;
@@ -154,32 +163,24 @@ impl PatternExecutor {
                         Some(_) => inner.reset(), // fail
                     };
                 }
-                ControlInstruction::ExecuteDisjunction(ExecuteDisjunction { index, branch_index, input }) => {
-                    let NestedPatternExecutor::Disjunction(disjunction) = &mut executors[index.0].unwrap_nested()
-                    else {
-                        unreachable!();
-                    };
-                    let branch = &mut disjunction.branches[branch_index.0];
+                ControlInstruction::ExecuteDisjunction(execute_disjunction) => {
+                    let ExecuteDisjunction { index, branch_index, input } = &execute_disjunction;
+                    let disjunction = &mut executors[index.0].unwrap_disjunction();
+                    let branch = &mut disjunction.branches[execute_disjunction.branch_index.0];
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let batch_opt = branch.batch_continue(context, interrupt, tabled_functions, suspensions)?;
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
-                        suspensions.push_nested(index, branch_index, input.clone());
+                        suspensions.push_nested(*index, *branch_index, input.clone());
                     }
                     if let Some(unmapped) = batch_opt {
                         let mapped = disjunction.map_output(unmapped);
-                        control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
-                            index,
-                            branch_index,
-                            input,
-                        }));
-                        self.push_next_instruction(context, index.next(), mapped)?;
+                        let next_index = index.next();
+                        control_stack.push(ControlInstruction::ExecuteDisjunction(execute_disjunction));
+                        self.push_next_instruction(context, next_index, mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }) => {
-                    let NestedPatternExecutor::InlinedFunction(executor) = &mut executors[index.0].unwrap_nested()
-                    else {
-                        unreachable!();
-                    };
+                    let executor = &mut executors[index.0].unwrap_inlined_call();
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
                     let unmapped_opt = executor.inner.batch_continue(
                         &context.clone_with_replaced_parameters(executor.parameter_registry.clone()),
@@ -289,7 +290,11 @@ impl PatternExecutor {
                     self.control_stack
                         .push(ControlInstruction::ExecuteImmediate(ExecuteImmediate { index: next_executor_index }));
                 }
-                StepExecutors::Nested(_) | StepExecutors::StreamModifier(_) | StepExecutors::TabledCall(_) => {
+                StepExecutors::Negation(_)
+                | StepExecutors::Disjunction(_)
+                | StepExecutors::InlinedCall(_)
+                | StepExecutors::StreamModifier(_)
+                | StepExecutors::TabledCall(_) => {
                     self.control_stack.push(ControlInstruction::MapBatchToRowForNested(MapRowBatchToRowForNested {
                         index: next_executor_index,
                         iterator: FixedBatchRowIterator::new(Ok(batch)),
@@ -312,51 +317,49 @@ impl PatternExecutor {
     }
 
     fn push_nested_pattern(&mut self, index: ExecutorIndex, input: MaybeOwnedRow<'_>) {
-        if let StepExecutors::TabledCall(tabled_call) = &mut self.executors[index.0] {
-            tabled_call.prepare(input.clone().into_owned());
-            self.control_stack
-                .push(ControlInstruction::ExecuteTabledCall(TabledCall { index, last_seen_table_size: None }));
-        } else if let StepExecutors::Nested(nested) = &mut self.executors[index.0] {
-            match nested {
-                NestedPatternExecutor::Disjunction(Disjunction { branches, .. }) => {
-                    for (branch_index, branch) in branches.iter_mut().enumerate() {
-                        branch.prepare(FixedBatch::from(input.as_reference()));
-                        self.control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
-                            index,
-                            branch_index: BranchIndex(branch_index),
-                            input: input.clone().into_owned(),
-                        }))
-                    }
-                }
-                NestedPatternExecutor::Negation(Negation { inner }) => {
-                    inner.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteNegation(ExecuteNegation {
+        match &mut self.executors[index.0] {
+            StepExecutors::TabledCall(tabled_call) => {
+                tabled_call.prepare(input.clone().into_owned());
+                self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index, last_seen_table_size: None }));
+            }
+            StepExecutors::Disjunction(DisjunctionExecutor { branches, .. }) => {
+                for (branch_index, branch) in branches.iter_mut().enumerate() {
+                    branch.prepare(FixedBatch::from(input.as_reference()));
+                    self.control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
                         index,
+                        branch_index: BranchIndex(branch_index),
                         input: input.clone().into_owned(),
-                    }));
-                }
-                NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, arg_mapping, .. }) => {
-                    let mapped_input = MaybeOwnedRow::new_owned(
-                        arg_mapping.iter().map(|&arg_pos| input.get(arg_pos).clone().into_owned()).collect(),
-                        input.multiplicity(),
-                    );
-                    inner.prepare(FixedBatch::from(mapped_input));
-                    self.control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
-                        index,
-                        input: input.clone().into_owned(),
-                    }));
+                    }))
                 }
             }
-        } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
-            stream_modifier.inner().prepare(FixedBatch::from(input.as_reference()));
-            let mapper = stream_modifier.create_mapper();
-            self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
-                index,
-                mapper,
-                input: input.clone().into_owned(),
-            }));
-        } else {
-            unreachable!();
+            StepExecutors::Negation(NegationExecutor { inner }) => {
+                inner.prepare(FixedBatch::from(input.as_reference()));
+                self.control_stack.push(ControlInstruction::ExecuteNegation(ExecuteNegation {
+                    index,
+                    input: input.clone().into_owned(),
+                }));
+            }
+            StepExecutors::InlinedCall(InlinedCallExecutor { inner, arg_mapping, .. }) => {
+                let mapped_input = MaybeOwnedRow::new_owned(
+                    arg_mapping.iter().map(|&arg_pos| input.get(arg_pos).clone().into_owned()).collect(),
+                    input.multiplicity(),
+                );
+                inner.prepare(FixedBatch::from(mapped_input));
+                self.control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
+                    index,
+                    input: input.clone().into_owned(),
+                }));
+            }
+            StepExecutors::StreamModifier(stream_modifier) => {
+                stream_modifier.inner().prepare(FixedBatch::from(input.as_reference()));
+                let mapper = stream_modifier.create_mapper();
+                self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                    index,
+                    mapper,
+                    input: input.clone().into_owned(),
+                }));
+            }
+            _ => unreachable!("Not called on any other StepExecutor"),
         }
     }
 
@@ -433,10 +436,8 @@ impl PatternExecutor {
 fn restore_suspension(
     control_stack: &mut Vec<ControlInstruction>,
     executors: &mut [StepExecutors],
-    depth: usize,
     point: PatternSuspension,
 ) {
-    control_stack.push(ControlInstruction::RestoreSuspension(RestoreSuspension { depth }));
     match point {
         PatternSuspension::AtTabledCall(suspended_call) => {
             let TabledCallSuspension { executor_index, next_table_row, input_row, .. } = suspended_call;
@@ -452,26 +453,24 @@ fn restore_suspension(
             let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
             let nested_pattern_depth = depth + 1;
             match &mut executors[executor_index.0] {
-                StepExecutors::Nested(nested) => match nested {
-                    NestedPatternExecutor::Negation(_) => {
-                        unreachable!("Stratification must have been violated")
-                    }
-                    NestedPatternExecutor::Disjunction(disjunction) => {
-                        disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(nested_pattern_depth);
-                        control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
-                            index: executor_index,
-                            branch_index,
-                            input: input_row.into_owned(),
-                        }))
-                    }
-                    NestedPatternExecutor::InlinedFunction(inlined) => {
-                        inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
-                        control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
-                            index: executor_index,
-                            input: input_row.into_owned(),
-                        }))
-                    }
-                },
+                StepExecutors::Negation(_) => {
+                    unreachable!("Stratification must have been violated")
+                }
+                StepExecutors::Disjunction(disjunction) => {
+                    disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(nested_pattern_depth);
+                    control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
+                        index: executor_index,
+                        branch_index,
+                        input: input_row.into_owned(),
+                    }))
+                }
+                StepExecutors::InlinedCall(inlined) => {
+                    inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
+                    control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
+                        index: executor_index,
+                        input: input_row.into_owned(),
+                    }))
+                }
                 StepExecutors::StreamModifier(modifier) => {
                     modifier.inner().prepare_to_restore_from_suspension(nested_pattern_depth);
                     control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {

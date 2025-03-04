@@ -27,19 +27,24 @@ use typeql::schema::definable::function::SingleSelector;
 use crate::{
     profile::QueryProfile,
     read::{
-        collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
-        nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-        stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
+        collecting_stage_executor::CollectingStageExecutor,
+        immediate_executor::ImmediateExecutor,
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
+        pattern_executor::PatternExecutor,
+        stream_modifier::StreamModifierExecutor,
+        tabled_call_executor::TabledCallExecutor,
     },
 };
 
 #[derive(Debug)]
 pub enum StepExecutors {
     Immediate(ImmediateExecutor),
-    Nested(NestedPatternExecutor),
+    Disjunction(DisjunctionExecutor),
+    Negation(NegationExecutor),
+    InlinedCall(InlinedCallExecutor),
+    TabledCall(TabledCallExecutor),
     StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
-    TabledCall(TabledCallExecutor),
     ReshapeForReturn(Vec<VariablePosition>),
 }
 
@@ -51,9 +56,23 @@ impl StepExecutors {
         }
     }
 
-    pub(crate) fn unwrap_nested(&mut self) -> &mut NestedPatternExecutor {
+    pub(crate) fn unwrap_negation(&mut self) -> &mut NegationExecutor {
         match self {
-            StepExecutors::Nested(step) => step,
+            StepExecutors::Negation(step) => step,
+            _ => panic!("bad unwrap"),
+        }
+    }
+
+    pub(crate) fn unwrap_disjunction(&mut self) -> &mut DisjunctionExecutor {
+        match self {
+            StepExecutors::Disjunction(step) => step,
+            _ => panic!("bad unwrap"),
+        }
+    }
+
+    pub(crate) fn unwrap_inlined_call(&mut self) -> &mut InlinedCallExecutor {
+        match self {
+            StepExecutors::InlinedCall(step) => step,
             _ => panic!("bad unwrap"),
         }
     }
@@ -137,11 +156,7 @@ pub(crate) fn create_executors_for_match(
                 )?;
                 // I shouldn't need to pass recursive here since it's stratified
                 steps.push(
-                    NestedPatternExecutor::new_negation(PatternExecutor::new(
-                        negation_step.negation.executable_id(),
-                        inner,
-                    ))
-                    .into(),
+                    NegationExecutor::new(PatternExecutor::new(negation_step.negation.executable_id(), inner)).into(),
                 )
             }
             ExecutionStep::FunctionCall(function_call) => {
@@ -166,11 +181,7 @@ pub(crate) fn create_executors_for_match(
                         function,
                     )?;
                     let inner = PatternExecutor::new(function.executable_id, inner_executors);
-                    let step = NestedPatternExecutor::new_inlined_function(
-                        inner,
-                        function_call,
-                        function.parameter_registry.clone(),
-                    );
+                    let step = InlinedCallExecutor::new(inner, function_call, function.parameter_registry.clone());
                     steps.push(step.into())
                 }
             }
@@ -193,12 +204,8 @@ pub(crate) fn create_executors_for_match(
                         Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
                     })
                     .try_collect()?;
-                let inner_step = NestedPatternExecutor::new_disjunction(
-                    branches,
-                    step.selected_variables.clone(),
-                    step.output_width,
-                )
-                .into();
+                let inner_step =
+                    DisjunctionExecutor::new(branches, step.selected_variables.clone(), step.output_width).into();
                 // Hack: wrap it in a distinct
                 let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
                     PatternExecutor::new(next_executable_id(), vec![inner_step]),

@@ -17,13 +17,25 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Disjunction {
+pub struct DisjunctionExecutor {
     pub branches: Vec<PatternExecutor>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
-impl Disjunction {
+impl DisjunctionExecutor {
+    pub(crate) fn new(
+        branches: Vec<PatternExecutor>,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { branches, selected_variables, output_width }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.branches.iter_mut().for_each(|branch| branch.reset())
+    }
+
     pub(crate) fn map_output(&self, unmapped: FixedBatch) -> FixedBatch {
         let mut uniform_batch = FixedBatch::new(self.output_width);
         unmapped.into_iter().for_each(|row| {
@@ -36,12 +48,22 @@ impl Disjunction {
 }
 
 #[derive(Debug)]
-pub struct Negation {
+pub struct NegationExecutor {
     pub inner: PatternExecutor,
 }
 
+impl NegationExecutor {
+    pub(crate) fn new(inner: PatternExecutor) -> Self {
+        Self { inner }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.inner.reset()
+    }
+}
+
 #[derive(Debug)]
-pub struct InlinedFunction {
+pub struct InlinedCallExecutor {
     pub inner: PatternExecutor,
     pub arg_mapping: Vec<VariablePosition>,
     pub assignment_positions: Vec<Option<VariablePosition>>,
@@ -49,7 +71,25 @@ pub struct InlinedFunction {
     pub parameter_registry: Arc<ParameterRegistry>,
 }
 
-impl InlinedFunction {
+impl InlinedCallExecutor {
+    pub(crate) fn new(
+        inner: PatternExecutor,
+        function_call: &FunctionCallStep,
+        parameter_registry: Arc<ParameterRegistry>,
+    ) -> Self {
+        Self {
+            inner,
+            arg_mapping: function_call.arguments.clone(),
+            assignment_positions: function_call.assigned.clone(),
+            output_width: function_call.output_width,
+            parameter_registry,
+        }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.inner.reset()
+    }
+
     pub(crate) fn map_output(&self, input: MaybeOwnedRow<'_>, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.output_width);
         let check_indices: Vec<_> = self
@@ -78,51 +118,21 @@ impl InlinedFunction {
     }
 }
 
-#[derive(Debug)]
-pub enum NestedPatternExecutor {
-    Disjunction(Disjunction),
-    Negation(Negation),
-    InlinedFunction(InlinedFunction),
-}
-
-impl From<NestedPatternExecutor> for StepExecutors {
-    fn from(val: NestedPatternExecutor) -> Self {
-        StepExecutors::Nested(val)
+// from/into
+impl From<NegationExecutor> for StepExecutors {
+    fn from(value: NegationExecutor) -> Self {
+        Self::Negation(value)
     }
 }
 
-impl NestedPatternExecutor {
-    pub(crate) fn new_negation(inner: PatternExecutor) -> Self {
-        Self::Negation(Negation { inner })
+impl From<DisjunctionExecutor> for StepExecutors {
+    fn from(value: DisjunctionExecutor) -> Self {
+        Self::Disjunction(value)
     }
+}
 
-    pub(crate) fn new_disjunction(
-        branches: Vec<PatternExecutor>,
-        selected_variables: Vec<VariablePosition>,
-        output_width: u32,
-    ) -> Self {
-        Self::Disjunction(Disjunction { branches, selected_variables, output_width })
-    }
-
-    pub(crate) fn new_inlined_function(
-        inner: PatternExecutor,
-        function_call: &FunctionCallStep,
-        parameter_registry: Arc<ParameterRegistry>,
-    ) -> Self {
-        Self::InlinedFunction(InlinedFunction {
-            inner,
-            arg_mapping: function_call.arguments.clone(),
-            assignment_positions: function_call.assigned.clone(),
-            output_width: function_call.output_width,
-            parameter_registry,
-        })
-    }
-
-    pub(super) fn reset(&mut self) {
-        match self {
-            NestedPatternExecutor::Disjunction(inner) => inner.branches.iter_mut().for_each(|branch| branch.reset()),
-            NestedPatternExecutor::Negation(inner) => inner.inner.reset(),
-            NestedPatternExecutor::InlinedFunction(inner) => inner.inner.reset(),
-        }
+impl From<InlinedCallExecutor> for StepExecutors {
+    fn from(value: InlinedCallExecutor) -> Self {
+        Self::InlinedCall(value)
     }
 }
