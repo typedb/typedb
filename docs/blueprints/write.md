@@ -1,3 +1,7 @@
+---
+status: complete
+---
+
 # Writing data
 
 Specification of how to write data to database in read-write pipelines. On this page:

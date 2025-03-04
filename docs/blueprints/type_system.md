@@ -1,3 +1,7 @@
+---
+status: complete
+---
+
 # The type system
 
 > **Types** are organizational tool of formal languages, and the analogs of **sets** in classical mathematics. 
@@ -40,12 +44,12 @@ The issue with TypeQL is that meaning is sometimes overloaded/ambiguous. Therefo
 | `kind A`                               | `A : KIND`                                |
 | `kind A @abstract`                     | `#(A : KIND)`                             |
 | "`A` references `I` when instantiated" | `A : KIND(I)`                             |
-| `A relates I`                          | `A : REL(I)`                              |
-| `A relates! I`                         | `B : REL(I)` implies `B <= A`             |
-| `A relates I @abstract`                | `#(B : REL(I))`                           |
-| `A relates I[]`                        | `A : REL(I[])`                            |
-| `A relates! I[]`                       | `B : REL(I[])` implies `B <= A`           |
-| `A relates I[] @abstract`              | `#(B : REL(I[]))`                         |
+| `A relates I`                          | `A : REL(I)` or `#(A : REL(I))`           |
+| `A relates! I`                         | `A : REL(I)`                              |
+| `A relates I @abstract`                | `#(A : REL(I))`                           |
+| `A relates I[]`                        | `A : REL(I[])` or `#(A : REL(I[]))`       |
+| `A relates! I[]`                       | `A : REL(I[])`                            |
+| `A relates I[] @abstract`              | `#(A : REL(I[]))`                         |
 | `A owned_by A.O`                       | `A : ATT(A.O)`                            |
 | `A[] owned_by A[].O`                   | `A[] : LIST(A[].O)`                       |
 | `A value V`                            | `_val : B -> V` for any `A <= B`          |
@@ -154,11 +158,6 @@ We discuss the syntax for statements relating to types, and explain them in natu
 * **Direct dependent typing**:  We write `a :! A(x : I, y : J,...)` to mean:
   > `a` was declared directly in the type "`A` with the exact dependencies on `x` (cast as `I`), and `y` (cast as `J`), and ...".
 
-* **"Direct dependency"**: Whenever we write `... :! A(x : I, y : J,...)` like in the previous item, then we implicitly also mean
-  > `A` depends directly on `I, J, ...`
-
-  _Note_. We do not introduce special notation for this in our type system, but in TypeQL this would be something like `A relates! I, relates! J, ...`.
-
 * **Subtyping**: We write `A <= B` to mean:
   > Implicit casts from `A` to `B` are possible.
 
@@ -249,7 +248,7 @@ _Remark_: **Key**, **subkey**, **unique** could also be modalities, but adding t
 
 ## THE RULES
 
-This section describes the **rules** that govern the interaction of statements. This allows to **derive new statements** from existing statements. (We also state a few "invariants" which doesn't derive any new statements itself, but correlates derivable statements.)
+This section describes the **rules** that govern the interaction of statements. This allows to **derive new statements** from existing statements.
 
 ### Types and subtypes
 
@@ -258,8 +257,6 @@ This section describes the **rules** that govern the interaction of statements. 
   _Example_. `p :! Child` means the user has inserted `p` into the type `Child`. Our type system may derive `p : Person` from this (but _not_ `p :! Person`)
 
 * **Direct dependent typing rule**: Similarly, from the statement `a :! A(x : I, y : J, ...)` the system can derive the statement `a : A(x : I, y : J, ...)`. (The converse is not true!)
-
-* **Direct dependency invariant** (this is not a rule but a property of the type system): Whenever `a :! A(x : I)` and `B : KIND(I)` in the system then `B <= A` must also be true. In words: _`I` is a "direct dependency" of `A`_.
 
 * **Subtyping rule**: If `A <= B` is true and `a : A`, then we can derive `a : B`.
 
@@ -338,16 +335,16 @@ _Note 2_. List types also interact with subtyping in the obvious way: when `A <=
   * _Invariant_: In a commited schema, **it is never possible** that both `#(statement)` and `statement` are both true the same time (and _neither implies the other_).
   * _Remark_: The purposse of abstractness is always to *constrain `insert` behavior.*
 
-* **Abstractly declared traits** `#(A <! I)` where `T : KIND(I)` means
+* **Abstract trait rules** `#(A <! I)` where `T : KIND(I)` means
   > `A` was declared to implement trait `I` abstractly.
 
-  * _Direct-to-general_ When `#(A <! I)` then `#(A < I)` (the latter meaning "`A` implements trait `I` abstractly")
-  * _Inheritance_: When `#(C <! I)`, `A < C`, and there is no `B` with `A <= B < C` and `B <! I` then `#(A < I)` (note that otherwise, by rules above, `A` inherits `A < I` from `B`)
-  * _Un-ordering rule_: When `A < B[].O` then `#(A < B.O)`
+  * ***Direct-to-general rule*** When `#(A <! I)` then `#(A < I)` (the latter meaning "`A` implements trait `I` abstractly")
+  * ***Inheritance rule***: When `#(C <! I)`, `A < C`, and there is no `B` with `A <= B < C` and `B <! I` then `#(A < I)` (note that otherwise, by rules above, `A` inherits `A < I` from `B`)
+  * ***Un-ordering rule***: When `A < B[].O` then `#(A < B.O)`
  
-* **Abstract roles** `#(A : REL(I))` means:
+* **Abstract role rules** `#(A : REL(I))` means:
   > Relation `A` depends on role type `I` abstractly
  
-  * _Un-specialization rule_: When `A : REL(I)`, `I < J`, (i.e., `A relates I as J`) then `#(A : REL(J[]))`
-  * _Un-specialization rule (list case)_: When `A : REL(I[])`, `I < J`, (i.e., `A relates I[] as J[]`) then `#(A : REL(J[]))`
-  * _Un-ordering rule_: When `A : REL(I[])` then automatically `#(A : REL(I))`
+  * ***Un-specialization rule***: When `A : REL(I)`, `I < J`, (i.e., `A relates I as J`) then `#(A : REL(J[]))`
+  * ***Un-specialization rule (list case)***: When `A : REL(I[])`, `I < J`, (i.e., `A relates I[] as J[]`) then `#(A : REL(J[]))`
+  * ***Un-ordering rule***: When `A : REL(I[])` then automatically `#(A : REL(I))`

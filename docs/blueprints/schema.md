@@ -1,3 +1,7 @@
+---
+status: complete
+---
+
 # Data definition language
 
 Specification of how to modify database schema. On this page:
@@ -20,15 +24,18 @@ Invariants hold true in any valid database system state. We usually express the 
 1. When `A sub! B` then either:
     * `_kind(A) = _kind(B)`
     * `A : ENT + REL`, `B : Trait`, 
-1. Given `A`, `A sub! B` true for at most one `B`
-1. Given `A`, `A relates! I` true for at most one `A`
-1. Given `A`, `A value V` true for at most one `V`
+1. Given ERA type `A`, `A sub! B` true for at most one `B`
+1. Given role `I`, `A relates! I` true for at most one `A`
+1. Given relation `A`, either `A @abstract` or `A relates! I` true for at least one `I`
+1. Given attribute `A`, `A value V` true for at most one `V`
 1. `A relates I` and `B relates J[]` never concretely true at the same time when `A/B` and `I/J` in same hierarchy
 1. `A owns M` and `B owns N[]` never concretely true at the same time when `A/B` and `M/N` in same hierarchy
 
 ### Abstractness invariants
 
-1. `<statement> @abstract` and `<statement>` never true at the same time
+_Note_: **Abstract traits** and **abstract roles** come with several systematic rules. They are therefore most elegantly understood as part of the type system ("abstract statements" in the type system are written using `#(...)`). In contrast, **abstract types** (and also other modalities, like key attributes, uniqueness, dinstinctness, etc.) are pretty "simple" and are not made part of the type system—we simply record them "in the schema".
+
+1. `<statement>` and `#(<statement>)` ***never both true*** at the same time in the [type system](type_system.md)
 1. `A sub B` and `kind A @abstract` then must have `kind B @abstract`
 1. `A(I) <= B(J)` and `A relates I @abstract` then cannot have `B relates J` non-abstractly
 1. `A(I) <= B(J)` and `C plays A:I @abstract` then cannot have `C plays B:J` non-abstractly

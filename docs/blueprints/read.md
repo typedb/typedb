@@ -1,3 +1,7 @@
+---
+status: complete
+---
+
 # Reading data
 
 Specification of how to read data from database. On this page:
@@ -121,6 +125,7 @@ A **query computation** is a program represented by evaluating a single **comput
 
 * `not` (need to exhaustively search to proof non-existence)
 * `reduce` (need to compute all results to compute the aggregate)
+* `sort` (same)
 
 Since we allow called functions **recursively**, we must check that subquerying is acyclic: i.e., no subquery can depend on itself. Otherwise, reject the query.
 
