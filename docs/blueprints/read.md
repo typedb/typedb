@@ -9,7 +9,7 @@ Specification of how to read data from database. On this page:
 _**Query PROCESSING**_
 
 1. **Variable categorization**:
-   2. We distinguish by input/output/checked variables
+   2. We distinguish by input/output/internal variables
    3. We distinguish by "varcategory" (whether type, instance, list, or value)
 2. **Plannability check**:
    1. Variables must be "produceable", 
@@ -40,7 +40,7 @@ Given a stage with pattern `P` and set `IN` of input variables, we categorize va
 * **Input variables** `$x : IN`
 * **Produced variable** `$x : PROD`, if `$x` is not an input and appears anywhere in `P` which is not in a `not`-scope
 * **Output variables** `$x : OUT = IN + PROD`
-* **Checked variable** `$x : CHECK` otherwise
+* **Internal variable** `$x : INTL` otherwise
 
 #### For stages without patterns (modifiers)
 
@@ -222,7 +222,7 @@ We define the **evaluation algorithm**, which produces mult-sets (i.e. sets _wit
 
 ## Match stage
 
-Given a pattern `P` with input variables `IN` and a concept row multiset `ROWS` whose rows contain all variables of `IN` but no variables of `PROD` or `CHECK`, we define the evaluation of `P` to be the multiset, obtained by
+Given a pattern `P` with input variables `IN` and a concept row multiset `ROWS` whose rows contain all variables of `IN` but no variables of `PROD` or `INTL`, we define the evaluation of `P` to be the multiset, obtained by
 
 * for each row `r` in `ROWS`, obtain the (**deduplicated**!) answer _set_ `EV(P @ r)` by the procedure described in the next sections
 * take the multiset union of `EV(P @ r)` for all `r` in `ROWS`

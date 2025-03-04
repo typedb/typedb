@@ -19,99 +19,189 @@ Must-reads:
 
 ## Overview
 
-***Problem***: Our current planner produces linear, non-bushy plans... (side note: IKKBZ would do a better job at that already). We need 
+### Problem 1: efficient bushi-ness
 
-***Solution***: Use DP, but work in three regimes for efficiency:
+***Problem***: Our current planner produces linear, non-bushy plans... (side note: IKKBZ would do a better job at that already).
 
-* **small**: for < 100k subgraph (up to ~14 fully connected or ~100 linearly vars)
+***Solution***: Use dynamic programming (DP), but work in three regimes for efficiency:
+
+* **small**: for < 150k subgraph (up to ~16 fully connected or ~128 linearly vars)
   * run _Vanilla DP_
-* **medium**: <= 100 vars
+* **medium**: <= 128 vars
   * run _IKKBZ_ for linear (non-bushy query) plan
   * then run _Vanilla DP_ on segments of the linear plan to produce a bushy plan
-* **large**: > 100 vars
+* **large**: > 128 vars
   * run _iterative DP_:
-    * _greedy_ selection of 100 vars
+    * _greedy_ selection of 128 vars
     * then run _medium_ algorithm
     * repeat
 
-`!! we need the capability to plan big queries for inlining functions !!`
+_Remark_: first mover advantage.
+
+### Problem 2: Joining on unsorted intermediate results
+
+***Problem***: The planner cannot join on unsorted results.
+
+***Solution***: Allow the planner to plan
+* loop joins
+* sort joins
+* hash joins
+* a combination thereof
+
+### Problem 3: Planning across stages and (recursive) functions
+
+***Problem***: The planner cannot share information across stage and function boundaries.
+
+***Solution***: Inline stages and functions, when possible:
+
+1. ***Inlineable***: inlineable functions are dealt with as part of the same query plan.
+    * any pipeline/function comprising (any number of) `match`, `select`, `limit`, `offset`, `distinct`, non-aggregate `return`, is inlineable.
+2. ***Not inlineable***: Non-inlineable pipelines/functions get their own plan. Non-inlineable pipelines/functions are those containing
+    * **termination-required** read stages `reduce`, `sort`, aggregate `return`. Need their own plan as they need to run to termination.
+    * **state-sensitive** write stages: `insert`, `delete`, `update`, `put`. Mixing these into the plan could be _possible_, but seems difficult because writes could affect ongoing reads (transaction-level version control? :P)
+3. **Recursive** functions. Recursion requires tabling which requires a well-defined plan for the function, so inlining becomes questionable except for shallow recursions.
+
+In the inlineable case for pipelines and functions, distinguish:
+1. Non-recursive case:
+    * **inline full pattern**, technicalities of constraint construction are discussed below
+    * _Note_: we need to **avoid name clashes** for de-selected variables
+2. Recursive case:
+    * ?? For depth-restricted recursions, consider feasibility of **inlining**: planner should be able to handle up to ~(128/#internal vars) inline depth
+    * Even without inlining, **partial application** of recursive functions is straight-forward, so all possible production rules should be given to the planner. Example:
+      ```
+      with fun path($x: vertex, $y: vertex) -> bool: 
+        match { edge($x, $y); } or { edge($x, $z); path($z, $y); }  # sugared
+        return check;                                               # sugared
+      match
+        $x isa vertex, has id "1";
+        path($x, $y);
+      ```
+      here, the planner should see the production rule `$x -> $y` for the call to `path($x, $y)`, and should generate a plan _with that production rule for the function itself_
+    * cost estimation for recursive functions should be **sample based**
+    * **maximal recursion depth** would be a useful thing to have to notify the user of potential cycles
+
+_Note_ Inlining automatically solved the issue of "partial applications". Unfortunately, in the recursive case, this does not apply, so a separate partial application mechanism needs to be built.
+
+### Problem 4: planning across disjunctions
+
+***Problem***: Plans may vary greatly between disjunction, especially when these are chained (i.e. for `{A} or {B}; {C} or {D};` the `A;C` plan may be completely different from the `B;D` plan.)
+
+***Solution***: Adaptively plan per branch in DNF, but share work in the planner.
+
+Per-branch planning can be inefficient; therefore, use adaptive planning as follows.
+
+* **medium DNF**: <= 32 branches (~5 binary, ~3 ternary `or`s) branches in DNF:
+  * plan each branch separately, but let planner share the same DP table to avoid redoing work
+  * from the final planning **tree plans per branch**, produce a **DAG** plan, by identifying shared subtrees.
+* **large DNF**: > 32 branches:
+  * **freeze** some _homogeneous_ disjunctions, i.e. do not expand them in DNF.
+    * A disjunction is **homogeneous** if all branches share at least one common production rule up to locally scoped variables (this production rule can then be used for the entire disjunction), where _"locally scoped in a disjunction"_ means _"appears only in branches of that disjunction"_
+  * (branch size may still be > 32, but that's life)
+  * then run small DNF with "frozen disjunctions" edges, see graph construction below
+
+### Notation
+
+* prod rules: `($x, $y) -> $z`
+
+  > A **pipeline** (incl. function), **pattern**, or **constraint** produces `$z` from `($x, $y)`
+* limit rules: `$x:($y, $z) = n`
+
+  > A **planner graph** restricts outputs of `$x` to n for each `($y, $z)`
+* sort rules:  `$x|($y, $z)`
+
+  > A **(partial) plan** produces `$x` sorted for each `($y, $z)
 
 ## Preprocessing
 
-### Expanding to disjunctive normal form (DNF)
+### "Planner graph" data
 
-**Problem**. Plans may vary greatly between disjunction, especially when these are chained (i.e. for `{A} or {B}; {C} or {D};` the `A;C` plan may be completely different from the `B;D` plan.)
-**Solution**. Plan per branch in DNF
+* **Variables**: are "typed vertices" of the graph, categorize by:
+  * **selected**, variables that are outputted by query
+  * **unselected**, variables that are not outputted (automatically includes "internal" variables)
+* **Constraints**: the "typed edges" of the graph, _see types detailed below_
+* **Production rules** per constraint: a set of rule `$a -> ($b, $c)` of which variables in the constraint can be produced from which other variables (empty set means all vars in constraint required)
+* **Limit rules**: rules `$a:($b,$c)=size` restricting the size of outputs for variable tuples relative to other variable tuple. Limit rules arise from
+  * internal vars in `not` subqueries
+  * `return` in inlined functions
+  * `select`, `limit`, `distinct`
+* **Offset rules**: rules `$a:($b,$c)=offset` restricting the size of outputs for variable tuples relative to other variable tuple.
 
-* **small DNF**: <= 64 branches in DNF
-  * plan each branch separately, but let planner share the same DP table to avoid redoing work
-  * unify subplans across branches
-* **large DNF**: > 64 branches in DNF:
-  * "freeze" the most homogenous `or` clauses by some measure of homogeneity, i.e. do not expand them in DNF
-  * then run small DNF with "frozen disjunction" edges (see below)
-
-### Inlining functions
-
-### Planner "graph" construction
-
-* **Variables**, both are "typed vertices" of the graph (types as categorized in [read spec](read.md))
-* **Constraints** are the "typed edges" of the graph, _see types detailed below_
-* **Validity dependencies**, mapping constraints to their "required variables"
-
-#### Constraint construction
+### Constructing constraints
 
 * **Access constraints**, are "unary" edges of the graph
-  * Example:
-    * `$x == 10`
-    * `$x isa person`
+  * may produce or require variable
+  * Examples:
+    * `$x == 10` (prod rules: `() -> $x`)
+    * `$x * $x + 1 == 28` (prod rules: empty)
+    * `$x isa person` (prod rules: `() -> $x`)
 * **Relation constraints**:
-  *  
-  * Example:
-    * `$x has $T $y`
-    * `$x links $y`;
+  * may produce or require variable
+  * Examples:
+    * `$x == $y` (prod rules: `$x -> $y`, `$y -> $x`)
+    * `$x * $x == $y` (prod rules: `$x -> $y`)
+    * `$x has $T $y` (prod rules `() -> $x, $y`)
+    * `$x links $y` (prod rules `() -> $x, $y`)
+* **Inlined function constraints**:
+  * Add all contained constraints
+  * and account for other stages
+  * Examples:
+    * `let $x in f($y)` where `f($y): match P($y, $z, $x2); limit 5; return $x2;`
+      * add _all_ constraints in `P` recursively, identifying `$x2` and `$x`
+      * add limit rules: `$x:$y = 5`, `$z:($y,$x) = 1`
+    * `let $x in f($y)` where `f($y): match P($u, $y, $z); select $u; match Q($u, $x2); return $x2;`
+      * add _all_ constraints in `P` **and** `Q` recursively, identifying `$x2` and `$x`
+      * add limit rules: `$u:($y,$x) = 1`, `$z:($y,$u) = 1`
+    * `let $x = f($y)` where `f($y): match P($y, $z, $x2); return first $x2;`
+      * add _all_ constraints in `P` recursively, identifying `$x2` and `$x`
+      * add limit rules: `$x:$y = 1`, `$z:($y,$x) = 1`
+* **Recursive functions**:
+  * 
 * **Non-inlined function constraints**, 
-  * Example:
-    * `let $x = f($y) // match $z ... return $x;` where `f` is _not_ inlineable
+  * edge relating function _input_ + _output_ vars. 
+  * prod rules: `input -> output`
+  * Examples:
+    * `let $x in f($y, $z)` (prod rules: `($y, $z) -> $x`) 
 * **Nested negation constraint**
+  * relates _output_ and _internal_ variables (see [IO categorization](read.md)) 
+  * prod rules: `output -> internal` (note: if a not succeeds, checked variables will be empty)
+  * size limits: `internal:output == 1`
   * Example:
-    * `not { <Inst $y>, <Check $z> }` (see [varcategories](read.md))
+    * `not { <Inst $y>, <Check $z> }` (prod rules: `$y -> $z`)
 * **Frozen disjunction constraints**, the n-ary edges of the graph, n > 1
- 
 
-### Validity dependency
+#### Constructing rules
 
-### Size dependency
-
-### "Currying"
-
-***Planning boundaries***
-
-Planner should work across `match`, `select`, `limit`, `offset`,
-
-This means functions using only these stages are **inlineable**
-
-"Planner boundaries": `not` and `reduce` and `sort`
+* `select` determines when variables are marked as selected/unselected (used by the planner to compute costs by reducing intermediate sizes)
+* function assignments affect limit rules ... (used by the planner to compute costs by reducing intermediate sizes)
+* `limit` affects limit rules ... (used by the planner to compute costs by reducing intermediate sizes) 
+* `distinct` doesn't affect anything ...
+* `offset` affects offset rules ... (used by the planner to compute costs by reducing intermediate sizes)
 
 ## Algorithm
 
-### Input
+### (Partial) Plan data
 
-*
+#### Single branch plan
 
-### DP Subplans
+* **tree of constraints**
+  * leafs are data retrievals
+  * links nodes are operations that operate on data in place
+    * predicate checks
+  * branching nodes are operations than combine constraints (potentially on **tuples** of vars)
+    * joins (as listed above)
+* **sort-by data** `$x|($y,$z)` says `$x` is sorted for each tuple `($y, $z)`. (Used for decisions on merge-sort)
 
-* A subplan is
-  * a set of constraint of "sort-produced vars" (sorted = true, false)
-  * (a site location, see "Partitioned data" below)
+#### Multi branch plan
+
+* **DAG** version of the above
 
 ### Vanilla DP
 
+As usual (up to some interesting transformations... tbd)
 
-### IKKBZ 
+### IKKBZ
 
-
-
-
+A very cool algorithm adapted from [operations research](references/The%20IKKBZ%20Algorithm%20-%20Cockroach%20Labs.pdf).
 
 ## Partitioned data
 
