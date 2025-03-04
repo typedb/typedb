@@ -32,6 +32,7 @@ use ir::{
     pipeline::ParameterRegistry,
 };
 use itertools::{Itertools, MinMaxResult};
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
 
@@ -169,6 +170,7 @@ impl InstructionExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         match self {
             Self::Is(executor) => executor.get_iterator(context, row),
@@ -182,13 +184,13 @@ impl InstructionExecutor {
             Self::RelatesReverse(executor) => executor.get_iterator(context, row),
             Self::Plays(executor) => executor.get_iterator(context, row),
             Self::PlaysReverse(executor) => executor.get_iterator(context, row),
-            Self::Isa(executor) => executor.get_iterator(context, row),
-            Self::IsaReverse(executor) => executor.get_iterator(context, row),
-            Self::Has(executor) => executor.get_iterator(context, row),
-            Self::HasReverse(executor) => executor.get_iterator(context, row),
-            Self::Links(executor) => executor.get_iterator(context, row),
-            Self::LinksReverse(executor) => executor.get_iterator(context, row),
-            Self::IndexedRelation(executor) => executor.get_iterator(context, row),
+            Self::Isa(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::IsaReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Has(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::HasReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Links(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::LinksReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::IndexedRelation(executor) => executor.get_iterator(context, row, storage_counters),
         }
     }
 

@@ -225,6 +225,7 @@ impl OwnerAPI for ObjectType {
 impl ConceptAPI for ObjectType {}
 
 impl TypeAPI for ObjectType {
+    const MIN: Self = Self::Entity(EntityType::MIN);
     fn new(vertex: TypeVertex) -> Self {
         Self::from_vertex(vertex).unwrap()
     }

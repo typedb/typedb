@@ -23,16 +23,24 @@ pub enum VariableValue<'a> {
 
 impl<'a> VariableValue<'a> {
     pub fn as_type(&self) -> Type {
+        self.get_type().unwrap_or_else(|| panic!("VariableValue is not a Type: {:?}", self))
+    }
+
+    pub fn get_type(&self) -> Option<Type> {
         match self {
-            &Self::Type(type_) => type_,
-            _ => panic!("VariableValue is not a Type: {self:?}"),
+            &VariableValue::Type(type_) => Some(type_),
+            _ => None,
         }
     }
 
     pub fn as_thing(&self) -> &Thing {
+        self.get_thing().unwrap_or_else(|| panic!("VariableValue is not a Thing: {:?}", self))
+    }
+
+    pub fn get_thing(&self) -> Option<&Thing> {
         match self {
-            VariableValue::Thing(thing) => thing,
-            _ => panic!("VariableValue is not a Thing: {self:?}"),
+            VariableValue::Thing(thing) => Some(thing),
+            _ => None,
         }
     }
 
@@ -40,7 +48,7 @@ impl<'a> VariableValue<'a> {
         match self {
             VariableValue::Value(value) => value,
             // TODO: Do we want to implicit cast from attributes?
-            _ => panic!("VariableValue is not a value"),
+            _ => panic!("VariableValue is not a value: {:?}", self),
         }
     }
 
@@ -116,6 +124,10 @@ impl Hkt for VariableValue<'static> {
 impl PartialOrd for VariableValue<'_> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         match (self, other) {
+            // special case: Empty is less than everything, except also equal to Empty
+            (Self::Empty, Self::Empty) => Some(Ordering::Equal),
+            (Self::Empty, _) => Some(Ordering::Less),
+            (_, Self::Empty) => Some(Ordering::Greater),
             (Self::Type(self_type), Self::Type(other_type)) => self_type.partial_cmp(other_type),
             (Self::Thing(self_thing), Self::Thing(other_thing)) => self_thing.partial_cmp(other_thing),
             (Self::Value(self_value), Self::Value(other_value)) => self_value.partial_cmp(other_value),

@@ -19,14 +19,15 @@ use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
+use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;
+use tracing::{event, Level};
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
     pipeline::stage::ExecutionContext,
-    profile::StepProfile,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
         step_executor::StepExecutors,
@@ -197,7 +198,7 @@ impl IntersectionExecutor {
             output_width,
             outputs_selected: SelectedPositions::new(select_variables),
             iterators: Vec::with_capacity(instruction_count),
-            cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count),
+            cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, profile.clone()),
             input: None,
             intersection_value: VariableValue::Empty,
             intersection_row: vec![VariableValue::Empty; output_width as usize],
@@ -336,7 +337,10 @@ impl IntersectionExecutor {
                     let (containing_max, containing_i) = self.iterators.split_at_mut(i);
                     (containing_i, containing_max, 0, current_max_index)
                 };
-                let current_max = containing_max[max_index].peek_first_unbound_value().unwrap().unwrap();
+                let iterator = &mut containing_max[max_index];
+                let current_max_name = format!("{}", iterator);
+                let current_max = iterator.peek_first_unbound_value().unwrap().unwrap();
+                println!("Checking max from iterator {}, value: {}", current_max_name, current_max);
                 let max_cmp_peek = match containing_i[i_index].peek_first_unbound_value() {
                     None => {
                         failed = true;
@@ -354,21 +358,38 @@ impl IntersectionExecutor {
                     Ordering::Equal => (),
                     Ordering::Greater => {
                         let iter_i = &mut containing_i[i_index];
+                        let name = format!("{}", iter_i);
+                        println!("Advancing iterator_i {} forward", name);
                         let next_value_cmp = iter_i
-                            .advance_until_index_is(iter_i.first_unbound_index(), current_max)
+                            .advance_until_first_unbound_is(current_max)
                             .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
+                        println!(
+                            "Seeked iter_i ({}) to current_max, cmp: {:?}, Has peek: {}",
+                            name,
+                            next_value_cmp,
+                            iter_i.peek().is_some()
+                        );
                         match next_value_cmp {
                             None => {
+                                println!(" --> No value found");
                                 failed = true;
                                 break;
                             }
                             Some(Ordering::Less) => {
+                                let peek = iter_i.peek().unwrap().as_ref().unwrap();
+                                println!(
+                                    "Current max variable_value: {}. Iter_i ({})'s peek: {:?}",
+                                    current_max, name, peek
+                                );
                                 unreachable!("Skip to should always be empty or equal/greater than the target")
                             }
-                            Some(Ordering::Equal) => (),
+                            Some(Ordering::Equal) => {
+                                println!(" --> Equal value found");
+                            }
                             Some(Ordering::Greater) => {
                                 current_max_index = i;
                                 retry = true;
+                                println!(" --> Greater value found");
                             }
                         }
                     }
@@ -381,6 +402,7 @@ impl IntersectionExecutor {
                 debug_assert!(self.all_iterators_intersect());
                 return Ok(true);
             }
+            println!("Retrying intersection loops");
         }
     }
 
@@ -394,12 +416,14 @@ impl IntersectionExecutor {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
             self.intersection_provenance = next_row.provenance();
             for executor in &self.instruction_executors {
-                self.iterators.push(executor.get_iterator(context, next_row.as_reference()).map_err(|err| {
-                    ReadExecutionError::CreatingIterator {
-                        instruction_name: executor.name().to_string(),
-                        typedb_source: err,
-                    }
-                })?);
+                self.iterators.push(
+                    executor.get_iterator(context, next_row.as_reference(), self.profile.storage_counters()).map_err(
+                        |err| ReadExecutionError::CreatingIterator {
+                            instruction_name: executor.name().to_string(),
+                            typedb_source: err,
+                        },
+                    )?,
+                );
             }
         }
         Ok(())
@@ -511,10 +535,11 @@ struct CartesianIterator {
     intersection_multiplicity: u64,
     cartesian_executor_indices: Vec<usize>,
     iterators: Vec<Option<TupleIterator>>,
+    profile: Arc<StepProfile>,
 }
 
 impl CartesianIterator {
-    fn new(width: usize, iterator_executor_count: usize) -> Self {
+    fn new(width: usize, iterator_executor_count: usize, profile: Arc<StepProfile>) -> Self {
         CartesianIterator {
             is_active: false,
             intersection_value: VariableValue::Empty,
@@ -523,6 +548,7 @@ impl CartesianIterator {
             intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
             iterators: (0..iterator_executor_count).map(|_| Option::None).collect_vec(),
+            profile,
         }
     }
 
@@ -571,10 +597,12 @@ impl CartesianIterator {
                         None => self.reopen_iterator(context, &iterator_executors[index])?,
                         Some(Ok(value)) => {
                             if value < source_intersection_value {
-                                let next_value_cmp = iter
-                                    .advance_until_index_is(iter.first_unbound_index(), source_intersection_value)
+                                iter.advance_until_first_unbound_is(source_intersection_value)
                                     .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
-                                debug_assert_eq!(next_value_cmp, Some(std::cmp::Ordering::Equal));
+                                debug_assert_eq!(
+                                    iter.peek_first_unbound_value().unwrap().unwrap(),
+                                    source_intersection_value
+                                );
                                 iter
                             } else if value == source_intersection_value {
                                 iter
@@ -632,11 +660,11 @@ impl CartesianIterator {
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ReadExecutionError> {
         let mut reopened = executor
-            .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1, &Provenance::INITIAL))
+            .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1, &Provenance::INITIAL), self.profile.storage_counters())
             .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
         // TODO: use seek()
         reopened
-            .advance_until_index_is(reopened.first_unbound_index(), &self.intersection_value)
+            .advance_until_first_unbound_is(&self.intersection_value)
             .map_err(|err| ReadExecutionError::AdvancingIteratorTo { typedb_source: err })?;
         Ok(reopened)
     }

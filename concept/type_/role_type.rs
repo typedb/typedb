@@ -14,7 +14,7 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
         },
         Typed,
@@ -64,6 +64,12 @@ impl Hkt for RoleType {
     type HktSelf<'a> = Self;
 }
 
+impl RoleType {
+    const fn new_const_(vertex: TypeVertex) -> Self {
+        Self { vertex }
+    }
+}
+
 impl ConceptAPI for RoleType {}
 
 impl PrefixedTypeVertexEncoding for RoleType {
@@ -90,6 +96,7 @@ impl TypeVertexEncoding for RoleType {
 }
 
 impl TypeAPI for RoleType {
+    const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexRoleType.prefix_id(), TypeID::MIN));
     fn new(vertex: TypeVertex) -> RoleType {
         Self::from_vertex(vertex).unwrap()
     }

@@ -11,7 +11,10 @@ use std::{
 
 use bytes::Bytes;
 use lending_iterator::LendingIterator;
-use resource::constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE};
+use resource::{
+    constants::{encoding::DefinitionIDUInt, snapshot::BUFFER_KEY_INLINE},
+    profile::StorageCounters,
+};
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
     key_value::StorageKey,
@@ -61,10 +64,13 @@ impl<T: SchemaID + Keyable<BUFFER_KEY_INLINE>> SchemaIDAllocator<T> {
         snapshot: &mut Snapshot,
         start: u64,
     ) -> Result<Option<u64>, EncodingError> {
-        let mut schema_object_iter = snapshot.iterate_range(&KeyRange::new_fixed_width(
-            RangeStart::Inclusive(T::object_from_id(self.prefix, start).into_storage_key()),
-            RangeEnd::EndPrefixInclusive(T::object_from_id(self.prefix, T::MAX_ID).into_storage_key()),
-        ));
+        let mut schema_object_iter = snapshot.iterate_range(
+            &KeyRange::new_fixed_width(
+                RangeStart::Inclusive(T::object_from_id(self.prefix, start).into_storage_key()),
+                RangeEnd::EndPrefixInclusive(T::object_from_id(self.prefix, T::MAX_ID).into_storage_key()),
+            ),
+            StorageCounters::DISABLED.clone(),
+        );
         for expected_next_id in start..=T::MAX_ID {
             match schema_object_iter.next() {
                 None => return Ok(Some(expected_next_id)),

@@ -18,11 +18,12 @@ use concept::{
     type_::{relation_type::RelationType, role_type::RoleType},
 };
 use itertools::Itertools;
+use lending_iterator::{AsLendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         relates_executor::{
             RelatesFilterFn, RelatesFilterMapFn, RelatesTupleIterator, RelatesVariableValueExtractor, EXTRACT_RELATION,
             EXTRACT_ROLE,
@@ -144,10 +145,10 @@ impl RelatesReverseExecutor {
                     })
                     .try_collect()?;
                 let iterator = relates.into_iter().flatten().map(Ok as _);
-                let as_tuples: RelatesReverseUnboundedSortedRole =
-                    iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::RelatesReverseUnbounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
@@ -171,10 +172,10 @@ impl RelatesReverseExecutor {
                     .map(|relation_type| (relation_type, role_type));
 
                 let iterator = relates.into_iter().sorted_by_key(|(relation, _)| *relation).map(Ok as _);
-                let as_tuples: RelatesReverseBoundedSortedRelation =
-                    iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::RelatesReverseBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))

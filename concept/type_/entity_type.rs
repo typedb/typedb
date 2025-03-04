@@ -10,7 +10,7 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
         },
         Typed,
@@ -60,7 +60,12 @@ impl Hkt for EntityType {
     type HktSelf<'a> = EntityType;
 }
 
-impl EntityType {}
+impl EntityType {
+    const fn new_const_(vertex: TypeVertex) -> Self {
+        // note: unchecked!
+        Self { vertex }
+    }
+}
 
 impl ConceptAPI for EntityType {}
 
@@ -88,6 +93,7 @@ impl TypeVertexEncoding for EntityType {
 }
 
 impl TypeAPI for EntityType {
+    const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexEntityType.prefix_id(), TypeID::MIN));
     fn new(vertex: TypeVertex) -> EntityType {
         Self::from_vertex(vertex).unwrap()
     }

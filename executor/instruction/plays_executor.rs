@@ -18,11 +18,13 @@ use concept::{
     type_::{object_type::ObjectType, role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, PlayerAPI},
 };
 use itertools::Itertools;
+use lending_iterator::{AsLendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
+        plays_reverse_executor::PlaysReverseExecutor,
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -47,7 +49,8 @@ impl fmt::Debug for PlaysExecutor {
     }
 }
 
-pub(super) type PlaysTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<PlaysFilterMapFn>>, PlaysToTupleFn>;
+pub(super) type PlaysTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<PlaysFilterMapFn>>, PlaysToTupleFn>>>;
 
 pub(super) type PlaysUnboundedSortedPlayer = PlaysTupleIterator<
     iter::Map<
@@ -144,10 +147,10 @@ impl PlaysExecutor {
                     .map(|player| self.get_plays_for_player(snapshot, type_manager, *player))
                     .try_collect()?;
                 let iterator = plays.into_iter().flatten().map(Ok as _);
-                let as_tuples: PlaysUnboundedSortedPlayer =
-                    iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(plays_to_tuple_player_role as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::PlaysUnbounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
@@ -166,10 +169,10 @@ impl PlaysExecutor {
                 let plays = self.get_plays_for_player(snapshot, type_manager, player)?;
 
                 let iterator = plays.into_iter().sorted_by_key(|&(player, role)| (role, player)).map(Ok as _);
-                let as_tuples: PlaysBoundedSortedRole =
-                    iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(plays_to_tuple_role_player as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::PlaysBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))

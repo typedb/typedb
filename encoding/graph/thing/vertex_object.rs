@@ -29,14 +29,16 @@ pub struct ObjectVertex {
 
 impl ObjectVertex {
     pub const KEYSPACE: EncodingKeyspace = EncodingKeyspace::DefaultOptimisedPrefix11;
-
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ObjectID::LENGTH;
+    pub const MIN: Self = Self::MIN_ENTITY;
+    pub const MIN_ENTITY: Self = Self::build_entity(TypeID::MIN, ObjectID::MIN);
+    pub const MIN_RELATION: Self = Self::build_relation(TypeID::MIN, ObjectID::MIN);
 
-    pub fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
+    pub const fn build_entity(type_id: TypeID, object_id: ObjectID) -> Self {
         Self { prefix: Prefix::VertexEntity, type_id, object_id }
     }
 
-    pub fn build_relation(type_id: TypeID, object_id: ObjectID) -> Self {
+    pub const fn build_relation(type_id: TypeID, object_id: ObjectID) -> Self {
         Self { prefix: Prefix::VertexRelation, type_id, object_id }
     }
 
@@ -133,9 +135,15 @@ pub struct ObjectID {
 
 impl ObjectID {
     pub(crate) const LENGTH: usize = 8;
+    pub const MIN: Self = Self::new_const(0);
 
     pub fn new(id: u64) -> Self {
+        // TODO: mem::size_of_val isn't const yet
         debug_assert_eq!(mem::size_of_val(&id), Self::LENGTH);
+        Self::new_const(id)
+    }
+
+    const fn new_const(id: u64) -> Self {
         ObjectID { value: id }
     }
 

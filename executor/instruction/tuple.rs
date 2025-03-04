@@ -4,17 +4,56 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::cmp::Ordering;
+
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::ExecutorVariable;
 use concept::{
     error::ConceptReadError,
     thing::{
+        attribute::Attribute,
         has::Has,
-        relation::{IndexedRelationPlayers, Relation, RolePlayer},
+        object::Object,
+        relation::{IndexedRelationPlayers, Links, Relation},
+        ThingAPI,
     },
-    type_::{attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType},
+    type_::{
+        attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
+        TypeAPI,
+    },
+};
+use encoding::graph::{
+    thing::{
+        edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks},
+        vertex_object::ObjectVertex,
+    },
+    type_::vertex::TypeVertexEncoding,
 };
 use lending_iterator::higher_order::Hkt;
+
+use crate::instruction::{has_executor::FixedHasBounds, links_executor::FixedLinksBounds};
+
+pub(crate) type TupleOrderingFn = for<'a, 'b> fn((&'a TupleResult<'static>, &'b TupleResult<'static>)) -> Ordering;
+
+pub(crate) fn unsafe_compare_result_tuple<'a, 'b>(
+    (first, second): (&'a TupleResult<'static>, &'b TupleResult<'static>),
+) -> Ordering {
+    let first_tuple = match first {
+        Ok(first) => first,
+        Err(_) => {
+            // arbitrary
+            return Ordering::Equal;
+        }
+    };
+    let second_tuple = match second {
+        Ok(second) => second,
+        Err(_) => {
+            // arbitrary
+            return Ordering::Equal;
+        }
+    };
+    first_tuple.partial_cmp(second_tuple).unwrap()
+}
 
 #[derive(Debug, Clone)]
 pub(crate) enum Tuple<'a> {
@@ -22,6 +61,7 @@ pub(crate) enum Tuple<'a> {
     Pair([VariableValue<'a>; 2]),
     Triple([VariableValue<'a>; 3]),
     Quintuple([VariableValue<'a>; 5]),
+    Arbitrary(Vec<VariableValue<'a>>), // TODO: unknown sized tuples, for functions
 }
 
 impl PartialEq<Tuple<'_>> for Tuple<'_> {
@@ -38,13 +78,7 @@ impl PartialEq<Tuple<'_>> for Tuple<'_> {
 
 impl PartialOrd<Tuple<'_>> for Tuple<'_> {
     fn partial_cmp(&self, other: &Tuple<'_>) -> Option<std::cmp::Ordering> {
-        match (self, other) {
-            (Tuple::Single(this), Tuple::Single(that)) => this.partial_cmp(that),
-            (Tuple::Pair(this), Tuple::Pair(that)) => this.partial_cmp(that),
-            (Tuple::Triple(this), Tuple::Triple(that)) => this.partial_cmp(that),
-            (Tuple::Quintuple(this), Tuple::Quintuple(that)) => this.partial_cmp(that),
-            _ => None,
-        }
+        self.values().partial_cmp(other.values())
     }
 }
 
@@ -55,6 +89,17 @@ impl<'a> Tuple<'a> {
             Tuple::Pair(values) => values,
             Tuple::Triple(values) => values,
             Tuple::Quintuple(values) => values,
+            Tuple::Arbitrary(values) => values,
+        }
+    }
+
+    pub(crate) fn values_mut(&mut self) -> &mut [VariableValue<'a>] {
+        match self {
+            Tuple::Single(values) => values,
+            Tuple::Pair(values) => values,
+            Tuple::Triple(values) => values,
+            Tuple::Quintuple(values) => values,
+            Tuple::Arbitrary(values) => values,
         }
     }
 
@@ -64,6 +109,7 @@ impl<'a> Tuple<'a> {
             Tuple::Pair(values) => Tuple::Pair(values.map(VariableValue::into_owned)),
             Tuple::Triple(values) => Tuple::Triple(values.map(VariableValue::into_owned)),
             Tuple::Quintuple(values) => Tuple::Quintuple(values.map(VariableValue::into_owned)),
+            Tuple::Arbitrary(values) => Tuple::Arbitrary(values.into_iter().map(VariableValue::into_owned).collect()),
         }
     }
 }
@@ -238,11 +284,50 @@ pub(crate) fn isa_to_tuple_type_thing(result: Result<(Thing, Type), Box<ConceptR
 }
 
 pub(crate) type HasToTupleFn = fn(Result<(Has, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
+pub(crate) type TupleToHasFn = fn(&Tuple<'_>, &FixedHasBounds) -> Has;
 
 pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has, u64), Box<ConceptReadError>>) -> TupleResult<'static> {
     let (has, _count) = result?;
     let (owner, attribute) = has.into_owner_attribute();
     Ok(Tuple::Pair([VariableValue::Thing(owner.into()), VariableValue::Thing(attribute.into())]))
+}
+
+pub(crate) fn tuple_owner_attribute_to_has_canonical(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
+    let (tuple_owner, tuple_attribute) = tuple_owner_attribute_to_owner_attribute(tuple);
+    let (owner, attribute) = match fixed_has_bounds {
+        FixedHasBounds::None => (tuple_owner, tuple_attribute),
+        FixedHasBounds::Owner(fixed_owner) => (*fixed_owner, tuple_attribute),
+        FixedHasBounds::Attribute(fixed_attribute) => (tuple_owner, fixed_attribute),
+    };
+    Has::Edge(ThingEdgeHas::new(owner.vertex(), attribute.vertex()))
+}
+
+pub(crate) fn tuple_owner_attribute_to_has_reverse(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
+    let (tuple_owner, tuple_attribute) = tuple_owner_attribute_to_owner_attribute(tuple);
+    let (owner, attribute) = match fixed_has_bounds {
+        FixedHasBounds::None => (tuple_owner, tuple_attribute),
+        FixedHasBounds::Owner(fixed_owner) => (*fixed_owner, tuple_attribute),
+        FixedHasBounds::Attribute(fixed_attribute) => (tuple_owner, fixed_attribute),
+    };
+    Has::EdgeReverse(ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()))
+}
+
+fn tuple_owner_attribute_to_owner_attribute<'a>(tuple: &'a Tuple<'a>) -> (Object, &'a Attribute) {
+    let owner = tuple
+        .values()
+        .get(0)
+        .expect("Reverse tuple mapping missing owner")
+        .get_thing()
+        .map(|thing| thing.as_object())
+        .unwrap_or_else(|| Object::MIN);
+    let attribute = tuple
+        .values()
+        .get(1)
+        .expect("Reverse tuple mapping missing attribute")
+        .get_thing()
+        .map(|thing| thing.as_attribute())
+        .unwrap_or_else(|| &concept::thing::attribute::MIN_STATIC);
+    (owner, attribute)
 }
 
 pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has, u64), Box<ConceptReadError>>) -> TupleResult<'static> {
@@ -251,42 +336,228 @@ pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has, u64), Box<Concep
     Ok(Tuple::Pair([VariableValue::Thing(attribute.into()), VariableValue::Thing(owner.into())]))
 }
 
-pub(crate) type LinksToTupleFn = fn(Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
+pub(crate) fn tuple_attribute_owner_to_has_canonical(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
+    let (tuple_attribute, tuple_owner) = tuple_attribute_owner_to_attribute_owner(tuple);
+    let (attribute, owner) = match fixed_has_bounds {
+        FixedHasBounds::None => (tuple_attribute, &tuple_owner),
+        FixedHasBounds::Owner(fixed_owner) => (tuple_attribute, fixed_owner),
+        FixedHasBounds::Attribute(fixed_attribute) => (fixed_attribute, &tuple_owner),
+    };
+    Has::Edge(ThingEdgeHas::new(owner.vertex(), attribute.vertex()))
+}
+
+pub(crate) fn tuple_attribute_owner_to_has_reverse(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
+    let (tuple_attribute, tuple_owner) = tuple_attribute_owner_to_attribute_owner(tuple);
+    let (attribute, owner) = match fixed_has_bounds {
+        FixedHasBounds::None => (tuple_attribute, tuple_owner),
+        FixedHasBounds::Owner(fixed_owner) => (tuple_attribute, *fixed_owner),
+        FixedHasBounds::Attribute(fixed_attribute) => (fixed_attribute, tuple_owner),
+    };
+    Has::EdgeReverse(ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex()))
+}
+
+fn tuple_attribute_owner_to_attribute_owner<'a>(tuple: &'a Tuple<'_>) -> (&'a Attribute, Object) {
+    let attribute = tuple
+        .values()
+        .get(0)
+        .expect("Reverse tuple mapping missing attribute")
+        .get_thing()
+        .map(|thing| thing.as_attribute())
+        .unwrap_or_else(|| &concept::thing::attribute::MIN_STATIC);
+    let owner = tuple
+        .values()
+        .get(1)
+        .expect("Reverse tuple mapping missing owner")
+        .get_thing()
+        .map(|thing| thing.as_object())
+        .unwrap_or_else(|| Object::MIN);
+    (attribute, owner)
+}
+
+pub(crate) type LinksToTupleFn = fn(Result<(Links, u64), Box<ConceptReadError>>) -> TupleResult<'static>;
+pub(crate) type TupleToLinksFn = fn(&Tuple<'_>, &FixedLinksBounds) -> Links;
 
 pub(crate) fn links_to_tuple_relation_player_role(
-    result: Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+    result: Result<(Links, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let (rel, rp, _count) = result?;
-    let role_type = rp.role_type();
+    let (links, _count) = result?;
     Ok(Tuple::Triple([
-        VariableValue::Thing(rel.into()),
-        VariableValue::Thing(rp.player().into()),
-        VariableValue::Type(role_type.into()),
+        VariableValue::Thing(links.relation().into()),
+        VariableValue::Thing(links.player().into()),
+        VariableValue::Type(links.role_type().into()),
     ]))
+}
+
+pub(crate) fn tuple_relation_player_role_to_links_canonical(
+    tuple: &Tuple<'_>,
+    fixed_bounds: &FixedLinksBounds,
+) -> Links {
+    let (tuple_relation, tuple_player, role) = tuple_relation_player_role_to_relation_player_role(tuple);
+    let (relation, player) = match fixed_bounds {
+        FixedLinksBounds::None => (tuple_relation, tuple_player),
+        FixedLinksBounds::Relation(fixed_relation) => (*fixed_relation, tuple_player),
+        FixedLinksBounds::Player(fixed_player) => (tuple_relation, *fixed_player),
+        FixedLinksBounds::RelationAndPlayer(fixed_relation, fixed_player) => (*fixed_relation, *fixed_player),
+    };
+    Links::Edge(ThingEdgeLinks::new(relation.vertex(), player.vertex(), role.vertex()))
+}
+
+pub(crate) fn tuple_relation_player_role_to_links_reverse(tuple: &Tuple<'_>, fixed_bounds: &FixedLinksBounds) -> Links {
+    let (tuple_relation, tuple_player, role) = tuple_relation_player_role_to_relation_player_role(tuple);
+    let (relation, player) = match fixed_bounds {
+        FixedLinksBounds::None => (tuple_relation, tuple_player),
+        FixedLinksBounds::Relation(fixed_relation) => (*fixed_relation, tuple_player),
+        FixedLinksBounds::Player(fixed_player) => (tuple_relation, *fixed_player),
+        FixedLinksBounds::RelationAndPlayer(fixed_relation, fixed_player) => (*fixed_relation, *fixed_player),
+    };
+    Links::EdgeReverse(ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role.vertex()))
+}
+
+fn tuple_relation_player_role_to_relation_player_role(tuple: &Tuple<'_>) -> (Relation, Object, RoleType) {
+    let relation = tuple
+        .values()
+        .get(0)
+        .expect("Reverse tuple mapping missing relation")
+        .get_thing()
+        .map(|thing| thing.as_relation())
+        .unwrap_or_else(|| Relation::MIN);
+    let player = tuple
+        .values()
+        .get(1)
+        .expect("Reverse tuple mapping missing player")
+        .get_thing()
+        .map(|thing| thing.as_object())
+        .unwrap_or_else(|| Object::MIN);
+    let role = tuple
+        .values()
+        .get(2)
+        .expect("Reverse tuple mapping missing role type")
+        .get_type()
+        .map(|type_| type_.as_role_type())
+        .unwrap_or_else(|| RoleType::MIN);
+    (relation, player, role)
 }
 
 pub(crate) fn links_to_tuple_player_relation_role(
-    result: Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+    result: Result<(Links, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let (rel, rp, _count) = result?;
-    let role_type = rp.role_type();
+    let (links, _count) = result?;
     Ok(Tuple::Triple([
-        VariableValue::Thing(rp.player().into()),
-        VariableValue::Thing(rel.into()),
-        VariableValue::Type(role_type.into()),
+        VariableValue::Thing(links.player().into()),
+        VariableValue::Thing(links.relation().into()),
+        VariableValue::Type(links.role_type().into()),
     ]))
 }
 
+pub(crate) fn tuple_player_relation_role_to_links_canonical(
+    tuple: &Tuple<'_>,
+    fixed_bounds: &FixedLinksBounds,
+) -> Links {
+    let (tuple_player, tuple_relation, role) = tuple_player_relation_role_to_player_relation_role(tuple);
+    let (player, relation) = match fixed_bounds {
+        FixedLinksBounds::None => (tuple_player, tuple_relation),
+        FixedLinksBounds::Relation(fixed_relation) => (tuple_player, *fixed_relation),
+        FixedLinksBounds::Player(fixed_player) => (*fixed_player, tuple_relation),
+        FixedLinksBounds::RelationAndPlayer(fixed_relation, fixed_player) => (*fixed_player, *fixed_relation),
+    };
+    Links::Edge(ThingEdgeLinks::new(relation.vertex(), player.vertex(), role.vertex()))
+}
+
+pub(crate) fn tuple_player_relation_role_to_links_reverse(tuple: &Tuple<'_>, fixed_bounds: &FixedLinksBounds) -> Links {
+    let (tuple_player, tuple_relation, role) = tuple_player_relation_role_to_player_relation_role(tuple);
+    let (player, relation) = match fixed_bounds {
+        FixedLinksBounds::None => (tuple_player, tuple_relation),
+        FixedLinksBounds::Relation(fixed_relation) => (tuple_player, *fixed_relation),
+        FixedLinksBounds::Player(fixed_player) => (*fixed_player, tuple_relation),
+        FixedLinksBounds::RelationAndPlayer(fixed_relation, fixed_player) => (*fixed_player, *fixed_relation),
+    };
+    Links::EdgeReverse(ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role.vertex()))
+}
+
+fn tuple_player_relation_role_to_player_relation_role(tuple: &Tuple<'_>) -> (Object, Relation, RoleType) {
+    let player = tuple
+        .values()
+        .get(0)
+        .expect("Reverse tuple mapping missing player")
+        .get_thing()
+        .map(|thing| thing.as_object())
+        .unwrap_or_else(|| Object::MIN);
+    let relation = tuple
+        .values()
+        .get(1)
+        .expect("Reverse tuple mapping missing relation")
+        .get_thing()
+        .map(|thing| thing.as_relation())
+        .unwrap_or_else(|| Relation::MIN);
+    let role = tuple
+        .values()
+        .get(2)
+        .expect("Reverse tuple mapping missing role type")
+        .get_type()
+        .map(|type_| type_.as_role_type())
+        .unwrap_or_else(|| RoleType::MIN);
+    (player, relation, role)
+}
+
 pub(crate) fn links_to_tuple_role_relation_player(
-    result: Result<(Relation, RolePlayer, u64), Box<ConceptReadError>>,
+    result: Result<(Links, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let (rel, rp, _count) = result?;
-    let role_type = rp.role_type();
+    let (links, _count) = result?;
     Ok(Tuple::Triple([
-        VariableValue::Type(role_type.into()),
-        VariableValue::Thing(rel.into()),
-        VariableValue::Thing(rp.player().into()),
+        VariableValue::Type(links.role_type().into()),
+        VariableValue::Thing(links.relation().into()),
+        VariableValue::Thing(links.player().into()),
     ]))
+}
+
+pub(crate) fn tuple_role_relation_player_to_links_canonical(
+    tuple: &Tuple<'_>,
+    fixed_bounds: &FixedLinksBounds,
+) -> Links {
+    let (role, tuple_relation, tuple_player) = tuple_role_relation_player_to_role_relation_player(tuple);
+    let (player, relation) = match fixed_bounds {
+        FixedLinksBounds::None => (tuple_player, tuple_relation),
+        FixedLinksBounds::Relation(fixed_relation) => (tuple_player, *fixed_relation),
+        FixedLinksBounds::Player(fixed_player) => (*fixed_player, tuple_relation),
+        FixedLinksBounds::RelationAndPlayer(fixed_relation, fixed_player) => (*fixed_player, *fixed_relation),
+    };
+    Links::Edge(ThingEdgeLinks::new(relation.vertex(), player.vertex(), role.vertex()))
+}
+
+pub(crate) fn tuple_role_relation_player_to_links_reverse(tuple: &Tuple<'_>, fixed_bounds: &FixedLinksBounds) -> Links {
+    let (role, tuple_relation, tuple_player) = tuple_role_relation_player_to_role_relation_player(tuple);
+    let (player, relation) = match fixed_bounds {
+        FixedLinksBounds::None => (tuple_player, tuple_relation),
+        FixedLinksBounds::Relation(fixed_relation) => (tuple_player, *fixed_relation),
+        FixedLinksBounds::Player(fixed_player) => (*fixed_player, tuple_relation),
+        FixedLinksBounds::RelationAndPlayer(fixed_relation, fixed_player) => (*fixed_player, *fixed_relation),
+    };
+    Links::EdgeReverse(ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role.vertex()))
+}
+
+fn tuple_role_relation_player_to_role_relation_player(tuple: &Tuple<'_>) -> (RoleType, Relation, Object) {
+    let role = tuple
+        .values()
+        .get(0)
+        .expect("Reverse tuple mapping missing role type")
+        .get_type()
+        .map(|type_| type_.as_role_type())
+        .unwrap_or_else(|| RoleType::MIN);
+    let relation = tuple
+        .values()
+        .get(1)
+        .expect("Reverse tuple mapping missing relation")
+        .get_thing()
+        .map(|thing| thing.as_relation())
+        .unwrap_or_else(|| Relation::MIN);
+    let player = tuple
+        .values()
+        .get(2)
+        .expect("Reverse tuple mapping missing player")
+        .get_thing()
+        .map(|thing| thing.as_object())
+        .unwrap_or_else(|| Object::MIN);
+    (role, relation, player)
 }
 
 pub(crate) type IndexedRelationToTupleFn =
@@ -296,7 +567,8 @@ pub(crate) type IndexedRelationToTupleFn =
 pub(crate) fn indexed_relation_to_tuple_start_end_relation_startrole_endrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
+    let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
     Ok(Tuple::Quintuple([
         VariableValue::Thing(player_start.into()),
         VariableValue::Thing(player_end.into()),
@@ -310,7 +582,8 @@ pub(crate) fn indexed_relation_to_tuple_start_end_relation_startrole_endrole(
 pub(crate) fn indexed_relation_to_tuple_end_start_relation_startrole_endrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
+    let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
     Ok(Tuple::Quintuple([
         VariableValue::Thing(player_end.into()),
         VariableValue::Thing(player_start.into()),
@@ -324,7 +597,8 @@ pub(crate) fn indexed_relation_to_tuple_end_start_relation_startrole_endrole(
 pub(crate) fn indexed_relation_to_tuple_relation_start_end_startrole_endrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
+    let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
     Ok(Tuple::Quintuple([
         VariableValue::Thing(relation.into()),
         VariableValue::Thing(player_start.into()),
@@ -338,7 +612,8 @@ pub(crate) fn indexed_relation_to_tuple_relation_start_end_startrole_endrole(
 pub(crate) fn indexed_relation_to_tuple_startrole_start_end_relation_endrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
+    let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
     Ok(Tuple::Quintuple([
         VariableValue::Type(role_start.into()),
         VariableValue::Thing(player_start.into()),
@@ -351,7 +626,8 @@ pub(crate) fn indexed_relation_to_tuple_startrole_start_end_relation_endrole(
 pub(crate) fn indexed_relation_to_tuple_endrole_start_end_relation_relation_startrole(
     result: Result<(IndexedRelationPlayers, u64), Box<ConceptReadError>>,
 ) -> TupleResult<'static> {
-    let ((player_start, player_end, relation, role_start, role_end), _count) = result?;
+    let ((player_start, player_end, relation_type_id, relation_id, role_start, role_end), _count) = result?;
+    let relation = Relation::new(ObjectVertex::build_relation(relation_type_id, relation_id));
     Ok(Tuple::Quintuple([
         VariableValue::Type(role_end.into()),
         VariableValue::Thing(player_start.into()),

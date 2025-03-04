@@ -8,9 +8,10 @@ use std::sync::Arc;
 
 use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{profile::QueryProfile, read::pattern_executor::PatternExecutor};
+use crate::read::pattern_executor::PatternExecutor;
 
 mod collecting_stage_executor;
 pub(super) mod control_instruction;

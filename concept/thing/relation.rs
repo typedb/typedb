@@ -11,10 +11,10 @@ use encoding::{
     graph::{
         thing::{
             edge::{ThingEdgeIndexedRelation, ThingEdgeLinks},
-            vertex_object::ObjectVertex,
+            vertex_object::{ObjectID, ObjectVertex},
             ThingVertex,
         },
-        type_::vertex::{PrefixedTypeVertexEncoding, TypeVertexEncoding},
+        type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
         Typed,
     },
     layout::prefix::Prefix,
@@ -22,8 +22,11 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use itertools::Itertools;
-use lending_iterator::higher_order::Hkt;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use lending_iterator::{higher_order::Hkt, LendingIterator};
+use resource::{
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    profile::StorageCounters,
+};
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -47,6 +50,10 @@ pub struct Relation {
 }
 
 impl Relation {
+    const fn new_const(vertex: ObjectVertex) -> Self {
+        Relation { vertex }
+    }
+
     pub fn type_(&self) -> RelationType {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
@@ -74,8 +81,9 @@ impl Relation {
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
-        thing_manager.get_role_players(snapshot, self)
+        thing_manager.get_role_players(snapshot, self, storage_counters)
     }
 
     // TODO: It is basically the same as `get_players_role_type`, but with counts. Do we need to return counts?
@@ -85,8 +93,9 @@ impl Relation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
-        thing_manager.get_role_players_role(snapshot, self, role_type)
+        thing_manager.get_role_players_role(snapshot, self, role_type, storage_counters)
     }
 
     pub fn get_players_ordered(
@@ -103,10 +112,13 @@ impl Relation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<Object, Box<ConceptReadError>>> {
-        self.get_players(snapshot, thing_manager).filter_map::<Result<Object, _>, _>(move |res| match res {
-            Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
-            Err(error) => Some(Err(error)),
+        self.get_players(snapshot, thing_manager, storage_counters).filter_map::<Result<Object, _>, _>(move |res| {
+            match res {
+                Ok((roleplayer, _count)) => (roleplayer.role_type() == role_type).then_some(Ok(roleplayer.player)),
+                Err(error) => Some(Err(error)),
+            }
         })
     }
 
@@ -116,7 +128,7 @@ impl Relation {
         thing_manager: &ThingManager,
     ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
-        let mut rp_iter = self.get_players(snapshot, thing_manager);
+        let mut rp_iter = self.get_players(snapshot, thing_manager, StorageCounters::DISABLED);
         while let Some((role_player, count)) = rp_iter.next().transpose()? {
             let value = counts.entry(role_player.role_type()).or_insert(0);
             *value += count;
@@ -313,6 +325,7 @@ impl ConceptAPI for Relation {}
 impl ThingAPI for Relation {
     type Vertex = ObjectVertex;
     type TypeAPI = RelationType;
+    const MIN: Self = Self::new_const(Self::Vertex::MIN_RELATION);
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
     fn new(vertex: Self::Vertex) -> Self {
@@ -321,7 +334,7 @@ impl ThingAPI for Relation {
             Prefix::VertexRelation,
             "non-relation prefix when constructing from a vertex"
         );
-        Relation { vertex }
+        Self::new_const(vertex)
     }
 
     fn vertex(&self) -> Self::Vertex {
@@ -352,7 +365,10 @@ impl ThingAPI for Relation {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
-        for attr in self.get_has_unordered(snapshot, thing_manager).map_ok(|(has, _value)| has.attribute()) {
+        for attr in self
+            .get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)
+            .map_ok(|(has, _value)| has.attribute())
+        {
             thing_manager.unset_has(snapshot, self, &attr?)?;
         }
 
@@ -363,14 +379,14 @@ impl ThingAPI for Relation {
             }
         }
 
-        for relation_role in self.get_relations_roles(snapshot, thing_manager) {
+        for relation_role in self.get_relations_roles(snapshot, thing_manager, StorageCounters::DISABLED) {
             let (relation, role, _count) =
                 relation_role.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
             thing_manager.unset_links(snapshot, relation, self, role)?;
         }
 
         let players = self
-            .get_players(snapshot, thing_manager)
+            .get_players(snapshot, thing_manager, StorageCounters::DISABLED)
             .map_ok(|(roleplayer, _count)| (roleplayer.role_type, roleplayer.player));
         for role_player in players {
             let (role, player) =
@@ -379,14 +395,14 @@ impl ThingAPI for Relation {
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
             thing_manager.unset_links(snapshot, self, player, role)?;
 
-            debug_assert!(!player.get_indexed_relations(snapshot, thing_manager, self.type_()).is_ok_and(
-                |mut iterator| iterator.any(|result| {
+            debug_assert!(!player
+                .get_indexed_relations(snapshot, thing_manager, self.type_(), StorageCounters::DISABLED)
+                .is_ok_and(|mut iterator| iterator.any(|result| {
                     match result {
-                        Ok(((start, _end, _relation, start_role, _), _)) => start == player && start_role == role,
+                        Ok(((start, _, _, _, start_role, _), _)) => start == player && start_role == role,
                         Err(_) => false,
                     }
-                })
-            ));
+                })));
         }
 
         thing_manager.delete_relation(snapshot, self);
@@ -430,60 +446,91 @@ impl RolePlayer {
     }
 }
 
-fn storage_key_links_edge_to_role_player<'a>(
-    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
-    value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (RolePlayer, u64) {
-    let edge = ThingEdgeLinks::new(storage_key.into_bytes());
-    let role_type = RoleType::build_from_type_id(edge.role_id());
-    let player = Object::new(edge.player());
-    (RolePlayer { player, role_type }, decode_value_u64(&value))
+#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, Ord, PartialOrd)]
+pub enum Links {
+    Edge(ThingEdgeLinks),
+    EdgeReverse(ThingEdgeLinks),
 }
 
-impl Hkt for RolePlayer {
-    type HktSelf<'a> = RolePlayer;
+impl Links {
+    pub fn role_type(&self) -> RoleType {
+        match self {
+            Links::Edge(edge) | Links::EdgeReverse(edge) => RoleType::build_from_type_id(edge.role_id()),
+        }
+    }
+
+    pub fn relation(&self) -> Relation {
+        match self {
+            Links::Edge(edge) | Links::EdgeReverse(edge) => Relation::new(edge.relation()),
+        }
+    }
+
+    pub fn player(&self) -> Object {
+        match self {
+            Links::Edge(edge) | Links::EdgeReverse(edge) => Object::new(edge.player()),
+        }
+    }
+
+    // TODO: legacy - ideally we'd delete these
+    pub(crate) fn into_role_player(self) -> RolePlayer {
+        RolePlayer { player: self.player(), role_type: self.role_type() }
+    }
+
+    pub(crate) fn into_relation_role(self) -> (Relation, RoleType) {
+        (self.relation(), self.role_type())
+    }
 }
 
-edge_iterator!(
-    RolePlayerIterator;
-    (RolePlayer, u64);
-    storage_key_links_edge_to_role_player
-);
-
-fn storage_key_links_edge_to_relation_role<'a>(
+fn storage_key_edge_to_links<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
     value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Relation, RoleType, u64) {
-    let edge = ThingEdgeLinks::new(storage_key.into_bytes());
-    let role_type = RoleType::build_from_type_id(edge.role_id());
-    (Relation::new(edge.relation()), role_type, decode_value_u64(&value))
+) -> (Links, u64) {
+    let edge = ThingEdgeLinks::decode(storage_key.into_bytes());
+    debug_assert!(!edge.is_reverse());
+    let links = Links::Edge(edge);
+    (links, decode_value_u64(&value))
 }
 
-edge_iterator!(
-    RelationRoleIterator;
-    (Relation, RoleType, u64);
-    storage_key_links_edge_to_relation_role
-);
-
-fn storage_key_links_edge_to_relation_role_player<'a>(
-    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
-    value: Bytes<'a, BUFFER_VALUE_INLINE>,
-) -> (Relation, RolePlayer, u64) {
-    let edge = ThingEdgeLinks::new(storage_key.into_bytes());
-    let relation = Relation::new(edge.relation());
-    let role_type = RoleType::build_from_type_id(edge.role_id());
-    let player = Object::new(edge.player());
-    let role_player = RolePlayer { player, role_type };
-    (relation, role_player, decode_value_u64(&value))
+fn links_to_edge_storage_key(links_count: &(Links, u64)) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+    let (links, _count) = links_count;
+    let edge = ThingEdgeLinks::new(links.relation().vertex(), links.player().vertex(), links.role_type().vertex());
+    println!("Unmapped Links to Links edge: {}", edge);
+    edge.into_storage_key()
 }
 
 edge_iterator!(
     LinksIterator;
-    (Relation, RolePlayer, u64);
-    storage_key_links_edge_to_relation_role_player
+    (Links, u64);
+    storage_key_edge_to_links,
+    links_to_edge_storage_key
 );
 
-pub type IndexedRelationPlayers = (Object, Object, Relation, RoleType, RoleType);
+fn storage_key_reverse_edge_to_links<'a>(
+    storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
+    value: Bytes<'a, BUFFER_VALUE_INLINE>,
+) -> (Links, u64) {
+    let edge = ThingEdgeLinks::decode(storage_key.into_bytes());
+    debug_assert!(edge.is_reverse());
+    let links = Links::EdgeReverse(edge);
+    (links, decode_value_u64(&value))
+}
+
+fn links_to_reverse_edge_storage_key(links_count: &(Links, u64)) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+    let (links, _count) = links_count;
+    let edge =
+        ThingEdgeLinks::new_reverse(links.relation().vertex(), links.player().vertex(), links.role_type().vertex());
+    println!("Unmapped Links to Links Reverse edge: {}", edge);
+    edge.into_storage_key()
+}
+
+edge_iterator!(
+    LinksReverseIterator;
+    (Links, u64);
+    storage_key_reverse_edge_to_links,
+    links_to_reverse_edge_storage_key
+);
+
+pub type IndexedRelationPlayers = (Object, Object, TypeID, ObjectID, RoleType, RoleType);
 
 fn storage_key_to_indexed_players<'a>(
     storage_key: StorageKey<'a, BUFFER_KEY_INLINE>,
@@ -492,16 +539,34 @@ fn storage_key_to_indexed_players<'a>(
     let edge = ThingEdgeIndexedRelation::decode(Bytes::reference(storage_key.bytes()));
     let start_player = Object::new(edge.from());
     let end_player = Object::new(edge.to());
-    let relation = Relation::new(edge.relation());
     let start_role_type = RoleType::build_from_type_id(edge.from_role_id());
     let end_role_type = RoleType::build_from_type_id(edge.to_role_id());
-    ((start_player, end_player, relation, start_role_type, end_role_type), decode_value_u64(&value))
+    let decoded =
+        (start_player, end_player, edge.relation_type_id(), edge.relation_id(), start_role_type, end_role_type);
+    (decoded, decode_value_u64(&value))
+}
+
+fn indexed_players_to_edge_storage_key(
+    indexed_relation_players_count: &(IndexedRelationPlayers, u64),
+) -> StorageKey<'static, BUFFER_KEY_INLINE> {
+    let ((from, to, relation_type_id, relation_id, from_role, to_role), _count) = indexed_relation_players_count;
+    let edge = ThingEdgeIndexedRelation::new_from_relation_parts(
+        from.vertex(),
+        to.vertex(),
+        *relation_type_id,
+        *relation_id,
+        from_role.vertex().type_id_(),
+        to_role.vertex().type_id_(),
+    );
+    println!("IndexedPlayers to Edge, resulted in: {}", edge);
+    edge.into_storage_key()
 }
 
 edge_iterator!(
     IndexedRelationsIterator;
     (IndexedRelationPlayers, u64);
-    storage_key_to_indexed_players
+    storage_key_to_indexed_players,
+    indexed_players_to_edge_storage_key
 );
 
 impl fmt::Display for Relation {

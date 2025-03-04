@@ -1,0 +1,519 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap, HashSet},
+    sync::Arc,
+};
+
+use answer::variable::Variable;
+use compiler::{
+    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    executable::{
+        function::ExecutableFunctionRegistry,
+        match_::{
+            instructions::{
+                thing::IsaReverseInstruction, type_::TypeListInstruction, CheckInstruction, CheckVertex,
+                ConstraintInstruction, Inputs,
+            },
+            planner::{
+                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                plan::PlannerStatistics,
+            },
+        },
+        next_executable_id,
+    },
+    ExecutorVariable, VariablePosition,
+};
+use concept::{
+    thing::object::ObjectAPI,
+    type_::{
+        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
+        PlayerAPI,
+    },
+};
+use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use executor::{
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
+};
+use ir::{
+    pattern::{
+        constraint::{Comparator, IsaKind},
+        Vertex,
+    },
+    pipeline::{block::Block, ParameterRegistry},
+    translation::TranslationContext,
+};
+use lending_iterator::LendingIterator;
+use resource::profile::QueryProfile;
+use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use test_utils_concept::{load_managers, setup_concept_storage};
+use test_utils_encoding::create_core_storage;
+use typeql::common::Span;
+
+const PERSON_LABEL: Label = Label::new_static("person");
+const MOVIE_LABEL: Label = Label::new_static("group");
+const CHARACTER_LABEL: Label = Label::new_static("character");
+const NAME_LABEL: Label = Label::new_static("name");
+const AGE_LABEL: Label = Label::new_static("age");
+const GOV_ID_LABEL: Label = Label::new_static("gov_id");
+const ID_LABEL: Label = Label::new_static("id");
+const CASTING_LABEL: Label = Label::new_static("casting");
+const CASTING_MOVIE_LABEL: Label = Label::new_static_scoped("movie", "casting", "casting:movie");
+const CASTING_ACTOR_LABEL: Label = Label::new_static_scoped("actor", "casting", "casting:actor");
+const CASTING_CHARACTER_LABEL: Label = Label::new_static_scoped("character", "casting", "casting:character");
+
+fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
+    setup_concept_storage(storage);
+
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+
+    let person_type = type_manager.create_entity_type(&mut snapshot, &PERSON_LABEL).unwrap();
+    let movie_type = type_manager.create_entity_type(&mut snapshot, &MOVIE_LABEL).unwrap();
+    let character_type = type_manager.create_entity_type(&mut snapshot, &CHARACTER_LABEL).unwrap();
+
+    let casting_type = type_manager.create_relation_type(&mut snapshot, &CASTING_LABEL).unwrap();
+
+    let relates_movie = casting_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            CASTING_MOVIE_LABEL.name().as_str(),
+            Ordering::Unordered,
+        )
+        .unwrap();
+    let casting_movie_type = relates_movie.role();
+
+    let relates_actor = casting_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            CASTING_ACTOR_LABEL.name().as_str(),
+            Ordering::Unordered,
+        )
+        .unwrap();
+    let casting_actor_type = relates_actor.role();
+
+    let relates_character = casting_type
+        .create_relates(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            CASTING_CHARACTER_LABEL.name().as_str(),
+            Ordering::Unordered,
+        )
+        .unwrap();
+    relates_character
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            RelatesAnnotation::Cardinality(AnnotationCardinality::new(0, Some(2))),
+        )
+        .unwrap();
+    let casting_character_type = relates_character.role();
+
+    let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
+    age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
+    let id_type = type_manager.create_attribute_type(&mut snapshot, &ID_LABEL).unwrap();
+    id_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
+    let gov_id_type = type_manager.create_attribute_type(&mut snapshot, &GOV_ID_LABEL).unwrap();
+    gov_id_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
+    let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
+    name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
+
+    let _person_owns_age =
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+    let person_owns_gov_id =
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, gov_id_type, Ordering::Unordered).unwrap();
+    person_owns_gov_id
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+    let person_owns_name =
+        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+    person_owns_name
+        .set_annotation(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
+        )
+        .unwrap();
+    let _movie_owns_id =
+        movie_type.set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered).unwrap();
+    let _character_owns_id =
+        character_type.set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered).unwrap();
+
+    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_actor_type).unwrap();
+    movie_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_movie_type).unwrap();
+    character_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_character_type).unwrap();
+
+    /*
+    insert
+         $person_1 isa person,
+            has gov_id 0,
+            has gov_id 1,
+            has gov_id 2,
+            has gov_id 3;
+         $person_2 isa person,
+           has age 10,
+           has name "abby",
+           has name "bolston",
+           has name "longy-mc-long-face-uninlineable"
+           has name "willa";
+
+         $person_3 isa person,
+           has age 10,
+           has gov_id 4;
+
+         $person_4 isa person,
+           has age 10;
+
+         $person_5 isa person,
+           has age 10;
+
+         $person_5 isa person,
+           has gov_id 5;
+
+         $person_6 isa person,
+           has gov_id 6;
+
+         $movie_1 isa movie, has id 0;
+         $movie_2 isa movie, has id 1;
+         $movie_3 isa movie, has id 2;
+
+         $character_1 isa character, has id 0;
+         $character_2 isa character, has id 1;
+         $character_3 isa character, has id 2;
+
+         $casting_binary isa casting, links (movie: $movie_1, actor: $person_1);
+         $casting_ternary isa casting, links (movie: $movie_2, actor: $person_1, character: $character_1);
+         $casting_quaternary_multi_role_player isa casting,
+            links (movie: $movie_3, actor: $person_2, character: $character_2, character: $character_3);
+    */
+    let age_10 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(10)).unwrap();
+    let age_11 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(11)).unwrap();
+
+    let id_0 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Integer(0)).unwrap();
+    let id_1 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Integer(1)).unwrap();
+    let id_2 = thing_manager.create_attribute(&mut snapshot, id_type, Value::Integer(2)).unwrap();
+
+    let gov_id_0 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(0)).unwrap();
+    let gov_id_1 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(1)).unwrap();
+    let gov_id_2 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(2)).unwrap();
+    let gov_id_3 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(3)).unwrap();
+    let gov_id_4 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(4)).unwrap();
+    let gov_id_5 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(5)).unwrap();
+    let gov_id_6 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(6)).unwrap();
+
+    let name_abby =
+        thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("abby"))).unwrap();
+    let name_bolston =
+        thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("bolston"))).unwrap();
+    let name_uninlineable = thing_manager
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("longy-mc-long-face-uninlineable")))
+        .unwrap();
+    let name_willa =
+        thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("willa"))).unwrap();
+
+    let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_0).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_1).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_2).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_3).unwrap();
+
+    let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_abby).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_bolston).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_uninlineable).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_willa).unwrap();
+
+    let person_3 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_4).unwrap();
+
+    let person_4 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+
+    let person_5 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    person_5.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+    person_5.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_5).unwrap();
+
+    let person_6 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
+    person_6.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_6).unwrap();
+
+    // $person_5 isa person, has gov_id 6;
+    let gov_id_6 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(6)).unwrap();
+    person_5.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_6).unwrap();
+    let movie_1 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
+    let movie_2 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
+    let movie_3 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
+    movie_1.set_has_unordered(&mut snapshot, &thing_manager, &id_0).unwrap();
+    movie_2.set_has_unordered(&mut snapshot, &thing_manager, &id_1).unwrap();
+    movie_3.set_has_unordered(&mut snapshot, &thing_manager, &id_2).unwrap();
+
+    let character_1 = thing_manager.create_entity(&mut snapshot, character_type).unwrap();
+    let character_2 = thing_manager.create_entity(&mut snapshot, character_type).unwrap();
+    let character_3 = thing_manager.create_entity(&mut snapshot, character_type).unwrap();
+    character_1.set_has_unordered(&mut snapshot, &thing_manager, &id_0).unwrap();
+    character_2.set_has_unordered(&mut snapshot, &thing_manager, &id_1).unwrap();
+    character_3.set_has_unordered(&mut snapshot, &thing_manager, &id_2).unwrap();
+
+    let casting_binary = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
+    let casting_ternary = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
+    let casting_quaternary_multi_role_player = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
+
+    casting_binary.add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_1.into_object()).unwrap();
+    casting_binary.add_player(&mut snapshot, &thing_manager, casting_actor_type, person_1.into_object()).unwrap();
+
+    casting_ternary.add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_2.into_object()).unwrap();
+    casting_ternary.add_player(&mut snapshot, &thing_manager, casting_actor_type, person_1.into_object()).unwrap();
+    casting_ternary
+        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_1.into_object())
+        .unwrap();
+
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_3.into_object())
+        .unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_2.into_object())
+        .unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_2.into_object())
+        .unwrap();
+    casting_quaternary_multi_role_player
+        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_3.into_object())
+        .unwrap();
+
+    let finalise_result = thing_manager.finalise(&mut snapshot);
+    assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
+    snapshot.commit().unwrap();
+}
+
+fn position_mapping<const N: usize, const M: usize>(
+    row_vars: [Variable; N],
+    internal_vars: [Variable; M],
+) -> (
+    HashMap<ExecutorVariable, Variable>,
+    HashMap<Variable, VariablePosition>,
+    HashMap<Variable, ExecutorVariable>,
+    HashSet<ExecutorVariable>,
+) {
+    let position_to_var: HashMap<_, _> =
+        row_vars.into_iter().enumerate().map(|(i, v)| (ExecutorVariable::new_position(i as _), v)).collect();
+    let variable_positions =
+        HashMap::from_iter(position_to_var.iter().map(|(i, var)| (*var, i.as_position().unwrap())));
+    let mapping: HashMap<_, _> = row_vars
+        .into_iter()
+        .map(|var| (var, ExecutorVariable::RowPosition(variable_positions[&var])))
+        .chain(internal_vars.into_iter().map(|var| (var, ExecutorVariable::Internal(var))))
+        .collect();
+    let named_variables = mapping.values().copied().collect();
+    (position_to_var, variable_positions, mapping, named_variables)
+}
+
+#[test]
+fn value_int_equality_reduces_isa_reads() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $attr isa id; $attr == 2; # middle of the range
+
+    // IR to compute type annotations
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_int_2_id = value_parameters.register_value(Value::Integer(2), Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+
+    let var_id_type = conjunction.constraints_mut().get_or_declare_variable("var_id_type", None).unwrap();
+    let var_attr = conjunction.constraints_mut().get_or_declare_variable("attr", None).unwrap();
+
+    let isa =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_attr, var_id_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_id_type, ID_LABEL.clone()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_attr), Vertex::Parameter(value_int_2_id), Comparator::Equal, None)
+        .unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let entry_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_id_type, var_attr], []);
+
+    // Plan
+    //    1. Intersection($id_type label ID;)
+    //    2. Intersection($attr isa $id_type; (VALUE constraints = Eq(value_int_2_id)))
+    //
+    // Should output:
+    //  $attr -> id(2)
+
+    let value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_attr),
+        rhs: CheckVertex::Parameter(value_int_2_id),
+        comparator: Comparator::Equal,
+    }
+    .map(&mapping);
+    let mut isa_reverse_instruction =
+        IsaReverseInstruction::new(isa, Inputs::Single([var_id_type]), &entry_annotations).map(&mapping);
+    isa_reverse_instruction.add_check(value_check);
+
+    let steps = vec![
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_id_type],
+            vec![ConstraintInstruction::TypeList(
+                TypeListInstruction::new(
+                    var_id_type,
+                    entry_annotations.vertex_annotations().get(&Vertex::Variable(var_id_type)).unwrap().clone(),
+                )
+                .map(&mapping),
+            )],
+            vec![variable_positions[&var_id_type]],
+            &named_variables,
+            1,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_attr],
+            vec![ConstraintInstruction::IsaReverse(isa_reverse_instruction)],
+            vec![variable_positions[&var_id_type], variable_positions[&var_attr]],
+            &named_variables,
+            2,
+        )),
+    ];
+
+    let executable = MatchExecutable::new(
+        next_executable_id(),
+        steps,
+        variable_positions.clone(),
+        row_vars.clone(),
+        PlannerStatistics::new(),
+    );
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let executor = MatchExecutor::new(
+        &executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+    .unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager.clone(), value_parameters.clone());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows: Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> = iterator
+        .map_static(|row| row.map(|row| row.as_reference().into_owned()).map_err(|err| Box::new(err.clone())))
+        .collect();
+    for row in &rows {
+        let r = row.as_ref().unwrap();
+        print!("{}", r);
+        println!()
+    }
+    assert_eq!(rows.len(), 1);
+}
+
+#[test]
+fn value_int_equality_reduces_has_reads_bound_owner() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $person isa person, has gov_id 1; # middle value
+
+    // plan: Isa($person, person)
+    //       Has($person, $_gov_id) with $_gov_id = 1
+}
+
+#[test]
+fn value_int_inequality_reduces_has_reads_bound_owner() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $person isa person, has gov_id $gov_id; $gov_id >= 1; $gov_id < 3; # middle range
+
+    // plan: Isa($person, person)
+    //       Has($person, $_gov_id) with >= and <
+}
+
+#[test]
+fn value_string_equality_reduces_has_reads_bound_owner() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $person isa person, has name "bolton"; # middle value
+
+    // plan: Isa($person, person)
+    //       Has($person, $_bolton) with $_bolton = "bolton"
+}
+
+#[test]
+fn value_string_inequality_reduces_has_reads_bound_owner() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $person isa person, has name $name; $name >= "bolton"; $name < "willow";
+
+    // plan: Isa($person, person)
+    //       Has($person, $_bolton) with >= and <
+}
+
+#[test]
+fn intersection_seeks_reduce_reads() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $age isa age 10;
+    //    $person has $age;
+    //    $person has gov_id $gov_id;
+
+    // plan:
+    // 1. Isa($age, age) value == 10
+    // 2. Intersect:
+    //       ReverseHas($person, $age) ==> independently produces many people
+    //       has($person, $gov_id) ==> unbound this produces many people
+}

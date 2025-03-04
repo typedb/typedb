@@ -41,7 +41,7 @@ impl TypeVertex {
     pub const LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH;
     pub(crate) const LENGTH_PREFIX: usize = PrefixID::LENGTH;
 
-    pub(crate) fn new(prefix: PrefixID, type_id: TypeID) -> Self {
+    pub const fn new(prefix: PrefixID, type_id: TypeID) -> Self {
         let prefix = (prefix.byte as u32) << 16;
         let type_id = type_id.value as u32;
         Self { value: prefix + type_id }

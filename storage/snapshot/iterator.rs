@@ -41,7 +41,7 @@ impl SnapshotRangeIterator {
 
     pub fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
         if self.ready_item_source.is_none() {
-            self.advance_and_find_next_state();
+            self.find_next_state();
         }
 
         match self.ready_item_source? {
@@ -56,6 +56,7 @@ impl SnapshotRangeIterator {
     pub fn seek(&mut self, key: StorageKeyReference<'_>) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek < key {
+                self.ready_item_source = None;
                 if let Some(iter) = self.buffered_iterator.as_mut() {
                     iter.seek(key.bytes())
                 }

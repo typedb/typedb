@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
+use std::{cmp::Ordering, collections::BTreeMap, fmt, iter, ops::Bound, sync::Arc, vec};
 
-use answer::{Thing, Type};
+use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::{executable::match_::instructions::thing::IsaReverseInstruction, ExecutorVariable};
 use concept::{
     error::ConceptReadError,
@@ -20,16 +20,16 @@ use concept::{
 use encoding::value::value::Value;
 use ir::pattern::constraint::{Isa, IsaKind};
 use itertools::Itertools;
+use lending_iterator::LendingIterator;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        isa_executor::{
-            AttributeEraseFn, IsaFilterMapFn, IsaTupleIterator, ObjectEraseFn, EXTRACT_THING, EXTRACT_TYPE,
-        },
-        iterator::{SortedTupleIterator, TupleIterator},
-        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes, TYPES_EMPTY,
+        isa_executor::{IsaFilterMapFn, EXTRACT_THING, EXTRACT_TYPE},
+        iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
+        tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
+        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -44,22 +44,6 @@ pub(crate) struct IsaReverseExecutor {
     type_to_instance_types: Arc<BTreeMap<Type, Vec<Type>>>,
     checker: Checker<(Thing, Type)>,
 }
-
-pub(crate) type IsaReverseBoundedSortedThing = IsaTupleIterator<MultipleTypeIsaIterator>;
-pub(crate) type IsaReverseUnboundedSortedType = IsaTupleIterator<MultipleTypeIsaIterator>;
-
-type MultipleTypeIsaObjectIterator =
-    iter::Flatten<vec::IntoIter<ThingWithType<iter::Map<InstanceIterator<Object>, ObjectEraseFn>>>>;
-type MultipleTypeIsaAttributeIterator = iter::Flatten<
-    vec::IntoIter<ThingWithType<iter::Map<AttributeIterator<InstanceIterator<Attribute>>, AttributeEraseFn>>>,
->;
-
-pub(super) type MultipleTypeIsaIterator = iter::Chain<MultipleTypeIsaObjectIterator, MultipleTypeIsaAttributeIterator>;
-
-type ThingWithType<I> = iter::Map<
-    iter::Zip<I, iter::Repeat<Type>>,
-    fn((Result<Thing, Box<ConceptReadError>>, Type)) -> Result<(Thing, Type), Box<ConceptReadError>>,
->;
 
 impl IsaReverseExecutor {
     pub(crate) fn new(
@@ -102,6 +86,7 @@ impl IsaReverseExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let check = self.checker.filter_for_row(context, &row);
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
@@ -119,41 +104,32 @@ impl IsaReverseExecutor {
                 let thing_iter = instances_of_types_chained(
                     snapshot,
                     thing_manager,
-                    self.type_to_instance_types.keys(),
+                    self.type_to_instance_types.keys().copied(),
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
                     &range,
+                    storage_counters,
                 )?;
-                let as_tuples: IsaReverseUnboundedSortedType =
-                    thing_iter.filter_map(filter_for_row).map(isa_to_tuple_type_thing);
                 Ok(TupleIterator::IsaReverseUnbounded(SortedTupleIterator::new(
-                    as_tuples,
+                    IsaReverseUnboundedSortedType::new(thing_iter, filter_for_row),
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
             }
-            BinaryIterateMode::UnboundInverted => {
-                unreachable!()
-            }
+            BinaryIterateMode::UnboundInverted => unreachable!(),
             BinaryIterateMode::BoundFrom => {
                 let type_ = type_from_row_or_annotations(self.isa.type_(), row, self.type_to_instance_types.keys());
                 let iterator = instances_of_types_chained(
                     snapshot,
                     thing_manager,
-                    [&type_].into_iter(),
+                    iter::once(type_),
                     self.type_to_instance_types.as_ref(),
                     self.isa.isa_kind(),
                     &range,
+                    storage_counters,
                 )?;
-                let as_tuples: IsaReverseBoundedSortedThing = iterator
-                    .filter_map(Box::new(move |res| match res {
-                        Ok((_, ty)) if ty == type_ => filter_for_row(res),
-                        Ok(_) => None,
-                        Err(err) => Some(Err(err)),
-                    }) as _)
-                    .map(isa_to_tuple_thing_type);
                 Ok(TupleIterator::IsaReverseBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    IsaReverseBoundedSortedThing::new(iterator, filter_for_row, type_),
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
@@ -168,65 +144,292 @@ impl fmt::Display for IsaReverseExecutor {
     }
 }
 
-fn with_type<I: Iterator<Item = Result<Thing, Box<ConceptReadError>>>>(iter: I, type_: Type) -> ThingWithType<I> {
-    iter.zip(iter::repeat(type_)).map(|(thing_res, ty)| match thing_res {
-        Ok(thing) => Ok((thing, ty)),
-        Err(err) => Err(err),
-    })
-}
-
-pub(super) fn instances_of_types_chained<'a>(
+pub(super) fn instances_of_types_chained(
     snapshot: &impl ReadableSnapshot,
     thing_manager: &ThingManager,
-    types: impl Iterator<Item = &'a Type>,
+    types: impl Iterator<Item = Type>,
     type_to_instance_types: &BTreeMap<Type, Vec<Type>>,
     isa_kind: IsaKind,
     range: &(Bound<Value<'_>>, Bound<Value<'_>>),
-) -> Result<MultipleTypeIsaIterator, Box<ConceptReadError>> {
+    storage_counters: StorageCounters,
+) -> Result<MultipleTypeIsaReverseIterator, Box<ConceptReadError>> {
     let (attribute_types, object_types) =
         types.into_iter().partition::<Vec<_>, _>(|type_| matches!(type_, Type::Attribute(_)));
 
-    let object_iters: Vec<ThingWithType<iter::Map<InstanceIterator<Object>, ObjectEraseFn>>> = object_types
+    let object_iters = object_types
         .into_iter()
         .flat_map(|type_| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
-                type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
+                type_to_instance_types.get(&type_).unwrap_or(const { &Vec::new() }).clone()
             } else {
-                vec![*type_]
+                vec![type_]
             };
-            returned_types.into_iter().map(move |subtype| {
-                Ok::<_, Box<_>>(with_type(
-                    thing_manager
-                        .get_objects_in(snapshot, subtype.as_object_type())
-                        .map((|res| res.map(Thing::from)) as ObjectEraseFn),
-                    *type_,
-                ))
+            returned_types.into_iter().map({
+                let counters = storage_counters.clone();
+                move |subtype| {
+                    IsaReverseObjectIterator::new(
+                        thing_manager.get_objects_in(snapshot, subtype.as_object_type(), counters.clone()),
+                        type_,
+                    )
+                }
             })
         })
-        .try_collect()?;
-    let object_iter: MultipleTypeIsaObjectIterator = object_iters.into_iter().flatten();
+        .collect_vec();
 
     // TODO: don't unwrap inside the operators
-    let attribute_iters: Vec<_> = attribute_types
+    let attribute_iters = attribute_types
         .into_iter()
         .flat_map(|type_| {
             let returned_types = if matches!(isa_kind, IsaKind::Subtype) {
-                type_to_instance_types.get(type_).unwrap_or(&TYPES_EMPTY).clone()
+                type_to_instance_types.get(&type_).unwrap_or(const { &Vec::new() }).clone()
             } else {
-                vec![*type_]
+                vec![type_]
             };
-            returned_types.into_iter().map(move |subtype| {
-                Ok::<_, Box<_>>(with_type(
-                    thing_manager
-                        .get_attributes_in_range(snapshot, subtype.as_attribute_type(), range)?
-                        .map((|res| res.map(Thing::Attribute)) as AttributeEraseFn),
-                    *type_,
-                ))
+            returned_types.into_iter().map({
+                let counters = storage_counters.clone();
+                move |subtype| {
+                    let iter = thing_manager.get_attributes_in_range(
+                        snapshot,
+                        subtype.as_attribute_type(),
+                        range,
+                        counters.clone(),
+                    )?;
+                    Ok::<_, Box<_>>(IsaReverseAttributeIterator::new(iter, type_))
+                }
             })
         })
         .try_collect()?;
-    let attribute_iter: MultipleTypeIsaAttributeIterator = attribute_iters.into_iter().flatten();
 
-    let thing_iter: MultipleTypeIsaIterator = object_iter.chain(attribute_iter);
+    let thing_iter = MultipleTypeIsaReverseIterator::new(object_iters, attribute_iters);
     Ok(thing_iter)
+}
+
+pub(crate) struct IsaReverseBoundedSortedThing {
+    inner: MultipleTypeIsaReverseIterator,
+    filter_map: Box<IsaFilterMapFn>,
+    type_: Type,
+}
+
+impl IsaReverseBoundedSortedThing {
+    pub(crate) fn new(inner: MultipleTypeIsaReverseIterator, filter_map: Box<IsaFilterMapFn>, type_: Type) -> Self {
+        Self { inner, filter_map, type_ }
+    }
+}
+
+impl LendingIterator for IsaReverseBoundedSortedThing {
+    type Item<'a> = TupleResult<'static>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        // TODO: can this be simplified with something like `.by_ref()` on iterators?
+        while let Some(next) = self.inner.next() {
+            if let Some(filter_mapped) = (self.filter_map)(next) {
+                return Some(isa_to_tuple_thing_type(filter_mapped));
+            }
+        }
+        None
+    }
+}
+
+impl TupleSeekable for IsaReverseBoundedSortedThing {
+    fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
+        let target_type = target.values().get(0);
+        let target_thing = target.values().get(1);
+        self.inner.seek(target_type, target_thing)?;
+        Ok(())
+    }
+}
+
+pub(crate) struct IsaReverseUnboundedSortedType {
+    inner: MultipleTypeIsaReverseIterator,
+    filter_map: Box<IsaFilterMapFn>,
+}
+
+impl IsaReverseUnboundedSortedType {
+    pub(crate) fn new(inner: MultipleTypeIsaReverseIterator, filter_map: Box<IsaFilterMapFn>) -> Self {
+        Self { inner, filter_map }
+    }
+}
+
+impl LendingIterator for IsaReverseUnboundedSortedType {
+    type Item<'a> = TupleResult<'static>;
+
+    fn next(&mut self) -> Option<Self::Item<'_>> {
+        // TODO: can this be simplified with something like `.by_ref()` on iterators?
+        while let Some(next) = self.inner.next() {
+            if let Some(filter_mapped) = (self.filter_map)(next) {
+                return Some(isa_to_tuple_type_thing(filter_mapped));
+            }
+        }
+        None
+    }
+}
+
+impl TupleSeekable for IsaReverseUnboundedSortedType {
+    fn seek(&mut self, target: &Tuple<'_>) -> Result<(), Box<ConceptReadError>> {
+        let target_type = target.values().get(0);
+        let target_thing = target.values().get(1);
+        self.inner.seek(target_type, target_thing)?;
+        Ok(())
+    }
+}
+
+pub(super) struct MultipleTypeIsaReverseIterator {
+    object_iters: Vec<IsaReverseObjectIterator>,
+    attribute_iters: Vec<IsaReverseAttributeIterator>,
+}
+
+impl MultipleTypeIsaReverseIterator {
+    pub(super) fn new(
+        mut objects: Vec<IsaReverseObjectIterator>,
+        mut attributes: Vec<IsaReverseAttributeIterator>,
+    ) -> Self {
+        objects.reverse();
+        attributes.reverse();
+        Self { object_iters: objects, attribute_iters: attributes }
+    }
+
+    fn seek(
+        &mut self,
+        target_type: Option<&VariableValue<'_>>,
+        target_thing: Option<&VariableValue<'_>>,
+    ) -> Result<(), Box<ConceptReadError>> {
+        // TODO!!!!
+        todo!()
+        //
+        // let Some(target_type) = target_type else { return Ok(Some(Ordering::Greater)) };
+        // let &VariableValue::Type(target_type) = target_type else {
+        //     unreachable!("seeking to type {:?} which is not a `Type`", target_type)
+        // };
+        // match target_type {
+        //     Type::Entity(_) | Type::Relation(_) => {
+        //         while let Some(object_iter) = self.object_iters.last_mut() {
+        //             if object_iter.type_ < target_type {
+        //                 self.object_iters.pop();
+        //             } else {
+        //                 return object_iter.seek(target_thing);
+        //             }
+        //         }
+        //         if self.attribute_iters.is_empty() {
+        //             Ok(None)
+        //         } else {
+        //             Ok(Some(Ordering::Greater))
+        //         }
+        //     }
+        //     Type::Attribute(_) => {
+        //         while let Some(attribute_iter) = self.attribute_iters.last_mut() {
+        //             if attribute_iter.iterator_type < target_type {
+        //                 self.attribute_iters.pop();
+        //             } else {
+        //                 return attribute_iter.seek(target_thing);
+        //             }
+        //         }
+        //         Ok(None)
+        //     }
+        //     Type::RoleType(_) => unreachable!("encountered role type during isa reverse seek"),
+        // }
+    }
+}
+
+impl Iterator for MultipleTypeIsaReverseIterator {
+    type Item = Result<(Thing, Type), Box<ConceptReadError>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        while let Some(object_iter) = self.object_iters.last_mut() {
+            if let Some(item) = object_iter.next() {
+                return Some(item);
+            } else {
+                self.object_iters.pop();
+            }
+        }
+        while let Some(attribute_iter) = self.attribute_iters.last_mut() {
+            if let Some(item) = attribute_iter.next() {
+                return Some(item);
+            } else {
+                self.attribute_iters.pop();
+            }
+        }
+        None
+    }
+}
+
+struct IsaReverseObjectIterator {
+    objects: InstanceIterator<Object>,
+    type_: Type,
+}
+
+impl IsaReverseObjectIterator {
+    fn new(objects: InstanceIterator<Object>, iterator_type: Type) -> Self {
+        Self { objects, type_: iterator_type }
+    }
+
+    fn seek(&mut self, target_thing: Option<&VariableValue<'_>>) -> Result<(), Box<ConceptReadError>> {
+        // let Some(target_thing) = target_thing else { return Ok(Some(Ordering::Greater)) };
+        // let VariableValue::Thing(target_thing) = target_thing else {
+        //     unreachable!("seeking to thing {:?} which is not a `Thing`", target_thing)
+        // };
+        // match self.objects.seek(&target_thing.as_object())? {
+        //     None => return Ok(None),
+        //     Some(Ordering::Greater) => return Ok(Some(Ordering::Greater)),
+        //     Some(Ordering::Equal) => (),
+        //     Some(Ordering::Less) => unreachable!(),
+        // }
+        //
+        // Ok(Some(Ordering::Equal))
+        todo!()
+    }
+}
+
+impl Iterator for IsaReverseObjectIterator {
+    type Item = Result<(Thing, Type), Box<ConceptReadError>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let object = match Iterator::next(&mut self.objects)? {
+            Ok(object) => object,
+            Err(err) => return Some(Err(err)),
+        };
+        Some(Ok((Thing::from(object), self.type_)))
+    }
+}
+
+struct IsaReverseAttributeIterator {
+    attributes: AttributeIterator<InstanceIterator<Attribute>>,
+    iterator_type: Type,
+}
+
+impl IsaReverseAttributeIterator {
+    fn new(attributes: AttributeIterator<InstanceIterator<Attribute>>, iterator_type: Type) -> Self {
+        Self { attributes, iterator_type }
+    }
+
+    fn seek(&mut self, target_thing: Option<&VariableValue<'_>>) -> Result<Option<Ordering>, Box<ConceptReadError>> {
+        let Some(target_thing) = target_thing else { return Ok(Some(Ordering::Greater)) };
+        let VariableValue::Thing(target_thing) = target_thing else {
+            unreachable!("seeking to thing {:?} which is not a `Thing`", target_thing)
+        };
+        self.attributes.seek(&target_thing.as_attribute());
+        let peek = self.attributes.peek().transpose()?;
+        let peek = match peek {
+            None => return Ok(None),
+            Some(peek) => peek,
+        };
+        match peek.cmp(target_thing.as_attribute()) {
+            Ordering::Greater => return Ok(Some(Ordering::Greater)),
+            Ordering::Equal => (),
+            Ordering::Less => unreachable!(),
+        }
+
+        Ok(Some(Ordering::Equal))
+    }
+}
+
+impl Iterator for IsaReverseAttributeIterator {
+    type Item = Result<(Thing, Type), Box<ConceptReadError>>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let attribute = match self.attributes.next()? {
+            Ok(attribute) => attribute,
+            Err(err) => return Some(Err(err)),
+        };
+        Some(Ok((Thing::from(attribute), self.iterator_type)))
+    }
 }

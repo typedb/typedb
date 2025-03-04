@@ -6,9 +6,9 @@ load("@rules_rust//rust:defs.bzl", "rust_binary")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_binary(
-    name = "read-wal",
+    name = "read_wal",
     srcs = [
-        "read-wal.rs",
+        "read_wal.rs",
     ],
     deps = [
         "//concept",
@@ -19,9 +19,9 @@ rust_binary(
 )
 
 rust_binary(
-    name = "replay-wal",
+    name = "replay_wal",
     srcs = [
-        "replay-wal.rs",
+        "replay_wal.rs",
     ],
     deps = [
         "//concept",

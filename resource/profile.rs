@@ -7,6 +7,7 @@
 use std::{
     collections::HashMap,
     fmt,
+    fmt::{Display, Formatter},
     sync::{
         atomic::{AtomicU64, Ordering},
         Arc, RwLock,
@@ -73,7 +74,7 @@ impl StageProfile {
         Self { description, step_profiles: RwLock::new(Vec::new()), enabled }
     }
 
-    pub(crate) fn extend_or_get(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
+    pub fn extend_or_get(&self, index: usize, description_getter: impl Fn() -> String) -> Arc<StepProfile> {
         if self.enabled {
             let profiles = self.step_profiles.read().unwrap();
             if index < profiles.len() {
@@ -115,6 +116,7 @@ struct StepProfileData {
     batches: AtomicU64,
     rows: AtomicU64,
     nanos: AtomicU64,
+    storage: StorageCounters,
 }
 
 impl StepProfile {
@@ -125,6 +127,7 @@ impl StepProfile {
                 batches: AtomicU64::new(0),
                 rows: AtomicU64::new(0),
                 nanos: AtomicU64::new(0),
+                storage: StorageCounters::new_enabled(),
             }),
         }
     }
@@ -133,11 +136,19 @@ impl StepProfile {
         Self { data: None }
     }
 
-    pub(crate) fn start_measurement(&self) -> StepProfileMeasurement {
+    pub fn start_measurement(&self) -> StepProfileMeasurement {
         if self.data.is_some() {
             StepProfileMeasurement::new(Some(Instant::now()))
         } else {
             StepProfileMeasurement::new(None)
+        }
+    }
+
+    pub fn storage_counters(&self) -> StorageCounters {
+        if let Some(data) = self.data.as_ref() {
+            data.storage.clone()
+        } else {
+            StorageCounters::DISABLED.clone()
         }
     }
 }
@@ -147,14 +158,16 @@ impl fmt::Display for StepProfileData {
         let rows = self.rows.load(Ordering::Relaxed);
         let micros = Duration::from_nanos(self.nanos.load(Ordering::Relaxed)).as_micros();
         let micros_per_row: f64 = micros as f64 / rows as f64;
+        // TODO: print storage ops
         write!(
             f,
-            "{}\n    ==> batches: {}, rows: {}, micros: {}, micros/row: {:.1}",
+            "{}\n    ==> batches: {}, rows: {}, micros: {}, micros/row: {:.1} ({})",
             &self.description,
             self.batches.load(Ordering::Relaxed),
             rows,
             micros,
             micros_per_row,
+            self.storage,
         )
     }
 }
@@ -169,7 +182,7 @@ impl StepProfileMeasurement {
         Self { start }
     }
 
-    pub(crate) fn end(self, profile: &StepProfile, batches: u64, rows_produced: u64) {
+    pub fn end(self, profile: &StepProfile, batches: u64, rows_produced: u64) {
         match self.start {
             None => {}
             Some(start) => {
@@ -181,5 +194,58 @@ impl StepProfileMeasurement {
                 profile_data.nanos.fetch_add(duration, Ordering::Relaxed);
             }
         }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct StorageCounters {
+    counters: Option<Arc<StorageCountersData>>,
+}
+
+impl StorageCounters {
+    pub const DISABLED: Self = Self { counters: None };
+
+    fn new_enabled() -> Self {
+        Self { counters: Some(Arc::new(StorageCountersData::new())) }
+    }
+
+    pub fn increment_advance(&self) {
+        if let Some(counters) = self.counters.as_ref() {
+            counters.advance.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub fn increment_seek(&self) {
+        if let Some(counters) = self.counters.as_ref() {
+            counters.seek.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+}
+
+impl Display for StorageCounters {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.counters.as_ref() {
+            None => write!(f, "storage counters disabled"),
+            Some(counters) => {
+                write!(
+                    f,
+                    "seeks: {}, advances: {}",
+                    counters.seek.load(Ordering::SeqCst),
+                    counters.advance.load(Ordering::SeqCst)
+                )
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+struct StorageCountersData {
+    advance: AtomicU64,
+    seek: AtomicU64,
+}
+
+impl StorageCountersData {
+    fn new() -> Self {
+        Self { advance: AtomicU64::new(0), seek: AtomicU64::new(0) }
     }
 }

@@ -15,6 +15,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use resource::profile::StageProfile;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -23,7 +24,6 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, WrittenRowsIterator,
     },
-    profile::StageProfile,
     row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,

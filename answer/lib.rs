@@ -12,16 +12,19 @@ use std::{collections::BTreeSet, fmt};
 use bytes::{byte_array::ByteArray, Bytes};
 use concept::{
     error::ConceptReadError,
-    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation},
+    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
         role_type::RoleType, type_manager::TypeManager, ObjectTypeAPI, TypeAPI,
     },
 };
 use encoding::{
-    graph::type_::{
-        vertex::{TypeVertex, TypeVertexEncoding},
-        Kind,
+    graph::{
+        thing::vertex_object::{ObjectID, ObjectVertex},
+        type_::{
+            vertex::{TypeID, TypeVertex, TypeVertexEncoding},
+            Kind,
+        },
     },
     value::{label::Label, value::Value},
     AsBytes,
@@ -52,13 +55,18 @@ impl fmt::Display for Concept<'_> {
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Type {
+    // WARNING: Changing order of enum will change Ord and `minimum_type()`! This must align with the storage encoding
     Entity(EntityType),
     Relation(RelationType),
     Attribute(AttributeType),
     RoleType(RoleType),
 }
 
+pub static MIN_TYPE_STATIC: Type = Type::Entity(EntityType::MIN);
+
 impl Type {
+    const MIN: Self = Self::Entity(EntityType::MIN);
+
     pub fn kind(&self) -> Kind {
         match self {
             Type::Entity(_) => Kind::Entity,
@@ -288,12 +296,17 @@ impl fmt::Display for Type {
 
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Thing {
+    // WARNING: Changing order of enum will change Ord and `minimum_type()`! This must align with the storage encoding
     Entity(Entity),
     Relation(Relation),
     Attribute(Attribute),
 }
 
+pub static MIN_THING_STATIC: Thing = Thing::Entity(Entity::MIN);
+
 impl Thing {
+    const MIN: Self = Self::Entity(Entity::MIN);
+
     pub fn type_(&self) -> Type {
         match self {
             Thing::Entity(entity) => Type::Entity(entity.type_()),
@@ -303,10 +316,14 @@ impl Thing {
     }
 
     pub fn as_object(&self) -> Object {
+        self.get_object().unwrap()
+    }
+
+    pub fn get_object(&self) -> Option<Object> {
         match *self {
-            Thing::Entity(entity) => Object::Entity(entity),
-            Thing::Relation(relation) => Object::Relation(relation),
-            _ => panic!("Thing is not an Object."),
+            Thing::Entity(entity) => Some(Object::Entity(entity)),
+            Thing::Relation(relation) => Some(Object::Relation(relation)),
+            _ => None,
         }
     }
 
@@ -318,9 +335,13 @@ impl Thing {
     }
 
     pub fn as_attribute(&self) -> &Attribute {
+        self.get_attribute().unwrap()
+    }
+
+    pub fn get_attribute(&self) -> Option<&Attribute> {
         match self {
-            Thing::Attribute(attribute) => attribute,
-            _ => panic!("Thing is not an Attribute."),
+            Thing::Attribute(attribute) => Some(attribute),
+            _ => None,
         }
     }
 
@@ -330,6 +351,10 @@ impl Thing {
             Thing::Relation(relation) => Thing::Relation(relation.next_possible()),
             Thing::Attribute(attribute) => Thing::Attribute(attribute.next_possible()),
         }
+    }
+
+    pub fn minimum_thing() -> Thing {
+        Thing::Entity(Entity::new(ObjectVertex::build_entity(TypeID::MIN, ObjectID::MIN)))
     }
 }
 

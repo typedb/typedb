@@ -213,8 +213,8 @@ pub trait Seekable<K: ?Sized>: LendingIterator {
 }
 
 pub struct Peekable<LI: LendingIterator> {
-    iter: LI,
-    item: Option<LI::Item<'static>>,
+    pub iter: LI,
+    pub item: Option<LI::Item<'static>>,
 }
 
 impl<LI: LendingIterator> Peekable<LI> {

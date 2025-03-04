@@ -14,11 +14,12 @@ use concept::{
 };
 use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use ir::pattern::constraint::Iid;
+use lending_iterator::{AsLendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -42,7 +43,8 @@ impl fmt::Debug for IidExecutor {
 
 pub(crate) type IidToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(super) type IidTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IidFilterMapFn>>, IidToTupleFn>;
+pub(super) type IidTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<IidFilterMapFn>>, IidToTupleFn>>>;
 
 pub(super) type IidFilterFn = FilterFn<VariableValue<'static>>;
 pub(super) type IidFilterMapFn = FilterMapUnchangedFn<VariableValue<'static>>;
@@ -118,9 +120,13 @@ impl IidExecutor {
         };
 
         let iterator = instance.transpose();
-        let as_tuples =
-            iterator.into_iter().filter_map(filter_for_row).map::<TupleResult<'_>, IidToTupleFn>(iid_to_tuple);
-        Ok(TupleIterator::Iid(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+        let as_tuples = iterator.into_iter().filter_map(filter_for_row).map(iid_to_tuple as _);
+        let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
+        Ok(TupleIterator::Iid(SortedTupleIterator::new(
+            lending_tuples,
+            self.tuple_positions.clone(),
+            &self.variable_modes,
+        )))
     }
 }
 

@@ -52,7 +52,7 @@ impl AttributeVertex {
     pub const PREFIX: Prefix = Prefix::VertexAttribute;
     pub const MAX_LENGTH: usize = PrefixID::LENGTH + TypeID::LENGTH + ValueEncodingLength::LONG_LENGTH;
 
-    pub fn new(type_id: TypeID, attribute_id: AttributeID) -> Self {
+    pub const fn new(type_id: TypeID, attribute_id: AttributeID) -> Self {
         Self { type_id, attribute_id }
     }
 
@@ -220,6 +220,7 @@ impl ValueEncodingLength {
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum AttributeID {
+    // WARNING: Changing order of enum will change Ord and `MIN`! This must align with the storage encoding
     Boolean(BooleanAttributeID),
     Integer(IntegerAttributeID),
     Double(DoubleAttributeID),
@@ -233,6 +234,8 @@ pub enum AttributeID {
 }
 
 impl AttributeID {
+    pub const MIN: AttributeID = Self::Boolean(BooleanAttributeID::MIN);
+
     pub fn new(bytes: &[u8]) -> Self {
         let &[prefix, ..] = bytes else { unreachable!("empty value bytes") };
         match ValueTypeCategory::from_bytes([prefix]) {
@@ -504,8 +507,9 @@ impl<const LENGTH_VALUE_WITH_PREFIX: usize, EncodedBytesType: InlineEncodableAtt
     const VALUE_TYPE_LENGTH: usize = ValueTypeBytes::CATEGORY_LENGTH;
     const VALUE_LENGTH_ID: ValueEncodingLength = EncodedBytesType::ENCODED_LENGTH_ID;
     const LENGTH: usize = LENGTH_VALUE_WITH_PREFIX;
+    const MIN: Self = Self::new([0; LENGTH_VALUE_WITH_PREFIX]);
 
-    pub fn new(bytes: [u8; LENGTH_VALUE_WITH_PREFIX]) -> Self {
+    pub const fn new(bytes: [u8; LENGTH_VALUE_WITH_PREFIX]) -> Self {
         // assert ensures generics are used correctly (see above note with link to rust-lang issue)
         debug_assert!(LENGTH_VALUE_WITH_PREFIX == EncodedBytesType::ENCODED_LENGTH + Self::VALUE_TYPE_LENGTH);
         Self { bytes, _ph: PhantomData }

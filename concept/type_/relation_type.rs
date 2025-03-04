@@ -10,7 +10,7 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
         },
         Typed,
@@ -60,7 +60,11 @@ impl fmt::Debug for RelationType {
     }
 }
 
-impl RelationType {}
+impl RelationType {
+    const fn new_const_(vertex: TypeVertex) -> Self {
+        Self { vertex }
+    }
+}
 
 impl Hkt for RelationType {
     type HktSelf<'a> = RelationType;
@@ -92,6 +96,7 @@ impl PrefixedTypeVertexEncoding for RelationType {
 }
 
 impl TypeAPI for RelationType {
+    const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexRelationType.prefix_id(), TypeID::MIN));
     fn new(vertex: TypeVertex) -> RelationType {
         Self::from_vertex(vertex).unwrap()
     }

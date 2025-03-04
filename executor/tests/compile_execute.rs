@@ -22,8 +22,7 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -33,6 +32,7 @@ use ir::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
+use resource::profile::QueryProfile;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,

@@ -20,11 +20,13 @@ use concept::{
     },
 };
 use itertools::Itertools;
+use lending_iterator::{AsLendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
+        owns_reverse_executor::OwnsReverseExecutor,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -49,7 +51,8 @@ impl fmt::Debug for OwnsExecutor {
     }
 }
 
-pub(super) type OwnsTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<OwnsFilterMapFn>>, OwnsToTupleFn>;
+pub(super) type OwnsTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<OwnsFilterMapFn>>, OwnsToTupleFn>>>;
 
 pub(super) type OwnsUnboundedSortedOwner = OwnsTupleIterator<
     iter::Map<
@@ -147,10 +150,10 @@ impl OwnsExecutor {
                     .map(|owner| self.get_owns_for_owner(snapshot, type_manager, *owner))
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsUnboundedSortedOwner =
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::OwnsUnbounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
@@ -169,10 +172,10 @@ impl OwnsExecutor {
                 let owns = self.get_owns_for_owner(snapshot, type_manager, owner)?;
 
                 let iterator = owns.into_iter().sorted_by_key(|(owner, attribute)| (*attribute, *owner)).map(Ok as _);
-                let as_tuples: OwnsBoundedSortedAttribute =
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::OwnsBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))

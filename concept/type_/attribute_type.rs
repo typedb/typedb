@@ -14,7 +14,7 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
         },
         Typed,
@@ -55,7 +55,12 @@ impl fmt::Debug for AttributeType {
     }
 }
 
-impl AttributeType {}
+impl AttributeType {
+    const fn new_const_(vertex: TypeVertex) -> Self {
+        // note: unchecked!
+        Self { vertex }
+    }
+}
 
 impl Hkt for AttributeType {
     type HktSelf<'a> = AttributeType;
@@ -97,6 +102,7 @@ impl primitive::prefix::Prefix for AttributeType {
 }
 
 impl TypeAPI for AttributeType {
+    const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexAttributeType.prefix_id(), TypeID::MIN));
     fn new(vertex: TypeVertex) -> AttributeType {
         Self::from_vertex(vertex).unwrap()
     }

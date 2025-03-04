@@ -4,19 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData};
+use std::{borrow::Borrow, cmp::Ordering, collections::BinaryHeap, marker::PhantomData, mem};
 
-use crate::{higher_order::FnHktHelper, LendingIterator, Peekable};
+use crate::{higher_order::FnHktHelper, LendingIterator, Peekable, Seekable};
 
 pub struct KMergeBy<I: LendingIterator, F> {
-    iterators: BinaryHeap<PeekWrapper<I, F>>,
-    next_iterator: Option<PeekWrapper<I, F>>,
-    state: State,
+    pub iterators: BinaryHeap<PeekWrapper<I, F>>,
+    pub next_iterator: Option<PeekWrapper<I, F>>,
+    pub state: State,
     phantom_compare: PhantomData<F>,
 }
 
 #[derive(Copy, Clone)]
-enum State {
+pub enum State {
     Init,
     Used,
     Ready,
@@ -28,10 +28,11 @@ where
     I: LendingIterator,
     F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
 {
-    pub fn new(iters: impl IntoIterator<Item = Peekable<I>>, cmp: F) -> Self {
+    pub fn new(iters: impl IntoIterator<Item = I>, cmp: F) -> Self {
         let iters = iters
             .into_iter()
-            .map(|mut peekable| {
+            .map(|iter| {
+                let mut peekable = Peekable::new(iter);
                 let _ = peekable.peek(); // peek requires a mutable ownership, which we can't do in a filter()
                 peekable
             })
@@ -83,10 +84,37 @@ where
     }
 }
 
-// TODO: Seekable
+impl<I, F, K> Seekable<K> for KMergeBy<I, F>
+where
+    I: LendingIterator + Seekable<K>,
+    F: for<'a, 'b> FnHktHelper<(&'a I::Item<'a>, &'b I::Item<'b>), Ordering> + Copy + 'static,
+{
+    fn seek(&mut self, key: &K) {
+        self.iterators = mem::take(&mut self.iterators)
+            .drain()
+            .map(|mut it| {
+                it.iter.seek(key);
+                it
+            })
+            .collect();
+        if let Some(mut next_iterator) = self.next_iterator.as_mut() {
+            next_iterator.iter.seek(key);
+        }
+        // force recomputation of heap element
+        self.state = State::Used;
+    }
 
-struct PeekWrapper<I: LendingIterator, F: ?Sized> {
-    iter: Peekable<I>,
+    fn compare_key(&self, item: &Self::Item<'_>, key: &K) -> Ordering {
+        if let Some(inner) = self.next_iterator.as_ref().or(self.iterators.peek()) {
+            inner.iter.compare_key(item, key)
+        } else {
+            Ordering::Less // let the enclosing iterator exhaust itself?
+        }
+    }
+}
+
+pub struct PeekWrapper<I: LendingIterator, F> {
+    pub iter: Peekable<I>,
     cmp_fn: F,
 }
 

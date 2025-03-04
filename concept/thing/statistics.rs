@@ -233,7 +233,7 @@ impl Statistics {
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
                 total_delta += delta;
             } else if ThingEdgeLinks::is_links(&key) {
-                let edge = ThingEdgeLinks::new(Bytes::Reference(key.bytes()));
+                let edge = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 self.update_role_player(
                     Object::new(edge.to()).type_(),

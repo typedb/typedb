@@ -16,8 +16,9 @@ deps = [
     "//encoding",
     "//executor",
     "//ir",
+    "//resource",
     "//storage",
-    
+
     "@typeql//rust:typeql",
 
     "//concept/tests:test_utils_concept",
@@ -106,6 +107,13 @@ rust_test(
         "//function",
         "//query:query",
     ],
+)
+
+rust_test(
+    name = "test_efficiency",
+    crate_root = "efficiency.rs",
+    srcs = ["efficiency.rs"],
+    deps = deps,
 )
 
 checkstyle_test(

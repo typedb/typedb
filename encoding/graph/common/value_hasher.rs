@@ -9,7 +9,7 @@ use std::sync::Arc;
 use bytes::byte_array::ByteArray;
 use lending_iterator::LendingIterator;
 use primitive::either::Either;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     key_range::KeyRange,
     key_value::StorageKey,
@@ -75,10 +75,13 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
         Snapshot: ReadableSnapshot,
     {
         let tail_byte_index = key_without_tail_byte.len();
-        let mut iter = snapshot.iterate_range(&KeyRange::new_within(
-            StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
-            Self::FIXED_WIDTH_KEYS,
-        ));
+        let mut iter = snapshot.iterate_range(
+            &KeyRange::new_within(
+                StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
+                Self::FIXED_WIDTH_KEYS,
+            ),
+            StorageCounters::DISABLED.clone(),
+        );
         let mut next = iter.next().transpose()?;
         let mut first_unused_tail: Option<u8> = None;
 

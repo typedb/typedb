@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
 use iterator::minmax_or;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -449,6 +450,7 @@ impl OperationTimeValidation {
                         snapshot,
                         &attribute,
                         &owner_type_range,
+                        StorageCounters::DISABLED,
                     );
 
                     while let Some((has, _)) = has_iterator

@@ -12,6 +12,9 @@ rust_library(
     srcs = glob([
         "*.rs",
     ]),
+    deps = [
+        "@crates//:itertools",
+    ],
     compile_data = [
         "typedb-ascii.txt",
         "//:VERSION",

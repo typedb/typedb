@@ -87,7 +87,7 @@ where
 }
 
 pub struct Inspect<I, F> {
-    iter: I,
+    pub iter: I,
     f: F,
 }
 

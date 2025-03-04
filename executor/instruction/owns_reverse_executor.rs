@@ -18,11 +18,12 @@ use concept::{
     type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use itertools::Itertools;
+use lending_iterator::{AsLendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         owns_executor::{
             OwnsFilterFn, OwnsFilterMapFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE,
             EXTRACT_OWNER,
@@ -144,10 +145,10 @@ impl OwnsReverseExecutor {
                     })
                     .try_collect()?;
                 let iterator = owns.into_iter().flatten().map(Ok as _);
-                let as_tuples: OwnsReverseUnboundedSortedAttribute =
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(owns_to_tuple_attribute_owner as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::OwnsReverseUnbounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
@@ -172,11 +173,10 @@ impl OwnsReverseExecutor {
                     .map(|object_type| (object_type, attribute_type));
 
                 let iterator = owns.sorted_by_key(|(owner, _)| *owner).map(Ok as _);
-                let as_tuples: OwnsReverseBoundedSortedOwner =
-                    iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _);
-
+                let as_tuples = iterator.filter_map(filter_for_row).map(owns_to_tuple_owner_attribute as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::OwnsReverseBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))

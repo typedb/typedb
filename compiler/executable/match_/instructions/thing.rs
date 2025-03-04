@@ -116,7 +116,7 @@ impl IsaReverseInstruction<Variable> {
 }
 
 impl<ID> IsaReverseInstruction<ID> {
-    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+    pub fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
 }

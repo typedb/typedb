@@ -253,7 +253,6 @@ impl Keyspace {
         iterator.item().map(|(k, v)| mapper(k, v))
     }
 
-    // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
     pub(crate) fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
         iterpool: &IteratorPool,

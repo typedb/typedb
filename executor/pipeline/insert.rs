@@ -17,7 +17,7 @@ use compiler::{
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
-use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
+use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::StageProfile};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -26,7 +26,6 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
-    profile::StageProfile,
     row::{MaybeOwnedRow, Row},
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,

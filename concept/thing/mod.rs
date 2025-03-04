@@ -27,12 +27,14 @@ pub mod has;
 pub mod object;
 pub mod relation;
 pub mod statistics;
+mod r#struct;
 pub mod thing_manager;
 
 pub trait ThingAPI: Sized + Clone {
     type TypeAPI: TypeAPI;
     type Vertex: ThingVertex;
 
+    const MIN: Self;
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix);
 
     fn new(vertex: Self::Vertex) -> Self;

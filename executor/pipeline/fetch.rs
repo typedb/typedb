@@ -32,6 +32,7 @@ use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use iterator::minmax_or;
 use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
+use resource::profile::{QueryProfile, StageProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -43,7 +44,6 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError,
     },
-    profile::{QueryProfile, StageProfile},
     read::{
         pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
         tabled_functions::TabledFunctions,
@@ -450,7 +450,7 @@ fn execute_attributes_all(
     snapshot: Arc<impl ReadableSnapshot>,
     thing_manager: Arc<ThingManager>,
 ) -> Result<DocumentNode, FetchExecutionError> {
-    let iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager);
+    let iter = object.get_has_unordered(snapshot.as_ref(), &thing_manager, StorageCounters::DISABLED);
     let mut map: HashMap<Arc<Label>, DocumentNode> = HashMap::new();
     for result in iter {
         let (has, count) = result.map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
@@ -539,7 +539,12 @@ fn prepare_attribute_type_has_iterator(
     let attribute_types = TypeAPI::chain_types(attribute_type, subtypes.into_iter().cloned());
     let (min_type, max_type) = minmax_or!(attribute_types.into_iter(), return Ok(HasIterator::new_empty()));
     let range = (Bound::Included(min_type), Bound::Included(max_type));
-    Ok(object.get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), &range))
+    Ok(object.get_has_types_range_unordered(
+        snapshot.as_ref(),
+        thing_manager.as_ref(),
+        &range,
+        StorageCounters::DISABLED,
+    ))
 }
 
 fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(

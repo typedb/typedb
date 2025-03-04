@@ -39,7 +39,7 @@ use ir::{
 };
 use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::{
     key_range::KeyRange,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -230,10 +230,13 @@ impl FunctionReader {
         snapshot: &impl ReadableSnapshot,
     ) -> Result<Vec<SchemaFunction>, FunctionReadError> {
         snapshot
-            .iterate_range(&KeyRange::new_within(
-                DefinitionKey::build_prefix(FunctionDefinition::PREFIX),
-                DefinitionKey::FIXED_WIDTH_ENCODING,
-            ))
+            .iterate_range(
+                &KeyRange::new_within(
+                    DefinitionKey::build_prefix(FunctionDefinition::PREFIX),
+                    DefinitionKey::FIXED_WIDTH_ENCODING,
+                ),
+                StorageCounters::DISABLED,
+            )
             .collect_cloned_vec(|key, value| {
                 SchemaFunction::build(
                     DefinitionKey::new(Bytes::Reference(key.bytes()).into_owned()),

@@ -6,7 +6,7 @@
 
 #![allow(unexpected_cfgs)]
 
-use std::io::stdout;
+use std::{fs::File, io::stdout};
 
 use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
 pub use tracing::{debug, error, info, trace};
@@ -20,22 +20,21 @@ pub fn initialise_logging_global() {
         // .add_directive("database=trace".parse().unwrap())
         // .add_directive("server=trace".parse().unwrap())
         // .add_directive("storage=trace".parse().unwrap())
-        // .add_directive("executor=trace".parse().unwrap())
-        // .add_directive("query=trace".parse().unwrap())
+        .add_directive("executor=trace".parse().unwrap())
+        .add_directive("query=trace".parse().unwrap())
         // .add_directive("compiler=trace".parse().unwrap())
         // useful for debugging what tonic is doing:
         // .add_directive("tonic=trace".parse().unwrap());
     ;
 
     // Create a file appender
-    // let file_appender = File::create("output.log")
-    //     .expect("Failed to create log file");
+    let file_appender = File::create("output.log").expect("Failed to create log file");
 
     let subscriber = SubscriberBuilder::default()
         .with_max_level(Level::TRACE)
         .with_env_filter(filter)
         .with_writer(stdout)
-        // .with_writer(file_appender)
+        .with_writer(file_appender)
         .with_ansi(false) // Disable ANSI colors in file output
         .with_thread_ids(true)
         .with_target(false)

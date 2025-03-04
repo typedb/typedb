@@ -187,7 +187,10 @@ fn multi_threaded_inserts() {
     {
         let snapshot = storage.clone().open_snapshot_read();
         let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person", None)).unwrap().unwrap();
-        assert_eq!(NUM_THREADS * INTERNAL_ITERS, thing_manager.get_entities_in(&snapshot, person_type).count());
+        assert_eq!(
+            NUM_THREADS * INTERNAL_ITERS,
+            Iterator::count(thing_manager.get_entities_in(&snapshot, person_type))
+        );
         snapshot.close_resources();
     }
 }

@@ -9,6 +9,7 @@ use std::sync::Arc;
 use compiler::executable::delete::{executable::DeleteExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use resource::profile::StageProfile;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -16,7 +17,6 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
-    profile::StageProfile,
     row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,

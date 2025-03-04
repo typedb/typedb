@@ -9,13 +9,13 @@ use std::sync::Arc;
 use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use lending_iterator::{adaptors::FlatMap, AsLendingIterator, LendingIterator};
+use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
-    profile::QueryProfile,
     read::{create_pattern_executor_for_match, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions},
     row::MaybeOwnedRow,
     ExecutionInterrupt,

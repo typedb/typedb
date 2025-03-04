@@ -76,6 +76,19 @@ impl LendingIterator for DBIterator {
 
 impl Seekable<[u8]> for DBIterator {
     fn seek(&mut self, key: &[u8]) {
+        if let Some(Ok((item_key, _))) = self.item.as_ref() {
+            match (*item_key).cmp(key) {
+                Ordering::Less => {
+                    // fall through
+                }
+                Ordering::Equal => {
+                    return;
+                }
+                Ordering::Greater => {
+                    unreachable!("Cannot seek DBIterator to a value ordered behind the current item")
+                }
+            }
+        }
         self.item.take();
         self.iterator.seek(key);
         self.item = peek_item(&self.iterator); // repopulate `item` to prevent advancing the underlying iterator

@@ -3,7 +3,6 @@
 # Do not modify this file.
 
 features = {}
-dependencies = {}
 
 [package]
 	name = "resource"
@@ -13,3 +12,8 @@ dependencies = {}
 [lib]
 	path = "resource.rs"
 
+[dependencies]
+	[dependencies.itertools]
+		features = ["default", "use_alloc", "use_std"]
+		version = "0.10.5"
+		default-features = false

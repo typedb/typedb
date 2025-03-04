@@ -52,6 +52,7 @@ pub mod sub;
 pub mod type_manager;
 
 pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
+    const MIN: Self;
     fn new(vertex: TypeVertex) -> Self;
 
     fn read_from(b: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
