@@ -14,8 +14,8 @@ def typedb_bazel_distribution():
 def typedb_dependencies():
     git_repository(
         name = "typedb_dependencies",
-        remote = "https://github.com/krishnangovindraj/dependencies",
-        commit = "478bb7516f352761876ecade52754e6de2f92c6c",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        remote = "https://github.com/typedb/dependencies",
+        commit = "b22f2877e1a3677a5758cb1d799503ff676cb137",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typeql():
