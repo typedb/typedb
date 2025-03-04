@@ -109,7 +109,7 @@ pub trait StageIterator:
             None => return Ok(Batch::new(0, 1)),
             Some(row) => {
                 let row = row?;
-                let mut batch = Batch::new(row.len() as u32, 10);
+                let mut batch = Batch::new(row.len() as u32, Batch::DEFAULT_LENGTH);
                 batch.append(row);
                 batch
             }

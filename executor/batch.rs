@@ -166,6 +166,7 @@ pub struct Batch {
 }
 
 impl Batch {
+    pub(crate) const DEFAULT_LENGTH: usize = 10;
     pub(crate) fn new(width: u32, length: usize) -> Self {
         let size = width as usize * length;
         Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }

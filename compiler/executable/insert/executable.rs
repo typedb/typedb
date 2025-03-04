@@ -61,7 +61,8 @@ pub fn compile(
     desired_output_variable_positions: Option<HashMap<Variable, VariablePosition>>,
     source_span: Option<Span>,
 ) -> Result<InsertExecutable, Box<WriteCompilationError>> {
-    debug_assert!(desired_output_variable_positions.as_ref()
+    debug_assert!(desired_output_variable_positions
+        .as_ref()
         .map(|positions| { input_variables.iter().all(|(k, v)| positions.get(k).unwrap() == v) })
         .unwrap_or(true));
     let mut variable_positions = desired_output_variable_positions.unwrap_or_else(|| input_variables.clone());

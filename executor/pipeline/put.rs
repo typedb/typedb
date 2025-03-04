@@ -61,7 +61,7 @@ where
     > {
         let Self { previous: previous_stage, executable, function_registry } = self;
 
-        let mut output_batch = Batch::new(executable.output_width() as u32, 10); // We don't know how many ahead of time
+        let mut output_batch = Batch::new(executable.output_width() as u32, Batch::DEFAULT_LENGTH);
         let mut must_insert = Vec::new();
 
         let (mut previous_iterator, mut context) = previous_stage.into_iterator(interrupt.clone())?;

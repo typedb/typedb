@@ -5,9 +5,13 @@
  */
 
 use std::sync::Arc;
-use answer::variable::Variable;
 
-use compiler::executable::insert::{executable::InsertExecutable, instructions::{ConceptInstruction, ConnectionInstruction}, VariableSource};
+use answer::variable::Variable;
+use compiler::executable::insert::{
+    executable::InsertExecutable,
+    instructions::{ConceptInstruction, ConnectionInstruction},
+    VariableSource,
+};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;

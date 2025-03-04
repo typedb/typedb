@@ -7,10 +7,9 @@
 use std::sync::Arc;
 
 use compiler::executable::{
-    insert::instructions::ConceptInstruction,
+    insert::{instructions::ConceptInstruction, VariableSource},
     update::{executable::UpdateExecutable, instructions::ConnectionInstruction},
 };
-use compiler::executable::insert::VariableSource;
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::WritableSnapshot;
