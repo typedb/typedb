@@ -73,15 +73,11 @@ impl StreamModifierExecutor {
             StreamModifierExecutor::Offset { offset, .. } => {
                 StreamModifierResultMapper::Offset(OffsetMapper::new(*offset))
             }
-            StreamModifierExecutor::Limit { limit, .. } => {
-                StreamModifierResultMapper::Limit(LimitMapper::new(*limit))
-            }
+            StreamModifierExecutor::Limit { limit, .. } => StreamModifierResultMapper::Limit(LimitMapper::new(*limit)),
             StreamModifierExecutor::Distinct { output_width, .. } => {
                 StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width))
             }
-            StreamModifierExecutor::Last { .. } => {
-                StreamModifierResultMapper::Last(LastMapper::new())
-            }
+            StreamModifierExecutor::Last { .. } => StreamModifierResultMapper::Last(LastMapper::new()),
         }
     }
 

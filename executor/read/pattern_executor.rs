@@ -22,10 +22,6 @@ use crate::{
         },
         nested_pattern_executor::{Disjunction, InlinedFunction, Negation, NestedPatternExecutor},
         step_executor::StepExecutors,
-        stream_modifier::{
-            DistinctMapper, LastMapper, LimitMapper, OffsetMapper, SelectMapper, StreamModifierExecutor,
-            StreamModifierResultMapper,
-        },
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
         NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension,
@@ -62,18 +58,31 @@ impl PatternExecutor {
         self.control_stack.is_empty()
     }
 
-    pub(crate) fn compute_next_batch(
+    pub(crate) fn compute_next_batch_restore_and_retry_as_needed(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
         tabled_functions: &mut TabledFunctions,
         suspensions: &mut QueryPatternSuspensions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let _suspension_count_before = suspensions.record_nested_pattern_entry();
-        let result = self.batch_continue(context, interrupt, tabled_functions, suspensions);
-        let _suspension_count_after = suspensions.record_nested_pattern_exit();
+        let mut result = None;
+        loop {
+            let _suspension_count_before = suspensions.record_nested_pattern_entry();
+            result = self.batch_continue(context, interrupt, tabled_functions, suspensions)?;
+            let _suspension_count_after = suspensions.record_nested_pattern_exit();
+            if result.is_some() {
+                break;
+            } else {
+                if suspensions.prepare_for_restore_if_needed(Some(tabled_functions)) {
+                    tabled_functions.may_prepare_to_retry_suspended();
+                    self.prepare_to_restore_from_suspension(0);
+                } else {
+                    break;
+                }
+            }
+        }
         // debug_assert!(state_after == state_before); // TODO: Enable once we figure out retries at the calls. // As long as compute_next_batch is only called for the entry.
-        result
+        Ok(result)
     }
 
     pub(crate) fn prepare(&mut self, input_batch: FixedBatch) {
@@ -143,33 +152,21 @@ impl PatternExecutor {
                         self.push_nested_pattern(index, unmapped_input);
                     }
                 }
-                ControlInstruction::ExecuteNegation(ExecuteNegation { index, input, last_seen_table_size: previous_table_size }) => {
+                ControlInstruction::ExecuteNegation(ExecuteNegation { index, input }) => {
                     let StepExecutors::Nested(NestedPatternExecutor::Negation(Negation { inner })) =
                         &mut executors[index.0]
                     else {
                         unreachable!();
                     };
-                    let mut negation_suspensions = QueryPatternSuspensions::new();
-                    negation_suspensions.record_nested_pattern_entry();
-                    let result = inner.batch_continue(context, interrupt, tabled_functions, &mut negation_suspensions)?;
-                    negation_suspensions.record_nested_pattern_exit();
+                    let result = inner.compute_next_batch_restore_and_retry_as_needed(
+                        context,
+                        interrupt,
+                        tabled_functions,
+                        &mut QueryPatternSuspensions::new(),
+                    )?;
                     match result {
                         None => {
-                            if !negation_suspensions.is_empty() {
-                                let current_table_size = tabled_functions.total_table_size();
-                                if previous_table_size != Some(current_table_size) {
-                                    // retry
-                                    tabled_functions.may_prepare_to_retry_suspended();
-                                    negation_suspensions.prepare_restoring_from_suspending();
-                                    inner.prepare_to_restore_from_suspension(0);
-                                    self.control_stack.push(ControlInstruction::ExecuteNegation(ExecuteNegation { index, input, last_seen_table_size: Some(current_table_size) }))
-                                } else {
-                                    // There are no answers to be found.
-                                    self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
-                                }
-                            } else {
-                                self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
-                            }
+                            self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
                         }
                         Some(_) => inner.reset(), // fail
                     };
@@ -241,42 +238,19 @@ impl PatternExecutor {
                 ControlInstruction::ExecuteTabledCall(TabledCall { index }) => {
                     self.execute_tabled_call(context, interrupt, tabled_functions, suspensions, index)?;
                 }
-                ControlInstruction::CollectingStage(CollectingStage { index, last_seen_table_size: previous_table_size }) => {
+                ControlInstruction::CollectingStage(CollectingStage { index }) => {
                     let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
-                    compile_error!("We throw this inner_suspensions off in the retry if we find answers");
                     let mut inner_suspensions = QueryPatternSuspensions::new();
-                    inner_suspensions.record_nested_pattern_entry();
-                    let result = inner.batch_continue(context, interrupt, tabled_functions, &mut inner_suspensions)?;
-                    inner_suspensions.record_nested_pattern_exit();
-                    match result {
-                        None => {
-                            if !inner_suspensions.is_empty() {
-                                let current_table_size = tabled_functions.total_table_size();
-                                if previous_table_size != Some(current_table_size) {
-                                    // retry
-                                    tabled_functions.may_prepare_to_retry_suspended();
-                                    inner_suspensions.prepare_restoring_from_suspending();
-                                    inner.prepare_to_restore_from_suspension(0);
-                                    self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index, last_seen_table_size: Some(current_table_size) }))
-                                } else {
-                                    // There are no answers to be found.
-                                    let iterator = collector.collected_to_iterator(context);
-                                    self.control_stack
-                                        .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
-                                }
-                            } else {
-                                debug_assert!(inner_suspensions.is_empty());
-                                let iterator = collector.collected_to_iterator(context);
-                                self.control_stack
-                                    .push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
-                            }
-                        }
-                        Some(batch) => {
-                            debug_assert!(inner_suspensions.is_empty()); // Fails
-                            collector.accept(context, batch);
-                            self.control_stack.push(ControlInstruction::CollectingStage(CollectingStage { index, last_seen_table_size: None }))
-                        },
-                    };
+                    while let Some(batch) = inner.compute_next_batch_restore_and_retry_as_needed(
+                        context,
+                        interrupt,
+                        tabled_functions,
+                        &mut inner_suspensions,
+                    )? {
+                        collector.accept(context, batch);
+                    }
+                    let iterator = collector.collected_to_iterator(context);
+                    self.control_stack.push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
                 }
                 ControlInstruction::StreamCollected(StreamCollected { index, mut iterator }) => {
                     if let Some(batch) = iterator.batch_continue()? {
@@ -336,7 +310,7 @@ impl PatternExecutor {
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     self.control_stack
-                        .push(ControlInstruction::CollectingStage(CollectingStage { index: next_executor_index, last_seen_table_size: None }));
+                        .push(ControlInstruction::CollectingStage(CollectingStage { index: next_executor_index }));
                 }
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ControlInstruction::ReshapeForReturn(ReshapeForReturn {
@@ -370,7 +344,6 @@ impl PatternExecutor {
                     self.control_stack.push(ControlInstruction::ExecuteNegation(ExecuteNegation {
                         index,
                         input: input.clone().into_owned(),
-                        last_seen_table_size: None,
                     }));
                 }
                 NestedPatternExecutor::InlinedFunction(InlinedFunction { inner, arg_mapping, .. }) => {
@@ -388,8 +361,10 @@ impl PatternExecutor {
         } else if let StepExecutors::StreamModifier(stream_modifier) = &mut self.executors[index.0] {
             stream_modifier.inner().prepare(FixedBatch::from(input.as_reference()));
             let mapper = stream_modifier.create_mapper();
-            self.control_stack.push(ControlInstruction::ExecuteStreamModifier( ExecuteStreamModifier {
-                index, mapper, input: input.clone().into_owned()
+            self.control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
+                index,
+                mapper,
+                input: input.clone().into_owned(),
             }));
         } else {
             unreachable!();

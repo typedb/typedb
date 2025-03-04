@@ -451,6 +451,10 @@ fn linear_reachability_in_tree() {
         let query = query_template.replace(placeholder_start_node, "e2");
         let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
         assert_eq!(8, rows.len()); // all except e1. e2 should be reachable from itself
+
+        let query = query_template.replace(placeholder_start_node, "e4");
+        let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(8, rows.len()); // all except e1
     }
 }
 
@@ -509,6 +513,108 @@ fn fibonacci() {
 }
 
 #[test]
+fn test_retries_at_negation() {
+    let custom_schema = r#"define
+        attribute name value string;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end;
+        relation edge, relates start, relates end;
+    "#;
+    let context = setup_common(custom_schema);
+    let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
+    assert_eq!(1, rows.len());
+
+    let placeholder_start_node = "<<NODE_NAME>>";
+    let query_template = r#"
+            with
+            fun reachable($start: node) -> { node }:
+            match
+                $return-me has name $name;
+                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
+            return { $return-me };
+
+            match
+                let $reachable = "dummy";
+                not {
+                    $start isa node, has name "<<NODE_NAME>>";
+                    $goal isa node, has name "<<GOAL_NAME>>";
+                    let $to in reachable($start); $goal is $to;
+                };
+        "#;
+
+    {
+        // tree
+        let query = query_template.replace(placeholder_start_node, "t2").replace("<<GOAL_NAME>>", "t4");
+        let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 0); // reachable, hence not fails
+    }
+
+    {
+        // tree
+        let query = query_template.replace(placeholder_start_node, "t2").replace("<<GOAL_NAME>>", "t6");
+        let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1); // not reachable
+    }
+
+    {
+        // ant
+        let query = query_template.replace(placeholder_start_node, "e1").replace("<<GOAL_NAME>>", "e4");
+        let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 0); // reachable, hence not fails
+    }
+    {
+        // ant
+        let query = query_template.replace(placeholder_start_node, "e4").replace("<<GOAL_NAME>>", "e1");
+        let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1); // not reachable
+    }
+}
+
+#[test]
+fn test_retries_at_collection() {
+    let custom_schema = r#"define
+        attribute name value string;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end;
+        relation edge, relates start, relates end;
+    "#;
+    let context = setup_common(custom_schema);
+    let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
+    assert_eq!(1, rows.len());
+
+    let placeholder_start_node = "<<NODE_NAME>>";
+    let query_template = r#"
+            with
+            fun reachable($start: node) -> { node }:
+            match
+                $return-me has name $name;
+                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
+            return { $return-me };
+
+            match
+                $start isa node, has name "<<NODE_NAME>>";
+                let $to in reachable($start);
+                reduce $reachable_count = count($to);
+        "#;
+
+    {
+        // tree
+        let query = query_template.replace(placeholder_start_node, "t1");
+        let (rows, positions) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get(*positions.get("reachable_count").unwrap()), &VariableValue::Value(Value::Integer(6)));
+    }
+
+    {
+        // tree
+        let query = query_template.replace(placeholder_start_node, "t2");
+        let (rows, positions) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get(*positions.get("reachable_count").unwrap()), &VariableValue::Value(Value::Integer(2)));
+    }
+}
+
+#[test]
 fn reduce_depends_on_cyclic_function() {
     let custom_schema = r#"define
         attribute name value string;
@@ -559,7 +665,6 @@ fn reduce_depends_on_cyclic_function() {
         let (rows, positions) = run_read_query(&context, query.as_str()).unwrap();
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].get(*positions.get("sum").unwrap()), &VariableValue::Value(Value::Integer(90)));
-
     }
 }
 

@@ -100,7 +100,7 @@ impl TabledFunctionPatternExecutorState {
         debug_assert!(self.pattern_executor.has_empty_control_stack());
         self.pattern_executor.reset();
         if !self.suspensions.is_empty() {
-            self.suspensions.prepare_restoring_from_suspending();
+            self.suspensions.prepare_for_restore_if_needed(None);
             self.pattern_executor.prepare_to_restore_from_suspension(0);
         }
     }

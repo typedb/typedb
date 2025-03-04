@@ -29,7 +29,6 @@ pub struct MatchExecutor {
     input: Option<MaybeOwnedRow<'static>>,
     tabled_functions: TabledFunctions,
     suspensions: QueryPatternSuspensions,
-    last_seen_table_size: usize,
 }
 
 impl MatchExecutor {
@@ -52,7 +51,6 @@ impl MatchExecutor {
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
             suspensions: QueryPatternSuspensions::new(),
-            last_seen_table_size: 0,
         })
     }
 
@@ -73,37 +71,15 @@ impl MatchExecutor {
     ) -> Result<Option<FixedBatch>, Box<ReadExecutionError>> {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
-            self.last_seen_table_size = 0;
         }
-        let batch =
-            self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspensions)?;
-        debug_assert!(self.suspensions.current_depth() == 0);
-        if batch.is_none() && !self.suspensions.is_empty() {
-            let mut return_batch = batch;
-            // TODO: We do it all the restoring here, but we should probably be doing it elsewhere. Maybe pattern_executor::execute_tabled_call
-            //  when the function returns None, AND it's possibly the head of a cycle.
-            while return_batch.is_none() && !self.suspensions.is_empty() {
-                self.last_seen_table_size = self.tabled_functions.total_table_size();
-                debug_assert!(self.tabled_functions.iterate_states().all(|state| state.executor_state.try_lock().unwrap().pattern_executor.has_empty_control_stack()));
-                self.tabled_functions.may_prepare_to_retry_suspended();
-                // And on the entry
-                self.suspensions.prepare_restoring_from_suspending();
-                self.entry.prepare_to_restore_from_suspension(0);
-
-                return_batch = self.entry.compute_next_batch(
-                    context,
-                    interrupt,
-                    &mut self.tabled_functions,
-                    &mut self.suspensions,
-                )?;
-                if return_batch.is_none() && self.last_seen_table_size == self.tabled_functions.total_table_size() {
-                    return Ok(None);
-                }
-            }
-            Ok(return_batch)
-        } else {
-            Ok(batch)
-        }
+        self.entry
+            .compute_next_batch_restore_and_retry_as_needed(
+                context,
+                interrupt,
+                &mut self.tabled_functions,
+                &mut self.suspensions,
+            )
+            .map_err(|err| Box::new(err))
     }
 }
 
