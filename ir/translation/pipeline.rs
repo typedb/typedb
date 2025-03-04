@@ -75,6 +75,7 @@ pub enum TranslatedStage {
     Match { block: Block, source_span: Option<Span> },
     Insert { block: Block, source_span: Option<Span> },
     Update { block: Block, source_span: Option<Span> },
+    Put { block: Block, source_span: Option<Span> },
     Delete { block: Block, deleted_variables: Vec<Variable>, source_span: Option<Span> },
 
     // ...
@@ -85,7 +86,6 @@ pub enum TranslatedStage {
     Require(Require),
     Reduce(Reduce),
     Distinct(Distinct),
-    Put { block: Block, source_span: Option<Span> },
 }
 
 impl TranslatedStage {

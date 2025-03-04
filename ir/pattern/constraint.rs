@@ -531,8 +531,8 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Links(_) => typeql::token::Keyword::Links.as_str(),
             Constraint::IndexedRelation(_) => "indexed-relation",
             Constraint::Has(_) => typeql::token::Keyword::Has.as_str(),
-            Constraint::ExpressionBinding(_) => typeql::token::Comparator::Eq.as_str(),
-            Constraint::FunctionCallBinding(_) => "=/in",
+            Constraint::ExpressionBinding(_) => "expression",
+            Constraint::FunctionCallBinding(_) => "function-call",
             Constraint::Comparison(comp) => comp.comparator.name(),
             Constraint::Owns(_) => typeql::token::Keyword::Owns.as_str(),
             Constraint::Relates(_) => typeql::token::Keyword::Relates.as_str(),
@@ -540,7 +540,7 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Value(_) => typeql::token::Keyword::Value.as_str(),
 
             Constraint::RoleName(_) => "role-name",
-            Constraint::LinksDeduplication(_) => "role-player-deduplication",
+            Constraint::LinksDeduplication(_) => "links-deduplication",
             Constraint::Unsatisfiable(_) => "optimised-away",
         }
     }
@@ -665,6 +665,30 @@ impl<ID: IrID> Constraint<ID> {
             Self::Value(inner) => Constraint::Value(inner.map(mapping)),
             Self::LinksDeduplication(inner) => Constraint::LinksDeduplication(inner.map(mapping)),
             Self::Unsatisfiable(inner) => Constraint::Unsatisfiable(inner.map(mapping)),
+        }
+    }
+
+    pub(crate) fn source_span(&self) -> Option<Span> {
+        match self {
+            Constraint::Is(inner) => inner.source_span(),
+            Constraint::Kind(inner) => None,
+            Constraint::Label(inner) => inner.source_span(),
+            Constraint::RoleName(inner) => inner.source_span(),
+            Constraint::Sub(inner) => inner.source_span(),
+            Constraint::Isa(inner) => inner.source_span(),
+            Constraint::Iid(inner) => inner.source_span(),
+            Constraint::Links(inner) => inner.source_span(),
+            Constraint::IndexedRelation(inner) => inner.source_span(),
+            Constraint::Has(inner) => inner.source_span(),
+            Constraint::ExpressionBinding(inner) => inner.source_span(),
+            Constraint::FunctionCallBinding(inner) => inner.source_span(),
+            Constraint::Comparison(inner) => inner.source_span(),
+            Constraint::Owns(inner) => inner.source_span(),
+            Constraint::Relates(inner) => inner.source_span(),
+            Constraint::Plays(inner) => inner.source_span(),
+            Constraint::Value(inner) => inner.source_span(),
+            Constraint::LinksDeduplication(inner) => None,
+            Constraint::Unsatisfiable(inner) => None,
         }
     }
 
