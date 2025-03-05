@@ -197,7 +197,34 @@ Per-branch planning can be inefficient; therefore, use adaptive planning as foll
 
 ### Vanilla DP
 
-As usual (up to some interesting transformations... tbd)
+As usual. But a few notes:
+1. In the tree representation of the plan, **later nodes may _interact_ with earlier nodes**
+2. For WCOJ merge-sort need to consider **join on more than one variable** at a time
+3. **Costs do not (always) compose** uniformly as before (they do for IKKBZ as usual), because of limit and offset rules
+
+_Example_:
+Triangle join `R($x,$y); S($y,$z); T($z; $x)`.
+
+* Planner **Step 1**: Cost singleton constraint sets
+  * say, plan `P0`, access `{R}` with `$x|$y` (`$x` sorted for each `$y`)
+  * say, plan `P1`, access `{R}` with `$y|$x` (`$y` sorted for each `$x`)
+* Planner **Step 2**: Cost binary constraint combinations, 
+  * say, plan `P2`, combine `{R}` and `{S}` by **nested-loop join** of `{S}` on `($x,$y)` in `P1`, which means `$z|$y`, `$y|$x` (and so `$z|($y,$x)`) is sorted
+  * say, plan `P3`, combine `{R}` and `{S}` by **sort-merge join** on `$y` in `P0`, which means `$x|$y` and `$z|$y` is sorted
+* Planner **Step 3**: Cost ternary constraint combinations
+  * say, plan `P4`, combine `{R,S}` via `P1` and `{T}` by **sort-merge join** on `$z` looped over `($x,$y)` in `{R,S}`.
+    * (could also have variant `P4'` which sort merges `{T}` on `$z` for each `$x` and loops over `$x`)
+  * say, plan `P5`, combine `{R,S}` via `P2` and `{T}` by **hash join** on tuples `($x, $z)` in `{R,S}`.
+
+In the resulting tree for plan `P4`
+```
+   / \
+  T  / \ 
+    S   R
+```
+the operation of merging `{T}` into `{R,S}` **does not loop over** `$z`, so `$z`'s production can be **deferred until the actual merge** in the upper node... in this sense, the upper node "interacts" with the lower on.
+
+In contrast, in `P5` we do loop over `($x, $z)` so these do need to be produced.
 
 ### IKKBZ
 
