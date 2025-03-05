@@ -73,12 +73,7 @@ impl MatchExecutor {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
         self.entry
-            .compute_next_batch_restore_and_retry_as_needed(
-                context,
-                interrupt,
-                &mut self.tabled_functions,
-                &mut self.suspensions,
-            )
+            .compute_next_batch_with_retries(context, interrupt, &mut self.tabled_functions, &mut self.suspensions)
             .map_err(|err| Box::new(err))
     }
 }

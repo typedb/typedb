@@ -58,7 +58,7 @@ impl PatternExecutor {
         self.control_stack.is_empty()
     }
 
-    pub(crate) fn compute_next_batch_restore_and_retry_as_needed(
+    pub(crate) fn compute_next_batch_with_retries(
         &mut self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         interrupt: &mut ExecutionInterrupt,
@@ -157,7 +157,7 @@ impl PatternExecutor {
                     else {
                         unreachable!();
                     };
-                    let result = inner.compute_next_batch_restore_and_retry_as_needed(
+                    let result = inner.compute_next_batch_with_retries(
                         context,
                         interrupt,
                         tabled_functions,
@@ -240,7 +240,7 @@ impl PatternExecutor {
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
                     let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
                     let mut inner_suspensions = QueryPatternSuspensions::new();
-                    while let Some(batch) = inner.compute_next_batch_restore_and_retry_as_needed(
+                    while let Some(batch) = inner.compute_next_batch_with_retries(
                         context,
                         interrupt,
                         tabled_functions,
