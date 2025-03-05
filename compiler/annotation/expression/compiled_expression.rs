@@ -7,7 +7,7 @@
 use std::{collections::HashMap, fmt};
 
 use encoding::value::value_type::ValueType;
-use ir::pattern::{IrID, ParameterID};
+use ir::pattern::{variable_category::VariableCategory, IrID, ParameterID};
 
 use crate::annotation::expression::instructions::op_codes::ExpressionOpCode;
 
@@ -35,6 +35,12 @@ impl<ID> ExecutableExpression<ID> {
     pub fn return_type(&self) -> &ExpressionValueType {
         &self.return_type
     }
+    pub(crate) fn return_category(&self) -> VariableCategory {
+        match &self.return_type {
+            ExpressionValueType::Single(_) => VariableCategory::Value,
+            ExpressionValueType::List(_) => VariableCategory::ValueList,
+        }
+    }
 }
 
 impl<ID: IrID> ExecutableExpression<ID> {
@@ -49,7 +55,7 @@ impl<ID: IrID> ExecutableExpression<ID> {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub enum ExpressionValueType {
     // TODO: we haven't implemented ConceptList, only ValueList right now.
     // TODO: this should hold an actual ValueType, not a Category!

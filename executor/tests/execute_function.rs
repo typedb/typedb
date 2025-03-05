@@ -326,67 +326,73 @@ fn function_binary() {
 #[test]
 fn quadratic_reachability_in_tree() {
     // Note: Otherwise fails in cargo because of a stack overflow.
-    std::thread::Builder::new().stack_size(32 * 1024 * 1024).name("quadratic_reachability_in_tree".to_owned()).spawn(|| {
-        let custom_schema = r#"define
+    std::thread::Builder::new()
+        .stack_size(32 * 1024 * 1024)
+        .name("quadratic_reachability_in_tree".to_owned())
+        .spawn(|| {
+            let custom_schema = r#"define
             attribute name value string;
             entity node, owns name @card(0..), plays edge:start, plays edge:end;
             relation edge, relates start, relates end;
         "#;
-        let context = setup_common(custom_schema);
+            let context = setup_common(custom_schema);
 
-        let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
-        assert_eq!(1, rows.len());
-        let query_template = r#"
+            let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
+            assert_eq!(1, rows.len());
+            let query_template = r#"
                 with
                 fun reachable($start: node) -> { node }:
                 match
-                    $return-me has name $name;
-                    { edge (start: $start, end: $middle); let $indirect in reachable($middle); $indirect has name $name; } or
-                    { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
-                return { $return-me };
+                    $end isa node;
+                    { edge (start: $start, end: $middle); let $end in reachable($middle); } or
+                    { edge (start: $start, end: $end); };
+                return { $end };
 
                 match
                     $start isa node, has name "<<NODE_NAME>>";
                     let $to in reachable($start);
             "#;
-        let placeholder_start_node = "<<NODE_NAME>>";
-        {
-            // Chain
-            let query = query_template.replace(placeholder_start_node, "c1");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(rows.len(), 2);
+            let placeholder_start_node = "<<NODE_NAME>>";
+            {
+                // Chain
+                let query = query_template.replace(placeholder_start_node, "c1");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(rows.len(), 2);
 
-            let query = query_template.replace(placeholder_start_node, "c2");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(rows.len(), 1);
-        }
+                let query = query_template.replace(placeholder_start_node, "c2");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(rows.len(), 1);
+            }
 
-        {
-            // tree
-            let query = query_template.replace(placeholder_start_node, "t1");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(6, rows.len());
+            {
+                // tree
+                let query = query_template.replace(placeholder_start_node, "t1");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(6, rows.len());
 
-            let query = query_template.replace(placeholder_start_node, "t2");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(2, rows.len());
-        }
+                let query = query_template.replace(placeholder_start_node, "t2");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(2, rows.len());
+            }
 
-        {
-            // ant
-            let query = query_template.replace(placeholder_start_node, "e1");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(8, rows.len()); // all except e1
+            {
+                // ant
+                let query = query_template.replace(placeholder_start_node, "e1");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(8, rows.len()); // all except e1
 
-            let query = query_template.replace(placeholder_start_node, "e9");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(0, rows.len()); // none
+                let query = query_template.replace(placeholder_start_node, "e9");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(0, rows.len()); // none
 
-            let query = query_template.replace(placeholder_start_node, "e2");
-            let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
-            assert_eq!(8, rows.len()); // all except e1. e2 should be reachable from itself
-        }
-    }).unwrap().join().unwrap();
+                let query = query_template.replace(placeholder_start_node, "e2");
+                let (rows, _) = run_read_query(&context, query.as_str()).unwrap();
+                assert_eq!(8, rows.len()); // all except e1. e2 should be reachable from itself
+            }
+        })
+        .unwrap()
+        .join()
+        .unwrap();
 }
 
 // Note: Fails in cargo because of a stack overflow. Bazel sets a larger stack size
@@ -406,10 +412,10 @@ fn linear_reachability_in_tree() {
             with
             fun reachable($start: node) -> { node }:
             match
-                $return-me has name $name;
-                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
-                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
-            return { $return-me };
+                $end isa node;
+                { let $middle in reachable($start); edge (start: $middle, end: $end); } or
+                { edge (start: $start, end: $end); };
+            return { $end };
 
             match
                 $start isa node, has name "<<NODE_NAME>>";
@@ -460,50 +466,29 @@ fn fibonacci() {
         attribute number @independent, value integer;
     "#;
     let context = setup_common(custom_schema);
-    let insert_query = r#"insert
-        $n1  isa number  1;
-        $n2  isa number  2;
-        $n3  isa number  3;
-        $n4  isa number  4;
-        $n5  isa number  5;
-        $n6  isa number  6;
-        $n7  isa number  7;
-        $n8  isa number  8;
-        $n9  isa number  9;
-        $n10 isa number 10;
-        $n11 isa number 11;
-        $n12 isa number 12;
-        $n13 isa number 13;
-        $n14 isa number 14;
-        $n15 isa number 15;
-    "#;
-    let (rows, _positions) = run_write_query(&context, insert_query).unwrap();
-    assert_eq!(1, rows.len());
 
     {
         let query = r#"
             with
-            fun ith_fibonacci_number($i: integer) -> { number }:
+            fun ith_fibonacci_number($i: integer) -> { integer }:
             match
-                $ret isa number;
-                { $i == 1; $ret == 1; $ret isa number; } or
-                { $i == 2; $ret == 1; $ret isa number; } or
+                let $_ = $ret;
+                { $i == 1; let $ret = 1;  } or
+                { $i == 2; let $ret = 1; } or
                 { $i > 2;
                      let $i1 = $i - 1;
                      let $i2 = $i - 2;
-                     let $combined = ith_fibonacci_number($i1) +  ith_fibonacci_number($i2);
-                     $ret == $combined;
-                     $ret isa number;
+                     let $ret = ith_fibonacci_number($i1) +  ith_fibonacci_number($i2);
                 };
             return { $ret };
 
             match
                 let $f_7 = ith_fibonacci_number(7);
-                let $as_value = $f_7;
+
         "#;
         let (rows, positions) = run_read_query(&context, query).unwrap();
         assert_eq!(rows.len(), 1);
-        let answer_position = *positions.get("as_value").unwrap();
+        let answer_position = *positions.get("f_7").unwrap();
         assert_eq!(rows[0].get(answer_position).as_value().clone().unwrap_integer(), 13);
     }
 }
@@ -519,14 +504,6 @@ fn write_pipelines() {
             attribute number @independent, value integer;
     "#,
     );
-    let insert_query = r#"insert
-        $n0  isa number  0;
-        $n1  isa number  1;
-        $n2  isa number  2;
-        $n3  isa number  3;
-    "#;
-    let (rows, _positions) = run_write_query(&context, insert_query).unwrap();
-    assert_eq!(1, rows.len());
 
     let query = r#"
         with
@@ -536,12 +513,11 @@ fn write_pipelines() {
             let $hops = $hops_inner;
             {
                 $edge isa edge, links (begin: $begin, end: $to);
-                let $hops_inner_1 = hops_starting_at($to) + 1;
-                $hops_inner isa number == $hops_inner_1;
+                let $hops_inner = hops_starting_at($to) + 1;
             }
             or {
                 not { $no-edge isa edge, links (begin: $begin, end: $anywhere); };
-                $hops_inner isa number == 0;
+                let $hops_inner = 0;
             };
         return { $hops };
 

@@ -47,7 +47,7 @@ typedb_error! {
         ),
         MultipleAssignmentsForVariable(
             7,
-            "Variable '{variable}' cannot be assigned to multiple times.",
+            "Variable '{variable}' cannot be assigned to multiple times in the same branch.",
             variable: String,
             source_span: Option<Span>,
         ),
@@ -99,6 +99,18 @@ typedb_error! {
             "Cannot infer inner value types of an empty list constructor.",
             source_span: Option<Span>,
         ),
-        Representation(18, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
+        ReassigningValueVariableFromPreviousStage(
+            18,
+            "The variable '{variable}' cannot be assigned to, as it was already assigned in a previous stage.",
+            variable: String,
+        ),
+        ValueVariableConflictingAssignmentTypes(
+            19,
+            "All assignments of the variable '{variable}' must have the same value type. Found: {value_types}.",
+            variable: String,
+            value_types: String,
+            source_span: Option<Span>,
+        ),
+        Representation(20, "Error building expression reprentation.", typedb_source: Box<RepresentationError>),
     }
 }

@@ -9,7 +9,10 @@ use std::collections::{hash_map, HashMap, HashSet};
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
-use ir::pipeline::{block::Block, function_signature::FunctionID, VariableRegistry};
+use ir::{
+    pattern::constraint::ExpressionBinding,
+    pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
+};
 use itertools::Itertools;
 
 use crate::{
@@ -47,7 +50,7 @@ pub fn compile(
     selected_variables: &[Variable],
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
-    expressions: &HashMap<Variable, ExecutableExpression<Variable>>,
+    expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
 ) -> Result<MatchExecutable, MatchCompilationError> {
