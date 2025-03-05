@@ -21,15 +21,17 @@ Invariants hold true in any valid database system state. We usually express the 
 
 ### Core invariants
 
-1. When `A sub! B` then either:
+1. When `A sub! B` matches then either:
     * `_kind(A) = _kind(B)`
     * `A : ENT + REL`, `B : Trait`, 
-1. Given ERA type `A`, `A sub! B` true for at most one `B`
-1. Given role `I`, `A relates! I` true for at most one `A`
-1. Given relation `A`, either `A @abstract` or `A relates! I` true for at least one `I`
-1. Given attribute `A`, `A value V` true for at most one `V`
-1. `A relates I` and `B relates J[]` never concretely true at the same time when `A/B` and `I/J` in same hierarchy
-1. `A owns M` and `B owns N[]` never concretely true at the same time when `A/B` and `M/N` in same hierarchy
+1. Given ERA type `A`, `A sub! B` matches for at most one `B`
+1. Given role `I`, `A relates! I` matches for at most one `A`
+1. Given relation `A`, either `A @abstract` matches or `A relates! I` matches for at least one `I`.
+1. Given attribute `A`, either `A @abstract` matches or `A value V` matches for exactly one `V`.
+1. 🔶 `A relates I` and `B relates J[]` never both match _non-abstractly_ at the same time when `A, B` and `I, J` are in same hierarchy respectively (see Rmk. below)
+1. 🔶 `A owns M` and `B owns N[]` never both match _non-abstractly_ at the same time when `A, B` and `M, N` are in same hierarchy respectively.
+
+_Remark_. By "matching a `<statement>` non-abstractly" in TypeQL we mean `<statement>; not { <statement> @abstract; };`
 
 ### Abstractness invariants
 
@@ -321,7 +323,7 @@ _In each case, `redefine` redefines the postulated condition._
 
 ### Define
 
-* 🔶**adding aliases**
+* **adding aliases**
 ```
 define person alias p, q, r;
 define marriage:spouse alias marriage:p, marriage:q, marriage:r;
@@ -329,7 +331,7 @@ define marriage:spouse alias marriage:p, marriage:q, marriage:r;
 
 ### Undefine
 
-* 🔶**removing aliases**
+* **removing aliases**
 ```
 undefine alias p, q, r from person;
 undefine alias marriage:p, marriage:q, marriage:r from marriage:spouse;
@@ -337,7 +339,7 @@ undefine alias marriage:p, marriage:q, marriage:r from marriage:spouse;
 
 ### Redefine 
 
-* 🔶**changing primary label**
+* **changing primary label**
 ```
 redefine person label animal;
 redefine marriage:spouse label marriage:super_spouse;

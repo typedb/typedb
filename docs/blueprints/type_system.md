@@ -150,8 +150,6 @@ We discuss the syntax for statements relating to types, and explain them in natu
 * **Direct typing**: We write `a :! A` to mean:
   > `a` was declared directly as an element of `A` by the user (we speak of a ***direct typing***).
 
-  _Remark_. The notion of direct typing might be confusing at first. Mathematically, it is merely an additional statement in our type system. Intuively, you can think of it as a way of keeping track of the _user-provided_ information. A similar remark applies to direct subtyping (`<!`) below.
-
 * **Dependent typing**:  We write `a : A(x : I, y : J,...)` to mean:
   > `a` lives in the type "`A` of `x` (cast as `I`), and `y` (cast as `J`), and ...".
 

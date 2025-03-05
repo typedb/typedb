@@ -21,14 +21,15 @@
   * Graph has a single **terminal node** (represent return of query answer)
   * Internal nodes represent operations:
     * **joins** combine data from difference sources
-    * **links** represents operations on data in place (could include, e.g., hash table construction etc.)
+    * **transformations** represent operations on data in place (could include, e.g., hash table construction etc.)
+    * a node with multiple outputs "sends its data to multiple places"
   * Edges may be annotated with "**production information**"; i.e. the data variables that need to be fully produced at that point (important e.g. for "deferred" joins, see [planner spec](planner.md))
 * A **subquery pipeline call / function call** pushes data in the compute graph of a function. 
   * Inlineable case:
     * For **inlined** functions, _no thought needs to be given to this_
-    * For **inlineable recursive** functions, model a function `f` recursively calling itself (`f`) by letting `f_n` call `f_{n-1}` instead (the first "outermost" call is `f_m`, for some integer max depth `m`, and any recursively calls in `f_0` return no more results): then
+    * For **inlineable recursive** functions, model a function `f` recursively calling itself (`f`) by letting `f_n` call `f_{n-1}` instead (the first "outermost" call is `f_m`, for some integer max depth `m`, and any recursively calls in `f_0` return no more results): then expand the compute graph accordingly, see example below.
   * Non-inlineable case:
-    * Record as **separate computation graph**
+    * Record as fully **separate computation graph**
     * We still "push" data from parent query to subquery, but need to run computation to termination
     * Affects: non-inlineable functions (due to aggregates, sorts) + negations
 

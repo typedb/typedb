@@ -25,7 +25,7 @@ Must-reads:
 
 ***Solution***: Use dynamic programming (DP), but work in three regimes for efficiency:
 
-* **small**: for < 150k subgraph (up to ~16 fully connected or ~128 linearly vars)
+* **small**: for < 150k subgraph (up to ~16 fully connected or ~128 linear constraints in graph)
   * run _Vanilla DP_
 * **medium**: <= 128 vars
   * run _IKKBZ_ for linear (non-bushy query) plan
@@ -36,7 +36,7 @@ Must-reads:
     * then run _medium_ algorithm
     * repeat
 
-_Remark_: first mover advantage.
+_Remark_: first mover advantage? (:
 
 ### Problem 2: Joining on unsorted intermediate results
 
@@ -66,7 +66,7 @@ In the inlineable case for pipelines and functions, distinguish:
     * **inline full pattern**, technicalities of constraint construction are discussed below
     * _Note_: we need to **avoid name clashes** for de-selected variables
 2. Recursive case:
-    * ?? For depth-restricted recursions, consider feasibility of **inlining**: planner should be able to handle up to ~(128/#internal vars) inline depth
+    * ?? For depth-restricted recursions, consider feasibility of **inlining**
     * Even without inlining, **partial application** of recursive functions is straight-forward, so all possible production rules should be given to the planner. Example:
       ```
       with fun path($x: vertex, $y: vertex) -> bool: 
@@ -80,7 +80,7 @@ In the inlineable case for pipelines and functions, distinguish:
     * cost estimation for recursive functions should be **sample based**
     * **maximal recursion depth** would be a useful thing to have to notify the user of potential cycles
 
-_Note_ Inlining automatically solved the issue of "partial applications". Unfortunately, in the recursive case, this does not apply, so a separate partial application mechanism needs to be built.
+_Note_. Inlining automatically solved the issue of "partial applications". Unfortunately, in the recursive case, this does not apply, so a separate partial application mechanism needs to be built.
 
 ### Problem 4: planning across disjunctions
 
@@ -91,11 +91,13 @@ _Note_ Inlining automatically solved the issue of "partial applications". Unfort
 Per-branch planning can be inefficient; therefore, use adaptive planning as follows.
 
 * **medium DNF**: <= 32 branches (~5 binary, ~3 ternary `or`s) branches in DNF:
-  * plan each branch separately, but let planner share the same DP table to avoid redoing work
+  * plan each branch separately, but let planner share the same DP table to avoid redoing work for the same subpatterns.
   * from the final planning **tree plans per branch**, produce a **DAG** plan, by identifying shared subtrees.
 * **large DNF**: > 32 branches:
   * **freeze** some _homogeneous_ disjunctions, i.e. do not expand them in DNF.
-    * A disjunction is **homogeneous** if all branches share at least one common production rule up to locally scoped variables (this production rule can then be used for the entire disjunction), where _"locally scoped in a disjunction"_ means _"appears only in branches of that disjunction"_
+    * A disjunction is **homogeneous** if all branches share at least one common production rule up to removing the locally scoped variables (indeed, this production rule can then be used for the entire disjunction).
+     
+    _Note_. A _"locally scoped variable in a disjunction"_ means _"the variable appears exclusively in branches of that disjunction"_
   * (branch size may still be > 32, but that's life)
   * then run small DNF with "frozen disjunctions" edges, see graph construction below
 

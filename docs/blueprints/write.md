@@ -9,7 +9,7 @@ Specification of how to write data to database in read-write pipelines. On this 
 _**Query PROCESSING**_
 
 1. **Variable categorization**: this is exactly as in [read spec](read.md) but extended to patterns in write stages
-2. **Type check**: this is exactly as in [read spec](read.md) but extended to patterns in write stages
+2. **Type check**: this is similar to [read spec](read.md) but extended to patterns in write stages
 
 _**Query OPERATION**_
 
@@ -24,7 +24,15 @@ _**Answer FORMATTING**_
 
 # PROCESSING
 
+## Variable categorization
+
 See [read spec](read.md), nothing to add (for now).
+
+## Type check
+
+Similar to [read spec](read.md). `insert` is the only interesting stage, is it may introduce new variables. 
+
+* type check is similar but stricter for `insert`: vars need to have _exactly_ the type that they are given in an insert (not a subtype thereof)
 
 # EVALUATION
 
