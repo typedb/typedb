@@ -46,7 +46,7 @@ features = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.14.0"
+		version = "1.15.1"
 		default-features = false
 
 	[dependencies.rand]
@@ -86,7 +86,7 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "c3651b6d3b82f6dc8a0db499592cb22e60e79b49"
+		rev = "5ccc1da728b381286b66cf059df010586eb60b48"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -173,7 +173,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.30"
+		version = "4.5.31"
 		default-features = false
 
 	[dependencies.bytes]
@@ -192,8 +192,8 @@ features = {}
 		default-features = false
 
 	[dependencies.chrono]
-		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-targets"]
-		version = "0.4.39"
+		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
+		version = "0.4.40"
 		default-features = false
 
 	[dependencies.user]

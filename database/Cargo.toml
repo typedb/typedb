@@ -97,13 +97,13 @@ features = {}
 		default-features = false
 
 	[dependencies.rocksdb]
-		features = ["lz4"]
-		version = "0.22.0"
+		features = ["bindgen-runtime", "lz4"]
+		version = "0.23.0"
 		default-features = false
 
 	[dependencies.typeql]
 		features = []
-		rev = "c3651b6d3b82f6dc8a0db499592cb22e60e79b49"
+		rev = "5ccc1da728b381286b66cf059df010586eb60b48"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 

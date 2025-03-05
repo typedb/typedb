@@ -48,7 +48,7 @@ features = {}
 
 	[dev-dependencies.typeql]
 		features = []
-		rev = "c3651b6d3b82f6dc8a0db499592cb22e60e79b49"
+		rev = "5ccc1da728b381286b66cf059df010586eb60b48"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
@@ -96,7 +96,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.30"
+		version = "4.5.31"
 		default-features = false
 
 	[dependencies.logger]
