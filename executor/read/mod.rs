@@ -15,7 +15,7 @@ use crate::{
     read::{
         pattern_executor::{BranchIndex, ExecutorIndex, PatternExecutor},
         tabled_call_executor::TabledCallExecutor,
-        tabled_functions::TableIndex,
+        tabled_functions::{TableIndex, TabledFunctions},
     },
     row::MaybeOwnedRow,
 };
@@ -85,6 +85,7 @@ pub(super) struct QueryPatternSuspensions {
     current_depth: usize,
     suspending_patterns_tree: Vec<PatternSuspension>,
     restoring_patterns_tree: Vec<PatternSuspension>, //Peekable<std::vec::IntoIter<SuspendPoint>>,
+    table_size_at_last_restore: Option<usize>,
 }
 
 #[derive(Debug, PartialEq, Eq)]
@@ -92,13 +93,31 @@ struct SuspensionCount(usize);
 
 impl QueryPatternSuspensions {
     pub(crate) fn new() -> Self {
-        Self { current_depth: 0, suspending_patterns_tree: Vec::new(), restoring_patterns_tree: Vec::new() }
+        Self {
+            current_depth: 0,
+            suspending_patterns_tree: Vec::new(),
+            restoring_patterns_tree: Vec::new(),
+            table_size_at_last_restore: None,
+        }
     }
 
-    pub(super) fn prepare_restoring_from_suspending(&mut self) {
-        debug_assert!(self.restoring_patterns_tree.is_empty());
-        self.restoring_patterns_tree.clear();
-        std::mem::swap(&mut self.restoring_patterns_tree, &mut self.suspending_patterns_tree);
+    // Will restore & returns true if a restore is needed.
+    pub(super) fn prepare_for_restore_if_needed(&mut self, tabled_functions: Option<&TabledFunctions>) -> bool {
+        if self.is_empty() {
+            return false;
+        }
+        let current_table_size = tabled_functions.map(|t| t.total_table_size());
+        let must_retry =
+            self.table_size_at_last_restore.is_none() || self.table_size_at_last_restore != current_table_size;
+        if must_retry {
+            debug_assert!(self.restoring_patterns_tree.is_empty());
+            self.restoring_patterns_tree.clear();
+            std::mem::swap(&mut self.restoring_patterns_tree, &mut self.suspending_patterns_tree);
+            self.table_size_at_last_restore = current_table_size;
+            true
+        } else {
+            false
+        }
     }
 
     pub(crate) fn is_empty(&self) -> bool {
