@@ -12,35 +12,18 @@ def typedb_bazel_distribution():
     )
 
 def typedb_dependencies():
-    # TODO: return typedb
     git_repository(
         name = "typedb_dependencies",
-        remote = "https://github.com/farost/dependencies",
-        commit = "76245eebd5c2ce4ec73b0e2bf70b812809255077",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        remote = "https://github.com/typedb/typedb-dependencies",
+        commit = "5c2d4dcc25493be9d35356075372229a6d2ba2a9",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
-#    git_repository(
-#        name = "typedb_dependencies",
-#        remote = "https://github.com/typedb/typedb-dependencies",
-#        commit = "b22f2877e1a3677a5758cb1d799503ff676cb137",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
-#    )
-#    native.local_repository(
-#        name = "typedb_dependencies",
-#        path = "../dependencies",
-#    )
-
 
 def typeql():
-    # TODO: return typedb
     git_repository(
         name = "typeql",
-        remote = "https://github.com/farost/typeql",
-        commit = "5ccc1da728b381286b66cf059df010586eb60b48",
+        remote = "https://github.com/typedb/typeql",
+        commit = "d1ef6785b27681bc2296c00e61db793d41f7f018",
     )
-#    git_repository(
-#        name = "typeql",
-#        remote = "https://github.com/typedb/typeql",
-#        commit = "c3651b6d3b82f6dc8a0db499592cb22e60e79b49",
-#    )
 
 def typedb_protocol():
     git_repository(
