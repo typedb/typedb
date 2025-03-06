@@ -38,6 +38,7 @@ pub fn initialise_logging_global() {
         // .with_writer(file_appender)
         .with_ansi(false) // Disable ANSI colors in file output
         .with_thread_ids(true)
+        .with_target(false)
         .with_file(true)
         .with_line_number(true)
         .finish();
