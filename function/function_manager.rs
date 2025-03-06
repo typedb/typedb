@@ -194,7 +194,7 @@ impl FunctionManager {
                     .map(|translated| (function.function_id.clone(), translated))
             })
             .try_collect()
-            .map_err(|err| FunctionError::FunctionTranslation { typedb_source: err })
+            .map_err(|err| FunctionError::FunctionTranslation { typedb_source: *err })
     }
 
     pub fn get_function_key(

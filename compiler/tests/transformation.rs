@@ -30,7 +30,6 @@ use storage::{
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
-use typeql::Query;
 
 const PERSON_LABEL: Label = Label::new_static("person");
 const DOG_LABEL: Label = Label::new_static("dog");

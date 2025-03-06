@@ -140,7 +140,7 @@ impl Conjunction {
         self.variable_dependency_modes().into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+    pub fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
         let mut data_modes = self.constraints.variable_dependency_modes();
         for nested in self.nested_patterns.iter() {
             let nested_pattern_data_modes = nested.variable_dependency_modes();

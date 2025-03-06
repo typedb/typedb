@@ -83,6 +83,7 @@ dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
     Empty(SortedTupleIterator<iter::Empty<TupleResult<'static>>>),
+    Check(SortedTupleIterator<<Option<TupleResult<'static>> as IntoIterator>::IntoIter>),
 
     Is(SortedTupleIterator<IsIterator>),
     Iid(SortedTupleIterator<IidIterator>),

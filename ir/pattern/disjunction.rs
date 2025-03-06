@@ -46,6 +46,14 @@ impl Disjunction {
         self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
     }
 
+    pub fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency_modes().into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+    }
+
+    pub fn optional_outputs(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency_modes().into_iter().filter_map(|(v, mode)| mode.is_optional().then_some(v))
+    }
+
     pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
@@ -53,12 +61,7 @@ impl Disjunction {
         let mut data_modes = self.conjunctions[0].variable_dependency_modes();
         for branch in &self.conjunctions[1..] {
             for (var, mode) in branch.variable_dependency_modes() {
-                match data_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().or_assign(mode),
-                    hash_map::Entry::Vacant(entry) => {
-                        entry.insert(mode);
-                    }
-                }
+                data_modes.entry(var).or_insert(DependencyMode::Optional).or_assign(mode)
             }
         }
         data_modes

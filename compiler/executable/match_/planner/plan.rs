@@ -133,6 +133,14 @@ fn make_builder<'a>(
                         )
                     })
                     .collect::<Result<Vec<_>, _>>()?,
+                disjunction
+                    .required_inputs()
+                    .chain(
+                        disjunction
+                            .optional_outputs()
+                            .filter(|out| conjunction.variable_dependency_modes()[out].is_produced()),
+                    )
+                    .collect(),
             )),
             NestedPattern::Negation(negation) => negation_subplans.push(
                 make_builder(
@@ -1928,11 +1936,12 @@ impl ConjunctionPlan<'_> {
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanBuilder<'a> {
     branches: Vec<ConjunctionPlanBuilder<'a>>,
+    required_inputs: Vec<Variable>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    pub(super) fn new(branches: Vec<ConjunctionPlanBuilder<'a>>) -> Self {
-        Self { branches }
+    fn new(branches: Vec<ConjunctionPlanBuilder<'a>>, required_inputs: Vec<Variable>) -> Self {
+        Self { branches, required_inputs }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
@@ -1950,6 +1959,10 @@ impl<'a> DisjunctionPlanBuilder<'a> {
             .collect::<Result<Vec<_>, _>>()?;
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
         Ok(DisjunctionPlan { branches, _cost: cost })
+    }
+
+    pub(crate) fn required_inputs(&self) -> &[Variable] {
+        &self.required_inputs
     }
 }
 
