@@ -134,11 +134,11 @@ fn make_builder<'a>(
                     })
                     .collect::<Result<Vec<_>, _>>()?,
                 disjunction
-                    .required_inputs()
+                    .required_inputs(block_context)
                     .chain(
                         disjunction
-                            .optional_outputs()
-                            .filter(|out| conjunction.variable_dependency_modes()[out].is_produced()),
+                            .optional_outputs(block_context)
+                            .filter(|out| conjunction.variable_dependency_modes(block_context)[out].is_produced()),
                     )
                     .collect(),
             )),

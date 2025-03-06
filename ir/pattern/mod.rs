@@ -385,10 +385,10 @@ impl AssignmentMode<'_> {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum DependencyMode<'a> {
+pub enum DependencyMode<'a> {
     Required(Vec<&'a Constraint<Variable>>),
     Produced,
-    None,
+    Optional,
 }
 
 impl DependencyMode<'_> {
@@ -396,8 +396,8 @@ impl DependencyMode<'_> {
         match (&mut *self, other) {
             (Self::Produced, _) | (_, Self::Produced) => *self = Self::Produced,
             (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::None, other) => *self = other,
-            (_, Self::None) => (),
+            (Self::Optional, other) => *self = other,
+            (_, Self::Optional) => (),
         }
     }
 
@@ -405,13 +405,21 @@ impl DependencyMode<'_> {
         match (&mut *self, other) {
             (Self::Produced, Self::Produced) => (),
             (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::Required(_), Self::Produced | Self::None) => (),
-            (Self::Produced | Self::None, other @ Self::Required(_)) => *self = other,
-            (Self::None, _) | (_, Self::None) => *self = Self::None,
+            (Self::Required(_), Self::Produced | Self::Optional) => (),
+            (Self::Produced | Self::Optional, other @ Self::Required(_)) => *self = other,
+            (Self::Optional, _) | (_, Self::Optional) => *self = Self::Optional,
         }
     }
 
-    fn is_required(&self) -> bool {
+    pub fn is_required(&self) -> bool {
         matches!(self, Self::Required(_))
+    }
+
+    pub fn is_produced(&self) -> bool {
+        matches!(self, Self::Produced)
+    }
+
+    pub fn is_optional(&self) -> bool {
+        matches!(self, Self::Optional)
     }
 }

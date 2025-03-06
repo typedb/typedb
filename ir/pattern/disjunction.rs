@@ -17,7 +17,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         AssignmentMode, DependencyMode, Scope, ScopeId,
     },
-    pipeline::block::{BlockBuilderContext, ScopeTransparency},
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
 
 #[derive(Clone, Debug, Default)]
@@ -46,21 +46,28 @@ impl Disjunction {
         self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
     }
 
-    pub fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes().into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency_modes(block_context)
+            .into_iter()
+            .filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub fn optional_outputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes().into_iter().filter_map(|(v, mode)| mode.is_optional().then_some(v))
+    pub fn optional_outputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency_modes(block_context)
+            .into_iter()
+            .filter_map(|(v, mode)| mode.is_optional().then_some(v))
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+    pub(crate) fn variable_dependency_modes(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, DependencyMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
-        let mut data_modes = self.conjunctions[0].variable_dependency_modes();
+        let mut data_modes = self.conjunctions[0].variable_dependency_modes(block_context);
         for branch in &self.conjunctions[1..] {
-            for (var, mode) in branch.variable_dependency_modes() {
+            for (var, mode) in branch.variable_dependency_modes(block_context) {
                 data_modes.entry(var).or_insert(DependencyMode::Optional).or_assign(mode)
             }
         }

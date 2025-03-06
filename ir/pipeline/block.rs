@@ -16,7 +16,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        Scope, ScopeId,
+        AssignmentMode, DependencyMode, Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -99,7 +99,7 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
         let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
-        validate_conjunction(&conjunction, variable_registry)?;
+        validate_conjunction(&conjunction, variable_registry, &block_context)?;
         Ok(Block { conjunction, block_context })
     }
 
@@ -115,6 +115,7 @@ impl<'reg> BlockBuilder<'reg> {
 fn validate_conjunction(
     conjunction: &Conjunction,
     variable_registry: &VariableRegistry,
+    block_context: &BlockContext,
 ) -> Result<(), Box<RepresentationError>> {
     let unbound = conjunction.referenced_variables().find(|&variable| {
         matches!(variable_registry.get_variable_category(variable), Some(VariableCategory::AttributeOrValue) | None)
@@ -130,6 +131,20 @@ fn validate_conjunction(
         let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
         lhs_category.narrowest(rhs_category).is_none()
     });
+
+    for (var, mode) in conjunction.variable_assignment_modes() {
+        if let AssignmentMode::MultipleAssignments(places) = mode {
+            todo!("Proper error: {var} assigned at multiple places: {places:?}")
+        }
+    }
+
+    for (var, mode) in conjunction.variable_dependency_modes(block_context) {
+        if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
+            let DependencyMode::Required(places) = mode else { unreachable!("just checked") };
+            todo!("Proper error: {var} is never bound but required here: {places:?}")
+        }
+    }
+
     if let Some(is) = is_with_mismatched_category {
         let lhs = is.lhs().as_variable().unwrap();
         let rhs = is.rhs().as_variable().unwrap();
@@ -250,6 +265,24 @@ impl BlockContext {
             (scope == ScopeId::INPUT || scope == root || self.is_visible_child(scope, root)).then_some(var)
         })
     }
+
+    pub fn variable_status_in_scope(&self, var: Variable, scope: ScopeId) -> VariableStatus {
+        let var_scope = self.variable_declaration[&var];
+        if var_scope == scope {
+            VariableStatus::Local
+        } else if self.is_visible_child(scope, var_scope) {
+            VariableStatus::Shared
+        } else {
+            VariableStatus::None // or an error
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VariableStatus {
+    Shared,
+    Local,
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

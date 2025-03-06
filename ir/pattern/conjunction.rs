@@ -136,14 +136,16 @@ impl Conjunction {
         produced_variables
     }
 
-    pub fn required_inputs(&self) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes().into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+    pub fn required_inputs<'a>(&'a self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_dependency_modes(block_context)
+            .into_iter()
+            .filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+    pub fn variable_dependency_modes(&self, block_context: &BlockContext) -> HashMap<Variable, DependencyMode<'_>> {
         let mut data_modes = self.constraints.variable_dependency_modes();
         for nested in self.nested_patterns.iter() {
-            let nested_pattern_data_modes = nested.variable_dependency_modes();
+            let nested_pattern_data_modes = nested.variable_dependency_modes(block_context);
             for (var, mode) in nested_pattern_data_modes {
                 match data_modes.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(mode),

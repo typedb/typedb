@@ -14,7 +14,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         AssignmentMode, DependencyMode, Scope, ScopeId,
     },
-    pipeline::block::BlockBuilderContext,
+    pipeline::block::{BlockBuilderContext, BlockContext},
 };
 
 #[derive(Debug, Clone)]
@@ -42,9 +42,16 @@ impl Optional {
         &mut self.conjunction
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+    pub(crate) fn variable_dependency_modes(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, DependencyMode<'_>> {
         // DependencyMode::Produced means "(can be) produced in all branches"
-        self.conjunction.variable_dependency_modes().into_iter().filter(|(_, mode)| mode.is_required()).collect()
+        self.conjunction
+            .variable_dependency_modes(block_context)
+            .into_iter()
+            .filter(|(_, mode)| mode.is_required())
+            .collect()
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {

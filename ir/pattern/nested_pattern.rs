@@ -9,8 +9,9 @@ use std::{collections::HashMap, fmt, mem};
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::pattern::{
-    disjunction::Disjunction, negation::Negation, optional::Optional, AssignmentMode, DependencyMode,
+use crate::{
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, AssignmentMode, DependencyMode},
+    pipeline::block::BlockContext,
 };
 
 #[derive(Debug, Clone)]
@@ -63,11 +64,14 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+    pub(crate) fn variable_dependency_modes(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, DependencyMode<'_>> {
         match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency_modes(),
-            NestedPattern::Negation(negation) => negation.variable_dependency_modes(),
-            NestedPattern::Optional(optional) => optional.variable_dependency_modes(),
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency_modes(block_context),
+            NestedPattern::Negation(negation) => negation.variable_dependency_modes(block_context),
+            NestedPattern::Optional(optional) => optional.variable_dependency_modes(block_context),
         }
     }
 

@@ -14,7 +14,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         AssignmentMode, DependencyMode, Scope, ScopeId,
     },
-    pipeline::block::BlockBuilderContext,
+    pipeline::block::{BlockBuilderContext, BlockContext, VariableStatus},
 };
 
 #[derive(Debug, Clone)]
@@ -46,8 +46,22 @@ impl Negation {
         self.conjunction().referenced_variables()
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
-        self.conjunction.variable_dependency_modes().into_iter().filter(|(_, mode)| mode.is_required()).collect()
+    pub(crate) fn variable_dependency_modes(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, DependencyMode<'_>> {
+        self.conjunction
+            .variable_dependency_modes(block_context)
+            .into_iter()
+            .filter_map(|(var, mode)| {
+                let status = block_context.variable_status_in_scope(var, self.scope_id());
+                if status == VariableStatus::Shared || mode.is_required() {
+                    Some((var, mode))
+                } else {
+                    None
+                }
+            })
+            .collect()
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
