@@ -65,22 +65,10 @@ impl PatternExecutor {
         tabled_functions: &mut TabledFunctions,
         suspensions: &mut QueryPatternSuspensions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let mut result = None;
-        loop {
-            let _suspension_count_before = suspensions.record_nested_pattern_entry();
-            result = self.batch_continue(context, interrupt, tabled_functions, suspensions)?;
-            let _suspension_count_after = suspensions.record_nested_pattern_exit();
-            if result.is_some() {
-                break;
-            } else {
-                if suspensions.prepare_for_restore_if_needed(Some(tabled_functions)) {
-                    tabled_functions.may_prepare_to_retry_suspended();
-                    self.prepare_to_restore_from_suspension(0);
-                } else {
-                    break;
-                }
-            }
-        }
+        let _suspension_count_before = suspensions.record_nested_pattern_entry();
+        let result = self.batch_continue(context, interrupt, tabled_functions, suspensions)?;
+        let _suspension_count_after = suspensions.record_nested_pattern_exit();
+        debug_assert!(suspensions.is_empty());
         Ok(result)
     }
 
@@ -157,12 +145,14 @@ impl PatternExecutor {
                     else {
                         unreachable!();
                     };
+                    let mut negation_suspensions = QueryPatternSuspensions::new_root();
                     let result = inner.compute_next_batch_with_retries(
                         context,
                         interrupt,
                         tabled_functions,
-                        &mut QueryPatternSuspensions::new(),
+                        &mut negation_suspensions,
                     )?;
+                    debug_assert!(negation_suspensions.is_empty());
                     match result {
                         None => {
                             self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
@@ -234,12 +224,19 @@ impl PatternExecutor {
                         self.push_next_instruction(context, index.next(), batch)?;
                     }
                 }
-                ControlInstruction::ExecuteTabledCall(TabledCall { index }) => {
-                    self.execute_tabled_call(context, interrupt, tabled_functions, suspensions, index)?;
+                ControlInstruction::ExecuteTabledCall(TabledCall { index, last_seen_table_size }) => {
+                    self.execute_tabled_call(
+                        context,
+                        interrupt,
+                        tabled_functions,
+                        suspensions,
+                        index,
+                        last_seen_table_size,
+                    )?;
                 }
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
                     let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
-                    let mut inner_suspensions = QueryPatternSuspensions::new();
+                    let mut inner_suspensions = QueryPatternSuspensions::new_root();
                     while let Some(batch) = inner.compute_next_batch_with_retries(
                         context,
                         interrupt,
@@ -248,6 +245,7 @@ impl PatternExecutor {
                     )? {
                         collector.accept(context, batch);
                     }
+                    debug_assert!(inner_suspensions.is_empty());
                     let iterator = collector.collected_to_iterator(context);
                     self.control_stack.push(ControlInstruction::StreamCollected(StreamCollected { index, iterator }));
                 }
@@ -325,7 +323,8 @@ impl PatternExecutor {
     fn push_nested_pattern(&mut self, index: ExecutorIndex, input: MaybeOwnedRow<'_>) {
         if let StepExecutors::TabledCall(tabled_call) = &mut self.executors[index.0] {
             tabled_call.prepare(input.clone().into_owned());
-            self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index }));
+            self.control_stack
+                .push(ControlInstruction::ExecuteTabledCall(TabledCall { index, last_seen_table_size: None }));
         } else if let StepExecutors::Nested(nested) = &mut self.executors[index.0] {
             match nested {
                 NestedPatternExecutor::Disjunction(Disjunction { branches, .. }) => {
@@ -377,6 +376,7 @@ impl PatternExecutor {
         tabled_functions: &mut TabledFunctions,
         query_suspensions: &mut QueryPatternSuspensions,
         index: ExecutorIndex,
+        table_size_at_last_restore: Option<usize>,
     ) -> Result<(), ReadExecutionError> {
         let executor = self.executors[index.0].unwrap_tabled_call();
         let call_key = executor.active_call_key().unwrap();
@@ -410,14 +410,30 @@ impl PatternExecutor {
                     // Don't use suspend_count_before == suspend_count_after, since we can get away with just one.
                     if !function_suspensions.is_empty() {
                         // TODO: Consider retrying here. For now, just record a suspension point for ourselves.
-                        query_suspensions.push_tabled_call(index, executor);
+                        if function_suspensions.scc() != query_suspensions.scc() {
+                            // This was an entry into a new SCC. We might have to retry!
+                            drop(pattern_state_mutex_guard);
+                            let new_table_size = tabled_functions.total_table_size();
+                            if Some(new_table_size) != table_size_at_last_restore {
+                                tabled_functions.may_prepare_to_retry_suspended();
+                                self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall {
+                                    index,
+                                    last_seen_table_size: Some(new_table_size),
+                                }));
+                            } // else, we're done!!!
+                        } else {
+                            query_suspensions.push_tabled_call(index, executor);
+                        }
                     }
                     None
                 }
             }
         };
         if let Some(batch) = found {
-            self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index }));
+            self.control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall {
+                index,
+                last_seen_table_size: table_size_at_last_restore,
+            }));
             let mapped = executor.map_output(batch);
             self.push_next_instruction(context, index.next(), mapped)?;
         }
@@ -437,7 +453,11 @@ fn restore_suspension(
             let TabledCallSuspension { executor_index, next_table_row, input_row, .. } = suspended_call;
             let executor = executors[executor_index.0].unwrap_tabled_call();
             executor.restore_from_suspension(input_row, next_table_row);
-            control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall { index: executor_index }))
+            // last_seen_table_size is None because a suspension is within a cycle, not at the entry. last_seen_table_size is set only for entry
+            control_stack.push(ControlInstruction::ExecuteTabledCall(TabledCall {
+                index: executor_index,
+                last_seen_table_size: None,
+            }))
         }
         PatternSuspension::AtNestedPattern(suspended_nested) => {
             let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;

@@ -13,7 +13,10 @@ use ir::{
 
 use crate::{
     annotation::{function::AnnotatedFunction, pipeline::AnnotatedStage},
-    executable::{function::FunctionTablingType, ExecutableCompilationError},
+    executable::{
+        function::{FunctionTablingType, StronglyConnectedComponentID},
+        ExecutableCompilationError,
+    },
 };
 
 pub(super) fn determine_compilation_order_and_tabling_types<FIDType: FunctionIDAPI>(
@@ -24,17 +27,19 @@ pub(super) fn determine_compilation_order_and_tabling_types<FIDType: FunctionIDA
 
     let mut post_order = Vec::new();
     let mut cycle_breakers = HashSet::new();
+    let mut open_set = HashSet::new();
+    let mut closed_set = HashSet::new();
     to_compile.keys().for_each(|fid| {
         determine_post_order_and_cycle_breakers(
             &forward_dependencies,
             &mut post_order,
             &mut cycle_breakers,
-            &mut HashSet::new(),
-            &mut HashSet::new(),
+            &mut open_set,
+            &mut closed_set,
             fid,
         );
     });
-    debug_assert!(to_compile.keys().all(|k| post_order.contains(k)));
+    debug_assert!(to_compile.keys().all(|k| post_order.contains(k)) && post_order.len() == to_compile.len());
 
     // Kosaraju for SCC finding
     let mut reverse_dependencies = to_compile.keys().map(|k| (k.clone(), HashSet::new())).collect::<HashMap<_, _>>();
@@ -52,7 +57,12 @@ pub(super) fn determine_compilation_order_and_tabling_types<FIDType: FunctionIDA
         .keys()
         .cloned()
         .map(|fid| match cycle_breakers.contains(&fid) {
-            true => (fid.clone(), FunctionTablingType::Tabled(scc_mapping.get(&fid).unwrap().clone().into())),
+            true => (
+                fid.clone(),
+                FunctionTablingType::Tabled(StronglyConnectedComponentID(
+                    scc_mapping.get(&fid).unwrap().clone().into(),
+                )),
+            ),
             false => (fid, FunctionTablingType::Untabled),
         })
         .collect::<HashMap<_, _>>();
@@ -120,32 +130,6 @@ fn assign_scc<FIDType: FunctionIDAPI>(
     reversed_dependencies.get(fid).unwrap().iter().for_each(|rdep| {
         assign_scc(reversed_dependencies, scc_mapping, root, rdep);
     })
-}
-
-fn determine_tabling_types<FIDType: FunctionIDAPI>(
-    dependencies: &HashMap<FIDType, HashSet<FIDType>>,
-    scc_mapping: &HashMap<FIDType, &FIDType>,
-    tabling_types: &mut HashMap<FIDType, FunctionTablingType>,
-    open: &mut HashSet<FIDType>,
-    closed: &mut HashSet<FIDType>,
-    fid: &FIDType,
-) {
-    if closed.contains(fid) {
-        return;
-    }
-    if open.contains(fid) {
-        tabling_types.insert(fid.clone(), FunctionTablingType::Tabled((*scc_mapping.get(fid).unwrap()).clone().into()));
-        return;
-    }
-    open.insert(fid.clone());
-    dependencies.get(fid).unwrap().iter().for_each(|dependency_fid| {
-        determine_tabling_types(dependencies, scc_mapping, tabling_types, open, closed, dependency_fid);
-    });
-    open.remove(&fid);
-    closed.insert(fid.clone());
-    if !tabling_types.contains_key(fid) {
-        tabling_types.insert(fid.clone(), FunctionTablingType::Untabled);
-    }
 }
 
 pub(super) fn all_calls_in_pipeline(stages: &[AnnotatedStage]) -> HashSet<FunctionID> {

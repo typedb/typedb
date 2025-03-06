@@ -15,8 +15,11 @@ pub mod executable;
 mod recursion_analyser;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+pub struct StronglyConnectedComponentID(FunctionID);
+
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum FunctionTablingType {
-    Tabled(FunctionID),
+    Tabled(StronglyConnectedComponentID),
     Untabled,
 }
 

@@ -50,7 +50,7 @@ impl MatchExecutor {
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
-            suspensions: QueryPatternSuspensions::new(),
+            suspensions: QueryPatternSuspensions::new_root(),
         })
     }
 

@@ -32,8 +32,8 @@ use ir::{
     pipeline::ParameterRegistry,
 };
 use itertools::{Itertools, MinMaxResult};
-use unicase::UniCase;
 use storage::snapshot::ReadableSnapshot;
+use unicase::UniCase;
 
 use crate::{
     instruction::{

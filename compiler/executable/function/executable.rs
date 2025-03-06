@@ -19,7 +19,7 @@ use crate::{
     executable::{
         function::{
             recursion_analyser::{all_calls_in_pipeline, determine_compilation_order_and_tabling_types},
-            ExecutableFunctionRegistry, FunctionCallCostProvider, FunctionTablingType,
+            ExecutableFunctionRegistry, FunctionCallCostProvider, FunctionTablingType, StronglyConnectedComponentID,
         },
         match_::planner::vertex::Cost,
         next_executable_id,
@@ -39,6 +39,16 @@ pub struct ExecutableFunction {
     pub is_tabled: FunctionTablingType,
     pub parameter_registry: Arc<ParameterRegistry>,
     pub single_call_cost: Cost,
+}
+
+impl ExecutableFunction {
+    pub fn scc_id(&self) -> Option<StronglyConnectedComponentID> {
+        if let FunctionTablingType::Tabled(scc_id) = &self.is_tabled {
+            Some(scc_id.clone())
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, Clone)]

@@ -9,7 +9,9 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use compiler::executable::function::{executable::ExecutableReturn, ExecutableFunctionRegistry};
+use compiler::executable::function::{
+    executable::ExecutableReturn, ExecutableFunctionRegistry, StronglyConnectedComponentID,
+};
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
@@ -23,7 +25,7 @@ use crate::{
 
 pub struct TabledFunctions {
     function_registry: Arc<ExecutableFunctionRegistry>,
-    state: HashMap<CallKey, Arc<TabledFunctionState>>,
+    state: HashMap<CallKey, Arc<TabledFunctionState>>, // TODO: Splitting these by SCCID would be nice.
 }
 
 impl TabledFunctions {
@@ -55,6 +57,7 @@ impl TabledFunctions {
             self.state.insert(
                 call_key.clone(),
                 Arc::new(TabledFunctionState::build_and_prepare(
+                    function.scc_id().unwrap(),
                     pattern_executor,
                     &call_key.arguments,
                     width,
@@ -69,6 +72,7 @@ impl TabledFunctions {
         self.state.values().cloned()
     }
 
+    // TODO: Would be great to replace this with just a counter in QuerySuspensions
     pub(crate) fn total_table_size(&self) -> usize {
         self.state.values().map(|state| state.table.read().unwrap().answers.len()).sum()
     }
@@ -100,7 +104,7 @@ impl TabledFunctionPatternExecutorState {
         debug_assert!(self.pattern_executor.has_empty_control_stack());
         self.pattern_executor.reset();
         if !self.suspensions.is_empty() {
-            self.suspensions.prepare_for_restore_if_needed(None);
+            self.suspensions.prepare_restoring_from_suspending();
             self.pattern_executor.prepare_to_restore_from_suspension(0);
         }
     }
@@ -108,6 +112,7 @@ impl TabledFunctionPatternExecutorState {
 
 impl TabledFunctionState {
     fn build_and_prepare(
+        scc_id: StronglyConnectedComponentID,
         mut pattern_executor: PatternExecutor,
         args: &MaybeOwnedRow<'_>,
         answer_width: u32,
@@ -118,7 +123,7 @@ impl TabledFunctionState {
             table: RwLock::new(AnswerTable { answers: Vec::new(), width: answer_width }),
             executor_state: Mutex::new(TabledFunctionPatternExecutorState {
                 pattern_executor,
-                suspensions: QueryPatternSuspensions::new(),
+                suspensions: QueryPatternSuspensions::new_tabled_call(scc_id),
                 parameters,
             }),
         }
