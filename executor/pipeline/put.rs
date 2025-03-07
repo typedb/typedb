@@ -11,8 +11,9 @@ use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
     VariablePosition,
 };
+use concept::thing::thing_manager::ThingManager;
 use lending_iterator::LendingIterator;
-use storage::snapshot::WritableSnapshot;
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     batch::Batch,
@@ -24,6 +25,7 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
+use crate::error::ReadExecutionError;
 
 pub struct PutStageExecutor<PreviousStage> {
     executable: Arc<PutExecutable>,
@@ -65,8 +67,7 @@ where
         let mut must_insert = Vec::new();
 
         let (mut previous_iterator, mut context) = previous_stage.into_iterator(interrupt.clone())?;
-        let ExecutionContext { snapshot, thing_manager, profile, .. } = &context;
-        let stage_profile = profile.profile_stage(|| String::from("Put"), executable.executable_id);
+        let stage_profile = context.profile.profile_stage(|| String::from("Put"), executable.executable_id);
         let empty_output_row = vec![VariableValue::Empty; executable.output_width()];
         let input_output_mapping = executable
             .insert
@@ -83,50 +84,13 @@ where
                 Ok(row) => row,
                 Err(err) => return Err((err, context)),
             };
-
-            let executor = MatchExecutor::new(
-                &executable.match_,
-                snapshot,
-                thing_manager,
-                input_row.clone(),
-                function_registry.clone(),
-                &context.profile,
-            )
-            .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }));
-            let mut match_iterator = match executor {
-                Ok(executor) => crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(
-                    executor.into_iterator(context.clone(), interrupt.clone()),
-                ))
-                .peekable(),
-                Err(err) => return Err((err, context)),
-            };
-            // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
-            //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
-            //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
             let size_before = output_batch.len();
-            while let Some(row_result) = match_iterator.next() {
-                match row_result {
-                    Ok(row) => {
-                        output_batch.append(row);
-                        must_insert.push(false);
-                    }
-                    Err(typedb_source) => {
-                        return Err((Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source }), context))
-                    }
-                }
+            if let Err(err) = may_append_matched_rows(&context, &interrupt, &executable, function_registry.clone(), &mut output_batch, &mut must_insert, input_row.clone()) {
+                return Err((err, context))
             }
+
             if size_before == output_batch.len() {
-                // copy out row multiplicity M, set it to 1, then append the row M times
-                let multiplicity = input_row.multiplicity();
-                for _ in 0..multiplicity {
-                    output_batch.append(MaybeOwnedRow::new_borrowed(&empty_output_row, &1)); // Insert an empty row
-                    output_batch.get_row_mut(output_batch.len() - 1).copy_mapped(
-                        // Copy over input_row
-                        input_row.as_reference(),
-                        input_output_mapping.iter().map(|(s, d)| (s.clone(), d.clone())),
-                    );
-                    must_insert.push(true);
-                }
+                prepare_rows_for_insertion(&empty_output_row, &input_output_mapping, &mut output_batch, &mut must_insert, input_row);
             }
         }
         drop(previous_iterator);
@@ -156,5 +120,54 @@ where
         }
 
         Ok((WrittenRowsIterator::new(output_batch), context))
+    }
+}
+
+fn may_append_matched_rows<Snapshot: ReadableSnapshot + 'static>(
+    context: &ExecutionContext<Snapshot>,
+    interrupt: &ExecutionInterrupt,
+    put_executable: &PutExecutable,
+    function_registry: Arc<ExecutableFunctionRegistry>,
+    output_batch: &mut Batch,
+    must_insert: &mut Vec<bool>,
+    input_row: MaybeOwnedRow<'_>,
+) -> Result<(), Box<PipelineExecutionError>> {
+    let executor = MatchExecutor::new(
+        &put_executable.match_,
+        &context.snapshot,
+        &context.thing_manager,
+        input_row,
+        function_registry,
+        &context.profile,
+    )
+        .map_err(|err| Box::new(PipelineExecutionError::InitialisingMatchIterator { typedb_source: err }))?;
+    let mut match_iterator = crate::pipeline::match_::unique_rows(crate::pipeline::match_::as_owned_rows(
+        executor.into_iterator(context.clone(), interrupt.clone()),
+    )).peekable();
+    while let Some(row_result) = match_iterator.next() {
+        match row_result {
+            Ok(row) => {
+                output_batch.append(row);
+                must_insert.push(false);
+            }
+            Err(typedb_source) => {
+                return Err(Box::new(PipelineExecutionError::ReadPatternExecution { typedb_source }))
+            }
+        }
+    }
+    Ok(())
+}
+
+fn prepare_rows_for_insertion(empty_output_row: &[VariableValue<'static>], input_output_mapping: &HashMap<VariablePosition, VariablePosition>, output_batch: &mut Batch, must_insert: &mut Vec<bool>, input_row: MaybeOwnedRow<'_>) {
+    // copy out row multiplicity M, set it to 1, then append the row M times
+    let multiplicity = input_row.multiplicity();
+    for _ in 0..multiplicity {
+        output_batch.append(MaybeOwnedRow::new_borrowed(&empty_output_row, &1)); // Insert an empty row
+        output_batch.get_row_mut(output_batch.len() - 1).copy_mapped(
+            // Copy over input_row
+            input_row.as_reference(),
+            input_output_mapping.iter().map(|(s, d)| (s.clone(), d.clone())),
+        );
+        must_insert.push(true);
     }
 }
