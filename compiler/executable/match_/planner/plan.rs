@@ -133,14 +133,7 @@ fn make_builder<'a>(
                         )
                     })
                     .collect::<Result<Vec<_>, _>>()?,
-                disjunction
-                    .required_inputs(block_context)
-                    .chain(
-                        disjunction
-                            .optional_outputs(block_context)
-                            .filter(|out| conjunction.variable_dependency_modes(block_context)[out].is_produced()),
-                    )
-                    .collect(),
+                disjunction.required_inputs(block_context).collect(),
             )),
             NestedPattern::Negation(negation) => negation_subplans.push(
                 make_builder(
@@ -153,7 +146,7 @@ fn make_builder<'a>(
                     statistics,
                     call_cost_provider,
                 )?
-                .with_inputs(negation.conjunction().captured_variables(block_context))
+                .with_inputs(negation.required_inputs(block_context))
                 .plan()?,
             ),
             NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
