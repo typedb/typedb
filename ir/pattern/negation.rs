@@ -56,7 +56,7 @@ impl Negation {
             .filter_map(|(var, mode)| {
                 let status = block_context.variable_status_in_scope(var, self.scope_id());
                 if status == VariableStatus::Shared || mode.is_required() {
-                    Some((var, mode))
+                    Some((var, DependencyMode::Required(vec![]))) // FIXME: actual usages
                 } else {
                     None
                 }
@@ -66,6 +66,12 @@ impl Negation {
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
         self.conjunction.variable_assignment_modes()
+    }
+
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency_modes(block_context)
+            .into_iter()
+            .filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 }
 

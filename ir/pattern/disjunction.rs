@@ -68,7 +68,7 @@ impl Disjunction {
         let mut data_modes = self.conjunctions[0].variable_dependency_modes(block_context);
         for branch in &self.conjunctions[1..] {
             for (var, mode) in branch.variable_dependency_modes(block_context) {
-                data_modes.entry(var).or_insert(DependencyMode::Optional).or_assign(mode)
+                data_modes.entry(var).or_insert(DependencyMode::Optional).or(mode)
             }
         }
         data_modes
@@ -82,7 +82,7 @@ impl Disjunction {
         for branch in &self.conjunctions[1..] {
             for (var, mode) in branch.variable_assignment_modes() {
                 match assignment_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().or_assign(mode),
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().or(mode),
                     hash_map::Entry::Vacant(entry) => {
                         entry.insert(mode);
                     }

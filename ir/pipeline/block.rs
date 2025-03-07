@@ -270,7 +270,7 @@ impl BlockContext {
         let var_scope = self.variable_declaration[&var];
         if var_scope == scope {
             VariableStatus::Local
-        } else if self.is_visible_child(scope, var_scope) {
+        } else if self.is_child_scope(scope, var_scope) {
             VariableStatus::Shared
         } else {
             VariableStatus::None // or an error

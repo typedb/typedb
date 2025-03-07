@@ -148,7 +148,7 @@ impl Conjunction {
             let nested_pattern_data_modes = nested.variable_dependency_modes(block_context);
             for (var, mode) in nested_pattern_data_modes {
                 match data_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(mode),
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(mode),
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(mode);
                     }
@@ -164,7 +164,7 @@ impl Conjunction {
             let nested_pattern_assignment_modes = nested.variable_assignment_modes();
             for (var, mode) in nested_pattern_assignment_modes {
                 match assignment_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(mode),
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(mode),
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(mode);
                     }

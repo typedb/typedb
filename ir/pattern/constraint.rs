@@ -67,22 +67,22 @@ impl Constraints {
     }
 
     pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
-        self.constraints().iter().fold(HashMap::new(), |mut acc, c| {
-            for var in c.produced_ids() {
+        self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
+            for var in constraint.produced_ids() {
                 match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(DependencyMode::Produced),
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(DependencyMode::Produced),
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(DependencyMode::Produced);
                     }
                 }
             }
-            for var in c.required_ids() {
+            for var in constraint.required_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        entry.get_mut().and_assign(DependencyMode::Required(vec![c]))
+                        entry.get_mut().and(DependencyMode::Required(vec![constraint]))
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(DependencyMode::Required(vec![c]));
+                        vacant_entry.insert(DependencyMode::Required(vec![constraint]));
                     }
                 }
             }
@@ -91,8 +91,8 @@ impl Constraints {
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
-        self.constraints().iter().fold(HashMap::new(), |mut acc, c| {
-            let ids_assigned = match c {
+        self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
+            let ids_assigned = match constraint {
                 Constraint::ExpressionBinding(expression_binding) => Either::Left(expression_binding.ids_assigned()),
                 Constraint::FunctionCallBinding(function_call_binding) => {
                     Either::Right(function_call_binding.ids_assigned())
@@ -118,9 +118,9 @@ impl Constraints {
 
             for var in ids_assigned {
                 match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and_assign(AssignmentMode::Assigned(c)),
+                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(AssignmentMode::Assigned(constraint)),
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(AssignmentMode::Assigned(c));
+                        vacant_entry.insert(AssignmentMode::Assigned(constraint));
                     }
                 }
             }
@@ -658,7 +658,7 @@ impl<ID: IrID> Constraint<ID> {
 
     pub fn required_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
-            Constraint::Is(is) => todo!(),
+            Constraint::Is(is) => Box::new(is.ids()), // FIXME _technically_ it's legal to only have one side of `is` bound
             | Constraint::Kind(_)
             | Constraint::Label(_)
             | Constraint::RoleName(_)

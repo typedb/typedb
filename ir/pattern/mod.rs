@@ -357,7 +357,7 @@ pub(crate) enum AssignmentMode<'a> {
 }
 
 impl AssignmentMode<'_> {
-    fn and_assign(&mut self, other: Self) {
+    fn and(&mut self, other: Self) {
         match (&mut *self, other) {
             (&mut Self::Assigned(place), Self::Assigned(other_place)) => {
                 *self = Self::MultipleAssignments(vec![place, other_place])
@@ -375,7 +375,7 @@ impl AssignmentMode<'_> {
         }
     }
 
-    fn or_assign(&mut self, other: Self) {
+    fn or(&mut self, other: Self) {
         // we only really need to preserve one assignment across branches for diagnostic purposes
         // or the branch with multiple assignments
         if matches!((&self, &other), (Self::Assigned(_), Self::MultipleAssignments(_))) {
@@ -392,7 +392,7 @@ pub enum DependencyMode<'a> {
 }
 
 impl DependencyMode<'_> {
-    fn and_assign(&mut self, other: Self) {
+    fn and(&mut self, other: Self) {
         match (&mut *self, other) {
             (Self::Produced, _) | (_, Self::Produced) => *self = Self::Produced,
             (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
@@ -401,7 +401,7 @@ impl DependencyMode<'_> {
         }
     }
 
-    fn or_assign(&mut self, other: Self) {
+    fn or(&mut self, other: Self) {
         match (&mut *self, other) {
             (Self::Produced, Self::Produced) => (),
             (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
