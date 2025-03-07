@@ -23,9 +23,10 @@ test_deps = [
     "//common/logger",
     "//common/primitive",
     "//concept",
-    "//encoding",
-    "//storage",
     "//durability",
+    "//encoding",
+    "//resource",
+    "//storage",
 
     ":test_utils_concept",
     "//encoding/tests:test_utils_encoding",

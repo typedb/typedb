@@ -671,7 +671,7 @@ impl ThingManager {
         range: &'a impl RangeBounds<Value<'a>>,
     ) -> Option<(Bound<Value<'a>>, Bound<Value<'a>>)> {
         let lower_bound = Self::get_value_lower_bound(expected_value_type, range)?;
-        let upper_bound = Self::get_value_lower_bound(expected_value_type, range)?;
+        let upper_bound = Self::get_value_upper_bound(expected_value_type, range)?;
         Some((lower_bound, upper_bound))
     }
 

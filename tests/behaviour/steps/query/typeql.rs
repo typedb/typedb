@@ -374,20 +374,16 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
                 .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
         );
         let mut attr_iter: Box<dyn Iterator<Item = Result<(Attribute, u64), Box<ConceptReadError>>>> = match thing {
-            Thing::Entity(entity) => Box::new(entity.get_has_type_unordered(
-                &*tx.snapshot,
-                &tx.thing_manager,
-                key_type,
-                &..,
-                StorageCounters::DISABLED,
-            )),
-            Thing::Relation(relation) => Box::new(relation.get_has_type_unordered(
-                &*tx.snapshot,
-                &tx.thing_manager,
-                key_type,
-                &..,
-                StorageCounters::DISABLED,
-            )),
+            Thing::Entity(entity) => Box::new(
+                entity
+                    .get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type, &.., StorageCounters::DISABLED)
+                    .unwrap(),
+            ),
+            Thing::Relation(relation) => Box::new(
+                relation
+                    .get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type, &.., StorageCounters::DISABLED)
+                    .unwrap(),
+            ),
             Thing::Attribute(_) => return false,
         };
         let (attr, count) = Iterator::next(&mut attr_iter)

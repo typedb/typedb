@@ -470,6 +470,105 @@ fn value_int_equality_reduces_isa_reads() {
 }
 
 #[test]
+fn value_int_equality_reduces_has_reverse_reads() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $person isa person, has gov_id 1; # middle value
+
+    // IR to compute type annotations
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_int_1_id = value_parameters.register_value(Value::Integer(1), Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("var_person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("var_person_type", None).unwrap();
+    let var_gov_id = conjunction.constraints_mut().get_or_declare_variable("var_gov_id", None).unwrap();
+    let var_gov_id_type = conjunction.constraints_mut().get_or_declare_variable("var_gov_id_type", None).unwrap();
+
+    let has = conjunction.constraints_mut().add_has(var_person, var_gov_id, None).unwrap().clone();
+    let _isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let _isa_gov_id = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_gov_id, var_gov_id_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_1_id), Comparator::Equal, None)
+        .unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let entry_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_gov_id], []);
+
+    // plan (requires correct type annotations)
+    //       HasReverse($person, $gov_id) with $gov_id = 1
+    //
+    // Should output:
+    //  (person 1, gov_id 1)
+
+    let value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_gov_id),
+        rhs: CheckVertex::Parameter(value_int_1_id),
+        comparator: Comparator::Equal,
+    }
+    .map(&mapping);
+    let mut has_reverse_instruction =
+        HasReverseInstruction::new(has, Inputs::None([]), &entry_annotations).map(&mapping);
+    has_reverse_instruction.add_check(value_check);
+
+    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
+        mapping[&var_gov_id],
+        vec![ConstraintInstruction::HasReverse(has_reverse_instruction)],
+        vec![variable_positions[&var_person], variable_positions[&var_gov_id]],
+        &named_variables,
+        2,
+    ))];
+
+    let query_profile = QueryProfile::new(true);
+    let rows =
+        execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
+
+    assert_eq!(rows.len(), 1);
+
+    let stage_profiles = query_profile.stage_profiles().read().unwrap();
+    let (_, match_profile) = stage_profiles.iter().next().unwrap();
+    let intersection_step_profile = match_profile.extend_or_get(0, || String::new());
+    let storage_counters = intersection_step_profile.storage_counters();
+    // 1 seek: skip directly to the correct attribute value, and find the only owner
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 1);
+    // 1 advance: iterator needs to step forward and finish
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 1);
+}
+
+#[test]
 fn value_int_equality_reduces_has_bound_owner() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
@@ -581,18 +680,19 @@ fn value_int_equality_reduces_has_bound_owner() {
 }
 
 #[test]
-fn value_int_equality_reduces_has_reverse_reads() {
+fn value_int_inequality_reduces_has_bound_owner() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
     // query:
     //   match
-    //    $person isa person, has gov_id 1; # middle value
+    //    $person isa person, has gov_id $gov_id; $gov_id >= 1; $gov_id < 3; # middle range
 
     // IR to compute type annotations
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let value_int_1_id = value_parameters.register_value(Value::Integer(1), Span { begin_offset: 0, end_offset: 0 });
+    let value_int_3_id = value_parameters.register_value(Value::Integer(3), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
 
@@ -602,7 +702,7 @@ fn value_int_equality_reduces_has_reverse_reads() {
     let var_gov_id_type = conjunction.constraints_mut().get_or_declare_variable("var_gov_id_type", None).unwrap();
 
     let has = conjunction.constraints_mut().add_has(var_person, var_gov_id, None).unwrap().clone();
-    let _isa_person = conjunction
+    let isa_person = conjunction
         .constraints_mut()
         .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
         .unwrap()
@@ -616,7 +716,16 @@ fn value_int_equality_reduces_has_reverse_reads() {
     conjunction.constraints_mut().add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_1_id), Comparator::Equal, None)
+        .add_comparison(
+            Vertex::Variable(var_gov_id),
+            Vertex::Parameter(value_int_1_id),
+            Comparator::GreaterOrEqual,
+            None,
+        )
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_3_id), Comparator::Less, None)
         .unwrap();
 
     let entry = builder.finish().unwrap();
@@ -637,59 +746,65 @@ fn value_int_equality_reduces_has_reverse_reads() {
     )
     .unwrap();
 
-    let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_gov_id], []);
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_person_type, var_gov_id], []);
 
     // plan (requires correct type annotations)
-    //       HasReverse($person, $gov_id) with $gov_id = 1
+    // plan: Isa($person, person)
+    //       Has($person, $_gov_id) with >= 1 and < 3
     //
     // Should output:
     //  (person 1, gov_id 1)
+    //  (person 1, gov_id 2)
 
-    let value_check = CheckInstruction::Comparison {
+    let greater_value_check = CheckInstruction::Comparison {
         lhs: CheckVertex::Variable(var_gov_id),
         rhs: CheckVertex::Parameter(value_int_1_id),
-        comparator: Comparator::Equal,
+        comparator: Comparator::GreaterOrEqual,
     }
     .map(&mapping);
-    let mut has_reverse_instruction =
-        HasReverseInstruction::new(has, Inputs::None([]), &entry_annotations).map(&mapping);
-    has_reverse_instruction.add_check(value_check);
+    let lesser_value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_gov_id),
+        rhs: CheckVertex::Parameter(value_int_3_id),
+        comparator: Comparator::Less,
+    }
+    .map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    has_instruction.add_check(greater_value_check);
+    has_instruction.add_check(lesser_value_check);
 
-    let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
-        mapping[&var_gov_id],
-        vec![ConstraintInstruction::HasReverse(has_reverse_instruction)],
-        vec![variable_positions[&var_person], variable_positions[&var_gov_id]],
-        &named_variables,
-        2,
-    ))];
+    let steps = vec![
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person_type],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
+            vec![variable_positions[&var_person], variable_positions[&var_person_type]],
+            &named_variables,
+            2,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_gov_id],
+            vec![ConstraintInstruction::Has(has_instruction)],
+            vec![variable_positions[&var_person], variable_positions[&var_gov_id]],
+            &named_variables,
+            3,
+        )),
+    ];
 
     let query_profile = QueryProfile::new(true);
     let rows =
         execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
-
-    assert_eq!(rows.len(), 1);
+    assert_eq!(rows.len(), 2);
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
-    let intersection_step_profile = match_profile.extend_or_get(0, || String::new());
+    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
-    // 1 seek: skip directly to the correct attribute value, and find the only owner
-    assert_eq!(storage_counters.get_raw_seek().unwrap(), 1);
-    // 1 advance: iterator needs to step forward and finish
-    assert_eq!(storage_counters.get_raw_advance().unwrap(), 1);
-}
-
-#[test]
-fn value_int_inequality_reduces_has_reads_bound_owner() {
-    let (_tmp_dir, mut storage) = create_core_storage();
-    setup_database(&mut storage);
-
-    // query:
-    //   match
-    //    $person isa person, has gov_id $gov_id; $gov_id >= 1; $gov_id < 3; # middle range
-
-    // plan: Isa($person, person)
-    //       Has($person, $_gov_id) with >= and <
+    // 6 seeks: for each person, we should skip directly to the person + owned ID
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 2 advance: the iterator matching person 1 will advances twice (once to find the second ID, then to fail)
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 2)
 }
 
 #[test]

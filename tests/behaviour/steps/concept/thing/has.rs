@@ -228,6 +228,7 @@ async fn object_get_has_is_empty(
     let actuals = with_read_tx!(context, |tx| {
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
+            .unwrap()
             .map(|res| {
                 let (has, _count) = res.unwrap();
                 has.attribute()
@@ -253,6 +254,7 @@ async fn object_get_has(
     let actuals = with_read_tx!(context, |tx| {
         object
             .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
+            .unwrap()
             .map(|res| {
                 let (has, _count) = res.unwrap();
                 let attribute = has.attribute();
@@ -290,6 +292,7 @@ async fn object_get_has_type(
                 &..,
                 StorageCounters::DISABLED,
             )
+            .unwrap()
             .map(|res| {
                 let (attribute, _count) = res.unwrap();
                 attribute
@@ -331,6 +334,7 @@ async fn object_get_has_with_annotations(
                         &..,
                         StorageCounters::DISABLED,
                     )
+                    .unwrap()
                     .map(|res| {
                         let (attribute, _count) = res.unwrap();
                         attribute

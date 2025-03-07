@@ -18,6 +18,7 @@ use concept::{
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
@@ -107,13 +108,13 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
 
     let mut statistics = Statistics::new(snapshot.open_sequence_number());
 
-    let entity_iter = thing_manager.get_entities(&snapshot);
+    let entity_iter = thing_manager.get_entities(&snapshot, StorageCounters::DISABLED);
     for entity in entity_iter {
         let entity = entity.unwrap();
         statistics.total_entity_count += 1;
         *statistics.entity_counts.entry(entity.type_()).or_default() += 1;
         let owner_type = entity.type_().into_object_type();
-        let has_iter = entity.get_has_unordered(&snapshot, thing_manager);
+        let has_iter = entity.get_has_unordered(&snapshot, thing_manager, StorageCounters::DISABLED).unwrap();
         for has in has_iter {
             let (has, count) = has.unwrap();
             let attribute = has.attribute();
@@ -124,13 +125,13 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         }
     }
 
-    let relation_iter = thing_manager.get_relations(&snapshot);
+    let relation_iter = thing_manager.get_relations(&snapshot, StorageCounters::DISABLED);
     for relation in relation_iter {
         let relation = relation.unwrap();
         statistics.total_relation_count += 1;
         *statistics.relation_counts.entry(relation.type_()).or_default() += 1;
         let owner_type = relation.type_().into_object_type();
-        let has_iter = relation.get_has_unordered(&snapshot, thing_manager);
+        let has_iter = relation.get_has_unordered(&snapshot, thing_manager, StorageCounters::DISABLED).unwrap();
         for has in has_iter {
             let (has, count) = has.unwrap();
             let attribute = has.attribute();
@@ -139,7 +140,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
             *statistics.attribute_owner_counts.entry(attribute.type_()).or_default().entry(owner_type).or_default() +=
                 count;
         }
-        let relates_iter = relation.get_players(&snapshot, thing_manager);
+        let relates_iter = relation.get_players(&snapshot, thing_manager, StorageCounters::DISABLED);
         let mut this_relation_players = BTreeMap::<_, u64>::new();
         for relates in relates_iter {
             let (roleplayer, count) = relates.unwrap();
@@ -178,7 +179,7 @@ fn read_statistics(storage: Arc<MVCCStorage<WALClient>>, thing_manager: &ThingMa
         }
     }
 
-    let attribute_iter = thing_manager.get_attributes(&snapshot).unwrap();
+    let attribute_iter = thing_manager.get_attributes(&snapshot, StorageCounters::DISABLED).unwrap();
     for attribute in attribute_iter {
         let attribute = attribute.unwrap();
         statistics.total_attribute_count += 1;

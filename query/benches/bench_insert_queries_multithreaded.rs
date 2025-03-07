@@ -28,6 +28,7 @@ use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -189,7 +190,7 @@ fn multi_threaded_inserts() {
         let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person", None)).unwrap().unwrap();
         assert_eq!(
             NUM_THREADS * INTERNAL_ITERS,
-            Iterator::count(thing_manager.get_entities_in(&snapshot, person_type))
+            Iterator::count(thing_manager.get_entities_in(&snapshot, person_type, StorageCounters::DISABLED))
         );
         snapshot.close_resources();
     }
