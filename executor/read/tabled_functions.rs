@@ -9,9 +9,7 @@ use std::{
     sync::{Arc, Mutex, RwLock},
 };
 
-use compiler::executable::function::{
-    executable::ExecutableReturn, ExecutableFunctionRegistry, StronglyConnectedComponentID,
-};
+use compiler::executable::function::{executable::ExecutableReturn, ExecutableFunctionRegistry, FunctionTablingType, StronglyConnectedComponentID};
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
@@ -54,10 +52,13 @@ impl TabledFunctions {
                 ExecutableReturn::Check => 1,
                 ExecutableReturn::Reduce(reduce) => reduce.reductions.len() as u32,
             };
+            let FunctionTablingType::Tabled(scc_id) = &function.tabling_type else {
+                unreachable!("Wouldn't reach here had it not been tabled")
+            };
             self.state.insert(
                 call_key.clone(),
                 Arc::new(TabledFunctionState::build_and_prepare(
-                    function.scc_id().unwrap(),
+                    scc_id.clone(),
                     pattern_executor,
                     &call_key.arguments,
                     width,

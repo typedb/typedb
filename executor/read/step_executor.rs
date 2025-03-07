@@ -149,7 +149,7 @@ pub(crate) fn create_executors_for_match(
                 let _step_profile = stage_profile.extend_or_get(index, || format!("{}", function_call));
 
                 let function = function_registry.get(&function_call.function_id).unwrap();
-                if let FunctionTablingType::Tabled(_) = function.is_tabled {
+                if let FunctionTablingType::Tabled(_) = function.tabling_type {
                     let executor = TabledCallExecutor::new(
                         function_call.function_id.clone(),
                         function_call.arguments.clone(),

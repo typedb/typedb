@@ -36,19 +36,9 @@ pub struct ExecutableFunction {
     pub executable_stages: Vec<ExecutableStage>,
     pub argument_positions: HashMap<Variable, VariablePosition>,
     pub returns: ExecutableReturn,
-    pub is_tabled: FunctionTablingType,
+    pub tabling_type: FunctionTablingType,
     pub parameter_registry: Arc<ParameterRegistry>,
     pub single_call_cost: Cost,
-}
-
-impl ExecutableFunction {
-    pub fn scc_id(&self) -> Option<StronglyConnectedComponentID> {
-        if let FunctionTablingType::Tabled(scc_id) = &self.is_tabled {
-            Some(scc_id.clone())
-        } else {
-            None
-        }
-    }
 }
 
 #[derive(Debug, Clone)]
@@ -129,7 +119,7 @@ fn compile_function(
         argument_positions,
         returns,
         parameter_registry: Arc::new(parameter_registry),
-        is_tabled,
+        tabling_type: is_tabled,
         single_call_cost,
     })
 }
