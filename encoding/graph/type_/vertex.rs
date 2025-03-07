@@ -125,6 +125,14 @@ impl TypeID {
     pub fn to_bytes(&self) -> [u8; TypeID::LENGTH] {
         self.value.to_be_bytes()
     }
+
+    pub fn increment(&self) -> Option<Self> {
+        Some(Self { value: self.value.checked_add(1)? })
+    }
+
+    pub fn decrement(&self) -> Option<Self> {
+        Some(Self { value: self.value.checked_sub(1)? })
+    }
 }
 
 impl fmt::Display for TypeID {

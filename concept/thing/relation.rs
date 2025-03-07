@@ -366,7 +366,7 @@ impl ThingAPI for Relation {
         thing_manager: &ThingManager,
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
-            .get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)
+            .get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)?
             .map_ok(|(has, _value)| has.attribute())
         {
             thing_manager.unset_has(snapshot, self, &attr?)?;

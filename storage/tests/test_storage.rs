@@ -10,7 +10,7 @@ use bytes::{byte_array::ByteArray, Bytes};
 use durability::wal::WAL;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::{
     key_range::{KeyRange, RangeStart},
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -135,6 +135,7 @@ fn create_reopen() {
                         [0x0],
                     ))),
                 ))),
+                StorageCounters::DISABLED,
             )
             .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
                 let (key, value) = res.unwrap();
@@ -191,6 +192,7 @@ fn get_put_iterate() {
                 StorageKey::<BUFFER_VALUE_INLINE>::Reference(StorageKeyReference::from(&prefix)),
                 false,
             ),
+            StorageCounters::DISABLED,
         )
         .map_static::<(ByteArray<BUFFER_VALUE_INLINE>, ByteArray<128>), _>(|res| {
             let (key, value) = res.unwrap();

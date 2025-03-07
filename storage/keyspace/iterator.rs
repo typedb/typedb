@@ -8,6 +8,7 @@ use std::cmp::Ordering;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use lending_iterator::{LendingIterator, Seekable};
+use resource::profile::StorageCounters;
 
 use crate::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -32,6 +33,7 @@ impl KeyspaceRangeIterator {
         keyspace: &'a Keyspace,
         iterpool: &IteratorPool,
         range: &KeyRange<Bytes<'a, INLINE_BYTES>>,
+        storage_counters: StorageCounters,
     ) -> Self {
         // TODO: if self.has_prefix_extractor_for(prefix), we can enable bloom filters
         // read_opts.set_prefix_same_as_start(true);
@@ -46,7 +48,11 @@ impl KeyspaceRangeIterator {
             }
         };
 
-        let mut iterator = raw_iterator::DBIterator::new_from(iterpool.get_iterator(keyspace), start_prefix.as_ref());
+        let mut iterator = raw_iterator::DBIterator::new_from(
+            iterpool.get_iterator(keyspace),
+            start_prefix.as_ref(),
+            storage_counters,
+        );
         if matches!(range.start(), RangeStart::ExcludeFirstWithPrefix(_)) {
             Self::may_skip_start(&mut iterator, range.start().get_value());
         }

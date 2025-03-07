@@ -7,6 +7,7 @@
 use std::{
     collections::{BTreeMap, HashMap},
     fmt,
+    iter::Map,
     ops::{Bound, RangeBounds},
 };
 
@@ -171,23 +172,37 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         storage_counters: StorageCounters,
-    ) -> HasIterator {
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
         self.get_has_types_range_unordered(
             snapshot,
             thing_manager,
             &(Bound::<AttributeType>::Unbounded, Bound::Unbounded),
+            &..,
             storage_counters,
         )
     }
 
-    fn get_has_type_unordered(
+    fn get_has_type_unordered<'a>(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
+        value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Attribute, u64), Box<ConceptReadError>>> {
-        thing_manager.get_has_from_thing_to_type_unordered(snapshot, self, attribute_type, storage_counters)
+    ) -> Result<
+        Map<
+            HasIterator,
+            fn(Result<(Has, u64), Box<ConceptReadError>>) -> Result<(Attribute, u64), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        thing_manager.get_has_from_thing_to_type_unordered(
+            snapshot,
+            self,
+            attribute_type,
+            value_range,
+            storage_counters,
+        )
     }
 
     fn get_has_type_ordered<'m>(
@@ -199,14 +214,15 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
     }
 
-    fn get_has_types_range_unordered(
+    fn get_has_types_range_unordered<'a>(
         self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute_type_range: &impl RangeBounds<AttributeType>,
+        value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> HasIterator {
-        thing_manager.get_has_from_thing_unordered(snapshot, self, attribute_type_range, storage_counters)
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
+        thing_manager.get_has_from_thing_unordered(snapshot, self, attribute_type_range, value_range, storage_counters)
     }
 
     fn set_has_unordered(
@@ -400,7 +416,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager: &ThingManager,
     ) -> Result<HashMap<AttributeType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
-        let mut has_iter = self.get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED);
+        let mut has_iter = self.get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)?;
         while let Some((has, count)) = Iterator::next(&mut has_iter).transpose()? {
             let value = counts.entry(has.attribute().type_()).or_insert(0);
             *value += count;

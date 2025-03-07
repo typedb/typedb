@@ -169,6 +169,11 @@ impl HasExecutor {
             Ok(false) => None,
             Err(_) => Some(item),
         });
+        let value_range = self.checker.value_range_for(
+            context,
+            Some(row.as_reference()),
+            self.has.attribute().as_variable().unwrap(),
+        )?;
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
@@ -206,8 +211,9 @@ impl HasExecutor {
                         thing_manager,
                         // TODO: this should be just the types owned by the one instance's type in the cache!
                         &self.attribute_type_range,
+                        &value_range,
                         storage_counters,
-                    );
+                    )?;
                     let as_tuples = HasTupleIterator::new(
                         iterator,
                         filter_for_row,
@@ -224,24 +230,25 @@ impl HasExecutor {
                     // TODO: we could create a reusable space for these temporarily held iterators
                     //       so we don't have allocate again before the merging iterator
                     let owners = self.owner_cache.as_ref().unwrap().iter();
-                    let iterators: Vec<_> = owners
-                        .map(|object| {
-                            let iterator = object.get_has_types_range_unordered(
-                                snapshot,
-                                thing_manager,
-                                &self.attribute_type_range,
-                                storage_counters.clone(),
-                            );
-                            let filter = filter_for_row.clone();
-                            HasTupleIterator::new(
-                                iterator,
-                                filter,
-                                has_to_tuple_attribute_owner,
-                                tuple_attribute_owner_to_has_canonical,
-                                FixedHasBounds::Owner(*object),
-                            )
-                        })
-                        .collect();
+                    let mut iterators = Vec::new();
+                    for owner in owners {
+                        let iterator = owner.get_has_types_range_unordered(
+                            snapshot,
+                            thing_manager,
+                            &self.attribute_type_range,
+                            &value_range,
+                            storage_counters.clone(),
+                        )?;
+                        let filter = filter_for_row.clone();
+                        let iterator = HasTupleIterator::new(
+                            iterator,
+                            filter,
+                            has_to_tuple_attribute_owner,
+                            tuple_attribute_owner_to_has_canonical,
+                            FixedHasBounds::Owner(*owner),
+                        );
+                        iterators.push(iterator);
+                    }
 
                     // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
 
@@ -264,14 +271,16 @@ impl HasExecutor {
                         snapshot,
                         thing_manager,
                         &self.attribute_type_range,
+                        &value_range,
                         storage_counters,
-                    ),
+                    )?,
                     VariableValue::Thing(Thing::Relation(relation)) => relation.get_has_types_range_unordered(
                         snapshot,
                         thing_manager,
                         &self.attribute_type_range,
+                        &value_range,
                         storage_counters,
-                    ),
+                    )?,
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let as_tuples = HasTupleIterator::new(

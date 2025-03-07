@@ -159,7 +159,7 @@ impl HasInstruction<Variable> {
 }
 
 impl<ID> HasInstruction<ID> {
-    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+    pub fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
 
@@ -210,7 +210,7 @@ impl HasReverseInstruction<Variable> {
 }
 
 impl<ID> HasReverseInstruction<ID> {
-    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+    pub fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
 

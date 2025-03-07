@@ -47,6 +47,10 @@ impl QueryProfile {
             Arc::new(StageProfile::new(String::new(), false))
         }
     }
+
+    pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
+        &self.stage_profiles
+    }
 }
 
 impl fmt::Display for QueryProfile {
@@ -209,15 +213,41 @@ impl StorageCounters {
         Self { counters: Some(Arc::new(StorageCountersData::new())) }
     }
 
-    pub fn increment_advance(&self) {
+    pub fn increment_raw_advance(&self) {
         if let Some(counters) = self.counters.as_ref() {
-            counters.advance.fetch_add(1, Ordering::Relaxed);
+            counters.raw_advance.fetch_add(1, Ordering::Relaxed);
         }
     }
 
-    pub fn increment_seek(&self) {
+    pub fn get_raw_advance(&self) -> Option<u64> {
+        self.counters.as_ref().map(|counters| counters.raw_advance.load(Ordering::SeqCst))
+    }
+
+    pub fn increment_raw_seek(&self) {
         if let Some(counters) = self.counters.as_ref() {
-            counters.seek.fetch_add(1, Ordering::Relaxed);
+            counters.raw_seek.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub fn get_raw_seek(&self) -> Option<u64> {
+        self.counters.as_ref().map(|counters| counters.raw_seek.load(Ordering::SeqCst))
+    }
+
+    pub fn increment_advance_mvcc_visible(&self) {
+        if let Some(counters) = self.counters.as_ref() {
+            counters.advance_mvcc_visible.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub fn increment_advance_mvcc_invisible(&self) {
+        if let Some(counters) = self.counters.as_ref() {
+            counters.advance_mvcc_invisible.fetch_add(1, Ordering::Relaxed);
+        }
+    }
+
+    pub fn increment_advance_mvcc_deleted(&self) {
+        if let Some(counters) = self.counters.as_ref() {
+            counters.advance_mvcc_deleted.fetch_add(1, Ordering::Relaxed);
         }
     }
 }
@@ -229,9 +259,12 @@ impl Display for StorageCounters {
             Some(counters) => {
                 write!(
                     f,
-                    "seeks: {}, advances: {}",
-                    counters.seek.load(Ordering::SeqCst),
-                    counters.advance.load(Ordering::SeqCst)
+                    "raw seeks: {}, raw advances: {}, advances mvcc visible: {}, advances mvcc invisible: {}, advances deleted invisible: {}",
+                    counters.raw_seek.load(Ordering::SeqCst),
+                    counters.raw_advance.load(Ordering::SeqCst),
+                    counters.advance_mvcc_visible.load(Ordering::SeqCst),
+                    counters.advance_mvcc_invisible.load(Ordering::SeqCst),
+                    counters.advance_mvcc_deleted.load(Ordering::SeqCst),
                 )
             }
         }
@@ -240,12 +273,21 @@ impl Display for StorageCounters {
 
 #[derive(Debug)]
 struct StorageCountersData {
-    advance: AtomicU64,
-    seek: AtomicU64,
+    raw_advance: AtomicU64,
+    raw_seek: AtomicU64,
+    advance_mvcc_visible: AtomicU64,
+    advance_mvcc_invisible: AtomicU64,
+    advance_mvcc_deleted: AtomicU64,
 }
 
 impl StorageCountersData {
     fn new() -> Self {
-        Self { advance: AtomicU64::new(0), seek: AtomicU64::new(0) }
+        Self {
+            raw_advance: AtomicU64::new(0),
+            raw_seek: AtomicU64::new(0),
+            advance_mvcc_visible: AtomicU64::new(0),
+            advance_mvcc_invisible: AtomicU64::new(0),
+            advance_mvcc_deleted: AtomicU64::new(0),
+        }
     }
 }

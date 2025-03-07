@@ -41,6 +41,7 @@ use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
 use resource::profile::{QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
+    key_range::RangeStart,
     snapshot::{CommittableSnapshot, WritableSnapshot, WriteSnapshot},
     MVCCStorage,
 };
@@ -487,7 +488,7 @@ fn test_has_with_input_rows() {
     let age_of_p10 = p10
         .as_thing()
         .as_object()
-        .get_has_type_unordered(&snapshot, &thing_manager, age_type, StorageCounters::DISABLED)
+        .get_has_type_unordered(&snapshot, &thing_manager, age_type, &.., StorageCounters::DISABLED)
         .map(|result| result.unwrap().0.clone())
         .collect::<Vec<_>>();
     assert_eq!(a10.as_thing().as_attribute(), &age_of_p10[0]);

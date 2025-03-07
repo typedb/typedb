@@ -53,6 +53,7 @@ impl ThingEdgeHas {
     pub const LENGTH_PREFIX_FROM_OBJECT: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
     pub const LENGTH_PREFIX_FROM_OBJECT_TO_TYPE: usize =
         PrefixID::LENGTH + ObjectVertex::LENGTH + THING_VERTEX_LENGTH_PREFIX_TYPE;
+    const LENGTH_BOUND: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + AttributeVertex::MAX_LENGTH;
 
     pub fn new(from: ObjectVertex, to: AttributeVertex) -> Self {
         Self { owner: from, attribute: to }
@@ -102,6 +103,22 @@ impl ThingEdgeHas {
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::range_from()].copy_from_slice(&from.to_bytes());
         AttributeVertex::write_prefix_type(&mut bytes[Self::range_from().end..], Prefix::VertexAttribute, to_type_id);
+        StorageKey::new_owned(Self::KEYSPACE, bytes)
+    }
+
+    pub fn prefix_from_object_to_type_with_attribute_prefix(
+        from: ObjectVertex,
+        attribute_vertex_prefix: &[u8],
+    ) -> StorageKey<'static, { Self::LENGTH_BOUND }> {
+        debug_assert!(
+            attribute_vertex_prefix[AttributeVertex::INDEX_PREFIX] == AttributeVertex::PREFIX.prefix_id().byte
+        );
+        let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_FROM_OBJECT_TO_TYPE + attribute_vertex_prefix.len());
+        bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
+        bytes[Self::range_from()].copy_from_slice(&from.to_bytes());
+        let end = Self::range_from().end + attribute_vertex_prefix.len();
+        bytes[Self::range_from().end..end].copy_from_slice(attribute_vertex_prefix);
+        bytes.truncate(end);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
 

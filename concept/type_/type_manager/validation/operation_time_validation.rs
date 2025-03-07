@@ -2738,8 +2738,13 @@ impl OperationTimeValidation {
 
         let mut owner_iterator = thing_manager.get_objects_in(snapshot, owner_type, StorageCounters::DISABLED);
         while let Some(instance) = owner_iterator.next().transpose()? {
-            let mut iterator =
-                instance.get_has_type_unordered(snapshot, thing_manager, attribute_type, StorageCounters::DISABLED);
+            let mut iterator = instance.get_has_type_unordered(
+                snapshot,
+                thing_manager,
+                attribute_type,
+                &..,
+                StorageCounters::DISABLED,
+            )?;
 
             if iterator.next().is_some() {
                 has_instances = true;
@@ -3119,8 +3124,9 @@ impl OperationTimeValidation {
 
                 // We assume that it's cheaper to open an iterator once and skip all the
                 // non-interesting interfaces rather creating multiple iterators
-                let has_attribute_iterator =
-                    object.get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED);
+                let has_attribute_iterator = object
+                    .get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)
+                    .map_err(|err| DataValidationError::ConceptRead { typedb_source: err })?;
                 for has_count in has_attribute_iterator {
                     let (has, count) = has_count
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;

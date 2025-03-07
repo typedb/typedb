@@ -7,6 +7,7 @@
 use std::{cmp::Ordering, mem::transmute};
 
 use lending_iterator::{LendingIterator, Seekable};
+use resource::profile::StorageCounters;
 use rocksdb::DBRawIterator;
 
 use crate::snapshot::pool::PoolRecycleGuard;
@@ -17,16 +18,22 @@ type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>;
 /// The item's lifetime is in fact invalidated when `iterator` is advanced.
 pub(super) struct DBIterator {
     iterator: PoolRecycleGuard<DBRawIterator<'static>>,
+    storage_counters: StorageCounters,
     // NOTE: when item is empty, that means that the kv pair the Rocks iterator _is currently pointing to_
     //       has been yielded to the user, and the underlying iterator needs to be advanced before peeking
     item: Option<KeyValue<'static>>,
 }
 
 impl DBIterator {
-    pub(super) fn new_from(mut iterator: PoolRecycleGuard<DBRawIterator<'static>>, start: &[u8]) -> Self {
+    pub(super) fn new_from(
+        mut iterator: PoolRecycleGuard<DBRawIterator<'static>>,
+        start: &[u8],
+        storage_counters: StorageCounters,
+    ) -> Self {
         iterator.seek(start);
+        storage_counters.increment_raw_seek();
         let item = peek_item(&iterator);
-        Self { iterator, item }
+        Self { iterator, item, storage_counters }
     }
 
     pub(super) fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
@@ -64,6 +71,7 @@ impl LendingIterator for DBIterator {
         if self.item.is_some() {
             self.item.take()
         } else if self.iterator.valid() {
+            self.storage_counters.increment_raw_advance();
             self.iterator.next();
             self.iterator.item().map(Ok)
         } else if self.iterator.status().is_err() {
@@ -91,6 +99,7 @@ impl Seekable<[u8]> for DBIterator {
         }
         self.item.take();
         self.iterator.seek(key);
+        self.storage_counters.increment_raw_seek();
         self.item = peek_item(&self.iterator); // repopulate `item` to prevent advancing the underlying iterator
     }
 

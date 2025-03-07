@@ -159,7 +159,8 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Has {
         let new_attribute = get_thing(row, &self.attribute).as_attribute();
 
         let mut old_attributes = owner
-            .get_has_type_unordered(snapshot, thing_manager, new_attribute.type_(), StorageCounters::DISABLED)
+            .get_has_type_unordered(snapshot, thing_manager, new_attribute.type_(), &.., StorageCounters::DISABLED)
+            .map_err(|err| WriteError::ConceptRead { typedb_source: err })?
             .take(2)
             .collect_vec()
             .into_iter();

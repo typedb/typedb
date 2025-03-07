@@ -5,9 +5,10 @@
  */
 
 use std::{
+    any::Any,
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    iter::once,
+    iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
 };
@@ -74,6 +75,7 @@ use crate::{
         attribute::{Attribute, AttributeIterator},
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
+        has::Has,
         object::{HasIterator, HasReverseIterator, Object, ObjectAPI},
         r#struct::StructIndexForAttributeTypeIterator,
         relation::{IndexedRelationsIterator, LinksIterator, LinksReverseIterator, Relation, RolePlayer},
@@ -540,14 +542,52 @@ impl ThingManager {
             return Ok(AttributeIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range)? else {
+        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range) else {
             return Ok(AttributeIterator::new_empty());
         };
+        let start_attribute_vertex_bound = self.get_attribute_vertex_prefix_lower_bound(
+            attribute_type.vertex().type_id_(),
+            &attribute_value_type,
+            value_lower_bound,
+        );
+        let end_attribute_vertex_bound = self.get_attribute_vertex_prefix_upper_bound(
+            attribute_type.vertex().type_id_(),
+            &attribute_value_type,
+            value_upper_bound,
+        );
+        let has_reverse_start_prefix = start_attribute_vertex_bound.map(|start| {
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), start.bytes())
+        });
+        let has_reverse_end_prefix = end_attribute_vertex_bound.map(|end| {
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                attribute_value_type.category(),
+                end.as_reference().bytes(),
+            )
+        });
+        let range = KeyRange::new_variable_width(start_attribute_vertex_bound, end_attribute_vertex_bound);
+        let has_reverse_range = KeyRange::new_variable_width(has_reverse_start_prefix, has_reverse_end_prefix);
+        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&has_reverse_range);
+        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&has_reverse_range, storage_counters.clone());
+        let snapshot_iterator = snapshot.iterate_range(&range, storage_counters);
+        let attributes_iterator = InstanceIterator::new(snapshot_iterator);
+        Ok(AttributeIterator::new(
+            attributes_iterator,
+            has_reverse_iterator_buffer,
+            has_reverse_iterator_storage,
+            self.type_manager().get_independent_attribute_types(snapshot)?,
+        ))
+    }
 
-        let start_attribute_vertex_prefix_range = match value_lower_bound {
+    fn get_attribute_vertex_prefix_lower_bound(
+        &self,
+        attribute_type_id: TypeID,
+        attribute_value_type: &ValueType,
+        value_lower_bound: Bound<Value<'_>>,
+    ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        match value_lower_bound {
             Bound::Included(lower_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     lower_value,
                     self.vertex_generator.hasher(),
                 );
@@ -559,7 +599,7 @@ impl ThingManager {
             }
             Bound::Excluded(lower_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     lower_value,
                     self.vertex_generator.hasher(),
                 );
@@ -572,17 +612,24 @@ impl ThingManager {
             Bound::Unbounded => RangeStart::Inclusive(
                 AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     AttributeVertex::keyspace_for_category(attribute_value_type.category()),
                 )
                 .resize_to(),
             ),
-        };
+        }
+    }
 
-        let end_attribute_vertex_prefix_range = match value_upper_bound {
+    fn get_attribute_vertex_prefix_upper_bound(
+        &self,
+        attribute_type_id: TypeID,
+        attribute_value_type: &ValueType,
+        value_upper_bound: Bound<Value<'_>>,
+    ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        match value_upper_bound {
             Bound::Included(upper_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     upper_value,
                     self.vertex_generator.hasher(),
                 );
@@ -594,7 +641,7 @@ impl ThingManager {
             }
             Bound::Excluded(upper_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     upper_value,
                     self.vertex_generator.hasher(),
                 );
@@ -607,7 +654,7 @@ impl ThingManager {
             Bound::Unbounded => {
                 let prefix = AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     AttributeVertex::keyspace_for_category(attribute_value_type.category()),
                 );
                 let keyspace = prefix.keyspace_id();
@@ -616,69 +663,64 @@ impl ThingManager {
                 let prefix_key = StorageKey::Array(StorageKeyArray::new_raw(keyspace, array));
                 RangeEnd::EndPrefixExclusive(prefix_key.resize_to())
             }
-        };
-
-        let has_reverse_start_prefix = ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-            attribute_value_type.category(),
-            start_attribute_vertex_prefix_range.get_value().as_reference().bytes(),
-        );
-        let has_reverse_end_prefix = end_attribute_vertex_prefix_range.map(|end| {
-            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                attribute_value_type.category(),
-                end.as_reference().bytes(),
-            )
-        });
-        let has_reverse_range =
-            KeyRange::new_variable_width(RangeStart::Inclusive(has_reverse_start_prefix), has_reverse_end_prefix);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&has_reverse_range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&has_reverse_range, storage_counters.clone());
-
-        let range =
-            KeyRange::new_variable_width(start_attribute_vertex_prefix_range, end_attribute_vertex_prefix_range);
-        let snapshot_iterator = snapshot.iterate_range(&range, storage_counters);
-        let attributes_iterator = InstanceIterator::new(snapshot_iterator);
-        Ok(AttributeIterator::new(
-            attributes_iterator,
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
-            self.type_manager().get_independent_attribute_types(snapshot)?,
-        ))
+        }
     }
 
     fn get_value_range<'a>(
         expected_value_type: &ValueType,
         range: &'a impl RangeBounds<Value<'a>>,
-    ) -> Result<Option<(Bound<Value<'a>>, Bound<Value<'a>>)>, Box<ConceptReadError>> {
-        fn get_value_type(bound: Bound<&Value<'_>>) -> Option<ValueType> {
-            match bound {
-                Bound::Included(value) | Bound::Excluded(value) => Some(value.value_type()),
-                Bound::Unbounded => None,
-            }
-        }
-        let start_value_type = get_value_type(range.start_bound());
-        let end_value_type = get_value_type(range.end_bound());
-        debug_assert!(start_value_type == end_value_type || start_value_type.is_none() || end_value_type.is_none());
-        let range_value_type = start_value_type.unwrap_or_else(|| end_value_type.unwrap());
-        if !range_value_type.is_approximately_castable_to(expected_value_type) {
-            return Ok(None);
-        }
-        let value_type = expected_value_type;
+    ) -> Option<(Bound<Value<'a>>, Bound<Value<'a>>)> {
+        let lower_bound = Self::get_value_lower_bound(expected_value_type, range)?;
+        let upper_bound = Self::get_value_lower_bound(expected_value_type, range)?;
+        Some((lower_bound, upper_bound))
+    }
 
-        let start_value_lower_bound = range.start_bound().map(|value| {
-            if *value_type != range_value_type {
-                value.as_reference().approximate_cast_lower_bound(value_type).unwrap()
+    fn get_value_lower_bound<'a>(
+        expected_value_type: &ValueType,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        let start_value_type = match range.start_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+            Bound::Unbounded => return Some(Bound::Unbounded),
+        };
+        if !start_value_type.is_approximately_castable_to(expected_value_type) {
+            // TODO: perhaps this should return a Result::Error on failure instead of doing nothing?
+            return None;
+        }
+        Some(range.start_bound().map(|value| {
+            if *expected_value_type != start_value_type {
+                value
+                    .as_reference()
+                    .approximate_cast_lower_bound(&expected_value_type)
+                    .expect("Failed to do a lower-bound conversion between value types.")
             } else {
                 value.as_reference()
             }
-        });
-        let end_value_upper_bound = range.end_bound().map(|value| {
-            if *value_type != range_value_type {
-                value.as_reference().approximate_cast_upper_bound(value_type).unwrap()
+        }))
+    }
+
+    fn get_value_upper_bound<'a>(
+        expected_value_type: &ValueType,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        let end_value_type = match range.end_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+            Bound::Unbounded => return Some(Bound::Unbounded),
+        };
+        if !end_value_type.is_approximately_castable_to(expected_value_type) {
+            // TODO: perhaps this should return a Result::Error on failure instead of doing nothing?
+            return None;
+        }
+        Some(range.end_bound().map(|value| {
+            if *expected_value_type != end_value_type {
+                value
+                    .as_reference()
+                    .approximate_cast_upper_bound(&expected_value_type)
+                    .expect("Failed to do an upper-bound conversion between value types.")
             } else {
                 value.as_reference()
             }
-        });
-        Ok(Some((start_value_lower_bound, end_value_upper_bound)))
+        }))
     }
 
     fn get_attribute_with_value_inline(
@@ -816,7 +858,7 @@ impl ThingManager {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range)? else {
+        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range) else {
             return Ok(HasReverseIterator::new_empty());
         };
 
@@ -1025,57 +1067,193 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered(
+    pub(crate) fn get_has_from_thing_unordered<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type_range_hint: &impl RangeBounds<AttributeType>,
+        value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> HasIterator {
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
         let range_start = match attribute_type_range_hint.start_bound() {
-            Bound::Included(attribute_type) => RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(
-                owner.vertex(),
-                attribute_type.vertex().type_id_(),
-            )),
-            Bound::Excluded(attribute_type) => RangeStart::ExcludePrefix(ThingEdgeHas::prefix_from_object_to_type(
-                owner.vertex(),
-                attribute_type.vertex().type_id_(),
-            )),
+            Bound::Included(attribute_type) => {
+                let attribute_value_type =
+                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
+                        None => return Ok(HasIterator::new_empty()),
+                        Some(value_type) => value_type,
+                    };
+                let lower_bound = match Self::get_value_lower_bound(&attribute_value_type, value_range) {
+                    None => return Ok(HasIterator::new_empty()),
+                    Some(lower_bound) => lower_bound,
+                };
+                // the attribute type is included, so we use whatever the Bound type is of the value lower bound
+                self.get_has_from_thing_to_type_unordered_start_bound(
+                    owner,
+                    attribute_type.vertex().type_id_(),
+                    &attribute_value_type,
+                    lower_bound,
+                )
+            }
+            Bound::Excluded(attribute_type) => {
+                let attribute_value_type =
+                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
+                        None => return Ok(HasIterator::new_empty()),
+                        Some(value_type) => value_type,
+                    };
+                let lower_bound = match Self::get_value_lower_bound(&attribute_value_type, value_range) {
+                    None => return Ok(HasIterator::new_empty()),
+                    Some(lower_bound) => lower_bound,
+                };
+                // the attribute type is already excluded wholly, so we explicitly skip it here by incrementing, then fall back to the included cas
+                // TODO: the next attribute type could have a different value type?
+                let next_attribute_id = match attribute_type.vertex().type_id_().increment() {
+                    None => {
+                        // start bound is above max attribute type!
+                        return Ok(HasIterator::new_empty());
+                    }
+                    Some(next_id) => next_id,
+                };
+                self.get_has_from_thing_to_type_unordered_start_bound(
+                    owner,
+                    next_attribute_id,
+                    &attribute_value_type,
+                    lower_bound,
+                )
+            }
             Bound::Unbounded => {
-                RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MIN))
+                // TODO: without any attribute bounds, we can't know any value type (?)
+                RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MIN).resize_to())
             }
         };
-        let range_end =
-            match attribute_type_range_hint.end_bound() {
-                Bound::Included(attribute_type) => RangeEnd::EndPrefixInclusive(
-                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()),
-                ),
-                Bound::Excluded(attribute_type) => RangeEnd::EndPrefixExclusive(
-                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()),
-                ),
-                Bound::Unbounded => {
-                    RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MAX))
-                }
-            };
+        let range_end = match attribute_type_range_hint.end_bound() {
+            Bound::Included(attribute_type) => {
+                let attribute_value_type =
+                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
+                        None => return Ok(HasIterator::new_empty()),
+                        Some(value_type) => value_type,
+                    };
+                let upper_bound = match Self::get_value_upper_bound(&attribute_value_type, value_range) {
+                    None => return Ok(HasIterator::new_empty()),
+                    Some(lower_bound) => lower_bound,
+                };
+                self.get_has_from_thing_to_type_unordered_end_bound(
+                    owner,
+                    attribute_type.vertex().type_id_(),
+                    &attribute_value_type,
+                    upper_bound,
+                )
+            }
+            Bound::Excluded(attribute_type) => {
+                let attribute_value_type =
+                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
+                        None => return Ok(HasIterator::new_empty()),
+                        Some(value_type) => value_type,
+                    };
+                let upper_bound = match Self::get_value_upper_bound(&attribute_value_type, value_range) {
+                    None => return Ok(HasIterator::new_empty()),
+                    Some(lower_bound) => lower_bound,
+                };
+                // the attribute type is already excluded wholly, so we explicitly skip it here by decrementing, then fall back to the included case
+                // TODO: the prev attribute type could have a different value type?
+                let prev_attribute_id = match attribute_type.vertex().type_id_().decrement() {
+                    None => {
+                        // upper bound is below the minimum attribute ID!
+                        return Ok(HasIterator::new_empty());
+                    }
+                    Some(prev_id) => prev_id,
+                };
+                self.get_has_from_thing_to_type_unordered_end_bound(
+                    owner,
+                    prev_attribute_id,
+                    &attribute_value_type,
+                    upper_bound,
+                )
+            }
+            Bound::Unbounded => RangeEnd::EndPrefixInclusive(
+                ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MAX).resize_to(),
+            ),
+        };
         let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
-    pub(crate) fn get_has_from_thing_to_type_unordered(
+    pub(crate) fn get_has_from_thing_to_type_unordered<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
+        value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Attribute, u64), Box<ConceptReadError>>> {
-        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_());
-        Iterator::map(
-            HasIterator::new(
-                snapshot
-                    .iterate_range(&KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING), storage_counters),
-            ),
-            |result| result.map(|(has, value)| (has.attribute(), value)),
-        )
+    ) -> Result<
+        Map<
+            HasIterator,
+            fn(Result<(Has, u64), Box<ConceptReadError>>) -> Result<(Attribute, u64), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        let attribute_value_type = match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
+            None => {
+                return Ok(Iterator::map(
+                    HasIterator::new_empty(),
+                    |result: Result<(Has, u64), Box<ConceptReadError>>| {
+                        result.map(|(has, value)| (has.attribute(), value))
+                    },
+                ));
+            }
+            Some(value_type) => value_type,
+        };
+        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, value_range)
+        else {
+            return Ok(Iterator::map(HasIterator::new_empty(), |result: Result<(Has, u64), Box<ConceptReadError>>| {
+                result.map(|(has, value)| (has.attribute(), value))
+            }));
+        };
+        let has_start_bound = self.get_has_from_thing_to_type_unordered_start_bound(
+            owner,
+            attribute_type.vertex().type_id_(),
+            &attribute_value_type,
+            value_lower_bound,
+        );
+        let has_end_bound = self.get_has_from_thing_to_type_unordered_end_bound(
+            owner,
+            attribute_type.vertex().type_id_(),
+            &attribute_value_type,
+            value_upper_bound,
+        );
+        let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        Ok(Iterator::map(
+            HasIterator::new(snapshot.iterate_range(&range, storage_counters)),
+            |result: Result<(Has, u64), Box<ConceptReadError>>| result.map(|(has, value)| (has.attribute(), value)),
+        ))
+    }
+
+    fn get_has_from_thing_to_type_unordered_start_bound<'a>(
+        &self,
+        owner: impl ObjectAPI,
+        attribute_type_id: TypeID,
+        attribute_value_type: &ValueType,
+        value_lower_bound: Bound<Value<'_>>,
+    ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        let attribute_vertex_lower_bound =
+            self.get_attribute_vertex_prefix_lower_bound(attribute_type_id, &attribute_value_type, value_lower_bound);
+        attribute_vertex_lower_bound.map(|lower_bound| {
+            ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), lower_bound.bytes())
+                .resize_to()
+        })
+    }
+
+    fn get_has_from_thing_to_type_unordered_end_bound<'a>(
+        &self,
+        owner: impl ObjectAPI,
+        attribute_type_id: TypeID,
+        attribute_value_type: &ValueType,
+        value_upper_bound: Bound<Value<'_>>,
+    ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        let attribute_vertex_upper_bound =
+            self.get_attribute_vertex_prefix_upper_bound(attribute_type_id, &attribute_value_type, value_upper_bound);
+        attribute_vertex_upper_bound.map(|end| {
+            ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), end.bytes()).resize_to()
+        })
     }
 
     pub(crate) fn get_has_from_thing_to_type_ordered(

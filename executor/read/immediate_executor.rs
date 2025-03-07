@@ -338,7 +338,6 @@ impl IntersectionExecutor {
                     (containing_i, containing_max, 0, current_max_index)
                 };
                 let iterator = &mut containing_max[max_index];
-                let current_max_name = format!("{}", iterator);
                 let current_max = iterator.peek_first_unbound_value().unwrap().unwrap();
                 // println!("Checking max from iterator {}, value: {}", current_max_name, current_max);
                 let max_cmp_peek = match containing_i[i_index].peek_first_unbound_value() {
@@ -358,7 +357,6 @@ impl IntersectionExecutor {
                     Ordering::Equal => (),
                     Ordering::Greater => {
                         let iter_i = &mut containing_i[i_index];
-                        let name = format!("{}", iter_i);
                         // println!("Advancing iterator_i {} forward", name);
                         let next_value_cmp = iter_i
                             .advance_until_first_unbound_is(current_max)
@@ -371,7 +369,7 @@ impl IntersectionExecutor {
                                 break;
                             }
                             Some(Ordering::Less) => {
-                                let peek = iter_i.peek().unwrap().as_ref().unwrap();
+                                // let peek = iter_i.peek().unwrap().as_ref().unwrap();
                                 // println!("Current max variable_value: {}. Iter_i ({})'s peek: {:?}", current_max, name, peek);
                                 unreachable!("Skip to should always be empty or equal/greater than the target")
                             }
