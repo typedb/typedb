@@ -33,18 +33,24 @@ _**Answer FORMATTING**_
 
 ### IO Categorization algorithm
 
-#### For stages with patterns
+#### For match stage with inputs
 
 Given a stage with pattern `P` and set `IN` of input variables, we categorize variables `$x` for that stage as follows
 
 * **Input variables** `$x : IN`
 * **Produced variable** `$x : PROD`, if `$x` is not an input and appears anywhere in `P` which is not in a `not`-scope
 * **Output variables** `$x : OUT = IN + PROD`
-* **Internal variable** `$x : INTL` otherwise
+* **Internal variable** `$x : INTL` otherwise (i.e. variable appears _only_ in `not` scopes)
 
-#### For stages without patterns (modifiers)
+_Remark_: there are grounds to reject patterns like `$x; not { R($x,$y) }; not { S($x,$y) };` because the internal variable `$y` could mistakenly be considered to be synchronized across the `not`-subqueries (it is not).
 
-Straight-forward
+#### For other stages (modifiers)
+
+Straight-forward (for example: `select` outputs the "selected" subset of its inputs)
+
+#### For functions and pipelines
+
+Apply the above stage by stage (with initial function inputs as inputs to the first stage in the function), and outputs of a stage becoming inputs of the next stage.
 
 ### Varcategory categorization algorithm
 
@@ -63,7 +69,7 @@ Given a pattern `P` and set `IN` of **input variables** with a varcategory categ
 
 If this does not define a function `p` (either because the assignment is defined multiple times or not at all), then varcategory categorization **fails**. 
 
-Note that variable categorization happens **globally** disregarding scopes (e.g. of branches in a disjunction).
+_Remark_. Note that variable categorization happens **globally** disregarding scopes (e.g. of branches in a disjunction).
 
 #### For nested negations
 
@@ -71,7 +77,7 @@ Run the above for the negated pattern, with the varcategory categorization of th
 
 #### For other stages
 
-Straight-forward.
+Straight-forward (for example, for `select` categorize outputs based on the categorization of its inputs)
 
 #### For functions and pipelines
 
@@ -99,7 +105,7 @@ Assume a pattern `P` with input variables. Let `P_0 + P_1 + ... + P_k` be the **
    * If at least one `S_j` requires `$x` but no `S_j` produces `$x` **fail**
    * otherwise **succeed**.
 
-_Remark_. (1) Function arguments of **inlineable functions** could be considered to "produces" their argument variables if these arguments are produced in the function body, see [planner spec](planner.md). (2) If each `P_i` contains `$x` you can think of `$x` as "**non-optional**", and otherwise as "**optional**". But these distinctions aren't needed to specify the desired behavior.
+_Remark_. (1) Functions may be considered to "produce" their argument variables if these arguments are produced in the function body, see [planner spec](planner.md); this is useful for **inlining** functions. (2) If each `P_i` contains `$x` you can think of `$x` as "**non-optional**", and otherwise as "**optional**". But these distinctions aren't needed to specify TypeDB's behavior!
 
 #### For nested negations
 

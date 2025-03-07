@@ -1,14 +1,13 @@
 # README
 
+**Disclaimer 1**: Be wary of typos and logic mistakes.
+
+**Disclaimer 2**: Part of the specification is _aspirational_, filling gaps of what is currently implemented.
+
 ## Blueprints
 
 Descriptions of TypeDB's type system, query processing, and evaluation algorithms.
 
-## Decisions
+## Archived
 
-Architecture decision log. Use provided python script as follows
-```bash
-python new_log <title>
-```
-to generate a new log.
-
+An old version of the "TypeDB specification".

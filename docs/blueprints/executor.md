@@ -12,7 +12,9 @@
 
 ***On this page***
 
-* **Compute graph**. Push based representation of computation
+* **Compute graphs**. A representation of computation as a directed graph (forward direction = "data push", backward direction = "data pull")
+* **Recursion and termination**. Criteria for the executor to terminate execution
+* **Batch-driven parallelism**. Descriptions of parallelization strategies and algorithms
 
 ## Compute graph
 
@@ -39,7 +41,7 @@ _Example_ An approximation of the expansion
 
 ## Recursion and termination
 
-* **Cycle breaking**. When `f_n` pushes a data row `r` to `f_k`, `k < n`, and `r` was also pushed to `f_n`, then we do not evaluate `f_k` on `r` but instead set a "**continuation point**": any new data that is push through `f_n(r)` will be also push through `f_k(r)`
+* **Cycle breaking**. When `f_n` pushes a data row `r` to `f_k`, `k < n`, and `r` was also pushed to `f_n`, then we do not evaluate `f_k` on `r` but instead set a "**suspension point**": any new data that is push through `f_n(r)` will be also push through `f_k(r)`
 * **Termination**. When no more data flows through the graph the computation is terminated.
 
 ## Batch-driven parallelism

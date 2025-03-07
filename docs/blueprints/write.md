@@ -9,7 +9,8 @@ Specification of how to write data to database in read-write pipelines. On this 
 _**Query PROCESSING**_
 
 1. **Variable categorization**: this is exactly as in [read spec](read.md) but extended to patterns in write stages
-2. **Type check**: this is similar to [read spec](read.md) but extended to patterns in write stages
+2. **Writeability check**: this is similar to [read spec](read.md) but extended to patterns in write stages
+3. **Type check**: this is similar to [read spec](read.md) but extended to patterns in write stages
 
 _**Query OPERATION**_
 
@@ -26,13 +27,29 @@ _**Answer FORMATTING**_
 
 ## Variable categorization
 
-See [read spec](read.md), nothing to add (for now).
+Similar to `match` stage (both for **IO** and **varcategories**), see [read spec](read.md), nothing to add (for now).
+
+* `insert` add outputs for "created" variables `$x isa ...`
+* `delete` removes inputs for "deleted" variables `$x;`
+
+## Writeability check
+
+#### For insert stage
+
+Check the following:
+
+* If the stage contains `$x isa ...` then we say the stage **creates** `$x`, in which case `$x` cannot be an input to the stage.
+* All non-created vars need to be inputs to the stage.
+
+#### Delete stage
+
+_All_ variables must be inputs.
 
 ## Type check
 
-Similar to [read spec](read.md). `insert` is the only interesting stage, is it may introduce new variables. 
+Similar to [read spec](read.md). 
 
-* type check is similar but stricter for `insert`: vars need to have _exactly_ the type that they are given in an insert (not a subtype thereof)
+* type check for `insert`, `delete`, `update` is similar to `match` but stricter: after running the type check algorithm, vars need to be able to have **exactly the type required** in statements (not a subtype thereof) ... otherwise, type check **fails**
 
 # EVALUATION
 
@@ -44,8 +61,10 @@ Similar to [read spec](read.md). `insert` is the only interesting stage, is it m
     * terms in types (which also **get added to concept row**)
     * dependencies between terms
 * multiple statements per stage
-* order does not (and must not) matter
-* execute try blocks exactly when all variable in block are non-empty
+* **order** of statements in pattern does _not_ (and must not) matter
+* **fail on empty** variables outside try blocks
+* **fail on non-exact types** fail if types are not exactly as specified in statements (see semantics below, which uses `:!` all over the place!)
+* execute statements in **try blocks** exactly when all variable in block are non-empty
 
 ### Statements
 
@@ -99,7 +118,9 @@ These statement **require** their variables.
   * dependencies between terms
 * multiple statements per stage
 * order does not (and must not) matter
-* execute try blocks exactly when all variable in block are non-empty
+* **fail on empty** variables outside try blocks
+* **fail on non-exact types** fail if types are not exactly as specified in statements (see semantics below, which uses `:!` all over the place!)
+* execute statements in **try blocks** exactly when all variable in block are non-empty
 
 ### Statements
 
@@ -136,7 +157,9 @@ Orphaned relation and attribute instance (i.e. those with insufficient dependenc
     * terms in types (which also **gets removed from concept row**)
     * dependencies between terms
 * **one statement** per stage (to avoid execution ordering issues)
-* execute try blocks exactly when all variable in block are non-empty
+* **fail on empty** variables outside try blocks
+* **fail on non-exact types** fail if types are not exactly as specified in statements (see semantics below, which uses `:!` all over the place!)
+* execute statements in **try blocks** exactly when all variable in block are non-empty
 
 ### Overview
 

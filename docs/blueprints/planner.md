@@ -19,6 +19,18 @@ Must-reads:
 
 ## Overview
 
+### Notation
+
+* **production rule**: `($x, $y) -> $z`
+
+  > A **pipeline** (incl. function), **pattern**, or **constraint** produces `$z` from `($x, $y)`
+* **limit rule**: `$x:($y, $z) = n`
+
+  > A **planner graph** restricts outputs of `$x` to n for each `($y, $z)`
+* **sort rule**:  `$x|($y, $z)`
+
+  > A **(partial) plan** produces `$x` sorted for each `($y, $z)`
+
 ### Problem 1: efficient bushi-ness
 
 ***Problem***: Our current planner produces linear, non-bushy plans... (side note: IKKBZ would do a better job at that already).
@@ -42,11 +54,11 @@ _Remark_: first mover advantage? (:
 
 ***Problem***: The planner cannot join on unsorted results.
 
-***Solution***: Allow the planner to plan
-* loop joins
-* sort joins
-* hash joins
-* a combination thereof
+***Solution***: Allow the planner to plan to join two subplans by performing:
+* nested-loop joins (loop over tuples in one plan, look up results in the other)
+* sort-merge joins (merge sorted results from both plans, potentially looping over tuples which the sorting is grouped by)
+* hash joins (loop over tuples in one plan, perform hash probes of tuples in the other)
+* a combination thereof...
 
 ### Problem 3: Planning across stages and (recursive) functions
 
@@ -59,7 +71,7 @@ _Remark_: first mover advantage? (:
 2. ***Not inlineable***: Non-inlineable pipelines/functions get their own plan. Non-inlineable pipelines/functions are those containing
     * **termination-required** read stages `reduce`, `sort`, aggregate `return`. Need their own plan as they need to run to termination.
     * **state-sensitive** write stages: `insert`, `delete`, `update`, `put`. Mixing these into the plan could be _possible_, but seems difficult because writes could affect ongoing reads (transaction-level version control? :P)
-3. **Recursive** functions. Recursion requires tabling which requires a well-defined plan for the function, so inlining becomes questionable except for shallow recursions.
+3. ***Recursive*** functions. Recursion requires tabling which requires a well-defined plan for the function, so inlining becomes questionable except for shallow recursions.
 
 In the inlineable case for pipelines and functions, distinguish:
 1. Non-recursive case:
@@ -101,26 +113,14 @@ Per-branch planning can be inefficient; therefore, use adaptive planning as foll
   * (branch size may still be > 32, but that's life)
   * then run small DNF with "frozen disjunctions" edges, see graph construction below
 
-### Notation
-
-* prod rules: `($x, $y) -> $z`
-
-  > A **pipeline** (incl. function), **pattern**, or **constraint** produces `$z` from `($x, $y)`
-* limit rules: `$x:($y, $z) = n`
-
-  > A **planner graph** restricts outputs of `$x` to n for each `($y, $z)`
-* sort rules:  `$x|($y, $z)`
-
-  > A **(partial) plan** produces `$x` sorted for each `($y, $z)
-
 ## Preprocessing
 
-### "Planner graph" data
+### The "Planner hyper-graph"
 
-* **Variables**: are "typed vertices" of the graph, categorize by:
+* Vertices == **Variables**: are "typed vertices" of the graph, categorize by:
   * **selected**, variables that are outputted by query
   * **unselected**, variables that are not outputted (automatically includes "internal" variables)
-* **Constraints**: the "typed edges" of the graph, _see types detailed below_
+* Hyperedges == **Constraints**: the "typed edges" of the graph, _see types detailed below_
 * **Production rules** per constraint: a set of rule `$a -> ($b, $c)` of which variables in the constraint can be produced from which other variables (empty set means all vars in constraint required)
 * **Limit rules**: rules `$a:($b,$c)=size` restricting the size of outputs for variable tuples relative to other variable tuple. Limit rules arise from
   * internal vars in `not` subqueries
@@ -130,22 +130,20 @@ Per-branch planning can be inefficient; therefore, use adaptive planning as foll
 
 ### Constructing constraints
 
-* **Access constraints**, are "unary" edges of the graph
-  * may produce or require variable
+* **Statement constraints**, are "unary" edges of the graph
+  * Hyperedge relating its variables
+  * May both produce and require its variable
   * Examples:
-    * `$x == 10` (prod rules: `() -> $x`)
+    * `$x == 10` (prod rules: `() -> $x; $x -> ();`)
+    * `$x isa person` (prod rules: `() -> $x; $x -> ();`)
     * `$x * $x + 1 == 28` (prod rules: empty)
-    * `$x isa person` (prod rules: `() -> $x`)
-* **Relation constraints**:
-  * may produce or require variable
-  * Examples:
-    * `$x == $y` (prod rules: `$x -> $y`, `$y -> $x`)
-    * `$x * $x == $y` (prod rules: `$x -> $y`)
-    * `$x has $T $y` (prod rules `() -> $x, $y`)
-    * `$x links $y` (prod rules `() -> $x, $y`)
-* **Inlined function constraints**:
-  * Add all contained constraints
-  * and account for other stages
+    * `$x == $y` (prod rules: `$x -> $y; $y -> $x; ($x, $y) -> ();``)
+    * `$x * $x == $y` (prod rules `$x -> $y; ($x, $y) -> ();`)
+    * `$x has name $y` (prod rules `$x -> $y; $y -> $x; () -> ($x, $y); ($x, $y) -> ();`)
+    * `$x links $y` (prod rules `$x -> $y; $y -> $x; () -> ($x, $y); ($x, $y) -> ();`)
+* **Inlined function call**:
+  * Add all contained constraints in the function body individually
+  * Account for other stages (`limit`, `select`) by appropriate limit/offset rules
   * Examples:
     * `let $x in f($y)` where `f($y): match P($y, $z, $x2); limit 5; return $x2;`
       * add _all_ constraints in `P` recursively, identifying `$x2` and `$x`
@@ -156,22 +154,37 @@ Per-branch planning can be inefficient; therefore, use adaptive planning as foll
     * `let $x = f($y)` where `f($y): match P($y, $z, $x2); return first $x2;`
       * add _all_ constraints in `P` recursively, identifying `$x2` and `$x`
       * add limit rules: `$x:$y = 1`, `$z:($y,$x) = 1`
-* **Recursive functions**:
-  * 
-* **Non-inlined function constraints**, 
-  * edge relating function _input_ + _output_ vars. 
+* **Recursive function call**:
+  * Add single hyperedge relating all input and output variables of the function call
+  * Annotate constraint with all possible production rules (based on body of function)
+  * Example: 
+    * Consider recursive function
+      ```
+      fun path($x : vertex, $y : vertex) -> bool:
+      match { edge($x, $y); } or { edge($x, $z); path($z, $y); };
+      return check;
+      ``` 
+      * production rules: `$x, $y -> ()`, `$x -> $y`, `$y -> $x`, `() -> $x, $y`
+      * In query `$x isa vertex, has ID 1; true == path($x, $y);` the planner may pick production rule `$x -> $y`, since `$y` isn't otherwise produced.
+  * Remark: **costing recursive functions** is difficult, but important for the choice of production rule.
+    * sample based approach: run a small number of (time-limited) sample calls to estimate cost
+* **Non-inlined function call**, 
+  * hyperedge relating function _input_ + _output_ vars. 
   * prod rules: `input -> output`
   * Examples:
     * `let $x in f($y, $z)` (prod rules: `($y, $z) -> $x`) 
 * **Nested negation constraint**
-  * relates _output_ and _internal_ variables (see [IO categorization](read.md)) 
-  * prod rules: `output -> internal` (note: if a not succeeds, checked variables will be empty)
-  * size limits: `internal:output == 1`
+  * hyperedge relates _output_ and _internal_ variables (see [IO categorization](read.md)) 
+  * prod rules: `output -> internal` (note: if a not succeeds, internal variables will be empty)
+  * limit rule: `internal:output = 1`
   * Example:
     * `not { <Inst $y>, <Check $z> }` (prod rules: `$y -> $z`)
-* **Frozen disjunction constraints**, the n-ary edges of the graph, n > 1
+* **Frozen disjunction constraints**
+  * Add a single constraint relating all its variables
+  * Production rules are the intersection set of production rule per branch disregarding "locally-scoped" variables (i.e. those occuring _only_ in one or more branches of that disjunction, but not elsewhere in the ambient pattern)
+  * **Costing** (for a chosen production rule) requires planning branches individually and summing their cost
 
-#### Constructing rules
+### Constructing rules
 
 * `select` determines when variables are marked as selected/unselected (used by the planner to compute costs by reducing intermediate sizes)
 * function assignments affect limit rules ... (used by the planner to compute costs by reducing intermediate sizes)
@@ -183,17 +196,17 @@ Per-branch planning can be inefficient; therefore, use adaptive planning as foll
 
 ### (Partial) Plan data
 
-#### Single branch plan
+#### Single-branch plan
 
-* **tree of constraints**
+* **rooted tree of constraints**
   * leafs are data retrievals
-  * links nodes are operations that operate on data in place
-    * predicate checks
+  * non-branching nodes are operations that operate on data in place
+    * e.g.: predicate checks
   * branching nodes are operations than combine constraints (potentially on **tuples** of vars)
-    * joins (as listed above)
-* **sort-by data** `$x|($y,$z)` says `$x` is sorted for each tuple `($y, $z)`. (Used for decisions on merge-sort)
+    * e.g.: joins (as listed above)
+* **sort-by data** `$x|($y,$z)` says "the plan produces `$x` in sorted order for each tuple `($y, $z)`". (This data is used for decisions on merge-sort)
 
-#### Multi branch plan
+#### Multi-branch plan
 
 * **DAG** version of the above
 
