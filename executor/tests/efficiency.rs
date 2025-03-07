@@ -53,7 +53,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use resource::profile::{QueryProfile, StorageCounters};
+use resource::profile::QueryProfile;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -70,6 +70,11 @@ const CASTING_LABEL: Label = Label::new_static("casting");
 const CASTING_MOVIE_LABEL: Label = Label::new_static_scoped("movie", "casting", "casting:movie");
 const CASTING_ACTOR_LABEL: Label = Label::new_static_scoped("actor", "casting", "casting:actor");
 const CASTING_CHARACTER_LABEL: Label = Label::new_static_scoped("character", "casting", "casting:character");
+
+const VALUE_STRING_LONG_UNINLINEABLE: &str = "longy-mc-long-face-uninlineable";
+const VALUE_STRING_ABBY: &str = "abby";
+const VALUE_STRING_BOLTON: &str = "bolton";
+const VALUE_STRING_WILLOW: &str = "willow";
 
 fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     setup_concept_storage(storage);
@@ -175,7 +180,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
          $person_2 isa person,
            has age 11,
            has name "abby",
-           has name "bolston",
+           has name "bolton",
            has name "longy-mc-long-face-uninlineable"
            has name "willa";
 
@@ -221,15 +226,18 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let gov_id_5 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(5)).unwrap();
     let gov_id_6 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(6)).unwrap();
 
-    let name_abby =
-        thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("abby"))).unwrap();
-    let name_bolston =
-        thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("bolston"))).unwrap();
-    let name_uninlineable = thing_manager
-        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("longy-mc-long-face-uninlineable")))
+    let name_abby = thing_manager
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(VALUE_STRING_ABBY)))
         .unwrap();
-    let name_willa =
-        thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed("willa"))).unwrap();
+    let name_bolton = thing_manager
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(VALUE_STRING_BOLTON)))
+        .unwrap();
+    let name_uninlineable = thing_manager
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)))
+        .unwrap();
+    let name_willa = thing_manager
+        .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(VALUE_STRING_WILLOW)))
+        .unwrap();
 
     let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
@@ -241,7 +249,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_abby).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_bolston).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_bolton).unwrap();
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_uninlineable).unwrap();
     person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_willa).unwrap();
 
@@ -367,7 +375,7 @@ fn execute_steps(
 }
 
 #[test]
-fn value_int_equality_reduces_isa_reads() {
+fn value_int_equality_isa_reads() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
@@ -470,7 +478,7 @@ fn value_int_equality_reduces_isa_reads() {
 }
 
 #[test]
-fn value_int_equality_reduces_has_reverse_reads() {
+fn value_int_equality_has_reverse_reads() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
@@ -569,7 +577,7 @@ fn value_int_equality_reduces_has_reverse_reads() {
 }
 
 #[test]
-fn value_int_equality_reduces_has_bound_owner() {
+fn value_int_equality_has_bound_owner() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
@@ -680,7 +688,7 @@ fn value_int_equality_reduces_has_bound_owner() {
 }
 
 #[test]
-fn value_int_inequality_reduces_has_bound_owner() {
+fn value_int_inequality_has_bound_owner() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
@@ -808,16 +816,223 @@ fn value_int_inequality_reduces_has_bound_owner() {
 }
 
 #[test]
-fn value_string_equality_reduces_has_reads_bound_owner() {
+fn value_inline_string_equality_has_bound_owner() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
     // query:
     //   match
-    //    $person isa person, has name "bolton"; # middle value
+    //    $person isa person, has name "abby";
 
-    // plan: Isa($person, person)
-    //       Has($person, $_bolton) with $_bolton = "bolton"
+    // IR to compute type annotations
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_string_abby = value_parameters
+        .register_value(Value::String(Cow::Borrowed(VALUE_STRING_ABBY)), Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("var_person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("var_person_type", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("var_name", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().get_or_declare_variable("var_name_type", None).unwrap();
+
+    let has = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let _isa_name =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_string_abby), Comparator::Equal, None)
+        .unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let entry_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_person_type, var_name], []);
+
+    // plan (requires correct type annotations)
+    //      IsaReverse($person_type, $person)
+    //      Has($person, $name) with $name = "abby"
+    //
+    // Should output:
+    //  (person 2, name "abby")
+
+    let value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_name),
+        rhs: CheckVertex::Parameter(value_string_abby),
+        comparator: Comparator::Equal,
+    }
+    .map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    has_instruction.add_check(value_check);
+
+    let steps = vec![
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person_type],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
+            vec![variable_positions[&var_person], variable_positions[&var_person_type]],
+            &named_variables,
+            2,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_name],
+            vec![ConstraintInstruction::Has(has_instruction)],
+            vec![variable_positions[&var_person], variable_positions[&var_name]],
+            &named_variables,
+            3,
+        )),
+    ];
+
+    let query_profile = QueryProfile::new(true);
+    let rows =
+        execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
+
+    assert_eq!(rows.len(), 1);
+
+    let stage_profiles = query_profile.stage_profiles().read().unwrap();
+    let (_, match_profile) = stage_profiles.iter().next().unwrap();
+    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let storage_counters = intersection_step_profile.storage_counters();
+    // 6 seeks: for each person, we should skip directly to the person + owned name
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 1 advance: the iterator matching the only person + name needs to step forward and finish
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 1);
+}
+
+#[test]
+fn value_hashed_string_equality_has_bound_owner() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $person isa person, has name "long....etc";
+
+    // IR to compute type annotations
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_string_hashed = value_parameters.register_value(
+        Value::String(Cow::Borrowed(VALUE_STRING_LONG_UNINLINEABLE)),
+        Span { begin_offset: 0, end_offset: 0 },
+    );
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("var_person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("var_person_type", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("var_name", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().get_or_declare_variable("var_name_type", None).unwrap();
+
+    let has = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let _isa_name =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_string_hashed), Comparator::Equal, None)
+        .unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let entry_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_person_type, var_name], []);
+
+    // plan (requires correct type annotations)
+    //      IsaReverse($person_type, $person)
+    //      Has($person, $name) with $name = "long..."
+    //
+    // Should output:
+    //  (person 2, name "long...")
+
+    let value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_name),
+        rhs: CheckVertex::Parameter(value_string_hashed),
+        comparator: Comparator::Equal,
+    }
+    .map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    has_instruction.add_check(value_check);
+
+    let steps = vec![
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person_type],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
+            vec![variable_positions[&var_person], variable_positions[&var_person_type]],
+            &named_variables,
+            2,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_name],
+            vec![ConstraintInstruction::Has(has_instruction)],
+            vec![variable_positions[&var_person], variable_positions[&var_name]],
+            &named_variables,
+            3,
+        )),
+    ];
+
+    let query_profile = QueryProfile::new(true);
+    let rows =
+        execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
+
+    assert_eq!(rows.len(), 1);
+
+    let stage_profiles = query_profile.stage_profiles().read().unwrap();
+    let (_, match_profile) = stage_profiles.iter().next().unwrap();
+    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let storage_counters = intersection_step_profile.storage_counters();
+    // 6 seeks: for each person, we should skip directly to the person + owned name
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 1 advance: the iterator matching the only person + name needs to step forward and finish
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 1);
 }
 
 #[test]
@@ -829,8 +1044,121 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     //   match
     //    $person isa person, has name $name; $name >= "bolton"; $name < "willow";
 
+    // IR to compute type annotations
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_string_bolton = value_parameters
+        .register_value(Value::String(Cow::Borrowed(VALUE_STRING_BOLTON)), Span { begin_offset: 0, end_offset: 0 });
+    let value_string_willow = value_parameters
+        .register_value(Value::String(Cow::Borrowed(VALUE_STRING_WILLOW)), Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("var_person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("var_person_type", None).unwrap();
+    let var_name = conjunction.constraints_mut().get_or_declare_variable("var_name", None).unwrap();
+    let var_name_type = conjunction.constraints_mut().get_or_declare_variable("var_name_type", None).unwrap();
+
+    let has = conjunction.constraints_mut().add_has(var_person, var_name, None).unwrap().clone();
+    let isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let _isa_name =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_name, var_name_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_name_type, NAME_LABEL.clone()).unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(
+            Vertex::Variable(var_name),
+            Vertex::Parameter(value_string_bolton),
+            Comparator::GreaterOrEqual,
+            None,
+        )
+        .unwrap();
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_name), Vertex::Parameter(value_string_willow), Comparator::Less, None)
+        .unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let variable_registry = &translation_context.variable_registry;
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    let entry_annotations = infer_types(
+        &snapshot,
+        &entry,
+        variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap();
+
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_person, var_person_type, var_name], []);
+
+    // plan (requires correct type annotations)
     // plan: Isa($person, person)
-    //       Has($person, $_bolton) with >= and <
+    //       Has($person, $name) with >= and <
+    // Should output:
+    //  (person 2, bolton)
+    //  (person 2, long...)
+
+    let greater_value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_name),
+        rhs: CheckVertex::Parameter(value_string_bolton),
+        comparator: Comparator::GreaterOrEqual,
+    }
+    .map(&mapping);
+    let lesser_value_check = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_name),
+        rhs: CheckVertex::Parameter(value_string_willow),
+        comparator: Comparator::Less,
+    }
+    .map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    has_instruction.add_check(greater_value_check);
+    has_instruction.add_check(lesser_value_check);
+
+    let steps = vec![
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person_type],
+            vec![ConstraintInstruction::IsaReverse(
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+            )],
+            vec![variable_positions[&var_person], variable_positions[&var_person_type]],
+            &named_variables,
+            2,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_name],
+            vec![ConstraintInstruction::Has(has_instruction)],
+            vec![variable_positions[&var_person], variable_positions[&var_name]],
+            &named_variables,
+            3,
+        )),
+    ];
+
+    let query_profile = QueryProfile::new(true);
+    let rows =
+        execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
+    assert_eq!(rows.len(), 2);
+
+    let stage_profiles = query_profile.stage_profiles().read().unwrap();
+    let (_, match_profile) = stage_profiles.iter().next().unwrap();
+    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let storage_counters = intersection_step_profile.storage_counters();
+    // 6 seeks: for each person, we should skip directly to the person + owned name
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 2 advance: the iterator matching person 1 will advances twice (once to find the second name, then to fail)
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 2)
 }
 
 #[test]
