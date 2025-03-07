@@ -243,7 +243,7 @@ In contrast, in `P5` we do loop over `($x, $z)` so these do need to be produced.
 
 ### IKKBZ
 
-A very cool algorithm adapted from [operations research](references/The%20IKKBZ%20Algorithm%20-%20Cockroach%20Labs.pdf).
+A very cool algorithm adapted from [operations research](https://web.archive.org/web/20190725183103/https://www.cockroachlabs.com/blog/join-ordering-ii-the-ikkbz-algorithm/).
 
 ## Partitioned data
 
