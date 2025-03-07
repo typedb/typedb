@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Created with Vectornator (http://vectornator.io/) -->
+<svg height="216.14292666245797mm" stroke-miterlimit="10" style="fill-rule:nonzero;clip-rule:evenodd;stroke-linecap:round;stroke-linejoin:round;" version="1.1" viewBox="0 0 595.35 612.765" width="210.0mm" xml:space="preserve" xmlns="http://www.w3.org/2000/svg" xmlns:vectornator="http://vectornator.io" xmlns:xlink="http://www.w3.org/1999/xlink">
+<defs/>
+<g id="Layer-1" vectornator:layerName="Layer 1">
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 42.1395 72.149)" vectornator:layerName="Text 14" vectornator:width="291.393" x="0" y="0">
+<tspan textLength="291.393" x="0" y="11"><![CDATA[{ direct_reporting (sub: $emp, sup: $sup); }]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 13.7895 8.505)" vectornator:layerName="Text 11" vectornator:width="337.75" x="0" y="0">
+<tspan textLength="337.75" x="0" y="11"><![CDATA[fun reporting_line($emp: employee) -> { employee }:]]></tspan>
+</text>
+<g opacity="1" vectornator:layerName="Group 2">
+<path d="M34.02 269.325L164.43 269.325L164.43 300.51L34.02 300.51L34.02 269.325Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Rectangle 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 45.36 277.83)" vectornator:layerName="Text 2" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[direct_reporting]]></tspan>
+</text>
+</g>
+<g opacity="1" vectornator:layerName="Group 3">
+<path d="M263.655 266.49L394.065 266.49L394.065 297.675L263.655 297.675L263.655 266.49Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Rectangle 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 274.995 274.995)" vectornator:layerName="Text 2" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[direct_reporting]]></tspan>
+</text>
+</g>
+<g opacity="1" vectornator:layerName="Group 1">
+<path d="M238.14 157.342C238.14 151.862 243.217 147.42 249.48 147.42C255.743 147.42 260.82 151.862 260.82 157.342C260.82 162.823 255.743 167.265 249.48 167.265C243.217 167.265 238.14 162.823 238.14 157.342Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Oval 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 245.692 150.43)" vectornator:layerName="Text 3" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[+]]></tspan>
+</text>
+</g>
+<path d="M447.93 266.49L527.31 266.49L527.31 297.675L447.93 297.675L447.93 266.49Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Rectangle 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 460.155 275.17)" vectornator:layerName="Text 2" vectornator:width="52.9805" x="0" y="0">
+<tspan textLength="52.9805" x="0" y="11"><![CDATA[employee]]></tspan>
+</text>
+<path d="M136.08 221.13L136.08 232.47L155.925 221.13L155.925 232.47L136.08 221.13Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 1"/>
+<path d="M340.2 221.13L340.2 232.47L360.045 221.13L360.045 232.47L340.2 221.13Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 2"/>
+<g opacity="1" vectornator:layerName="Curve 3">
+<path d="M262.734 159.963C294.368 179.627 351.54 204.575 351.54 226.8C351.54 249.48 314.685 243.81 314.685 266.49" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M264.301 158.881L260.829 158.766L262.438 161.844L264.301 158.881Z" fill="#000000"/>
+</g>
+</g>
+<path d="M107.73 467.719C107.73 456.379 147.42 447.874 147.42 425.194C147.42 402.514 199.867 405.349 206.955 428.029C214.042 450.709 209.79 473.389 209.79 490.399C209.79 527.363 240.975 524.419 246.645 524.419" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 24"/>
+<path d="M107.73 267.974C107.73 256.634 147.42 248.129 147.42 225.449C147.42 202.769 199.867 205.604 206.955 228.284C214.042 250.964 209.79 273.644 209.79 290.654C209.79 327.618 240.975 324.674 246.645 324.674" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 4"/>
+<g opacity="1" vectornator:layerName="Curve 5">
+<path d="M367.978 223.983C418.806 224.793 487.62 252.523 487.62 266.49" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M368.742 222.239L365.728 223.965L368.714 225.739L368.742 222.239Z" fill="#000000"/>
+</g>
+</g>
+<path d="M467.775 266.49C467.775 255.15 362.88 252.315 340.2 246.645" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 6"/>
+<path d="M334.53 243.81C311.85 238.14 229.635 226.8 209.79 226.8" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 7"/>
+<g opacity="1" vectornator:layerName="Curve 8">
+<path d="M161.012 226.8C164.69 226.8 201.285 226.8 201.285 226.8" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M161.762 225.05L158.762 226.8L161.762 228.55L161.762 225.05Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Curve 9">
+<path d="M249.48 126.991C249.48 129.161 249.48 147.42 249.48 147.42" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M251.23 127.741L249.48 124.741L247.73 127.741L251.23 127.741Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Group 4">
+<path d="M34.02 467.775L164.43 467.775L164.43 498.96L34.02 498.96L34.02 467.775Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Rectangle 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 45.36 476.28)" vectornator:layerName="Text 2" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[direct_reporting]]></tspan>
+</text>
+</g>
+<g opacity="1" vectornator:layerName="Group 5">
+<path d="M263.655 464.94L394.065 464.94L394.065 496.125L263.655 496.125L263.655 464.94Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Rectangle 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 274.995 473.445)" vectornator:layerName="Text 2" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[direct_reporting]]></tspan>
+</text>
+</g>
+<g opacity="1" vectornator:layerName="Group 6">
+<path d="M238.14 355.793C238.14 350.312 243.217 345.87 249.48 345.87C255.743 345.87 260.82 350.312 260.82 355.793C260.82 361.273 255.743 365.715 249.48 365.715C243.217 365.715 238.14 361.273 238.14 355.793Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Oval 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 245.692 348.88)" vectornator:layerName="Text 3" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[+]]></tspan>
+</text>
+</g>
+<path d="M447.93 464.94L527.31 464.94L527.31 496.125L447.93 496.125L447.93 464.94Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Rectangle 2"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 460.155 473.62)" vectornator:layerName="Text 3" vectornator:width="52.9805" x="0" y="0">
+<tspan textLength="52.9805" x="0" y="11"><![CDATA[employee]]></tspan>
+</text>
+<path d="M136.08 419.58L136.08 430.92L155.925 419.58L155.925 430.92L136.08 419.58Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 10"/>
+<path d="M340.2 419.58L340.2 430.92L360.045 419.58L360.045 430.92L340.2 419.58Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 11"/>
+<g opacity="1" vectornator:layerName="Curve 12">
+<path d="M262.734 358.413C294.368 378.077 351.54 403.025 351.54 425.25C351.54 447.93 314.685 442.26 314.685 464.94" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M264.301 357.331L260.829 357.216L262.438 360.294L264.301 357.331Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Curve 14">
+<path d="M367.978 422.433C418.806 423.243 487.62 450.973 487.62 464.94" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M368.742 420.689L365.728 422.415L368.714 424.189L368.742 420.689Z" fill="#000000"/>
+</g>
+</g>
+<path d="M467.775 464.94C467.775 453.6 362.88 450.765 340.2 445.095" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 15"/>
+<path d="M334.53 442.26C311.85 436.59 229.635 425.25 209.79 425.25" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 16"/>
+<g opacity="1" vectornator:layerName="Curve 17">
+<path d="M161.012 425.25C164.69 425.25 201.285 425.25 201.285 425.25" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M161.762 423.5L158.762 425.25L161.762 427L161.762 423.5Z" fill="#000000"/>
+</g>
+</g>
+<path d="M249.48 345.87L249.48 323.19L249.48 232.47" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 18"/>
+<g opacity="1" vectornator:layerName="Curve 19">
+<path d="M249.48 169.516C249.48 174.222 249.48 226.8 249.48 226.8" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M251.23 170.266L249.48 167.266L247.73 170.266L251.23 170.266Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Group 7">
+<path d="M238.14 554.242C238.14 548.762 243.217 544.32 249.48 544.32C255.743 544.32 260.82 548.762 260.82 554.242C260.82 559.723 255.743 564.165 249.48 564.165C243.217 564.165 238.14 559.723 238.14 554.242Z" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Oval 1"/>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 245.692 547.33)" vectornator:layerName="Text 3" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[+]]></tspan>
+</text>
+</g>
+<path d="M249.48 544.32L249.48 521.64L249.48 430.92" fill="none" opacity="1" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5" vectornator:layerName="Curve 20"/>
+<g opacity="1" vectornator:layerName="Curve 21">
+<path d="M249.48 367.966C249.48 372.672 249.48 425.25 249.48 425.25" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M251.23 368.716L249.48 365.716L247.73 368.716L251.23 368.716Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Curve 25">
+<path d="M390.462 552.392C323.301 535.071 259.129 524.521 255.15 524.521" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M389.298 553.899L392.64 552.956L390.175 550.51L389.298 553.899Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Curve 22">
+<path d="M490.695 498.416C495.396 532.432 544.32 518.379 544.32 496.171C544.32 473.491 544.32 493.336 544.32 433.801C544.32 374.266 260.82 326.071 252.315 326.071" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M492.515 498.975L490.456 496.178L489.035 499.348L492.515 498.975Z" fill="#000000"/>
+</g>
+</g>
+<g opacity="1" vectornator:layerName="Curve 23">
+<path d="M496.334 299.971C500.59 336.862 541.485 322.907 541.485 306.226C541.485 289.216 541.485 275.041 541.485 243.856C541.485 212.671 544.32 161.641 575.505 161.641" fill="none" stroke="#000000" stroke-linecap="butt" stroke-linejoin="round" stroke-width="0.5"/>
+<g fill="#000000" stroke="none">
+<path d="M498.146 300.556L496.126 297.731L494.661 300.88L498.146 300.556Z" fill="#000000"/>
+</g>
+</g>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 245.692 575.505)" vectornator:layerName="Text 4" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[…]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 391.23 575.68)" vectornator:layerName="Text 5" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[…]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 578.34 147.595)" vectornator:layerName="Text 9" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[…]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 245.692 107.905)" vectornator:layerName="Text 10" vectornator:width="6.62256" x="0" y="0">
+<tspan textLength="6.62256" x="0" y="11"><![CDATA[…]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 127.575 122.08)" vectornator:layerName="Text 6" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[reporting_line_3]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 127.575 530.32)" vectornator:layerName="Text 7" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[reporting_line_1]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 127.575 331.87)" vectornator:layerName="Text 8" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[reporting_line_2]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 27.9645 24.416)" vectornator:layerName="Text 12" vectornator:width="33.1128" x="0" y="0">
+<tspan textLength="33.1128" x="0" y="11"><![CDATA[match]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 42.525 39.69)" vectornator:layerName="Text 13" vectornator:width="119.206" x="0" y="0">
+<tspan textLength="119.206" x="0" y="11"><![CDATA[$sup isa employee;]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 42.525 55.601)" vectornator:layerName="Text 15" vectornator:width="543.05" x="0" y="0">
+<tspan textLength="543.05" x="0" y="11"><![CDATA[or { direct_reporting (sub: $emp, sup: $int); let $sup in reporting_line($int); };]]></tspan>
+</text>
+<text fill="#000000" font-family="MesloLGSForPowerline-Regular" font-size="11" opacity="1" stroke="none" text-anchor="start" transform="matrix(1 0 0 1 27.9645 88.06)" vectornator:layerName="Text 16" vectornator:width="105.961" x="0" y="0">
+<tspan textLength="105.961" x="0" y="11"><![CDATA[return { $sup };]]></tspan>
+</text>
+</g>
+</svg>
