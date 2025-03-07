@@ -99,10 +99,7 @@ impl HasExecutor {
         let owner = has.owner().as_variable().unwrap();
         let attribute = has.attribute().as_variable().unwrap();
 
-        let output_tuple_positions = match iterate_mode {
-            BinaryIterateMode::Unbound => TuplePositions::Pair([Some(owner), Some(attribute)]),
-            _ => TuplePositions::Pair([Some(attribute), Some(owner)]),
-        };
+        let output_tuple_positions = TuplePositions::Pair([Some(owner), Some(attribute)]);
 
         let checker =
             Checker::<(Has, _)>::new(checks, HashMap::from([(owner, EXTRACT_OWNER), (attribute, EXTRACT_ATTRIBUTE)]));
@@ -165,8 +162,15 @@ impl HasExecutor {
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();
 
-        match self.iterate_mode {
-            BinaryIterateMode::Unbound => {
+        let attribute = self.has.attribute().as_variable().unwrap().as_position();
+        let owner = self.has.owner().as_variable().unwrap().as_position();
+
+        let attribute =
+            attribute.and_then(|pos| (row.len() > pos.as_usize()).then(|| row.get(pos))).filter(|v| !v.is_empty());
+        let owner = owner.and_then(|pos| (row.len() > pos.as_usize()).then(|| row.get(pos))).filter(|v| !v.is_empty());
+
+        match (owner, attribute) {
+            (None, None) => {
                 // TODO: we could cache the range byte arrays computed inside the thing_manager, for this case
 
                 // TODO: in the HasReverse case, we look up N iterators (one per type) and link them - here we scan and post-filter
@@ -181,65 +185,35 @@ impl HasExecutor {
                     &self.variable_modes,
                 )))
             }
-            BinaryIterateMode::UnboundInverted => {
-                debug_assert!(self.owner_cache.is_some());
-                if let Some([owner]) = self.owner_cache.as_deref() {
-                    // no heap allocs needed if there is only 1 iterator
-                    let iterator = owner.get_has_types_range_unordered(
-                        snapshot,
-                        thing_manager,
-                        // TODO: this should be just the types owned by the one instance's type in the cache!
-                        &self.attribute_type_range,
-                    );
-                    let as_tuples: HasUnboundedTupleIteratorSingle =
-                        iterator
-                            .filter_map(filter_for_row)
-                            .map::<Result<Tuple<'_>, _>, _>(has_to_tuple_attribute_owner);
-                    Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
-                        as_tuples,
-                        self.tuple_positions.clone(),
-                        &self.variable_modes,
-                    )))
-                } else {
-                    // TODO: we could create a reusable space for these temporarily held iterators
-                    //       so we don't have allocate again before the merging iterator
-                    let owners = self.owner_cache.as_ref().unwrap().iter();
-                    let iterators: Vec<_> = owners
-                        .map(|object| {
-                            object.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
-                        })
-                        .collect();
-
-                    // note: this will always have to heap alloc, if we use don't have a re-usable/small-vec'ed priority queue somewhere
-                    let merged: KMergeBy<HasIterator, HasOrderingFn> =
-                        kmerge_by(iterators, compare_has_by_attribute_then_owner);
-                    let as_tuples: HasUnboundedTupleIteratorMerged =
-                        merged.filter_map(filter_for_row).map(has_to_tuple_attribute_owner);
-                    Ok(TupleIterator::HasMerged(SortedTupleIterator::new(
-                        as_tuples,
-                        self.tuple_positions.clone(),
-                        &self.variable_modes,
-                    )))
-                }
-            }
-            BinaryIterateMode::BoundFrom => {
-                let owner = self.has.owner().as_variable().unwrap().as_position().unwrap();
-                debug_assert!(row.len() > owner.as_usize());
+            (None, Some(_attribute)) => todo!(),
+            (Some(owner), None) => {
                 // TODO: inject value ranges
-                let iterator = match row.get(owner) {
+                let iterator = match owner {
                     VariableValue::Thing(Thing::Entity(entity)) => {
                         entity.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
                     }
                     VariableValue::Thing(Thing::Relation(relation)) => {
                         relation.get_has_types_range_unordered(snapshot, thing_manager, &self.attribute_type_range)
                     }
-                    VariableValue::Empty => return Ok(TupleIterator::empty()),
                     _ => unreachable!("Has owner must be an entity or relation."),
                 };
                 let as_tuples: HasUnboundedTupleIteratorSingle =
-                    iterator.filter_map(filter_for_row).map(has_to_tuple_attribute_owner);
+                    iterator.filter_map(filter_for_row).map(has_to_tuple_owner_attribute);
                 Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                     as_tuples,
+                    self.tuple_positions.clone(),
+                    &self.variable_modes,
+                )))
+            }
+            (Some(owner), Some(attribute)) => {
+                let VariableValue::Thing(Thing::Attribute(attr)) = attribute else { panic!() };
+                let VariableValue::Thing(owner_obj) = owner else { panic!() };
+                Ok(TupleIterator::Check(SortedTupleIterator::new(
+                    owner_obj
+                        .as_object()
+                        .has_attribute(snapshot, thing_manager, attr)?
+                        .then(|| Ok(Tuple::Pair([owner.to_owned(), attribute.to_owned()])))
+                        .into_iter(),
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
