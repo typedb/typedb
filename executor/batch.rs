@@ -11,6 +11,7 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 
@@ -181,7 +182,7 @@ impl Batch {
     }
 
     pub(crate) fn get_multiplicities(&self) -> &[u64] {
-        self.multiplicities.as_ref()
+        &self.multiplicities[0..self.entries]
     }
 
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
@@ -200,6 +201,16 @@ impl Batch {
     pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
         let mut destination_row = self.row_internal_mut(self.entries);
         destination_row.copy_from_row(row);
+        self.entries += 1;
+    }
+
+    pub(crate) fn append_mapped(
+        &mut self,
+        row: MaybeOwnedRow<'_>,
+        mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
+    ) {
+        let mut destination_row = self.row_internal_mut(self.entries);
+        destination_row.copy_mapped(row, mapping);
         self.entries += 1;
     }
 
