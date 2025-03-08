@@ -12,7 +12,9 @@ use std::{
 
 use answer::variable::Variable;
 use compiler::{
-    annotation::{function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types},
+    annotation::{
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
+    },
     executable::{
         function::ExecutableFunctionRegistry,
         match_::{
@@ -35,8 +37,8 @@ use compiler::{
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
-        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, Ordering, OwnerAPI,
-        PlayerAPI,
+        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, type_manager::TypeManager,
+        Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
@@ -54,7 +56,11 @@ use ir::{
 };
 use lending_iterator::LendingIterator;
 use resource::profile::QueryProfile;
-use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
+use storage::{
+    durability_client::WALClient,
+    snapshot::{CommittableSnapshot, ReadSnapshot},
+    MVCCStorage,
+};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
 use typeql::common::Span;
@@ -337,6 +343,25 @@ fn position_mapping<const N: usize, const M: usize>(
     (position_to_var, variable_positions, mapping, named_variables)
 }
 
+fn get_type_annotations(
+    translation_context: &TranslationContext,
+    entry: &Block,
+    snapshot: &ReadSnapshot<WALClient>,
+    type_manager: &Arc<TypeManager>,
+) -> TypeAnnotations {
+    let previous_stage_variable_annotations = &BTreeMap::new();
+    infer_types(
+        &snapshot,
+        &entry,
+        &translation_context.variable_registry,
+        &type_manager,
+        previous_stage_variable_annotations,
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+    .unwrap()
+}
+
 fn execute_steps(
     steps: Vec<ExecutionStep>,
     variable_positions: HashMap<Variable, VariablePosition>,
@@ -406,18 +431,7 @@ fn value_int_equality_isa_reads() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_id_type, var_attr], []);
 
@@ -435,7 +449,7 @@ fn value_int_equality_isa_reads() {
     }
     .map(&mapping);
     let mut isa_reverse_instruction =
-        IsaReverseInstruction::new(isa, Inputs::Single([var_id_type]), &entry_annotations).map(&mapping);
+        IsaReverseInstruction::new(isa, Inputs::Single([var_id_type]), &type_annotations).map(&mapping);
     isa_reverse_instruction.add_check(value_check);
 
     let steps = vec![
@@ -444,7 +458,7 @@ fn value_int_equality_isa_reads() {
             vec![ConstraintInstruction::TypeList(
                 TypeListInstruction::new(
                     var_id_type,
-                    entry_annotations.vertex_annotations().get(&Vertex::Variable(var_id_type)).unwrap().clone(),
+                    type_annotations.vertex_annotations().get(&Vertex::Variable(var_id_type)).unwrap().clone(),
                 )
                 .map(&mapping),
             )],
@@ -521,18 +535,7 @@ fn value_int_equality_has_reverse_reads() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_person, var_gov_id], []);
 
@@ -549,7 +552,7 @@ fn value_int_equality_has_reverse_reads() {
     }
     .map(&mapping);
     let mut has_reverse_instruction =
-        HasReverseInstruction::new(has, Inputs::None([]), &entry_annotations).map(&mapping);
+        HasReverseInstruction::new(has, Inputs::None([]), &type_annotations).map(&mapping);
     has_reverse_instruction.add_check(value_check);
 
     let steps = vec![ExecutionStep::Intersection(IntersectionStep::new(
@@ -620,18 +623,7 @@ fn value_int_equality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let type_annotations = get_type_annotations(&translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_gov_id], []);
@@ -649,14 +641,14 @@ fn value_int_equality_has_bound_owner() {
         comparator: Comparator::Equal,
     }
     .map(&mapping);
-    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &type_annotations).map(&mapping);
     has_instruction.add_check(value_check);
 
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person_type],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &type_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person], variable_positions[&var_person_type]],
             &named_variables,
@@ -741,18 +733,7 @@ fn value_int_inequality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_gov_id], []);
@@ -777,7 +758,7 @@ fn value_int_inequality_has_bound_owner() {
         comparator: Comparator::Less,
     }
     .map(&mapping);
-    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &type_annotations).map(&mapping);
     has_instruction.add_check(greater_value_check);
     has_instruction.add_check(lesser_value_check);
 
@@ -785,7 +766,7 @@ fn value_int_inequality_has_bound_owner() {
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person_type],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &type_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person], variable_positions[&var_person_type]],
             &named_variables,
@@ -857,18 +838,7 @@ fn value_inline_string_equality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let entry_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_name], []);
@@ -968,18 +938,7 @@ fn value_hashed_string_equality_has_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_name], []);
@@ -997,14 +956,14 @@ fn value_hashed_string_equality_has_bound_owner() {
         comparator: Comparator::Equal,
     }
     .map(&mapping);
-    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &type_annotations).map(&mapping);
     has_instruction.add_check(value_check);
 
     let steps = vec![
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person_type],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &type_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person], variable_positions[&var_person_type]],
             &named_variables,
@@ -1088,18 +1047,7 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
 
     let snapshot = storage.clone().open_snapshot_read();
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-    let variable_registry = &translation_context.variable_registry;
-    let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
-        &snapshot,
-        &entry,
-        variable_registry,
-        &type_manager,
-        previous_stage_variable_annotations,
-        &EmptyAnnotatedFunctionSignatures,
-        false,
-    )
-    .unwrap();
+    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_person_type, var_name], []);
@@ -1123,7 +1071,7 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
         comparator: Comparator::Less,
     }
     .map(&mapping);
-    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &entry_annotations).map(&mapping);
+    let mut has_instruction = HasInstruction::new(has, Inputs::Single([var_person]), &type_annotations).map(&mapping);
     has_instruction.add_check(greater_value_check);
     has_instruction.add_check(lesser_value_check);
 
@@ -1131,7 +1079,7 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
         ExecutionStep::Intersection(IntersectionStep::new(
             mapping[&var_person_type],
             vec![ConstraintInstruction::IsaReverse(
-                IsaReverseInstruction::new(isa_person, Inputs::None([]), &entry_annotations).map(&mapping),
+                IsaReverseInstruction::new(isa_person, Inputs::None([]), &type_annotations).map(&mapping),
             )],
             vec![variable_positions[&var_person], variable_positions[&var_person_type]],
             &named_variables,
@@ -1157,12 +1105,12 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned name
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
-    // 2 advance: the iterator matching person 1 will advances twice (once to find the second name, then to fail)
+    // 2 advance: the iterator matching person 1 will advance twice (once to find the second name, then to fail)
     assert_eq!(storage_counters.get_raw_advance().unwrap(), 2)
 }
 
 #[test]
-fn intersection_seeks_reduce_reads() {
+fn intersection_seeks() {
     let (_tmp_dir, mut storage) = create_core_storage();
     setup_database(&mut storage);
 
@@ -1177,4 +1125,25 @@ fn intersection_seeks_reduce_reads() {
     // 2. Intersect:
     //       ReverseHas($person, $age) ==> independently produces many people
     //       has($person, $gov_id) ==> unbound this produces many people
+}
+
+#[test]
+fn intersections_seeks_with_extra_values() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_database(&mut storage);
+
+    // query:
+    //   match
+    //    $age isa age 10;
+    //    $person has $age;
+    //    $person has gov_id $gov_id;
+    //    $gov_id > 2;
+
+    // plan:
+    // 1. Isa($age, age) value == 10
+    // 2. Intersect:
+    //       ReverseHas($person, $age) ==> independently produces many people
+    //       Has($person, $gov_id) $gov_id > 2 ==> unbound this produces many people
+    //  Note that the interesting case here is that the first iterator would produce Persons, which are used in intersection with the second Has iterator
+    //    however, seeking through that iterator to search for a specific person with the required Has should also leverage the value range restriction!
 }
