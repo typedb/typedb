@@ -16,7 +16,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::{
         control_instruction::{
-            CollectingStage, ControlInstruction, ExecuteDisjunction, ExecuteImmediate, ExecuteInlinedFunction,
+            CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteStreamModifier, MapRowBatchToRowForNested, PatternStart, ReshapeForReturn,
             RestoreSuspension, StreamCollected, TabledCall, Yield,
         },
@@ -169,8 +169,8 @@ impl PatternExecutor {
                         Some(_) => inner.reset(), // fail
                     };
                 }
-                ControlInstruction::ExecuteDisjunction(execute_disjunction) => {
-                    let ExecuteDisjunction { index, branch_index, input } = &execute_disjunction;
+                ControlInstruction::ExecuteDisjunctionBranch(execute_disjunction) => {
+                    let ExecuteDisjunctionBranch { index, branch_index, input } = &execute_disjunction;
                     let disjunction = &mut executors[**index].unwrap_disjunction();
                     let branch = &mut disjunction.branches[**branch_index];
                     let suspension_count_before = suspensions.record_nested_pattern_entry();
@@ -181,7 +181,7 @@ impl PatternExecutor {
                     if let Some(unmapped) = batch_opt {
                         let mapped = disjunction.map_output(unmapped);
                         let next_index = index.next();
-                        control_stack.push(ControlInstruction::ExecuteDisjunction(execute_disjunction));
+                        control_stack.push(ControlInstruction::ExecuteDisjunctionBranch(execute_disjunction));
                         self.push_next_instruction(context, next_index, mapped)?;
                     }
                 }
@@ -211,18 +211,15 @@ impl PatternExecutor {
                     if suspensions.record_nested_pattern_exit() != suspension_count_before {
                         suspensions.push_nested(index, BranchIndex(0), input.clone());
                     }
-                    let (must_retry, mapped) = mapper.map_output(unmapped).into_parts();
-                    if must_retry {
+                    if let Some(batch) = mapper.map_output(unmapped) {
                         control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                             index,
                             mapper,
                             input,
                         }));
+                        self.push_next_instruction(context, index.next(), batch)?;
                     } else {
                         inner.reset();
-                    }
-                    if let Some(batch) = mapped {
-                        self.push_next_instruction(context, index.next(), batch)?;
                     }
                 }
                 ControlInstruction::ExecuteTabledCall(TabledCall { index, last_seen_table_size }) => {
@@ -331,7 +328,7 @@ impl PatternExecutor {
             StepExecutors::Disjunction(DisjunctionExecutor { branches, .. }) => {
                 for (branch_index, branch) in branches.iter_mut().enumerate() {
                     branch.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
+                    self.control_stack.push(ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch {
                         index,
                         branch_index: BranchIndex(branch_index),
                         input: input.clone().into_owned(),
@@ -464,7 +461,7 @@ fn restore_suspension(
                 }
                 StepExecutors::Disjunction(disjunction) => {
                     disjunction.branches[*branch_index].prepare_to_restore_from_suspension(nested_pattern_depth);
-                    control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
+                    control_stack.push(ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch {
                         index: executor_index,
                         branch_index,
                         input: input_row.into_owned(),

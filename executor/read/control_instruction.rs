@@ -55,7 +55,7 @@ pub(super) struct ExecuteNegation {
 }
 
 #[derive(Debug)]
-pub(super) struct ExecuteDisjunction {
+pub(super) struct ExecuteDisjunctionBranch {
     pub(super) index: ExecutorIndex,
     pub(super) branch_index: BranchIndex,
     pub(super) input: MaybeOwnedRow<'static>, // Only needed for suspend points. We can actually use an empty one, because the nested pattern has all the info
@@ -91,22 +91,39 @@ pub(super) struct Yield {
 
 #[derive(Debug)]
 pub(super) enum ControlInstruction {
-    PatternStart(PatternStart),
+    // Control instructions
     RestoreSuspension(RestoreSuspension),
+    Yield(Yield),
 
-    ExecuteImmediate(ExecuteImmediate),
-
+    // ExecuteSimpleSpecialInstruction(ExecuteSimpleSpecialInstruction),
+    PatternStart(PatternStart),
     MapBatchToRowForNested(MapRowBatchToRowForNested),
-    ExecuteNegation(ExecuteNegation),
-    ExecuteDisjunction(ExecuteDisjunction),
-    ExecuteInlinedFunction(ExecuteInlinedFunction),
-    ExecuteStreamModifier(ExecuteStreamModifier),
-
-    ExecuteTabledCall(TabledCall),
-
-    CollectingStage(CollectingStage),
     StreamCollected(StreamCollected),
     ReshapeForReturn(ReshapeForReturn),
 
-    Yield(Yield),
+    ExecuteImmediate(ExecuteImmediate),
+
+    // ExecuteSimpleNestedPattern(ExecuteSimpleNestedPattern),
+    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
+    ExecuteInlinedFunction(ExecuteInlinedFunction),
+    ExecuteStreamModifier(ExecuteStreamModifier),
+
+    ExecuteNegation(ExecuteNegation),
+    ExecuteTabledCall(TabledCall),
+    CollectingStage(CollectingStage),
+}
+
+#[derive(Debug)]
+pub(super) enum ExecuteSimpleNestedPattern {
+    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
+    ExecuteInlinedFunction(ExecuteInlinedFunction),
+    ExecuteStreamModifier(ExecuteStreamModifier),
+}
+
+#[derive(Debug)]
+pub(super) enum ExecuteSimpleSpecialInstruction {
+    PatternStart(PatternStart),
+    MapBatchToRowForNested(MapRowBatchToRowForNested),
+    StreamCollected(StreamCollected),
+    ReshapeForReturn(ReshapeForReturn),
 }

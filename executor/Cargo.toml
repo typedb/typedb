@@ -121,6 +121,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.utils]
+		path = "../common/utils"
+		features = []
+		default-features = false
+
 	[dependencies.bytes]
 		path = "../common/bytes"
 		features = []
