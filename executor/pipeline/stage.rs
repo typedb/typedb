@@ -11,6 +11,7 @@ use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::Level;
+use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 
 use crate::{
     batch::Batch,
@@ -109,7 +110,7 @@ pub trait StageIterator:
             None => return Ok(Batch::new(0, 1)),
             Some(row) => {
                 let row = row?;
-                let mut batch = Batch::new(row.len() as u32, Batch::DEFAULT_LENGTH);
+                let mut batch = Batch::new(row.len() as u32, BATCH_DEFAULT_LENGTH);
                 batch.append(row);
                 batch
             }

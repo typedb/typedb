@@ -14,13 +14,12 @@ use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
 
 use crate::{
     error::ReadExecutionError,
     row::{MaybeOwnedRow, Row},
 };
-
-const FIXED_BATCH_ROWS_MAX: u32 = 64;
 
 #[derive(Debug)]
 pub struct FixedBatch {
@@ -167,7 +166,6 @@ pub struct Batch {
 }
 
 impl Batch {
-    pub(crate) const DEFAULT_LENGTH: usize = 10;
     pub(crate) fn new(width: u32, length: usize) -> Self {
         let size = width as usize * length;
         Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }
@@ -199,9 +197,9 @@ impl Batch {
     }
 
     pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
-        let mut destination_row = self.row_internal_mut(self.entries);
-        destination_row.copy_from_row(row);
-        self.entries += 1;
+        debug_assert!(self.width as usize >= row.len());
+        let row_len = row.len();
+        self.append_mapped(row, (0..row_len as u32).map(|i| (VariablePosition::new(i), VariablePosition::new(i))))
     }
 
     pub(crate) fn append_mapped(

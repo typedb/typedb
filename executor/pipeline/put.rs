@@ -11,6 +11,7 @@ use compiler::{
     VariablePosition,
 };
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -77,7 +78,7 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
     function_registry: Arc<ExecutableFunctionRegistry>,
     mut previous_iterator: impl StageIterator,
 ) -> Result<WrittenRowsIterator, Box<PipelineExecutionError>> {
-    let mut output_batch = Batch::new(executable.output_width() as u32, Batch::DEFAULT_LENGTH);
+    let mut output_batch = Batch::new(executable.output_width() as u32, BATCH_DEFAULT_LENGTH);
     let mut must_insert = Vec::new();
     let input_output_mapping = executable
         .insert
