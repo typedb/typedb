@@ -55,7 +55,7 @@ impl Disjunction {
     pub fn optional_outputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
         self.variable_dependency_modes(block_context)
             .into_iter()
-            .filter_map(|(v, mode)| mode.is_optional().then_some(v))
+            .filter_map(|(v, mode)| (v.is_named() && mode.is_optional()).then_some(v))
     }
 
     pub(crate) fn variable_dependency_modes(
