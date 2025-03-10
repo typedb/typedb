@@ -65,13 +65,19 @@ impl Disjunction {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
-        let mut data_modes = self.conjunctions[0].variable_dependency_modes(block_context);
+        let mut dependency_modes = self.conjunctions[0].variable_dependency_modes(block_context);
         for branch in &self.conjunctions[1..] {
-            for (var, mode) in branch.variable_dependency_modes(block_context) {
-                data_modes.entry(var).or_insert(DependencyMode::Optional).or(mode)
+            let branch_dependency_modes = branch.variable_dependency_modes(block_context);
+            for (var, mode) in &mut dependency_modes {
+                if !branch_dependency_modes.contains_key(var) {
+                    mode.or(DependencyMode::Optional)
+                }
+            }
+            for (var, mode) in branch_dependency_modes {
+                dependency_modes.entry(var).or_insert(DependencyMode::Optional).or(mode)
             }
         }
-        data_modes
+        dependency_modes
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
