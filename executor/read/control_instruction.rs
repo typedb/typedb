@@ -15,6 +15,7 @@ use crate::{
     },
     row::MaybeOwnedRow,
 };
+use crate::read::collecting_stage_executor::CollectorEnum;
 
 #[derive(Debug)]
 pub(super) enum ControlInstruction {
@@ -94,6 +95,7 @@ pub(super) struct ExecuteTabledCall {
 #[derive(Debug)]
 pub(super) struct CollectingStage {
     pub(super) index: ExecutorIndex,
+    pub(super) collector: CollectorEnum,
 }
 
 #[derive(Debug)]

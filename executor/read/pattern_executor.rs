@@ -6,7 +6,6 @@
 
 use std::ops::DerefMut;
 
-use compiler::VariablePosition;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -196,12 +195,12 @@ impl PatternExecutor {
                         last_seen_table_size,
                     )?;
                 }
-                ControlInstruction::CollectingStage(CollectingStage { index }) => {
-                    let (inner, collector) = executors[*index].unwrap_collecting_stage().to_parts_mut();
+                ControlInstruction::CollectingStage(CollectingStage { index, mut collector }) => {
+                    let inner = executors[*index].unwrap_collecting_stage().pattern_mut();
                     while let Some(batch) = inner.compute_next_batch(context, interrupt, tabled_functions)? {
                         collector.accept(context, batch);
                     }
-                    let iterator = collector.collected_to_iterator(context);
+                    let iterator = collector.into_iterator(context);
                     self.control_stack.push(StreamCollected { index, iterator }.into());
                 }
                 ControlInstruction::StreamCollected(StreamCollected { index, mut iterator }) => {
@@ -212,12 +211,7 @@ impl PatternExecutor {
                 }
                 ControlInstruction::ReshapeForReturn(ReshapeForReturn { index, to_reshape: batch }) => {
                     let reshape = executors[*index].unwrap_reshape();
-                    let mut output_batch = FixedBatch::new(reshape.len() as u32);
-                    for row in batch {
-                        output_batch.append(|mut write_to| {
-                            write_to.copy_mapped(row, ReshapeForReturn::positions_to_mapping(reshape))
-                        })
-                    }
+                    let output_batch = reshape.map_output(batch);
                     self.push_next_instruction(context, index.next(), output_batch)?;
                 }
                 ControlInstruction::Yield(Yield { batch }) => {
@@ -255,7 +249,8 @@ impl PatternExecutor {
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
-                    self.control_stack.push(CollectingStage { index: next_index }.into());
+                    let collector = collecting_stage.create_collector();
+                    self.control_stack.push(CollectingStage { index: next_index, collector }.into());
                 }
                 StepExecutors::ReshapeForReturn(_) => {
                     self.control_stack.push(ReshapeForReturn { index: next_index, to_reshape: batch }.into());

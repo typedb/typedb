@@ -42,10 +42,10 @@ use crate::{
 pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
 deref_for_trivial_struct!(ReshapeForReturnExecutor => [VariablePosition]);
 impl ReshapeForReturnExecutor {
-    fn map_output(&self, batch: FixedBatch) -> Option<FixedBatch> {
+    pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.0.len() as u32);
         batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
-        Some(output_batch)
+        output_batch
     }
 
     fn as_mapping(&self) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
@@ -115,9 +115,9 @@ impl StepExecutors {
         }
     }
 
-    pub(crate) fn unwrap_reshape(&self) -> &[VariablePosition] {
+    pub(crate) fn unwrap_reshape(&self) -> &ReshapeForReturnExecutor {
         match self {
-            StepExecutors::ReshapeForReturn(return_positions) => return_positions,
+            StepExecutors::ReshapeForReturn(step) => step,
             _ => panic!("bad unwrap"),
         }
     }

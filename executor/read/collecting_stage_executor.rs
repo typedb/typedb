@@ -7,9 +7,8 @@
 use std::{
     borrow::Cow,
     cmp::Ordering,
-    collections::HashSet,
     fmt,
-    hash::{DefaultHasher, Hash, Hasher},
+    hash:: Hash,
     iter::Peekable,
     sync::Arc,
 };
@@ -17,10 +16,9 @@ use std::{
 use answer::{variable_value::VariableValue, Thing};
 use compiler::{
     executable::{
-        modifiers::{DistinctExecutable, SortExecutable},
+        modifiers::SortExecutable,
         reduce::ReduceRowsExecutable,
     },
-    VariablePosition,
 };
 use encoding::value::value::Value;
 use error::unimplemented_feature;
@@ -37,16 +35,68 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub(crate) struct CollectingStageExecutor {
-    pattern: PatternExecutor,
-    collector: CollectorEnum,
+pub(crate) enum CollectingStageExecutor {
+    Reduce { pattern: PatternExecutor, reduce_rows_executable: Arc<ReduceRowsExecutable> },
+    Sort { pattern: PatternExecutor, sort_on: Arc<Vec<(usize, bool)>,> },
+}
+
+impl CollectingStageExecutor {
+    pub(crate) fn new_reduce(
+        previous_stage: PatternExecutor,
+        reduce_rows_executable: Arc<ReduceRowsExecutable>,
+    ) -> Self {
+        Self::Reduce { pattern: previous_stage, reduce_rows_executable }
+    }
+
+    pub(crate) fn new_sort(previous_stage: PatternExecutor, sort_executable: &SortExecutable) -> Self {
+        let sort_on = sort_executable
+            .sort_on
+            .iter()
+            .map(|sort_variable| match sort_variable {
+                SortVariable::Ascending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), true),
+                SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
+            })
+            .collect();
+        Self::Sort { pattern: previous_stage, sort_on: Arc::new(sort_on) }
+    }
+
+    pub(super) fn pattern_mut(&mut self) -> &mut PatternExecutor {
+        match self {
+            CollectingStageExecutor::Reduce { pattern, .. } => pattern,
+            CollectingStageExecutor::Sort { pattern, .. } => pattern,
+        }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.pattern_mut().reset()
+    }
+
+    pub(crate) fn prepare(&mut self, batch: FixedBatch) {
+        debug_assert!({
+            match self {
+                Self::Reduce {..} => batch.len() == 1,
+                _ => true,
+            }
+        });
+        self.pattern_mut().prepare(batch)
+    }
+
+    pub(crate) fn create_collector(&self) -> CollectorEnum {
+        match self {
+            CollectingStageExecutor::Reduce { reduce_rows_executable, .. } => {
+                CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable.clone()))
+            },
+            CollectingStageExecutor::Sort { sort_on, .. } => {
+                CollectorEnum::Sort(SortCollector::new(sort_on.clone()))
+            }
+        }
+    }
 }
 
 #[derive(Debug)]
 pub(super) enum CollectorEnum {
     Reduce(ReduceCollector),
     Sort(SortCollector),
-    Distinct(DistinctCollector),
 }
 
 impl CollectorEnum {
@@ -54,18 +104,16 @@ impl CollectorEnum {
         match self {
             CollectorEnum::Reduce(collector) => collector.accept(context, batch),
             CollectorEnum::Sort(collector) => collector.accept(context, batch),
-            CollectorEnum::Distinct(collector) => collector.accept(context, batch),
         }
     }
 
-    pub(crate) fn collected_to_iterator(
-        &mut self,
+    pub(crate) fn into_iterator(
+        self,
         context: &ExecutionContext<impl ReadableSnapshot>,
     ) -> CollectedStageIterator {
         match self {
-            CollectorEnum::Reduce(collector) => collector.collected_to_iterator(context),
-            CollectorEnum::Sort(collector) => collector.collected_to_iterator(context),
-            CollectorEnum::Distinct(collector) => collector.collected_to_iterator(context),
+            CollectorEnum::Reduce(collector) => collector.into_iterator(context),
+            CollectorEnum::Sort(collector) => collector.into_iterator(context),
         }
     }
 }
@@ -74,7 +122,6 @@ impl CollectorEnum {
 pub(super) enum CollectedStageIterator {
     Reduce(ReduceStageIterator),
     Sort(SortStageIterator),
-    Distinct(DistinctStageIterator),
 }
 
 impl CollectedStageIterator {
@@ -82,65 +129,14 @@ impl CollectedStageIterator {
         match self {
             CollectedStageIterator::Reduce(iterator) => iterator.batch_continue(),
             CollectedStageIterator::Sort(iterator) => iterator.batch_continue(),
-            CollectedStageIterator::Distinct(iterator) => iterator.batch_continue(),
         }
     }
 }
 
-impl CollectingStageExecutor {
-    pub(super) fn to_parts_mut(&mut self) -> (&mut PatternExecutor, &mut CollectorEnum) {
-        let Self { pattern, collector } = self;
-        (pattern, collector)
-    }
-
-    pub(crate) fn new_reduce(
-        previous_stage: PatternExecutor,
-        reduce_rows_executable: Arc<ReduceRowsExecutable>,
-    ) -> Self {
-        Self { pattern: previous_stage, collector: CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable)) }
-    }
-
-    pub(crate) fn new_sort(previous_stage: PatternExecutor, sort_executable: &SortExecutable) -> Self {
-        Self { pattern: previous_stage, collector: CollectorEnum::Sort(SortCollector::new(sort_executable)) }
-    }
-
-    pub(crate) fn new_distinct(previous_stage: PatternExecutor, distinct_executable: &DistinctExecutable) -> Self {
-        Self {
-            pattern: previous_stage,
-            collector: CollectorEnum::Distinct(DistinctCollector::new(distinct_executable)),
-        }
-    }
-
-    pub(crate) fn reset(&mut self) {
-        self.pattern.reset();
-        match &mut self.collector {
-            CollectorEnum::Reduce(collector) => collector.reset(),
-            CollectorEnum::Sort(collector) => collector.reset(),
-            CollectorEnum::Distinct(collector) => collector.reset(),
-        }
-    }
-
-    pub(crate) fn prepare(&mut self, batch: FixedBatch) {
-        debug_assert!({
-            match &self.collector {
-                CollectorEnum::Reduce(_) => batch.len() == 1,
-                _ => true,
-            }
-        });
-        self.pattern.prepare(batch);
-        match &mut self.collector {
-            CollectorEnum::Reduce(collector) => collector.prepare(),
-            CollectorEnum::Sort(collector) => collector.prepare(),
-            CollectorEnum::Distinct(collector) => collector.prepare(),
-        }
-    }
-}
-
+// Actual implementations
 pub(super) trait CollectorTrait {
-    fn prepare(&mut self);
-    fn reset(&mut self);
     fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch);
-    fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator;
+    fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator;
 }
 
 pub(super) trait CollectedStageIteratorTrait {
@@ -149,8 +145,7 @@ pub(super) trait CollectedStageIteratorTrait {
 
 // Reduce
 pub(super) struct ReduceCollector {
-    reduce_executable: Arc<ReduceRowsExecutable>,
-    active_reducer: Option<GroupedReducer>,
+    active_reducer: GroupedReducer,
     output: Option<BatchRowIterator>,
     output_width: u32,
 }
@@ -164,29 +159,20 @@ impl fmt::Debug for ReduceCollector {
 impl ReduceCollector {
     fn new(reduce_executable: Arc<ReduceRowsExecutable>) -> Self {
         let output_width = (reduce_executable.input_group_positions.len() + reduce_executable.reductions.len()) as u32;
-        Self { reduce_executable, active_reducer: None, output: None, output_width }
+        Self { active_reducer: GroupedReducer::new(reduce_executable), output: None, output_width }
     }
 }
 
 impl CollectorTrait for ReduceCollector {
-    fn prepare(&mut self) {
-        self.active_reducer = Some(GroupedReducer::new(self.reduce_executable.clone()));
-    }
-
-    fn reset(&mut self) {
-        self.active_reducer = None;
-    }
-
     fn accept(&mut self, context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
-        let active_reducer = self.active_reducer.as_mut().unwrap();
         for row in batch {
-            active_reducer.accept(&row, context).unwrap(); // TODO: potentially unsafe unwrap
+            self.active_reducer.accept(&row, context).unwrap(); // TODO: potentially unsafe unwrap
         }
     }
 
-    fn collected_to_iterator(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
+    fn into_iterator(self, _context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         CollectedStageIterator::Reduce(ReduceStageIterator::new(
-            self.active_reducer.take().unwrap().finalise().into_iterator(),
+            self.active_reducer.finalise().into_iterator(),
             self.output_width,
         ))
     }
@@ -225,20 +211,12 @@ impl CollectedStageIteratorTrait for ReduceStageIterator {
 // Sort
 #[derive(Debug)]
 pub(super) struct SortCollector {
-    sort_on: Vec<(usize, bool)>,
+    sort_on: Arc<Vec<(usize, bool)>>,
     collector: Option<Batch>,
 }
 
 impl SortCollector {
-    fn new(sort_executable: &SortExecutable) -> Self {
-        let sort_on = sort_executable
-            .sort_on
-            .iter()
-            .map(|sort_variable| match sort_variable {
-                SortVariable::Ascending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), true),
-                SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
-            })
-            .collect();
+    fn new(sort_on: Arc<Vec<(usize, bool)>>) -> Self {
         // let output_width = sort_executable.output_width;  // TODO: Get this information into the sort_executable.
         Self { sort_on, collector: None }
     }
@@ -265,13 +243,6 @@ impl SortCollector {
 }
 
 impl CollectorTrait for SortCollector {
-    fn prepare(&mut self) {
-        // self.collector = Some(Batch::new(self.output_width));
-    }
-
-    fn reset(&mut self) {
-        self.collector = None;
-    }
 
     fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
         for row in batch {
@@ -282,15 +253,16 @@ impl CollectorTrait for SortCollector {
         }
     }
 
-    fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
-        let unsorted = self.collector.take().unwrap();
+    fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
+        let Self { sort_on, collector } = self;
+        let unsorted = collector.unwrap();
         let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         indices.sort_by(|x, y| {
             let x_row_as_row = unsorted.get_row(*x);
             let y_row_as_row = unsorted.get_row(*y);
             let x_row = x_row_as_row.row();
             let y_row = y_row_as_row.row();
-            for (idx, asc) in &self.sort_on {
+            for (idx, asc) in sort_on.iter() {
                 let ord = Self::get_value(&x_row[*idx], context)
                     .partial_cmp(&Self::get_value(&y_row[*idx], context))
                     .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
@@ -324,126 +296,6 @@ impl CollectedStageIteratorTrait for SortStageIterator {
                 next_batch.append(|mut copy_to_row| {
                     copy_to_row.copy_from_row(unsorted.get_row(index)); // TODO: Can we avoid a copy?
                 });
-            }
-            Ok(Some(next_batch))
-        } else {
-            Ok(None)
-        }
-    }
-}
-
-// Distinct
-#[derive(Debug)]
-pub(super) struct DistinctCollector {
-    variable_positions: Vec<VariablePosition>,
-    collector: Option<Batch>,
-}
-
-impl DistinctCollector {
-    fn new(distinct_executable: &DistinctExecutable) -> Self {
-        Self { variable_positions: distinct_executable.output_row_mapping.values().cloned().collect(), collector: None }
-    }
-}
-
-impl CollectorTrait for DistinctCollector {
-    fn prepare(&mut self) {
-        // self.collector = Some(Batch::new(self.output_width));
-    }
-
-    fn reset(&mut self) {
-        self.collector = None;
-    }
-
-    fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
-        for row in batch {
-            if self.collector.is_none() {
-                self.collector = Some(Batch::new(row.len() as u32, 0usize))
-            }
-            self.collector.as_mut().unwrap().append_row(row);
-        }
-    }
-
-    fn collected_to_iterator(&mut self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
-        let batch_with_duplicates = self.collector.take().unwrap();
-        let mut indices: Vec<usize> = (0..batch_with_duplicates.len()).collect();
-        let mut duplicate_block_start_indices: Vec<usize> = vec![];
-        let mut unique_block_restart_indices: Vec<usize> = vec![];
-        let mut previously_seen_hashes: HashSet<u64> = HashSet::new();
-        let mut looking_for_duplicate = true;
-
-        for &row_index in indices.iter() {
-            let row = batch_with_duplicates.get_row(row_index);
-            let mut hasher = DefaultHasher::new();
-            for &pos in &self.variable_positions {
-                row.get(pos).hash(&mut hasher);
-            }
-            let hash = hasher.finish();
-            if !previously_seen_hashes.contains(&hash) {
-                previously_seen_hashes.insert(hash);
-                if looking_for_duplicate == false {
-                    looking_for_duplicate = true;
-                    unique_block_restart_indices.push(row_index)
-                }
-            } else {
-                if looking_for_duplicate == true {
-                    looking_for_duplicate = false;
-                    duplicate_block_start_indices.push(row_index)
-                }
-            }
-        }
-
-        CollectedStageIterator::Distinct(DistinctStageIterator {
-            batch_with_duplicates,
-            next_row_index: 0,
-            duplicate_block_start_indices,
-            unique_block_restart_indices,
-            next_duplicate_index_index: 0,
-        })
-    }
-}
-
-#[derive(Debug)]
-pub struct DistinctStageIterator {
-    batch_with_duplicates: Batch,
-    next_row_index: usize,
-    // Record contiguous index blocks of duplicates:
-    duplicate_block_start_indices: Vec<usize>, // invariant: nui.len() <= fdi.len() <= nui.len() + 1
-    unique_block_restart_indices: Vec<usize>,
-    next_duplicate_index_index: usize,
-}
-
-impl CollectedStageIteratorTrait for DistinctStageIterator {
-    fn batch_continue(&mut self) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        if self.next_row_index < self.batch_with_duplicates.len() {
-            let width = self.batch_with_duplicates.get_row(0).len();
-            let mut next_batch = FixedBatch::new(width as u32);
-            while self.next_row_index < self.batch_with_duplicates.len() {
-                let mut next_row;
-                if self.next_duplicate_index_index >= self.duplicate_block_start_indices.len()
-                    || self.next_row_index < self.duplicate_block_start_indices[self.next_duplicate_index_index]
-                {
-                    // Case 1: next row is not a duplicate
-                    let row = self.batch_with_duplicates.get_row(self.next_row_index);
-                    self.next_row_index += 1;
-                    next_row = row;
-                } else {
-                    // Case 2: next row *is* a duplicate
-                    if let Some(next_index) = self.unique_block_restart_indices.get(self.next_duplicate_index_index) {
-                        next_row = self.batch_with_duplicates.get_row(self.next_row_index);
-                        self.next_row_index = *next_index;
-                    } else {
-                        // There are no more non-duplicated rows
-                        break;
-                    }
-                }
-                if !next_batch.is_full() {
-                    next_batch.append(|mut copy_to_row| {
-                        copy_to_row.copy_from_row(next_row);
-                    })
-                } else {
-                    // Batch is full
-                    break;
-                }
             }
             Ok(Some(next_batch))
         } else {
