@@ -30,6 +30,19 @@ use crate::{
     ExecutionInterrupt,
 };
 
+macro_rules! may_suspend {
+    ($suspensions:ident($index:ident, $branch_index:expr, $input:ident) $block:block) => {
+        {
+            let suspension_count_before = $suspensions.record_nested_pattern_entry();
+            let result = $block;
+            if $suspensions.record_nested_pattern_exit() != suspension_count_before {
+                $suspensions.push_nested($index, $branch_index, $input.clone());
+            }
+            result
+        }
+    };
+}
+
 #[derive(Debug)]
 pub(crate) struct PatternExecutor {
     executable_id: u64,
@@ -142,47 +155,33 @@ impl PatternExecutor {
                     let ExecuteDisjunctionBranch { index, branch_index, input } = execute_disjunction;
                     let disjunction = &mut executors[*index].unwrap_disjunction();
                     let branch = &mut disjunction.branches[*branch_index];
-                    let suspension_count_before = suspensions.record_nested_pattern_entry();
-                    let batch_opt = branch.batch_continue(context, interrupt, tabled_functions, suspensions)?;
-                    if suspensions.record_nested_pattern_exit() != suspension_count_before {
-                        suspensions.push_nested(index, branch_index, input.clone());
-                    }
-                    if let Some(unmapped) = batch_opt {
-                        let mapped = disjunction.map_output(unmapped);
+                    let batch_opt = may_suspend!(suspensions(index, branch_index, input) {
+                        branch.batch_continue(context, interrupt, tabled_functions, suspensions)?
+                    });
+                    if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(unmapped)) {
                         control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input }.into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }) => {
                     let executor = &mut executors[*index].unwrap_inlined_call();
-                    let suspension_count_before = suspensions.record_nested_pattern_entry();
-                    let unmapped_opt = executor.inner.batch_continue(
-                        &context.clone_with_replaced_parameters(executor.parameter_registry.clone()),
-                        interrupt,
-                        tabled_functions,
-                        suspensions,
-                    )?;
-                    if suspensions.record_nested_pattern_exit() != suspension_count_before {
-                        suspensions.push_nested(index, BranchIndex(0), input.clone());
-                    }
-                    if let Some(unmapped) = unmapped_opt {
-                        let mapped = executor.map_output(input.as_reference(), unmapped);
+                    let func_context = &context.clone_with_replaced_parameters(executor.parameter_registry.clone());
+                    let batch_opt = may_suspend!(suspensions(index, BranchIndex(0), input) {
+                        executor.inner.batch_continue(func_context, interrupt, tabled_functions, suspensions)?
+                    });
+                    if let Some(mapped) = batch_opt.map(|batch| executor.map_output(input.as_reference(), batch)) {
                         control_stack.push(ExecuteInlinedFunction::new(index, input).into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
                     let inner = &mut executors[*index].unwrap_stream_modifier().inner();
-                    let suspension_count_before = suspensions.record_nested_pattern_entry();
-                    let unmapped = inner.batch_continue(context, interrupt, tabled_functions, suspensions)?;
-                    if suspensions.record_nested_pattern_exit() != suspension_count_before {
-                        suspensions.push_nested(index, BranchIndex(0), input.clone());
-                    }
+                    let unmapped = may_suspend!(suspensions(index, BranchIndex(0), input) {
+                        inner.batch_continue(context, interrupt, tabled_functions, suspensions)?
+                    });
                     if let Some(batch) = mapper.map_output(unmapped) {
                         control_stack.push(ExecuteStreamModifier::new(index, mapper, input).into());
                         self.push_next_instruction(context, index.next(), batch)?;
-                    } else {
-                        inner.reset();
                     }
                 }
                 ControlInstruction::ExecuteTabledCall(ExecuteTabledCall { index, last_seen_table_size }) => {
@@ -357,28 +356,6 @@ impl PatternExecutor {
         }
         Ok(())
     }
-
-    fn execute_simple_nested_pattern(
-        &mut self,
-        instruction: impl SimpleNestedPatternInstruction,
-        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
-        interrupt: &mut ExecutionInterrupt,
-        tabled_functions: &mut TabledFunctions,
-        suspensions: &mut QueryPatternSuspensions,
-    ) -> Result<(), ReadExecutionError> {
-        let (index, branch_index, input, pattern) = instruction.unpack(self.executors.as_mut_slice());
-        let suspension_count_before = suspensions.record_nested_pattern_entry();
-
-        let batch_opt = pattern.batch_continue(context, interrupt, tabled_functions, suspensions)?;
-        if suspensions.record_nested_pattern_exit() != suspension_count_before {
-            suspensions.push_nested(index, branch_index, input.clone());
-        }
-        if let Some(mapped) = batch_opt.and_then(|unmapped| instruction.map_output(pattern, unmapped)) {
-            self.control_stack.push(instruction.into()); // retry
-            self.push_next_instruction(context, index.next(), mapped)?;
-        }
-        Ok(())
-    }
 }
 
 fn restore_suspension(
@@ -421,8 +398,4 @@ fn restore_suspension(
             }
         }
     }
-}
-trait SimpleNestedPatternInstruction : Into<ControlInstruction> {
-    fn unpack(&self, executors: &mut [StepExecutors]) -> (ExecutorIndex, BranchIndex, &MaybeOwnedRow<'static>,  &mut PatternExecutor);
-    fn map_output(&self, pattern: &mut PatternExecutor, to_map: FixedBatch) -> Option<FixedBatch>;
 }
