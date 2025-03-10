@@ -357,6 +357,28 @@ impl PatternExecutor {
         }
         Ok(())
     }
+
+    fn execute_simple_nested_pattern(
+        &mut self,
+        instruction: impl SimpleNestedPatternInstruction,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        interrupt: &mut ExecutionInterrupt,
+        tabled_functions: &mut TabledFunctions,
+        suspensions: &mut QueryPatternSuspensions,
+    ) -> Result<(), ReadExecutionError> {
+        let (index, branch_index, input, pattern) = instruction.unpack(self.executors.as_mut_slice());
+        let suspension_count_before = suspensions.record_nested_pattern_entry();
+
+        let batch_opt = pattern.batch_continue(context, interrupt, tabled_functions, suspensions)?;
+        if suspensions.record_nested_pattern_exit() != suspension_count_before {
+            suspensions.push_nested(index, branch_index, input.clone());
+        }
+        if let Some(mapped) = batch_opt.and_then(|unmapped| instruction.map_output(pattern, unmapped)) {
+            self.control_stack.push(instruction.into()); // retry
+            self.push_next_instruction(context, index.next(), mapped)?;
+        }
+        Ok(())
+    }
 }
 
 fn restore_suspension(
@@ -399,4 +421,8 @@ fn restore_suspension(
             }
         }
     }
+}
+trait SimpleNestedPatternInstruction : Into<ControlInstruction> {
+    fn unpack(&self, executors: &mut [StepExecutors]) -> (ExecutorIndex, BranchIndex, &MaybeOwnedRow<'static>,  &mut PatternExecutor);
+    fn map_output(&self, pattern: &mut PatternExecutor, to_map: FixedBatch) -> Option<FixedBatch>;
 }
