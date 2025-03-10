@@ -17,8 +17,8 @@ use crate::{
     pipeline::stage::ExecutionContext,
     profile::QueryProfile,
     read::{
-        pattern_executor::PatternExecutor, suspension::QueryPatternSuspensions, tabled_functions::TabledFunctions,
-        TODO_REMOVE_create_executors_for_match,
+        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions,
+        create_pattern_executor_for_match,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -40,7 +40,7 @@ impl MatchExecutor {
         profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
         Ok(Self {
-            entry: TODO_REMOVE_create_executors_for_match(
+            entry: create_pattern_executor_for_match(
                 snapshot,
                 thing_manager,
                 &function_registry,

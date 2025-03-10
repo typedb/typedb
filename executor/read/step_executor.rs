@@ -259,13 +259,10 @@ pub(crate) fn create_executors_for_function(
         }
         ExecutableReturn::Single(selector, positions) => {
             steps.push(StepExecutors::ReshapeForReturn(ReshapeForReturnExecutor(positions.clone())));
+            let pattern_executor = PatternExecutor::new(executable_function.executable_id, steps);
             let step = match selector {
-                SingleSelector::First => {
-                    StreamModifierExecutor::new_first(PatternExecutor::new(executable_function.executable_id, steps))
-                }
-                SingleSelector::Last => {
-                    StreamModifierExecutor::new_last(PatternExecutor::new(executable_function.executable_id, steps))
-                }
+                SingleSelector::First => StreamModifierExecutor::new_first(pattern_executor),
+                SingleSelector::Last => StreamModifierExecutor::new_last(pattern_executor),
             };
             Ok(vec![step.into()])
         }

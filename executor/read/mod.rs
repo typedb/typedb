@@ -43,7 +43,7 @@ impl ExecutorIndex {
 }
 deref_for_trivial_struct!(ExecutorIndex => usize);
 
-pub(super) fn TODO_REMOVE_create_executors_for_match(
+pub(super) fn create_pattern_executor_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
