@@ -7,7 +7,7 @@
 use std::collections::HashSet;
 
 use compiler::VariablePosition;
-use utils::{enum_dispatch_method, enum_dispatch};
+use utils::{enum_dispatch, enum_dispatch_method};
 
 use crate::{
     batch::FixedBatch,
@@ -109,7 +109,6 @@ trait StreamModifierResultMapperTrait {
     fn reset(&mut self);
 }
 
-
 #[derive(Debug)]
 pub(super) struct SelectMapper {
     removed_positions: Vec<VariablePosition>,
@@ -136,7 +135,7 @@ impl StreamModifierResultMapperTrait for SelectMapper {
         }
     }
 
-    fn reset(&mut self) { }
+    fn reset(&mut self) {}
 }
 
 #[derive(Debug)]
@@ -237,8 +236,9 @@ impl DistinctMapper {
 impl StreamModifierResultMapperTrait for DistinctMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         let mut input_batch = subquery_result?;
-        if input_batch.is_empty() { // Wait why?
-            return None
+        if input_batch.is_empty() {
+            // Wait why?
+            return None;
         };
 
         for i in 0..input_batch.len() {

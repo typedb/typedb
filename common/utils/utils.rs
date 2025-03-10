@@ -4,7 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#[macro_export]
+macro_rules! deref_for_trivial_struct {
+    ($outer:ty => $inner:ty) => {
+        impl std::ops::Deref for $outer {
+            type Target = $inner;
 
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+    };
+}
 
 #[macro_export]
 macro_rules! impl_from_for_enum {
@@ -31,7 +42,6 @@ macro_rules! enum_dispatch {
 
 }
 
-
 #[macro_export]
 macro_rules! enum_dispatch_method {
 
@@ -48,4 +58,3 @@ macro_rules! enum_dispatch_method {
     };
 
 }
-

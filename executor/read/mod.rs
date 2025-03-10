@@ -6,17 +6,15 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{
-    function::ExecutableFunctionRegistry,
-    match_::planner::match_executable::MatchExecutable,
+use compiler::{
+    executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable},
+    VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
+use utils::deref_for_trivial_struct;
 
-use crate::{
-    profile::QueryProfile,
-    read::pattern_executor::PatternExecutor,
-};
+use crate::{profile::QueryProfile, read::pattern_executor::PatternExecutor};
 
 mod collecting_stage_executor;
 pub(super) mod control_instruction;
@@ -31,6 +29,20 @@ pub(crate) mod tabled_call_executor;
 pub mod tabled_functions;
 
 // And use the below one instead
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct BranchIndex(pub usize);
+deref_for_trivial_struct!(BranchIndex => usize);
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct ExecutorIndex(pub usize);
+
+impl ExecutorIndex {
+    fn next(&self) -> ExecutorIndex {
+        ExecutorIndex(self.0 + 1)
+    }
+}
+deref_for_trivial_struct!(ExecutorIndex => usize);
+
 pub(super) fn TODO_REMOVE_create_executors_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,

@@ -4,13 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use compiler::VariablePosition;
 use utils::impl_from_for_enum;
+
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     read::{
-        collecting_stage_executor::CollectedStageIterator,
-        pattern_executor::{BranchIndex, ExecutorIndex},
-        stream_modifier::StreamModifierResultMapper,
+        collecting_stage_executor::CollectedStageIterator, stream_modifier::StreamModifierResultMapper, BranchIndex,
+        ExecutorIndex,
     },
     row::MaybeOwnedRow,
 };
@@ -132,6 +133,14 @@ impl ExecuteDisjunctionBranch {
 impl ExecuteStreamModifier {
     pub(crate) fn new(index: ExecutorIndex, mapper: StreamModifierResultMapper, input_row: MaybeOwnedRow<'_>) -> Self {
         Self { index, mapper, input: input_row.into_owned() }
+    }
+}
+
+impl ReshapeForReturn {
+    pub(crate) fn positions_to_mapping(
+        positions: &[VariablePosition],
+    ) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
+        positions.iter().enumerate().map(|(dst, &src)| (src, VariablePosition::new(dst as u32)))
     }
 }
 

@@ -5,10 +5,11 @@
  */
 
 use compiler::executable::function::StronglyConnectedComponentID;
-use crate::read::pattern_executor::{BranchIndex, ExecutorIndex};
-use crate::read::tabled_call_executor::TabledCallExecutor;
-use crate::read::tabled_functions::TableIndex;
-use crate::row::MaybeOwnedRow;
+
+use crate::{
+    read::{tabled_call_executor::TabledCallExecutor, tabled_functions::TableIndex, BranchIndex, ExecutorIndex},
+    row::MaybeOwnedRow,
+};
 
 #[derive(Debug)]
 pub(crate) enum PatternSuspension {
@@ -108,7 +109,11 @@ impl QueryPatternSuspensions {
         }))
     }
 
-    pub(super) fn push_tabled_call(&mut self, executor_index: ExecutorIndex, tabled_call_executor: &TabledCallExecutor) {
+    pub(super) fn push_tabled_call(
+        &mut self,
+        executor_index: ExecutorIndex,
+        tabled_call_executor: &TabledCallExecutor,
+    ) {
         self.suspending_patterns_tree
             .push(tabled_call_executor.create_suspension_at(executor_index, self.current_depth))
     }

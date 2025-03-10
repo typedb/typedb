@@ -23,8 +23,10 @@ use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
+use utils::deref_for_trivial_struct;
 
 use crate::{
+    batch::FixedBatch,
     profile::QueryProfile,
     read::{
         collecting_stage_executor::CollectingStageExecutor,
@@ -37,6 +39,21 @@ use crate::{
 };
 
 #[derive(Debug)]
+pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
+deref_for_trivial_struct!(ReshapeForReturnExecutor => [VariablePosition]);
+impl ReshapeForReturnExecutor {
+    fn map_output(&self, batch: FixedBatch) -> Option<FixedBatch> {
+        let mut output_batch = FixedBatch::new(self.0.len() as u32);
+        batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
+        Some(output_batch)
+    }
+
+    fn as_mapping(&self) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
+        self.0.iter().enumerate().map(|(dst, src)| (*src, VariablePosition::new(dst as u32)))
+    }
+}
+
+#[derive(Debug)]
 pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Disjunction(DisjunctionExecutor),
@@ -45,7 +62,7 @@ pub enum StepExecutors {
     TabledCall(TabledCallExecutor),
     StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
-    ReshapeForReturn(Vec<VariablePosition>),
+    ReshapeForReturn(ReshapeForReturnExecutor),
 }
 
 impl StepExecutors {
@@ -237,11 +254,11 @@ pub(crate) fn create_executors_for_function(
     )?;
     match &executable_function.returns {
         ExecutableReturn::Stream(positions) => {
-            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            steps.push(StepExecutors::ReshapeForReturn(ReshapeForReturnExecutor(positions.clone())));
             Ok(steps)
         }
         ExecutableReturn::Single(selector, positions) => {
-            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            steps.push(StepExecutors::ReshapeForReturn(ReshapeForReturnExecutor(positions.clone())));
             let step = match selector {
                 SingleSelector::First => {
                     StreamModifierExecutor::new_first(PatternExecutor::new(executable_function.executable_id, steps))

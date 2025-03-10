@@ -45,7 +45,7 @@ use crate::{
     profile::{QueryProfile, StageProfile},
     read::{
         pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
-        tabled_functions::TabledFunctions, suspension::QueryPatternSuspensions,
+        suspension::QueryPatternSuspensions, tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
@@ -245,11 +245,7 @@ fn execute_single_function(
 
     let batch = exactly_one_or_return_err!(
         pattern_executor
-            .compute_next_batch(
-                &execution_context,
-                &mut interrupt,
-                &mut tabled_functions
-            )
+            .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions)
             .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?,
         FetchExecutionError::FetchSingleFunctionNotSingle { func_name: "func".to_string() } // TODO: Can we get function name here?
     );

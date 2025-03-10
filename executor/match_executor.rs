@@ -17,7 +17,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     profile::QueryProfile,
     read::{
-        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, suspension::QueryPatternSuspensions,
+        pattern_executor::PatternExecutor, suspension::QueryPatternSuspensions, tabled_functions::TabledFunctions,
         TODO_REMOVE_create_executors_for_match,
     },
     row::MaybeOwnedRow,
@@ -48,7 +48,7 @@ impl MatchExecutor {
                 profile,
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
-            input: Some(input.into_owned())
+            input: Some(input.into_owned()),
         })
     }
 
@@ -70,9 +70,7 @@ impl MatchExecutor {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
-        self.entry
-            .compute_next_batch(context, interrupt, &mut self.tabled_functions)
-            .map_err(|err| Box::new(err))
+        self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions).map_err(|err| Box::new(err))
     }
 }
 

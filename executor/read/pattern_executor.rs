@@ -17,46 +17,19 @@ use crate::{
     read::{
         control_instruction::{
             CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
-            ExecuteNegation, ExecuteStreamModifier, MapBatchToRowsForNested, PatternStart, ReshapeForReturn,
-            RestoreSuspension, StreamCollected, ExecuteTabledCall, Yield,
+            ExecuteNegation, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested, PatternStart,
+            ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
         },
         nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
         step_executor::StepExecutors,
+        suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
-        suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
+        BranchIndex, ExecutorIndex,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-
-#[derive(Debug, Copy, Clone)]
-pub(crate) struct BranchIndex(pub usize);
-
-impl std::ops::Deref for BranchIndex {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-#[derive(Debug, Copy, Clone)]
-pub(crate) struct ExecutorIndex(pub usize);
-
-impl ExecutorIndex {
-    fn next(&self) -> ExecutorIndex {
-        ExecutorIndex(self.0 + 1)
-    }
-}
-
-impl std::ops::Deref for ExecutorIndex {
-    type Target = usize;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 #[derive(Debug)]
 pub(crate) struct PatternExecutor {
@@ -238,17 +211,11 @@ impl PatternExecutor {
                     }
                 }
                 ControlInstruction::ReshapeForReturn(ReshapeForReturn { index, to_reshape: batch }) => {
-                    let return_positions = executors[*index].unwrap_reshape();
-                    let mut output_batch = FixedBatch::new(return_positions.len() as u32);
+                    let reshape = executors[*index].unwrap_reshape();
+                    let mut output_batch = FixedBatch::new(reshape.len() as u32);
                     for row in batch {
                         output_batch.append(|mut write_to| {
-                            write_to.copy_mapped(
-                                row,
-                                return_positions
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(dst, &src)| (src, VariablePosition::new(dst as u32))),
-                            );
+                            write_to.copy_mapped(row, ReshapeForReturn::positions_to_mapping(reshape))
                         })
                     }
                     self.push_next_instruction(context, index.next(), output_batch)?;
@@ -284,14 +251,14 @@ impl PatternExecutor {
                 | StepExecutors::StreamModifier(_)
                 | StepExecutors::TabledCall(_) => {
                     let iterator = FixedBatchRowIterator::new(Ok(batch));
-                    self.control_stack.push(MapBatchToRowsForNested {index: next_index, iterator }.into())
+                    self.control_stack.push(MapBatchToRowsForNested { index: next_index, iterator }.into())
                 }
                 StepExecutors::CollectingStage(collecting_stage) => {
                     collecting_stage.prepare(batch);
                     self.control_stack.push(CollectingStage { index: next_index }.into());
                 }
                 StepExecutors::ReshapeForReturn(_) => {
-                    self.control_stack.push(ReshapeForReturn { index: next_index, to_reshape: batch}.into());
+                    self.control_stack.push(ReshapeForReturn { index: next_index, to_reshape: batch }.into());
                 }
             }
         }
@@ -307,7 +274,9 @@ impl PatternExecutor {
             StepExecutors::Disjunction(DisjunctionExecutor { branches, .. }) => {
                 for (branch_index, branch) in branches.iter_mut().enumerate() {
                     branch.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(ExecuteDisjunctionBranch::new(index, BranchIndex(branch_index), input.as_reference()).into())
+                    self.control_stack.push(
+                        ExecuteDisjunctionBranch::new(index, BranchIndex(branch_index), input.as_reference()).into(),
+                    )
                 }
             }
             StepExecutors::Negation(NegationExecutor { inner }) => {
@@ -373,7 +342,9 @@ impl PatternExecutor {
                             let new_table_size = tabled_functions.total_table_size();
                             if Some(new_table_size) != table_size_at_last_restore {
                                 tabled_functions.may_prepare_to_retry_suspended();
-                                self.control_stack.push(ExecuteTabledCall {index, last_seen_table_size: Some(new_table_size) }.into());
+                                self.control_stack.push(
+                                    ExecuteTabledCall { index, last_seen_table_size: Some(new_table_size) }.into(),
+                                );
                             } // else, we're done!!!
                         } else {
                             caller_suspensions.push_tabled_call(index, executor);
@@ -384,7 +355,8 @@ impl PatternExecutor {
             }
         };
         if let Some(batch) = found {
-            self.control_stack.push(ExecuteTabledCall { index, last_seen_table_size: table_size_at_last_restore}.into());
+            self.control_stack
+                .push(ExecuteTabledCall { index, last_seen_table_size: table_size_at_last_restore }.into());
             let mapped = executor.map_output(batch);
             self.push_next_instruction(context, index.next(), mapped)?;
         }
@@ -422,7 +394,8 @@ fn restore_suspension(
                 }
                 StepExecutors::StreamModifier(modifier) => {
                     modifier.inner().prepare_to_restore_from_suspension(nested_pattern_depth);
-                    control_stack.push(ExecuteStreamModifier::new(executor_index, modifier.create_mapper(), input_row).into())
+                    let mapper = modifier.create_mapper();
+                    control_stack.push(ExecuteStreamModifier::new(executor_index, mapper, input_row).into())
                 }
                 StepExecutors::Immediate(_)
                 | StepExecutors::CollectingStage(_)
