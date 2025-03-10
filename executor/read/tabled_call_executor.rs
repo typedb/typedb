@@ -18,7 +18,7 @@ use crate::{
         pattern_executor::ExecutorIndex,
         tabled_call_executor::TabledCallResult::Suspend,
         tabled_functions::{CallKey, TableIndex, TabledFunctionPatternExecutorState, TabledFunctionState},
-        PatternSuspension, TabledCallSuspension,
+        suspension::{PatternSuspension, TabledCallSuspension},
     },
     row::MaybeOwnedRow,
 };

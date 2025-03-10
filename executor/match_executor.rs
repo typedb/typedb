@@ -17,7 +17,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     profile::QueryProfile,
     read::{
-        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, QueryPatternSuspensions,
+        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, suspension::QueryPatternSuspensions,
         TODO_REMOVE_create_executors_for_match,
     },
     row::MaybeOwnedRow,

@@ -45,7 +45,7 @@ use crate::{
     profile::{QueryProfile, StageProfile},
     read::{
         pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
-        tabled_functions::TabledFunctions, QueryPatternSuspensions,
+        tabled_functions::TabledFunctions, suspension::QueryPatternSuspensions,
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,

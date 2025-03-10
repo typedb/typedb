@@ -24,7 +24,7 @@ use crate::{
         step_executor::StepExecutors,
         tabled_call_executor::TabledCallResult,
         tabled_functions::{TabledFunctionPatternExecutorState, TabledFunctions},
-        NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension,
+        suspension::{NestedPatternSuspension, PatternSuspension, QueryPatternSuspensions, TabledCallSuspension},
     },
     row::MaybeOwnedRow,
     ExecutionInterrupt,
