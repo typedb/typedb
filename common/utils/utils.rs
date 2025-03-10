@@ -9,12 +9,15 @@
 #[macro_export]
 macro_rules! impl_from_for_enum {
     // Nothing, we just need the compile error when the feature is deleted
-    ($enum_name:ident from $inner:ident in $variant:ident) => {
+    ($enum_name:ident from $inner:ident as $variant:ident) => {
         impl From<$inner> for $enum_name {
             fn from(value: $inner) -> Self {
                 $enum_name::$variant(value)
             }
         }
+    };
+    ($enum_name:ident from $inner_and_variant:ident) => {
+        impl_from_for_enum!($enum_name from $inner_and_variant as $inner_and_variant);
     };
 }
 

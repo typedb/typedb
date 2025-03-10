@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use utils::impl_from_for_enum;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     read::{
@@ -13,6 +14,28 @@ use crate::{
     },
     row::MaybeOwnedRow,
 };
+
+#[derive(Debug)]
+pub(super) enum ControlInstruction {
+    // Control instructions
+    PatternStart(PatternStart),
+    RestoreSuspension(RestoreSuspension),
+    ReshapeForReturn(ReshapeForReturn),
+    Yield(Yield),
+
+    ExecuteImmediate(ExecuteImmediate),
+
+    MapBatchToRowsForNested(MapBatchToRowsForNested),
+    ExecuteNegation(ExecuteNegation),
+
+    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
+    ExecuteInlinedFunction(ExecuteInlinedFunction),
+    ExecuteStreamModifier(ExecuteStreamModifier),
+
+    ExecuteTabledCall(ExecuteTabledCall),
+    CollectingStage(CollectingStage),
+    StreamCollected(StreamCollected),
+}
 
 #[derive(Debug)]
 pub(super) struct PatternStart {
@@ -30,7 +53,7 @@ pub(super) struct ExecuteImmediate {
 }
 
 #[derive(Debug)]
-pub(super) struct MapRowBatchToRowForNested {
+pub(super) struct MapBatchToRowsForNested {
     pub(super) index: ExecutorIndex,
     pub(super) iterator: FixedBatchRowIterator,
 }
@@ -62,7 +85,7 @@ pub(super) struct ExecuteDisjunctionBranch {
 }
 
 #[derive(Debug)]
-pub(super) struct TabledCall {
+pub(super) struct ExecuteTabledCall {
     pub(super) index: ExecutorIndex,
     pub(super) last_seen_table_size: Option<usize>,
 }
@@ -89,41 +112,43 @@ pub(super) struct Yield {
     pub(super) batch: FixedBatch,
 }
 
-#[derive(Debug)]
-pub(super) enum ControlInstruction {
-    // Control instructions
-    RestoreSuspension(RestoreSuspension),
-    Yield(Yield),
-
-    // ExecuteSimpleSpecialInstruction(ExecuteSimpleSpecialInstruction),
-    PatternStart(PatternStart),
-    MapBatchToRowForNested(MapRowBatchToRowForNested),
-    StreamCollected(StreamCollected),
-    ReshapeForReturn(ReshapeForReturn),
-
-    ExecuteImmediate(ExecuteImmediate),
-
-    // ExecuteSimpleNestedPattern(ExecuteSimpleNestedPattern),
-    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
-    ExecuteInlinedFunction(ExecuteInlinedFunction),
-    ExecuteStreamModifier(ExecuteStreamModifier),
-
-    ExecuteNegation(ExecuteNegation),
-    ExecuteTabledCall(TabledCall),
-    CollectingStage(CollectingStage),
+impl ExecuteInlinedFunction {
+    pub(crate) fn new(index: ExecutorIndex, input_row: MaybeOwnedRow<'_>) -> Self {
+        Self { index, input: input_row.into_owned() }
+    }
 }
 
-#[derive(Debug)]
-pub(super) enum ExecuteSimpleNestedPattern {
-    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
-    ExecuteInlinedFunction(ExecuteInlinedFunction),
-    ExecuteStreamModifier(ExecuteStreamModifier),
+impl ExecuteNegation {
+    pub(crate) fn new(index: ExecutorIndex, input_row: MaybeOwnedRow<'_>) -> Self {
+        Self { index, input: input_row.into_owned() }
+    }
+}
+impl ExecuteDisjunctionBranch {
+    pub(crate) fn new(index: ExecutorIndex, branch_index: BranchIndex, input_row: MaybeOwnedRow<'_>) -> Self {
+        Self { index, branch_index, input: input_row.into_owned() }
+    }
 }
 
-#[derive(Debug)]
-pub(super) enum ExecuteSimpleSpecialInstruction {
-    PatternStart(PatternStart),
-    MapBatchToRowForNested(MapRowBatchToRowForNested),
-    StreamCollected(StreamCollected),
-    ReshapeForReturn(ReshapeForReturn),
+impl ExecuteStreamModifier {
+    pub(crate) fn new(index: ExecutorIndex, mapper: StreamModifierResultMapper, input_row: MaybeOwnedRow<'_>) -> Self {
+        Self { index, mapper, input: input_row.into_owned() }
+    }
 }
+
+impl_from_for_enum!(ControlInstruction from PatternStart);
+impl_from_for_enum!(ControlInstruction from RestoreSuspension);
+impl_from_for_enum!(ControlInstruction from ReshapeForReturn);
+impl_from_for_enum!(ControlInstruction from Yield);
+
+impl_from_for_enum!(ControlInstruction from MapBatchToRowsForNested);
+
+impl_from_for_enum!(ControlInstruction from ExecuteImmediate);
+
+impl_from_for_enum!(ControlInstruction from ExecuteNegation);
+impl_from_for_enum!(ControlInstruction from ExecuteDisjunctionBranch);
+impl_from_for_enum!(ControlInstruction from ExecuteInlinedFunction);
+impl_from_for_enum!(ControlInstruction from ExecuteStreamModifier);
+impl_from_for_enum!(ControlInstruction from ExecuteTabledCall);
+
+impl_from_for_enum!(ControlInstruction from CollectingStage);
+impl_from_for_enum!(ControlInstruction from StreamCollected);
