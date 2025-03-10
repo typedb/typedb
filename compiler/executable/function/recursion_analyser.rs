@@ -24,48 +24,32 @@ pub(super) fn determine_compilation_order_and_tabling_types<FIDType: FunctionIDA
 ) -> Result<(Vec<FIDType>, HashMap<FIDType, FunctionTablingType>), ExecutableCompilationError> {
     let mut forward_dependencies = HashMap::new();
     to_compile.keys().try_for_each(|fid| collect_dependencies(to_compile, &mut forward_dependencies, fid))?;
+    debug_assert!(to_compile.len() == forward_dependencies.len() && to_compile.keys().all(|k| forward_dependencies.contains_key(k)));
 
-    let mut post_order = Vec::new();
-    let mut cycle_breakers = HashSet::new();
-    let mut open_set = HashSet::new();
-    let mut closed_set = HashSet::new();
-    to_compile.keys().for_each(|fid| {
-        determine_post_order_and_cycle_breakers(
-            &forward_dependencies,
-            &mut post_order,
-            &mut cycle_breakers,
-            &mut open_set,
-            &mut closed_set,
-            fid,
-        );
-    });
+    // Find the post_order
+    let (post_order, cycle_breakers) = determine_post_order_and_cycle_breakers(&forward_dependencies);
     debug_assert!(to_compile.keys().all(|k| post_order.contains(k)) && post_order.len() == to_compile.len());
 
-    // Kosaraju for SCC finding
+    // Reverse forward dependencies
     let mut reverse_dependencies = to_compile.keys().map(|k| (k.clone(), HashSet::new())).collect::<HashMap<_, _>>();
     forward_dependencies.iter().for_each(|(k, v_set)| {
         v_set.iter().for_each(|v| {
             reverse_dependencies.get_mut(v).unwrap().insert(k.clone());
         });
     });
-    let mut scc_mapping: HashMap<FIDType, FIDType> = HashMap::new();
+
+    // Use the post-order & reversed graph to find SCCs using Kosaraju
+    let mut scc_mapping: HashMap<FIDType, StronglyConnectedComponentID> = HashMap::new();
     post_order.iter().rev().for_each(|root| {
         assign_scc(&reverse_dependencies, &mut scc_mapping, root, root);
     });
 
-    let tabling_types = to_compile
-        .keys()
-        .cloned()
-        .map(|fid| match cycle_breakers.contains(&fid) {
-            true => (
-                fid.clone(),
-                FunctionTablingType::Tabled(StronglyConnectedComponentID(
-                    scc_mapping.get(&fid).unwrap().clone().into(),
-                )),
-            ),
-            false => (fid, FunctionTablingType::Untabled),
-        })
-        .collect::<HashMap<_, _>>();
+    // Convert SCCID to TablingTypes
+    debug_assert!(scc_mapping.len() == to_compile.len() && to_compile.keys().all(|k| scc_mapping.contains_key(k)));
+    let tabling_types = scc_mapping.into_iter().map(|(fid, scc)| match cycle_breakers.contains(&fid) {
+        true => (fid.clone(), FunctionTablingType::Tabled(scc)),
+         false => (fid, FunctionTablingType::Untabled)
+    }).collect::<HashMap<_, _>>();
 
     Ok((post_order, tabling_types))
 }
@@ -93,6 +77,26 @@ fn collect_dependencies<FIDType: FunctionIDAPI>(
 
 fn determine_post_order_and_cycle_breakers<FIDType: FunctionIDAPI>(
     forward_dependencies: &HashMap<FIDType, HashSet<FIDType>>,
+) -> (Vec<FIDType>, HashSet<FIDType>) {
+    let mut post_order = Vec::new();
+    let mut cycle_breakers = HashSet::new();
+    let mut open_set = HashSet::new();
+    let mut closed_set = HashSet::new();
+    forward_dependencies.keys().for_each(|fid| {
+        determine_post_order_and_cycle_breakers_impl(
+            &forward_dependencies,
+            &mut post_order,
+            &mut cycle_breakers,
+            &mut open_set,
+            &mut closed_set,
+            fid,
+        );
+    });
+    (post_order, cycle_breakers)
+}
+
+fn determine_post_order_and_cycle_breakers_impl<FIDType: FunctionIDAPI>(
+    forward_dependencies: &HashMap<FIDType, HashSet<FIDType>>,
     post_order: &mut Vec<FIDType>,
     cycle_breakers: &mut HashSet<FIDType>,
     open: &mut HashSet<FIDType>,
@@ -109,7 +113,7 @@ fn determine_post_order_and_cycle_breakers<FIDType: FunctionIDAPI>(
 
     open.insert(fid.clone());
     forward_dependencies.get(fid).unwrap().iter().for_each(|dep| {
-        determine_post_order_and_cycle_breakers(forward_dependencies, post_order, cycle_breakers, open, closed, dep);
+        determine_post_order_and_cycle_breakers_impl(forward_dependencies, post_order, cycle_breakers, open, closed, dep);
     });
     open.remove(fid);
     closed.insert(fid.clone());
@@ -119,14 +123,14 @@ fn determine_post_order_and_cycle_breakers<FIDType: FunctionIDAPI>(
 
 fn assign_scc<FIDType: FunctionIDAPI>(
     reversed_dependencies: &HashMap<FIDType, HashSet<FIDType>>,
-    scc_mapping: &mut HashMap<FIDType, FIDType>,
+    scc_mapping: &mut HashMap<FIDType, StronglyConnectedComponentID>,
     root: &FIDType,
     fid: &FIDType,
 ) {
     if scc_mapping.contains_key(fid) {
         return;
     }
-    scc_mapping.insert(fid.clone(), root.clone());
+    scc_mapping.insert(fid.clone(), StronglyConnectedComponentID(root.clone().into()));
     reversed_dependencies.get(fid).unwrap().iter().for_each(|rdep| {
         assign_scc(reversed_dependencies, scc_mapping, root, rdep);
     })
