@@ -196,10 +196,12 @@ impl Batch {
         self.row_internal_mut(index)
     }
 
+    // We keep the implementation of append & append_mapped separate
+    // hoping copy_from_row does a memcpy that's better for large rows
     pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
-        debug_assert!(self.width as usize >= row.len());
-        let row_len = row.len();
-        self.append_mapped(row, (0..row_len as u32).map(|i| (VariablePosition::new(i), VariablePosition::new(i))))
+        let mut destination_row = self.row_internal_mut(self.entries);
+        destination_row.copy_from_row(row);
+        self.entries += 1;
     }
 
     pub(crate) fn append_mapped(

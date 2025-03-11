@@ -9,9 +9,9 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::Level;
-use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 
 use crate::{
     batch::Batch,
