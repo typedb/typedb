@@ -21,6 +21,7 @@ pub mod insert;
 pub mod match_;
 pub mod modifiers;
 pub mod pipeline;
+pub mod put;
 pub mod reduce;
 pub mod update;
 
@@ -37,6 +38,8 @@ typedb_error! {
         DeleteExecutableCompilation(3, "Error compiling delete stage into executable.", typedb_source: Box<WriteCompilationError>),
         FetchCompilation(4, "Error compiling fetch stage into executable.", typedb_source: FetchCompilationError),
         MatchCompilation(5, "Error compiling match stage into executable.", typedb_source: MatchCompilationError),
+        PutMatchCompilation(6, "Error compiling put stage into a match executable.", typedb_source: MatchCompilationError),
+        PutInsertCompilation(7, "Error compiling put stage into an insert executable.", typedb_source: Box<WriteCompilationError>),
     }
 }
 

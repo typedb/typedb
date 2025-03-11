@@ -225,6 +225,12 @@ typedb_error! {
             "Illegal statement provided for an update stage. Only 'update $0 has $1' and 'update $0 links $1' are allowed.",
             source_span: Option<Span>,
         ),
+        IllegalStatementForPut(
+            43,
+            "Illegal statement '{constraint_type}' provided for a put stage. Only 'has', 'links' and 'isa' constraints are allowed.",
+            constraint_type: String,
+            source_span: Option<Span>,
+        ),
         RegexExpectedStringLiteral(50,
             "Expected a string literal as regex.",
             source_span: Option<Span>

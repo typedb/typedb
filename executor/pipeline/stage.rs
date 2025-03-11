@@ -9,6 +9,7 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::Level;
 
@@ -24,6 +25,7 @@ use crate::{
             OffsetStageIterator, RequireStageExecutor, RequireStageIterator, SelectStageExecutor, SelectStageIterator,
             SortStageExecutor, SortStageIterator,
         },
+        put::PutStageExecutor,
         reduce::ReduceStageExecutor,
         update::UpdateStageExecutor,
         PipelineExecutionError, WrittenRowsIterator,
@@ -108,7 +110,7 @@ pub trait StageIterator:
             None => return Ok(Batch::new(0, 1)),
             Some(row) => {
                 let row = row?;
-                let mut batch = Batch::new(row.len() as u32, 10);
+                let mut batch = Batch::new(row.len() as u32, BATCH_DEFAULT_LENGTH);
                 batch.append(row);
                 batch
             }
@@ -235,6 +237,7 @@ pub enum WritePipelineStage<Snapshot: WritableSnapshot + 'static> {
     Match(Box<MatchStageExecutor<WritePipelineStage<Snapshot>>>),
     Insert(Box<InsertStageExecutor<WritePipelineStage<Snapshot>>>),
     Update(Box<UpdateStageExecutor<WritePipelineStage<Snapshot>>>),
+    Put(Box<PutStageExecutor<WritePipelineStage<Snapshot>>>),
     Delete(Box<DeleteStageExecutor<WritePipelineStage<Snapshot>>>),
     Sort(Box<SortStageExecutor<WritePipelineStage<Snapshot>>>),
     Limit(Box<LimitStageExecutor<WritePipelineStage<Snapshot>>>),
@@ -269,6 +272,10 @@ impl<Snapshot: WritableSnapshot + 'static> StageAPI<Snapshot> for WritePipelineS
                 Ok((WriteStageIterator::Write(iterator), context))
             }
             WritePipelineStage::Update(stage) => {
+                let (iterator, context) = stage.into_iterator(interrupt)?;
+                Ok((WriteStageIterator::Write(iterator), context))
+            }
+            WritePipelineStage::Put(stage) => {
                 let (iterator, context) = stage.into_iterator(interrupt)?;
                 Ok((WriteStageIterator::Write(iterator), context))
             }

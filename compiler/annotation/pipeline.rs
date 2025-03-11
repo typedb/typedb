@@ -79,6 +79,12 @@ pub enum AnnotatedStage {
         annotations: TypeAnnotations,
         source_span: Option<Span>,
     },
+    Put {
+        block: Block,
+        match_annotations: TypeAnnotations,
+        insert_annotations: TypeAnnotations,
+        source_span: Option<Span>,
+    },
     Delete {
         block: Block,
         deleted_variables: Vec<Variable>,
@@ -104,6 +110,7 @@ impl AnnotatedStage {
             AnnotatedStage::Match { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Insert { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Update { block, .. } => Box::new(block.variables()),
+            AnnotatedStage::Put { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Delete { block, .. } => Box::new(block.variables()),
             AnnotatedStage::Select(select) => Box::new(select.variables.iter().cloned()),
             AnnotatedStage::Sort(sort) => Box::new(sort.variables.iter().map(|sort_variable| sort_variable.variable())),
@@ -338,6 +345,44 @@ fn annotate_stage(
             Ok(AnnotatedStage::Update { block, annotations, source_span })
         }
 
+        TranslatedStage::Put { block, source_span } => {
+            let match_annotations = infer_types(
+                snapshot,
+                &block,
+                variable_registry,
+                type_manager,
+                running_variable_annotations,
+                annotated_function_signatures,
+                false,
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+            let insert_annotations = annotate_write_stage(
+                running_variable_annotations,
+                variable_registry,
+                snapshot,
+                type_manager,
+                annotated_function_signatures,
+                &block,
+            )?;
+            check_type_combinations_for_write(
+                snapshot,
+                type_manager,
+                &block,
+                running_variable_annotations,
+                running_constraint_annotations,
+                &insert_annotations,
+            )
+            .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+
+            // Update running annotations based on match annotations as they will be less strict.
+            match_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+                if let Some(var) = vertex.as_variable() {
+                    running_variable_annotations.insert(var, types.clone());
+                }
+            });
+
+            Ok(AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span })
+        }
         TranslatedStage::Delete { block, deleted_variables, source_span } => {
             let delete_annotations = annotate_write_stage(
                 running_variable_annotations,

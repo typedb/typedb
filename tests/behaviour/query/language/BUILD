@@ -72,7 +72,6 @@ rust_test(
     crate_features = ["bazel"],
 )
 
-
 rust_test(
     name = "test_update",
     srcs = ["update.rs"],
@@ -81,6 +80,17 @@ rust_test(
         "@crates//:tokio",
     ],
     data = ["@typedb_behaviour//query/language:update.feature"],
+    crate_features = ["bazel"],
+)
+
+rust_test(
+    name = "test_put",
+    srcs = ["put.rs"],
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = ["@typedb_behaviour//query/language:put.feature"],
     crate_features = ["bazel"],
 )
 

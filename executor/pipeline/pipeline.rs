@@ -8,7 +8,10 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
-    executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
+    executable::{
+        fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage,
+        put::PutExecutable,
+    },
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
@@ -29,6 +32,7 @@ use crate::{
             DistinctStageExecutor, LimitStageExecutor, OffsetStageExecutor, RequireStageExecutor, SelectStageExecutor,
             SortStageExecutor,
         },
+        put::PutStageExecutor,
         reduce::ReduceStageExecutor,
         stage::{ExecutionContext, ReadPipelineStage, StageAPI, WritePipelineStage},
         update::UpdateStageExecutor,
@@ -144,6 +148,9 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
                 ExecutableStage::Update(_) => {
                     return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Update".to_string() }))
                 }
+                ExecutableStage::Put(_) => {
+                    return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Put".to_string() }))
+                }
                 ExecutableStage::Delete(_) => {
                     return Err(Box::new(PipelineError::InvalidReadPipelineStage { stage: "Delete".to_string() }))
                 }
@@ -215,6 +222,10 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
                 ExecutableStage::Update(update_executable) => {
                     let update_stage = UpdateStageExecutor::new(update_executable, last_stage);
                     last_stage = WritePipelineStage::Update(Box::new(update_stage));
+                }
+                ExecutableStage::Put(put_executable) => {
+                    let put_stage = PutStageExecutor::new(put_executable, last_stage, executable_functions.clone());
+                    last_stage = WritePipelineStage::Put(Box::new(put_stage));
                 }
                 ExecutableStage::Delete(delete_executable) => {
                     let delete_stage = DeleteStageExecutor::new(delete_executable, last_stage);

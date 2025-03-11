@@ -30,6 +30,7 @@ use crate::{
         modifiers::{
             DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
         },
+        put::PutExecutable,
         reduce::{ReduceExecutable, ReduceRowsExecutable},
         update::executable::UpdateExecutable,
         ExecutableCompilationError,
@@ -49,6 +50,7 @@ pub enum ExecutableStage {
     Match(Arc<MatchExecutable>),
     Insert(Arc<InsertExecutable>),
     Update(Arc<UpdateExecutable>),
+    Put(Arc<(PutExecutable)>),
     Delete(Arc<DeleteExecutable>),
 
     Select(Arc<SelectExecutable>),
@@ -91,6 +93,7 @@ impl ExecutableStage {
             ExecutableStage::Require(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Distinct(executable) => executable.output_row_mapping.clone(),
             ExecutableStage::Reduce(executable) => executable.output_row_mapping.clone(),
+            ExecutableStage::Put(executable) => executable.output_row_mapping().clone(),
         }
     }
 }
@@ -246,6 +249,7 @@ fn compile_stage(
                 input_variables,
                 annotations,
                 variable_registry,
+                None,
                 *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::InsertExecutableCompilation { typedb_source })?;
@@ -261,6 +265,29 @@ fn compile_stage(
             )
             .map_err(|typedb_source| ExecutableCompilationError::UpdateExecutableCompilation { typedb_source })?;
             Ok(ExecutableStage::Update(Arc::new(plan)))
+        }
+        AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
+            let match_plan = crate::executable::match_::planner::compile(
+                block,
+                input_variables,
+                selected_variables,
+                match_annotations,
+                variable_registry,
+                &HashMap::new(),
+                statistics,
+                call_cost_provider,
+            )
+            .map_err(|source| ExecutableCompilationError::PutMatchCompilation { typedb_source: source })?;
+            let insert_plan = crate::executable::insert::executable::compile(
+                block.conjunction().constraints(),
+                input_variables,
+                insert_annotations,
+                variable_registry,
+                Some(match_plan.variable_positions().clone()),
+                *source_span,
+            )
+            .map_err(|typedb_source| ExecutableCompilationError::PutInsertCompilation { typedb_source })?;
+            Ok(ExecutableStage::Put(Arc::new(PutExecutable::new(match_plan, insert_plan))))
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {
             let plan = crate::executable::delete::executable::compile(

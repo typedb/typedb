@@ -7,7 +7,7 @@
 use answer::variable::Variable;
 use typeql::{
     common::{Span, Spanned},
-    query::stage::delete::DeletableKind,
+    query::stage::{delete::DeletableKind, Put},
     statement::thing::{Constraint, HasValue, Head, RolePlayer},
     Expression, Identifier, Statement,
 };
@@ -61,6 +61,33 @@ pub fn translate_update(
         add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
     }
     builder.finish()
+}
+
+pub fn translate_put(
+    context: &mut TranslationContext,
+    value_parameters: &mut ParameterRegistry,
+    put: &Put,
+) -> Result<Block, Box<RepresentationError>> {
+    let mut builder = Block::builder(context.new_block_builder_context(value_parameters));
+    let function_index = HashMapFunctionSignatureIndex::empty();
+    for statement in &put.statements {
+        add_statement(&function_index, &mut builder.conjunction_mut(), statement)?;
+    }
+    let block = builder.finish()?;
+    block.conjunction().constraints().iter().try_for_each(|constraint| match constraint {
+        crate::pattern::constraint::Constraint::RoleName(_)
+        | crate::pattern::constraint::Constraint::Isa(_)
+        | crate::pattern::constraint::Constraint::Links(_)
+        | crate::pattern::constraint::Constraint::Has(_)
+        | crate::pattern::constraint::Constraint::Comparison(_)
+        | crate::pattern::constraint::Constraint::LinksDeduplication(_)
+        | crate::pattern::constraint::Constraint::Value(_) => Ok(()),
+        constraint => Err(Box::new(RepresentationError::IllegalStatementForPut {
+            constraint_type: constraint.name().to_owned(),
+            source_span: constraint.source_span(),
+        })),
+    })?;
+    Ok(block)
 }
 
 pub fn translate_delete(

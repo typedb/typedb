@@ -6,24 +6,25 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{
-    insert::instructions::ConceptInstruction,
-    update::{executable::UpdateExecutable, instructions::ConnectionInstruction},
+use compiler::{
+    executable::{
+        insert::{instructions::ConceptInstruction, VariableSource},
+        update::{executable::UpdateExecutable, instructions::ConnectionInstruction},
+    },
+    VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
-use lending_iterator::LendingIterator;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
-    batch::Batch,
     pipeline::{
         insert::prepare_output_rows,
         stage::{ExecutionContext, StageAPI},
-        PipelineExecutionError, StageIterator, WrittenRowsIterator,
+        PipelineExecutionError, WrittenRowsIterator,
     },
     profile::StageProfile,
-    row::{MaybeOwnedRow, Row},
+    row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
 };
@@ -62,10 +63,20 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
 
-        let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
-            Ok(output_rows) => output_rows,
-            Err(err) => return Err((err, context)),
-        };
+        let input_output_mapping = executable
+            .output_row_schema
+            .iter()
+            .enumerate()
+            .filter_map(|(i, entry)| match entry {
+                Some((_, VariableSource::Input(src))) => Some((*src, VariablePosition::new(i as u32))),
+                Some((_, VariableSource::Inserted)) | None => None,
+            })
+            .collect();
+        let mut batch =
+            match prepare_output_rows(executable.output_width() as u32, previous_iterator, &input_output_mapping) {
+                Ok(output_rows) => output_rows,
+                Err(err) => return Err((err, context)),
+            };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();

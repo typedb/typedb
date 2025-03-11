@@ -62,7 +62,7 @@ impl<'a> Row<'a> {
         mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
     ) {
         for (src, dst) in mapping {
-            if row.len() > src.as_usize() {
+            if src.as_usize() < row.len() {
                 self.set(dst, row.get(src).clone().into_owned());
             }
         }

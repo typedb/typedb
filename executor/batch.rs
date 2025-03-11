@@ -11,15 +11,15 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
+use compiler::VariablePosition;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
 
 use crate::{
     error::ReadExecutionError,
     row::{MaybeOwnedRow, Row},
 };
-
-const FIXED_BATCH_ROWS_MAX: u32 = 64;
 
 #[derive(Debug)]
 pub struct FixedBatch {
@@ -180,7 +180,7 @@ impl Batch {
     }
 
     pub(crate) fn get_multiplicities(&self) -> &[u64] {
-        self.multiplicities.as_ref()
+        &self.multiplicities[0..self.entries]
     }
 
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
@@ -196,9 +196,21 @@ impl Batch {
         self.row_internal_mut(index)
     }
 
+    // We keep the implementation of append & append_mapped separate
+    // hoping copy_from_row does a memcpy that's better for large rows
     pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
         let mut destination_row = self.row_internal_mut(self.entries);
         destination_row.copy_from_row(row);
+        self.entries += 1;
+    }
+
+    pub(crate) fn append_mapped(
+        &mut self,
+        row: MaybeOwnedRow<'_>,
+        mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
+    ) {
+        let mut destination_row = self.row_internal_mut(self.entries);
+        destination_row.copy_mapped(row, mapping);
         self.entries += 1;
     }
 

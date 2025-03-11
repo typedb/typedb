@@ -199,7 +199,7 @@ typedb_error!(
         ),
         AnnotationsUnavailableForVariableInWrite(
             10,
-            "Typing information for the variable '{variable}' is not available. Check if the variable is available from a previous stage or is inserted in this stage.",
+            "Typing information for the variable '{variable}' is not available. Ensure the variable is available from a previous stage or is inserted in this stage.",
             variable: Variable,
             source_span: Option<Span>,
         ),

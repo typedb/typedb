@@ -504,7 +504,7 @@ checkstyle_test(
     exclude = glob([
         "*.md",
         ".circleci/windows/*",
-        "docs/*",
+        "docs/**",
         "tools/**",
         "Cargo.*",
     ]) + [

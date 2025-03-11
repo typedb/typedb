@@ -6,9 +6,13 @@
 
 use std::sync::Arc;
 
-use compiler::executable::insert::{
-    executable::InsertExecutable,
-    instructions::{ConceptInstruction, ConnectionInstruction},
+use compiler::{
+    executable::insert::{
+        executable::InsertExecutable,
+        instructions::{ConceptInstruction, ConnectionInstruction},
+        VariableSource,
+    },
+    VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
@@ -61,10 +65,21 @@ where
 
         let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
 
-        let mut batch = match prepare_output_rows(executable.output_width() as u32, previous_iterator) {
-            Ok(output_rows) => output_rows,
-            Err(err) => return Err((err, context)),
-        };
+        // prepare_output_rows copies unmapped
+        let input_output_mapping = executable
+            .output_row_schema
+            .iter()
+            .enumerate()
+            .filter_map(|(i, entry)| match entry {
+                Some((_, VariableSource::Input(src))) => Some((*src, VariablePosition::new(i as u32))),
+                Some((_, VariableSource::Inserted)) | None => None,
+            })
+            .collect();
+        let mut batch =
+            match prepare_output_rows(executable.output_width() as u32, previous_iterator, &input_output_mapping) {
+                Ok(output_rows) => output_rows,
+                Err(err) => return Err((err, context)),
+            };
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so we can get mut:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
@@ -96,26 +111,36 @@ where
 pub(crate) fn prepare_output_rows(
     output_width: u32,
     input_iterator: impl StageIterator,
+    mapping: &Vec<(VariablePosition, VariablePosition)>,
 ) -> Result<Batch, Box<PipelineExecutionError>> {
     // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
     //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
     //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
     let input_batch = input_iterator.collect_owned()?;
-    let total_output_rows: u64 = input_batch.get_multiplicities().iter().sum();
-    let mut output_batch = Batch::new(output_width, total_output_rows as usize);
-    let mut input_batch_iterator = input_batch.into_iterator_mut();
-    while let Some(mut row) = input_batch_iterator.next() {
-        // copy out row multiplicity M, set it to 1, then append the row M times
-        let multiplicity = row.get_multiplicity();
-        row.set_multiplicity(1);
-        for _ in 0..multiplicity {
-            output_batch.append(MaybeOwnedRow::new_from_row(&row));
-        }
+    let total_output_rows = input_batch.get_multiplicities().iter().sum::<u64>() as usize;
+    let mut output_batch = Batch::new(output_width, total_output_rows);
+    let mut input_batch_iterator = input_batch.into_iterator();
+    while let Some(row) = input_batch_iterator.next() {
+        append_row_for_insert_mapped(&mut output_batch, row.as_reference(), mapping);
     }
+    debug_assert_eq!(output_batch.len(), total_output_rows);
     Ok(output_batch)
 }
 
-fn execute_insert(
+pub(crate) fn append_row_for_insert_mapped(
+    output_batch: &mut Batch,
+    unmapped_row: MaybeOwnedRow<'_>,
+    mapping: &Vec<(VariablePosition, VariablePosition)>,
+) {
+    // copy out row multiplicity M, set it to 1, then append the row M times
+    let one = 1;
+    let with_multiplicity_one = MaybeOwnedRow::new_borrowed(unmapped_row.row(), &one);
+    for _ in 0..unmapped_row.multiplicity() {
+        output_batch.append_mapped(with_multiplicity_one.as_reference(), mapping.iter().copied())
+    }
+}
+
+pub(crate) fn execute_insert(
     executable: &InsertExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,

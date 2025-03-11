@@ -24,6 +24,7 @@ pub mod insert;
 pub mod match_;
 pub mod modifiers;
 pub mod pipeline;
+pub mod put;
 pub mod reduce;
 pub mod stage;
 pub mod update;

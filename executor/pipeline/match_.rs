@@ -138,7 +138,7 @@ type AsOwnedRows<I> = IntoIter<
         lending_iterator::higher_order::AdHocHkt<Result<MaybeOwnedRow<'static>, ReadExecutionError>>,
     >,
 >;
-fn as_owned_rows<I>(iter: I) -> AsOwnedRows<I>
+pub(crate) fn as_owned_rows<I>(iter: I) -> AsOwnedRows<I>
 where
     I: for<'a> LendingIterator<Item<'a> = Result<MaybeOwnedRow<'a>, &'a ReadExecutionError>>,
 {
@@ -158,7 +158,7 @@ type UniqueRows<I> = UniqueBy<
     fn(&Result<MaybeOwnedRow<'static>, ReadExecutionError>) -> Result<MaybeOwnedRow<'static>, ()>,
 >;
 
-fn unique_rows<I>(iter: I) -> UniqueRows<I>
+pub(crate) fn unique_rows<I>(iter: I) -> UniqueRows<I>
 where
     I: Iterator<Item = Result<MaybeOwnedRow<'static>, ReadExecutionError>>,
 {
