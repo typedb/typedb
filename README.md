@@ -15,7 +15,7 @@
 
 - [Deploy TypeDB](https://cloud.typedb.com) in the Cloud. Or, [download and install](https://typedb.com/docs/manual/install/CE) TypeDB Community Edition.
 - Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
-- Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy).
+- Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy/).
 - Discover more of TypeDB’s unique [Features](https://typedb.com/features).
 - Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
 - Stay updated with the latest TypeDB news by [subscribing to the TypeDB newsletter](https://typedb.com/?dialog=newsletter).
