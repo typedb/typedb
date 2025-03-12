@@ -89,7 +89,7 @@ $user isa $user-type,
 ```
 
 
-## Functions
+### Functions
 
 Functions, a new concept in TypeDB 3.0 and a cornerstone of TypeQL's query model, are like subqueries you can re-use and invoke whenever you want. You can learn more about them from the [TypeQL Functions Documentation](https://typedb.com/docs/typeql/functions/).
 
