@@ -46,20 +46,20 @@ Interface and inheritance for these types can be combined in many ways, resultin
 ```php
 define
 
-full-name sub attribute, value string;
-id sub attribute, value string;
-email sub id;
-employee-id sub id;
+attribute full-name value string;
+attribute id value string;
+attribute email sub id;
+attribute employee-id sub id;
 
-user sub entity,
+entity user,
     owns full-name,
     owns email @unique,
     plays mentorship:trainee;
-employee sub user,
+entity employee,
     owns employee-id @key,
     plays mentorship:mentor;
 
-mentorship sub relation,
+relation mentorship,
     relates mentor,
     relates trainee;
 ```
