@@ -13,20 +13,22 @@
 
 ## Getting started
 
-- Get started by [installing TypeDB](https://typedb.com/docs/home/install/overview).
+- [Deploy TypeDB](https://cloud.typedb.com) in the Cloud. Or, [download and install](https://typedb.com/docs/manual/install/CE) TypeDB Community Edition.
 - Explore the basics of TypeDB in our [Quickstart](https://typedb.com/docs/home/quickstart) and [Crash Course](https://typedb.com/docs/home/crash-course).
 - Master TypeDB with [TypeDB Academy](https://typedb.com/docs/academy).
 - Discover more of TypeDB’s unique [Features](https://typedb.com/features).
 - Find further articles and lectures in our [Learning Center](https://typedb.com/learn).
+- Stay updated with the latest TypeDB news by [subscribing to the TypeDB newsletter](https://typedb.com/?dialog=newsletter).
+- Join our vibrant developer community over on our [Discord](https://typedb.com/discord) chat server.
 
-> **IMPORTANT NOTE:** TypeDB & TypeQL are in the process of being rewritten in [Rust](https://www.rust-lang.org). There will be significant refinement to the language, and minor breaks in backwards compatibility. Learn about the changes on our [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). The biggest change to TypeDB 3.0 will be our storage data structure and architecture that significantly boosts performance. We’re aiming to release 3.0 in the summer this year, along with preliminary benchmarks of TypeDB.
+> **IMPORTANT NOTE:** As of version 3.0, TypeDB & TypeQL are now written in [Rust](https://www.rust-lang.org)! The first Rust release went live in December 2024. TypeDB is currently in a phase of rapid iteration, with new features and patches being launched regularly. You can browse the [roadmap blog post](https://typedb.com/blog/typedb-3-roadmap). TypeDB 3.0 comes with a new storage data structure and architecture that significantly boosts performance when compared against version 2.x. We’re aiming to release preliminary benchmarks of TypeDB 3.0 in early 2025.
 
 ##  Why TypeDB?
 
 * TypeDB was crafted to natively express and combine diverse data features, allowing users to build advanced data models from a set of simple and intuitive building blocks.
 * TypeDB's type system provides safety and flexibility at the same time, which makes both prototyping and building performant, production-ready data applications fast, elegant, and _enjoyable_.
 * With TypeDB, and its query language TypeQL, we envision databases catching up with modern typed programming languages, allowing users to write clear, intuitive, and easy to maintain code.
-* TypeDB comes with a mature ecosystem include language drivers and a graphical user interface: **TypeDB Studio!**
+* TypeDB comes with a mature ecosystem including language drivers and a graphical user interface: **TypeDB Studio!**
 
 
 ## Database Fundamentals
@@ -87,35 +89,10 @@ $user isa $user-type,
 ```
 
 
-### The inference engine
+## Functions
 
-Any query in TypeDB is [semantically validated](https://typedb.com/features#strong-type-system) by TypeDB’s inference engine for consistency with the database schema. This prevents invalid schema updates and data inserts before they can affect the integrity of the database.
+Functions, a new concept in TypeDB 3.0 and a cornerstone of TypeQL's query model, are like subqueries you can re-use and invoke whenever you want. You can learn more about them from the [TypeQL Functions Documentation](https://typedb.com/docs/typeql/functions/).
 
-TypeDB can also work with data that is not physically stored in the database, but instead logically inferred based on user-specified [rules](https://typedb.com/features#symbolic-reasoning). This enables developers to cleanly separate their source data from their application logic, often allowing for complex systems to be described by combinations of simple rules.
-
-```php
-define
-rule transitive-team-membership:
-    when {
-        (team: $team-1, member: $team-2) isa team-membership;
-        (team: $team-2, member: $member) isa team-membership;
-    } then {
-        (team: $team-1, member: $member) isa team-membership;
-    };
-
-insert
-$john isa user, has email "john@typedb.com";
-$eng isa team, has name "Engineering ";
-$cloud isa team, has name "Cloud";
-(team: $eng, member: $cloud) isa team-membership;
-(team: $cloud, member: $john) isa team-membership;
-
-match
-$john isa user, has email "john@typedb.com";
-(team: $team, member: $john) isa team-membership;
-# This will return both Cloud and Engineering for $team due to the defined rule
-```
- 
 
 ## Effective database engineering
 
