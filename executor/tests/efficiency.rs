@@ -58,7 +58,7 @@ use lending_iterator::LendingIterator;
 use resource::profile::QueryProfile;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot},
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot},
     MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -346,12 +346,12 @@ fn position_mapping<const N: usize, const M: usize>(
 fn get_type_annotations(
     translation_context: &TranslationContext,
     entry: &Block,
-    snapshot: &ReadSnapshot<WALClient>,
+    snapshot: &impl ReadableSnapshot,
     type_manager: &Arc<TypeManager>,
 ) -> TypeAnnotations {
     let previous_stage_variable_annotations = &BTreeMap::new();
     infer_types(
-        &snapshot,
+        snapshot,
         &entry,
         &translation_context.variable_registry,
         &type_manager,

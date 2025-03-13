@@ -4,15 +4,53 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, mem::transmute};
+use std::{cmp::Ordering, mem, mem::transmute};
 
 use lending_iterator::{LendingIterator, Seekable};
 use resource::profile::StorageCounters;
-use rocksdb::DBRawIterator;
+use rocksdb::{DBRawIterator, Error};
 
 use crate::snapshot::pool::PoolRecycleGuard;
 
-type KeyValue<'a> = Result<(&'a [u8], &'a [u8]), rocksdb::Error>;
+type KeyValue<'a> = (&'a [u8], &'a [u8]);
+
+enum IteratorItemState {
+    None,
+    Some(KeyValue<'static>),
+    Finished,
+    Err(rocksdb::Error),
+}
+
+impl IteratorItemState {
+    const fn is_none(&self) -> bool {
+        matches!(self, IteratorItemState::None)
+    }
+
+    #[inline]
+    pub fn take_value_else_retain(&mut self) -> Self {
+        // this method protects us from losing the Finished or Error state
+        match self {
+            IteratorItemState::None => {
+                // unchanged
+                Self::None
+            }
+            IteratorItemState::Some(_) => mem::replace(self, IteratorItemState::None),
+            IteratorItemState::Finished => {
+                // unchanged, keep finished
+                Self::Finished
+            }
+            IteratorItemState::Err(err) => Self::Err(err.clone()),
+        }
+    }
+
+    #[inline]
+    fn into_option(self) -> Option<KeyValue<'static>> {
+        match self {
+            IteratorItemState::Some(kv) => Option::Some(kv),
+            _ => None,
+        }
+    }
+}
 
 /// SAFETY NOTE: `'static` here represents that the `DBIterator` owns the data.
 /// The item's lifetime is in fact invalidated when `iterator` is advanced.
@@ -20,8 +58,8 @@ pub(super) struct DBIterator {
     iterator: PoolRecycleGuard<DBRawIterator<'static>>,
     storage_counters: StorageCounters,
     // NOTE: when item is empty, that means that the kv pair the Rocks iterator _is currently pointing to_
-    //       has been yielded to the user, and the underlying iterator needs to be advanced before peeking
-    item: Option<KeyValue<'static>>,
+    //       has been yielded to the user, and the underlying iterator needs to be advanced before  reading
+    state: IteratorItemState,
 }
 
 impl DBIterator {
@@ -32,32 +70,44 @@ impl DBIterator {
     ) -> Self {
         iterator.seek(start);
         storage_counters.increment_raw_seek();
-        let item = peek_item(&iterator);
-        Self { iterator, item, storage_counters }
+        let mut this = Self { iterator, state: IteratorItemState::None, storage_counters };
+        this.record_iterator_state(); // initialise with the first state read from the seek'ed value
+        this
     }
 
-    pub(super) fn peek(&mut self) -> Option<&<Self as LendingIterator>::Item<'_>> {
-        match self.next() {
-            Some(item) => {
-                self.item = Some(unsafe {
-                    // SAFETY: the stored item is only accessible while mutably borrowing this iterator.
-                    // When the underlying iterator is advanced, the stored item is discarded.
-                    transmute::<KeyValue<'_>, KeyValue<'static>>(item)
-                });
-                self.item.as_ref()
-            }
-            None => None,
+    pub(super) fn peek(&mut self) -> Option<<Self as LendingIterator>::Item<'_>> {
+        let state = self.next_internal();
+        self.state = state;
+        match &self.state {
+            IteratorItemState::None => unreachable!("State after internal check should be error, Some, or Finished"),
+            IteratorItemState::Some(kv) => Some(Ok(*kv)),
+            IteratorItemState::Finished => None,
+            IteratorItemState::Err(err) => Some(Err(err.clone())),
         }
     }
-}
 
-fn peek_item(iterator: &DBRawIterator<'static>) -> Option<KeyValue<'static>> {
-    if iterator.valid() {
-        iterator.item().map(|item| unsafe { transmute::<KeyValue<'_>, KeyValue<'static>>(Ok(item)) })
-    } else if let Err(err) = iterator.status() {
-        Some(Err(err))
-    } else {
-        None
+    fn next_internal(&mut self) -> IteratorItemState {
+        if !self.state.is_none() {
+            self.state.take_value_else_retain()
+        } else {
+            self.storage_counters.increment_raw_advance();
+            self.iterator.next();
+            self.record_iterator_state();
+            self.state.take_value_else_retain()
+        }
+    }
+
+    fn record_iterator_state(&mut self) {
+        self.state = match self.iterator.item() {
+            None => match self.iterator.status() {
+                Ok(_) => IteratorItemState::Finished,
+                Err(err) => IteratorItemState::Err(err),
+            },
+            Some(item) => {
+                let kv = unsafe { transmute::<KeyValue<'_>, KeyValue<'static>>(item) };
+                IteratorItemState::Some(kv)
+            }
+        }
     }
 }
 
@@ -68,23 +118,21 @@ impl LendingIterator for DBIterator {
         Self: 'a;
 
     fn next(&mut self) -> Option<Self::Item<'_>> {
-        if self.item.is_some() {
-            self.item.take()
-        } else if self.iterator.valid() {
-            self.storage_counters.increment_raw_advance();
-            self.iterator.next();
-            self.iterator.item().map(Ok)
-        } else if self.iterator.status().is_err() {
-            Some(Err(self.iterator.status().err().unwrap().clone()))
-        } else {
-            None
+        let next_state = self.next_internal();
+        match next_state {
+            IteratorItemState::None => unreachable!("State after internal check should be error, Some, or Finished"),
+            IteratorItemState::Some(kv) => Some(Ok(kv)),
+            IteratorItemState::Finished => None,
+            IteratorItemState::Err(err) => Some(Err(err)),
         }
     }
 }
 
 impl Seekable<[u8]> for DBIterator {
     fn seek(&mut self, key: &[u8]) {
-        if let Some(Ok((item_key, _))) = self.item.as_ref() {
+        if matches!(&self.state, IteratorItemState::Finished) {
+            return;
+        } else if let IteratorItemState::Some((item_key, _)) = &self.state {
             match (*item_key).cmp(key) {
                 Ordering::Less => {
                     // fall through
@@ -97,10 +145,10 @@ impl Seekable<[u8]> for DBIterator {
                 }
             }
         }
-        self.item.take();
+        self.state.take_value_else_retain();
         self.iterator.seek(key);
         self.storage_counters.increment_raw_seek();
-        self.item = peek_item(&self.iterator); // repopulate `item` to prevent advancing the underlying iterator
+        self.record_iterator_state()
     }
 
     fn compare_key(&self, item: &Self::Item<'_>, key: &[u8]) -> Ordering {

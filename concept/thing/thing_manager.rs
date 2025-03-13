@@ -11,6 +11,7 @@ use std::{
     iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
+    time::Instant,
 };
 
 use bytes::{byte_array::ByteArray, util::increment, Bytes};
@@ -67,6 +68,7 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
 };
+use tracing::{event, Level};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
@@ -363,12 +365,10 @@ impl ThingManager {
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range, storage_counters.clone());
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
             self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(true), snapshot, storage_counters),
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -380,12 +380,10 @@ impl ThingManager {
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range, storage_counters.clone());
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
             self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(false), snapshot, storage_counters),
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -405,9 +403,7 @@ impl ThingManager {
         let has_reverse_prefix =
             ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range, storage_counters.clone());
-
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
             self.get_instances_in(
                 snapshot,
@@ -415,8 +411,7 @@ impl ThingManager {
                 AttributeVertex::keyspace_for_category(value_type.category()),
                 storage_counters,
             ),
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -531,10 +526,11 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
-        range: &'a impl RangeBounds<Value<'a>>,
+        value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
-        if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
+        if matches!(value_range.start_bound(), Bound::Unbounded) && matches!(value_range.end_bound(), Bound::Unbounded)
+        {
             return self.get_attributes_in(snapshot, attribute_type, storage_counters);
         }
         let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
@@ -542,7 +538,8 @@ impl ThingManager {
             return Ok(AttributeIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range) else {
+        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, value_range)
+        else {
             return Ok(AttributeIterator::new_empty());
         };
         let start_attribute_vertex_bound = self.get_attribute_vertex_prefix_lower_bound(
@@ -555,6 +552,7 @@ impl ThingManager {
             &attribute_value_type,
             value_upper_bound,
         );
+
         let has_reverse_start_prefix = start_attribute_vertex_bound.map(|start| {
             ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), start.bytes())
         });
@@ -564,16 +562,15 @@ impl ThingManager {
                 end.as_reference().bytes(),
             )
         });
+
         let range = KeyRange::new_variable_width(start_attribute_vertex_bound, end_attribute_vertex_bound);
+        let attributes_iterator = InstanceIterator::new(snapshot.iterate_range(&range, storage_counters));
         let has_reverse_range = KeyRange::new_variable_width(has_reverse_start_prefix, has_reverse_end_prefix);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&has_reverse_range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&has_reverse_range, storage_counters.clone());
-        let snapshot_iterator = snapshot.iterate_range(&range, storage_counters);
-        let attributes_iterator = InstanceIterator::new(snapshot_iterator);
+        let has_reverse_iterator =
+            HasReverseIterator::new(snapshot.iterate_range(&has_reverse_range, StorageCounters::DISABLED));
         Ok(AttributeIterator::new(
             attributes_iterator,
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -1055,13 +1052,15 @@ impl ThingManager {
             attribute_type.vertex().type_id_(),
         );
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range, StorageCounters::DISABLED.clone());
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, StorageCounters::DISABLED));
+        // let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
+        // let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range, StorageCounters::DISABLED.clone());
 
         let iter = AttributeIterator::new(
             index_attribute_iterator,
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            // has_reverse_iterator_buffer,
+            // has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager.get_independent_attribute_types(snapshot)?,
         );
         Ok(iter)

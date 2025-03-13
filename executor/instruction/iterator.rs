@@ -17,7 +17,7 @@ use compiler::{
 };
 use concept::error::ConceptReadError;
 use itertools::{zip_eq, Itertools};
-use lending_iterator::{adaptors::Inspect, kmerge, kmerge::KMergeBy, LendingIterator, Peekable, Seekable};
+use lending_iterator::{adaptors::Inspect, kmerge, kmerge::KMergeBy, LendingIterator, Peekable};
 
 use crate::{
     instruction::{
@@ -449,7 +449,7 @@ impl<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekabl
         //     match self.peek() {
         //         None => return Ok(None),
         //         Some(Ok(tuple)) => {
-        //             println!(" --> Skipping over tuple {:?}", tuple);
+        //             // println!(" --> Skipping over tuple {:?}", tuple);
         //             let value = &tuple.values()[index as usize];
         //             match value.partial_cmp(target).unwrap() {
         //                 Ordering::Less => self.advance_single()?,

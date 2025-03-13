@@ -69,7 +69,7 @@ impl KeyspaceRangeIterator {
     }
 
     fn may_skip_start(iterator: &mut DBIterator, excluded_value: &[u8]) {
-        if iterator.peek().is_some_and(|result| result.as_ref().is_ok_and(|(key, _)| *key == excluded_value)) {
+        if iterator.peek().is_some_and(|result| result.is_ok_and(|(key, _)| key == excluded_value)) {
             iterator.next();
         }
     }

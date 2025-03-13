@@ -18,6 +18,7 @@ use encoding::{
         thing::{
             edge::ThingEdgeHasReverse,
             vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_object::ObjectVertex,
         },
         type_::vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertexEncoding},
         Typed,
@@ -30,14 +31,16 @@ use iterator::State;
 use itertools::Itertools;
 use lending_iterator::{higher_order::Hkt, LendingIterator, Peekable, Seekable};
 use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
-use storage::snapshot::{
-    buffer::BufferRangeIterator, iterator::SnapshotRangeIterator, write::WriteCategory, ReadableSnapshot,
-    WritableSnapshot,
-};
+use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
+    thing::{
+        has::Has,
+        object::{HasReverseIterator, Object},
+        thing_manager::ThingManager,
+        HKInstance, ThingAPI,
+    },
     type_::{attribute_type::AttributeType, ObjectTypeAPI},
     ConceptAPI, ConceptStatus,
 };
@@ -207,8 +210,7 @@ where
 {
     independent_attribute_types: Arc<HashSet<AttributeType>>,
     attributes_iterator: Option<Peekable<AllAttributesIterator>>,
-    has_reverse_iterator_buffer: Option<BufferRangeIterator>,
-    has_reverse_iterator_storage: Option<SnapshotRangeIterator>,
+    has_reverse_iterator: Option<HasReverseIterator>,
     state: State<Box<ConceptReadError>>,
 }
 
@@ -219,15 +221,13 @@ where
 {
     pub(crate) fn new(
         attributes_iterator: AllAttributesIterator,
-        has_reverse_iterator_buffer: BufferRangeIterator,
-        has_reverse_iterator_storage: SnapshotRangeIterator,
+        has_reverse_iterator: HasReverseIterator,
         independent_attribute_types: Arc<HashSet<AttributeType>>,
     ) -> Self {
         Self {
             independent_attribute_types,
             attributes_iterator: Some(Peekable::new(attributes_iterator)),
-            has_reverse_iterator_buffer: Some(has_reverse_iterator_buffer),
-            has_reverse_iterator_storage: Some(has_reverse_iterator_storage),
+            has_reverse_iterator: Some(has_reverse_iterator),
             state: State::Init,
         }
     }
@@ -236,8 +236,7 @@ where
         Self {
             independent_attribute_types: Arc::new(HashSet::new()),
             attributes_iterator: None,
-            has_reverse_iterator_buffer: None,
-            has_reverse_iterator_storage: None,
+            has_reverse_iterator: None,
             state: State::Done,
         }
     }
@@ -281,25 +280,13 @@ where
             match self.attributes_iterator.as_mut().unwrap().peek() {
                 None => self.state = State::Done,
                 Some(Ok(attribute)) => {
-                    let attribute_vertex = attribute.vertex();
                     let independent = self.independent_attribute_types.contains(&attribute.type_());
                     if independent {
                         self.state = State::ItemReady;
                     } else {
-                        match Self::write_category(self.has_reverse_iterator_buffer.as_mut().unwrap(), attribute_vertex)
-                        {
-                            Ok(Some(write_category)) => match write_category {
-                                WriteCategory::Insert | WriteCategory::Put => self.state = State::ItemReady,
-                                WriteCategory::Delete => advance_attribute = true,
-                            },
-                            Ok(None) => match Self::has_owner(
-                                self.has_reverse_iterator_storage.as_mut().unwrap(),
-                                attribute_vertex,
-                            ) {
-                                Ok(true) => self.state = State::ItemReady,
-                                Ok(false) => advance_attribute = true,
-                                Err(err) => self.state = State::Error(err),
-                            },
+                        match Self::has_owner(self.has_reverse_iterator.as_mut().unwrap(), attribute.vertex()) {
+                            Ok(true) => self.state = State::ItemReady,
+                            Ok(false) => advance_attribute = true,
                             Err(err) => self.state = State::Error(err),
                         }
                     }
@@ -313,41 +300,24 @@ where
     }
 
     fn has_owner(
-        has_reverse_iterator: &mut SnapshotRangeIterator,
+        has_reverse_iterator: &mut HasReverseIterator,
         attribute_vertex: AttributeVertex,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
-        has_reverse_iterator.seek(has_reverse_prefix.as_reference());
+        let target_has = Has::EdgeReverse(ThingEdgeHasReverse::new(attribute_vertex, ObjectVertex::MIN));
+        has_reverse_iterator.seek(&(target_has, 0));
         match has_reverse_iterator.peek() {
             None => Ok(false),
-            Some(Err(source)) => Err(Box::new(ConceptReadError::SnapshotIterate { source })),
-            Some(Ok((bytes, _))) => {
-                let edge = ThingEdgeHasReverse::decode(Bytes::Reference(bytes.bytes()));
-                let edge_from = edge.from();
-                match edge_from.cmp(&attribute_vertex) {
+            Some(Err(err)) => Err(err),
+            Some(Ok((found_has, _))) => {
+                match found_has.attribute().vertex.cmp(&attribute_vertex) {
                     Ordering::Less => {
-                        panic!("Unexpected attribute edge encountered for a previous attribute, which should not be possible.");
+                        unreachable!("Unexpected attribute edge encountered for a previous attribute, which should not be possible.");
                     }
                     Ordering::Equal => Ok(true),
                     Ordering::Greater => Ok(false),
                 }
             }
         }
-    }
-
-    fn write_category(
-        has_reverse_iterator: &mut BufferRangeIterator,
-        attribute_vertex: AttributeVertex,
-    ) -> Result<Option<WriteCategory>, Box<ConceptReadError>> {
-        let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute_vertex);
-        has_reverse_iterator.seek(has_reverse_prefix.bytes());
-        if let Some((key, write)) = has_reverse_iterator.peek() {
-            let edge = ThingEdgeHasReverse::decode(Bytes::Reference(key.byte_array()));
-            if edge.from() == attribute_vertex {
-                return Ok(Some(write.category()));
-            }
-        }
-        Ok(None)
     }
 }
 
