@@ -53,6 +53,8 @@ pub mod type_manager;
 
 pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
     const MIN: Self;
+    const MAX: Self;
+
     fn new(vertex: TypeVertex) -> Self;
 
     fn read_from(b: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
@@ -173,6 +175,10 @@ pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
     fn chain_types<C: IntoIterator<Item = Self>>(first: Self, others: C) -> impl Iterator<Item = Self> {
         iter::once(first).chain(others)
     }
+
+    fn next_possible(&self) -> Option<Self>;
+
+    fn previous_possible(&self) -> Option<Self>;
 }
 
 pub trait KindAPI: TypeAPI {

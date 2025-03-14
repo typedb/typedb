@@ -8,7 +8,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt,
-    ops::Index,
+    ops::{Bound, Index},
     sync::Arc,
 };
 
@@ -25,7 +25,7 @@ use concept::{
         thing_manager::ThingManager,
         ThingAPI,
     },
-    type_::{relation_type::RelationType, role_type::RoleType, TypeAPI},
+    type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType, TypeAPI},
 };
 use encoding::graph::{
     thing::vertex_object::{ObjectID, ObjectVertex},
@@ -34,6 +34,7 @@ use encoding::graph::{
 };
 use itertools::Itertools;
 use lending_iterator::{kmerge::KMergeBy, LendingIterator, Peekable};
+use primitive::Bounds;
 use resource::{constants::traversal::CONSTANT_CONCEPT_LIMIT, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
@@ -267,7 +268,7 @@ impl IndexedRelationExecutor {
                 if self.relation_to_player_start_types.len() == 1 {
                     let relation_type = self.relation_to_player_start_types.keys().next().unwrap().as_relation_type();
                     let iterator = thing_manager
-                        .get_indexed_relations_in(snapshot, relation_type, storage_counters)
+                        .get_indexed_relations_in(snapshot, relation_type, self.player_start_range(), storage_counters)
                         .expect("Relation index should be available");
                     let as_tuples = IndexedRelationTupleIterator::new(
                         iterator,
@@ -290,6 +291,7 @@ impl IndexedRelationExecutor {
                                 .get_indexed_relations_in(
                                     snapshot,
                                     relation_type.as_relation_type(),
+                                    self.player_start_range(),
                                     storage_counters.clone(),
                                 )
                                 .expect("Relation index should be available");
@@ -589,6 +591,13 @@ impl IndexedRelationExecutor {
             ExecutorVariable::Internal(_) => None,
         };
         (relation, start_role, end_role)
+    }
+
+    fn player_start_range(&self) -> Bounds<ObjectType> {
+        debug_assert!(!self.player_start_to_player_end_types.is_empty());
+        let (first, _) = self.player_start_to_player_end_types.first_key_value().unwrap();
+        let (last, _) = self.player_start_to_player_end_types.last_key_value().unwrap();
+        (Bound::Included(first.as_object_type()), Bound::Included(last.as_object_type()))
     }
 }
 

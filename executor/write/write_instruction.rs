@@ -203,7 +203,7 @@ impl AsWriteInstruction for compiler::executable::update::instructions::Links {
         let role_type = try_unwrap_as!(answer::Type::RoleType : get_type(row, &self.role)).unwrap();
 
         let mut old_players =
-            relation.get_players_role_type(snapshot, thing_manager, *role_type, StorageCounters::DISABLED);
+            relation.get_players_role_type(snapshot, thing_manager, role_type, StorageCounters::DISABLED);
         if let Some(old_player) = old_players.next() {
             match old_player {
                 Ok(old_player) => {

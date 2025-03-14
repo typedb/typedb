@@ -87,29 +87,29 @@ impl ValueType {
         }
     }
 
-    pub fn is_trivially_castable_to(&self, other: &Self) -> bool {
-        if self == other {
+    pub fn is_trivially_castable_to(&self, other: ValueTypeCategory) -> bool {
+        if self.category() == other {
             return true;
         }
         match self {
-            ValueType::Integer => other == &ValueType::Double || other == &ValueType::Decimal,
-            ValueType::Decimal => other == &ValueType::Double,
-            ValueType::Date => other == &ValueType::DateTime,
+            ValueType::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
+            ValueType::Decimal => other == ValueTypeCategory::Double,
+            ValueType::Date => other == ValueTypeCategory::DateTime,
             _ => false,
         }
     }
 
     // we can approximately cast any numerical type to any other numerical type
-    pub fn is_approximately_castable_to(&self, other: &Self) -> bool {
-        if self == other {
+    pub fn is_approximately_castable_to(&self, other: ValueTypeCategory) -> bool {
+        if self.category() == other {
             return true;
         }
         match self {
-            ValueType::Integer => other == &ValueType::Double || other == &ValueType::Decimal,
-            ValueType::Decimal => other == &ValueType::Double || other == &ValueType::Integer,
-            ValueType::Double => other == &ValueType::Decimal || other == &ValueType::Integer,
+            ValueType::Integer => other == ValueTypeCategory::Double || other == ValueTypeCategory::Decimal,
+            ValueType::Decimal => other == ValueTypeCategory::Double || other == ValueTypeCategory::Integer,
+            ValueType::Double => other == ValueTypeCategory::Decimal || other == ValueTypeCategory::Integer,
             // TODO: we will have to decide if we consider date datatypes to be approximately castable to each other
-            ValueType::Date => other == &ValueType::DateTime,
+            ValueType::Date => other == ValueTypeCategory::DateTime,
             _ => false,
         }
     }

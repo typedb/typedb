@@ -1099,6 +1099,7 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
+                let start_time = Instant::now();
                 let pipeline = prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
@@ -1121,6 +1122,7 @@ impl TransactionService {
                     snapshot,
                     &type_manager,
                     thing_manager,
+                    start_time,
                 );
             })
         })
@@ -1136,6 +1138,7 @@ impl TransactionService {
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
+        start_time: Instant,
     ) {
         let query_profile = if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
@@ -1248,7 +1251,13 @@ impl TransactionService {
             context.profile
         };
         if query_profile.is_enabled() {
-            event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
+            let micros = Instant::now().duration_since(start_time).as_micros();
+            event!(
+                Level::INFO,
+                "Read query done (including network request time) in {} micros.\n{}",
+                micros,
+                query_profile
+            );
         }
         Self::submit_response_sync(sender, StreamQueryResponse::done_ok())
     }

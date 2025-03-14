@@ -31,7 +31,7 @@ use ir::{
     },
     pipeline::ParameterRegistry,
 };
-use itertools::{Itertools, MinMaxResult};
+use itertools::Itertools;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 use unicase::UniCase;
@@ -999,13 +999,12 @@ impl<T> Checker<T> {
         let snapshot = context.snapshot.clone();
         let thing_manager = context.thing_manager.clone();
         let rhs = match rhs {
-            VariableValue::Empty => Ok(None),
             VariableValue::Thing(Thing::Attribute(attr)) => {
-                attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned).map(Some)
+                attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
             }
-            VariableValue::Value(value) => Ok(Some(value.into_owned())),
+            VariableValue::Value(value) => Ok(value.into_owned()),
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-            VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+            VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
         };
         let cmp: fn(&Value<'_>, &Value<'_>) -> bool = match comparator {
             Comparator::Equal => |a, b| a == b,
@@ -1030,19 +1029,18 @@ impl<T> Checker<T> {
             // NOTE: Empty <op> Empty never matches
             let lhs = lhs(value);
             let lhs = match lhs {
-                VariableValue::Empty => return Ok(false),
                 VariableValue::Thing(Thing::Attribute(attr)) => {
                     attr.get_value(&*snapshot, &thing_manager)?.into_owned()
                 }
                 VariableValue::Value(value) => value,
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-                VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
+                VariableValue::Empty | VariableValue::Type(_) | VariableValue::Thing(_) => unreachable!(),
             };
-            let Some(rhs) = rhs.clone()? else { return Ok(false) };
-            if rhs.value_type().is_trivially_castable_to(&lhs.value_type()) {
-                Ok(cmp(&lhs, &rhs.cast(&lhs.value_type()).unwrap()))
-            } else if lhs.value_type().is_trivially_castable_to(&rhs.value_type()) {
-                Ok(cmp(&lhs.cast(&rhs.value_type()).unwrap(), &rhs))
+            let rhs = rhs.clone()?;
+            if rhs.value_type().is_trivially_castable_to(lhs.value_type().category()) {
+                Ok(cmp(&lhs, &rhs.cast(lhs.value_type().category()).unwrap()))
+            } else if lhs.value_type().is_trivially_castable_to(rhs.value_type().category()) {
+                Ok(cmp(&lhs.cast(rhs.value_type().category()).unwrap(), &rhs))
             } else {
                 Ok(false)
             }

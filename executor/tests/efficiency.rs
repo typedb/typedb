@@ -21,9 +21,7 @@ use compiler::{
             instructions::{
                 thing::{HasInstruction, HasReverseInstruction, IsaReverseInstruction},
                 type_::TypeListInstruction,
-                CheckInstruction, CheckVertex, ConstraintInstruction,
-                ConstraintInstruction::HasReverse,
-                Inputs,
+                CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
                 match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
@@ -58,7 +56,7 @@ use lending_iterator::LendingIterator;
 use resource::profile::QueryProfile;
 use storage::{
     durability_client::WALClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot},
+    snapshot::{CommittableSnapshot, ReadableSnapshot},
     MVCCStorage,
 };
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -273,9 +271,6 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let person_6 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
     person_6.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_6).unwrap();
 
-    // $person_5 isa person, has gov_id 6;
-    let gov_id_6 = thing_manager.create_attribute(&mut snapshot, gov_id_type, Value::Integer(6)).unwrap();
-    person_5.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_6).unwrap();
     let movie_1 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
     let movie_2 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
     let movie_3 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
@@ -1117,14 +1112,138 @@ fn intersection_seeks() {
     // query:
     //   match
     //    $age isa age 10;
-    //    $person has $age;
+    //    $person isa person, has $age;
     //    $person has gov_id $gov_id;
 
+    // IR to compute type annotations
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let value_int_10 = value_parameters.register_value(Value::Integer(10), Span { begin_offset: 0, end_offset: 0 });
+    let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+    let mut conjunction = builder.conjunction_mut();
+
+    let var_person = conjunction.constraints_mut().get_or_declare_variable("var_person", None).unwrap();
+    let var_person_type = conjunction.constraints_mut().get_or_declare_variable("var_person_type", None).unwrap();
+    let var_gov_id = conjunction.constraints_mut().get_or_declare_variable("var_gov_id", None).unwrap();
+    let var_gov_id_type = conjunction.constraints_mut().get_or_declare_variable("var_gov_id_type", None).unwrap();
+    let var_age = conjunction.constraints_mut().get_or_declare_variable("var_age", None).unwrap();
+    let var_age_type = conjunction.constraints_mut().get_or_declare_variable("var_age_type", None).unwrap();
+
+    let has_age = conjunction.constraints_mut().add_has(var_person, var_age, None).unwrap().clone();
+    let has_gov_id = conjunction.constraints_mut().add_has(var_person, var_gov_id, None).unwrap().clone();
+    let _isa_person = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_person, var_person_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
+    let _isa_gov_id = conjunction
+        .constraints_mut()
+        .add_isa(IsaKind::Subtype, var_gov_id, var_gov_id_type.into(), None)
+        .unwrap()
+        .clone();
+    conjunction.constraints_mut().add_label(var_gov_id_type, GOV_ID_LABEL.clone()).unwrap();
+    let isa_age =
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_age, var_age_type.into(), None).unwrap().clone();
+    conjunction.constraints_mut().add_label(var_age_type, AGE_LABEL.clone()).unwrap();
+
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_10), Comparator::Equal, None)
+        .unwrap();
+
+    let entry = builder.finish().unwrap();
+    let value_parameters = Arc::new(value_parameters);
+
+    let snapshot = storage.clone().open_snapshot_read();
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let type_annotations = get_type_annotations(&mut translation_context, &entry, &snapshot, &type_manager);
+
+    let (row_vars, variable_positions, mapping, named_variables) =
+        position_mapping([var_age, var_age_type, var_person, var_gov_id], []);
+
+    // plan (requires correct type annotations)
     // plan:
     // 1. Isa($age, age) value == 10
     // 2. Intersect:
     //       ReverseHas($person, $age) ==> independently produces many people
     //       has($person, $gov_id) ==> unbound this produces many people
+    // ---> should output:
+    //  (person 1, age 10, gov_id 0)
+    //  (person 1, age 10, gov_id 1)
+    //  (person 1, age 10, gov_id 2)
+    //  (person 1, age 10, gov_id 3)
+    //  (person 3, age 10, gov_id 4)
+    //  (person 6, age 10, gov_id 5)
+
+    let age_equal_10 = CheckInstruction::Comparison {
+        lhs: CheckVertex::Variable(var_age),
+        rhs: CheckVertex::Parameter(value_int_10),
+        comparator: Comparator::Equal,
+    }
+    .map(&mapping);
+    let mut isa_age = IsaReverseInstruction::new(isa_age, Inputs::None([]), &type_annotations).map(&mapping);
+    isa_age.add_check(age_equal_10);
+
+    let steps = vec![
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_age_type],
+            vec![ConstraintInstruction::IsaReverse(isa_age)],
+            vec![variable_positions[&var_age], variable_positions[&var_age_type]],
+            &named_variables,
+            2,
+        )),
+        ExecutionStep::Intersection(IntersectionStep::new(
+            mapping[&var_person],
+            vec![
+                ConstraintInstruction::HasReverse(HasReverseInstruction::new(
+                    has_age,
+                    Inputs::Single([var_age]),
+                    &type_annotations,
+                ))
+                .map(&mapping),
+                ConstraintInstruction::Has(HasInstruction::new(has_gov_id, Inputs::None([]), &type_annotations))
+                    .map(&mapping),
+            ],
+            vec![
+                variable_positions[&var_person],
+                variable_positions[&var_gov_id],
+                variable_positions[&var_age],
+                variable_positions[&var_age_type],
+            ],
+            &named_variables,
+            4,
+        )),
+    ];
+
+    let query_profile = QueryProfile::new(true);
+    let rows =
+        execute_steps(steps, variable_positions, row_vars, storage, thing_manager, value_parameters, &query_profile);
+    for row in rows.iter() {
+        println!("Row: {}", row.as_ref().unwrap())
+    }
+    assert_eq!(rows.len(), 6);
+
+    let stage_profiles = query_profile.stage_profiles().read().unwrap();
+    let (_, match_profile) = stage_profiles.iter().next().unwrap();
+    let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
+    let storage_counters = intersection_step_profile.storage_counters();
+
+    // expected evaluation
+    //  open initial iterators: 2 seeks... HasReverse finds Person 1. Has finds Person 1 + GovId0. match!
+    //  => advance each iterator: 2 advances... HasReverse is at Person 2. Has is on Person 1 + GovId 1
+    //  => Cartesian sub-iterator opened for Has iterator: 1 seek. Has is now back to Person 1 + GovID 0, and does 1 advance: now at Person 1 + GovId 1
+    //      => Cartesian iterator 3 more GovIds in Person 1 intersection: 3 advances
+    //  => Has seeks to HasReverse's value of Person2: 1 seek... ends up at Person 3 (Person 2 has no gov id)
+    //  => HasReverse seeks Has's value of Person3: 1 seek. match!
+    //  => advance each iterator: 2 advances... HasReverse is at Person 4. Has is on Person 5 + Gov ID 5advances
+    //  => HasReverse seeks to Has's value Person 5: 1 seek. match!
+    //  => advance both iterators: 2 advances... run out of answers in HasReverse. Finished!
+
+    // for each person, we should skip directly to the person + owned name
+    // assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 2 advance: the iterator matching person 1 will advance twice (once to find the second name, then to fail)
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 9);
 }
 
 #[test]

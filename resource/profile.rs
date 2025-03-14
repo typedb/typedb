@@ -55,8 +55,23 @@ impl QueryProfile {
 
 impl fmt::Display for QueryProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, "Query profile[measurements_enabled={}]", self.enabled)?;
         let profiles = self.stage_profiles.read().unwrap();
+        let total_micros = profiles
+            .iter()
+            .map(|(_, stage_profile)| {
+                stage_profile
+                    .step_profiles
+                    .read()
+                    .unwrap()
+                    .iter()
+                    .map(|step_profile| {
+                        step_profile.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
+                    })
+                    .sum::<u64>()
+            })
+            .sum::<u64>() as f64
+            / 1000.0;
+        writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
         for (id, pattern_profile) in profiles.iter().sorted_by_key(|(id, _)| *id) {
             writeln!(f, "  -----")?;
             writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;

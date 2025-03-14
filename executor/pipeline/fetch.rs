@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, marker::PhantomData, ops::Bound, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    marker::PhantomData,
+    ops::Bound,
+    sync::Arc,
+};
 
 use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
 use compiler::{
@@ -21,6 +26,7 @@ use compiler::{
 use concept::{
     error::ConceptReadError,
     thing::{
+        has::Has,
         object::{HasIterator, ObjectAPI},
         thing_manager::ThingManager,
     },
@@ -529,27 +535,25 @@ fn execute_attributes_list(
     Ok(list)
 }
 
-fn prepare_attribute_type_has_iterator(
+fn prepare_attribute_type_has_iterator<'a>(
     object: impl ObjectAPI,
     attribute_type: AttributeType,
-    snapshot: &Arc<impl ReadableSnapshot>,
-    thing_manager: &Arc<ThingManager>,
-) -> Result<HasIterator, FetchExecutionError> {
+    snapshot: &'a Arc<impl ReadableSnapshot>,
+    thing_manager: &'a Arc<ThingManager>,
+) -> Result<impl Iterator<Item = Result<(Has, u64), Box<ConceptReadError>>> + 'a, FetchExecutionError> {
     let subtypes = attribute_type
         .get_subtypes_transitive(snapshot.as_ref(), thing_manager.type_manager())
         .map_err(|source| FetchExecutionError::ConceptRead { typedb_source: source })?;
-    let attribute_types = TypeAPI::chain_types(attribute_type, subtypes.into_iter().cloned());
-    let (min_type, max_type) = minmax_or!(attribute_types.into_iter(), return Ok(HasIterator::new_empty()));
-    let range = (Bound::Included(min_type), Bound::Included(max_type));
-    let iter = object
-        .get_has_types_range_unordered(
-            snapshot.as_ref(),
-            thing_manager.as_ref(),
-            &range,
-            &..,
-            StorageCounters::DISABLED,
-        )
-        .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?;
+    let iter = Iterator::filter(
+        object
+            .get_has_types_range_unordered(snapshot.as_ref(), thing_manager.as_ref(), StorageCounters::DISABLED)
+            .map_err(|err| FetchExecutionError::ConceptRead { typedb_source: err })?,
+        move |result| {
+            result.as_ref().is_ok_and(|(has, _count)| {
+                has.attribute().type_() == attribute_type || subtypes.contains(&has.attribute().type_())
+            })
+        },
+    );
     Ok(iter)
 }
 

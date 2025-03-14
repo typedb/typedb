@@ -103,6 +103,8 @@ impl primitive::prefix::Prefix for AttributeType {
 
 impl TypeAPI for AttributeType {
     const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexAttributeType.prefix_id(), TypeID::MIN));
+    const MAX: Self = Self::new_const_(TypeVertex::new(Prefix::VertexAttributeType.prefix_id(), TypeID::MAX));
+
     fn new(vertex: TypeVertex) -> AttributeType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -170,6 +172,14 @@ impl TypeAPI for AttributeType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_subtypes_transitive(snapshot, *self)
+    }
+
+    fn next_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
+    }
+
+    fn previous_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().decrement().map(|next_id| Self::build_from_type_id(next_id))
     }
 }
 

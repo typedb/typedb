@@ -94,6 +94,7 @@ impl TypeVertexEncoding for EntityType {
 
 impl TypeAPI for EntityType {
     const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexEntityType.prefix_id(), TypeID::MIN));
+    const MAX: Self = Self::new_const_(TypeVertex::new(Prefix::VertexEntityType.prefix_id(), TypeID::MAX));
     fn new(vertex: TypeVertex) -> EntityType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -161,6 +162,14 @@ impl TypeAPI for EntityType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<EntityType>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_subtypes_transitive(snapshot, *self)
+    }
+
+    fn next_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
+    }
+
+    fn previous_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().decrement().map(|next_id| Self::build_from_type_id(next_id))
     }
 }
 

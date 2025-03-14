@@ -76,7 +76,7 @@ impl IsaInstruction<Variable> {
 }
 
 impl<ID> IsaInstruction<ID> {
-    pub(crate) fn add_check(&mut self, check: CheckInstruction<ID>) {
+    pub fn add_check(&mut self, check: CheckInstruction<ID>) {
         self.checks.push(check)
     }
 }

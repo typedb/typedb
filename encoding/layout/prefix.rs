@@ -78,10 +78,6 @@ impl Prefix {
             Prefix::VertexEntityType
         }
     }
-
-    pub fn object_type_range_inclusive() -> (Prefix, Prefix) {
-        (Self::min_object_type_prefix(), Self::max_object_type_prefix())
-    }
 }
 
 make_prefix_enum! {

@@ -226,6 +226,7 @@ impl ConceptAPI for ObjectType {}
 
 impl TypeAPI for ObjectType {
     const MIN: Self = Self::Entity(EntityType::MIN);
+    const MAX: Self = Self::Relation(RelationType::MAX);
     fn new(vertex: TypeVertex) -> Self {
         Self::from_vertex(vertex).unwrap()
     }
@@ -309,6 +310,32 @@ impl TypeAPI for ObjectType {
                 .map(|type_| (*type_).into_object_type())
                 .collect_vec()
         })))
+    }
+
+    fn next_possible(&self) -> Option<Self> {
+        match self {
+            ObjectType::Entity(entity) => Some(
+                entity
+                    .next_possible()
+                    .map(|entity_type| Self::Entity(entity_type))
+                    .unwrap_or_else(|| Self::Relation(RelationType::MIN)),
+            ),
+            ObjectType::Relation(relation) => {
+                relation.next_possible().map(|relation_type| Self::Relation(relation_type))
+            }
+        }
+    }
+
+    fn previous_possible(&self) -> Option<Self> {
+        match self {
+            ObjectType::Entity(entity) => entity.previous_possible().map(|entity_type| Self::Entity(entity_type)),
+            ObjectType::Relation(relation) => Some(
+                relation
+                    .previous_possible()
+                    .map(|relation_type| Self::Relation(relation_type))
+                    .unwrap_or_else(|| Self::Entity(EntityType::MAX)),
+            ),
+        }
     }
 }
 

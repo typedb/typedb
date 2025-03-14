@@ -269,6 +269,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     source_query: &str,
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {
+    let start_time = Instant::now();
     let result = query_manager.prepare_write_pipeline(
         snapshot,
         type_manager,
@@ -314,7 +315,13 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
             }
         }
         if query_profile.is_enabled() {
-            event!(Level::INFO, "Write query completed.\n{}", query_profile);
+            let micros = Instant::now().duration_since(start_time).as_micros();
+            event!(
+                Level::INFO,
+                "Write query done (excluding network request time) in {} micros.\n{}",
+                micros,
+                query_profile
+            );
         }
         (
             Arc::into_inner(snapshot).unwrap(),
@@ -350,8 +357,15 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
                 })),
             ),
         };
+
         if query_profile.is_enabled() {
-            event!(Level::INFO, "Write query completed.\n{}", query_profile);
+            let micros = Instant::now().duration_since(start_time).as_micros();
+            event!(
+                Level::INFO,
+                "Write query done (excluding network request time) in {} micros.\n{}",
+                micros,
+                query_profile
+            );
         }
         result
     }

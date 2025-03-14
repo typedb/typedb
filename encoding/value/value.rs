@@ -223,63 +223,63 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub fn cast(self, value_type: &ValueType) -> Option<Value<'static>> {
-        if &self.value_type() == value_type {
+    pub fn cast(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
+        if self.value_type().category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_trivially_castable_to(value_type) {
+        } else if !self.value_type().is_trivially_castable_to(value_type_category) {
             return None;
         }
 
         match self {
             Value::Integer(integer) => {
-                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Decimal));
-                match value_type {
-                    ValueType::Double => Some(Value::Double(integer as f64)),
-                    ValueType::Decimal => Some(Value::Decimal(Decimal::new(integer, 0))),
+                debug_assert!(matches!(value_type_category, ValueTypeCategory::Double | ValueTypeCategory::Decimal));
+                match value_type_category {
+                    ValueTypeCategory::Double => Some(Value::Double(integer as f64)),
+                    ValueTypeCategory::Decimal => Some(Value::Decimal(Decimal::new(integer, 0))),
                     _ => unreachable!(),
                 }
             }
             Value::Decimal(decimal) => {
-                debug_assert_eq!(value_type, &ValueType::Double);
+                debug_assert_eq!(value_type_category, ValueTypeCategory::Double);
                 Some(Value::Double(decimal.to_f64()))
             }
             Value::Date(date) => {
-                debug_assert!(matches!(value_type, &ValueType::DateTime));
+                debug_assert!(matches!(value_type_category, ValueTypeCategory::DateTime));
                 Some(Value::DateTime(date.and_time(NaiveTime::default())))
             }
             _ => unreachable!(),
         }
     }
 
-    pub fn approximate_cast_lower_bound(self, value_type: &ValueType) -> Option<Value<'static>> {
-        if &self.value_type() == value_type {
+    pub fn approximate_cast_lower_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
+        if self.value_type().category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type) {
+        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
             return None;
-        } else if self.value_type().is_trivially_castable_to(value_type) {
-            return self.cast(value_type);
+        } else if self.value_type().is_trivially_castable_to(value_type_category) {
+            return self.cast(value_type_category);
         }
 
         match self {
             Value::Integer(_) => unreachable!("Handled by trivial cast"),
             Value::Decimal(decimal) => {
-                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Integer));
-                match value_type {
-                    ValueType::Integer => Some(Value::Integer(decimal.integer_part())),
-                    ValueType::Double => Some(Value::Double(decimal.to_f64())),
+                debug_assert!(matches!(value_type_category, ValueTypeCategory::Double | ValueTypeCategory::Integer));
+                match value_type_category {
+                    ValueTypeCategory::Integer => Some(Value::Integer(decimal.integer_part())),
+                    ValueTypeCategory::Double => Some(Value::Double(decimal.to_f64())),
                     _ => unreachable!(),
                 }
             }
             Value::Double(double) => {
-                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Integer));
-                match value_type {
-                    ValueType::Decimal => {
+                debug_assert!(matches!(value_type_category, ValueTypeCategory::Decimal | ValueTypeCategory::Integer));
+                match value_type_category {
+                    ValueTypeCategory::Decimal => {
                         let integer_part =
                             if double.floor() > i64::MAX as f64 { i64::MAX } else { double.floor() as i64 };
                         let fractional_part = (double - (integer_part as f64)).abs();
                         Some(Value::Decimal(Decimal::new_lower_bound_from(integer_part, fractional_part)))
                     }
-                    ValueType::Integer => {
+                    ValueTypeCategory::Integer => {
                         if double.floor() > i64::MAX as f64 {
                             Some(Value::Integer(i64::MAX))
                         } else {
@@ -294,21 +294,21 @@ impl<'a> Value<'a> {
         }
     }
 
-    pub fn approximate_cast_upper_bound(self, value_type: &ValueType) -> Option<Value<'static>> {
-        if &self.value_type() == value_type {
+    pub fn approximate_cast_upper_bound(self, value_type_category: ValueTypeCategory) -> Option<Value<'static>> {
+        if self.value_type().category() == value_type_category {
             return Some(self.into_owned());
-        } else if !self.value_type().is_approximately_castable_to(value_type) {
+        } else if !self.value_type().is_approximately_castable_to(value_type_category) {
             return None;
-        } else if self.value_type().is_trivially_castable_to(value_type) {
-            return self.cast(value_type);
+        } else if self.value_type().is_trivially_castable_to(value_type_category) {
+            return self.cast(value_type_category);
         }
 
         match self {
             Value::Integer(_) => unreachable!("Handled by trivial cast"),
             Value::Decimal(decimal) => {
-                debug_assert!(matches!(value_type, &ValueType::Double | &ValueType::Integer));
-                match value_type {
-                    ValueType::Integer => {
+                debug_assert!(matches!(value_type_category, ValueTypeCategory::Double | ValueTypeCategory::Integer));
+                match value_type_category {
+                    ValueTypeCategory::Integer => {
                         let integer_part = decimal.integer_part();
                         if decimal.fractional_part() == 0 {
                             Some(Value::Integer(integer_part))
@@ -316,7 +316,7 @@ impl<'a> Value<'a> {
                             Some(Value::Integer(integer_part + 1))
                         }
                     }
-                    ValueType::Double => {
+                    ValueTypeCategory::Double => {
                         // TODO: we might be able to have a tighter bound?
                         Some(Value::Double(decimal.to_f64() + 1.0 / FRACTIONAL_PART_DENOMINATOR_LOG10 as f64))
                     }
@@ -324,9 +324,9 @@ impl<'a> Value<'a> {
                 }
             }
             Value::Double(double) => {
-                debug_assert!(matches!(value_type, &ValueType::Decimal | &ValueType::Integer));
-                match value_type {
-                    ValueType::Decimal => {
+                debug_assert!(matches!(value_type_category, ValueTypeCategory::Decimal | ValueTypeCategory::Integer));
+                match value_type_category {
+                    ValueTypeCategory::Decimal => {
                         let integer_part = if double.floor() > i64::MAX as f64 {
                             panic!("Cannot create an upper-bounding decimal from double {}", double);
                         } else {
@@ -335,7 +335,7 @@ impl<'a> Value<'a> {
                         let fractional_part = (double - (integer_part as f64)).abs();
                         Some(Value::Decimal(Decimal::new_upper_bound_from(integer_part, fractional_part)))
                     }
-                    ValueType::Integer => {
+                    ValueTypeCategory::Integer => {
                         if double.floor() > i64::MAX as f64 {
                             panic!("Cannot create an upper-bounding integer from double {}", double);
                         } else {

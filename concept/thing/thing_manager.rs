@@ -197,13 +197,7 @@ impl ThingManager {
         entity_type_range: &impl RangeBounds<EntityType>,
         storage_counters: StorageCounters,
     ) -> InstanceIterator<Entity> {
-        self.get_thing_in_range(
-            snapshot,
-            entity_type_range,
-            <Entity as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
-            <Entity as ThingAPI>::Vertex::KEYSPACE,
-            storage_counters,
-        )
+        self.get_thing_in_range(snapshot, entity_type_range, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     pub fn get_relations_in(
@@ -224,7 +218,6 @@ impl ThingManager {
         self.get_thing_in_range(
             snapshot,
             relation_type_range,
-            <Relation as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
             <Relation as ThingAPI>::Vertex::KEYSPACE,
             storage_counters,
         )
@@ -245,107 +238,38 @@ impl ThingManager {
         object_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
     ) -> InstanceIterator<Object> {
-        self.get_thing_in_range(
-            snapshot,
-            object_type_range,
-            Prefix::object_type_range_inclusive(),
-            <Object as ThingAPI>::Vertex::KEYSPACE,
-            storage_counters,
-        )
+        self.get_thing_in_range(snapshot, object_type_range, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     fn get_thing_in_range<T: ThingAPI>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_range: &impl RangeBounds<T::TypeAPI>,
-        unbounded_prefix_range: (Prefix, Prefix),
         keyspace: EncodingKeyspace,
         storage_counters: StorageCounters,
     ) -> InstanceIterator<T> {
-        let range_start = match type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*start_type),
-                start_type.vertex().type_id_(),
+        let start = match Self::start_type_bound_to_range_start_included_type(type_range.start_bound()) {
+            None => return InstanceIterator::empty(),
+            Some(start_type_included) => <T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(start_type_included),
+                start_type_included.vertex().type_id_(),
                 keyspace,
-            )),
-            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*start_type),
-                start_type.vertex().type_id_(),
-                keyspace,
-            )),
-            Bound::Unbounded => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                unbounded_prefix_range.0,
-                TypeID::MIN,
-                keyspace,
-            )),
+            ),
         };
-        let range_end = match type_range.end_bound() {
-            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*end_type),
-                end_type.vertex().type_id_(),
+        let end = match Self::end_type_bound_to_range_end_included_type(type_range.end_bound()) {
+            None => return InstanceIterator::empty(),
+            Some(end_type_included) => <T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(end_type_included),
+                end_type_included.vertex().type_id_(),
                 keyspace,
-            )),
-            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*end_type),
-                end_type.vertex().type_id_(),
-                keyspace,
-            )),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                unbounded_prefix_range.1,
-                TypeID::MAX,
-                keyspace,
-            )),
+            ),
         };
-        let key_range = KeyRange::new(range_start, range_end, <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING);
+        let key_range = KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING,
+        );
         InstanceIterator::new(snapshot.iterate_range(&key_range, storage_counters))
-    }
-
-    pub(crate) fn get_relations_roles(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI,
-        storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
-        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        Iterator::map(
-            LinksReverseIterator::new(snapshot.iterate_range(
-                &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
-                storage_counters,
-            )),
-            |result| {
-                result.map(|(links, count)| {
-                    let (relation, role) = links.into_relation_role();
-                    (relation, role, count)
-                })
-            },
-        )
-    }
-
-    pub(crate) fn get_relations_player(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI,
-        storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
-        self.get_relations_roles(snapshot, player, storage_counters).map::<Result<Relation, _>, _>(|res| {
-            let (rel, _, _) = res?;
-            Ok(rel)
-        })
-    }
-
-    pub(crate) fn get_relations_player_role(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI,
-        role_type: RoleType,
-        storage_counters: StorageCounters,
-    ) -> impl Iterator<Item = Result<(Relation, u64), Box<ConceptReadError>>> {
-        self.get_relations_roles(snapshot, player, storage_counters).filter_map::<Result<(Relation, u64), _>, _>(
-            move |item| match item {
-                Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
-                Err(error) => Some(Err(error)),
-            },
-        )
     }
 
     pub fn get_attributes<Snapshot: ReadableSnapshot>(
@@ -538,18 +462,19 @@ impl ThingManager {
             return Ok(AttributeIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, value_range)
+        let Some((value_lower_bound, value_upper_bound)) =
+            Self::get_value_range(attribute_value_type.category(), value_range)
         else {
             return Ok(AttributeIterator::new_empty());
         };
         let start_attribute_vertex_bound = self.get_attribute_vertex_prefix_lower_bound(
             attribute_type.vertex().type_id_(),
-            &attribute_value_type,
+            attribute_value_type.category(),
             value_lower_bound,
         );
         let end_attribute_vertex_bound = self.get_attribute_vertex_prefix_upper_bound(
             attribute_type.vertex().type_id_(),
-            &attribute_value_type,
+            attribute_value_type.category(),
             value_upper_bound,
         );
 
@@ -578,7 +503,7 @@ impl ThingManager {
     fn get_attribute_vertex_prefix_lower_bound(
         &self,
         attribute_type_id: TypeID,
-        attribute_value_type: &ValueType,
+        attribute_value_type_category: ValueTypeCategory,
         value_lower_bound: Bound<Value<'_>>,
     ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
         match value_lower_bound {
@@ -610,7 +535,7 @@ impl ThingManager {
                 AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
                     attribute_type_id,
-                    AttributeVertex::keyspace_for_category(attribute_value_type.category()),
+                    AttributeVertex::keyspace_for_category(attribute_value_type_category),
                 )
                 .resize_to(),
             ),
@@ -620,7 +545,7 @@ impl ThingManager {
     fn get_attribute_vertex_prefix_upper_bound(
         &self,
         attribute_type_id: TypeID,
-        attribute_value_type: &ValueType,
+        attribute_value_type_category: ValueTypeCategory,
         value_upper_bound: Bound<Value<'_>>,
     ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
         match value_upper_bound {
@@ -652,7 +577,7 @@ impl ThingManager {
                 let prefix = AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
                     attribute_type_id,
-                    AttributeVertex::keyspace_for_category(attribute_value_type.category()),
+                    AttributeVertex::keyspace_for_category(attribute_value_type_category),
                 );
                 let keyspace = prefix.keyspace_id();
                 let mut array = prefix.into_bytes().into_array();
@@ -661,63 +586,6 @@ impl ThingManager {
                 RangeEnd::EndPrefixExclusive(prefix_key.resize_to())
             }
         }
-    }
-
-    fn get_value_range<'a>(
-        expected_value_type: &ValueType,
-        range: &'a impl RangeBounds<Value<'a>>,
-    ) -> Option<(Bound<Value<'a>>, Bound<Value<'a>>)> {
-        let lower_bound = Self::get_value_lower_bound(expected_value_type, range)?;
-        let upper_bound = Self::get_value_upper_bound(expected_value_type, range)?;
-        Some((lower_bound, upper_bound))
-    }
-
-    fn get_value_lower_bound<'a>(
-        expected_value_type: &ValueType,
-        range: &'a impl RangeBounds<Value<'a>>,
-    ) -> Option<Bound<Value<'a>>> {
-        let start_value_type = match range.start_bound() {
-            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
-            Bound::Unbounded => return Some(Bound::Unbounded),
-        };
-        if !start_value_type.is_approximately_castable_to(expected_value_type) {
-            // TODO: perhaps this should return a Result::Error on failure instead of doing nothing?
-            return None;
-        }
-        Some(range.start_bound().map(|value| {
-            if *expected_value_type != start_value_type {
-                value
-                    .as_reference()
-                    .approximate_cast_lower_bound(&expected_value_type)
-                    .expect("Failed to do a lower-bound conversion between value types.")
-            } else {
-                value.as_reference()
-            }
-        }))
-    }
-
-    fn get_value_upper_bound<'a>(
-        expected_value_type: &ValueType,
-        range: &'a impl RangeBounds<Value<'a>>,
-    ) -> Option<Bound<Value<'a>>> {
-        let end_value_type = match range.end_bound() {
-            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
-            Bound::Unbounded => return Some(Bound::Unbounded),
-        };
-        if !end_value_type.is_approximately_castable_to(expected_value_type) {
-            // TODO: perhaps this should return a Result::Error on failure instead of doing nothing?
-            return None;
-        }
-        Some(range.end_bound().map(|value| {
-            if *expected_value_type != end_value_type {
-                value
-                    .as_reference()
-                    .approximate_cast_upper_bound(&expected_value_type)
-                    .expect("Failed to do an upper-bound conversion between value types.")
-            } else {
-                value.as_reference()
-            }
-        }))
     }
 
     fn get_attribute_with_value_inline(
@@ -737,7 +605,55 @@ impl ThingManager {
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
 
-    pub(crate) fn has_attribute_with_value(
+    pub(crate) fn get_player_relations_roles(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
+        Iterator::map(
+            LinksReverseIterator::new(snapshot.iterate_range(
+                &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
+                storage_counters,
+            )),
+            |result| {
+                result.map(|(links, count)| {
+                    let (relation, role) = links.into_relation_role();
+                    (relation, role, count)
+                })
+            },
+        )
+    }
+
+    pub(crate) fn get_player_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
+        self.get_player_relations_roles(snapshot, player, storage_counters).map::<Result<Relation, _>, _>(|res| {
+            let (rel, _, _) = res?;
+            Ok(rel)
+        })
+    }
+
+    pub(crate) fn get_player_relations_using_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI,
+        role_type: RoleType,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(Relation, u64), Box<ConceptReadError>>> {
+        self.get_player_relations_roles(snapshot, player, storage_counters).filter_map::<Result<(Relation, u64), _>, _>(
+            move |item| match item {
+                Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
+                Err(error) => Some(Err(error)),
+            },
+        )
+    }
+
+    pub(crate) fn owner_has_attribute_with_value(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
@@ -772,7 +688,7 @@ impl ThingManager {
         Ok(has_exists)
     }
 
-    pub(crate) fn has_attribute(
+    pub(crate) fn owner_has_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
@@ -792,29 +708,19 @@ impl ThingManager {
         owner_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
     ) -> HasIterator {
-        let range_start = match owner_type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeHas::prefix_from_type(start_type.vertex())),
-            Bound::Excluded(start_type) => {
-                RangeStart::ExcludePrefix(ThingEdgeHas::prefix_from_type(start_type.vertex()))
-            }
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeHas::prefix_from_type_parts(
-                Prefix::min_object_type_prefix(),
-                TypeID::MIN,
-            )),
+        let start = match Self::start_type_bound_to_range_start_included_type(owner_type_range.start_bound()) {
+            None => return HasIterator::new_empty(),
+            Some(start_type_included) => ThingEdgeHas::prefix_from_type(start_type_included.vertex()),
         };
-        let range_end = match owner_type_range.end_bound() {
-            Bound::Included(end_type) => {
-                RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_type(end_type.vertex()))
-            }
-            Bound::Excluded(end_type) => {
-                RangeEnd::EndPrefixExclusive(ThingEdgeHas::prefix_from_type(end_type.vertex()))
-            }
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_type_parts(
-                Prefix::max_object_type_prefix(),
-                TypeID::MAX,
-            )),
+        let end = match Self::end_type_bound_to_range_end_included_type(owner_type_range.end_bound()) {
+            None => return HasIterator::new_empty(),
+            Some(end_type_included) => ThingEdgeHas::prefix_from_type(end_type_included.vertex()),
         };
-        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        let key_range = KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            ThingEdgeHas::FIXED_WIDTH_ENCODING,
+        );
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
@@ -855,7 +761,9 @@ impl ThingManager {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range) else {
+        let Some((value_lower_bound, value_upper_bound)) =
+            Self::get_value_range(attribute_value_type.category(), range)
+        else {
             return Ok(HasReverseIterator::new_empty());
         };
 
@@ -1053,126 +961,64 @@ impl ThingManager {
         );
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, StorageCounters::DISABLED));
-        // let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        // let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range, StorageCounters::DISABLED.clone());
-
         let iter = AttributeIterator::new(
             index_attribute_iterator,
-            // has_reverse_iterator_buffer,
-            // has_reverse_iterator_storage,
             has_reverse_iterator,
             self.type_manager.get_independent_attribute_types(snapshot)?,
         );
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered<'a>(
+    pub(crate) fn owner_get_has_unordered_all<'a>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owner: impl ObjectAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
+        let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
+        let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+    }
+
+    pub(crate) fn owner_get_has_unordered_in_value_type<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type_range_hint: &impl RangeBounds<AttributeType>,
+        value_type_categories: &[ValueTypeCategory],
         value_range: &'a impl RangeBounds<Value<'a>>,
         storage_counters: StorageCounters,
     ) -> Result<HasIterator, Box<ConceptReadError>> {
-        let range_start = match attribute_type_range_hint.start_bound() {
-            Bound::Included(attribute_type) => {
-                let attribute_value_type =
-                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
-                        None => return Ok(HasIterator::new_empty()),
-                        Some(value_type) => value_type,
-                    };
-                let lower_bound = match Self::get_value_lower_bound(&attribute_value_type, value_range) {
-                    None => return Ok(HasIterator::new_empty()),
-                    Some(lower_bound) => lower_bound,
-                };
-                // the attribute type is included, so we use whatever the Bound type is of the value lower bound
-                self.get_has_from_thing_to_type_unordered_start_bound(
-                    owner,
-                    attribute_type.vertex().type_id_(),
-                    &attribute_value_type,
-                    lower_bound,
-                )
-            }
-            Bound::Excluded(attribute_type) => {
-                let attribute_value_type =
-                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
-                        None => return Ok(HasIterator::new_empty()),
-                        Some(value_type) => value_type,
-                    };
-                let lower_bound = match Self::get_value_lower_bound(&attribute_value_type, value_range) {
-                    None => return Ok(HasIterator::new_empty()),
-                    Some(lower_bound) => lower_bound,
-                };
-                // the attribute type is already excluded wholly, so we explicitly skip it here by incrementing, then fall back to the included cas
-                // TODO: the next attribute type could have a different value type?
-                let next_attribute_id = match attribute_type.vertex().type_id_().increment() {
-                    None => {
-                        // start bound is above max attribute type!
-                        return Ok(HasIterator::new_empty());
-                    }
-                    Some(next_id) => next_id,
-                };
-                self.get_has_from_thing_to_type_unordered_start_bound(
-                    owner,
-                    next_attribute_id,
-                    &attribute_value_type,
-                    lower_bound,
-                )
-            }
-            Bound::Unbounded => {
-                // TODO: without any attribute bounds, we can't know any value type (?)
-                RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MIN).resize_to())
-            }
+        let start_attribute_type =
+            match Self::start_type_bound_to_range_start_included_type(attribute_type_range_hint.start_bound()) {
+                None => return Ok(HasIterator::new_empty()),
+                Some(start_type_included) => start_type_included,
+            };
+        let start_value_bound = match Self::get_value_lower_bound_across_types(value_type_categories, value_range) {
+            None => return Ok(HasIterator::new_empty()),
+            Some(lower_bound) => lower_bound,
         };
-        let range_end = match attribute_type_range_hint.end_bound() {
-            Bound::Included(attribute_type) => {
-                let attribute_value_type =
-                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
-                        None => return Ok(HasIterator::new_empty()),
-                        Some(value_type) => value_type,
-                    };
-                let upper_bound = match Self::get_value_upper_bound(&attribute_value_type, value_range) {
-                    None => return Ok(HasIterator::new_empty()),
-                    Some(lower_bound) => lower_bound,
-                };
-                self.get_has_from_thing_to_type_unordered_end_bound(
-                    owner,
-                    attribute_type.vertex().type_id_(),
-                    &attribute_value_type,
-                    upper_bound,
-                )
-            }
-            Bound::Excluded(attribute_type) => {
-                let attribute_value_type =
-                    match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
-                        None => return Ok(HasIterator::new_empty()),
-                        Some(value_type) => value_type,
-                    };
-                let upper_bound = match Self::get_value_upper_bound(&attribute_value_type, value_range) {
-                    None => return Ok(HasIterator::new_empty()),
-                    Some(lower_bound) => lower_bound,
-                };
-                // the attribute type is already excluded wholly, so we explicitly skip it here by decrementing, then fall back to the included case
-                // TODO: the prev attribute type could have a different value type?
-                let prev_attribute_id = match attribute_type.vertex().type_id_().decrement() {
-                    None => {
-                        // upper bound is below the minimum attribute ID!
-                        return Ok(HasIterator::new_empty());
-                    }
-                    Some(prev_id) => prev_id,
-                };
-                self.get_has_from_thing_to_type_unordered_end_bound(
-                    owner,
-                    prev_attribute_id,
-                    &attribute_value_type,
-                    upper_bound,
-                )
-            }
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(
-                ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MAX).resize_to(),
-            ),
+        let start = self.get_has_from_thing_to_type_unordered_start_bound(
+            owner,
+            start_attribute_type.vertex().type_id_(),
+            start_value_bound,
+        );
+
+        let end_attribute_type =
+            match Self::end_type_bound_to_range_end_included_type(attribute_type_range_hint.end_bound()) {
+                None => return Ok(HasIterator::new_empty()),
+                Some(end_type_included) => end_type_included,
+            };
+        let end_value_bound = match Self::get_value_upper_bound_across_types(value_type_categories, value_range) {
+            None => return Ok(HasIterator::new_empty()),
+            Some(upper_bound) => upper_bound,
         };
-        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        let end = self.get_has_from_thing_to_type_unordered_end_bound(
+            owner,
+            end_attribute_type.vertex().type_id_(),
+            end_value_bound,
+        );
+        let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
         Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
@@ -1201,7 +1047,8 @@ impl ThingManager {
             }
             Some(value_type) => value_type,
         };
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, value_range)
+        let Some((value_lower_bound, value_upper_bound)) =
+            Self::get_value_range(attribute_value_type.category(), value_range)
         else {
             return Ok(Iterator::map(HasIterator::new_empty(), |result: Result<(Has, u64), Box<ConceptReadError>>| {
                 result.map(|(has, value)| (has.attribute(), value))
@@ -1210,13 +1057,11 @@ impl ThingManager {
         let has_start_bound = self.get_has_from_thing_to_type_unordered_start_bound(
             owner,
             attribute_type.vertex().type_id_(),
-            &attribute_value_type,
             value_lower_bound,
         );
         let has_end_bound = self.get_has_from_thing_to_type_unordered_end_bound(
             owner,
             attribute_type.vertex().type_id_(),
-            &attribute_value_type,
             value_upper_bound,
         );
         let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
@@ -1230,11 +1075,15 @@ impl ThingManager {
         &self,
         owner: impl ObjectAPI,
         attribute_type_id: TypeID,
-        attribute_value_type: &ValueType,
         value_lower_bound: Bound<Value<'_>>,
     ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
-        let attribute_vertex_lower_bound =
-            self.get_attribute_vertex_prefix_lower_bound(attribute_type_id, &attribute_value_type, value_lower_bound);
+        let attribute_vertex_lower_bound = self.get_attribute_vertex_prefix_lower_bound(
+            attribute_type_id,
+            // ### DUMMY - IRRELEVANT - keyspace determined by Has edge later ###
+            ValueTypeCategory::Boolean,
+            // ### DUMMY - IRRELEVANT ###
+            value_lower_bound,
+        );
         attribute_vertex_lower_bound.map(|lower_bound| {
             ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), lower_bound.bytes())
                 .resize_to()
@@ -1245,11 +1094,15 @@ impl ThingManager {
         &self,
         owner: impl ObjectAPI,
         attribute_type_id: TypeID,
-        attribute_value_type: &ValueType,
         value_upper_bound: Bound<Value<'_>>,
     ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
-        let attribute_vertex_upper_bound =
-            self.get_attribute_vertex_prefix_upper_bound(attribute_type_id, &attribute_value_type, value_upper_bound);
+        let attribute_vertex_upper_bound = self.get_attribute_vertex_prefix_upper_bound(
+            attribute_type_id,
+            // ### DUMMY - IRRELEVANT - keyspace determined by Has edge later ###
+            ValueTypeCategory::Boolean,
+            // ### DUMMY - IRRELEVANT ###
+            value_upper_bound,
+        );
         attribute_vertex_upper_bound.map(|end| {
             ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), end.bytes()).resize_to()
         })
@@ -1599,19 +1452,38 @@ impl ThingManager {
         )
     }
 
+    fn indexed_relation_prefix_in_relation_type(
+        relation_type: RelationType,
+        start_player_type_inclusive: ObjectType,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE }> {
+        ThingEdgeIndexedRelation::prefix_relation_type_start_type(
+            relation_type.vertex().type_id_(),
+            start_player_type_inclusive.vertex().prefix(),
+            start_player_type_inclusive.vertex().type_id_(),
+        )
+    }
+
     pub fn get_indexed_relations_in(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
+        start_player_type_range: impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
-        let prefix = ThingEdgeIndexedRelation::prefix_relation_type(relation_type.vertex().type_id_());
-        self.iterate_indexed_relations(
-            snapshot,
-            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
-            relation_type,
-            storage_counters,
-        )
+        let start = match Self::start_type_bound_to_range_start_included_type(start_player_type_range.start_bound()) {
+            None => return Ok(IndexedRelationsIterator::new_empty()),
+            Some(start_player_type) => Self::indexed_relation_prefix_in_relation_type(relation_type, start_player_type),
+        };
+        let end = match Self::end_type_bound_to_range_end_included_type(start_player_type_range.end_bound()) {
+            None => return Ok(IndexedRelationsIterator::new_empty()),
+            Some(end_player_type) => Self::indexed_relation_prefix_in_relation_type(relation_type, end_player_type),
+        };
+        let range = &KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
+        );
+        self.iterate_indexed_relations(snapshot, &range, relation_type, storage_counters)
     }
 
     pub(crate) fn has_indexed_relation_player(
@@ -1641,7 +1513,7 @@ impl ThingManager {
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
 
-    pub(crate) fn get_indexed_relation_players(
+    pub(crate) fn get_indexed_relation_players_from(
         &self,
         snapshot: &impl ReadableSnapshot,
         start: impl ObjectAPI,
@@ -1657,7 +1529,7 @@ impl ThingManager {
         )
     }
 
-    pub(crate) fn get_indexed_relations(
+    pub(crate) fn get_indexed_relations_between(
         &self,
         snapshot: &impl ReadableSnapshot,
         start: impl ObjectAPI,
@@ -1769,6 +1641,117 @@ impl ThingManager {
         snapshot
             .contains(type_.vertex().into_storage_key().as_reference())
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+    }
+
+    fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
+        let bound_inclusive = match start_bound {
+            Bound::Included(type_) => *type_,
+            Bound::Excluded(type_) => type_.previous_possible()?,
+            Bound::Unbounded => T::MAX,
+        };
+        Some(bound_inclusive)
+    }
+
+    fn end_type_bound_to_range_end_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
+        let bound_inclusive = match start_bound {
+            Bound::Included(type_) => *type_,
+            Bound::Excluded(type_) => type_.previous_possible()?,
+            Bound::Unbounded => T::MAX,
+        };
+        Some(bound_inclusive)
+    }
+
+    fn get_value_range<'a>(
+        expected_value_type_category: ValueTypeCategory,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<(Bound<Value<'a>>, Bound<Value<'a>>)> {
+        let lower_bound = Self::get_value_lower_bound(expected_value_type_category, range)?;
+        let upper_bound = Self::get_value_upper_bound(expected_value_type_category, range)?;
+        Some((lower_bound, upper_bound))
+    }
+
+    fn get_value_lower_bound_across_types<'a>(
+        ordered_possible_value_types: &[ValueTypeCategory],
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        debug_assert!(Self::value_types_in_order(ordered_possible_value_types));
+        ordered_possible_value_types
+            .into_iter()
+            .filter_map(|value_type_category| Self::get_value_lower_bound(*value_type_category, range))
+            .next()
+    }
+
+    fn value_types_in_order(value_types: &[ValueTypeCategory]) -> bool {
+        if value_types.is_empty() {
+            return true;
+        }
+        let mut current = &value_types[0];
+        for other in &value_types[1..] {
+            if current.to_bytes() > other.to_bytes() {
+                return false;
+            }
+            current = other;
+        }
+        return true;
+    }
+
+    fn get_value_upper_bound_across_types<'a>(
+        ordered_possible_value_types: &[ValueTypeCategory],
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        debug_assert!(Self::value_types_in_order(ordered_possible_value_types));
+        ordered_possible_value_types
+            .iter()
+            .rev()
+            .filter_map(|value_type_category| Self::get_value_upper_bound(*value_type_category, range))
+            .next()
+    }
+
+    fn get_value_lower_bound<'a>(
+        expected_value_type_category: ValueTypeCategory,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        let start_value_type = match range.start_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+            Bound::Unbounded => return Some(Bound::Unbounded),
+        };
+        if !start_value_type.is_approximately_castable_to(expected_value_type_category) {
+            return None;
+        }
+        Some(range.start_bound().map(|value| {
+            if expected_value_type_category != start_value_type.category() {
+                value
+                    .as_reference()
+                    .approximate_cast_lower_bound(expected_value_type_category)
+                    .expect("Failed to do a lower-bound conversion between value types.")
+            } else {
+                value.as_reference()
+            }
+        }))
+    }
+
+    fn get_value_upper_bound<'a>(
+        expected_value_type_category: ValueTypeCategory,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        let end_value_type = match range.end_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+            Bound::Unbounded => return Some(Bound::Unbounded),
+        };
+        if !end_value_type.is_approximately_castable_to(expected_value_type_category) {
+            // TODO: perhaps this should return a Result::Error on failure instead of doing nothing?
+            return None;
+        }
+        Some(range.end_bound().map(|value| {
+            if expected_value_type_category != end_value_type.category() {
+                value
+                    .as_reference()
+                    .approximate_cast_upper_bound(expected_value_type_category)
+                    .expect("Failed to do an upper-bound conversion between value types.")
+            } else {
+                value.as_reference()
+            }
+        }))
     }
 }
 
@@ -2663,14 +2646,6 @@ impl ThingManager {
         OperationTimeValidation::validate_attribute_type_is_not_abstract(snapshot, self, attribute_type)
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
-            snapshot,
-            self,
-            attribute_type,
-            value.value_type(),
-            value.as_reference(),
-        )?;
-
         OperationTimeValidation::validate_attribute_regex_constraints(
             snapshot,
             self,
@@ -2713,7 +2688,7 @@ impl ThingManager {
         )?;
 
         let vertex = match value
-            .cast(&attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap())
+            .cast(attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap().category())
             .expect("value type compatibility should have been verified by this point")
         {
             Value::Boolean(bool) => {
@@ -2968,7 +2943,7 @@ impl ThingManager {
 
         if owner_status != ConceptStatus::Inserted {
             if self
-                .has_attribute(snapshot, owner, attribute)
+                .owner_has_attribute(snapshot, owner, attribute)
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
             {
                 snapshot.delete(has_array);
