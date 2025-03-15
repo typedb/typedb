@@ -1230,26 +1230,20 @@ impl ThingManager {
         relation_type_range: &impl RangeBounds<RelationType>,
         storage_counters: StorageCounters,
     ) -> LinksIterator {
-        let range_start = match relation_type_range.start_bound() {
-            Bound::Included(start_type) => {
-                RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()))
-            }
-            Bound::Excluded(start_type) => {
-                RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()))
-            }
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_type(TypeID::MIN)),
+        let start = match Self::start_type_bound_to_range_start_included_type(relation_type_range.start_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(start_type) => ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()),
         };
-        let range_end = match relation_type_range.end_bound() {
-            Bound::Included(end_type) => {
-                RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()))
-            }
-            Bound::Excluded(end_type) => {
-                RangeEnd::EndPrefixExclusive(ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()))
-            }
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_type(TypeID::MAX)),
+        let end = match Self::end_type_bound_to_range_end_included_type(relation_type_range.end_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(end_type) => ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()),
         };
         LinksIterator::new(snapshot.iterate_range(
-            &KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+            &KeyRange::new(
+                RangeStart::Inclusive(start),
+                RangeEnd::EndPrefixInclusive(end),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            ),
             storage_counters,
         ))
     }
@@ -1261,35 +1255,21 @@ impl ThingManager {
         player_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
     ) -> LinksIterator {
-        let range_start = match player_type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_player_type(
-                relation.vertex(),
-                start_type.vertex(),
-            )),
-            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_from_relation_player_type(
-                relation.vertex(),
-                start_type.vertex(),
-            )),
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_player_type_parts(
-                relation.vertex(),
-                Prefix::min_object_type_prefix(),
-                TypeID::MIN,
-            )),
+        let start = match Self::start_type_bound_to_range_start_included_type(player_type_range.start_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(start_type) => {
+                ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), start_type.vertex())
+            }
         };
-        let range_end = match player_type_range.end_bound() {
-            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(
-                ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), end_type.vertex()),
-            ),
-            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(
-                ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), end_type.vertex()),
-            ),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_player_type_parts(
-                relation.vertex(),
-                Prefix::max_object_type_prefix(),
-                TypeID::MAX,
-            )),
+        let end = match Self::end_type_bound_to_range_end_included_type(player_type_range.end_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(end_type) => ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), end_type.vertex()),
         };
-        let key_range = KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
+        let key_range = KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+        );
         LinksIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
@@ -1313,36 +1293,26 @@ impl ThingManager {
         player_type_range: &impl RangeBounds<ObjectType>,
         storage_counters: StorageCounters,
     ) -> LinksReverseIterator {
-        let range_start = match player_type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
+        let range_start = match Self::start_type_bound_to_range_start_included_type(player_type_range.start_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(start_type) => ThingEdgeLinks::prefix_reverse_from_player_type(
                 start_type.vertex().prefix(),
                 start_type.vertex().type_id_(),
-            )),
-            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_reverse_from_player_type(
-                start_type.vertex().prefix(),
-                start_type.vertex().type_id_(),
-            )),
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
-                Prefix::min_object_type_prefix(),
-                TypeID::MIN,
-            )),
+            ),
         };
-        let range_end = match player_type_range.end_bound() {
-            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
+        let range_end = match Self::end_type_bound_to_range_end_included_type(player_type_range.end_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(end_type) => ThingEdgeLinks::prefix_reverse_from_player_type(
                 end_type.vertex().prefix(),
                 end_type.vertex().type_id_(),
-            )),
-            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
-                end_type.vertex().prefix(),
-                end_type.vertex().type_id_(),
-            )),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
-                Prefix::max_object_type_prefix(),
-                TypeID::MAX,
-            )),
+            ),
         };
         LinksReverseIterator::new(snapshot.iterate_range(
-            &KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+            &KeyRange::new(
+                RangeStart::Inclusive(range_start),
+                RangeEnd::EndPrefixInclusive(range_end),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            ),
             storage_counters,
         ))
     }
@@ -1354,38 +1324,25 @@ impl ThingManager {
         relation_type_range: &impl RangeBounds<RelationType>,
         storage_counters: StorageCounters,
     ) -> LinksReverseIterator {
-        let range_start = match relation_type_range.start_bound() {
-            Bound::Included(type_start) => {
-                RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
-                    player.vertex(),
-                    type_start.vertex().type_id_(),
-                ))
-            }
-            Bound::Excluded(type_start) => {
-                RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
-                    player.vertex(),
-                    type_start.vertex().type_id_(),
-                ))
-            }
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
+        let range_start = match Self::start_type_bound_to_range_start_included_type(relation_type_range.start_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(start_type) => ThingEdgeLinks::prefix_reverse_from_player_relation_type(
                 player.vertex(),
-                TypeID::MIN,
-            )),
+                start_type.vertex().type_id_(),
+            ),
         };
-        let range_end = match relation_type_range.end_bound() {
-            Bound::Included(type_end) => RangeEnd::EndPrefixInclusive(
-                ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_end.vertex().type_id_()),
-            ),
-            Bound::Excluded(type_end) => RangeEnd::EndPrefixExclusive(
-                ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_end.vertex().type_id_()),
-            ),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
-                player.vertex(),
-                TypeID::MAX,
-            )),
+        let range_end = match Self::end_type_bound_to_range_end_included_type(relation_type_range.end_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(end_type) => {
+                ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
+            }
         };
         LinksReverseIterator::new(snapshot.iterate_range(
-            &KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+            &KeyRange::new(
+                RangeStart::Inclusive(range_start),
+                RangeEnd::EndPrefixInclusive(range_end),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            ),
             storage_counters,
         ))
     }
