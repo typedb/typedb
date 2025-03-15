@@ -167,7 +167,6 @@ macro_rules! edge_iterator {
 
             pub fn seek(&mut self, target: &$mapped_type) {
                 let unmapped_target = $unmap_fn(target);
-                // println!("Edge iterator seeking to unmapped target: {:?}", unmapped_target);
                 if let Some(iterator) = self.snapshot_iterator.as_mut() {
                     iterator.seek(unmapped_target.as_reference());
                 }

@@ -494,7 +494,6 @@ fn storage_key_edge_to_links<'a>(
 fn links_to_edge_storage_key(links_count: &(Links, u64)) -> StorageKey<'static, BUFFER_KEY_INLINE> {
     let (links, _count) = links_count;
     let edge = ThingEdgeLinks::new(links.relation().vertex(), links.player().vertex(), links.role_type().vertex());
-    // println!("Unmapped Links to Links edge: {}", edge);
     edge.into_storage_key()
 }
 
@@ -519,7 +518,6 @@ fn links_to_reverse_edge_storage_key(links_count: &(Links, u64)) -> StorageKey<'
     let (links, _count) = links_count;
     let edge =
         ThingEdgeLinks::new_reverse(links.player().vertex(), links.relation().vertex(), links.role_type().vertex());
-    // println!("Unmapped Links to Links Reverse edge: {}", edge);
     edge.into_storage_key()
 }
 
@@ -558,7 +556,6 @@ fn indexed_players_to_edge_storage_key(
         from_role.vertex().type_id_(),
         to_role.vertex().type_id_(),
     );
-    // println!("IndexedPlayers to Edge, resulted in: {}", edge);
     edge.into_storage_key()
 }
 

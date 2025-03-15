@@ -553,7 +553,6 @@ fn storage_key_has_edge_to_has<'a>(
 fn has_to_edge_storage_key(has_count: &(Has, u64)) -> StorageKey<'static, BUFFER_KEY_INLINE> {
     let (has, _) = has_count;
     let edge = ThingEdgeHas::new(has.owner().vertex(), has.attribute().vertex());
-    // println!("Unmapped Has to Has edge: {}", edge);
     edge.into_storage_key()
 }
 
@@ -567,7 +566,6 @@ fn storage_key_has_reverse_edge_to_has<'a>(
 fn has_to_reverse_edge_storage_key(has_count: &(Has, u64)) -> StorageKey<'static, BUFFER_KEY_INLINE> {
     let (has, _) = has_count;
     let edge = ThingEdgeHasReverse::new(has.attribute().vertex(), has.owner().vertex());
-    // println!("Unmapped has to Reverse Edge: {}", edge);
     edge.into_storage_key()
 }
 

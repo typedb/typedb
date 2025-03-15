@@ -829,12 +829,13 @@ impl ThingEdgeIndexedRelation {
 
     pub fn prefix_relation_type_start_type(
         relation_id: TypeID,
-        start_type_prefix: Prefix,
-        start_type_id: TypeID,
+        start_instance_type: TypeVertex,
     ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE }> {
         let mut bytes = ByteArray::zeros(Self::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE);
         bytes[Self::INDEX_PREFIX] = Self::PREFIX.prefix_id().byte;
         bytes[Self::RANGE_RELATION_TYPE_ID].copy_from_slice(&relation_id.to_bytes());
+        let start_type_prefix = ObjectVertex::prefix_for_type(start_instance_type.prefix());
+        let start_type_id = start_instance_type.type_id_();
         ObjectVertex::write_prefix_type(&mut bytes[Self::RANGE_START_TYPE], start_type_prefix, start_type_id);
         StorageKey::new_owned(Self::KEYSPACE, bytes)
     }
