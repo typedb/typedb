@@ -721,8 +721,6 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeHas::FIXED_WIDTH_ENCODING,
         );
-        let mut iterator = HasIterator::new(snapshot.iterate_range(&key_range, StorageCounters::DISABLED));
-        let count = iterator.count_as_ref();
         HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 

@@ -550,6 +550,8 @@ impl CartesianIterator {
         source_multiplicity: u64,
         intersection_iterators: &mut [TupleIterator],
     ) -> Result<(), ReadExecutionError> {
+        // TODO: there's room for an optimisation here: we don't have to re-open a new iterator when only have 1 cartesian iterator!
+        //       we can just advance it linearly through the answers, and not cost another lookup
         debug_assert!(source_intersection.len() == self.intersection_source.len());
         self.is_active = true;
         self.input_row[..input_row.len()].clone_from_slice(input_row);
@@ -639,6 +641,34 @@ impl CartesianIterator {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ReadExecutionError> {
+        /*
+        TODO: this re-opens an iterator to contribute towards a cartesian product.
+              However, we only need values within the intersection. This 'bound' is not information we pass into the reopened iterator!
+
+              Example: Has[person $x, age $a], normally called in the Unbound mode.
+              However, now we know we are within the intersection for Person 1.
+
+              Say data looks like this:
+
+              Person 0, age 10;
+              Person 0, name 'a';
+              Person 1, age 11;
+              Person 1, age 12;
+              Person 1, name 'b';
+              Person 2, name 'c';
+              Person 3, name 'd';
+              Person ...
+
+              The iterator will be opened in Unbound mode, and we will seek it to person 1 in this method.
+              However, it also has built-in filtering to ensure that we only see Person-Age combinations!
+
+              As a result, we will correctly find Person1-Age11 and Person1-Age12 for the Cartesian output.
+              However, after that, the iterator may not return anything if it doesn't encounter any more Age owners!!
+              In this case, we will advance through Person2-NameC, Person3-NameD, ... either until the end of all Has-Person prefixes
+              or we find another Person with an Age!
+
+              Ideally, we could use the bound Person1 as input to the getIterator to make sure we stick in the right range.
+         */
         let mut reopened = executor
             .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1, &Provenance::INITIAL), self.profile.storage_counters())
             .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
