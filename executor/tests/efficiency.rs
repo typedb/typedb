@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, HashMap, HashSet},
+    ops::Bound,
     sync::Arc,
 };
 
@@ -35,8 +36,8 @@ use compiler::{
 use concept::{
     thing::{object::ObjectAPI, thing_manager::ThingManager},
     type_::{
-        annotation::AnnotationCardinality, owns::OwnsAnnotation, relates::RelatesAnnotation, type_manager::TypeManager,
-        Ordering, OwnerAPI, PlayerAPI,
+        annotation::AnnotationCardinality, object_type::ObjectType, owns::OwnsAnnotation, relates::RelatesAnnotation,
+        type_manager::TypeManager, Ordering, OwnerAPI, PlayerAPI,
     },
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
@@ -53,7 +54,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use resource::profile::QueryProfile;
+use resource::profile::{QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
@@ -175,7 +176,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     /*
     insert
-         $person_1 isa person,
+         aperson_1 isa person,
             has age 10,
             has gov_id 0,
             has gov_id 1,
@@ -1266,15 +1267,37 @@ fn intersections_seeks_with_extra_values() {
 
     // query:
     //   match
-    //    $age isa age 10;
+    //    $age isa age 12;
     //    $person has $age;
     //    $person has gov_id $gov_id;
     //    $gov_id > 2;
 
+    // add `match $person_3 isa person, has gov_id 4; insert $person_3 has age 12;`
+    // this reveals the use of the Value during an intersection seek optimisation
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    let mut snapshot = storage.clone().open_snapshot_write();
+    let person_type = type_manager.get_entity_type(&mut snapshot, &PERSON_LABEL).unwrap().unwrap();
+    let age_type = type_manager.get_attribute_type(&mut snapshot, &AGE_LABEL).unwrap().unwrap();
+    let gov_id_type = type_manager.get_attribute_type(&mut snapshot, &GOV_ID_LABEL).unwrap().unwrap();
+    let gov_id_4 = thing_manager.get_attribute_with_value(&snapshot, gov_id_type, Value::Integer(4)).unwrap().unwrap();
+    let person_4 = Iterator::next(&mut thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
+        &snapshot,
+        &gov_id_4,
+        &(Bound::Included(ObjectType::Entity(person_type)), Bound::Included(ObjectType::Entity(person_type))),
+        StorageCounters::DISABLED,
+    ))
+    .unwrap()
+    .unwrap()
+    .0
+    .owner();
+    let age_12 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(12)).unwrap();
+    person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_12).unwrap();
+    snapshot.commit().unwrap();
+
     // IR to compute type annotations
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let value_int_10 = value_parameters.register_value(Value::Integer(10), Span { begin_offset: 0, end_offset: 0 });
+    let value_int_12 = value_parameters.register_value(Value::Integer(12), Span { begin_offset: 0, end_offset: 0 });
     let value_int_2 = value_parameters.register_value(Value::Integer(2), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -1306,14 +1329,12 @@ fn intersections_seeks_with_extra_values() {
 
     conjunction
         .constraints_mut()
-        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_10), Comparator::Equal, None)
+        .add_comparison(Vertex::Variable(var_age), Vertex::Parameter(value_int_12), Comparator::Equal, None)
         .unwrap();
-    conjunction.constraints_mut().add_comparison(
-        Vertex::Variable(var_gov_id),
-        Vertex::Parameter(value_int_2),
-        Comparator::Greater,
-        None,
-    );
+    conjunction
+        .constraints_mut()
+        .add_comparison(Vertex::Variable(var_gov_id), Vertex::Parameter(value_int_2), Comparator::Greater, None)
+        .unwrap();
 
     let entry = builder.finish().unwrap();
     let value_parameters = Arc::new(value_parameters);
@@ -1327,20 +1348,18 @@ fn intersections_seeks_with_extra_values() {
 
     // plan (requires correct type annotations)
     // plan:
-    // 1. Isa($age, age) value == 10
+    // 1. Isa($age, age) value == 12
     // 2. Intersect:
     //       ReverseHas($person, $age) ==> independently produces many people
     //       Has($person, $gov_id) $gov_id > 2 ==> unbound this produces many people
     //  Note that the interesting case here is that the first iterator would produce Persons, which are used in intersection with the second Has iterator
     //    however, seeking through that iterator to search for a specific person with the required Has should also leverage the value range restriction!
     // ---> should output:
-    //  (person 1, age 10, gov_id 3)
-    //  (person 3, age 10, gov_id 4)
-    //  (person 6, age 10, gov_id 5)
+    //  (person 3, age 12, gov_id 4)
 
-    let age_equal_10 = CheckInstruction::Comparison {
+    let age_equal_12 = CheckInstruction::Comparison {
         lhs: CheckVertex::Variable(var_age),
-        rhs: CheckVertex::Parameter(value_int_10),
+        rhs: CheckVertex::Parameter(value_int_12),
         comparator: Comparator::Equal,
     }
     .map(&mapping);
@@ -1351,7 +1370,7 @@ fn intersections_seeks_with_extra_values() {
     }
     .map(&mapping);
     let mut isa_age = IsaReverseInstruction::new(isa_age, Inputs::None([]), &type_annotations).map(&mapping);
-    isa_age.add_check(age_equal_10);
+    isa_age.add_check(age_equal_12);
     let mut has_gov_id = HasInstruction::new(has_gov_id, Inputs::None([]), &type_annotations).map(&mapping);
     has_gov_id.add_check(gov_id_gt_2);
 
@@ -1391,7 +1410,7 @@ fn intersections_seeks_with_extra_values() {
     for row in rows.iter() {
         println!("Row: {}", row.as_ref().unwrap())
     }
-    assert_eq!(rows.len(), 3);
+    assert_eq!(rows.len(), 1);
 
     let stage_profiles = query_profile.stage_profiles().read().unwrap();
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
@@ -1399,22 +1418,13 @@ fn intersections_seeks_with_extra_values() {
     let storage_counters = intersection_step_profile.storage_counters();
 
     // expected evaluation
-    //  open initial iterators: 2 seeks... HasReverse[age 10] finds Person 1. Has[unbound] finds Person 1 and attributes
+    //  open initial iterators: 2 seeks... HasReverse[age 12] finds Person 3. Has[unbound] finds Person 1 and attributes
     //      Has[unbound] Person1 advances 4 past age 10, gov id 0, gov id 1, gov id 2, lands on GovId3
-    //      Now have match!
-    //  => advance each iterator: 2 advances... HasReverse is at Person 2.
-    //      Has[unbound] is on Person 2 + Age 11... 4 advances to Person3 Age 10... 1 advance to Person3 GovId4
-    //  => HasReverse seeks Has's value of Person3: [1 seek] which actually reduces to 1 advance as it checks the iterator. match!
-    //  => advance each iterator: 2 advances...
-    //      HasReverse is at Person 4.
-    //      Has[unbound] is on Person 4's first attribute, age 10, which is skipped with 1 advance (no gov id).
-    //          Now at Person 5's first attribute, age 10, which is skipped, with 1 advance.. Now at Person 5.GovId5
-    //  => HasReverse seeks to Has's value Person 5: [1 seek], which actually reduces to 1 advance as it checks the iterator. match!
-    //  => advance both iterators: 2 advances... run out of answers in HasReverse. Finished!
+    //  Has[unbound] does 1 seek to Person3... lands at Person3.age10, which is skipped with 1 advance. Now at Person3.Age12. match!
+    //  HasReverse does 1 advance to fail. Done!
 
-    // total seek: 2
-    // total advance: 19 (20 ? off by one...)
-    // for each person, we should skip directly to the person + owned name
-    assert_eq!(storage_counters.get_raw_seek().unwrap(), 2);
-    assert_eq!(storage_counters.get_raw_advance().unwrap(), 20)
+    // total seek: 3
+    // total advance: 5
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 3);
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 5)
 }

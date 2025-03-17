@@ -1599,7 +1599,7 @@ impl ThingManager {
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
-    fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
+    pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
         let bound_inclusive = match start_bound {
             Bound::Included(type_) => *type_,
             Bound::Excluded(type_) => type_.previous_possible()?,

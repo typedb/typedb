@@ -24,9 +24,12 @@ use concept::{
         thing_manager::ThingManager,
         ThingAPI,
     },
-    type_::{attribute_type::AttributeType, object_type::ObjectType},
+    type_::{attribute_type::AttributeType, object_type::ObjectType, TypeAPI},
 };
-use encoding::{graph::type_::vertex::TypeVertexEncoding, value::value_type::ValueTypeCategory};
+use encoding::{
+    graph::type_::vertex::TypeVertexEncoding,
+    value::{value::Value, value_type::ValueTypeCategory},
+};
 use itertools::Itertools;
 use lending_iterator::{kmerge::KMergeBy, LendingIterator, Peekable};
 use primitive::Bounds;
@@ -205,12 +208,18 @@ impl HasExecutor {
                     &self.owner_type_range,
                     storage_counters,
                 );
+                let attribute_type_lower_bound_inclusive =
+                    ThingManager::start_type_bound_to_range_start_included_type(self.attribute_type_range.0.as_ref())
+                        .unwrap_or(AttributeType::MIN);
                 let as_tuples = HasTupleIterator::new(
                     has_iterator,
                     filter_for_row,
                     has_to_tuple_owner_attribute,
                     tuple_owner_attribute_to_has_canonical,
-                    FixedHasBounds::None,
+                    FixedHasBounds::NoneWithLowerBounds(
+                        attribute_type_lower_bound_inclusive,
+                        value_range.0.clone().map(|v| v.into_owned()),
+                    ),
                 );
                 Ok(TupleIterator::HasSingle(SortedTupleIterator::new(
                     as_tuples,
@@ -328,7 +337,7 @@ impl fmt::Display for HasExecutor {
 }
 
 pub(crate) enum FixedHasBounds {
-    None,
+    NoneWithLowerBounds(AttributeType, Bound<Value<'static>>),
     Owner(Object),
     Attribute(Attribute),
 }

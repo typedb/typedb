@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::cmp::Ordering;
+use std::{cmp::Ordering, collections::Bound};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::ExecutorVariable;
@@ -22,12 +22,17 @@ use concept::{
         TypeAPI,
     },
 };
-use encoding::graph::{
-    thing::{
-        edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks},
-        vertex_object::ObjectVertex,
+use encoding::{
+    graph::{
+        thing::{
+            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks},
+            vertex_attribute::{AttributeID, AttributeVertex},
+            vertex_object::ObjectVertex,
+        },
+        type_::vertex::TypeVertexEncoding,
+        Typed,
     },
-    type_::vertex::TypeVertexEncoding,
+    value::value::Value,
 };
 use lending_iterator::higher_order::Hkt;
 
@@ -295,7 +300,21 @@ pub(crate) fn has_to_tuple_owner_attribute(result: Result<(Has, u64), Box<Concep
 pub(crate) fn tuple_owner_attribute_to_has_canonical(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
     let (tuple_owner, tuple_attribute) = tuple_owner_attribute_to_owner_attribute(tuple);
     let (owner, attribute) = match fixed_has_bounds {
-        FixedHasBounds::None => (tuple_owner, tuple_attribute),
+        FixedHasBounds::NoneWithLowerBounds(attribute_type_lower_bound, value_bound) => match value_bound {
+            Bound::Included(lower_bound) | Bound::Excluded(lower_bound) => {
+                if AttributeID::is_inlineable(lower_bound.as_reference()) {
+                    let composed_attribute = Attribute::new(AttributeVertex::new(
+                        attribute_type_lower_bound.vertex().type_id_(),
+                        AttributeID::build_inline(lower_bound.as_reference()),
+                    ));
+                    debug_assert!(composed_attribute >= *tuple_attribute);
+                    (tuple_owner, tuple_attribute)
+                } else {
+                    (tuple_owner, tuple_attribute)
+                }
+            }
+            Bound::Unbounded => (tuple_owner, tuple_attribute),
+        },
         FixedHasBounds::Owner(fixed_owner) => (*fixed_owner, tuple_attribute),
         FixedHasBounds::Attribute(fixed_attribute) => (tuple_owner, fixed_attribute),
     };
@@ -305,7 +324,7 @@ pub(crate) fn tuple_owner_attribute_to_has_canonical(tuple: &Tuple<'_>, fixed_ha
 pub(crate) fn tuple_owner_attribute_to_has_reverse(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
     let (tuple_owner, tuple_attribute) = tuple_owner_attribute_to_owner_attribute(tuple);
     let (owner, attribute) = match fixed_has_bounds {
-        FixedHasBounds::None => (tuple_owner, tuple_attribute),
+        FixedHasBounds::NoneWithLowerBounds(_, _) => (tuple_owner, tuple_attribute),
         FixedHasBounds::Owner(fixed_owner) => (*fixed_owner, tuple_attribute),
         FixedHasBounds::Attribute(fixed_attribute) => (tuple_owner, fixed_attribute),
     };
@@ -339,7 +358,8 @@ pub(crate) fn has_to_tuple_attribute_owner(result: Result<(Has, u64), Box<Concep
 pub(crate) fn tuple_attribute_owner_to_has_canonical(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
     let (tuple_attribute, tuple_owner) = tuple_attribute_owner_to_attribute_owner(tuple);
     let (attribute, owner) = match fixed_has_bounds {
-        FixedHasBounds::None => (tuple_attribute, &tuple_owner),
+        // note: this means attribute is given in tuple, so we can ignore constants
+        FixedHasBounds::NoneWithLowerBounds(_, _) => (tuple_attribute, &tuple_owner),
         FixedHasBounds::Owner(fixed_owner) => (tuple_attribute, fixed_owner),
         FixedHasBounds::Attribute(fixed_attribute) => (fixed_attribute, &tuple_owner),
     };
@@ -349,7 +369,8 @@ pub(crate) fn tuple_attribute_owner_to_has_canonical(tuple: &Tuple<'_>, fixed_ha
 pub(crate) fn tuple_attribute_owner_to_has_reverse(tuple: &Tuple<'_>, fixed_has_bounds: &FixedHasBounds) -> Has {
     let (tuple_attribute, tuple_owner) = tuple_attribute_owner_to_attribute_owner(tuple);
     let (attribute, owner) = match fixed_has_bounds {
-        FixedHasBounds::None => (tuple_attribute, tuple_owner),
+        // note: this means attribute is given in tuple, so we can ignore constants
+        FixedHasBounds::NoneWithLowerBounds(_, _) => (tuple_attribute, tuple_owner),
         FixedHasBounds::Owner(fixed_owner) => (tuple_attribute, *fixed_owner),
         FixedHasBounds::Attribute(fixed_attribute) => (fixed_attribute, tuple_owner),
     };
