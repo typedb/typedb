@@ -10,7 +10,7 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::BitXor,
+    ops::{BitAndAssign, BitOrAssign, BitXor},
 };
 
 use answer::variable::Variable;
@@ -351,75 +351,75 @@ impl fmt::Display for ValueType {
 }
 
 #[derive(Clone, Debug)]
-pub(crate) enum AssignmentMode<'a> {
-    Assigned(&'a Constraint<Variable>),
-    MultipleAssignments(Vec<&'a Constraint<Variable>>),
+pub(crate) enum VariableAssignment<'a> {
+    Single(&'a Constraint<Variable>),
+    Multiple(Vec<&'a Constraint<Variable>>),
 }
 
-impl AssignmentMode<'_> {
-    fn and(&mut self, other: Self) {
-        match (&mut *self, other) {
-            (&mut Self::Assigned(place), Self::Assigned(other_place)) => {
-                *self = Self::MultipleAssignments(vec![place, other_place])
-            }
-            (Self::Assigned(place), Self::MultipleAssignments(mut other_places)) => {
+impl BitAndAssign for VariableAssignment<'_> {
+    fn bitand_assign(&mut self, rhs: Self) {
+        match (&mut *self, rhs) {
+            (&mut Self::Single(place), Self::Single(other_place)) => *self = Self::Multiple(vec![place, other_place]),
+            (Self::Single(place), Self::Multiple(mut other_places)) => {
                 other_places.push(place);
-                *self = Self::MultipleAssignments(other_places);
+                *self = Self::Multiple(other_places);
             }
-            (Self::MultipleAssignments(places), Self::Assigned(other_place)) => {
+            (Self::Multiple(places), Self::Single(other_place)) => {
                 places.push(other_place);
             }
-            (Self::MultipleAssignments(places), Self::MultipleAssignments(other_places)) => {
+            (Self::Multiple(places), Self::Multiple(other_places)) => {
                 places.extend(other_places);
             }
         }
     }
+}
 
-    fn or(&mut self, other: Self) {
+impl BitOrAssign for VariableAssignment<'_> {
+    fn bitor_assign(&mut self, rhs: Self) {
         // we only really need to preserve one assignment across branches for diagnostic purposes
         // or the branch with multiple assignments
-        if matches!((&self, &other), (Self::Assigned(_), Self::MultipleAssignments(_))) {
-            *self = other
+        if matches!((&self, &rhs), (Self::Single(_), Self::Multiple(_))) {
+            *self = rhs
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub enum DependencyMode<'a> {
+pub enum VariableDependency<'a> {
     Required(Vec<&'a Constraint<Variable>>),
-    Produced,
-    Optional,
+    Producing,
+    NotProducing,
 }
 
-impl DependencyMode<'_> {
-    fn and(&mut self, other: Self) {
-        match (&mut *self, other) {
-            (Self::Produced, _) | (_, Self::Produced) => *self = Self::Produced,
-            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::Optional, other) => *self = other,
-            (_, Self::Optional) => (),
-        }
-    }
-
-    fn or(&mut self, other: Self) {
-        match (&mut *self, other) {
-            (Self::Produced, Self::Produced) => (),
-            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::Required(_), Self::Produced | Self::Optional) => (),
-            (Self::Produced | Self::Optional, other @ Self::Required(_)) => *self = other,
-            (Self::Optional, _) | (_, Self::Optional) => *self = Self::Optional,
-        }
-    }
-
+impl VariableDependency<'_> {
     pub fn is_required(&self) -> bool {
         matches!(self, Self::Required(_))
     }
 
-    pub fn is_produced(&self) -> bool {
-        matches!(self, Self::Produced)
+    pub fn is_producing(&self) -> bool {
+        matches!(self, Self::Producing)
     }
+}
 
-    pub fn is_optional(&self) -> bool {
-        matches!(self, Self::Optional)
+impl BitAndAssign for VariableDependency<'_> {
+    fn bitand_assign(&mut self, rhs: Self) {
+        match (&mut *self, rhs) {
+            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
+            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
+            (Self::NotProducing, other) => *self = other,
+            (_, Self::NotProducing) => (),
+        }
+    }
+}
+
+impl BitOrAssign for VariableDependency<'_> {
+    fn bitor_assign(&mut self, rhs: Self) {
+        match (&mut *self, rhs) {
+            (Self::Producing, Self::Producing) => (),
+            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
+            (Self::Required(_), Self::Producing | Self::NotProducing) => (),
+            (Self::Producing | Self::NotProducing, other @ Self::Required(_)) => *self = other,
+            (Self::NotProducing, _) | (_, Self::NotProducing) => *self = Self::NotProducing,
+        }
     }
 }

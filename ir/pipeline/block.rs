@@ -16,7 +16,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        AssignmentMode, DependencyMode, Scope, ScopeId,
+        Scope, ScopeId, VariableAssignment, VariableDependency,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -133,14 +133,14 @@ fn validate_conjunction(
     });
 
     for (var, mode) in conjunction.variable_assignment_modes() {
-        if let AssignmentMode::MultipleAssignments(places) = mode {
+        if let VariableAssignment::Multiple(places) = mode {
             todo!("Proper error: {var} assigned at multiple places: {places:?}")
         }
     }
 
     for (var, mode) in conjunction.variable_dependency_modes(block_context) {
         if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
-            let DependencyMode::Required(places) = mode else { unreachable!("just checked") };
+            let VariableDependency::Required(places) = mode else { unreachable!("just checked") };
             todo!("Proper error: {var} is never bound but required here: {places:?}")
         }
     }
@@ -266,21 +266,21 @@ impl BlockContext {
         })
     }
 
-    pub fn variable_status_in_scope(&self, var: Variable, scope: ScopeId) -> VariableStatus {
+    pub fn variable_status_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
         let var_scope = self.variable_declaration[&var];
         if var_scope == scope {
-            VariableStatus::Local
+            VariableLocality::Local
         } else if self.is_child_scope(scope, var_scope) {
-            VariableStatus::Shared
+            VariableLocality::Parent
         } else {
-            VariableStatus::None // or an error
+            VariableLocality::None // or an error
         }
     }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum VariableStatus {
-    Shared,
+pub enum VariableLocality {
+    Parent,
     Local,
     None,
 }

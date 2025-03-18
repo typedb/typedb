@@ -12,9 +12,9 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        AssignmentMode, DependencyMode, Scope, ScopeId,
+        Scope, ScopeId, VariableAssignment, VariableDependency,
     },
-    pipeline::block::{BlockBuilderContext, BlockContext, VariableStatus},
+    pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
 
 #[derive(Debug, Clone)]
@@ -49,14 +49,14 @@ impl Negation {
     pub(crate) fn variable_dependency_modes(
         &self,
         block_context: &BlockContext,
-    ) -> HashMap<Variable, DependencyMode<'_>> {
+    ) -> HashMap<Variable, VariableDependency<'_>> {
         self.conjunction
             .variable_dependency_modes(block_context)
             .into_iter()
             .filter_map(|(var, mode)| {
                 let status = block_context.variable_status_in_scope(var, self.scope_id());
-                if status == VariableStatus::Shared || mode.is_required() {
-                    Some((var, DependencyMode::Required(vec![]))) // FIXME: actual usages
+                if status == VariableLocality::Parent || mode.is_required() {
+                    Some((var, VariableDependency::Required(vec![]))) // FIXME: actual usages
                 } else {
                     None
                 }
@@ -64,7 +64,7 @@ impl Negation {
             .collect()
     }
 
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
         self.conjunction.variable_assignment_modes()
     }
 

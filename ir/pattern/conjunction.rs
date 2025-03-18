@@ -22,7 +22,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        AssignmentMode, DependencyMode, Scope, ScopeId,
+        Scope, ScopeId, VariableAssignment, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -142,13 +142,13 @@ impl Conjunction {
             .filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub fn variable_dependency_modes(&self, block_context: &BlockContext) -> HashMap<Variable, DependencyMode<'_>> {
+    pub fn variable_dependency_modes(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
         let mut data_modes = self.constraints.variable_dependency_modes();
         for nested in self.nested_patterns.iter() {
             let nested_pattern_data_modes = nested.variable_dependency_modes(block_context);
             for (var, mode) in nested_pattern_data_modes {
                 match data_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(mode),
+                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= mode,
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(mode);
                     }
@@ -158,13 +158,13 @@ impl Conjunction {
         data_modes
     }
 
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
         let mut assignment_modes = self.constraints.variable_assignment_modes();
         for nested in self.nested_patterns.iter() {
             let nested_pattern_assignment_modes = nested.variable_assignment_modes();
             for (var, mode) in nested_pattern_assignment_modes {
                 match assignment_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(mode),
+                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= mode,
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(mode);
                     }

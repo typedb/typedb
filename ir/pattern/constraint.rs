@@ -24,7 +24,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        AssignmentMode, DependencyMode, IrID, ParameterID, ScopeId, ValueType, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, VariableAssignment, VariableDependency, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     LiteralParseError, RepresentationError,
@@ -66,23 +66,23 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, DependencyMode<'_>> {
+    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, VariableDependency<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             for var in constraint.produced_ids() {
                 match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(DependencyMode::Produced),
+                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= VariableDependency::Producing,
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(DependencyMode::Produced);
+                        vacant_entry.insert(VariableDependency::Producing);
                     }
                 }
             }
             for var in constraint.required_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        entry.get_mut().and(DependencyMode::Required(vec![constraint]))
+                        *entry.get_mut() &= VariableDependency::Required(vec![constraint])
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(DependencyMode::Required(vec![constraint]));
+                        vacant_entry.insert(VariableDependency::Required(vec![constraint]));
                     }
                 }
             }
@@ -90,7 +90,7 @@ impl Constraints {
         })
     }
 
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             let ids_assigned = match constraint {
                 Constraint::ExpressionBinding(expression_binding) => Either::Left(expression_binding.ids_assigned()),
@@ -118,9 +118,9 @@ impl Constraints {
 
             for var in ids_assigned {
                 match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().and(AssignmentMode::Assigned(constraint)),
+                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= VariableAssignment::Single(constraint),
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(AssignmentMode::Assigned(constraint));
+                        vacant_entry.insert(VariableAssignment::Single(constraint));
                     }
                 }
             }
@@ -674,8 +674,8 @@ impl<ID: IrID> Constraint<ID> {
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_)
             | Constraint::Unsatisfiable(_) => Box::new(iter::empty()),
-            Constraint::ExpressionBinding(binding) => Box::new(binding.ids_accepted()),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_accepted()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.required_ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.required_ids()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
     }
@@ -2053,7 +2053,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         [&self.left].into_iter()
     }
 
-    pub fn ids_accepted(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.expression.variables()
     }
 
@@ -2165,7 +2165,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
-    pub fn ids_accepted(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.function_call.argument_ids()
     }
 

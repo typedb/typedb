@@ -15,7 +15,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        AssignmentMode, DependencyMode, Scope, ScopeId,
+        Scope, ScopeId, VariableAssignment, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -52,16 +52,10 @@ impl Disjunction {
             .filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub fn optional_outputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes(block_context)
-            .into_iter()
-            .filter_map(|(v, mode)| (v.is_named() && mode.is_optional()).then_some(v))
-    }
-
     pub(crate) fn variable_dependency_modes(
         &self,
         block_context: &BlockContext,
-    ) -> HashMap<Variable, DependencyMode<'_>> {
+    ) -> HashMap<Variable, VariableDependency<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
@@ -70,17 +64,17 @@ impl Disjunction {
             let branch_dependency_modes = branch.variable_dependency_modes(block_context);
             for (var, mode) in &mut dependency_modes {
                 if !branch_dependency_modes.contains_key(var) {
-                    mode.or(DependencyMode::Optional)
+                    *mode |= VariableDependency::NotProducing
                 }
             }
             for (var, mode) in branch_dependency_modes {
-                dependency_modes.entry(var).or_insert(DependencyMode::Optional).or(mode)
+                *dependency_modes.entry(var).or_insert(VariableDependency::NotProducing) |= mode
             }
         }
         dependency_modes
     }
 
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, AssignmentMode<'_>> {
+    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
@@ -88,7 +82,7 @@ impl Disjunction {
         for branch in &self.conjunctions[1..] {
             for (var, mode) in branch.variable_assignment_modes() {
                 match assignment_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => entry.get_mut().or(mode),
+                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() |= mode,
                     hash_map::Entry::Vacant(entry) => {
                         entry.insert(mode);
                     }
