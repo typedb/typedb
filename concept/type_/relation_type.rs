@@ -301,12 +301,10 @@ impl RelationType {
     ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
         self.get_relates_declared(snapshot, type_manager)?
             .iter()
-            .filter_map(|relates| {
-                match relates.is_implicit(snapshot, type_manager) {
-                    Ok(false) => Some(Ok(*relates)),
-                    Ok(true) => None,
-                    Err(err) => return Some(Err(err)),
-                }
+            .filter_map(|relates| match relates.is_implicit(snapshot, type_manager) {
+                Ok(false) => Some(Ok(*relates)),
+                Ok(true) => None,
+                Err(err) => return Some(Err(err)),
             })
             .try_collect()
     }
@@ -326,12 +324,10 @@ impl RelationType {
     ) -> Result<HashSet<Relates>, Box<ConceptReadError>> {
         self.get_relates(snapshot, type_manager)?
             .iter()
-            .filter_map(|relates| {
-                match relates.is_implicit(snapshot, type_manager) {
-                    Ok(false) => Some(Ok(*relates)),
-                    Ok(true) => None,
-                    Err(err) => return Some(Err(err)),
-                }
+            .filter_map(|relates| match relates.is_implicit(snapshot, type_manager) {
+                Ok(false) => Some(Ok(*relates)),
+                Ok(true) => None,
+                Err(err) => return Some(Err(err)),
             })
             .try_collect()
     }

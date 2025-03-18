@@ -103,11 +103,15 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
-		rev = "5ccc1da728b381286b66cf059df010586eb60b48"
+		rev = "d1ef6785b27681bc2296c00e61db793d41f7f018"
 		git = "https://github.com/typedb/typeql"
 		default-features = false
 
 [[test]]
 	path = "tests/database.rs"
 	name = "test_database"
+
+[[test]]
+	path = "tests/transaction.rs"
+	name = "test_transaction"
 
