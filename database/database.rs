@@ -193,7 +193,7 @@ impl<D> Database<D> {
 
             if next_schema {
                 if *running_write_transactions > 0 {
-                    // wait for the write queries to finish, leave the request in the queue
+                    // wait for the write transactions to finish, leave the request in the queue
                     break;
                 }
                 let TransactionReservationRequest::Schema(notifier) =
