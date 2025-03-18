@@ -183,19 +183,47 @@ impl<D> Database<D> {
         guard: &mut MutexGuard<'_, (bool, usize, VecDeque<TransactionReservationRequest>)>,
     ) {
         let (has_schema_transaction, running_write_transactions, notify_queue) = &mut **guard;
-        if notify_queue.is_empty() {
-            return;
-        }
-        let head = notify_queue.pop_front().unwrap();
-        if let TransactionReservationRequest::Schema(notifier) = head {
-            // fulfill exactly 1 schema request
-            *has_schema_transaction = true;
-            let _skipped_sync_error = notifier.send(()).ok();
-        } else {
-            // fulfill as many write requests as possible
-            while let Some(TransactionReservationRequest::Write(notifier)) = notify_queue.pop_front() {
-                *running_write_transactions += 1;
-                let _skipped_sync_error = notifier.send(()).ok();
+
+        loop {
+            let (next_schema, next_write) = match notify_queue.front() {
+                Some(TransactionReservationRequest::Schema(_)) => (true, false),
+                Some(TransactionReservationRequest::Write(_)) => (false, true),
+                None => (false, false),
+            };
+
+            if next_schema {
+                if *running_write_transactions > 0 {
+                    // wait for the write transactions to finish, leave the request in the queue
+                    break;
+                }
+                let TransactionReservationRequest::Schema(notifier) =
+                    notify_queue.pop_front().expect("Expected the next schema request")
+                else {
+                    panic!("Expected the next schema request: the queue cannot be changed")
+                };
+                match notifier.send(()).ok() {
+                    Some(_) => {
+                        // fulfill exactly 1 awaiting schema request
+                        *has_schema_transaction = true;
+                        break;
+                    }
+                    None => {}
+                }
+            } else if next_write {
+                let TransactionReservationRequest::Write(notifier) =
+                    notify_queue.pop_front().expect("Expected the next write request")
+                else {
+                    panic!("Expected the next write request: the queue cannot be changed")
+                };
+                match notifier.send(()).ok() {
+                    Some(_) => {
+                        // fulfill as many write requests as possible
+                        *running_write_transactions += 1;
+                    }
+                    None => {}
+                }
+            } else {
+                break;
             }
         }
     }

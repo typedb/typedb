@@ -9,7 +9,7 @@ package(default_visibility = ["//visibility:public",])
 rust_test(
     name = "test_database",
     srcs = glob([
-        "*.rs",
+        "database.rs",
     ]),
     deps = [
         "//common/logger",
@@ -20,6 +20,25 @@ rust_test(
 
         "@crates//:rocksdb",
         "@crates//:tracing",
+    ]
+)
+
+rust_test(
+    name = "test_transaction",
+    srcs = glob([
+        "transaction.rs",
+    ]),
+    deps = [
+        "//common/logger",
+        "//common/options",
+        "//database",
+        "//encoding",
+        "//storage",
+        "//util/test:test_utils",
+
+        "@crates//:rocksdb",
+        "@crates//:tracing",
+        "@crates//:tokio",
     ]
 )
 
