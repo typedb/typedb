@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{cmp::Ordering, collections::Bound};
+use std::{borrow::Cow, cmp::Ordering, collections::Bound};
 
 use answer::{variable_value::VariableValue, Thing, Type};
 use compiler::ExecutorVariable;
@@ -308,15 +308,15 @@ pub(crate) fn tuple_owner_attribute_to_has_canonical(tuple: &Tuple<'_>, fixed_ha
                         AttributeID::build_inline(lower_bound.as_reference()),
                     ));
                     debug_assert!(composed_attribute >= *tuple_attribute);
-                    (tuple_owner, tuple_attribute)
+                    (tuple_owner, Cow::Owned(composed_attribute))
                 } else {
-                    (tuple_owner, tuple_attribute)
+                    (tuple_owner, Cow::Borrowed(tuple_attribute))
                 }
             }
-            Bound::Unbounded => (tuple_owner, tuple_attribute),
+            Bound::Unbounded => (tuple_owner, Cow::Borrowed(tuple_attribute)),
         },
-        FixedHasBounds::Owner(fixed_owner) => (*fixed_owner, tuple_attribute),
-        FixedHasBounds::Attribute(fixed_attribute) => (tuple_owner, fixed_attribute),
+        FixedHasBounds::Owner(fixed_owner) => (*fixed_owner, Cow::Borrowed(tuple_attribute)),
+        FixedHasBounds::Attribute(fixed_attribute) => (tuple_owner, Cow::Borrowed(fixed_attribute)),
     };
     Has::Edge(ThingEdgeHas::new(owner.vertex(), attribute.vertex()))
 }
