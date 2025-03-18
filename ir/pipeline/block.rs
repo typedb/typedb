@@ -388,10 +388,6 @@ impl<'a> BlockBuilderContext<'a> {
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
-    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
-        self.variable_registry.set_variable_is_optional(variable, optional)
-    }
-
     pub fn parameters(&mut self) -> &mut ParameterRegistry {
         self.parameters
     }

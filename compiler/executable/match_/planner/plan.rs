@@ -153,11 +153,9 @@ fn make_builder<'a>(
         }
     }
 
-    let mut plan_builder = ConjunctionPlanBuilder::new(
-        conjunction.captured_required_variables(block_context).collect(),
-        type_annotations,
-        statistics,
-    );
+    let mut plan_builder =
+        ConjunctionPlanBuilder::new(conjunction.required_inputs(block_context).collect(), type_annotations, statistics);
+
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         conjunction.captured_variables(block_context),
@@ -167,6 +165,7 @@ fn make_builder<'a>(
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
     plan_builder.register_negations(negation_subplans);
     plan_builder.register_disjunctions(disjunction_planners);
+
     Ok(plan_builder)
 }
 

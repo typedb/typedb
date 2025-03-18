@@ -78,16 +78,6 @@ impl Conjunction {
         })
     }
 
-    pub fn captured_required_variables<'a>(
-        &'a self,
-        block_context: &'a BlockContext,
-    ) -> impl Iterator<Item = Variable> + 'a {
-        let producible_variables = self.producible_variables(block_context);
-        self.referenced_variables()
-            .filter(|v| block_context.is_variable_available(self.scope_id(), *v))
-            .filter(move |v| !producible_variables.contains(v))
-    }
-
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.constraints()
             .iter()

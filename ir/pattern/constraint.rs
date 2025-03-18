@@ -550,10 +550,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         self.context.get_or_declare_variable(name, self.constraints.scope, source_span)
     }
 
-    pub(crate) fn set_variable_optionality(&mut self, variable: Variable, optional: bool) {
-        self.context.set_variable_is_optional(variable, optional)
-    }
-
     pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
         self.context.parameters()
     }
