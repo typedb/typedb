@@ -645,7 +645,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
         let mut receiver4 = sender.subscribe();
         let mut receiver5 = sender.subscribe();
 
-        const MULTIPLIER: u64 = 6;
+        const MULTIPLIER: u64 = 18; // Big multiplier for small machines
         let full_timeout_millis = TransactionOptions::default().schema_lock_acquire_timeout_millis;
         let timeout_millis = Duration::from_millis(full_timeout_millis / MULTIPLIER);
 
@@ -719,7 +719,7 @@ fn blocked_write_transactions_progress_together() {
         let mut receiver4 = sender.subscribe();
         let mut receiver5 = sender.subscribe();
 
-        const MULTIPLIER: u64 = 6;
+        const MULTIPLIER: u64 = 18; // Big multiplier for small machines
         let full_timeout_millis = TransactionOptions::default().schema_lock_acquire_timeout_millis;
         let timeout_millis = Duration::from_millis(full_timeout_millis / MULTIPLIER);
 
@@ -794,7 +794,7 @@ fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
             let mut receiver4 = sender.subscribe();
             let mut receiver5 = sender.subscribe();
 
-            const MULTIPLIER: u64 = 6;
+            const MULTIPLIER: u64 = 18; // Big multiplier for small machines
             let full_timeout_millis = TransactionOptions::default().schema_lock_acquire_timeout_millis;
             let timeout_millis = Duration::from_millis(full_timeout_millis / MULTIPLIER);
 
