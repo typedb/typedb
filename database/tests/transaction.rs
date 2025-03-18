@@ -651,7 +651,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
 
         let task2 = tokio::spawn(async move {
             receiver2.recv().await.expect("Expected receiver2");
-            let tx_schema = tokio::task::spawn_blocking(move || {open_schema(database_clone)}).await.expect("Expected inner task completion");
+            let tx_schema = tokio::task::spawn_blocking(move || open_schema(database_clone)).await.unwrap();
             sleep(timeout_millis).await;
             tx_schema.close();
             Instant::now()
@@ -659,7 +659,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
 
         let task3 = tokio::spawn(async move {
             receiver3.recv().await.expect("Expected receiver3");
-            let tx_schema = tokio::task::spawn_blocking(move || {open_schema(database_clone_2)}).await.expect("Expected inner task completion");
+            let tx_schema = tokio::task::spawn_blocking(move || open_schema(database_clone_2)).await.unwrap();
             sleep(timeout_millis).await;
             tx_schema.close();
             Instant::now()
@@ -667,7 +667,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
 
         let task4 = tokio::spawn(async move {
             receiver4.recv().await.expect("Expected receiver4");
-            let tx_schema = tokio::task::spawn_blocking(move || {open_schema(database_clone_3)}).await.expect("Expected inner task completion");
+            let tx_schema = tokio::task::spawn_blocking(move || open_schema(database_clone_3)).await.unwrap();
             sleep(timeout_millis).await;
             tx_schema.close();
             Instant::now()
@@ -675,7 +675,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
 
         let task5 = tokio::spawn(async move {
             receiver5.recv().await.expect("Expected receiver5");
-            let tx_schema = tokio::task::spawn_blocking(move || {open_schema(database_clone_4)}).await.expect("Expected inner task completion");
+            let tx_schema = tokio::task::spawn_blocking(move || open_schema(database_clone_4)).await.unwrap();
             sleep(timeout_millis).await;
             tx_schema.close();
             Instant::now()
@@ -683,7 +683,7 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
 
         let task_main = tokio::spawn(async move {
             let mut tx_write = open_write(database);
-            sender.send(()).expect("Expected send");;
+            sender.send(()).expect("Expected send");
             sleep(timeout_millis).await;
             tx_write.close();
         });
@@ -725,7 +725,7 @@ fn blocked_write_transactions_progress_together() {
 
         let task2 = tokio::spawn(async move {
             receiver2.recv().await.expect("Expected receiver2");
-            let tx_write = open_write(database_clone);
+            let tx_write = tokio::task::spawn_blocking(move || open_write(database_clone)).await.unwrap();
             sleep(timeout_millis).await;
             tx_write.close();
             Instant::now()
@@ -733,7 +733,7 @@ fn blocked_write_transactions_progress_together() {
 
         let task3 = tokio::spawn(async move {
             receiver3.recv().await.expect("Expected receiver3");
-            let tx_write = open_write(database_clone_2);
+            let tx_write = tokio::task::spawn_blocking(move || open_write(database_clone_2)).await.unwrap();
             sleep(timeout_millis).await;
             tx_write.close();
             Instant::now()
@@ -741,7 +741,7 @@ fn blocked_write_transactions_progress_together() {
 
         let task4 = tokio::spawn(async move {
             receiver4.recv().await.expect("Expected receiver4");
-            let tx_write = open_write(database_clone_3);
+            let tx_write = tokio::task::spawn_blocking(move || open_write(database_clone_3)).await.unwrap();
             sleep(timeout_millis).await;
             tx_write.close();
             Instant::now()
@@ -749,7 +749,7 @@ fn blocked_write_transactions_progress_together() {
 
         let task5 = tokio::spawn(async move {
             receiver5.recv().await.expect("Expected receiver5");
-            let tx_write = open_write(database_clone_4);
+            let tx_write = tokio::task::spawn_blocking(move || open_write(database_clone_4)).await.unwrap();
             sleep(timeout_millis).await;
             tx_write.close();
             Instant::now()
@@ -757,7 +757,7 @@ fn blocked_write_transactions_progress_together() {
 
         let task_main = tokio::spawn(async move {
             let mut tx_schema = open_schema(database);
-            sender.send(()).expect("Expected send");;
+            sender.send(()).expect("Expected send");
             sleep(timeout_millis).await;
             tx_schema.close();
         });
@@ -800,7 +800,7 @@ fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
 
             let task_write = tokio::spawn(async move {
                 receiver2.recv().await.expect("Expected receiver2");
-                let tx_write = open_write(database_clone);
+                let tx_write = tokio::task::spawn_blocking(move || open_write(database_clone)).await.unwrap();
                 sleep(timeout_millis).await;
                 tx_write.close();
                 Instant::now()
@@ -808,7 +808,7 @@ fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
 
             let task_schema = tokio::spawn(async move {
                 receiver3.recv().await.expect("Expected receiver3");
-                let tx_schema = open_schema(database_clone_2);
+                let tx_schema = tokio::task::spawn_blocking(move || open_schema(database_clone_2)).await.unwrap();
                 sleep(timeout_millis).await;
                 tx_schema.close();
                 Instant::now()
@@ -816,7 +816,7 @@ fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
 
             let task_write_2 = tokio::spawn(async move {
                 receiver4.recv().await.expect("Expected receiver4");
-                let tx_write = open_write(database_clone_3);
+                let tx_write = tokio::task::spawn_blocking(move || open_write(database_clone_3)).await.unwrap();
                 sleep(timeout_millis).await;
                 tx_write.close();
                 Instant::now()
@@ -824,7 +824,7 @@ fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
 
             let task_schema_2 = tokio::spawn(async move {
                 receiver5.recv().await.expect("Expected receiver5");
-                let tx_schema = open_schema(database_clone_4);
+                let tx_schema = tokio::task::spawn_blocking(move || open_schema(database_clone_4)).await.unwrap();
                 sleep(timeout_millis).await;
                 tx_schema.close();
                 Instant::now()
