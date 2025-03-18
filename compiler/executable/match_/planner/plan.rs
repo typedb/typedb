@@ -1588,7 +1588,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
 
-            PlannerVertex::Unsatisfiable(_) => match_builder.push_check(&Vec::new(), CheckInstruction::Unsatisfiable),
+            PlannerVertex::Unsatisfiable(_) => match_builder.push_check(&[], CheckInstruction::Unsatisfiable),
 
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
