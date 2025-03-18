@@ -260,12 +260,6 @@ impl BlockContext {
         self.variable_declaration.iter().map(|(&var, &scope)| (var, scope))
     }
 
-    pub fn visible_variables(&self, root: ScopeId) -> impl Iterator<Item = Variable> + '_ {
-        self.get_variable_scopes().filter_map(move |(var, scope)| {
-            (scope == ScopeId::INPUT || scope == root || self.is_visible_child(scope, root)).then_some(var)
-        })
-    }
-
     pub fn variable_status_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
         let var_scope = self.variable_declaration[&var];
         if var_scope == scope {

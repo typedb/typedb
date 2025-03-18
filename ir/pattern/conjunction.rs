@@ -103,30 +103,17 @@ impl Conjunction {
             .unique()
     }
 
-    pub fn named_output_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        block_context.visible_variables(self.scope_id).filter(Variable::is_named)
+    pub fn named_producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.producible_variables(block_context).filter(Variable::is_named)
     }
 
-    fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
-        let mut produced_variables: HashSet<Variable> =
-            self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
-        let available_referenced_variables: HashSet<Variable> =
-            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v)).collect();
-        available_referenced_variables
-            .iter()
-            .filter(|v| {
-                self.nested_patterns.iter().filter_map(|nested| nested.as_disjunction()).any(|disjunction| {
-                    disjunction.conjunctions().iter().all(|b| b.producible_variables(block_context).contains(v))
-                })
-            })
-            .copied()
-            .for_each(|v| {
-                produced_variables.insert(v);
-            });
-        produced_variables
+    fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency_modes(block_context)
+            .into_iter()
+            .filter_map(|(v, mode)| mode.is_producing().then_some(v))
     }
 
-    pub fn required_inputs<'a>(&'a self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + 'a {
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
         self.variable_dependency_modes(block_context)
             .into_iter()
             .filter_map(|(v, mode)| mode.is_required().then_some(v))
