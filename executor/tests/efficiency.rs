@@ -176,7 +176,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     /*
     insert
-         aperson_1 isa person,
+         $person_1 isa person,
             has age 10,
             has gov_id 0,
             has gov_id 1,
@@ -1420,11 +1420,13 @@ fn intersections_seeks_with_extra_values() {
     // expected evaluation
     //  open initial iterators: 2 seeks... HasReverse[age 12] finds Person 3. Has[unbound] finds Person 1 and attributes
     //      Has[unbound] Person1 advances 4 past age 10, gov id 0, gov id 1, gov id 2, lands on GovId3
-    //  Has[unbound] does 1 seek to Person3... lands at Person3.age10, which is skipped with 1 advance. Now at Person3.Age12. match!
-    //  HasReverse does 1 advance to fail. Done!
+    //  Has[unbound] does 1 seek (induces 1 advance) to Person3... lands at Person3.age10, which is skipped with 1 advance. Now at Person3.Age12. match!
+    //  HasReverse does 1 advance to fail.
+    //      Has[unbound] will do 5 advance through Person3+GovID4, Person4+Age10, Person5+Age10|GovID6, Person6+GovID6, plus 1 advance to fail.
+    //      ==> TODO: this should be optimisable with a short-circuit, but it is currently impossible due to iterators skipping values internally!
 
     // total seek: 3
-    // total advance: 5
+    // total advance: 12
     assert_eq!(storage_counters.get_raw_seek().unwrap(), 3);
-    assert_eq!(storage_counters.get_raw_advance().unwrap(), 5)
+    assert_eq!(storage_counters.get_raw_advance().unwrap(), 12)
 }

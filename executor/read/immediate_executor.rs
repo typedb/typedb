@@ -410,6 +410,14 @@ impl IntersectionExecutor {
     }
 
     fn advance_intersection_iterators_with_multiplicity(&mut self) -> Result<(), ReadExecutionError> {
+        // TODO: there's room for optimisation here:
+        //       since we use iterators that hide their filtering/skipping conditions, it's possible we
+        //       end up iterating internally over far too many keys! For example Has[$owner, $attr] where $attr is of type Age
+        //       However, after we find the last Owner1+Age pair, every other Has is of Owner1,2,3...+Name! We will iterate over ALL
+        //       Possible Has's until we run out. In reality, we just need the raw iterator to advance past the current Owner1
+        //       --> This can then be utilised to short circuit when advancing multiple intersection iterators:
+        //       If 1 iterator has no more answers after Owner1, then the other also just has to finish the Owner1 count
+        //       and we can short-circuit evaluating this set of iterators based on the current input!
         let mut multiplicity: u64 = 1;
         for iter in &mut self.iterators {
             multiplicity *=

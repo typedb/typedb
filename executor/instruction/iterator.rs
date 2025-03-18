@@ -463,26 +463,28 @@ impl<It: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekabl
         target: &VariableValue<'_>,
     ) -> Result<Option<Ordering>, Box<ConceptReadError>> {
         // create target tuple using [0..index]
-        let first_unbound_index = self.first_unbound_index();
+        let first_unbound_index = self.first_unbound_index() as usize;
         let current = match self.peek() {
             None => return Ok(None),
             Some(Err(err)) => return Err(err.clone()),
             Some(Ok(peek)) => peek,
         };
         let mut target_tuple = current.clone().into_owned();
-        target_tuple.values_mut()[first_unbound_index as usize] = target.clone();
+        target_tuple.values_mut()[first_unbound_index] = target.clone();
         // zero out the rest of the values
-        for i in (first_unbound_index as usize + 1)..target_tuple.values().len() {
+        for i in (first_unbound_index + 1)..target_tuple.values().len() {
             target_tuple.values_mut()[i] = VariableValue::Empty;
         }
         if target_tuple > *current {
             self.iterator.seek(&target_tuple)?;
             match self.iterator.peek() {
                 None => Ok(None),
-                Some(Ok(peek)) => match peek.partial_cmp(&target_tuple) {
-                    None => return Err(Box::new(ConceptReadError::InternalIncomparableTypes {})),
-                    Some(ordering) => return Ok(Some(ordering)),
-                },
+                Some(Ok(peek)) => {
+                    match peek.values()[first_unbound_index].partial_cmp(&target_tuple.values()[first_unbound_index]) {
+                        None => return Err(Box::new(ConceptReadError::InternalIncomparableTypes {})),
+                        Some(ordering) => return Ok(Some(ordering)),
+                    }
+                }
                 Some(Err(err)) => return Err(err.clone()),
             }
         } else {
