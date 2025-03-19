@@ -64,6 +64,7 @@ pub(super) struct ExecuteDisjunction {
 #[derive(Debug)]
 pub(super) struct TabledCall {
     pub(super) index: ExecutorIndex,
+    pub(super) last_seen_table_size: Option<usize>,
 }
 
 #[derive(Debug)]

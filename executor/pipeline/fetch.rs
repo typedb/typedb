@@ -12,7 +12,7 @@ use compiler::{
         fetch::executable::{
             ExecutableFetch, ExecutableFetchListSubFetch, FetchObjectInstruction, FetchSomeInstruction,
         },
-        function::{ExecutableFunction, ExecutableFunctionRegistry},
+        function::{executable::ExecutableFunction, ExecutableFunctionRegistry},
         next_executable_id,
     },
     VariablePosition,
@@ -241,11 +241,11 @@ fn execute_single_function(
         function,
     )?;
     let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
-    let mut suspend_points = QueryPatternSuspensions::new();
+    let mut suspend_points = QueryPatternSuspensions::new_root();
 
     let batch = exactly_one_or_return_err!(
         pattern_executor
-            .compute_next_batch_with_retries(
+            .compute_next_batch(
                 &execution_context,
                 &mut interrupt,
                 &mut tabled_functions,
@@ -335,12 +335,12 @@ fn execute_list_function(
         function,
     )?;
     let mut tabled_functions = TabledFunctions::new(functions_registry.clone());
-    let mut suspend_points = QueryPatternSuspensions::new();
+    let mut suspend_points = QueryPatternSuspensions::new_root();
 
     let mut nodes = Vec::new();
     // TODO: We could create an iterator over rows in a single call here instead
     while let Some(batch) = pattern_executor
-        .compute_next_batch_with_retries(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
+        .compute_next_batch(&execution_context, &mut interrupt, &mut tabled_functions, &mut suspend_points)
         .map_err(|err| FetchExecutionError::ReadExecution { typedb_source: Box::new(err) })?
     {
         for row in batch {

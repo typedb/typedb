@@ -6,8 +6,12 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
+use compiler::executable::{
+    function::{ExecutableFunctionRegistry, StronglyConnectedComponentID},
+    match_::planner::match_executable::MatchExecutable,
+};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
+use ir::pipeline::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -64,6 +68,9 @@ impl PatternSuspension {
     }
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct SuspensionCount(usize);
+
 #[derive(Debug)]
 pub(super) struct TabledCallSuspension {
     pub(crate) executor_index: ExecutorIndex,
@@ -82,42 +89,34 @@ pub(super) struct NestedPatternSuspension {
 
 #[derive(Debug)]
 pub(super) struct QueryPatternSuspensions {
+    scc: Option<StronglyConnectedComponentID>,
     current_depth: usize,
     suspending_patterns_tree: Vec<PatternSuspension>,
-    restoring_patterns_tree: Vec<PatternSuspension>, //Peekable<std::vec::IntoIter<SuspendPoint>>,
-    table_size_at_last_restore: Option<usize>,
+    restoring_patterns_tree: Vec<PatternSuspension>,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-struct SuspensionCount(usize);
-
 impl QueryPatternSuspensions {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new_root() -> Self {
+        Self { scc: None, current_depth: 0, suspending_patterns_tree: Vec::new(), restoring_patterns_tree: Vec::new() }
+    }
+
+    pub(crate) fn new_tabled_call(scc: StronglyConnectedComponentID) -> Self {
         Self {
+            scc: Some(scc),
             current_depth: 0,
             suspending_patterns_tree: Vec::new(),
             restoring_patterns_tree: Vec::new(),
-            table_size_at_last_restore: None,
         }
     }
 
-    // Will restore & returns true if a restore is needed.
-    pub(super) fn prepare_for_restore_if_needed(&mut self, tabled_functions: Option<&TabledFunctions>) -> bool {
-        if self.is_empty() {
-            return false;
-        }
-        let current_table_size = tabled_functions.map(|t| t.total_table_size());
-        let must_retry =
-            self.table_size_at_last_restore.is_none() || self.table_size_at_last_restore != current_table_size;
-        if must_retry {
-            debug_assert!(self.restoring_patterns_tree.is_empty());
-            self.restoring_patterns_tree.clear();
-            std::mem::swap(&mut self.restoring_patterns_tree, &mut self.suspending_patterns_tree);
-            self.table_size_at_last_restore = current_table_size;
-            true
-        } else {
-            false
-        }
+    pub(crate) fn scc(&self) -> Option<&StronglyConnectedComponentID> {
+        return self.scc.as_ref();
+    }
+
+    pub(super) fn prepare_restoring_from_suspending(&mut self) {
+        debug_assert!(self.restoring_patterns_tree.is_empty());
+        self.restoring_patterns_tree.clear();
+        std::mem::swap(&mut self.restoring_patterns_tree, &mut self.suspending_patterns_tree);
     }
 
     pub(crate) fn is_empty(&self) -> bool {

@@ -50,7 +50,7 @@ impl MatchExecutor {
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
-            suspensions: QueryPatternSuspensions::new(),
+            suspensions: QueryPatternSuspensions::new_root(),
         })
     }
 
@@ -73,7 +73,7 @@ impl MatchExecutor {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
         self.entry
-            .compute_next_batch_with_retries(context, interrupt, &mut self.tabled_functions, &mut self.suspensions)
+            .compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspensions)
             .map_err(|err| Box::new(err))
     }
 }

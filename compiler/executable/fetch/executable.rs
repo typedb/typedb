@@ -14,7 +14,10 @@ use ir::{pattern::ParameterID, pipeline::VariableRegistry};
 use crate::{
     annotation::fetch::{AnnotatedFetch, AnnotatedFetchListSubFetch, AnnotatedFetchObject, AnnotatedFetchSome},
     executable::{
-        function::{compile_single_untabled_function, ExecutableFunction, ExecutableFunctionRegistry},
+        function::{
+            executable::{compile_single_untabled_function, ExecutableFunction},
+            ExecutableFunctionRegistry,
+        },
         next_executable_id,
         pipeline::{compile_stages_and_fetch, ExecutableStage},
         ExecutableCompilationError,
