@@ -231,15 +231,37 @@ typedb_error! {
             constraint_type: String,
             source_span: Option<Span>,
         ),
-        RegexExpectedStringLiteral(50,
-            "Expected a string literal as regex.",
-            source_span: Option<Span>
+        MultipleAssignments(
+            44,
+            "{variable} is assigned at multiple places; first one here:",
+            variable: String,
+            source_span: Option<Span>,
+            _rest: Vec<Option<Span>>,
         ),
-        RegexFailedCompilation(51,
+        InputVariableAssignment(
+            45,
+            "Attempting to assign to the input variable {variable}.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        UnboundRequiredVariable(
+            46,
+            "{variable} is required to be bound to a value before it's used. First use here:",
+            variable: String,
+            source_span: Option<Span>,
+            _rest: Vec<Option<Span>>,
+        ),
+        RegexExpectedStringLiteral(
+            50,
+            "Expected a string literal as regex.",
+            source_span: Option<Span>,
+        ),
+        RegexFailedCompilation(
+            51,
             "The regular expression failed compilation: '{value}'.",
             value: String,
             source: regex::Error,
-            source_span: Option<Span>
+            source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(
             254,

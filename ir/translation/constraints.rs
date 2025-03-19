@@ -10,7 +10,7 @@ use encoding::{graph::thing::THING_VERTEX_MAX_LENGTH, value::label::Label};
 use error::UnimplementedFeature;
 use itertools::Itertools;
 use typeql::{
-    common::Spanned,
+    common::{Span, Spanned},
     expression::{FunctionCall, FunctionName},
     statement::{
         comparison::ComparisonStatement, thing::isa::IsaInstanceConstraint, type_::ValueType as TypeQLValueType,
@@ -131,7 +131,7 @@ fn add_type_statement(
         let Vertex::Variable(var) = type_ else {
             return Err(Box::new(RepresentationError::LabelWithKind { source_span: type_statement.span() }));
         };
-        add_typeql_kind(constraints, var, kind)?;
+        add_typeql_kind(constraints, var, kind, type_statement.span())?;
     }
     for constraint in &type_statement.constraints {
         assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
@@ -290,8 +290,9 @@ fn add_typeql_kind(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     type_: Variable,
     kind: Kind,
+    source_span: Option<Span>,
 ) -> Result<(), Box<RepresentationError>> {
-    constraints.add_kind(kind, type_)?;
+    constraints.add_kind(kind, type_, source_span)?;
     Ok(())
 }
 

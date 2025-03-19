@@ -190,6 +190,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: typeql::token::Kind,
         variable: Variable,
+        source_span: Option<Span>,
     ) -> Result<&Kind<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let category = match kind {
@@ -198,7 +199,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             typeql::token::Kind::Attribute => VariableCategory::ThingType,
             typeql::token::Kind::Role => VariableCategory::RoleType,
         };
-        let kind = Kind::new(kind, variable);
+        let kind = Kind::new(kind, variable, source_span);
         self.context.set_variable_category(variable, category, kind.clone().into())?;
         let as_ref = self.constraints.add_constraint(kind);
         Ok(as_ref.as_kind().unwrap())
@@ -1179,11 +1180,18 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
 pub struct Kind<ID> {
     kind: typeql::token::Kind,
     type_: Vertex<ID>,
+    source_span: Option<Span>,
+}
+
+impl<ID> Kind<ID> {
+    fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
 }
 
 impl<ID: IrID> Kind<ID> {
-    pub fn new(kind: typeql::token::Kind, type_: ID) -> Self {
-        Self { kind, type_: Vertex::Variable(type_) }
+    pub fn new(kind: typeql::token::Kind, type_: ID, source_span: Option<Span>) -> Self {
+        Self { kind, type_: Vertex::Variable(type_), source_span }
     }
 
     pub fn type_(&self) -> &Vertex<ID> {
@@ -1210,7 +1218,7 @@ impl<ID: IrID> Kind<ID> {
     }
 
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
-        Kind { kind: self.kind, type_: self.type_.map(mapping) }
+        Kind { kind: self.kind, type_: self.type_.map(mapping), source_span: self.source_span }
     }
 }
 
