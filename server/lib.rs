@@ -11,4 +11,4 @@ mod authenticator;
 pub mod authenticator_cache;
 pub mod parameters;
 mod service;
-pub mod typedb;
+pub mod server;

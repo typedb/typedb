@@ -32,7 +32,7 @@ fn main() {
 
     tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Expected a main tokio runtime").block_on(
         async {
-            let open_result = server::typedb::Server::open(config, DISTRIBUTION, VERSION, deployment_id).await;
+            let open_result = server::server::Server::open(config, DISTRIBUTION, VERSION, deployment_id).await;
             let result = open_result.unwrap().serve().await;
             match result {
                 Ok(_) => println!("Exited."),
