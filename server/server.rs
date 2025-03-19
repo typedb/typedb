@@ -68,7 +68,7 @@ impl Server {
         let server_config = &config.server;
         let server_id = Self::initialise_server_id(storage_directory)?;
         let deployment_id = deployment_id.unwrap_or(server_id.clone());
-        let server_address = resolve_address(server_config.address.clone()).await;
+        let server_address = Self::resolve_address(server_config.address.clone()).await;
         let diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
@@ -111,112 +111,10 @@ impl Server {
             config,
             shutdown_sender,
             _database_diagnostics_updater: IntervalRunner::new(
-                move || synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
+                move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
             ),
         })
-    }
-
-    pub fn database_manager(&self) -> &DatabaseManager {
-        self.typedb_service.as_ref().unwrap().database_manager()
-    }
-
-    pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
-        let authenticator = Authenticator::new(
-            self.user_manager.clone(),
-            self.authenticator_cache.clone(),
-            self.diagnostics_manager.clone(),
-        );
-
-        Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
-
-        Self::create_tonic_server(&self.config.server.encryption)?
-            .layer(&authenticator)
-            .add_service(service)
-            .serve_with_shutdown(self.address, async {
-                // The tonic server starts a shutdown process when this closure execution finishes
-                Self::shutdown_handler(self.shutdown_sender).await;
-            })
-            .await
-            .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
-    }
-
-    fn initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
-        if !storage_directory.exists() {
-            Self::create_storage_directory(storage_directory)
-        } else if !storage_directory.is_dir() {
-            Err(ServerOpenError::NotADirectory { path: storage_directory.to_str().unwrap_or("").to_owned() })
-        } else {
-            Ok(())
-        }
-    }
-
-    fn initialise_diagnostics(
-        deployment_id: String,
-        server_id: String,
-        distribution: &'static str,
-        version: &'static str,
-        config: &DiagnosticsConfig,
-        storage_directory: PathBuf,
-        is_development_mode: bool,
-    ) -> DiagnosticsManager {
-        let diagnostics = Diagnostics::new(
-            deployment_id,
-            server_id,
-            distribution.to_owned(),
-            version.to_owned(),
-            storage_directory,
-            config.is_reporting_enabled,
-        );
-
-        DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode)
-    }
-
-    fn create_tonic_server(encryption_config: &EncryptionConfig) -> Result<tonic::transport::Server, ServerOpenError> {
-        let mut tonic_server =
-            Self::configure_server_encryption(tonic::transport::Server::builder(), encryption_config)?;
-        Ok(tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE)))
-    }
-
-    fn configure_server_encryption(
-        server: tonic::transport::Server,
-        encryption_config: &EncryptionConfig,
-    ) -> Result<tonic::transport::Server, ServerOpenError> {
-        if !encryption_config.enabled {
-            return Ok(server);
-        }
-
-        let cert_path = encryption_config.cert.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
-        let cert = fs::read_to_string(cert_path).map_err(|source| ServerOpenError::CouldNotReadTLSCertificate {
-            path: cert_path.display().to_string(),
-            source: Arc::new(source),
-        })?;
-        let cert_key_path =
-            encryption_config.cert_key.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
-        let cert_key =
-            fs::read_to_string(cert_key_path).map_err(|source| ServerOpenError::CouldNotReadTLSCertificateKey {
-                path: cert_key_path.display().to_string(),
-                source: Arc::new(source),
-            })?;
-        let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
-
-        if let Some(root_ca_path) = &encryption_config.root_ca {
-            let root_ca = fs::read_to_string(root_ca_path).map_err(|source| ServerOpenError::CouldNotReadRootCA {
-                path: root_ca_path.display().to_string(),
-                source: Arc::new(source),
-            })?;
-            tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true);
-        }
-        server.tls_config(tls_config).map_err(|source| ServerOpenError::TLSConfigError { source: Arc::new(source) })
-    }
-
-    fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
-        fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
-            path: storage_directory.to_str().unwrap_or("").to_owned(),
-            source: Arc::new(source),
-        })?;
-        Ok(())
     }
 
     fn initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
@@ -252,6 +150,122 @@ impl Server {
         (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
     }
 
+    fn initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        if !storage_directory.exists() {
+            Self::create_storage_directory(storage_directory)
+        } else if !storage_directory.is_dir() {
+            Err(ServerOpenError::NotADirectory { path: storage_directory.to_str().unwrap_or("").to_owned() })
+        } else {
+            Ok(())
+        }
+    }
+
+    fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
+            path: storage_directory.to_str().unwrap_or("").to_owned(),
+            source: Arc::new(source),
+        })?;
+        Ok(())
+    }
+
+    fn initialise_diagnostics(
+        deployment_id: String,
+        server_id: String,
+        distribution: &'static str,
+        version: &'static str,
+        config: &DiagnosticsConfig,
+        storage_directory: PathBuf,
+        is_development_mode: bool,
+    ) -> DiagnosticsManager {
+        let diagnostics = Diagnostics::new(
+            deployment_id,
+            server_id,
+            distribution.to_owned(),
+            version.to_owned(),
+            storage_directory,
+            config.is_reporting_enabled,
+        );
+
+        DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode)
+    }
+
+    fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
+        let metrics = database_manager
+            .databases()
+            .values()
+            .filter(|database| DatabaseManager::is_user_database(database.name()))
+            .map(|database| database.get_metrics())
+            .collect();
+        diagnostics_manager.submit_database_metrics(metrics);
+    }
+
+    async fn resolve_address(address: String) -> SocketAddr {
+        lookup_host(address.clone())
+            .await
+            .unwrap()
+            .next()
+            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
+    }
+
+    pub async fn serve(mut self) -> Result<(), ServerOpenError> {
+        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
+        let authenticator = Authenticator::new(
+            self.user_manager.clone(),
+            self.authenticator_cache.clone(),
+            self.diagnostics_manager.clone(),
+        );
+
+        Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
+
+        Self::create_tonic_server(&self.config.server.encryption)?
+            .layer(&authenticator)
+            .add_service(service)
+            .serve_with_shutdown(self.address, async {
+                // The tonic server starts a shutdown process when this closure execution finishes
+                Self::shutdown_handler(self.shutdown_sender).await;
+            })
+            .await
+            .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
+    }
+
+    fn create_tonic_server(encryption_config: &EncryptionConfig) -> Result<tonic::transport::Server, ServerOpenError> {
+        let mut tonic_server =
+            Self::configure_tonic_server_encryption(tonic::transport::Server::builder(), encryption_config)?;
+        Ok(tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE)))
+    }
+
+    fn configure_tonic_server_encryption(
+        server: tonic::transport::Server,
+        encryption_config: &EncryptionConfig,
+    ) -> Result<tonic::transport::Server, ServerOpenError> {
+        if !encryption_config.enabled {
+            return Ok(server);
+        }
+
+        let cert_path = encryption_config.cert.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
+        let cert = fs::read_to_string(cert_path).map_err(|source| ServerOpenError::CouldNotReadTLSCertificate {
+            path: cert_path.display().to_string(),
+            source: Arc::new(source),
+        })?;
+        let cert_key_path =
+            encryption_config.cert_key.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
+        let cert_key =
+            fs::read_to_string(cert_key_path).map_err(|source| ServerOpenError::CouldNotReadTLSCertificateKey {
+                path: cert_key_path.display().to_string(),
+                source: Arc::new(source),
+            })?;
+        let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
+
+        if let Some(root_ca_path) = &encryption_config.root_ca {
+            let root_ca = fs::read_to_string(root_ca_path).map_err(|source| ServerOpenError::CouldNotReadRootCA {
+                path: root_ca_path.display().to_string(),
+                source: Arc::new(source),
+            })?;
+            tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true);
+        }
+        server.tls_config(tls_config).map_err(|source| ServerOpenError::TLSConfigError { source: Arc::new(source) })
+    }
+
     fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
         if is_development_mode_enabled {
             println!("Running {distribution} {version} in development mode.");
@@ -262,7 +276,7 @@ impl Server {
     }
 
     async fn shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
-        Self::listen_ctrl_c().await;
+        Self::listen_to_ctrl_c_signal().await;
         println!("\nReceived CTRL-C. Initiating shutdown...");
         shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
 
@@ -270,32 +284,18 @@ impl Server {
     }
 
     async fn forced_shutdown_handler() {
-        Self::listen_ctrl_c().await;
+        Self::listen_to_ctrl_c_signal().await;
         println!("\nReceived CTRL-C. Forcing shutdown...");
         std::process::exit(1);
     }
 
-    async fn listen_ctrl_c() {
+    async fn listen_to_ctrl_c_signal() {
         tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL-C signal");
     }
-}
 
-fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
-    let metrics = database_manager
-        .databases()
-        .values()
-        .filter(|database| DatabaseManager::is_user_database(database.name()))
-        .map(|database| database.get_metrics())
-        .collect();
-    diagnostics_manager.submit_database_metrics(metrics);
-}
-
-async fn resolve_address(address: String) -> SocketAddr {
-    lookup_host(address.clone())
-        .await
-        .unwrap()
-        .next()
-        .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
+    pub fn database_manager(&self) -> &DatabaseManager {
+        self.typedb_service.as_ref().unwrap().database_manager()
+    }
 }
 
 typedb_error! {
