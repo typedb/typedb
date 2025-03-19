@@ -23,6 +23,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        plays_reverse_executor::PlaysReverseExecutor,
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -162,8 +163,6 @@ impl PlaysExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let player = type_from_row_or_annotations(self.plays.player(), row, self.player_role_types.keys());
-                let Some(player) = player else { return Ok(TupleIterator::empty()) };
-
                 let type_manager = context.type_manager();
                 let plays = self.get_plays_for_player(snapshot, type_manager, player)?;
 

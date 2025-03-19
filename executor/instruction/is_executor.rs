@@ -19,7 +19,7 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterMapUnchangedFn, VariableModes,
+        Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
@@ -38,6 +38,7 @@ pub(crate) type IsToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadE
 
 pub(super) type IsTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IsFilterMapFn>>, IsToTupleFn>;
 
+pub(super) type IsFilterFn = FilterFn<VariableValue<'static>>;
 pub(super) type IsFilterMapFn = FilterMapUnchangedFn<VariableValue<'static>>;
 
 pub(crate) type IsIterator = IsTupleIterator<iter::Once<Result<VariableValue<'static>, Box<ConceptReadError>>>>;

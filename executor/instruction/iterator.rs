@@ -82,9 +82,6 @@ macro_rules! dispatch_tuple_iterator {
 dispatch_tuple_iterator! {
 #[allow(clippy::large_enum_variant)]
 pub(crate) enum TupleIterator {
-    Empty(SortedTupleIterator<iter::Empty<TupleResult<'static>>>),
-    Check(SortedTupleIterator<<Option<TupleResult<'static>> as IntoIterator>::IntoIter>),
-
     Is(SortedTupleIterator<IsIterator>),
     Iid(SortedTupleIterator<IidIterator>),
     Type(SortedTupleIterator<TypeIterator>),
@@ -152,10 +149,6 @@ impl {
 }
 
 impl TupleIterator {
-    pub(crate) fn empty() -> Self {
-        Self::Empty(SortedTupleIterator::empty())
-    }
-
     pub(crate) fn advance_until_index_is(
         &mut self,
         index: TupleIndex,
@@ -185,19 +178,6 @@ pub(crate) struct SortedTupleIterator<It: Iterator<Item = TupleResult<'static>>>
     first_unbound: TupleIndex,
     last_enumerated: Option<TupleIndex>,
     last_enumerated_or_counted: Option<TupleIndex>,
-}
-
-impl SortedTupleIterator<iter::Empty<TupleResult<'static>>> {
-    fn empty() -> Self {
-        Self {
-            iterator: iter::empty().inspect(Box::new(|_: &TupleResult<'_>| ()) as _).peekable(),
-            positions: TuplePositions::Single([None]),
-            tuple_length: 0,
-            first_unbound: 0,
-            last_enumerated: None,
-            last_enumerated_or_counted: None,
-        }
-    }
 }
 
 impl<It: Iterator<Item = TupleResult<'static>>> SortedTupleIterator<It> {

@@ -155,10 +155,8 @@ impl IsaExecutor {
             BinaryIterateMode::BoundFrom => {
                 let thing = self.isa.thing().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > thing.as_usize());
-                let thing = match row.get(thing).to_owned() {
-                    VariableValue::Thing(thing) => thing,
-                    VariableValue::Empty => return Ok(TupleIterator::empty()),
-                    _ => unreachable!("Has thing must be an entity or relation."),
+                let VariableValue::Thing(thing) = row.get(thing).to_owned() else {
+                    unreachable!("Has thing must be an entity or relation.")
                 };
                 let type_ = thing.type_();
                 let supertypes = self.instance_type_to_types.get(&type_).cloned().unwrap_or(TYPES_EMPTY);

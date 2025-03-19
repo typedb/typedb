@@ -14,13 +14,14 @@ use std::{
 use answer::Type;
 use compiler::{executable::match_::instructions::type_::SubReverseInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        sub_executor::{SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
+        sub_executor::{SubExecutor, SubFilterFn, SubFilterMapFn, SubTupleIterator, EXTRACT_SUB, EXTRACT_SUPER},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -139,7 +140,6 @@ impl SubReverseExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let supertype = type_from_row_or_annotations(self.sub.supertype(), row, self.super_to_subtypes.keys());
-                let Some(supertype) = supertype else { return Ok(TupleIterator::empty()) };
                 let subtypes = self.super_to_subtypes.get(&supertype).unwrap_or(const { &Vec::new() });
                 let sub_with_super = subtypes.iter().map(|sub| Ok((*sub, supertype))).collect_vec(); // TODO cache this
                 let as_tuples: SubReverseBoundedSortedSub =

@@ -19,12 +19,14 @@ use concept::{
         attribute_type::AttributeType, object_type::ObjectType, type_manager::TypeManager, ObjectTypeAPI, OwnerAPI,
     },
 };
+use error::UnimplementedFeature;
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        owns_reverse_executor::OwnsReverseExecutor,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, OwnsToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -165,7 +167,6 @@ impl OwnsExecutor {
 
             BinaryIterateMode::BoundFrom => {
                 let owner = type_from_row_or_annotations(self.owns.owner(), row, self.owner_attribute_types.keys());
-                let Some(owner) = owner else { return Ok(TupleIterator::empty()) };
                 let type_manager = context.type_manager();
                 let owns = self.get_owns_for_owner(snapshot, type_manager, owner)?;
 

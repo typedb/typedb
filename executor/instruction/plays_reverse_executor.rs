@@ -27,6 +27,7 @@ use crate::{
             PlaysFilterFn, PlaysFilterMapFn, PlaysTupleIterator, PlaysVariableValueExtractor, EXTRACT_PLAYER,
             EXTRACT_ROLE,
         },
+        relates_executor::RelatesExecutor,
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },
@@ -164,8 +165,7 @@ impl PlaysReverseExecutor {
             BinaryIterateMode::BoundFrom => {
                 let role_type =
                     type_from_row_or_annotations(self.plays.role_type(), row, self.role_player_types.keys())
-                        .map(|ty| ty.as_role_type());
-                let Some(role_type) = role_type else { return Ok(TupleIterator::empty()) };
+                        .as_role_type();
                 let type_manager = context.type_manager();
                 let plays = role_type
                     .get_player_types(snapshot, type_manager)?

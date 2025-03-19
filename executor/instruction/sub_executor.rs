@@ -138,14 +138,13 @@ impl SubExecutor {
 
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
-                Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
                     functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
-                }))
+                }));
             }
 
             BinaryIterateMode::BoundFrom => {
                 let subtype = type_from_row_or_annotations(self.sub.subtype(), row, self.sub_to_supertypes.keys());
-                let Some(subtype) = subtype else { return Ok(TupleIterator::empty()) };
                 let supertypes = self.sub_to_supertypes.get(&subtype).unwrap_or(const { &Vec::new() });
                 let sub_with_super = supertypes.iter().map(|sup| Ok((subtype, *sup))).collect_vec(); // TODO cache this
 

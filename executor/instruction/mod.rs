@@ -345,18 +345,17 @@ fn type_from_row_or_annotations<'a>(
     vertex: &Vertex<ExecutorVariable>,
     row: MaybeOwnedRow<'_>,
     annos: impl Iterator<Item = &'a Type> + fmt::Debug,
-) -> Option<Type> {
+) -> Type {
     match vertex {
         &Vertex::Variable(ExecutorVariable::RowPosition(var)) => {
             debug_assert!(row.len() > var.as_usize());
             match row.get(var).to_owned() {
-                VariableValue::Type(type_) => Some(type_),
-                VariableValue::Empty => None,
-                _ => unreachable!("Supertype must be a type"),
+                VariableValue::Type(type_) => type_,
+                other => unreachable!("Supertype must be a type, found: {other}"),
             }
         }
         &Vertex::Variable(ExecutorVariable::Internal(_)) => unreachable!("an internal variable cannot be an input"),
-        Vertex::Label(_) => Some(annos.cloned().exactly_one().expect("multiple types for fixed label?")),
+        Vertex::Label(_) => annos.cloned().exactly_one().expect("multiple types for fixed label?"),
         Vertex::Parameter(_) => unreachable!(),
     }
 }

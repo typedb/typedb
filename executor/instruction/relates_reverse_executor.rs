@@ -155,16 +155,15 @@ impl RelatesReverseExecutor {
 
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
-                Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
                     functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
-                }))
+                }));
             }
 
             BinaryIterateMode::BoundFrom => {
                 let role_type =
                     type_from_row_or_annotations(self.relates.role_type(), row, self.role_relation_types.keys())
-                        .map(|ty| ty.as_role_type());
-                let Some(role_type) = role_type else { return Ok(TupleIterator::empty()) };
+                        .as_role_type();
                 let relates = role_type
                     .get_relation_types(snapshot, context.type_manager())?
                     .to_owned()

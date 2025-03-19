@@ -18,6 +18,7 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
+        indexed_relation_executor::IndexedRelationExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapUnchangedFn, VariableModes,

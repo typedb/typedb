@@ -29,6 +29,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
+        links_reverse_executor::LinksReverseExecutor,
         min_max_types,
         tuple::{
             links_to_tuple_player_relation_role, links_to_tuple_relation_player_role,
@@ -247,7 +248,6 @@ impl LinksExecutor {
                 let iterator = match row.get(relation) {
                     &VariableValue::Thing(Thing::Relation(relation)) => thing_manager
                         .get_links_by_relation_and_player_type_range(snapshot, relation, &self.player_type_range),
-                    VariableValue::Empty => return Ok(TupleIterator::empty()),
                     _ => unreachable!("Links relation must be a relation."),
                 };
                 let as_tuples: LinksTupleIteratorSingle =
@@ -264,16 +264,8 @@ impl LinksExecutor {
                 let player = self.links.player().as_variable().unwrap().as_position().unwrap();
                 debug_assert!(row.len() > relation.as_usize());
                 debug_assert!(row.len() > player.as_usize());
-                let relation = match row.get(relation) {
-                    &VariableValue::Thing(Thing::Relation(relation)) => relation,
-                    VariableValue::Empty => return Ok(TupleIterator::empty()),
-                    _ => unreachable!("Links relation must be a relation."),
-                };
-                let player = match row.get(player) {
-                    VariableValue::Thing(thing) => thing.as_object(),
-                    VariableValue::Empty => return Ok(TupleIterator::empty()),
-                    _ => unreachable!("Links player must be a object."),
-                };
+                let relation = row.get(relation).as_thing().as_relation();
+                let player = row.get(player).as_thing().as_object();
                 let iterator = thing_manager.get_links_by_relation_and_player(snapshot, relation, player);
                 let as_tuples: LinksTupleIteratorSingle =
                     iterator.filter_map(filter_for_row).map(links_to_tuple_role_relation_player);
