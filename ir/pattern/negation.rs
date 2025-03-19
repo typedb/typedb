@@ -53,10 +53,11 @@ impl Negation {
         self.conjunction
             .variable_dependency_modes(block_context)
             .into_iter()
-            .filter_map(|(var, mode)| {
+            .filter_map(|(var, mut mode)| {
                 let status = block_context.variable_status_in_scope(var, self.scope_id());
                 if status == VariableLocality::Parent || mode.is_required() {
-                    Some((var, VariableDependency::Required(vec![]))) // FIXME: actual usages
+                    mode.set_required();
+                    Some((var, mode))
                 } else {
                     None
                 }

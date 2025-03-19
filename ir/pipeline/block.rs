@@ -140,8 +140,7 @@ fn validate_conjunction(
 
     for (var, mode) in conjunction.variable_dependency_modes(block_context) {
         if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
-            let VariableDependency::Required(places) = mode else { unreachable!("just checked") };
-            todo!("Proper error: {var} is never bound but required here: {places:?}")
+            todo!("Proper error: {var} is never bound but required here: {places:?}", places = mode.places())
         }
     }
 

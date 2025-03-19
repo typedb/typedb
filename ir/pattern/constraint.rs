@@ -70,19 +70,21 @@ impl Constraints {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             for var in constraint.produced_ids() {
                 match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= VariableDependency::Producing,
+                    hash_map::Entry::Occupied(mut entry) => {
+                        *entry.get_mut() &= VariableDependency::producing(constraint);
+                    }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::Producing);
+                        vacant_entry.insert(VariableDependency::producing(constraint));
                     }
                 }
             }
             for var in constraint.required_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::Required(vec![constraint])
+                        *entry.get_mut() &= VariableDependency::required(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::Required(vec![constraint]));
+                        vacant_entry.insert(VariableDependency::required(constraint));
                     }
                 }
             }

@@ -62,13 +62,22 @@ impl Disjunction {
         let mut dependency_modes = self.conjunctions[0].variable_dependency_modes(block_context);
         for branch in &self.conjunctions[1..] {
             let branch_dependency_modes = branch.variable_dependency_modes(block_context);
-            for (var, mode) in &mut dependency_modes {
+            for (var, dependency) in &mut dependency_modes {
                 if !branch_dependency_modes.contains_key(var) {
-                    *mode |= VariableDependency::NotProducing
+                    dependency.set_referencing()
                 }
             }
-            for (var, mode) in branch_dependency_modes {
-                *dependency_modes.entry(var).or_insert(VariableDependency::NotProducing) |= mode
+            for (var, mut mode) in branch_dependency_modes {
+                let entry = dependency_modes.entry(var);
+                match entry {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        *entry.get_mut() |= mode;
+                    }
+                    hash_map::Entry::Vacant(entry) => {
+                        mode.set_referencing();
+                        entry.insert(mode);
+                    }
+                }
             }
         }
         dependency_modes

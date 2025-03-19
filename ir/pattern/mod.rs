@@ -384,42 +384,83 @@ impl BitOrAssign for VariableAssignment<'_> {
     }
 }
 
-#[derive(Clone, Debug)]
-pub enum VariableDependency<'a> {
-    Required(Vec<&'a Constraint<Variable>>),
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum VariableDependencyMode {
+    Required,
     Producing,
-    NotProducing,
+    Referencing,
 }
 
-impl VariableDependency<'_> {
+impl BitAndAssign for VariableDependencyMode {
+    fn bitand_assign(&mut self, rhs: Self) {
+        match (*self, rhs) {
+            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
+            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
+            (Self::Referencing, Self::Referencing) => (),
+        }
+    }
+}
+
+impl BitOrAssign for VariableDependencyMode {
+    fn bitor_assign(&mut self, rhs: Self) {
+        match (*self, rhs) {
+            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
+            (Self::Referencing, _) | (_, Self::Referencing) => *self = Self::Referencing,
+            (Self::Producing, Self::Producing) => (),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct VariableDependency<'a> {
+    mode: VariableDependencyMode,
+    places: Vec<&'a Constraint<Variable>>,
+}
+
+impl<'a> VariableDependency<'a> {
+    pub fn required(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: VariableDependencyMode::Required, places: vec![constraint] }
+    }
+
+    pub fn producing(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: VariableDependencyMode::Producing, places: vec![constraint] }
+    }
+
+    pub fn referencing(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: VariableDependencyMode::Referencing, places: vec![constraint] }
+    }
+
+    pub fn set_required(&mut self) {
+        self.mode = VariableDependencyMode::Required;
+    }
+
+    pub fn set_referencing(&mut self) {
+        self.mode = VariableDependencyMode::Referencing;
+    }
+
     pub fn is_required(&self) -> bool {
-        matches!(self, Self::Required(_))
+        self.mode == VariableDependencyMode::Required
     }
 
     pub fn is_producing(&self) -> bool {
-        matches!(self, Self::Producing)
+        self.mode == VariableDependencyMode::Producing
+    }
+
+    pub fn places(&self) -> &[&Constraint<Variable>] {
+        &self.places
     }
 }
 
 impl BitAndAssign for VariableDependency<'_> {
     fn bitand_assign(&mut self, rhs: Self) {
-        match (&mut *self, rhs) {
-            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
-            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::NotProducing, other) => *self = other,
-            (_, Self::NotProducing) => (),
-        }
+        self.places.extend_from_slice(&rhs.places);
+        self.mode &= rhs.mode;
     }
 }
 
 impl BitOrAssign for VariableDependency<'_> {
     fn bitor_assign(&mut self, rhs: Self) {
-        match (&mut *self, rhs) {
-            (Self::Producing, Self::Producing) => (),
-            (Self::Required(vec), Self::Required(other_vec)) => vec.extend_from_slice(&other_vec),
-            (Self::Required(_), Self::Producing | Self::NotProducing) => (),
-            (Self::Producing | Self::NotProducing, other @ Self::Required(_)) => *self = other,
-            (Self::NotProducing, _) | (_, Self::NotProducing) => *self = Self::NotProducing,
-        }
+        self.places.extend_from_slice(&rhs.places);
+        self.mode &= rhs.mode;
     }
 }
