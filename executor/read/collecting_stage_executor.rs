@@ -4,22 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    borrow::Cow,
-    cmp::Ordering,
-    fmt,
-    hash:: Hash,
-    iter::Peekable,
-    sync::Arc,
-};
+use std::{borrow::Cow, cmp::Ordering, fmt, hash::Hash, iter::Peekable, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
-use compiler::{
-    executable::{
-        modifiers::SortExecutable,
-        reduce::ReduceRowsExecutable,
-    },
-};
+use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use encoding::value::value::Value;
 use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
@@ -37,7 +25,7 @@ use crate::{
 #[derive(Debug)]
 pub(crate) enum CollectingStageExecutor {
     Reduce { pattern: PatternExecutor, reduce_rows_executable: Arc<ReduceRowsExecutable> },
-    Sort { pattern: PatternExecutor, sort_on: Arc<Vec<(usize, bool)>,> },
+    Sort { pattern: PatternExecutor, sort_on: Arc<Vec<(usize, bool)>> },
 }
 
 impl CollectingStageExecutor {
@@ -74,7 +62,7 @@ impl CollectingStageExecutor {
     pub(crate) fn prepare(&mut self, batch: FixedBatch) {
         debug_assert!({
             match self {
-                Self::Reduce {..} => batch.len() == 1,
+                Self::Reduce { .. } => batch.len() == 1,
                 _ => true,
             }
         });
@@ -85,10 +73,8 @@ impl CollectingStageExecutor {
         match self {
             CollectingStageExecutor::Reduce { reduce_rows_executable, .. } => {
                 CollectorEnum::Reduce(ReduceCollector::new(reduce_rows_executable.clone()))
-            },
-            CollectingStageExecutor::Sort { sort_on, .. } => {
-                CollectorEnum::Sort(SortCollector::new(sort_on.clone()))
             }
+            CollectingStageExecutor::Sort { sort_on, .. } => CollectorEnum::Sort(SortCollector::new(sort_on.clone())),
         }
     }
 }
@@ -107,10 +93,7 @@ impl CollectorEnum {
         }
     }
 
-    pub(crate) fn into_iterator(
-        self,
-        context: &ExecutionContext<impl ReadableSnapshot>,
-    ) -> CollectedStageIterator {
+    pub(crate) fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         match self {
             CollectorEnum::Reduce(collector) => collector.into_iterator(context),
             CollectorEnum::Sort(collector) => collector.into_iterator(context),
@@ -243,7 +226,6 @@ impl SortCollector {
 }
 
 impl CollectorTrait for SortCollector {
-
     fn accept(&mut self, _context: &ExecutionContext<impl ReadableSnapshot>, batch: FixedBatch) {
         for row in batch {
             if self.collector.is_none() {

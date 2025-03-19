@@ -16,10 +16,7 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     profile::QueryProfile,
-    read::{
-        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions,
-        create_pattern_executor_for_match,
-    },
+    read::{create_pattern_executor_for_match, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };

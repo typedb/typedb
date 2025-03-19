@@ -7,7 +7,6 @@
 use std::collections::HashSet;
 
 use compiler::VariablePosition;
-use utils::{enum_dispatch, enum_dispatch_method};
 
 use crate::{
     batch::FixedBatch,
@@ -97,10 +96,14 @@ pub(super) enum StreamModifierResultMapper {
 }
 
 impl StreamModifierResultMapper {
-    enum_dispatch_method! {
-        pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch>  [
-            Select Offset Limit Distinct Last
-        ]
+    pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
+        match self {
+            Self::Select(inner) => inner.map_output(subquery_result),
+            Self::Offset(inner) => inner.map_output(subquery_result),
+            Self::Limit(inner) => inner.map_output(subquery_result),
+            Self::Distinct(inner) => inner.map_output(subquery_result),
+            Self::Last(inner) => inner.map_output(subquery_result),
+        }
     }
 }
 

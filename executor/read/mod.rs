@@ -6,9 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::{
-    executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable},
-};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 use utils::deref_for_trivial_struct;

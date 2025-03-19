@@ -255,9 +255,8 @@ impl PatternExecutor {
                 for (idx, branch) in branches.iter_mut().enumerate() {
                     let branch_index = BranchIndex(idx);
                     branch.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack.push(
-                        ExecuteBranch { index, branch_index, input: input.clone().into_owned() }.into(),
-                    )
+                    self.control_stack
+                        .push(ExecuteBranch { index, branch_index, input: input.clone().into_owned() }.into())
                 }
             }
             StepExecutors::Negation(NegationExecutor { inner }) => {
@@ -388,7 +387,13 @@ fn restore_suspension(
 }
 
 #[inline]
-pub(super) fn may_push_nested<Result>(suspensions:&mut QueryPatternSuspensions, executor_index: ExecutorIndex, branch_index: BranchIndex, input_row: &MaybeOwnedRow<'_>, nested_pattern_execution: impl FnOnce(&mut QueryPatternSuspensions) -> Result) -> Result {
+pub(super) fn may_push_nested<Result>(
+    suspensions: &mut QueryPatternSuspensions,
+    executor_index: ExecutorIndex,
+    branch_index: BranchIndex,
+    input_row: &MaybeOwnedRow<'_>,
+    nested_pattern_execution: impl FnOnce(&mut QueryPatternSuspensions) -> Result,
+) -> Result {
     let suspension_count_before = suspensions.record_nested_pattern_entry();
     let result = nested_pattern_execution(suspensions);
     if suspensions.record_nested_pattern_exit() != suspension_count_before {

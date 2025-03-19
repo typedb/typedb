@@ -10,12 +10,12 @@ use utils::impl_from_for_enum;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     read::{
-        collecting_stage_executor::CollectedStageIterator, stream_modifier::StreamModifierResultMapper, BranchIndex,
-        ExecutorIndex,
+        collecting_stage_executor::{CollectedStageIterator, CollectorEnum},
+        stream_modifier::StreamModifierResultMapper,
+        BranchIndex, ExecutorIndex,
     },
     row::MaybeOwnedRow,
 };
-use crate::read::collecting_stage_executor::CollectorEnum;
 
 #[derive(Debug)]
 pub(super) enum ControlInstruction {
