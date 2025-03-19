@@ -34,6 +34,7 @@ pub(super) fn object_set_has_impl(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         attribute,
+        StorageCounters::DISABLED
     ))
 }
 
@@ -48,6 +49,7 @@ pub(super) fn object_set_has_ordered_impl(
         &tx.thing_manager,
         attribute_type,
         attributes,
+        StorageCounters::DISABLED
     ))
 }
 
@@ -60,6 +62,7 @@ fn object_unset_has_impl(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         key,
+        StorageCounters::DISABLED
     ))
 }
 
@@ -74,7 +77,12 @@ fn object_unset_has_ordered_impl(
             .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
             .unwrap()
             .unwrap();
-        object.unset_has_ordered(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, attribute_type)
+        object.unset_has_ordered(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.thing_manager,
+            attribute_type,
+            StorageCounters::DISABLED,
+        )
     })
 }
 
@@ -175,7 +183,7 @@ async fn object_get_has_list(
             .unwrap()
             .unwrap();
         object
-            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
+            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type, StorageCounters::DISABLED)
             .unwrap()
             .into_iter()
             .collect()
@@ -202,7 +210,7 @@ async fn object_get_has_list_is(
             .unwrap()
             .unwrap();
         object
-            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
+            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type, StorageCounters::DISABLED)
             .unwrap()
             .into_iter()
             .collect_vec()

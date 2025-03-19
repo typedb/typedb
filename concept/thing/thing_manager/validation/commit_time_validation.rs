@@ -6,6 +6,7 @@
 
 use std::collections::HashSet;
 
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -44,8 +45,6 @@ macro_rules! collect_errors {
 }
 
 pub(crate) use collect_errors;
-use resource::profile::StorageCounters;
-
 macro_rules! validate_capability_cardinality_constraint {
     ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
         pub(crate) fn $func_name(

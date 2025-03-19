@@ -390,7 +390,7 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
             .unwrap_or_else(|| panic!("no attributes of type {key_label} found for {var}: {thing}"))
             .unwrap();
         assert_eq!(count, 1, "expected exactly one {key_label} for {var}, found {count}");
-        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager);
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED);
         if actual.unwrap() != expected {
             return false;
         }
@@ -416,7 +416,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
-        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED).unwrap();
         actual == expected
     })
 }

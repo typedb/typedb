@@ -95,7 +95,10 @@ async fn attribute_has_value(context: &mut Context, var: params::Var, value: par
         let value = value.into_typedb(
             attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
         );
-        assert_eq!(attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager).unwrap(), value);
+        assert_eq!(
+            attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED).unwrap(),
+            value
+        );
     });
 }
 
@@ -123,7 +126,12 @@ pub fn get_attribute_by_value(
         let value = value.into_typedb(
             attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
         );
-        tx.thing_manager.get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value)
+        tx.thing_manager.get_attribute_with_value(
+            tx.snapshot.as_ref(),
+            attribute_type,
+            value,
+            StorageCounters::DISABLED,
+        )
     })
 }
 
@@ -146,7 +154,7 @@ async fn delete_attribute(context: &mut Context, var: params::Var) {
         context.attributes[&var.name]
             .clone()
             .unwrap()
-            .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager)
+            .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
             .unwrap()
     })
 }
@@ -157,8 +165,10 @@ async fn attribute_is_deleted(context: &mut Context, var: params::Var, is_delete
     let attribute = context.attributes.get_mut(&var.name).unwrap().as_mut().unwrap();
     let attribute_type = attribute.type_();
     let get = with_read_tx!(context, |tx| {
-        let value = attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager).unwrap();
-        tx.thing_manager.get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value).unwrap()
+        let value = attribute.get_value(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED).unwrap();
+        tx.thing_manager
+            .get_attribute_with_value(tx.snapshot.as_ref(), attribute_type, value, StorageCounters::DISABLED)
+            .unwrap()
     });
     check_boolean!(is_deleted, get.is_none());
 }
@@ -181,7 +191,10 @@ async fn delete_attributes_of_type(context: &mut Context, type_label: params::La
             .get_attributes_in(tx.snapshot.as_ref(), attribute_type, StorageCounters::DISABLED)
             .unwrap();
         while let Some(attribute) = attribute_iterator.next() {
-            attribute.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
+            attribute
+                .unwrap()
+                .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                .unwrap();
         }
     })
 }

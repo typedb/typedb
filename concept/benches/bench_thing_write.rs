@@ -32,6 +32,7 @@ use encoding::{
 };
 use pprof::ProfilerGuard;
 use rand::distributions::{Alphanumeric, DistString};
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WriteSnapshot},
@@ -75,11 +76,11 @@ fn write_entity_attributes(
         let name = thing_manager
             .create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(&random_string)))
             .unwrap();
-        person.set_has_unordered(&mut snapshot, &thing_manager, &age).unwrap();
-        person.set_has_unordered(&mut snapshot, &thing_manager, &name).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &age, StorageCounters::DISABLED).unwrap();
+        person.set_has_unordered(&mut snapshot, &thing_manager, &name, StorageCounters::DISABLED).unwrap();
     }
 
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
@@ -92,7 +93,7 @@ fn create_schema(storage: Arc<MVCCStorage<WALClient>>) {
     let person_type = type_manager.create_entity_type(&mut snapshot, PERSON_LABEL.get().unwrap()).unwrap();
     person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
     person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 fn criterion_benchmark(c: &mut Criterion) {

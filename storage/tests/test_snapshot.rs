@@ -129,7 +129,7 @@ fn snapshot_read_through() {
     snapshot.put(key_2.clone());
     snapshot.put(key_3.clone());
     snapshot.put(key_4.clone());
-    snapshot.commit().unwrap_or_log();
+    snapshot.commit(StorageCounters::DISABLED).unwrap_or_log();
 
     let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1, 0x2, 0x0]));
 
@@ -173,7 +173,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_1.clone());
         snapshot.put(key_2.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 
     {
@@ -215,7 +215,7 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
                 )
                 .count()
         );
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 }
 
@@ -231,12 +231,12 @@ fn snapshot_delete_reinserted() {
 
     let mut snapshot_0 = storage.clone().open_snapshot_write();
     snapshot_0.put_val(key_1.clone(), value_0);
-    snapshot_0.commit().unwrap();
+    snapshot_0.commit(StorageCounters::DISABLED).unwrap();
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.clone(), value_1);
     snapshot_1.delete(key_1.clone());
-    snapshot_1.commit().unwrap();
+    snapshot_1.commit(StorageCounters::DISABLED).unwrap();
 
     let snapshot_2 = storage.open_snapshot_read();
     assert_eq!(

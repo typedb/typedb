@@ -41,7 +41,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use resource::profile::QueryProfile;
+use resource::profile::{QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot},
@@ -126,24 +126,24 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, email_type, Value::String(Cow::Owned("xyz@email.com".to_string())))
         .unwrap();
 
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_1).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_2).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_3).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_1).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_2).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_1).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_2).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_1, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_2, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_3, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_1, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_2, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_1, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_2, StorageCounters::DISABLED).unwrap();
 
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_5).unwrap();
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_4).unwrap();
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_1).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_5, StorageCounters::DISABLED).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_4, StorageCounters::DISABLED).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_1, StorageCounters::DISABLED).unwrap();
 
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_age_4).unwrap();
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_name_3).unwrap();
+    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_age_4, StorageCounters::DISABLED).unwrap();
+    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_name_3, StorageCounters::DISABLED).unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(

@@ -14,6 +14,7 @@ use concept::{
 use encoding::{graph::type_::Kind, value::value::Value};
 use executor::document::{ConceptDocument, DocumentLeaf, DocumentMap, DocumentNode};
 use ir::pipeline::ParameterRegistry;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::json::JSON;
@@ -186,7 +187,9 @@ impl QueryAnswer {
                 Thing::Entity(_) => todo!("Unexpected entity result, requires implementation"),
                 Thing::Relation(_) => todo!("Unexpected relation result, requires implementation"),
                 Thing::Attribute(attribute) => Self::value_as_json(
-                    &attribute.get_value(snapshot, thing_manager).expect("Expected attribute's value"),
+                    &attribute
+                        .get_value(snapshot, thing_manager, StorageCounters::DISABLED)
+                        .expect("Expected attribute's value"),
                 ),
             },
             Concept::Value(value) => Self::value_as_json(value),

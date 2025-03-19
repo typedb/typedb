@@ -858,6 +858,7 @@ dependencies = [
  "error",
  "ir",
  "itertools 0.10.5",
+ "resource",
  "storage",
  "test_utils",
  "test_utils_concept",

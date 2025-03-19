@@ -33,8 +33,9 @@ features = {}
 
 [[bin]]
 	path = "replay_wal.rs"
-	name = "replay-wal"
+	name = "replay_wal"
 
 [[bin]]
 	path = "read_wal.rs"
-	name = "read-wal"
+	name = "read_wal"
+

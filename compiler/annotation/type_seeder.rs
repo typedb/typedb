@@ -32,6 +32,7 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -1683,6 +1684,7 @@ pub mod tests {
         pipeline::{block::Block, ParameterRegistry},
         translation::TranslationContext,
     };
+    use resource::profile::StorageCounters;
     use storage::snapshot::CommittableSnapshot;
 
     use crate::annotation::{
@@ -1801,7 +1803,7 @@ pub mod tests {
                     Ordering::Unordered,
                 )
                 .unwrap();
-            snapshot.commit().unwrap();
+            snapshot.commit(StorageCounters::DISABLED).unwrap();
             (TypeAnnotation::Entity(type_owner), TypeAnnotation::Attribute(type_age))
         };
 

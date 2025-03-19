@@ -19,6 +19,7 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, EncodingKeyspace, Keyable,
 };
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,
@@ -75,7 +76,7 @@ fn entity_type_vertexes_are_reused() {
             let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(i, vertex.type_id_().as_u16());
         }
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 
     {
@@ -87,7 +88,7 @@ fn entity_type_vertexes_are_reused() {
                 // TODO: replace with type api call.
             }
         }
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 
     {
@@ -114,7 +115,7 @@ fn max_entity_type_vertexes() {
             let vertex = generator.create_entity_type(&mut snapshot).unwrap();
             assert_eq!(i, vertex.type_id_().as_u16());
         }
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 
     {
@@ -150,7 +151,7 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_entity_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 
     for i in 0..create_till {
@@ -164,7 +165,7 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_attribute_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 
     // try with checkpoints
@@ -197,7 +198,7 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_relation_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
 
         let check = Checkpoint::new(&storage_path).unwrap();
         storage.checkpoint(&check).unwrap();
@@ -216,6 +217,6 @@ fn loading_storage_assigns_next_vertex() {
 
         let vertex = generator.create_role_type(&mut snapshot).unwrap();
         assert_eq!(i, vertex.type_id_().as_u16());
-        snapshot.commit().unwrap();
+        snapshot.commit(StorageCounters::DISABLED).unwrap();
     }
 }

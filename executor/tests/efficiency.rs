@@ -245,76 +245,120 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .unwrap();
 
     let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_0).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_1).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_2).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_3).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_10, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_0, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_1, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_2, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_3, StorageCounters::DISABLED).unwrap();
 
     let person_2 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_11).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_abby).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_bolton).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_uninlineable).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_willa).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_11, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_abby, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_bolton, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_uninlineable, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &name_willa, StorageCounters::DISABLED).unwrap();
 
     let person_3 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_4).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_10, StorageCounters::DISABLED).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_4, StorageCounters::DISABLED).unwrap();
 
     let person_4 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
+    person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_10, StorageCounters::DISABLED).unwrap();
 
     let person_5 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    person_5.set_has_unordered(&mut snapshot, &thing_manager, &age_10).unwrap();
-    person_5.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_5).unwrap();
+    person_5.set_has_unordered(&mut snapshot, &thing_manager, &age_10, StorageCounters::DISABLED).unwrap();
+    person_5.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_5, StorageCounters::DISABLED).unwrap();
 
     let person_6 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
-    person_6.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_6).unwrap();
+    person_6.set_has_unordered(&mut snapshot, &thing_manager, &gov_id_6, StorageCounters::DISABLED).unwrap();
 
     let movie_1 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
     let movie_2 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
     let movie_3 = thing_manager.create_entity(&mut snapshot, movie_type).unwrap();
-    movie_1.set_has_unordered(&mut snapshot, &thing_manager, &id_0).unwrap();
-    movie_2.set_has_unordered(&mut snapshot, &thing_manager, &id_1).unwrap();
-    movie_3.set_has_unordered(&mut snapshot, &thing_manager, &id_2).unwrap();
+    movie_1.set_has_unordered(&mut snapshot, &thing_manager, &id_0, StorageCounters::DISABLED).unwrap();
+    movie_2.set_has_unordered(&mut snapshot, &thing_manager, &id_1, StorageCounters::DISABLED).unwrap();
+    movie_3.set_has_unordered(&mut snapshot, &thing_manager, &id_2, StorageCounters::DISABLED).unwrap();
 
     let character_1 = thing_manager.create_entity(&mut snapshot, character_type).unwrap();
     let character_2 = thing_manager.create_entity(&mut snapshot, character_type).unwrap();
     let character_3 = thing_manager.create_entity(&mut snapshot, character_type).unwrap();
-    character_1.set_has_unordered(&mut snapshot, &thing_manager, &id_0).unwrap();
-    character_2.set_has_unordered(&mut snapshot, &thing_manager, &id_1).unwrap();
-    character_3.set_has_unordered(&mut snapshot, &thing_manager, &id_2).unwrap();
+    character_1.set_has_unordered(&mut snapshot, &thing_manager, &id_0, StorageCounters::DISABLED).unwrap();
+    character_2.set_has_unordered(&mut snapshot, &thing_manager, &id_1, StorageCounters::DISABLED).unwrap();
+    character_3.set_has_unordered(&mut snapshot, &thing_manager, &id_2, StorageCounters::DISABLED).unwrap();
 
     let casting_binary = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
     let casting_ternary = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
     let casting_quaternary_multi_role_player = thing_manager.create_relation(&mut snapshot, casting_type).unwrap();
 
-    casting_binary.add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_1.into_object()).unwrap();
-    casting_binary.add_player(&mut snapshot, &thing_manager, casting_actor_type, person_1.into_object()).unwrap();
+    casting_binary
+        .add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_1.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    casting_binary
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            casting_actor_type,
+            person_1.into_object(),
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
 
-    casting_ternary.add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_2.into_object()).unwrap();
-    casting_ternary.add_player(&mut snapshot, &thing_manager, casting_actor_type, person_1.into_object()).unwrap();
     casting_ternary
-        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_1.into_object())
+        .add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_2.into_object(), StorageCounters::DISABLED)
+        .unwrap();
+    casting_ternary
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            casting_actor_type,
+            person_1.into_object(),
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    casting_ternary
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            casting_character_type,
+            character_1.into_object(),
+            StorageCounters::DISABLED,
+        )
         .unwrap();
 
     casting_quaternary_multi_role_player
-        .add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_3.into_object())
+        .add_player(&mut snapshot, &thing_manager, casting_movie_type, movie_3.into_object(), StorageCounters::DISABLED)
         .unwrap();
     casting_quaternary_multi_role_player
-        .add_player(&mut snapshot, &thing_manager, casting_actor_type, person_2.into_object())
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            casting_actor_type,
+            person_2.into_object(),
+            StorageCounters::DISABLED,
+        )
         .unwrap();
     casting_quaternary_multi_role_player
-        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_2.into_object())
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            casting_character_type,
+            character_2.into_object(),
+            StorageCounters::DISABLED,
+        )
         .unwrap();
     casting_quaternary_multi_role_player
-        .add_player(&mut snapshot, &thing_manager, casting_character_type, character_3.into_object())
+        .add_player(
+            &mut snapshot,
+            &thing_manager,
+            casting_character_type,
+            character_3.into_object(),
+            StorageCounters::DISABLED,
+        )
         .unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(
@@ -1279,7 +1323,10 @@ fn intersections_seeks_with_extra_values() {
     let person_type = type_manager.get_entity_type(&mut snapshot, &PERSON_LABEL).unwrap().unwrap();
     let age_type = type_manager.get_attribute_type(&mut snapshot, &AGE_LABEL).unwrap().unwrap();
     let gov_id_type = type_manager.get_attribute_type(&mut snapshot, &GOV_ID_LABEL).unwrap().unwrap();
-    let gov_id_4 = thing_manager.get_attribute_with_value(&snapshot, gov_id_type, Value::Integer(4)).unwrap().unwrap();
+    let gov_id_4 = thing_manager
+        .get_attribute_with_value(&snapshot, gov_id_type, Value::Integer(4), StorageCounters::DISABLED)
+        .unwrap()
+        .unwrap();
     let person_4 = Iterator::next(&mut thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
         &snapshot,
         &gov_id_4,
@@ -1291,8 +1338,8 @@ fn intersections_seeks_with_extra_values() {
     .0
     .owner();
     let age_12 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(12)).unwrap();
-    person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_12).unwrap();
-    snapshot.commit().unwrap();
+    person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_12, StorageCounters::DISABLED).unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 
     // IR to compute type annotations
     let mut translation_context = TranslationContext::new();

@@ -237,7 +237,7 @@ impl QueryManager {
                     }
                 };
 
-                let mut annotated_pipeline = annotate_preamble_and_pipeline(
+                let annotated_pipeline = annotate_preamble_and_pipeline(
                     &snapshot,
                     type_manager,
                     annotated_schema_functions.clone(),

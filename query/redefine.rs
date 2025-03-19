@@ -297,9 +297,9 @@ fn redefine_type_annotations(
 }
 
 fn redefine_alias(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    anything_redefined: &mut bool,
+    _snapshot: &mut impl WritableSnapshot,
+    _type_manager: &TypeManager,
+    _anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     for capability in &type_declaration.capabilities {
@@ -313,7 +313,7 @@ fn redefine_alias(
     Ok(())
 }
 
-fn redefine_alias_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
+fn redefine_alias_annotations(_typeql_capability: &Capability) -> Result<(), RedefineError> {
     Err(RedefineError::Unimplemented { description: "Alias redefinition is not yet implemented.".to_string() })
     // verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
 }

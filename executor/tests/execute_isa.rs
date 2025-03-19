@@ -40,7 +40,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use resource::profile::QueryProfile;
+use resource::profile::{QueryProfile, StorageCounters};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -70,9 +70,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let _cat_1 = thing_manager.create_entity(&mut snapshot, cat_type).unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(

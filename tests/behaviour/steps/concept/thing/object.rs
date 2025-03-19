@@ -103,7 +103,9 @@ async fn object_create_instance_with_key_var(
 async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, var: params::Var) {
     let object = context.objects[&var.name].as_ref().unwrap().object;
     object_kind.assert(&object.type_());
-    with_write_tx!(context, |tx| { object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap() })
+    with_write_tx!(context, |tx| {
+        object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED).unwrap()
+    })
 }
 
 #[apply(generic_step)]
@@ -115,17 +117,23 @@ async fn delete_objects_of_type(context: &mut Context, object_kind: params::Obje
         object_kind.assert(&object_type);
         match object_type {
             ObjectType::Entity(entity_type) => {
-                let mut entity_iterator =
+                let entity_iterator =
                     tx.thing_manager.get_entities_in(tx.snapshot.as_ref(), entity_type, StorageCounters::DISABLED);
                 for entity in entity_iterator {
-                    entity.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
+                    entity
+                        .unwrap()
+                        .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                        .unwrap();
                 }
             }
             ObjectType::Relation(relation_type) => {
-                let mut relation_iterator =
+                let relation_iterator =
                     tx.thing_manager.get_relations_in(tx.snapshot.as_ref(), relation_type, StorageCounters::DISABLED);
                 for relation in relation_iterator {
-                    relation.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
+                    relation
+                        .unwrap()
+                        .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                        .unwrap();
                 }
             }
         }

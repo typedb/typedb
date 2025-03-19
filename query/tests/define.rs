@@ -9,6 +9,7 @@ use std::sync::Arc;
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use function::function_manager::FunctionManager;
 use query::query_manager::QueryManager;
+use resource::profile::StorageCounters;
 use storage::snapshot::CommittableSnapshot;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -31,5 +32,5 @@ fn basic() {
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, schema_query, query_str)
         .unwrap();
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }

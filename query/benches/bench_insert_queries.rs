@@ -29,6 +29,7 @@ use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use pprof::ProfilerGuard;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -86,7 +87,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type).unwrap();
     group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type).unwrap();
 
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 fn execute_insert<Snapshot: WritableSnapshot + 'static>(
@@ -163,7 +164,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 &format!("insert $p isa person, has age {age};"),
             )
             .unwrap();
-            snapshot.commit().unwrap();
+            snapshot.commit(StorageCounters::DISABLED).unwrap();
         });
     });
 }

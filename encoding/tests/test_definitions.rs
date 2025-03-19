@@ -18,7 +18,7 @@ use encoding::{
     value::value_type::ValueType,
     AsBytes, Keyable,
 };
-use resource::constants::snapshot::BUFFER_VALUE_INLINE;
+use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils_encoding::create_core_storage;
 
@@ -41,12 +41,14 @@ fn define_struct<Snapshot: WritableSnapshot>(
 
 fn get_struct_key(snapshot: &impl ReadableSnapshot, name: String) -> Option<DefinitionKey> {
     let index_key = NameToStructDefinitionIndex::build(name.as_str());
-    let bytes = snapshot.get(index_key.into_storage_key().as_reference()).unwrap();
+    let bytes = snapshot.get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED).unwrap();
     bytes.map(|value| DefinitionKey::new(Bytes::Array(value)))
 }
 
 fn get_struct_definition(snapshot: &impl ReadableSnapshot, definition_key: &DefinitionKey) -> StructDefinition {
-    let bytes = snapshot.get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference()).unwrap();
+    let bytes = snapshot
+        .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference(), StorageCounters::DISABLED)
+        .unwrap();
     StructDefinition::from_bytes(&bytes.unwrap())
 }
 
@@ -76,7 +78,7 @@ fn test_struct_definition() {
         let read_1_definition = get_struct_definition(&snapshot, &read_1_key);
         assert_eq!(struct_1_definition, read_1_definition);
     }
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 
     // Read back commmitted
     {

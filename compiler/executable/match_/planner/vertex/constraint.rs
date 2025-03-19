@@ -89,7 +89,7 @@ impl ConstraintVertex<'_> {
         // Check whether we have unbound vars for join candidates
         match self {
             Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
-                let mut unbound_join_variables: Vec<VariableVertexId> = self
+                let unbound_join_variables: Vec<VariableVertexId> = self
                     .variables()
                     .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
                     .collect();

@@ -29,11 +29,6 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.resource]
-		path = "../../../resource"
-		features = []
-		default-features = false
-
 	[dependencies.cucumber]
 		features = ["default", "macros"]
 		version = "0.19.1"
@@ -103,6 +98,11 @@ features = {}
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
 		version = "1.44.2"
+		default-features = false
+
+	[dependencies.resource]
+		path = "../../../resource"
+		features = []
 		default-features = false
 
 	[dependencies.query]

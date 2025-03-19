@@ -24,8 +24,9 @@ rust_test(
         "//concept:concept",
         "//encoding:encoding",
         "//ir:ir",
+        "//resource:resource",
         "//storage:storage",
-        
+
         "//concept/tests:test_utils_concept",
         "//encoding/tests:test_utils_encoding",
         "//util/test:test_utils",

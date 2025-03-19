@@ -151,6 +151,10 @@ features = {}
 	name = "test_execute_expression"
 
 [[test]]
+	path = "tests/efficiency.rs"
+	name = "test_efficiency"
+
+[[test]]
 	path = "tests/execute_has.rs"
 	name = "test_execute_has"
 

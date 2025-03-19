@@ -23,6 +23,7 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
@@ -73,9 +74,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .set_owns(&mut snapshot, &type_manager, &thing_manager, start_time_type, Ordering::Unordered)
         .unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(StorageCounters::DISABLED).unwrap();
 }
 
 #[test]
