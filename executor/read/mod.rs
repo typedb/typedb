@@ -8,7 +8,6 @@ use std::sync::Arc;
 
 use compiler::{
     executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable},
-    VariablePosition,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;

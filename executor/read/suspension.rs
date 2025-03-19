@@ -119,11 +119,8 @@ impl QueryPatternSuspensions {
     }
 
     pub(super) fn next_restore_point_at_current_depth(&mut self) -> Option<PatternSuspension> {
-        let has_next = if let Some(point) = self.restoring_patterns_tree.last() {
-            point.depth() == self.current_depth
-        } else {
-            false
-        };
+        let has_next = self.restoring_patterns_tree.last()
+            .map_or(false, |point| point.depth() == self.current_depth);
         if has_next {
             self.restoring_patterns_tree.pop()
         } else {

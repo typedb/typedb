@@ -15,7 +15,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::{
         control_instruction::{
-            CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
+            CollectingStage, ControlInstruction, ExecuteBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested, PatternStart,
             ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
         },
@@ -29,19 +29,6 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
-
-macro_rules! may_suspend {
-    ($suspensions:ident($index:ident, $branch_index:expr, $input:ident) $block:block) => {
-        {
-            let suspension_count_before = $suspensions.record_nested_pattern_entry();
-            let result = $block;
-            if $suspensions.record_nested_pattern_exit() != suspension_count_before {
-                $suspensions.push_nested($index, $branch_index, $input.clone());
-            }
-            result
-        }
-    };
-}
 
 #[derive(Debug)]
 pub(crate) struct PatternExecutor {
@@ -151,36 +138,35 @@ impl PatternExecutor {
                         Some(_) => inner.reset(), // fail
                     };
                 }
-                ControlInstruction::ExecuteDisjunctionBranch(execute_disjunction) => {
-                    let ExecuteDisjunctionBranch { index, branch_index, input } = execute_disjunction;
+                ControlInstruction::ExecuteBranch(ExecuteBranch { index, branch_index, input }) => {
                     let disjunction = &mut executors[*index].unwrap_disjunction();
                     let branch = &mut disjunction.branches[*branch_index];
-                    let batch_opt = may_suspend!(suspensions(index, branch_index, input) {
-                        branch.batch_continue(context, interrupt, tabled_functions, suspensions)?
-                    });
+                    let batch_opt = may_push_nested(suspensions, index, branch_index, &input, |suspensions| {
+                        branch.batch_continue(context, interrupt, tabled_functions, suspensions)
+                    })?;
                     if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(unmapped)) {
-                        control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input }.into());
+                        control_stack.push(ExecuteBranch { index, branch_index, input }.into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction { index, input }) => {
                     let executor = &mut executors[*index].unwrap_inlined_call();
                     let func_context = &context.clone_with_replaced_parameters(executor.parameter_registry.clone());
-                    let batch_opt = may_suspend!(suspensions(index, BranchIndex(0), input) {
-                        executor.inner.batch_continue(func_context, interrupt, tabled_functions, suspensions)?
-                    });
+                    let batch_opt = may_push_nested(suspensions, index, BranchIndex(0), &input, |suspensions| {
+                        executor.inner.batch_continue(func_context, interrupt, tabled_functions, suspensions)
+                    })?;
                     if let Some(mapped) = batch_opt.map(|batch| executor.map_output(input.as_reference(), batch)) {
-                        control_stack.push(ExecuteInlinedFunction::new(index, input).into());
+                        control_stack.push(ExecuteInlinedFunction { index, input: input.into_owned() }.into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
                 ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier { index, mut mapper, input }) => {
                     let inner = &mut executors[*index].unwrap_stream_modifier().inner();
-                    let unmapped = may_suspend!(suspensions(index, BranchIndex(0), input) {
-                        inner.batch_continue(context, interrupt, tabled_functions, suspensions)?
-                    });
+                    let unmapped = may_push_nested(suspensions, index, BranchIndex(0), &input, |suspensions| {
+                        inner.batch_continue(context, interrupt, tabled_functions, suspensions)
+                    })?;
                     if let Some(batch) = mapper.map_output(unmapped) {
-                        control_stack.push(ExecuteStreamModifier::new(index, mapper, input).into());
+                        control_stack.push(ExecuteStreamModifier { index, mapper, input: input.into_owned() }.into());
                         self.push_next_instruction(context, index.next(), batch)?;
                     }
                 }
@@ -266,16 +252,17 @@ impl PatternExecutor {
                 self.control_stack.push(ExecuteTabledCall { index, last_seen_table_size: None }.into());
             }
             StepExecutors::Disjunction(DisjunctionExecutor { branches, .. }) => {
-                for (branch_index, branch) in branches.iter_mut().enumerate() {
+                for (idx, branch) in branches.iter_mut().enumerate() {
+                    let branch_index = BranchIndex(idx);
                     branch.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack.push(
-                        ExecuteDisjunctionBranch::new(index, BranchIndex(branch_index), input.as_reference()).into(),
+                        ExecuteBranch { index, branch_index, input: input.clone().into_owned() }.into(),
                     )
                 }
             }
             StepExecutors::Negation(NegationExecutor { inner }) => {
                 inner.prepare(FixedBatch::from(input.as_reference()));
-                self.control_stack.push(ExecuteNegation::new(index, input).into());
+                self.control_stack.push(ExecuteNegation { index, input: input.into_owned() }.into());
             }
             StepExecutors::InlinedCall(InlinedCallExecutor { inner, arg_mapping, .. }) => {
                 let mapped_input = MaybeOwnedRow::new_owned(
@@ -283,12 +270,12 @@ impl PatternExecutor {
                     input.multiplicity(),
                 );
                 inner.prepare(FixedBatch::from(mapped_input));
-                self.control_stack.push(ExecuteInlinedFunction::new(index, input).into());
+                self.control_stack.push(ExecuteInlinedFunction { index, input: input.into_owned() }.into());
             }
             StepExecutors::StreamModifier(stream_modifier) => {
                 stream_modifier.inner().prepare(FixedBatch::from(input.as_reference()));
                 let mapper = stream_modifier.create_mapper();
-                self.control_stack.push(ExecuteStreamModifier::new(index, mapper, input).into())
+                self.control_stack.push(ExecuteStreamModifier { index, mapper, input: input.into_owned() }.into())
             }
             _ => unreachable!("Not called on any other StepExecutor"),
         }
@@ -372,24 +359,24 @@ fn restore_suspension(
             control_stack.push(ExecuteTabledCall { index: executor_index, last_seen_table_size: None }.into())
         }
         PatternSuspension::AtNestedPattern(suspended_nested) => {
-            let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
+            let NestedPatternSuspension { executor_index: index, input_row, branch_index, depth } = suspended_nested;
             let nested_pattern_depth = depth + 1;
-            match &mut executors[*executor_index] {
+            match &mut executors[*index] {
                 StepExecutors::Negation(_) => {
                     unreachable!("Stratification must have been violated")
                 }
                 StepExecutors::Disjunction(disjunction) => {
                     disjunction.branches[*branch_index].prepare_to_restore_from_suspension(nested_pattern_depth);
-                    control_stack.push(ExecuteDisjunctionBranch::new(executor_index, branch_index, input_row).into())
+                    control_stack.push(ExecuteBranch { index, branch_index, input: input_row.into_owned() }.into())
                 }
                 StepExecutors::InlinedCall(inlined) => {
                     inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
-                    control_stack.push(ExecuteInlinedFunction::new(executor_index, input_row).into())
+                    control_stack.push(ExecuteInlinedFunction { index, input: input_row.into_owned() }.into())
                 }
                 StepExecutors::StreamModifier(modifier) => {
                     modifier.inner().prepare_to_restore_from_suspension(nested_pattern_depth);
                     let mapper = modifier.create_mapper();
-                    control_stack.push(ExecuteStreamModifier::new(executor_index, mapper, input_row).into())
+                    control_stack.push(ExecuteStreamModifier { index, mapper, input: input_row.into_owned() }.into())
                 }
                 StepExecutors::Immediate(_)
                 | StepExecutors::CollectingStage(_)
@@ -398,4 +385,14 @@ fn restore_suspension(
             }
         }
     }
+}
+
+#[inline]
+pub(super) fn may_push_nested<Result>(suspensions:&mut QueryPatternSuspensions, executor_index: ExecutorIndex, branch_index: BranchIndex, input_row: &MaybeOwnedRow<'_>, nested_pattern_execution: impl FnOnce(&mut QueryPatternSuspensions) -> Result) -> Result {
+    let suspension_count_before = suspensions.record_nested_pattern_entry();
+    let result = nested_pattern_execution(suspensions);
+    if suspensions.record_nested_pattern_exit() != suspension_count_before {
+        suspensions.push_nested(executor_index, branch_index, input_row.clone().into_owned());
+    }
+    result
 }

@@ -30,7 +30,7 @@ pub(super) enum ControlInstruction {
     MapBatchToRowsForNested(MapBatchToRowsForNested),
     ExecuteNegation(ExecuteNegation),
 
-    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
+    ExecuteBranch(ExecuteBranch),
     ExecuteInlinedFunction(ExecuteInlinedFunction),
     ExecuteStreamModifier(ExecuteStreamModifier),
 
@@ -80,7 +80,7 @@ pub(super) struct ExecuteNegation {
 }
 
 #[derive(Debug)]
-pub(super) struct ExecuteDisjunctionBranch {
+pub(super) struct ExecuteBranch {
     pub(super) index: ExecutorIndex,
     pub(super) branch_index: BranchIndex,
     pub(super) input: MaybeOwnedRow<'static>, // Only needed for suspend points. We can actually use an empty one, because the nested pattern has all the info
@@ -115,29 +115,6 @@ pub(super) struct Yield {
     pub(super) batch: FixedBatch,
 }
 
-impl ExecuteInlinedFunction {
-    pub(crate) fn new(index: ExecutorIndex, input_row: MaybeOwnedRow<'_>) -> Self {
-        Self { index, input: input_row.into_owned() }
-    }
-}
-
-impl ExecuteNegation {
-    pub(crate) fn new(index: ExecutorIndex, input_row: MaybeOwnedRow<'_>) -> Self {
-        Self { index, input: input_row.into_owned() }
-    }
-}
-impl ExecuteDisjunctionBranch {
-    pub(crate) fn new(index: ExecutorIndex, branch_index: BranchIndex, input_row: MaybeOwnedRow<'_>) -> Self {
-        Self { index, branch_index, input: input_row.into_owned() }
-    }
-}
-
-impl ExecuteStreamModifier {
-    pub(crate) fn new(index: ExecutorIndex, mapper: StreamModifierResultMapper, input_row: MaybeOwnedRow<'_>) -> Self {
-        Self { index, mapper, input: input_row.into_owned() }
-    }
-}
-
 impl ReshapeForReturn {
     pub(crate) fn positions_to_mapping(
         positions: &[VariablePosition],
@@ -146,20 +123,21 @@ impl ReshapeForReturn {
     }
 }
 
-impl_from_for_enum!(ControlInstruction from PatternStart);
-impl_from_for_enum!(ControlInstruction from RestoreSuspension);
-impl_from_for_enum!(ControlInstruction from ReshapeForReturn);
-impl_from_for_enum!(ControlInstruction from Yield);
-
-impl_from_for_enum!(ControlInstruction from MapBatchToRowsForNested);
-
-impl_from_for_enum!(ControlInstruction from ExecuteImmediate);
-
-impl_from_for_enum!(ControlInstruction from ExecuteNegation);
-impl_from_for_enum!(ControlInstruction from ExecuteDisjunctionBranch);
-impl_from_for_enum!(ControlInstruction from ExecuteInlinedFunction);
-impl_from_for_enum!(ControlInstruction from ExecuteStreamModifier);
-impl_from_for_enum!(ControlInstruction from ExecuteTabledCall);
-
-impl_from_for_enum!(ControlInstruction from CollectingStage);
-impl_from_for_enum!(ControlInstruction from StreamCollected);
+macro_rules! impl_control_instruction_from_inner {
+    ($($variant:ident,)*) => { $(impl_from_for_enum!(ControlInstruction from $variant);)* };
+}
+impl_control_instruction_from_inner!(
+    PatternStart,
+    RestoreSuspension,
+    ReshapeForReturn,
+    Yield,
+    MapBatchToRowsForNested,
+    ExecuteImmediate,
+    ExecuteNegation,
+    ExecuteBranch,
+    ExecuteInlinedFunction,
+    ExecuteStreamModifier,
+    ExecuteTabledCall,
+    CollectingStage,
+    StreamCollected,
+);

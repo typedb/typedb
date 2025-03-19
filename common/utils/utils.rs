@@ -44,7 +44,6 @@ macro_rules! enum_dispatch {
 
 #[macro_export]
 macro_rules! enum_dispatch_method {
-
     ($vis:vis fn $method_name:ident(&mut self $(, $arg:ident : $argtype:ty)* ) -> $ret:ty [ $($variant:ident)* ]) => {
         $vis fn $method_name(&mut self$(, $arg : $argtype)* ) -> $ret {
             enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
@@ -56,5 +55,4 @@ macro_rules! enum_dispatch_method {
             enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
         }
     };
-
 }
