@@ -216,13 +216,15 @@ impl<Durability> MVCCStorage<Durability> {
     fn snapshot_commit(
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
+        storage_counters: StorageCounters,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
+        self.set_initial_put_status(&snapshot, storage_counters.clone())
+            .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
         let commit_record = snapshot.into_commit_record();
 
         let commit_sequence_number = self
@@ -265,7 +267,11 @@ impl<Durability> MVCCStorage<Durability> {
         }
     }
 
-    fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>) -> Result<(), MVCCReadError>
+    fn set_initial_put_status(
+        &self,
+        snapshot: &impl CommittableSnapshot<Durability>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), MVCCReadError>
     where
         Durability: DurabilityClient,
     {
@@ -279,12 +285,22 @@ impl<Durability> MVCCStorage<Durability> {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
                     debug_assert!(self
-                        .get::<0>(snapshot.iterator_pool(), wrapped, snapshot.open_sequence_number())
+                        .get::<0>(
+                            snapshot.iterator_pool(),
+                            wrapped,
+                            snapshot.open_sequence_number(),
+                            storage_counters.clone()
+                        )
                         .is_ok_and(|opt| opt.is_some()));
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(snapshot.iterator_pool(), wrapped, snapshot.open_sequence_number())?
+                        .get::<BUFFER_VALUE_INLINE>(
+                            snapshot.iterator_pool(),
+                            wrapped,
+                            snapshot.open_sequence_number(),
+                            storage_counters.clone(),
+                        )?
                         .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
@@ -344,6 +360,7 @@ impl<Durability> MVCCStorage<Durability> {
         iterator_pool: &IteratorPool,
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
         self.get_mapped(iterator_pool, key, open_sequence_number, |byte_ref| ByteArray::from(byte_ref))
     }
@@ -615,6 +632,7 @@ impl StorageOperation {
 mod tests {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
+    use resource::profile::StorageCounters;
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
@@ -687,6 +705,9 @@ mod tests {
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
                 .unwrap();
-        assert_eq!(storage.get::<0>(&IteratorPool::new(), &key_2, seq).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(
+            storage.get::<0>(&IteratorPool::new(), &key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
+            ByteArray::empty()
+        );
     }
 }

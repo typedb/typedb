@@ -179,7 +179,7 @@ impl HasExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Arc<HasFilterMapFn> = Arc::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -192,6 +192,7 @@ impl HasExecutor {
             context,
             Some(row.as_reference()),
             self.has.attribute().as_variable().unwrap(),
+            storage_counters.clone(),
         )?;
 
         let snapshot = &**context.snapshot();

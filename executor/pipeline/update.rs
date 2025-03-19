@@ -121,7 +121,7 @@ fn execute_update(
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
-                isa_attr.execute(snapshot, thing_manager, parameters, row)?;
+                isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
             ConceptInstruction::PutObject(isa_object) => {
                 unreachable!("Unexpected Put Object for Update: {isa_object:?}");
@@ -135,10 +135,10 @@ fn execute_update(
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
-                has.execute(snapshot, thing_manager, parameters, row)?;
+                has.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
             ConnectionInstruction::Links(links) => {
-                links.execute(snapshot, thing_manager, parameters, row)?;
+                links.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         };
         measurement.end(&step_profile, 1, 1);

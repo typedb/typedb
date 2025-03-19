@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeMap, HashMap},
     fmt,
     iter::Map,
-    ops::{Bound, RangeBounds},
+    ops::RangeBounds,
 };
 
 use bytes::Bytes;
@@ -110,17 +110,23 @@ impl ThingAPI for Object {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         match self {
-            Object::Entity(entity) => entity.set_required(snapshot, thing_manager),
-            Object::Relation(relation) => relation.set_required(snapshot, thing_manager),
+            Object::Entity(entity) => entity.set_required(snapshot, thing_manager, storage_counters),
+            Object::Relation(relation) => relation.set_required(snapshot, thing_manager, storage_counters),
         }
     }
 
-    fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
+    fn get_status(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> ConceptStatus {
         match self {
-            Object::Entity(entity) => entity.get_status(snapshot, thing_manager),
-            Object::Relation(relation) => relation.get_status(snapshot, thing_manager),
+            Object::Entity(entity) => entity.get_status(snapshot, thing_manager, storage_counters),
+            Object::Relation(relation) => relation.get_status(snapshot, thing_manager, storage_counters),
         }
     }
 
@@ -128,10 +134,11 @@ impl ThingAPI for Object {
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         match self {
-            Object::Entity(entity) => entity.delete(snapshot, thing_manager),
-            Object::Relation(relation) => relation.delete(snapshot, thing_manager),
+            Object::Entity(entity) => entity.delete(snapshot, thing_manager, storage_counters),
+            Object::Relation(relation) => relation.delete(snapshot, thing_manager, storage_counters),
         }
     }
 
@@ -154,8 +161,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         value: Value<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        thing_manager.owner_has_attribute_with_value(snapshot, self, attribute_type, value)
+        thing_manager.owner_has_attribute_with_value(snapshot, self, attribute_type, value, storage_counters)
     }
 
     fn has_attribute(
@@ -163,8 +171,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        thing_manager.owner_has_attribute(snapshot, self, attribute)
+        thing_manager.owner_has_attribute(snapshot, self, attribute, storage_counters)
     }
 
     fn get_has_unordered<'m>(
@@ -204,8 +213,9 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &'m impl ReadableSnapshot,
         thing_manager: &'m ThingManager,
         attribute_type: AttributeType,
+        storage_counters: StorageCounters,
     ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
-        thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)
+        thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type, storage_counters)
     }
 
     fn get_has_types_range_unordered<'a>(
@@ -241,12 +251,24 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_owner_exists_to_set_has(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_attribute_exists_to_set_has(snapshot, thing_manager, self, attribute)
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_attribute_exists_to_set_has(
+            snapshot,
+            thing_manager,
+            self,
+            attribute,
+            storage_counters.clone(),
+        )
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -265,7 +287,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         OperationTimeValidation::validate_owns_is_not_abstract(snapshot, thing_manager, self, attribute.type_())
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        thing_manager.set_has_unordered(snapshot, self, attribute)
+        thing_manager.set_has_unordered(snapshot, self, attribute, storage_counters)
     }
 
     fn unset_has_unordered(
@@ -273,9 +295,15 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_owner_exists_to_unset_has(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -291,7 +319,7 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
             Ordering::Ordered => return Err(Box::new(ConceptWriteError::UnsetHasUnorderedOwnsOrdered {})),
         }
 
-        thing_manager.unset_has(snapshot, self, attribute)
+        thing_manager.unset_has(snapshot, self, attribute, storage_counters)
     }
 
     fn set_has_ordered(
@@ -301,9 +329,15 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         // TODO: We might need to change this interface if we can add attributes of different types!
         attribute_type: AttributeType,
         new_attributes: Vec<Attribute>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_owner_exists_to_set_has(snapshot, thing_manager, self)
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_owner_exists_to_set_has(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -324,8 +358,14 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
 
         let mut new_counts = BTreeMap::<_, u64>::new();
         for attribute in &new_attributes {
-            OperationTimeValidation::validate_attribute_exists_to_set_has(snapshot, thing_manager, self, attribute)
-                .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+            OperationTimeValidation::validate_attribute_exists_to_set_has(
+                snapshot,
+                thing_manager,
+                self,
+                attribute,
+                storage_counters.clone(),
+            )
+            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
             *new_counts.entry(attribute).or_default() += 1;
         }
@@ -340,7 +380,12 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         // 1. get owned list
-        let old_attributes = thing_manager.get_has_from_thing_to_type_ordered(snapshot, self, attribute_type)?;
+        let old_attributes = thing_manager.get_has_from_thing_to_type_ordered(
+            snapshot,
+            self,
+            attribute_type,
+            storage_counters.clone(),
+        )?;
 
         let mut old_counts = BTreeMap::<_, u64>::new();
         for attribute in &old_attributes {
@@ -350,16 +395,16 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
         for attribute in old_counts.keys() {
             if !new_counts.contains_key(attribute) {
-                thing_manager.unset_has(snapshot, self, attribute)?;
+                thing_manager.unset_has(snapshot, self, attribute, storage_counters.clone())?;
             }
         }
         for (attribute, count) in new_counts {
             // Don't skip unchanged count to ensure that locks are placed correctly
-            thing_manager.set_has_count(snapshot, self, attribute, count)?;
+            thing_manager.set_has_count(snapshot, self, attribute, count, storage_counters.clone())?;
         }
 
         // 3. Overwrite owned list
-        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes)
+        thing_manager.set_has_ordered(snapshot, self, attribute_type, new_attributes, storage_counters)
     }
 
     fn unset_has_ordered(
@@ -367,9 +412,15 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_owner_exists_to_unset_has(snapshot, thing_manager, self)
-            .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
+        OperationTimeValidation::validate_owner_exists_to_unset_has(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         OperationTimeValidation::validate_object_type_owns_attribute_type(
             snapshot,
@@ -384,10 +435,12 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         match ordering {
             Ordering::Unordered => Err(Box::new(ConceptWriteError::UnsetHasOrderedOwnsUnordered {})),
             Ordering::Ordered => {
-                for attribute in self.get_has_type_ordered(snapshot, thing_manager, attribute_type)? {
-                    thing_manager.unset_has(snapshot, self, &attribute)?;
+                for attribute in
+                    self.get_has_type_ordered(snapshot, thing_manager, attribute_type, storage_counters.clone())?
+                {
+                    thing_manager.unset_has(snapshot, self, &attribute, storage_counters.clone())?;
                 }
-                thing_manager.unset_has_ordered(snapshot, self, attribute_type);
+                thing_manager.unset_has_ordered(snapshot, self, attribute_type, storage_counters);
                 Ok(())
             }
         }
@@ -425,9 +478,10 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<HashMap<AttributeType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
-        let mut has_iter = self.get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)?;
+        let mut has_iter = self.get_has_unordered(snapshot, thing_manager, storage_counters)?;
         while let Some((has, count)) = Iterator::next(&mut has_iter).transpose()? {
             let value = counts.entry(has.attribute().type_()).or_insert(0);
             *value += count;
@@ -439,9 +493,10 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
-        let mut relation_role_iter = self.get_relations_roles(snapshot, thing_manager, StorageCounters::DISABLED);
+        let mut relation_role_iter = self.get_relations_roles(snapshot, thing_manager, storage_counters);
         while let Some((_, role_type, count)) = Iterator::next(&mut relation_role_iter).transpose()? {
             let value = counts.entry(role_type).or_insert(0);
             *value += count;
@@ -457,8 +512,17 @@ pub trait ObjectAPI: ThingAPI<Vertex = ObjectVertex> + Copy + fmt::Debug {
         relation: Relation,
         start_role: RoleType,
         end_role: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        thing_manager.has_indexed_relation_player(snapshot, self, end_player, relation, start_role, end_role)
+        thing_manager.has_indexed_relation_player(
+            snapshot,
+            self,
+            end_player,
+            relation,
+            start_role,
+            end_role,
+            storage_counters,
+        )
     }
 
     fn get_indexed_relations(

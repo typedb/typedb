@@ -111,9 +111,11 @@ impl FunctionManager {
             let function =
                 SchemaFunction::build(definition_key, FunctionDefinition::build_ref(definition.unparsed.as_str()))?;
             let index_key = NameToFunctionDefinitionIndex::build(function.name().as_str()).into_storage_key();
-            let existing = snapshot.get::<BUFFER_VALUE_INLINE>(index_key.as_reference()).map_err(|source| {
-                FunctionError::FunctionRetrieval { typedb_source: FunctionReadError::FunctionRetrieval { source } }
-            })?;
+            let existing = snapshot
+                .get::<BUFFER_VALUE_INLINE>(index_key.as_reference(), StorageCounters::DISABLED)
+                .map_err(|source| FunctionError::FunctionRetrieval {
+                    typedb_source: FunctionReadError::FunctionRetrieval { source },
+                })?;
             if existing.is_some() {
                 Err(FunctionError::FunctionAlreadyExists { name: function.name(), source_span: definition.span() })?;
             } else {
@@ -253,7 +255,7 @@ impl FunctionReader {
     ) -> Result<Option<DefinitionKey>, FunctionReadError> {
         let index_key = NameToFunctionDefinitionIndex::build(name);
         let bytes_opt = snapshot
-            .get(index_key.into_storage_key().as_reference())
+            .get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED)
             .map_err(|source| FunctionReadError::FunctionRetrieval { source })?;
         Ok(bytes_opt.map(|bytes| DefinitionKey::new(Bytes::Array(bytes))))
     }
@@ -264,7 +266,7 @@ impl FunctionReader {
         name: &str,
     ) -> Result<SchemaFunction, FunctionReadError> {
         snapshot
-            .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())
+            .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference(), StorageCounters::DISABLED)
             .map_err(|source| FunctionReadError::FunctionRetrieval { source })?
             .map_or(
                 Err(FunctionReadError::FunctionIDNotFound { name: name.to_owned(), id: FunctionID::Schema(definition_key.clone()) }),
@@ -487,6 +489,7 @@ pub mod tests {
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
+    use resource::profile::StorageCounters;
     use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
 
@@ -559,7 +562,7 @@ pub mod tests {
                     .as_str()
             );
             function_manager.finalise(&snapshot, &type_manager).unwrap();
-            snapshot.commit().unwrap().unwrap()
+            snapshot.commit(StorageCounters::DISABLED).unwrap().unwrap()
         };
 
         {
@@ -625,6 +628,7 @@ pub mod tests {
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};
+        use resource::profile::StorageCounters;
         use storage::{
             durability_client::WALClient,
             snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -688,7 +692,7 @@ pub mod tests {
             cat.set_owns(&mut snapshot, type_manager, thing_manager, catname, Ordering::Unordered).unwrap();
             dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname, Ordering::Unordered).unwrap();
 
-            snapshot.commit().unwrap();
+            snapshot.commit(StorageCounters::DISABLED).unwrap();
 
             (
                 (TypeAnnotation::Entity(animal), TypeAnnotation::Entity(cat), TypeAnnotation::Entity(dog)),

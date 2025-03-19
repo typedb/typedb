@@ -58,8 +58,13 @@ impl Relation {
         RelationType::build_from_type_id(self.vertex.type_id_())
     }
 
-    pub fn has_players(self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
-        match self.get_status(snapshot, thing_manager) {
+    pub fn has_players(
+        self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> bool {
+        match self.get_status(snapshot, thing_manager, storage_counters) {
             ConceptStatus::Inserted => thing_manager.has_links(snapshot, self, true),
             ConceptStatus::Persisted => thing_manager.has_links(snapshot, self, false),
             ConceptStatus::Put => unreachable!("Encountered a `put` relation"),
@@ -73,8 +78,9 @@ impl Relation {
         thing_manager: &ThingManager,
         player: impl ObjectAPI,
         role: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        thing_manager.has_role_player(snapshot, self, player, role)
+        thing_manager.has_role_player(snapshot, self, player, role, storage_counters)
     }
 
     pub fn get_players(
@@ -103,8 +109,9 @@ impl Relation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
-        thing_manager.get_role_players_ordered(snapshot, self, role_type)
+        thing_manager.get_role_players_ordered(snapshot, self, role_type, storage_counters)
     }
 
     pub fn get_players_role_type(
@@ -126,9 +133,10 @@ impl Relation {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<HashMap<RoleType, u64>, Box<ConceptReadError>> {
         let mut counts = HashMap::new();
-        let mut rp_iter = self.get_players(snapshot, thing_manager, StorageCounters::DISABLED);
+        let mut rp_iter = self.get_players(snapshot, thing_manager, storage_counters);
         while let Some((role_player, count)) = rp_iter.next().transpose()? {
             let value = counts.entry(role_player.role_type()).or_insert(0);
             *value += count;
@@ -148,12 +156,24 @@ impl Relation {
         thing_manager: &ThingManager,
         role_type: RoleType,
         player: Object,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
-            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+        OperationTimeValidation::validate_relation_exists_to_add_player(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-        OperationTimeValidation::validate_role_player_exists_to_add_player(snapshot, thing_manager, self, player)
-            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+        OperationTimeValidation::validate_role_player_exists_to_add_player(
+            snapshot,
+            thing_manager,
+            self,
+            player,
+            storage_counters.clone(),
+        )
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -179,9 +199,9 @@ impl Relation {
 
         let distinct = self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type)?;
         if distinct {
-            thing_manager.put_links_unordered(snapshot, self, player, role_type)
+            thing_manager.put_links_unordered(snapshot, self, player, role_type, storage_counters)
         } else {
-            thing_manager.increment_links_count(snapshot, self, player, role_type)
+            thing_manager.increment_links_count(snapshot, self, player, role_type, storage_counters)
         }
     }
 
@@ -191,14 +211,20 @@ impl Relation {
         thing_manager: &ThingManager,
         role_type: RoleType,
         new_players: Vec<Object>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         match role_type.get_ordering(snapshot, thing_manager.type_manager())? {
             Ordering::Unordered => return Err(Box::new(ConceptWriteError::SetPlayersOrderedRoleUnordered {})),
             Ordering::Ordered => (),
         }
 
-        OperationTimeValidation::validate_relation_exists_to_add_player(snapshot, thing_manager, self)
-            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+        OperationTimeValidation::validate_relation_exists_to_add_player(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -224,8 +250,14 @@ impl Relation {
             OperationTimeValidation::validate_plays_is_not_abstract(snapshot, thing_manager, player, role_type)
                 .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
-            OperationTimeValidation::validate_role_player_exists_to_add_player(snapshot, thing_manager, self, player)
-                .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+            OperationTimeValidation::validate_role_player_exists_to_add_player(
+                snapshot,
+                thing_manager,
+                self,
+                player,
+                storage_counters.clone(),
+            )
+            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
             *new_counts.entry(player).or_default() += 1;
         }
@@ -240,7 +272,8 @@ impl Relation {
         .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         // 1. get owned list
-        let old_players = thing_manager.get_role_players_ordered(snapshot, self, role_type)?;
+        let old_players =
+            thing_manager.get_role_players_ordered(snapshot, self, role_type, storage_counters.clone())?;
 
         let mut old_counts = HashMap::<_, u64>::new();
         for &player in &old_players {
@@ -250,13 +283,13 @@ impl Relation {
         // 2. Delete existing but no-longer necessary has, and add new ones, with the correct counts (!)
         for &player in old_counts.keys() {
             if !new_counts.contains_key(&player) {
-                thing_manager.unset_links(snapshot, self, player, role_type)?;
+                thing_manager.unset_links(snapshot, self, player, role_type, storage_counters.clone())?;
             }
         }
 
         for (player, count) in new_counts {
             // Don't skip unchanged count to ensure that locks are placed correctly
-            thing_manager.set_links_count(snapshot, self, player, role_type, count)?;
+            thing_manager.set_links_count(snapshot, self, player, role_type, count, storage_counters.clone())?;
         }
 
         // 3. Overwrite owned list
@@ -270,8 +303,9 @@ impl Relation {
         thing_manager: &ThingManager,
         role_type: RoleType,
         player: Object,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.remove_player_many(snapshot, thing_manager, role_type, player, 1)
+        self.remove_player_many(snapshot, thing_manager, role_type, player, 1, storage_counters)
     }
 
     pub fn remove_player_many(
@@ -281,9 +315,15 @@ impl Relation {
         role_type: RoleType,
         player: Object,
         delete_count: u64,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_relation_exists_to_remove_player(snapshot, thing_manager, self)
-            .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
+        OperationTimeValidation::validate_relation_exists_to_remove_player(
+            snapshot,
+            thing_manager,
+            self,
+            storage_counters.clone(),
+        )
+        .map_err(|error| Box::new(ConceptWriteError::DataValidation { typedb_source: error }))?;
 
         OperationTimeValidation::validate_relation_type_relates_role_type(
             snapshot,
@@ -307,9 +347,9 @@ impl Relation {
         let distinct = self.type_().is_related_role_type_distinct(snapshot, thing_manager.type_manager(), role_type)?;
         if distinct {
             debug_assert_eq!(delete_count, 1);
-            thing_manager.unset_links(snapshot, self, player, role_type)
+            thing_manager.unset_links(snapshot, self, player, role_type, storage_counters)
         } else {
-            thing_manager.decrement_links_count(snapshot, self, player, role_type, delete_count)
+            thing_manager.decrement_links_count(snapshot, self, player, role_type, delete_count, storage_counters)
         }
     }
 
@@ -323,8 +363,8 @@ impl Relation {
 impl ConceptAPI for Relation {}
 
 impl ThingAPI for Relation {
-    type Vertex = ObjectVertex;
     type TypeAPI = RelationType;
+    type Vertex = ObjectVertex;
     const MIN: Self = Self::new_const(Self::Vertex::MIN_RELATION);
     const PREFIX_RANGE_INCLUSIVE: (Prefix, Prefix) = (Prefix::VertexRelation, Prefix::VertexRelation);
 
@@ -349,54 +389,61 @@ impl ThingAPI for Relation {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
+        if matches!(self.get_status(snapshot, thing_manager, storage_counters), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())
     }
 
-    fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
+    fn get_status(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> ConceptStatus {
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
-            .get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)?
+            .get_has_unordered(snapshot, thing_manager, storage_counters.clone())?
             .map_ok(|(has, _value)| has.attribute())
         {
-            thing_manager.unset_has(snapshot, self, &attr?)?;
+            thing_manager.unset_has(snapshot, self, &attr?, storage_counters.clone())?;
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
             let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.unset_has_ordered(snapshot, self, owns.attribute());
+                thing_manager.unset_has_ordered(snapshot, self, owns.attribute(), storage_counters.clone());
             }
         }
 
-        for relation_role in self.get_relations_roles(snapshot, thing_manager, StorageCounters::DISABLED) {
+        for relation_role in self.get_relations_roles(snapshot, thing_manager, storage_counters.clone()) {
             let (relation, role, _count) =
                 relation_role.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
-            thing_manager.unset_links(snapshot, relation, self, role)?;
+            thing_manager.unset_links(snapshot, relation, self, role, storage_counters.clone())?;
         }
 
         let players = self
-            .get_players(snapshot, thing_manager, StorageCounters::DISABLED)
+            .get_players(snapshot, thing_manager, storage_counters.clone())
             .map_ok(|(roleplayer, _count)| (roleplayer.role_type, roleplayer.player));
         for role_player in players {
             let (role, player) =
                 role_player.map_err(|error| Box::new(ConceptWriteError::ConceptRead { typedb_source: error }))?;
             // TODO: Deleting one player at a time, each of which will delete parts of the relation index, isn't optimal
             //       Instead, we could delete the players, then delete the entire index at once, if there is one
-            thing_manager.unset_links(snapshot, self, player, role)?;
+            thing_manager.unset_links(snapshot, self, player, role, storage_counters.clone())?;
 
             debug_assert!(!player
-                .get_indexed_relations(snapshot, thing_manager, self.type_(), StorageCounters::DISABLED)
+                .get_indexed_relations(snapshot, thing_manager, self.type_(), storage_counters.clone())
                 .is_ok_and(|mut iterator| iterator.any(|result| {
                     match result {
                         Ok(((start, _, _, _, start_role, _), _)) => start == player && start_role == role,
@@ -405,7 +452,7 @@ impl ThingAPI for Relation {
                 })));
         }
 
-        thing_manager.delete_relation(snapshot, self);
+        thing_manager.delete_relation(snapshot, self, storage_counters);
         Ok(())
     }
 

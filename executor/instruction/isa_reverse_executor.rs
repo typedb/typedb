@@ -88,14 +88,18 @@ impl IsaReverseExecutor {
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,
         });
 
-        let range =
-            self.checker.value_range_for(context, Some(row.as_reference()), self.isa.thing().as_variable().unwrap())?;
+        let range = self.checker.value_range_for(
+            context,
+            Some(row.as_reference()),
+            self.isa.thing().as_variable().unwrap(),
+            storage_counters.clone(),
+        )?;
 
         let snapshot = &**context.snapshot();
         let thing_manager = context.thing_manager();

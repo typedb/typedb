@@ -173,17 +173,17 @@ impl InstructionExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         match self {
-            Self::Is(executor) => executor.get_iterator(context, row),
-            Self::Iid(executor) => executor.get_iterator(context, row),
-            Self::TypeList(executor) => executor.get_iterator(context, row),
-            Self::Sub(executor) => executor.get_iterator(context, row),
-            Self::SubReverse(executor) => executor.get_iterator(context, row),
-            Self::Owns(executor) => executor.get_iterator(context, row),
-            Self::OwnsReverse(executor) => executor.get_iterator(context, row),
-            Self::Relates(executor) => executor.get_iterator(context, row),
-            Self::RelatesReverse(executor) => executor.get_iterator(context, row),
-            Self::Plays(executor) => executor.get_iterator(context, row),
-            Self::PlaysReverse(executor) => executor.get_iterator(context, row),
+            Self::Is(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Iid(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::TypeList(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Sub(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::SubReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Owns(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::OwnsReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Relates(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::RelatesReverse(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::Plays(executor) => executor.get_iterator(context, row, storage_counters),
+            Self::PlaysReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Isa(executor) => executor.get_iterator(context, row, storage_counters),
             Self::IsaReverse(executor) => executor.get_iterator(context, row, storage_counters),
             Self::Has(executor) => executor.get_iterator(context, row, storage_counters),
@@ -397,6 +397,7 @@ impl<T> Checker<T> {
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: Option<MaybeOwnedRow<'_>>,
         target_variable: ExecutorVariable,
+        storage_counters: StorageCounters,
     ) -> Result<(Bound<Value<'_>>, Bound<Value<'_>>), Box<ConceptReadError>> {
         fn intersect<'a>(
             (a_min, a_max): (Bound<Value<'a>>, Bound<Value<'a>>),
@@ -428,8 +429,12 @@ impl<T> Checker<T> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     if lhs.as_variable() == Some(target_variable) {
                         let rhs_variable_value = get_vertex_value(rhs, row.as_ref(), &context.parameters);
-                        let rhs_value =
-                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        let rhs_value = Self::read_value(
+                            context.snapshot.as_ref(),
+                            &context.thing_manager,
+                            &rhs_variable_value,
+                            storage_counters.clone(),
+                        )?;
                         if let Some(rhs_value) = rhs_value {
                             let comp_range = match comparator {
                                 Comparator::Equal => (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value)),
@@ -448,8 +453,12 @@ impl<T> Checker<T> {
                             rhs.as_variable().expect("RHS of comparison must be a variable") == target_variable
                         );
                         let lhs_variable_value = get_vertex_value(lhs, row.as_ref(), &context.parameters);
-                        let lhs_value =
-                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        let lhs_value = Self::read_value(
+                            context.snapshot.as_ref(),
+                            &context.thing_manager,
+                            &lhs_variable_value,
+                            storage_counters.clone(),
+                        )?;
                         if let Some(lhs_value) = lhs_value {
                             let comp_range = match comparator {
                                 Comparator::Equal => (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value)),
@@ -469,8 +478,12 @@ impl<T> Checker<T> {
                     if *lhs == target_variable {
                         let rhs_as_vertex = CheckVertex::Variable(*rhs);
                         let rhs_variable_value = get_vertex_value(&rhs_as_vertex, row.as_ref(), &context.parameters);
-                        let rhs_value =
-                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &rhs_variable_value)?;
+                        let rhs_value = Self::read_value(
+                            context.snapshot.as_ref(),
+                            &context.thing_manager,
+                            &rhs_variable_value,
+                            storage_counters.clone(),
+                        )?;
                         if let Some(rhs_value) = rhs_value {
                             let comp_range = (Bound::Included(rhs_value.clone()), Bound::Included(rhs_value));
                             range = intersect(range, comp_range);
@@ -478,8 +491,12 @@ impl<T> Checker<T> {
                     } else {
                         let lhs_as_vertex = CheckVertex::Variable(*lhs);
                         let lhs_variable_value = get_vertex_value(&lhs_as_vertex, row.as_ref(), &context.parameters);
-                        let lhs_value =
-                            Self::read_value(context.snapshot.as_ref(), &context.thing_manager, &lhs_variable_value)?;
+                        let lhs_value = Self::read_value(
+                            context.snapshot.as_ref(),
+                            &context.thing_manager,
+                            &lhs_variable_value,
+                            storage_counters.clone(),
+                        )?;
                         if let Some(lhs_value) = lhs_value {
                             let comp_range = (Bound::Included(lhs_value.clone()), Bound::Included(lhs_value));
                             range = intersect(range, comp_range);
@@ -497,11 +514,12 @@ impl<T> Checker<T> {
         snapshot: &'a impl ReadableSnapshot,
         thing_manager: &'a ThingManager,
         variable_value: &'a VariableValue<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<Option<Value<'static>>, Box<ConceptReadError>> {
         // TODO: is there a way to do this without cloning the value?
         match variable_value {
             VariableValue::Thing(Thing::Attribute(attribute)) => {
-                let value = attribute.get_value(snapshot, thing_manager)?;
+                let value = attribute.get_value(snapshot, thing_manager, storage_counters)?;
                 Ok(Some(value.into_owned()))
             }
             VariableValue::Value(value) => {
@@ -516,6 +534,7 @@ impl<T> Checker<T> {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: &MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Box<FilterFn<T>> {
         let mut filters: Vec<Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>>> =
             Vec::with_capacity(self.checks.len());
@@ -540,19 +559,29 @@ impl<T> Checker<T> {
                 &CheckInstruction::Isa { isa_kind, ref type_, ref thing } => {
                     self.filter_isa(context, row, isa_kind, type_, thing)
                 }
-                CheckInstruction::Has { owner, attribute } => self.filter_has(context, row, owner, attribute),
+                CheckInstruction::Has { owner, attribute } => {
+                    self.filter_has(context, row, owner, attribute, storage_counters.clone())
+                }
                 CheckInstruction::Links { relation, player, role } => {
-                    self.filter_links(context, row, relation, player, role)
+                    self.filter_links(context, row, relation, player, role, storage_counters.clone())
                 }
-                CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => {
-                    self.filter_indexed_relation(context, row, start_player, end_player, relation, start_role, end_role)
-                }
-                &CheckInstruction::Is { lhs, rhs } => self.filter_is(row, lhs, rhs),
+                CheckInstruction::IndexedRelation { start_player, end_player, relation, start_role, end_role } => self
+                    .filter_indexed_relation(
+                        context,
+                        row,
+                        start_player,
+                        end_player,
+                        relation,
+                        start_role,
+                        end_role,
+                        storage_counters.clone(),
+                    ),
                 &CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                     self.filter_links_dedup(row, role1, player1, role2, player2)
                 }
+                &CheckInstruction::Is { lhs, rhs } => self.filter_is(row, lhs, rhs),
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
-                    self.filter_comparison(context, row, lhs, rhs, comparator)
+                    self.filter_comparison(context, row, lhs, rhs, comparator, storage_counters.clone())
                 }
                 CheckInstruction::Unsatisfiable => Box::new(|_: &T| Ok(false)),
             };
@@ -786,6 +815,7 @@ impl<T> Checker<T> {
         row: &MaybeOwnedRow<'_>,
         owner: &CheckVertex<ExecutorVariable>,
         attribute: &CheckVertex<ExecutorVariable>,
+        storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let maybe_owner_extractor = owner.as_variable().and_then(|var| self.extractors.get(&var));
         let maybe_attribute_extractor = attribute.as_variable().and_then(|var| self.extractors.get(&var));
@@ -804,7 +834,7 @@ impl<T> Checker<T> {
                 let owner = unwrap_or_bail!(owner(value) => Thing).as_object();
                 let attribute = attribute(value);
                 let attribute = unwrap_or_bail!(&attribute => Thing).as_attribute();
-                owner.has_attribute(&*snapshot, &thing_manager, attribute)
+                owner.has_attribute(&*snapshot, &thing_manager, attribute, storage_counters.clone())
             }
         })
     }
@@ -816,6 +846,7 @@ impl<T> Checker<T> {
         relation: &CheckVertex<ExecutorVariable>,
         player: &CheckVertex<ExecutorVariable>,
         role: &CheckVertex<ExecutorVariable>,
+        storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let maybe_relation_extractor = relation.as_variable().and_then(|var| self.extractors.get(&var));
         let maybe_player_extractor = player.as_variable().and_then(|var| self.extractors.get(&var));
@@ -839,7 +870,7 @@ impl<T> Checker<T> {
                 let relation = unwrap_or_bail!(relation(value) => Thing).as_relation();
                 let player = unwrap_or_bail!(player(value) => Thing).as_object();
                 let role = unwrap_or_bail!(role(value) => Type).as_role_type();
-                relation.has_role_player(&*snapshot, &thing_manager, player, role)
+                relation.has_role_player(&*snapshot, &thing_manager, player, role, storage_counters.clone())
             }
         })
     }
@@ -853,6 +884,7 @@ impl<T> Checker<T> {
         relation: &CheckVertex<ExecutorVariable>,
         start_role: &CheckVertex<ExecutorVariable>,
         end_role: &CheckVertex<ExecutorVariable>,
+        storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let maybe_start_player_extractor = start_player.as_variable().and_then(|var| self.extractors.get(&var));
         let maybe_end_player_extractor = end_player.as_variable().and_then(|var| self.extractors.get(&var));
@@ -895,6 +927,7 @@ impl<T> Checker<T> {
                     relation,
                     start_role,
                     end_role,
+                    storage_counters.clone(),
                 )
             }
         })
@@ -982,6 +1015,7 @@ impl<T> Checker<T> {
         lhs: &CheckVertex<ExecutorVariable>,
         rhs: &CheckVertex<ExecutorVariable>,
         comparator: &Comparator,
+        storage_counters: StorageCounters,
     ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
         let maybe_lhs_extractor = lhs.as_variable().and_then(|var| self.extractors.get(&var));
         let lhs: BoxExtractor<T> = match maybe_lhs_extractor {
@@ -1000,7 +1034,7 @@ impl<T> Checker<T> {
         let thing_manager = context.thing_manager.clone();
         let rhs = match rhs {
             VariableValue::Thing(Thing::Attribute(attr)) => {
-                attr.get_value(&*snapshot, &thing_manager).map(Value::into_owned)
+                attr.get_value(&*snapshot, &thing_manager, storage_counters.clone()).map(Value::into_owned)
             }
             VariableValue::Value(value) => Ok(value.into_owned()),
             VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
@@ -1030,7 +1064,7 @@ impl<T> Checker<T> {
             let lhs = lhs(value);
             let lhs = match lhs {
                 VariableValue::Thing(Thing::Attribute(attr)) => {
-                    attr.get_value(&*snapshot, &thing_manager)?.into_owned()
+                    attr.get_value(&*snapshot, &thing_manager, storage_counters.clone())?.into_owned()
                 }
                 VariableValue::Value(value) => value,
                 VariableValue::ThingList(_) | VariableValue::ValueList(_) => unimplemented_feature!(Lists),

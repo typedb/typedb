@@ -28,6 +28,7 @@ use compiler::annotation::expression::{
 };
 use encoding::value::value::{NativeValueConvertible, Value};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::pipeline::stage::ExecutionContext;
@@ -42,12 +43,13 @@ impl ExpressionValue {
     pub(crate) fn try_from_value(
         value: VariableValue<'static>,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        storage_counters: StorageCounters,
     ) -> Result<Self, ExpressionEvaluationError> {
         match value {
             VariableValue::Value(value) => Ok(ExpressionValue::Single(value)),
             VariableValue::ValueList(values) => Ok(ExpressionValue::List(values)),
             VariableValue::Thing(Thing::Attribute(attr)) => Ok(ExpressionValue::Single(
-                attr.get_value(&**context.snapshot(), context.thing_manager())
+                attr.get_value(&**context.snapshot(), context.thing_manager(), storage_counters)
                     .map_err(|source| ExpressionEvaluationError::ConceptRead { typedb_source: source })?
                     .into_owned(),
             )),
@@ -56,7 +58,7 @@ impl ExpressionValue {
                     .iter()
                     .map(|thing| match thing {
                         Thing::Attribute(attr) => Ok(attr
-                            .get_value(&**context.snapshot(), context.thing_manager())
+                            .get_value(&**context.snapshot(), context.thing_manager(), storage_counters.clone())
                             .map_err(|source| ExpressionEvaluationError::ConceptRead { typedb_source: source })?
                             .into_owned()),
                         _ => Err(ExpressionEvaluationError::CastFailed {

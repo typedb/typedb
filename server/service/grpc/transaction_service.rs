@@ -43,7 +43,10 @@ use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
 use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
+use resource::{
+    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
+    profile::StorageCounters,
+};
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot},
@@ -1015,6 +1018,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                StorageCounters::DISABLED, // TODO
             );
             match encoded_row {
                 Ok(encoded_row) => {
@@ -1063,8 +1067,14 @@ impl TransactionService {
                 return;
             }
 
-            let encoded_document =
-                encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+            let encoded_document = encode_document(
+                document,
+                snapshot.as_ref(),
+                &type_manager,
+                &thing_manager,
+                &parameters,
+                StorageCounters::DISABLED, // TODO
+            );
             match encoded_document {
                 Ok(encoded_document) => {
                     Self::submit_response_async(&sender, StreamQueryResponse::next_document(encoded_document)).await;
@@ -1175,8 +1185,14 @@ impl TransactionService {
                     Self::submit_response_sync(sender, StreamQueryResponse::done_err(err));
                 });
 
-                let encoded_document =
-                    encode_document(document, snapshot.as_ref(), type_manager, &thing_manager, &parameters);
+                let encoded_document = encode_document(
+                    document,
+                    snapshot.as_ref(),
+                    type_manager,
+                    &thing_manager,
+                    &parameters,
+                    StorageCounters::DISABLED, // TODO
+                );
                 match encoded_document {
                     Ok(encoded_document) => {
                         Self::submit_response_sync(sender, StreamQueryResponse::next_document(encoded_document))
@@ -1236,6 +1252,7 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    StorageCounters::DISABLED, // TODO
                 );
                 match encoded_row {
                     Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),

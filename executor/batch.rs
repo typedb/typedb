@@ -18,7 +18,7 @@ use encoding::value::value::Value;
 use error::unimplemented_feature;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
+use resource::{constants::traversal::FIXED_BATCH_ROWS_MAX, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -340,7 +340,15 @@ fn get_value<'a, T: ReadableSnapshot>(
     match entry {
         VariableValue::Value(value) => Some(Cow::Borrowed(value)),
         VariableValue::Thing(Thing::Attribute(attribute)) => {
-            Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
+            Some(Cow::Owned(
+                attribute
+                    .get_value(
+                        snapshot,
+                        &context.thing_manager,
+                        StorageCounters::DISABLED, // TODO
+                    )
+                    .unwrap(),
+            ))
         }
         VariableValue::Empty => None,
         VariableValue::Type(_) | VariableValue::Thing(_) => {

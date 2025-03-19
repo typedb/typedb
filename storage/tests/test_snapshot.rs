@@ -44,11 +44,17 @@ fn snapshot_buffered_put_get() {
     snapshot.put(key_3);
     snapshot.put(key_4);
 
-    assert_eq!(snapshot.get(StorageKey::Array(key_1).as_reference()).unwrap(), Some(value_1));
-    assert_eq!(snapshot.get::<48>(StorageKey::Array(key_2).as_reference()).unwrap(), Some(ByteArray::empty()));
+    assert_eq!(
+        snapshot.get(StorageKey::Array(key_1).as_reference(), StorageCounters::DISABLED).unwrap(),
+        Some(value_1)
+    );
+    assert_eq!(
+        snapshot.get::<48>(StorageKey::Array(key_2).as_reference(), StorageCounters::DISABLED).unwrap(),
+        Some(ByteArray::empty())
+    );
 
     let key_5 = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0xff, 0xff, 0xff]));
-    assert_eq!(snapshot.get::<48>(StorageKey::Array(key_5).as_reference()).unwrap(), None);
+    assert_eq!(snapshot.get::<48>(StorageKey::Array(key_5).as_reference(), StorageCounters::DISABLED).unwrap(), None);
     snapshot.close_resources();
 }
 
@@ -96,7 +102,7 @@ fn snapshot_buffered_delete() {
 
     snapshot.delete(key_3.clone());
 
-    assert_eq!(snapshot.get::<48>(StorageKey::Array(key_3).as_reference()).unwrap(), None);
+    assert_eq!(snapshot.get::<48>(StorageKey::Array(key_3).as_reference(), StorageCounters::DISABLED).unwrap(), None);
 
     let key_prefix = StorageKeyArray::<BUFFER_KEY_INLINE>::from((Keyspace, [0x1]));
     let items: Vec<(StorageKeyArray<BUFFER_KEY_INLINE>, ByteArray<BUFFER_VALUE_INLINE>)> = snapshot
@@ -172,8 +178,14 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
 
     {
         let mut snapshot = storage.clone().open_snapshot_write();
-        assert!(snapshot.get::<48>(StorageKey::Array(key_1.clone()).as_reference()).unwrap().is_some());
-        assert!(snapshot.get::<48>(StorageKey::Array(key_2.clone()).as_reference()).unwrap().is_some());
+        assert!(snapshot
+            .get::<48>(StorageKey::Array(key_1.clone()).as_reference(), StorageCounters::DISABLED)
+            .unwrap()
+            .is_some());
+        assert!(snapshot
+            .get::<48>(StorageKey::Array(key_2.clone()).as_reference(), StorageCounters::DISABLED)
+            .unwrap()
+            .is_some());
         assert_eq!(
             2,
             snapshot
@@ -187,7 +199,10 @@ fn snapshot_read_buffered_delete_of_persisted_key() {
                 .count()
         );
         snapshot.delete(key_2.clone());
-        assert!(snapshot.get::<48>(StorageKey::Array(key_2.clone()).as_reference()).unwrap().is_none());
+        assert!(snapshot
+            .get::<48>(StorageKey::Array(key_2.clone()).as_reference(), StorageCounters::DISABLED)
+            .unwrap()
+            .is_none());
         assert_eq!(
             1,
             snapshot
@@ -224,6 +239,11 @@ fn snapshot_delete_reinserted() {
     snapshot_1.commit().unwrap();
 
     let snapshot_2 = storage.open_snapshot_read();
-    assert_eq!(snapshot_2.get::<BUFFER_KEY_INLINE>(StorageKey::Array(key_1).as_reference()).unwrap(), None);
+    assert_eq!(
+        snapshot_2
+            .get::<BUFFER_KEY_INLINE>(StorageKey::Array(key_1).as_reference(), StorageCounters::DISABLED)
+            .unwrap(),
+        None
+    );
     snapshot_2.close_resources();
 }

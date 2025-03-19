@@ -117,7 +117,7 @@ impl IsaExecutor {
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,
@@ -128,7 +128,7 @@ impl IsaExecutor {
         match self.iterate_mode {
             BinaryIterateMode::Unbound => {
                 let instances_range = if let Vertex::Variable(thing_variable) = self.isa.thing() {
-                    self.checker.value_range_for(context, Some(row), *thing_variable)?
+                    self.checker.value_range_for(context, Some(row), *thing_variable, storage_counters.clone())?
                 } else {
                     (Bound::Unbounded, Bound::Unbounded)
                 };

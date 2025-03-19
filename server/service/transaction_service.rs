@@ -30,7 +30,10 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
+use resource::{
+    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
+    profile::StorageCounters,
+};
 use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::WALClient,

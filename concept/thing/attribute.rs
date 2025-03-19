@@ -69,16 +69,22 @@ impl Attribute {
         &self,
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<Value<'_>, Box<ConceptReadError>> {
         if self.value.get().is_none() {
-            let value = thing_manager.get_attribute_value(snapshot, self)?;
+            let value = thing_manager.get_attribute_value(snapshot, self, storage_counters)?;
             let _ = self.value.set(Arc::new(value));
         }
         Ok(self.value.get().unwrap().as_reference())
     }
 
-    pub fn has_owners(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> bool {
-        match self.get_status(snapshot, thing_manager) {
+    pub fn has_owners(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> bool {
+        match self.get_status(snapshot, thing_manager, storage_counters) {
             ConceptStatus::Put | ConceptStatus::Persisted => thing_manager.has_owners(snapshot, self, false),
             ConceptStatus::Inserted | ConceptStatus::Deleted => {
                 unreachable!("Attributes are expected to always have a PUT status.")
@@ -136,6 +142,7 @@ impl ThingAPI for Attribute {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         match self.type_().get_value_type_without_source(snapshot, thing_manager.type_manager())? {
             Some(value_type) => match value_type {
@@ -155,19 +162,25 @@ impl ThingAPI for Attribute {
         Ok(())
     }
 
-    fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
+    fn get_status(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> ConceptStatus {
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for object in self.get_owners(snapshot, thing_manager, StorageCounters::DISABLED).map_ok(|(key, _)| key) {
-            thing_manager.unset_has(snapshot, object?, &self)?;
+            thing_manager.unset_has(snapshot, object?, &self, storage_counters.clone())?;
         }
-        thing_manager.delete_attribute(snapshot, self)?;
+        thing_manager.delete_attribute(snapshot, self, storage_counters)?;
 
         Ok(())
     }

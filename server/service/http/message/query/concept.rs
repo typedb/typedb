@@ -18,6 +18,7 @@ use concept::{
 };
 use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
 use error::unimplemented_feature;
+use resource::profile::StorageCounters;
 use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
@@ -181,6 +182,7 @@ pub fn encode_thing_concept(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    storage_counters: StorageCounters,
 ) -> Result<serde_json::Value, Box<ConceptReadError>> {
     let response = match thing {
         Thing::Entity(entity) => {
@@ -197,6 +199,7 @@ pub fn encode_thing_concept(
             type_manager,
             thing_manager,
             include_instance_types,
+            storage_counters,
         )?)
         .expect("Expected json value conversion"),
     };
@@ -241,8 +244,9 @@ pub fn encode_attribute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    storage_counters: StorageCounters,
 ) -> Result<AttributeResponse, Box<ConceptReadError>> {
-    let value = attribute.get_value(snapshot, thing_manager)?;
+    let value = attribute.get_value(snapshot, thing_manager, storage_counters)?;
     Ok(AttributeResponse {
         value_type: encode_value_value_type(&value),
         value: encode_value_value(value),

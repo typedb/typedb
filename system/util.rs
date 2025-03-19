@@ -201,6 +201,7 @@ pub mod answer_util {
     use database::transaction::TransactionRead;
     use executor::batch::Batch;
     use lending_iterator::LendingIterator;
+    use resource::profile::StorageCounters;
     use storage::durability_client::WALClient;
 
     pub fn collect_answer(
@@ -223,7 +224,11 @@ pub mod answer_util {
         let var_ = row.get(var).unwrap();
         let attr = var_.as_thing().as_attribute();
         let attr_ref = attr;
-        let val = attr_ref.get_value(&*tx.snapshot, &tx.thing_manager).unwrap().unwrap_string().to_string();
+        let val = attr_ref
+            .get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED)
+            .unwrap()
+            .unwrap_string()
+            .to_string();
         val
     }
 }

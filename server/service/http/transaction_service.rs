@@ -52,9 +52,12 @@ use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
 use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::{
-    diagnostics::REPORT_INTERVAL,
-    server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
+use resource::{
+    constants::{
+        diagnostics::REPORT_INTERVAL,
+        server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
+    },
+    profile::StorageCounters,
 };
 use serde_json::json;
 use storage::{
@@ -674,9 +677,15 @@ impl TransactionService {
                 }
                 return Continue(());
             } else {
-                self.blocking_read_query_worker(responder, query_options, query_pipeline, source_query)
-                    .await
-                    .expect("Expected read query completion");
+                self.blocking_read_query_worker(
+                    responder,
+                    query_options,
+                    query_pipeline,
+                    source_query,
+                    StorageCounters::DISABLED,
+                )
+                .await
+                .expect("Expected read query completion");
             }
         }
         Continue(())
@@ -726,9 +735,15 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        self.blocking_read_query_worker(responder, query_options, pipeline, query)
-                            .await
-                            .expect("Expected read query completion");
+                        self.blocking_read_query_worker(
+                            responder,
+                            query_options,
+                            pipeline,
+                            query,
+                            StorageCounters::DISABLED,
+                        )
+                        .await
+                        .expect("Expected read query completion");
                         // running read queries have no response on the main loop and will respond asynchronously
                         Continue(())
                     }
@@ -817,6 +832,7 @@ impl TransactionService {
                             responder,
                             timeout_at,
                             interrupt,
+                            StorageCounters::DISABLED,
                         )
                         .await
                     }
@@ -831,6 +847,7 @@ impl TransactionService {
                             responder,
                             timeout_at,
                             interrupt,
+                            StorageCounters::DISABLED,
                         )
                         .await
                     }
@@ -876,6 +893,7 @@ impl TransactionService {
         responder: TransactionResponder,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
+        storage_counters: StorageCounters,
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
@@ -911,6 +929,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                storage_counters.clone(),
             );
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
@@ -943,6 +962,7 @@ impl TransactionService {
         responder: TransactionResponder,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
+        storage_counters: StorageCounters,
     ) -> ControlFlow<(), ()> {
         let mut result = Vec::with_capacity(documents.len());
         let mut warning = None;
@@ -957,8 +977,14 @@ impl TransactionService {
                 }
             }
 
-            let encoded_document =
-                encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+            let encoded_document = encode_document(
+                document,
+                snapshot.as_ref(),
+                &type_manager,
+                &thing_manager,
+                &parameters,
+                storage_counters.clone(),
+            );
             match encoded_document {
                 Ok(encoded_document) => result.push(encoded_document),
                 Err(typedb_source) => {
@@ -983,6 +1009,7 @@ impl TransactionService {
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
         source_query: String,
+        storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
@@ -1017,6 +1044,7 @@ impl TransactionService {
                     snapshot,
                     &type_manager,
                     thing_manager,
+                    storage_counters,
                 )
             })
         })
@@ -1032,6 +1060,7 @@ impl TransactionService {
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
+        storage_counters: StorageCounters,
     ) -> ControlFlow<(), ()> {
         let query_profile = if pipeline.has_fetch() {
             let (iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
@@ -1066,8 +1095,14 @@ impl TransactionService {
                         TransactionServiceError::PipelineExecution { typedb_source: *typedb_source }
                     });
 
-                let encoded_document =
-                    encode_document(document, snapshot.as_ref(), type_manager, &thing_manager, &parameters);
+                let encoded_document = encode_document(
+                    document,
+                    snapshot.as_ref(),
+                    type_manager,
+                    &thing_manager,
+                    &parameters,
+                    storage_counters.clone(),
+                );
                 match encoded_document {
                     Ok(encoded_document) => result.push(encoded_document),
                     Err(typedb_source) => {
@@ -1139,6 +1174,7 @@ impl TransactionService {
                     &type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    storage_counters.clone(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),

@@ -23,6 +23,7 @@ This file should comprise a set of low-level tests relating to MVCC.
 
  */
 use bytes::byte_array::ByteArray;
+use resource::profile::StorageCounters;
 use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot},
@@ -70,28 +71,37 @@ fn test_reading_snapshots() {
     let watermark_0 = storage.snapshot_watermark();
 
     let snapshot_read_0 = storage.clone().open_snapshot_read();
-    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
 
     let mut snapshot_write_1 = storage.clone().open_snapshot_write();
     snapshot_write_1.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     let snapshot_read_01 = storage.clone().open_snapshot_read();
-    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
-    assert_eq!(*snapshot_read_01.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
+    assert_eq!(
+        *snapshot_read_01.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(),
+        VALUE_0
+    );
 
     let result_write_1 = snapshot_write_1.commit();
     assert!(result_write_1.is_ok());
 
     let snapshot_read_1 = storage.clone().open_snapshot_read();
-    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
-    assert_eq!(*snapshot_read_01.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
-    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_1);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
+    assert_eq!(
+        *snapshot_read_01.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(),
+        VALUE_0
+    );
+    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_1);
     snapshot_read_1.close_resources();
     snapshot_read_01.close_resources();
     snapshot_read_0.close_resources();
 
     // Read from further in the past.
     let snapshot_read_02 = storage.open_snapshot_read_at(watermark_0);
-    assert_eq!(*snapshot_read_02.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(
+        *snapshot_read_02.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(),
+        VALUE_0
+    );
     snapshot_read_02.close_resources();
 }
 
@@ -115,7 +125,7 @@ fn test_conflicting_update_fails() {
         let mut snapshot_write_11 = storage.clone().open_snapshot_write();
         let mut snapshot_write_21 = storage.clone().open_snapshot_write();
         snapshot_write_11.delete(key_1.clone().into_owned_array());
-        snapshot_write_21.get_required(key_1.clone()).unwrap();
+        snapshot_write_21.get_required(key_1.clone(), StorageCounters::DISABLED).unwrap();
         snapshot_write_21.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2));
         let result_write_11 = snapshot_write_11.commit();
         assert!(result_write_11.is_ok());
@@ -126,13 +136,12 @@ fn test_conflicting_update_fails() {
     {
         // Try the same, with the snapshot opened in the past
         let mut snapshot_write_at_0 = storage.open_snapshot_write_at(watermark_after_initial_write);
-        snapshot_write_at_0.get_required(key_1.clone()).unwrap();
+        snapshot_write_at_0.get_required(key_1.clone(), StorageCounters::DISABLED).unwrap();
         snapshot_write_at_0.put_val(key_2.clone().into_owned_array(), ByteArray::copy(&VALUE_2));
         let result_write_at_0 = snapshot_write_at_0.commit();
         assert!(result_write_at_0.is_err());
     }
 }
-
 #[test]
 fn test_open_snapshot_write_at() {
     init_logging();
@@ -148,7 +157,7 @@ fn test_open_snapshot_write_at() {
     snapshot_write_0.commit().unwrap();
 
     let snapshot_read_0 = storage.clone().open_snapshot_read();
-    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0);
+    assert_eq!(*snapshot_read_0.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0);
     snapshot_read_0.close_resources();
 
     let mut snapshot_write_1 = storage.clone().open_snapshot_write_at(watermark_init);
@@ -156,6 +165,6 @@ fn test_open_snapshot_write_at() {
     snapshot_write_1.commit().unwrap();
 
     let snapshot_read_1 = storage.open_snapshot_read();
-    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference()).unwrap().unwrap(), VALUE_0); // FIXME: value overwrite currently unsupported
+    assert_eq!(*snapshot_read_1.get::<128>(key_1.as_reference(), StorageCounters::DISABLED).unwrap().unwrap(), VALUE_0); // FIXME: value overwrite currently unsupported
     snapshot_read_1.close_resources();
 }

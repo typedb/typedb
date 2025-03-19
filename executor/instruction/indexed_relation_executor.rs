@@ -241,7 +241,7 @@ impl IndexedRelationExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
 
         let (relation, start_role, end_role) = self.may_get_relation_and_roles(row.as_reference());
 

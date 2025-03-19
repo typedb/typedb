@@ -79,42 +79,49 @@ impl ThingAPI for Entity {
         &self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        if matches!(self.get_status(snapshot, thing_manager), ConceptStatus::Persisted) {
+        if matches!(self.get_status(snapshot, thing_manager, storage_counters), ConceptStatus::Persisted) {
             thing_manager.lock_existing_object(snapshot, *self);
         }
         Ok(())
     }
 
-    fn get_status(&self, snapshot: &impl ReadableSnapshot, thing_manager: &ThingManager) -> ConceptStatus {
-        thing_manager.get_status(snapshot, self.vertex().into_storage_key())
+    fn get_status(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
+    ) -> ConceptStatus {
+        thing_manager.get_status(snapshot, self.vertex().into_storage_key(), storage_counters)
     }
 
     fn delete(
         self,
         snapshot: &mut impl WritableSnapshot,
         thing_manager: &ThingManager,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         for attr in self
-            .get_has_unordered(snapshot, thing_manager, StorageCounters::DISABLED)?
+            .get_has_unordered(snapshot, thing_manager, storage_counters.clone())?
             .map_ok(|(has, _count)| has.attribute())
         {
-            thing_manager.unset_has(snapshot, self, &attr?)?;
+            thing_manager.unset_has(snapshot, self, &attr?, storage_counters.clone())?;
         }
 
         for owns in self.type_().get_owns(snapshot, thing_manager.type_manager())?.iter() {
             let ordering = owns.get_ordering(snapshot, thing_manager.type_manager())?;
             if matches!(ordering, Ordering::Ordered) {
-                thing_manager.unset_has_ordered(snapshot, self, owns.attribute());
+                thing_manager.unset_has_ordered(snapshot, self, owns.attribute(), storage_counters.clone());
             }
         }
 
-        for relates in self.get_relations_roles(snapshot, thing_manager, StorageCounters::DISABLED) {
+        for relates in self.get_relations_roles(snapshot, thing_manager, storage_counters.clone()) {
             let (relation, role, _count) = relates?;
-            thing_manager.unset_links(snapshot, relation, self, role)?;
+            thing_manager.unset_links(snapshot, relation, self, role, storage_counters.clone())?;
         }
 
-        thing_manager.delete_entity(snapshot, self);
+        thing_manager.delete_entity(snapshot, self, storage_counters);
         Ok(())
     }
 

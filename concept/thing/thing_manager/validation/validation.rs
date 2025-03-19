@@ -6,6 +6,7 @@
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{label::Label, value::Value};
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

@@ -12,6 +12,7 @@ use compiler::{
     VariablePosition,
 };
 use encoding::value::value::Value;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -110,7 +111,7 @@ fn extract_value<Snapshot: ReadableSnapshot>(
         VariableValue::Thing(Thing::Attribute(attribute)) => {
             // As long as these are trivial, it's safe to unwrap
             let snapshot: &Snapshot = &context.snapshot;
-            let value = attribute.get_value(snapshot, &context.thing_manager).unwrap();
+            let value = attribute.get_value(snapshot, &context.thing_manager, StorageCounters::DISABLED).unwrap(); // TODO storage counters
             Some(value.clone().into_owned())
         }
         _ => unreachable!(),

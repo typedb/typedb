@@ -15,6 +15,7 @@ use concept::{
 use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use ir::pattern::constraint::Iid;
 use lending_iterator::{AsLendingIterator, Peekable};
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -87,9 +88,10 @@ impl IidExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IidFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -108,12 +110,12 @@ impl IidExecutor {
         let instance = if let Some(object) = ObjectVertex::try_from_bytes(bytes) {
             let object = Object::new(object);
             thing_manager
-                .instance_exists(snapshot, &object)
+                .instance_exists(snapshot, &object, storage_counters.clone())
                 .map(move |exists| exists.then_some(VariableValue::Thing(object.into())))
         } else if let Some(attribute) = AttributeVertex::try_from_bytes(bytes) {
             let attribute = Attribute::new(attribute);
             thing_manager
-                .instance_exists(snapshot, &attribute)
+                .instance_exists(snapshot, &attribute, storage_counters.clone())
                 .map(move |exists| exists.then_some(VariableValue::Thing(attribute.clone().into())))
         } else {
             Ok(None)

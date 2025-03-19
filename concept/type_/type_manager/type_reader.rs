@@ -58,6 +58,7 @@ use crate::{
 // non-instantiable
 pub enum TypeReader {}
 
+// TODO: this file needs to use StorageCounters correctly
 impl TypeReader {
     pub(crate) fn get_labelled_type<T>(
         snapshot: &impl ReadableSnapshot,
@@ -67,7 +68,7 @@ impl TypeReader {
         T: TypeAPI,
     {
         let key = LabelToTypeVertexIndex::build(label).into_storage_key();
-        match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference()) {
+        match snapshot.get::<BUFFER_KEY_INLINE>(key.as_reference(), StorageCounters::DISABLED) {
             Err(error) => Err(Box::new(ConceptReadError::SnapshotGet { source: error })),
             Ok(None) => Ok(None),
             Ok(Some(value)) => match T::from_bytes(Bytes::Array(value)) {
@@ -106,7 +107,7 @@ impl TypeReader {
     ) -> Result<Option<DefinitionKey>, Box<ConceptReadError>> {
         let index_key = NameToStructDefinitionIndex::build(name);
         let bytes = snapshot
-            .get(index_key.into_storage_key().as_reference())
+            .get(index_key.into_storage_key().as_reference(), StorageCounters::DISABLED)
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
         Ok(bytes.map(|value| DefinitionKey::new(Bytes::Array(value))))
     }
@@ -116,7 +117,10 @@ impl TypeReader {
         definition_key: DefinitionKey,
     ) -> Result<StructDefinition, Box<ConceptReadError>> {
         let bytes = snapshot
-            .get::<BUFFER_VALUE_INLINE>(definition_key.clone().into_storage_key().as_reference())
+            .get::<BUFFER_VALUE_INLINE>(
+                definition_key.clone().into_storage_key().as_reference(),
+                StorageCounters::DISABLED,
+            )
             .map_err(|source| Box::new(ConceptReadError::SnapshotGet { source }))?;
         Ok(StructDefinition::from_bytes(&bytes.unwrap()))
     }
@@ -464,9 +468,11 @@ impl TypeReader {
         PROPERTY: TypeVertexPropertyEncoding,
     {
         let property = snapshot
-            .get_mapped(PROPERTY::build_key(type_).into_storage_key().as_reference(), |value| {
-                PROPERTY::from_value_bytes(value)
-            })
+            .get_mapped(
+                PROPERTY::build_key(type_).into_storage_key().as_reference(),
+                |value| PROPERTY::from_value_bytes(value),
+                StorageCounters::DISABLED,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
         Ok(property)
     }
@@ -497,9 +503,11 @@ impl TypeReader {
         PROPERTY: TypeEdgePropertyEncoding,
     {
         let property = snapshot
-            .get_mapped(PROPERTY::build_key(edge).into_storage_key().as_reference(), |value| {
-                PROPERTY::from_value_bytes(value)
-            })
+            .get_mapped(
+                PROPERTY::build_key(edge).into_storage_key().as_reference(),
+                |value| PROPERTY::from_value_bytes(value),
+                StorageCounters::DISABLED,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
         Ok(property)
     }

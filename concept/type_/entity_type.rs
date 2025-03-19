@@ -21,7 +21,7 @@ use encoding::{
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},

@@ -18,6 +18,7 @@ use error::typedb_error;
 use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
+use resource::profile::StorageCounters;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
@@ -145,21 +146,21 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn commit(self) -> Result<(), DataCommitError> {
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
-        let result = self.try_commit();
+        let result = self.try_commit(StorageCounters::DISABLED); // TODO: counters
         database.release_write_transaction();
         result
     }
 
-    pub fn try_commit(self) -> Result<(), DataCommitError> {
+    pub fn try_commit(self, storage_counters: StorageCounters) -> Result<(), DataCommitError> {
         let mut snapshot = Arc::into_inner(self.snapshot).ok_or_else(|| DataCommitError::SnapshotInUse {})?;
-        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+        self.thing_manager.finalise(&mut snapshot, storage_counters.clone()).map_err(|errs| {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             let error = errs.into_iter().next().unwrap();
             DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }
         })?;
         drop(self.type_manager);
-        snapshot.commit().map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
+        snapshot.commit(storage_counters).map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
         Ok(())
     }
 
@@ -252,12 +253,12 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn commit(self) -> Result<(), SchemaCommitError> {
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
-        let result = self.try_commit();
+        let result = self.try_commit(StorageCounters::DISABLED); // TODO include
         database.release_schema_transaction();
         result
     }
 
-    fn try_commit(self) -> Result<(), SchemaCommitError> {
+    fn try_commit(self, storage_counters: StorageCounters) -> Result<(), SchemaCommitError> {
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
@@ -268,7 +269,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
         })?;
 
-        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+        self.thing_manager.finalise(&mut snapshot, storage_counters.clone()).map_err(|errs| {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
@@ -299,7 +300,8 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             .durably_write(self.database.storage.durability())
             .map_err(|typedb_source| StatisticsError { typedb_source })?;
 
-        let sequence_number = snapshot.commit().map_err(|typedb_source| SnapshotError { typedb_source })?;
+        let sequence_number =
+            snapshot.commit(storage_counters).map_err(|typedb_source| SnapshotError { typedb_source })?;
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {

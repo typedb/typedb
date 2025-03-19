@@ -8,6 +8,7 @@ use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::row::MaybeOwnedRow;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::grpc::concept::{encode_thing_concept, encode_type_concept, encode_value};
@@ -19,13 +20,20 @@ pub(crate) fn encode_row(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::ConceptRow, Box<ConceptReadError>> {
     // TODO: multiplicity?
     let mut encoded_row = Vec::with_capacity(columns.len());
     for (_, position) in columns {
         let variable_value = row.get(*position);
-        let row_entry =
-            encode_row_entry(variable_value, snapshot, type_manager, thing_manager, include_instance_types)?;
+        let row_entry = encode_row_entry(
+            variable_value,
+            snapshot,
+            type_manager,
+            thing_manager,
+            include_instance_types,
+            storage_counters.clone(),
+        )?;
         encoded_row.push(typedb_protocol::RowEntry { entry: Some(row_entry) });
     }
     Ok(typedb_protocol::ConceptRow { row: encoded_row })
@@ -37,6 +45,7 @@ pub(crate) fn encode_row_entry(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::row_entry::Entry, Box<ConceptReadError>> {
     match variable_value {
         VariableValue::Empty => Ok(typedb_protocol::row_entry::Entry::Empty(typedb_protocol::row_entry::Empty {})),
@@ -49,6 +58,7 @@ pub(crate) fn encode_row_entry(
             type_manager,
             thing_manager,
             include_instance_types,
+            storage_counters.clone(),
         )?)),
         VariableValue::Value(value) => Ok(typedb_protocol::row_entry::Entry::Value(encode_value(value.as_reference()))),
         VariableValue::ThingList(thing_list) => {
@@ -60,6 +70,7 @@ pub(crate) fn encode_row_entry(
                     type_manager,
                     thing_manager,
                     include_instance_types,
+                    storage_counters.clone(),
                 )?);
             }
             Ok(typedb_protocol::row_entry::Entry::ConceptList(typedb_protocol::row_entry::ConceptList {

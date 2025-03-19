@@ -21,7 +21,10 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt};
+use resource::{
+    constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt},
+    profile::StorageCounters,
+};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use type_cache::TypeCache;
 use type_writer::TypeWriter;
@@ -1306,6 +1309,7 @@ impl TypeManager {
                 thing_manager,
                 relates,
                 get_relates_default_constraints(relates, ordering, false),
+                StorageCounters::DISABLED, // TODO type operations counters
             )
             .map_err(|typedb_source| Box::new(ConceptWriteError::SchemaValidation { typedb_source }))?;
         }
@@ -1357,8 +1361,14 @@ impl TypeManager {
         OperationTimeValidation::validate_no_subtypes_for_type_deletion(snapshot, self, type_)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_no_instances_to_delete(snapshot, self, thing_manager, type_)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_instances_to_delete(
+            snapshot,
+            self,
+            thing_manager,
+            type_,
+            StorageCounters::DISABLED,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         Ok(())
     }
@@ -1424,6 +1434,7 @@ impl TypeManager {
             thing_manager,
             relates.relation(),
             role_type,
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1631,6 +1642,7 @@ impl TypeManager {
                     self,
                     thing_manager,
                     attribute_type,
+                    StorageCounters::DISABLED,
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
@@ -1647,8 +1659,14 @@ impl TypeManager {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        OperationTimeValidation::validate_value_type_can_be_unset(snapshot, self, thing_manager, attribute_type)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_value_type_can_be_unset(
+            snapshot,
+            self,
+            thing_manager,
+            attribute_type,
+            StorageCounters::DISABLED,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.unset_value_type_unchecked(snapshot, attribute_type)
     }
@@ -1717,6 +1735,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             Some(supertype),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1731,6 +1750,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             Some(supertype),
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1740,6 +1760,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1749,6 +1770,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1767,6 +1789,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             None, // supertype
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1776,6 +1799,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             None, // supertype
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1784,6 +1808,7 @@ impl TypeManager {
             self,
             thing_manager,
             subtype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1806,6 +1831,7 @@ impl TypeManager {
             thing_manager,
             object_subtype,
             Some(object_supertype),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1815,6 +1841,7 @@ impl TypeManager {
             thing_manager,
             object_subtype,
             object_supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1824,6 +1851,7 @@ impl TypeManager {
             thing_manager,
             object_subtype,
             Some(object_supertype),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1833,6 +1861,7 @@ impl TypeManager {
             thing_manager,
             object_subtype,
             object_supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1853,6 +1882,7 @@ impl TypeManager {
             thing_manager,
             object_subtype,
             None, // supertype
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1862,6 +1892,7 @@ impl TypeManager {
             thing_manager,
             object_subtype,
             None, // supertype
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1881,6 +1912,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1914,6 +1946,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1941,6 +1974,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             Some(supertype),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1950,6 +1984,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -1978,6 +2013,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             None, // supertype
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2014,6 +2050,7 @@ impl TypeManager {
                 thing_manager,
                 owns,
                 get_owns_default_constraints(owns, ordering),
+                StorageCounters::DISABLED, // TODO type operations counters
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
@@ -2040,6 +2077,7 @@ impl TypeManager {
                 thing_manager,
                 owner,
                 attribute_type,
+                StorageCounters::DISABLED,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2067,6 +2105,7 @@ impl TypeManager {
                 thing_manager,
                 plays,
                 get_plays_default_constraints(plays),
+                StorageCounters::DISABLED, // TODO counters for type operations
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
@@ -2092,6 +2131,7 @@ impl TypeManager {
                 thing_manager,
                 player,
                 role_type,
+                StorageCounters::DISABLED,
             )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2115,8 +2155,14 @@ impl TypeManager {
         OperationTimeValidation::validate_owns_distinct_constraint_ordering(snapshot, self, owns, Some(ordering), None)
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_no_owns_instances_to_set_ordering(snapshot, self, thing_manager, owns)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_owns_instances_to_set_ordering(
+            snapshot,
+            self,
+            thing_manager,
+            owns,
+            StorageCounters::DISABLED,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         TypeWriter::storage_set_owns_ordering(snapshot, owns, ordering);
         Ok(())
@@ -2164,8 +2210,14 @@ impl TypeManager {
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
         }
 
-        OperationTimeValidation::validate_no_role_instances_to_set_ordering(snapshot, self, thing_manager, role_type)
-            .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
+        OperationTimeValidation::validate_no_role_instances_to_set_ordering(
+            snapshot,
+            self,
+            thing_manager,
+            role_type,
+            StorageCounters::DISABLED,
+        )
+        .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         TypeWriter::storage_put_type_vertex_property(snapshot, role_type, Some(ordering));
         Ok(())
@@ -2194,6 +2246,7 @@ impl TypeManager {
             thing_manager,
             entity_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2223,6 +2276,7 @@ impl TypeManager {
             thing_manager,
             relation_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2252,6 +2306,7 @@ impl TypeManager {
             thing_manager,
             attribute_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2340,6 +2395,7 @@ impl TypeManager {
             thing_manager,
             relates,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2388,6 +2444,7 @@ impl TypeManager {
             thing_manager,
             attribute_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2489,6 +2546,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2498,6 +2556,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2507,6 +2566,7 @@ impl TypeManager {
             thing_manager,
             subtype,
             supertype,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2543,6 +2603,7 @@ impl TypeManager {
             self,
             thing_manager,
             role_type,
+            StorageCounters::DISABLED,
         )
             .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2551,6 +2612,7 @@ impl TypeManager {
             self,
             thing_manager,
             role_type,
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2576,6 +2638,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2610,6 +2673,7 @@ impl TypeManager {
             thing_manager,
             relates,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2662,6 +2726,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2701,6 +2766,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2728,6 +2794,7 @@ impl TypeManager {
                     thing_manager,
                     owns,
                     Annotation::Cardinality(updated_cardinality),
+                    StorageCounters::DISABLED,
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
@@ -2756,6 +2823,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2783,6 +2851,7 @@ impl TypeManager {
                     thing_manager,
                     owns,
                     Annotation::Cardinality(updated_cardinality),
+                    StorageCounters::DISABLED,
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
@@ -2811,6 +2880,7 @@ impl TypeManager {
             thing_manager,
             plays,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2838,6 +2908,7 @@ impl TypeManager {
                     thing_manager,
                     plays,
                     Annotation::Cardinality(updated_cardinality),
+                    StorageCounters::DISABLED,
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
@@ -2868,6 +2939,7 @@ impl TypeManager {
             thing_manager,
             relates,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -2899,6 +2971,7 @@ impl TypeManager {
                     thing_manager,
                     relates,
                     Annotation::Cardinality(updated_cardinality),
+                    StorageCounters::DISABLED,
                 )
                 .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
             }
@@ -2954,6 +3027,7 @@ impl TypeManager {
             thing_manager,
             attribute_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3005,6 +3079,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3105,6 +3180,7 @@ impl TypeManager {
             thing_manager,
             attribute_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3160,6 +3236,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3226,6 +3303,7 @@ impl TypeManager {
             thing_manager,
             attribute_type,
             annotation.clone(),
+            StorageCounters::DISABLED, // TODO type operations counters
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
@@ -3281,6 +3359,7 @@ impl TypeManager {
             thing_manager,
             owns,
             annotation.clone(),
+            StorageCounters::DISABLED,
         )
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
