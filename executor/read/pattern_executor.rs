@@ -65,10 +65,8 @@ impl PatternExecutor {
         tabled_functions: &mut TabledFunctions,
         suspensions: &mut QueryPatternSuspensions,
     ) -> Result<Option<FixedBatch>, ReadExecutionError> {
-        let _suspension_count_before = suspensions.record_nested_pattern_entry();
         let result = self.batch_continue(context, interrupt, tabled_functions, suspensions)?;
-        let _suspension_count_after = suspensions.record_nested_pattern_exit();
-        debug_assert!(suspensions.is_empty());
+        debug_assert!(suspensions.current_depth == 0);
         Ok(result)
     }
 
@@ -90,7 +88,7 @@ impl PatternExecutor {
     pub(crate) fn prepare_to_restore_from_suspension(&mut self, depth: usize) {
         debug_assert!(self.control_stack.is_empty());
         self.reset();
-        self.control_stack.push(ControlInstruction::RestoreSuspension(RestoreSuspension { depth: depth + 1 }));
+        self.control_stack.push(ControlInstruction::RestoreSuspension(RestoreSuspension { depth }));
     }
 
     pub(crate) fn reset(&mut self) {
@@ -395,14 +393,12 @@ impl PatternExecutor {
                 } = pattern_state_mutex_guard.deref_mut();
                 let context_with_function_parameters =
                     ExecutionContext::new(context.snapshot.clone(), context.thing_manager.clone(), parameters.clone());
-                let _suspension_count_before = function_suspensions.record_nested_pattern_entry();
                 let batch_opt = pattern_executor.batch_continue(
                     &context_with_function_parameters,
                     interrupt,
                     tabled_functions,
                     function_suspensions,
                 )?;
-                let _suspension_count_after = function_suspensions.record_nested_pattern_exit();
                 if let Some(batch) = batch_opt {
                     let deduplicated_batch = executor.add_batch_to_table(&function_state, batch);
                     Some(deduplicated_batch)
@@ -461,13 +457,14 @@ fn restore_suspension(
         }
         PatternSuspension::AtNestedPattern(suspended_nested) => {
             let NestedPatternSuspension { executor_index, input_row, branch_index, depth } = suspended_nested;
+            let nested_pattern_depth = depth + 1;
             match &mut executors[executor_index.0] {
                 StepExecutors::Nested(nested) => match nested {
                     NestedPatternExecutor::Negation(_) => {
                         unreachable!("Stratification must have been violated")
                     }
                     NestedPatternExecutor::Disjunction(disjunction) => {
-                        disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(depth);
+                        disjunction.branches[branch_index.0].prepare_to_restore_from_suspension(nested_pattern_depth);
                         control_stack.push(ControlInstruction::ExecuteDisjunction(ExecuteDisjunction {
                             index: executor_index,
                             branch_index,
@@ -475,7 +472,7 @@ fn restore_suspension(
                         }))
                     }
                     NestedPatternExecutor::InlinedFunction(inlined) => {
-                        inlined.inner.prepare_to_restore_from_suspension(depth);
+                        inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
                         control_stack.push(ControlInstruction::ExecuteInlinedFunction(ExecuteInlinedFunction {
                             index: executor_index,
                             input: input_row.into_owned(),
@@ -483,7 +480,7 @@ fn restore_suspension(
                     }
                 },
                 StepExecutors::StreamModifier(modifier) => {
-                    modifier.inner().prepare_to_restore_from_suspension(depth);
+                    modifier.inner().prepare_to_restore_from_suspension(nested_pattern_depth);
                     control_stack.push(ControlInstruction::ExecuteStreamModifier(ExecuteStreamModifier {
                         index: executor_index,
                         mapper: modifier.create_mapper(),
