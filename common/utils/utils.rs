@@ -39,20 +39,31 @@ macro_rules! enum_dispatch {
             $(Self::$variant($inner) => $block) *,
         }
     }
-
 }
 
 #[macro_export]
 macro_rules! enum_dispatch_method {
-    ($vis:vis fn $method_name:ident(&mut self $(, $arg:ident : $argtype:ty)* ) -> $ret:ty [ $($variant:ident)* ]) => {
+    ($vis:vis fn $method_name:ident(&mut self $(, $arg:ident : $argtype:ty)* ) -> $ret:ty [ $($variant:ident)* ];) => {
         $vis fn $method_name(&mut self$(, $arg : $argtype)* ) -> $ret {
-            enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
+            utils::enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
         }
     };
 
-    ( $vis:vis fn $method_name:ident(&self $(, $arg:ident : $argtype:ty)* ) -> $ret:ty [ $($variant:ident)* ] ) => {
+    ( $vis:vis fn $method_name:ident(&self $(, $arg:ident : $argtype:ty)* ) -> $ret:ty [ $($variant:ident)* ]; ) => {
         $vis fn $method_name(&self$(, $arg : $argtype)* ) -> $ret {
-            enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
+            utils::enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
         }
     };
+
+    ( $vis:vis fn $method_name:ident(self $(, $arg:ident : $argtype:ty)* ) -> $ret:ty [ $($variant:ident)* ]; ) => {
+        $vis fn $method_name(self$(, $arg : $argtype)* ) -> $ret {
+            utils::enum_dispatch!( {inner.$method_name($($arg,)*) } for inner in [ $($variant)* ] on self)
+        }
+    };
+
+    ( foreach $variants:tt [ $($vis:vis fn $method_name:ident $args:tt -> $ret:ty;)* ] ) => {
+        $( utils::enum_dispatch_method!{
+            $vis fn $method_name $args -> $ret $variants;
+        })*
+    }
 }
