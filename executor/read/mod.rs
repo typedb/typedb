@@ -9,7 +9,6 @@ use std::sync::Arc;
 use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
-use utils::deref_for_trivial_struct;
 
 use crate::{profile::QueryProfile, read::pattern_executor::PatternExecutor};
 
@@ -29,7 +28,14 @@ pub mod tabled_functions;
 
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct BranchIndex(pub usize);
-deref_for_trivial_struct!(BranchIndex => usize);
+impl std::ops::Deref for BranchIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct ExecutorIndex(pub usize);
 
@@ -38,7 +44,14 @@ impl ExecutorIndex {
         ExecutorIndex(self.0 + 1)
     }
 }
-deref_for_trivial_struct!(ExecutorIndex => usize);
+
+impl std::ops::Deref for ExecutorIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 pub(super) fn create_pattern_executor_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,

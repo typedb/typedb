@@ -5,7 +5,6 @@
  */
 
 use compiler::VariablePosition;
-use utils::impl_from_for_enum;
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
@@ -123,8 +122,18 @@ impl ReshapeForReturn {
     }
 }
 
+macro_rules! impl_from_for_enum {
+    // Nothing, we just need the compile error when the feature is deleted
+    ($enum_name:ident from $inner:ident as $variant:ident) => {
+        impl From<$inner> for $enum_name {
+            fn from(value: $inner) -> Self {
+                $enum_name::$variant(value)
+            }
+        }
+    };
+}
 macro_rules! impl_control_instruction_from_inner {
-    ($($variant:ident,)*) => { $(impl_from_for_enum!(ControlInstruction from $variant);)* };
+    ($($variant:ident,)*) => { $(impl_from_for_enum!(ControlInstruction from $variant as $variant);)* };
 }
 impl_control_instruction_from_inner!(
     PatternStart,

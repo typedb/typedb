@@ -23,7 +23,6 @@ use error::{unimplemented_feature, UnimplementedFeature};
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
-use utils::deref_for_trivial_struct;
 
 use crate::{
     batch::FixedBatch,
@@ -40,7 +39,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
-deref_for_trivial_struct!(ReshapeForReturnExecutor => [VariablePosition]);
+
 impl ReshapeForReturnExecutor {
     pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
         let mut output_batch = FixedBatch::new(self.0.len() as u32);

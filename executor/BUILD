@@ -23,7 +23,6 @@ rust_library(
         "//common/lending_iterator",
         "//common/logger",
         "//common/primitive",
-        "//common/utils",
         "//compiler",
         "//concept",
         "//encoding",
