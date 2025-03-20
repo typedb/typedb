@@ -9,7 +9,7 @@ use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead,
 use futures::future::join_all;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
-use server::typedb::Server;
+use server::server::Server;
 use test_utils::assert_matches;
 
 use crate::{

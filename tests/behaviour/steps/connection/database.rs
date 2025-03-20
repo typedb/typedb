@@ -7,7 +7,7 @@
 use cucumber::gherkin::Step;
 use futures::future::join_all;
 use macro_rules_attribute::apply;
-use server::typedb::Server;
+use server::server::Server;
 
 use crate::{generic_step, params, util, Context};
 
