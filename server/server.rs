@@ -59,6 +59,7 @@ impl Server {
     ) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         let server_config = &config.server;
+        let diagnostics_config = &config.diagnostics;
 
         Self::may_initialise_storage_directory(storage_directory)?;
 
@@ -74,7 +75,7 @@ impl Server {
                 server_id.clone(),
                 distribution,
                 version,
-                &server_config.diagnostics,
+                &diagnostics_config,
                 storage_directory.clone(),
                 server_config.is_development_mode,
             ).await
