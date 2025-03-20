@@ -233,7 +233,7 @@ typedb_error! {
         ),
         MultipleAssignments(
             44,
-            "{variable} is assigned at multiple places; first one here:",
+            "{variable} is assigned at multiple places.",
             variable: String,
             source_span: Option<Span>,
             _rest: Vec<Option<Span>>,
@@ -246,7 +246,7 @@ typedb_error! {
         ),
         UnboundRequiredVariable(
             46,
-            "{variable} is required to be bound to a value before it's used. First use here:",
+            "{variable} is required to be bound to a value before it's used.",
             variable: String,
             source_span: Option<Span>,
             _rest: Vec<Option<Span>>,
