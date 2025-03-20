@@ -380,20 +380,20 @@ impl BitOrAssign for VariableDependencyMode {
 #[derive(Clone, Debug)]
 pub struct VariableDependency<'a> {
     mode: VariableDependencyMode,
-    places: Vec<&'a Constraint<Variable>>,
+    referencing_constraints: Vec<&'a Constraint<Variable>>,
 }
 
 impl<'a> VariableDependency<'a> {
     pub fn required(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: VariableDependencyMode::Required, places: vec![constraint] }
+        Self { mode: VariableDependencyMode::Required, referencing_constraints: vec![constraint] }
     }
 
     pub fn producing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: VariableDependencyMode::Producing, places: vec![constraint] }
+        Self { mode: VariableDependencyMode::Producing, referencing_constraints: vec![constraint] }
     }
 
     pub fn referencing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: VariableDependencyMode::Referencing, places: vec![constraint] }
+        Self { mode: VariableDependencyMode::Referencing, referencing_constraints: vec![constraint] }
     }
 
     pub fn set_required(&mut self) {
@@ -416,21 +416,21 @@ impl<'a> VariableDependency<'a> {
         self.mode == VariableDependencyMode::Referencing
     }
 
-    pub fn places(&self) -> &[&Constraint<Variable>] {
-        &self.places
+    pub fn referencing_constraints(&self) -> &[&Constraint<Variable>] {
+        &self.referencing_constraints
     }
 }
 
 impl BitAndAssign for VariableDependency<'_> {
     fn bitand_assign(&mut self, rhs: Self) {
-        self.places.extend_from_slice(&rhs.places);
+        self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
         self.mode &= rhs.mode;
     }
 }
 
 impl BitOrAssign for VariableDependency<'_> {
     fn bitor_assign(&mut self, rhs: Self) {
-        self.places.extend_from_slice(&rhs.places);
+        self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
         self.mode |= rhs.mode;
     }
 }

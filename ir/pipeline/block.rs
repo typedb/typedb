@@ -136,7 +136,7 @@ fn validate_conjunction(
         // TODO error on var that's in some but not all branches of a disj
         if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
-            let spans = mode.places().iter().map(|s| s.source_span()).collect_vec();
+            let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
             return Err(Box::new(RepresentationError::UnboundRequiredVariable {
                 variable,
                 source_span: spans[0],
