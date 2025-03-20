@@ -412,6 +412,10 @@ impl<'a> VariableDependency<'a> {
         self.mode == VariableDependencyMode::Producing
     }
 
+    pub fn is_referencing(&self) -> bool {
+        self.mode == VariableDependencyMode::Referencing
+    }
+
     pub fn places(&self) -> &[&Constraint<Variable>] {
         &self.places
     }

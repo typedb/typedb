@@ -133,6 +133,7 @@ fn validate_conjunction(
     });
 
     for (var, mode) in conjunction.variable_dependency(block_context) {
+        // TODO error on var that's in some but not all branches of a disj
         if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
             let spans = mode.places().iter().map(|s| s.source_span()).collect_vec();
