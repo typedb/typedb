@@ -34,6 +34,7 @@ use crate::{
     parameters::config::{Config, DiagnosticsConfig, EncryptionConfig},
     service::typedb_service::TypeDBService,
 };
+use resource::constants::server::ASCII_LOGO;
 
 #[derive(Debug)]
 pub struct Server {
@@ -63,7 +64,7 @@ impl Server {
         let storage_directory = &config.storage.data;
         let server_config = &config.server;
 
-        Self::initialise_storage_directory(storage_directory)?;
+        Self::may_initialise_storage_directory(storage_directory)?;
 
         let server_id = Self::may_initialise_server_id(storage_directory)?;
 
@@ -71,15 +72,17 @@ impl Server {
 
         let server_address = Self::resolve_address(server_config.address.clone()).await;
 
-        let diagnostics_manager = Arc::new(Self::initialise_diagnostics(
-            deployment_id.clone(),
-            server_id.clone(),
-            distribution,
-            version,
-            &server_config.diagnostics,
-            storage_directory.clone(),
-            server_config.is_development_mode,
-        ).await);
+        let diagnostics_manager = Arc::new(
+            Self::initialise_diagnostics(
+                deployment_id.clone(),
+                server_id.clone(),
+                distribution,
+                version,
+                &server_config.diagnostics,
+                storage_directory.clone(),
+                server_config.is_development_mode,
+            ).await
+        );
 
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
@@ -154,7 +157,7 @@ impl Server {
         (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
     }
 
-    fn initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+    fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)
         } else if !storage_directory.is_dir() {
@@ -274,6 +277,7 @@ impl Server {
     }
 
     fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
+        println!("{ASCII_LOGO}"); // very important
         if is_development_mode_enabled {
             println!("Running {distribution} {version} in development mode.");
         } else {

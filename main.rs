@@ -11,7 +11,7 @@ use std::{path::PathBuf, str::FromStr};
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{ASCII_LOGO, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
+use resource::constants::server::{DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
 use sentry::ClientInitGuard as SentryGuard;
 use server::parameters::{
     cli::CLIArgs,
@@ -23,7 +23,6 @@ fn main() {
     initialise_logging_global();
 
     let cli_args = server::parameters::cli::CLIArgs::parse();
-    print_ascii_logo(); // very important
 
     let deployment_id = None;
     let is_error_reporting_enabled = cli_args.diagnostics_reporting_errors;
@@ -62,10 +61,6 @@ fn get_configuration(cli_args: CLIArgs) -> Config {
         data_dir,
         cli_args.development_mode_enabled,
     )
-}
-
-fn print_ascii_logo() {
-    println!("{ASCII_LOGO}");
 }
 
 fn setup_abort_on_panic() {
