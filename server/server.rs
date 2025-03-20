@@ -51,7 +51,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn open(
+    pub async fn create(
         config: Config,
         distribution: &'static str,
         version: &'static str,
