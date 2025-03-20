@@ -109,7 +109,6 @@ impl StreamModifierResultMapper {
 
 trait StreamModifierResultMapperTrait {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch>;
-    fn reset(&mut self);
 }
 
 #[derive(Debug)]
@@ -137,8 +136,6 @@ impl StreamModifierResultMapperTrait for SelectMapper {
             None
         }
     }
-
-    fn reset(&mut self) {}
 }
 
 #[derive(Debug)]
@@ -160,7 +157,7 @@ impl StreamModifierResultMapperTrait for OffsetMapper {
                 Some(input_batch)
             } else if (self.required - self.current) >= input_batch.len() as u64 {
                 self.current += input_batch.len() as u64;
-                Some(FixedBatch::EMPTY)
+                Some(FixedBatch::EMPTY) // Retry this instruction without returning any rows
             } else {
                 let offset_in_batch = (self.required - self.current) as u32;
                 let mut output_batch = FixedBatch::new(input_batch.width());
@@ -173,10 +170,6 @@ impl StreamModifierResultMapperTrait for OffsetMapper {
         } else {
             None
         }
-    }
-
-    fn reset(&mut self) {
-        self.current = 0
     }
 }
 
@@ -217,10 +210,6 @@ impl StreamModifierResultMapperTrait for LimitMapper {
             None
         }
     }
-
-    fn reset(&mut self) {
-        self.current = 0;
-    }
 }
 
 // Distinct
@@ -252,10 +241,6 @@ impl StreamModifierResultMapperTrait for DistinctMapper {
         }
         Some(input_batch)
     }
-
-    fn reset(&mut self) {
-        self.collector = HashSet::new() // reallocates to small
-    }
 }
 
 #[derive(Debug)]
@@ -273,13 +258,9 @@ impl StreamModifierResultMapperTrait for LastMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         if let Some(input_batch) = subquery_result {
             self.last_row = Some(input_batch.get_row(input_batch.len() - 1).into_owned());
-            Some(FixedBatch::EMPTY)
+            Some(FixedBatch::EMPTY)  // Retry this instruction without returning any rows
         } else {
             self.last_row.take().map(FixedBatch::from)
         }
-    }
-
-    fn reset(&mut self) {
-        self.last_row = None
     }
 }
