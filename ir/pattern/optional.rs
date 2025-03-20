@@ -46,8 +46,18 @@ impl Optional {
         &self,
         block_context: &BlockContext,
     ) -> HashMap<Variable, VariableDependency<'_>> {
-        // DependencyMode::Produced means "(can be) produced in all branches"
-        self.conjunction.variable_dependency(block_context).into_iter().filter(|(_, mode)| mode.is_required()).collect()
+        self.conjunction
+            .variable_dependency(block_context)
+            .into_iter()
+            .map(|(var, mut mode)| {
+                // VariableDependency::Producing means "producing in all branches".
+                // A try {} block never produces.
+                if mode.is_producing() {
+                    mode.set_referencing()
+                }
+                (var, mode)
+            })
+            .collect()
     }
 }
 
