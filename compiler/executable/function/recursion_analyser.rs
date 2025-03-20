@@ -24,7 +24,10 @@ pub(super) fn determine_compilation_order_and_tabling_types<FIDType: FunctionIDA
 ) -> Result<(Vec<FIDType>, HashMap<FIDType, FunctionTablingType>), ExecutableCompilationError> {
     let mut forward_dependencies = HashMap::new();
     to_compile.keys().try_for_each(|fid| collect_dependencies(to_compile, &mut forward_dependencies, fid))?;
-    debug_assert!(to_compile.len() == forward_dependencies.len() && to_compile.keys().all(|k| forward_dependencies.contains_key(k)));
+    debug_assert!(
+        to_compile.len() == forward_dependencies.len()
+            && to_compile.keys().all(|k| forward_dependencies.contains_key(k))
+    );
 
     // Find the post_order
     let (post_order, cycle_breakers) = determine_post_order_and_cycle_breakers(&forward_dependencies);
@@ -46,10 +49,13 @@ pub(super) fn determine_compilation_order_and_tabling_types<FIDType: FunctionIDA
 
     // Convert SCCID to TablingTypes
     debug_assert!(scc_mapping.len() == to_compile.len() && to_compile.keys().all(|k| scc_mapping.contains_key(k)));
-    let tabling_types = scc_mapping.into_iter().map(|(fid, scc)| match cycle_breakers.contains(&fid) {
-        true => (fid.clone(), FunctionTablingType::Tabled(scc)),
-         false => (fid, FunctionTablingType::Untabled)
-    }).collect::<HashMap<_, _>>();
+    let tabling_types = scc_mapping
+        .into_iter()
+        .map(|(fid, scc)| match cycle_breakers.contains(&fid) {
+            true => (fid.clone(), FunctionTablingType::Tabled(scc)),
+            false => (fid, FunctionTablingType::Untabled),
+        })
+        .collect::<HashMap<_, _>>();
 
     Ok((post_order, tabling_types))
 }
@@ -113,7 +119,14 @@ fn determine_post_order_and_cycle_breakers_impl<FIDType: FunctionIDAPI>(
 
     open.insert(fid.clone());
     forward_dependencies.get(fid).unwrap().iter().for_each(|dep| {
-        determine_post_order_and_cycle_breakers_impl(forward_dependencies, post_order, cycle_breakers, open, closed, dep);
+        determine_post_order_and_cycle_breakers_impl(
+            forward_dependencies,
+            post_order,
+            cycle_breakers,
+            open,
+            closed,
+            dep,
+        );
     });
     open.remove(fid);
     closed.insert(fid.clone());
