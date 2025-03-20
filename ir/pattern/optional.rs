@@ -50,7 +50,7 @@ impl Optional {
             .variable_dependency(block_context)
             .into_iter()
             .map(|(var, mut mode)| {
-                // VariableDependency::Producing means "producing in all branches".
+                // VariableDependency::Producing means "producing in all code paths".
                 // A try {} block never produces.
                 if mode.is_producing() {
                     mode.set_referencing()
