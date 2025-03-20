@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::ControlFlow,
+};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -132,8 +135,12 @@ fn validate_conjunction(
         lhs_category.narrowest(rhs_category).is_none()
     });
 
+    if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint(block_context) {
+        let name = variable_registry.get_variable_name(var).unwrap().clone();
+        return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
+    }
+
     for (var, mode) in conjunction.variable_dependency(block_context) {
-        // TODO error on var that's in some but not all branches of a disj
         if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
             let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();

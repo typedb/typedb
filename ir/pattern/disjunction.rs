@@ -7,17 +7,22 @@
 use std::{
     collections::{hash_map, HashMap},
     fmt,
+    ops::ControlFlow,
 };
 
 use answer::variable::Variable;
+use itertools::{ExactlyOneError, Itertools};
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
+use super::constraint::Constraint;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
+    RepresentationError,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -89,6 +94,24 @@ impl Disjunction {
             }
         }
         dependencies
+    }
+
+    pub(crate) fn find_disjoint(
+        &self,
+        block_context: &BlockContext,
+        scope_id: ScopeId,
+    ) -> ControlFlow<(Variable, Option<Span>)> {
+        let dependencies = self.variable_dependency(block_context);
+        let branch_dependencies =
+            self.conjunctions.iter().map(|conj| conj.variable_dependency(block_context)).collect_vec();
+        for (var, dep) in dependencies {
+            if dep.is_referencing() && block_context.get_scope(&var) == Some(scope_id) {
+                if let Err(mut err) = branch_dependencies.iter().filter_map(|d| d.get(&var)).exactly_one() {
+                    return ControlFlow::Break((var, err.next().unwrap().referencing_constraints()[0].source_span()));
+                }
+            }
+        }
+        ControlFlow::Continue(())
     }
 }
 

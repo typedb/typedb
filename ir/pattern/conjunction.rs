@@ -8,12 +8,14 @@ use std::{
     collections::{hash_map, HashMap},
     fmt,
     hash::{DefaultHasher, Hasher},
+    ops::ControlFlow,
 };
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
 use itertools::Itertools;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::{
     pattern::{
@@ -25,6 +27,7 @@ use crate::{
         Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
+    RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -119,6 +122,17 @@ impl Conjunction {
             }
         }
         dependencies
+    }
+
+    pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+        for nested in &self.nested_patterns {
+            match nested {
+                NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint(block_context, self.scope_id)?,
+                NestedPattern::Negation(negation) => negation.conjunction().find_disjoint(block_context)?,
+                NestedPattern::Optional(optional) => optional.conjunction().find_disjoint(block_context)?,
+            }
+        }
+        ControlFlow::Continue(())
     }
 }
 
