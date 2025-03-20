@@ -15,7 +15,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableAssignment, VariableDependency,
+        Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -83,24 +83,6 @@ impl Disjunction {
             }
         }
         dependencies
-    }
-
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
-        if self.conjunctions.is_empty() {
-            return HashMap::new();
-        }
-        let mut assignment_modes = self.conjunctions[0].variable_assignment_modes();
-        for branch in &self.conjunctions[1..] {
-            for (var, mode) in branch.variable_assignment_modes() {
-                match assignment_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() |= mode,
-                    hash_map::Entry::Vacant(entry) => {
-                        entry.insert(mode);
-                    }
-                }
-            }
-        }
-        assignment_modes
     }
 }
 

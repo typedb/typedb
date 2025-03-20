@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableAssignment, VariableDependency,
+        Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
@@ -63,10 +63,6 @@ impl Negation {
                 }
             })
             .collect()
-    }
-
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
-        self.conjunction.variable_assignment_modes()
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {

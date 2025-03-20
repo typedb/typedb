@@ -22,7 +22,7 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Scope, ScopeId, VariableAssignment, VariableDependency,
+        Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -129,22 +129,6 @@ impl Conjunction {
             }
         }
         dependencies
-    }
-
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
-        let mut assignment_modes = self.constraints.variable_assignment_modes();
-        for nested in self.nested_patterns.iter() {
-            let nested_pattern_assignment_modes = nested.variable_assignment_modes();
-            for (var, mode) in nested_pattern_assignment_modes {
-                match assignment_modes.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= mode,
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(mode);
-                    }
-                }
-            }
-        }
-        assignment_modes
     }
 }
 

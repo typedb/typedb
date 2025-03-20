@@ -10,9 +10,7 @@ use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
 use crate::{
-    pattern::{
-        disjunction::Disjunction, negation::Negation, optional::Optional, VariableAssignment, VariableDependency,
-    },
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, VariableDependency},
     pipeline::block::BlockContext,
 };
 
@@ -74,14 +72,6 @@ impl NestedPattern {
             NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency(block_context),
             NestedPattern::Negation(negation) => negation.variable_dependency(block_context),
             NestedPattern::Optional(optional) => optional.variable_dependency(block_context),
-        }
-    }
-
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
-        match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_assignment_modes(),
-            NestedPattern::Negation(negation) => negation.variable_assignment_modes(),
-            NestedPattern::Optional(optional) => optional.variable_assignment_modes(),
         }
     }
 }

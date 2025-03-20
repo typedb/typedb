@@ -13,8 +13,7 @@ use std::{
 };
 
 use answer::variable::Variable;
-use error::UnimplementedFeature;
-use itertools::{Either, Itertools};
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
@@ -24,7 +23,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, ScopeId, ValueType, VariableAssignment, VariableDependency, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, VariableDependency, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     LiteralParseError, RepresentationError,
@@ -85,44 +84,6 @@ impl Constraints {
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(VariableDependency::required(constraint));
-                    }
-                }
-            }
-            acc
-        })
-    }
-
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
-        self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
-            let ids_assigned = match constraint {
-                Constraint::ExpressionBinding(expression_binding) => Either::Left(expression_binding.ids_assigned()),
-                Constraint::FunctionCallBinding(function_call_binding) => {
-                    Either::Right(function_call_binding.ids_assigned())
-                }
-                Constraint::Is(_)
-                | Constraint::Kind(_)
-                | Constraint::Label(_)
-                | Constraint::RoleName(_)
-                | Constraint::Sub(_)
-                | Constraint::Isa(_)
-                | Constraint::Iid(_)
-                | Constraint::Links(_)
-                | Constraint::IndexedRelation(_)
-                | Constraint::Has(_)
-                | Constraint::Comparison(_)
-                | Constraint::Owns(_)
-                | Constraint::Relates(_)
-                | Constraint::Plays(_)
-                | Constraint::Value(_)
-                | Constraint::LinksDeduplication(_)
-                | Constraint::Unsatisfiable(_) => return acc,
-            };
-
-            for var in ids_assigned {
-                match acc.entry(var) {
-                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= VariableAssignment::Single(constraint),
-                    hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableAssignment::Single(constraint));
                     }
                 }
             }

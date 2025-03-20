@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableAssignment, VariableDependency,
+        Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
@@ -48,10 +48,6 @@ impl Optional {
     ) -> HashMap<Variable, VariableDependency<'_>> {
         // DependencyMode::Produced means "(can be) produced in all branches"
         self.conjunction.variable_dependency(block_context).into_iter().filter(|(_, mode)| mode.is_required()).collect()
-    }
-
-    pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {
-        self.conjunction.variable_assignment_modes()
     }
 }
 

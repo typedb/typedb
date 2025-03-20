@@ -350,40 +350,6 @@ impl fmt::Display for ValueType {
     }
 }
 
-#[derive(Clone, Debug)]
-pub(crate) enum VariableAssignment<'a> {
-    Single(&'a Constraint<Variable>),
-    Multiple(Vec<&'a Constraint<Variable>>),
-}
-
-impl BitAndAssign for VariableAssignment<'_> {
-    fn bitand_assign(&mut self, rhs: Self) {
-        match (&mut *self, rhs) {
-            (&mut Self::Single(place), Self::Single(other_place)) => *self = Self::Multiple(vec![place, other_place]),
-            (Self::Single(place), Self::Multiple(mut other_places)) => {
-                other_places.push(place);
-                *self = Self::Multiple(other_places);
-            }
-            (Self::Multiple(places), Self::Single(other_place)) => {
-                places.push(other_place);
-            }
-            (Self::Multiple(places), Self::Multiple(other_places)) => {
-                places.extend(other_places);
-            }
-        }
-    }
-}
-
-impl BitOrAssign for VariableAssignment<'_> {
-    fn bitor_assign(&mut self, rhs: Self) {
-        // we only really need to preserve one assignment across branches for diagnostic purposes
-        // or the branch with multiple assignments
-        if matches!((&self, &rhs), (Self::Single(_), Self::Multiple(_))) {
-            *self = rhs
-        }
-    }
-}
-
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum VariableDependencyMode {
     Required,

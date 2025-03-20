@@ -16,7 +16,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        Scope, ScopeId, VariableAssignment, VariableDependency,
+        Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -131,26 +131,6 @@ fn validate_conjunction(
         let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
         lhs_category.narrowest(rhs_category).is_none()
     });
-
-    for (var, mode) in conjunction.variable_assignment_modes() {
-        match mode {
-            VariableAssignment::Multiple(places) => {
-                let variable = variable_registry.get_variable_name(var).unwrap().clone();
-                let spans = places.into_iter().map(|s| s.source_span()).collect_vec();
-                return Err(Box::new(RepresentationError::MultipleAssignments {
-                    variable,
-                    source_span: spans[0],
-                    _rest: spans,
-                }));
-            }
-            VariableAssignment::Single(place) if block_context.get_scope(&var) == Some(ScopeId::INPUT) => {
-                let variable = variable_registry.get_variable_name(var).unwrap().clone();
-                let source_span = place.source_span();
-                return Err(Box::new(RepresentationError::InputVariableAssignment { variable, source_span }));
-            }
-            VariableAssignment::Single(_) => (),
-        }
-    }
 
     for (var, mode) in conjunction.variable_dependency(block_context) {
         if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
