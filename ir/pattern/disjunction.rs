@@ -38,6 +38,14 @@ impl Disjunction {
         &mut self.conjunctions
     }
 
+    pub fn named_producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.producible_variables(block_context).filter(Variable::is_named)
+    }
+
+    fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
+    }
+
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }

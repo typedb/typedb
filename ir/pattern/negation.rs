@@ -42,14 +42,11 @@ impl Negation {
         &mut self.conjunction
     }
 
-    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }
 
-    pub(crate) fn variable_dependency(
-        &self,
-        block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableDependency<'_>> {
+    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
         self.conjunction
             .variable_dependency(block_context)
             .into_iter()

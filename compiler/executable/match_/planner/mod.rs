@@ -10,7 +10,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::ExpressionBinding, ScopeId},
+    pattern::constraint::ExpressionBinding,
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
@@ -67,6 +67,7 @@ pub fn compile(
         conjunction,
         block_context,
         input_variables,
+        selected_variables,
         type_annotations,
         variable_registry,
         expressions,

@@ -83,6 +83,7 @@ pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
     variable_positions: &HashMap<Variable, VariablePosition>,
+    shared_variables: &HashSet<Variable>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -93,6 +94,7 @@ pub(crate) fn plan_conjunction<'a>(
         conjunction,
         block_context,
         variable_positions,
+        shared_variables,
         type_annotations,
         variable_registry,
         expressions,
@@ -106,6 +108,7 @@ fn make_builder<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
     variable_positions: &HashMap<Variable, VariablePosition>,
+    shared_variables: &HashSet<Variable>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -116,39 +119,55 @@ fn make_builder<'a>(
     let mut disjunction_planners = Vec::new();
     for pattern in conjunction.nested_patterns() {
         match pattern {
-            NestedPattern::Disjunction(disjunction) => disjunction_planners.push(DisjunctionPlanBuilder::new(
-                disjunction
-                    .conjunctions()
-                    .iter()
-                    .map(|conj| {
-                        make_builder(
-                            conj,
-                            block_context,
-                            variable_positions,
-                            type_annotations,
-                            variable_registry,
-                            expressions,
-                            statistics,
-                            call_cost_provider,
-                        )
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-                disjunction.required_inputs(block_context).collect(),
-            )),
-            NestedPattern::Negation(negation) => negation_subplans.push(
-                make_builder(
-                    negation.conjunction(),
-                    block_context,
-                    variable_positions,
-                    type_annotations,
-                    variable_registry,
-                    expressions,
-                    statistics,
-                    call_cost_provider,
-                )?
-                .with_inputs(negation.required_inputs(block_context))
-                .plan()?,
-            ),
+            NestedPattern::Disjunction(disjunction) => {
+                let mut shared_variables = shared_variables.clone();
+                shared_variables.extend(disjunction.named_producible_variables(block_context));
+                shared_variables.extend(disjunction.required_inputs(block_context));
+                shared_variables =
+                    shared_variables.intersection(&disjunction.referenced_variables().collect()).copied().collect();
+                let planner = DisjunctionPlanBuilder::new(
+                    disjunction
+                        .conjunctions()
+                        .iter()
+                        .map(|conj| {
+                            make_builder(
+                                conj,
+                                block_context,
+                                variable_positions,
+                                &shared_variables,
+                                type_annotations,
+                                variable_registry,
+                                expressions,
+                                statistics,
+                                call_cost_provider,
+                            )
+                        })
+                        .collect::<Result<Vec<_>, _>>()?,
+                    disjunction.required_inputs(block_context).collect(),
+                );
+                disjunction_planners.push(planner)
+            }
+            NestedPattern::Negation(negation) => {
+                let mut shared_variables = shared_variables.clone();
+                shared_variables.extend(negation.required_inputs(block_context));
+                shared_variables =
+                    shared_variables.intersection(&negation.referenced_variables().collect()).copied().collect();
+                negation_subplans.push(
+                    make_builder(
+                        negation.conjunction(),
+                        block_context,
+                        variable_positions,
+                        &shared_variables,
+                        type_annotations,
+                        variable_registry,
+                        expressions,
+                        statistics,
+                        call_cost_provider,
+                    )?
+                    .with_inputs(negation.required_inputs(block_context))
+                    .plan()?,
+                )
+            }
             NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
         }
     }
@@ -158,7 +177,7 @@ fn make_builder<'a>(
 
     plan_builder.register_variables(
         variable_positions.keys().copied(),
-        conjunction.captured_variables(block_context),
+        shared_variables.iter().copied(),
         conjunction.local_variables(block_context),
         variable_registry,
     );
