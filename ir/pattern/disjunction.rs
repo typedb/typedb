@@ -47,40 +47,42 @@ impl Disjunction {
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes(block_context)
+        dbg!(self.variable_dependency(block_context))
             .into_iter()
             .filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub(crate) fn variable_dependency_modes(
+    pub(crate) fn variable_dependency(
         &self,
         block_context: &BlockContext,
     ) -> HashMap<Variable, VariableDependency<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
-        let mut dependency_modes = self.conjunctions[0].variable_dependency_modes(block_context);
+        let mut dependencies = self.conjunctions[0].variable_dependency(block_context);
         for branch in &self.conjunctions[1..] {
-            let branch_dependency_modes = branch.variable_dependency_modes(block_context);
-            for (var, dependency) in &mut dependency_modes {
-                if !branch_dependency_modes.contains_key(var) {
+            let branch_dependency_modes = branch.variable_dependency(block_context);
+            for (var, dependency) in &mut dependencies {
+                if !branch_dependency_modes.contains_key(var) && dependency.is_producing() {
                     dependency.set_referencing()
                 }
             }
-            for (var, mut mode) in branch_dependency_modes {
-                let entry = dependency_modes.entry(var);
+            for (var, mut dependency) in branch_dependency_modes {
+                let entry = dependencies.entry(var);
                 match entry {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() |= mode;
+                        *entry.get_mut() |= dependency;
                     }
                     hash_map::Entry::Vacant(entry) => {
-                        mode.set_referencing();
-                        entry.insert(mode);
+                        if dependency.is_producing() {
+                            dependency.set_referencing();
+                        }
+                        entry.insert(dependency);
                     }
                 }
             }
         }
-        dependency_modes
+        dependencies
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {

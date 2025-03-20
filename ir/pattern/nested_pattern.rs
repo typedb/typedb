@@ -66,14 +66,14 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn variable_dependency_modes(
+    pub(crate) fn variable_dependency(
         &self,
         block_context: &BlockContext,
     ) -> HashMap<Variable, VariableDependency<'_>> {
         match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency_modes(block_context),
-            NestedPattern::Negation(negation) => negation.variable_dependency_modes(block_context),
-            NestedPattern::Optional(optional) => optional.variable_dependency_modes(block_context),
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency(block_context),
+            NestedPattern::Negation(negation) => negation.variable_dependency(block_context),
+            NestedPattern::Optional(optional) => optional.variable_dependency(block_context),
         }
     }
 

@@ -46,12 +46,12 @@ impl Negation {
         self.conjunction().referenced_variables()
     }
 
-    pub(crate) fn variable_dependency_modes(
+    pub(crate) fn variable_dependency(
         &self,
         block_context: &BlockContext,
     ) -> HashMap<Variable, VariableDependency<'_>> {
         self.conjunction
-            .variable_dependency_modes(block_context)
+            .variable_dependency(block_context)
             .into_iter()
             .filter_map(|(var, mut mode)| {
                 let status = block_context.variable_status_in_scope(var, self.scope_id());
@@ -70,9 +70,7 @@ impl Negation {
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes(block_context)
-            .into_iter()
-            .filter_map(|(v, mode)| mode.is_required().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 }
 

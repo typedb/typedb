@@ -108,23 +108,19 @@ impl Conjunction {
     }
 
     fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes(block_context)
-            .into_iter()
-            .filter_map(|(v, mode)| mode.is_producing().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency_modes(block_context)
-            .into_iter()
-            .filter_map(|(v, mode)| mode.is_required().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 
-    pub fn variable_dependency_modes(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
-        let mut data_modes = self.constraints.variable_dependency_modes();
+    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
+        let mut dependencies = self.constraints.variable_dependency();
         for nested in self.nested_patterns.iter() {
-            let nested_pattern_data_modes = nested.variable_dependency_modes(block_context);
+            let nested_pattern_data_modes = nested.variable_dependency(block_context);
             for (var, mode) in nested_pattern_data_modes {
-                match data_modes.entry(var) {
+                match dependencies.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= mode,
                     hash_map::Entry::Vacant(vacant_entry) => {
                         vacant_entry.insert(mode);
@@ -132,7 +128,7 @@ impl Conjunction {
                 }
             }
         }
-        data_modes
+        dependencies
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {

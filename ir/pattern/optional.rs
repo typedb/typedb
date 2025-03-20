@@ -42,16 +42,12 @@ impl Optional {
         &mut self.conjunction
     }
 
-    pub(crate) fn variable_dependency_modes(
+    pub(crate) fn variable_dependency(
         &self,
         block_context: &BlockContext,
     ) -> HashMap<Variable, VariableDependency<'_>> {
         // DependencyMode::Produced means "(can be) produced in all branches"
-        self.conjunction
-            .variable_dependency_modes(block_context)
-            .into_iter()
-            .filter(|(_, mode)| mode.is_required())
-            .collect()
+        self.conjunction.variable_dependency(block_context).into_iter().filter(|(_, mode)| mode.is_required()).collect()
     }
 
     pub(crate) fn variable_assignment_modes(&self) -> HashMap<Variable, VariableAssignment<'_>> {

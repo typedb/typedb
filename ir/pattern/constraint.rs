@@ -66,7 +66,7 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub(crate) fn variable_dependency_modes(&self) -> HashMap<Variable, VariableDependency<'_>> {
+    pub(crate) fn variable_dependency(&self) -> HashMap<Variable, VariableDependency<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
             for var in constraint.produced_ids() {
                 match acc.entry(var) {
