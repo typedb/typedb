@@ -205,14 +205,6 @@ impl Server {
         diagnostics_manager.submit_database_metrics(metrics);
     }
 
-    async fn resolve_address(address: String) -> SocketAddr {
-        lookup_host(address.clone())
-            .await
-            .unwrap()
-            .next()
-            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
-    }
-
     pub async fn serve(mut self) -> Result<(), ServerOpenError> {
         let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
         let authenticator = Authenticator::new(
@@ -270,6 +262,14 @@ impl Server {
             tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true);
         }
         server.tls_config(tls_config).map_err(|source| ServerOpenError::TLSConfigError { source: Arc::new(source) })
+    }
+
+    async fn resolve_address(address: String) -> SocketAddr {
+        lookup_host(address.clone())
+            .await
+            .unwrap()
+            .next()
+            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
     }
 
     fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
