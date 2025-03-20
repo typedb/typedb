@@ -12,3 +12,4 @@ pub mod authenticator_cache;
 pub mod parameters;
 mod service;
 pub mod server;
+mod error;
