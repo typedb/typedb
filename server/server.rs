@@ -39,15 +39,15 @@ pub struct Server {
     deployment_id: String,
     distribution: &'static str,
     version: &'static str,
+    config: Config,
     address: SocketAddr,
     data_directory: PathBuf,
+    diagnostics_manager: Arc<DiagnosticsManager>,
+    database_diagnostics_updater: IntervalRunner,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
     typedb_service: Option<TypeDBService>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
-    config: Config,
     shutdown_sender: tokio::sync::watch::Sender<()>,
-    _database_diagnostics_updater: IntervalRunner,
 }
 
 impl Server {
@@ -107,16 +107,16 @@ impl Server {
             version,
             address: server_address,
             data_directory: storage_directory.to_owned(),
-            user_manager,
-            authenticator_cache,
-            typedb_service: Some(typedb_service),
             diagnostics_manager: diagnostics_manager.clone(),
-            config,
-            shutdown_sender,
-            _database_diagnostics_updater: IntervalRunner::new(
+            database_diagnostics_updater: IntervalRunner::new(
                 move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
             ),
+            user_manager,
+            authenticator_cache,
+            typedb_service: Some(typedb_service),
+            shutdown_sender,
+            config,
         })
     }
 
