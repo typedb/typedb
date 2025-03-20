@@ -71,9 +71,10 @@ impl CLIArgs {
             root_ca: self.server_encryption_root_ca.clone().map(|path| PathBuf::from_str(path.as_str()).unwrap()),
         };
         let diagnostics_config = DiagnosticsConfig {
+            is_reporting_error_enabled: self.diagnostics_reporting_errors,
+            is_reporting_metric_enabled: self.diagnostics_reporting_metrics,
             is_monitoring_enabled: self.diagnostics_monitoring_enable,
             monitoring_port: self.diagnostics_monitoring_port,
-            is_reporting_enabled: self.diagnostics_reporting_metrics,
         };
         let data_dir = self.storage_data.clone().map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
         Config::customised(

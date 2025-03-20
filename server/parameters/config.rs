@@ -90,7 +90,7 @@ impl Config {
 pub struct ServerConfig {
     pub(crate) address: String,
     pub(crate) encryption: EncryptionConfig,
-    pub(crate) diagnostics: DiagnosticsConfig,
+    pub diagnostics: DiagnosticsConfig,
 
     pub is_development_mode: bool,
 }
@@ -129,14 +129,20 @@ pub(crate) struct StorageConfig {
 
 #[derive(Debug)]
 pub struct DiagnosticsConfig {
+    pub is_reporting_error_enabled: bool,
+    pub is_reporting_metric_enabled: bool,
     pub is_monitoring_enabled: bool,
     pub monitoring_port: u16,
-    pub is_reporting_enabled: bool,
 }
 
 impl DiagnosticsConfig {
     pub fn enabled() -> Self {
-        Self { is_monitoring_enabled: true, monitoring_port: MONITORING_DEFAULT_PORT, is_reporting_enabled: true }
+        Self {
+            is_reporting_error_enabled: true,
+            is_reporting_metric_enabled: true,
+            is_monitoring_enabled: true,
+            monitoring_port: MONITORING_DEFAULT_PORT,
+        }
     }
 }
 

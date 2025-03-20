@@ -20,10 +20,9 @@ use tokio::runtime::Runtime;
 fn main() {
     let args = CLIArgs::parse();
     let config = args.to_config();
-    let is_error_reporting_enabled = args.diagnostics_reporting_errors;
     initialise_abort_on_panic();
     initialise_logging_global();
-    may_initialise_error_reporting(config.server_config(), is_error_reporting_enabled);
+    may_initialise_error_reporting(config.server_config());
     create_tokio_runtime().block_on(
         async {
             let server = Server::create(
@@ -50,8 +49,8 @@ fn initialise_abort_on_panic() {
     });
 }
 
-fn may_initialise_error_reporting(server_config: &ServerConfig, is_error_reporting_enabled: bool) {
-    if is_error_reporting_enabled && !server_config.is_development_mode {
+fn may_initialise_error_reporting(server_config: &ServerConfig) {
+    if server_config.diagnostics.is_reporting_error_enabled && !server_config.is_development_mode {
         let opts = (
             SENTRY_REPORTING_URI,
             sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() },

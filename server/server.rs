@@ -186,7 +186,7 @@ impl Server {
             distribution.to_owned(),
             version.to_owned(),
             storage_directory,
-            config.is_reporting_enabled,
+            config.is_reporting_metric_enabled,
         );
         let diagnostics_manager = DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode);
         diagnostics_manager.may_start_monitoring().await;
