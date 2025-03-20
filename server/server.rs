@@ -60,15 +60,17 @@ impl Server {
         version: &'static str,
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
-        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
-
         let storage_directory = &config.storage.data;
+        let server_config = &config.server;
+
         Self::initialise_storage_directory(storage_directory)?;
 
-        let server_config = &config.server;
-        let server_id = Self::initialise_server_id(storage_directory)?;
+        let server_id = Self::may_initialise_server_id(storage_directory)?;
+
         let deployment_id = deployment_id.unwrap_or(server_id.clone());
+
         let server_address = Self::resolve_address(server_config.address.clone()).await;
+
         let diagnostics_manager = Arc::new(Self::initialise_diagnostics(
             deployment_id.clone(),
             server_id.clone(),
@@ -77,13 +79,18 @@ impl Server {
             &server_config.diagnostics,
             storage_directory.clone(),
             server_config.is_development_mode,
-        ));
+        ).await);
+
         let database_manager = DatabaseManager::new(storage_directory)
             .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
-        let system_db = initialise_system_database(&database_manager);
-        let user_manager = Arc::new(UserManager::new(system_db));
-        let authenticator_cache = Arc::new(AuthenticatorCache::new());
+        let system_database = initialise_system_database(&database_manager);
+
+        let user_manager = Arc::new(UserManager::new(system_database));
         initialise_default_user(&user_manager);
+
+        let authenticator_cache = Arc::new(AuthenticatorCache::new());
+
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
 
         let typedb_service = TypeDBService::new(
             &server_address,
@@ -93,9 +100,6 @@ impl Server {
             diagnostics_manager.clone(),
             shutdown_receiver,
         );
-
-        diagnostics_manager.may_start_monitoring().await;
-        diagnostics_manager.may_start_reporting().await;
 
         Ok(Self {
             id: server_id,
@@ -117,7 +121,7 @@ impl Server {
         })
     }
 
-    fn initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
+    fn may_initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
         let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
         if server_id_file.exists() {
             let server_id = fs::read_to_string(&server_id_file)
@@ -168,7 +172,7 @@ impl Server {
         Ok(())
     }
 
-    fn initialise_diagnostics(
+    async fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
         distribution: &'static str,
@@ -185,8 +189,11 @@ impl Server {
             storage_directory,
             config.is_reporting_enabled,
         );
+        let diagnostics_manager = DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode);
+        diagnostics_manager.may_start_monitoring().await;
+        diagnostics_manager.may_start_reporting().await;
 
-        DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode)
+        diagnostics_manager
     }
 
     fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
