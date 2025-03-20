@@ -120,8 +120,7 @@ impl PatternExecutor {
                         self.push_next_instruction(context, index.next(), batch)?;
                     }
                 }
-                ControlInstruction::MapBatchToRowsForNested(mut batch_mapper) => {
-                    let MapBatchToRowsForNested { index, mut iterator } = batch_mapper;
+                ControlInstruction::MapBatchToRowsForNested(MapBatchToRowsForNested { index, mut iterator }) => {
                     if let Some(row_result) = iterator.next() {
                         let row_owned = row_result.unwrap().into_owned();
                         control_stack.push(MapBatchToRowsForNested { index, iterator }.into());

@@ -38,21 +38,6 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
-
-impl ReshapeForReturnExecutor {
-    pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
-        let mut output_batch = FixedBatch::new(self.0.len() as u32);
-        batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
-        output_batch
-    }
-
-    fn as_mapping(&self) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
-        self.0.iter().enumerate().map(|(dst, src)| (*src, VariablePosition::new(dst as u32)))
-    }
-}
-
-#[derive(Debug)]
 pub enum StepExecutors {
     Immediate(ImmediateExecutor),
     Disjunction(DisjunctionExecutor),
@@ -119,6 +104,21 @@ impl StepExecutors {
             StepExecutors::ReshapeForReturn(step) => step,
             _ => panic!("bad unwrap"),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
+
+impl ReshapeForReturnExecutor {
+    pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
+        let mut output_batch = FixedBatch::new(self.0.len() as u32);
+        batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
+        output_batch
+    }
+
+    fn as_mapping(&self) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
+        self.0.iter().enumerate().map(|(dst, src)| (*src, VariablePosition::new(dst as u32)))
     }
 }
 
