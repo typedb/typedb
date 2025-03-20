@@ -24,7 +24,7 @@ use futures::{
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
-use server::server;
+use server::server::Server;
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;
@@ -104,7 +104,7 @@ impl<I: AsRef<Path>> cucumber::Parser<I> for SingletonParser {
 
 #[derive(Debug, Default, World)]
 pub struct Context {
-    server: Option<Arc<Mutex<typedb::Server>>>,
+    server: Option<Arc<Mutex<Server>>>,
     active_transaction: Option<ActiveTransaction>,
     active_concurrent_transactions: Vec<ActiveTransaction>,
 
@@ -176,7 +176,7 @@ impl Context {
         }
     }
 
-    pub fn server(&self) -> Option<&Mutex<typedb::Server>> {
+    pub fn server(&self) -> Option<&Mutex<Server>> {
         self.server.as_deref()
     }
 
