@@ -18,8 +18,7 @@ use server::server::Server;
 use tokio::runtime::Runtime;
 
 fn main() {
-    let args = CLIArgs::parse();
-    let config = args.to_config();
+    let config = CLIArgs::parse().to_config();
     initialise_abort_on_panic();
     initialise_logging_global();
     may_initialise_error_reporting(config.server_config());
