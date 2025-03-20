@@ -461,6 +461,6 @@ impl BitAndAssign for VariableDependency<'_> {
 impl BitOrAssign for VariableDependency<'_> {
     fn bitor_assign(&mut self, rhs: Self) {
         self.places.extend_from_slice(&rhs.places);
-        self.mode &= rhs.mode;
+        self.mode |= rhs.mode;
     }
 }
