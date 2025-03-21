@@ -22,7 +22,7 @@ def typeql():
     git_repository(
         name = "typeql",
         remote = "https://github.com/typedb/typeql",
-        commit = "d1ef6785b27681bc2296c00e61db793d41f7f018",
+        tag = "3.1.0-rc0",
     )
 
 def typedb_protocol():
