@@ -275,15 +275,12 @@ fn compile_stage(
                 call_cost_provider,
             )
             .map_err(|source| ExecutableCompilationError::PutMatchCompilation { typedb_source: source })?;
-            let selected_variable_positions = match_plan.variable_positions().iter().filter(|(var, pos)| {
-                match_plan.selected_variables().contains(pos)
-            }).map(|(var, pos)| (*var, *pos)).collect();
             let insert_plan = crate::executable::insert::executable::compile(
                 block.conjunction().constraints(),
                 input_variables,
                 insert_annotations,
                 variable_registry,
-                Some(selected_variable_positions),
+                Some(match_plan.variable_positions().clone()),
                 *source_span,
             )
             .map_err(|typedb_source| ExecutableCompilationError::PutInsertCompilation { typedb_source })?;
