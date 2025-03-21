@@ -129,16 +129,6 @@
 
 
 ## Other Improvements
-- **Fix behaviour dependency**
-
-
-- **Update README.md: update TypeQL syntax**
-
-- **Update README.md**
-
-- **Update README.md**
-
-- **Update README.md**
 
 - **Implement put stage**
   Implements the `put` stage.
@@ -182,10 +172,6 @@
   Also fixes a panic which wrongly assumed suspend points could not exist at certain modifiers.
 
 
-- **Update dependencies for 3.1**
-  Update dependencies prior to the 3.1 release
-
-
 - **Allow multiple expression assignments in different branches**
   Allows multiple expression assignments for the same variable in different branches - essential for meaningful recursive functions.
   * Assignments in different branches of the same disjunction are allowed
@@ -204,8 +190,6 @@
     match
         let $f_5 in factorial(5);
   ```
-
-- **Point dependencies to upstream**
 
 - **Implement like & contains comparators**
   Implement like & contains comparators for strings.
