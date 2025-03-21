@@ -11,7 +11,7 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use server::{parameters::config::Config, typedb};
+use server::{parameters::config::Config, server::Server};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
 
@@ -22,7 +22,7 @@ mod transaction;
 
 const DISTRIBUTION: &str = "TypeDB CE TEST";
 const VERSION: &str = "0.0.0";
-static TYPEDB: OnceCell<(TempDir, Arc<Mutex<typedb::Server>>)> = OnceCell::const_new();
+static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 #[apply(generic_step)]
 #[step("typedb starts")]
@@ -31,7 +31,7 @@ pub async fn typedb_starts(context: &mut Context) {
         .get_or_init(|| async {
             let server_dir = create_tmp_dir();
             let config = Config::new_with_data_directory(server_dir.as_ref(), true);
-            let server = typedb::Server::open(config, DISTRIBUTION, VERSION, None).await.unwrap();
+            let server = Server::create(config, DISTRIBUTION, VERSION, None).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })
         .await;

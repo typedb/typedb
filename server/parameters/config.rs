@@ -15,7 +15,8 @@ use tokio::net::lookup_host;
 
 #[derive(Debug)]
 pub struct Config {
-    pub(crate) server: ServerConfig,
+    pub server: ServerConfig,
+    pub diagnostics: DiagnosticsConfig,
     pub(crate) storage: StorageConfig,
 }
 
@@ -34,9 +35,9 @@ impl Config {
             server: ServerConfig {
                 address: DEFAULT_ADDRESS.to_string(),
                 encryption: EncryptionConfig::default(),
-                diagnostics: DiagnosticsConfig::default(),
                 is_development_mode: ServerConfig::IS_DEVELOPMENT_MODE_FORCED,
             },
+            diagnostics: DiagnosticsConfig::default(),
             storage: StorageConfig { data: typedb_dir_or_current.join(PathBuf::from_str(DEFAULT_DATA_DIR).unwrap()) },
         }
     }
@@ -74,9 +75,9 @@ impl Config {
             server: ServerConfig {
                 address: server_address,
                 encryption: encryption_config,
-                diagnostics: diagnostics_config,
                 is_development_mode,
             },
+            diagnostics: diagnostics_config,
             storage: StorageConfig { data: data_directory.to_owned() },
         }
     }
@@ -90,8 +91,6 @@ impl Config {
 pub struct ServerConfig {
     pub(crate) address: String,
     pub(crate) encryption: EncryptionConfig,
-    pub(crate) diagnostics: DiagnosticsConfig,
-
     pub is_development_mode: bool,
 }
 
@@ -129,14 +128,20 @@ pub(crate) struct StorageConfig {
 
 #[derive(Debug)]
 pub struct DiagnosticsConfig {
+    pub is_reporting_error_enabled: bool,
+    pub is_reporting_metric_enabled: bool,
     pub is_monitoring_enabled: bool,
     pub monitoring_port: u16,
-    pub is_reporting_enabled: bool,
 }
 
 impl DiagnosticsConfig {
     pub fn enabled() -> Self {
-        Self { is_monitoring_enabled: true, monitoring_port: MONITORING_DEFAULT_PORT, is_reporting_enabled: true }
+        Self {
+            is_reporting_error_enabled: true,
+            is_reporting_metric_enabled: true,
+            is_monitoring_enabled: true,
+            monitoring_port: MONITORING_DEFAULT_PORT,
+        }
     }
 }
 

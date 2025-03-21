@@ -4,9 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use std::net::SocketAddr;
-
+use std::str::FromStr;
+use std::path::PathBuf;
 use clap::{ArgAction, Parser};
 use resource::constants::server::{MONITORING_DEFAULT_PORT, VERSION};
+use crate::parameters::config::{Config, DiagnosticsConfig, EncryptionConfig};
 
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
@@ -58,4 +60,30 @@ pub struct CLIArgs {
     /// logging, restricted functionalities, and reduced performance
     #[arg(long = "development-mode.enabled", hide = true)]
     pub development_mode_enabled: bool,
+}
+
+impl CLIArgs {
+    pub fn to_config(&self) -> Config {
+        let encryption_config = EncryptionConfig {
+            enabled: self.server_encryption_enabled,
+            cert: self.server_encryption_cert.clone().map(|path| PathBuf::from_str(path.as_str()).unwrap()),
+            cert_key: self.server_encryption_cert_key.clone().map(|path| PathBuf::from_str(path.as_str()).unwrap()),
+            root_ca: self.server_encryption_root_ca.clone().map(|path| PathBuf::from_str(path.as_str()).unwrap()),
+        };
+        let diagnostics_config = DiagnosticsConfig {
+            is_reporting_error_enabled: self.diagnostics_reporting_errors,
+            is_reporting_metric_enabled: self.diagnostics_reporting_metrics,
+            is_monitoring_enabled: self.diagnostics_monitoring_enable,
+            monitoring_port: self.diagnostics_monitoring_port,
+        };
+        let data_dir = self.storage_data.clone().map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
+        Config::customised(
+            self.server_address.clone(),
+            Some(encryption_config),
+            Some(diagnostics_config),
+            data_dir,
+            self.development_mode_enabled,
+        )
+    }
+
 }
