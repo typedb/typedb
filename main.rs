@@ -9,7 +9,7 @@
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
+use resource::constants::server::{ASCII_LOGO, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
 use server::{
     parameters::{cli::CLIArgs, config::Config},
     server::Server,
@@ -22,7 +22,7 @@ fn main() {
     initialise_logging_global();
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
-        let server = Server::create(config, DISTRIBUTION, VERSION, None).await.unwrap();
+        let server = Server::create(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
         match server.serve().await {
             Ok(_) => println!("Exited."),
             Err(err) => println!("Exited with error: {:?}", err),
