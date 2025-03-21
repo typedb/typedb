@@ -75,22 +75,9 @@ pub fn compile(
         &mut variable_positions,
         source_span,
     )?;
-
-    #[cfg(debug_assertions)]
-    let mut variable_positions_tmp = variable_positions
-        .iter()
-        .filter(|(var, _)| {
-            !(variable_registry.get_variable_name(**var).is_none()
-                && variable_registry.get_variable_category(**var).unwrap() == VariableCategory::RoleType)
-        })
-        .map(|(k, v)| (k.clone(), v.clone()))
-        .collect::<HashMap<_, _>>();
-    #[cfg(not(debug_assertions))]
-    compile_error!("Remove the above");
-
     let mut connection_inserts = Vec::with_capacity(constraints.len());
     add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
-    add_links(constraints, type_annotations, &variable_positions_tmp, variable_registry, &mut connection_inserts)?;
+    add_links(constraints, type_annotations, input_variables, &variable_positions, variable_registry, &mut connection_inserts)?;
 
     Ok(InsertExecutable {
         executable_id: next_executable_id(),
@@ -276,7 +263,8 @@ fn add_has(
 fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-    variable_positions: &HashMap<Variable, VariablePosition>,
+    input_variables:  &HashMap<Variable, VariablePosition>, // Strictly input
+    variable_positions: &HashMap<Variable, VariablePosition>, // Also contains ones inserted.
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
@@ -295,7 +283,7 @@ fn add_links(
             links.source_span(),
         )?;
         let role =
-            resolve_links_role(type_annotations, variable_positions, variable_registry, &named_role_types, links)?;
+            resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
