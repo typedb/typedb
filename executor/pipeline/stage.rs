@@ -9,7 +9,7 @@ use std::sync::Arc;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
-use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
+use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::Level;
 
@@ -107,10 +107,13 @@ pub trait StageIterator:
         // specific iterators can optimise this by not iterating + collecting!
         let first = self.next();
         let mut batch = match first {
-            None => return Ok(Batch::new(0, 1)),
+            None => {
+                let batch = Batch::new(0, 0);
+                return Ok(batch);
+            }
             Some(row) => {
                 let row = row?;
-                let mut batch = Batch::new(row.len() as u32, BATCH_DEFAULT_LENGTH);
+                let mut batch = Batch::new(row.len() as u32, BATCH_DEFAULT_CAPACITY);
                 batch.append(row);
                 batch
             }
@@ -120,6 +123,10 @@ pub trait StageIterator:
             batch.append(row);
         }
         Ok(batch)
+    }
+
+    fn multiplicity_sum_if_collected(&self) -> Option<usize> {
+        None
     }
 }
 

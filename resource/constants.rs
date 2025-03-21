@@ -87,7 +87,7 @@ pub mod concept {
 pub mod traversal {
     pub const CONSTANT_CONCEPT_LIMIT: usize = 1000;
     pub const FIXED_BATCH_ROWS_MAX: u32 = 64;
-    pub const BATCH_DEFAULT_LENGTH: usize = 10;
+    pub const BATCH_DEFAULT_CAPACITY: usize = 10;
 }
 
 pub mod snapshot {

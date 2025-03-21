@@ -60,6 +60,10 @@ impl StageIterator for WrittenRowsIterator {
         debug_assert!(self.index == 0, "Truncating start of rows is not implemented");
         Ok(self.rows)
     }
+
+    fn multiplicity_sum_if_collected(&self) -> Option<usize> {
+        Some(self.rows.get_multiplicities().iter().sum::<u64>() as usize)
+    }
 }
 
 typedb_error! {

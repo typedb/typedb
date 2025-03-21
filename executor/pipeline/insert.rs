@@ -17,6 +17,7 @@ use compiler::{
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
+use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -110,20 +111,17 @@ where
 
 pub(crate) fn prepare_output_rows(
     output_width: u32,
-    input_iterator: impl StageIterator,
+    mut input_iterator: impl StageIterator,
     mapping: &Vec<(VariablePosition, VariablePosition)>,
 ) -> Result<Batch, Box<PipelineExecutionError>> {
-    // TODO: if the previous stage is not already in Collected format, this will end up temporarily allocating 2x
-    //       the current memory. However, in the other case we don't know how many rows in the output batch to allocate ahead of time
-    //       and require resizing. For now we take the simpler strategy that doesn't require resizing.
-    let input_batch = input_iterator.collect_owned()?;
-    let total_output_rows = input_batch.get_multiplicities().iter().sum::<u64>() as usize;
-    let mut output_batch = Batch::new(output_width, total_output_rows);
-    let mut input_batch_iterator = input_batch.into_iterator();
-    while let Some(row) = input_batch_iterator.next() {
+    let initial_output_batch_size = input_iterator
+        .multiplicity_sum_if_collected()
+        .map(|sum| 10 + sum + (sum / 8)) // Some breathing room to avoid re-allocation
+        .unwrap_or(BATCH_DEFAULT_CAPACITY);
+    let mut output_batch = Batch::new(output_width, initial_output_batch_size);
+    while let Some(row) = input_iterator.next().transpose()? {
         append_row_for_insert_mapped(&mut output_batch, row.as_reference(), mapping);
     }
-    debug_assert_eq!(output_batch.len(), total_output_rows);
     Ok(output_batch)
 }
 

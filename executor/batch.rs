@@ -160,31 +160,27 @@ impl LendingIterator for FixedBatchRowIterator {
 #[derive(Debug)]
 pub struct Batch {
     width: u32,
-    entries: usize,
     data: Vec<VariableValue<'static>>,
     multiplicities: Vec<u64>,
 }
 
 impl Batch {
-    pub(crate) fn new(width: u32, length: usize) -> Self {
-        let size = width as usize * length;
-        Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }
+    pub(crate) fn new(width: u32, capacity: usize) -> Self {
+        let size = width as usize * capacity;
+        Batch { width, data: Vec::with_capacity(size), multiplicities: Vec::with_capacity(capacity) }
     }
 
     pub fn len(&self) -> usize {
-        self.entries
-    }
-
-    pub(crate) fn is_full(&self) -> bool {
-        (self.entries * self.width as usize) == self.data.len()
+        debug_assert!(self.multiplicities.len() * self.width as usize == self.data.len());
+        self.multiplicities.len()
     }
 
     pub(crate) fn get_multiplicities(&self) -> &[u64] {
-        &self.multiplicities[0..self.entries]
+        &self.multiplicities
     }
 
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
-        debug_assert!(index <= self.entries);
+        debug_assert!(index <= self.len());
         let start = index * self.width as usize;
         let end = (index + 1) * self.width as usize;
         let slice = &self.data[start..end];
@@ -192,16 +188,17 @@ impl Batch {
     }
 
     pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
-        debug_assert!(index <= self.entries);
+        debug_assert!(index <= self.len());
         self.row_internal_mut(index)
     }
 
     // We keep the implementation of append & append_mapped separate
     // hoping copy_from_row does a memcpy that's better for large rows
     pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
-        let mut destination_row = self.row_internal_mut(self.entries);
+        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
+        self.multiplicities.push(1);
+        let mut destination_row = self.row_internal_mut(self.len() - 1);
         destination_row.copy_from_row(row);
-        self.entries += 1;
     }
 
     pub(crate) fn append_mapped(
@@ -209,18 +206,16 @@ impl Batch {
         row: MaybeOwnedRow<'_>,
         mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
     ) {
-        let mut destination_row = self.row_internal_mut(self.entries);
+        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
+        self.multiplicities.push(1);
+        debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
+        let mut destination_row = self.row_internal_mut(self.len() - 1);
         destination_row.copy_mapped(row, mapping);
-        self.entries += 1;
     }
 
     fn row_internal_mut(&mut self, index: usize) -> Row<'_> {
         let start = index * self.width as usize;
-        let end = (index + 1) * self.width as usize;
-        if end > self.data.len() {
-            self.data.resize(end, VariableValue::Empty);
-            self.multiplicities.resize(index + 1, 1);
-        }
+        let end = start + self.width as usize;
         let slice = &mut self.data[start..end];
         Row::new(slice, &mut self.multiplicities[index])
     }
@@ -231,6 +226,10 @@ impl Batch {
 
     pub fn into_iterator(self) -> BatchRowIterator {
         BatchRowIterator::new(self)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = MaybeOwnedRow<'_>> {
+        (0..self.len()).map(|i| self.get_row(i))
     }
 }
 
