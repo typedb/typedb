@@ -74,6 +74,10 @@
 
 
 ## Bugs Fixed
+- **Filter out unnamed variables in expected variable positions of Put stages**
+  Avoids the case where the insert stage sees a named role-type variable as both an input and a locally defined one.
+
+
 - **Fix erroneously selected named variables**
 
   We adjust the computation of bound variables after each stage in query execution and keep better track of selected variables.
