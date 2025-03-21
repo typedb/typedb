@@ -22,21 +22,13 @@ goto print_usage
 
 :startconsole
 
-where java >NUL 2>NUL
-if %ERRORLEVEL% GEQ 1 (
-  echo Java is not installed on this machine. TypeDB needs Java 11+ in order to run.
-  pause
-  exit 1
-)
-
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
-
-set "G_CP=%TYPEDB_HOME%\console\conf\;%TYPEDB_HOME%\console\lib\*"
-java %CONSOLE_JAVAOPTS% -cp "%G_CP%" -Dtypedb.dir="%TYPEDB_HOME%" com.typedb.console.TypeDBConsole %ARGS%
+%TYPEDB_HOME%\console\typedb_console_bin.exe %ARGS%
 goto exit
 
 :startserver
-%TYPEDB_HOME%\server\typedb_server_bin.exe
+for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
+%TYPEDB_HOME%\server\typedb_server_bin.exe %ARGS%
 goto exit
 
 :exit
