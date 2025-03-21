@@ -178,8 +178,8 @@ impl Server {
     async fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
-        distribution: &'static str,
-        version: &'static str,
+        distribution: &str,
+        version: &str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
         is_development_mode: bool,
