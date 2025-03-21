@@ -46,7 +46,7 @@ pub struct Server {
     database_diagnostics_updater: IntervalRunner,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
-    typedb_service: Option<TypeDBService>,
+    typedb_service: TypeDBService,
     shutdown_sender: tokio::sync::watch::Sender<()>,
 }
 
@@ -118,7 +118,7 @@ impl Server {
             ),
             user_manager,
             authenticator_cache,
-            typedb_service: Some(typedb_service),
+            typedb_service,
             shutdown_sender,
             config,
         })
@@ -218,7 +218,7 @@ impl Server {
     }
 
     pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
+        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service);
         let authenticator = Authenticator::new(
             self.user_manager.clone(),
             self.authenticator_cache.clone(),
@@ -313,6 +313,6 @@ impl Server {
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
-        self.typedb_service.as_ref().unwrap().database_manager()
+        self.typedb_service.database_manager()
     }
 }
