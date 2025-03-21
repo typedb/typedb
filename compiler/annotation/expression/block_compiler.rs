@@ -139,7 +139,7 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
     index: &mut HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>,
 ) -> Result<(), Box<ExpressionCompileError>> {
     let mut combined_indices = HashMap::<Variable, Vec<&'block ExpressionBinding<Variable>>>::new();
-    let mut branch_indices = disjunction
+    let branch_indices = disjunction
         .conjunctions()
         .iter()
         .map(|branch| {
@@ -153,7 +153,7 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
         .for_each(|(var, expressions)| combined_indices.entry(var).or_default().extend(expressions));
     combined_indices.into_iter().try_for_each(|(var, expressions)| match index.insert(var.clone(), expressions) {
         Some(_) => {
-            debug_assert!(index.get(&var).unwrap().len() > 0);
+            debug_assert!(!index.get(&var).unwrap().is_empty());
             Err(ExpressionCompileError::MultipleAssignmentsForVariable {
                 variable: context.variable_name(&var),
                 source_span: index.get(&var).unwrap().first().unwrap().source_span(),

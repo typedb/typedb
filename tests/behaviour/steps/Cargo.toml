@@ -39,6 +39,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.logger]
+		path = "../../../common/logger"
+		features = []
+		default-features = false
+
 	[dependencies.storage]
 		path = "../../../storage"
 		features = []

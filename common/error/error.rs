@@ -45,7 +45,7 @@ pub trait TypeDBError {
 
     fn format_code_and_description(&self) -> String {
         if let Some(query) = self.source_query() {
-            if let Some((line_col, _)) = self.bottom_source_span().map(|span| query.line_col(span)).flatten() {
+            if let Some((line_col, _)) = self.bottom_source_span().and_then(|span| query.line_col(span)) {
                 if let Some(excerpt) = query.extract_annotated_line_col(
                     // note: span line and col are 1-indexed,must adjust to 0-offset
                     line_col.line as usize - 1,
@@ -69,7 +69,7 @@ pub trait TypeDBError {
 
     // return most-specific span available
     fn bottom_source_span(&self) -> Option<::typeql::common::Span> {
-        self.source_typedb_error().map(|err| err.bottom_source_span()).flatten().or_else(|| self.source_span())
+        self.source_typedb_error().and_then(|err| err.bottom_source_span()).or_else(|| self.source_span())
     }
 }
 

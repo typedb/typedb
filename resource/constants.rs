@@ -124,7 +124,7 @@ pub mod diagnostics {
 
     use crate::constants::common::SECONDS_IN_HOUR;
 
-    pub const UNKNOWN_STR: &'static str = "Unknown";
+    pub const UNKNOWN_STR: &str = "Unknown";
 
     pub const SERVICE_REPORTING_URI: &str = "https://diagnostics.typedb.com/";
     pub const POSTHOG_BATCH_REPORTING_URI: &str = "https://us.i.posthog.com/batch/";

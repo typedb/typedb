@@ -97,8 +97,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         context: &BlockContext,
         parent_vertices: &VertexAnnotations,
     ) -> Result<(), TypeInferenceError> {
-        let vars_in_pattern =
-            graph.conjunction.referenced_variables().map(|v| Vertex::Variable(v)).collect::<HashSet<_>>();
+        let vars_in_pattern = graph.conjunction.referenced_variables().map(Vertex::Variable).collect::<HashSet<_>>();
         for (vertex, parent_annotations) in parent_vertices.iter() {
             if vars_in_pattern.contains(vertex) {
                 graph.vertices.insert(vertex.clone(), parent_annotations.clone());

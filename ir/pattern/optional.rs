@@ -4,16 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
+use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId,
+        Scope, ScopeId, VariableDependency,
     },
-    pipeline::block::BlockBuilderContext,
+    pipeline::block::{BlockBuilderContext, BlockContext},
 };
 
 #[derive(Debug, Clone)]
@@ -39,6 +40,24 @@ impl Optional {
 
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
+    }
+
+    pub(crate) fn variable_dependency(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, VariableDependency<'_>> {
+        self.conjunction
+            .variable_dependency(block_context)
+            .into_iter()
+            .map(|(var, mut mode)| {
+                // VariableDependency::Producing means "producing in all code paths".
+                // A try {} block never produces.
+                if mode.is_producing() {
+                    mode.set_referencing()
+                }
+                (var, mode)
+            })
+            .collect()
     }
 }
 

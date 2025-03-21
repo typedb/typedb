@@ -34,7 +34,7 @@ pub fn translate_typeql_function(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
     function: &typeql::Function,
-) -> Result<Function, FunctionRepresentationError> {
+) -> Result<Function, Box<FunctionRepresentationError>> {
     translate_function_from(snapshot, function_index, &function.signature, &function.block, Some(function))
 }
 
@@ -44,7 +44,7 @@ pub fn translate_function_from(
     signature: &typeql::schema::definable::function::Signature,
     block: &FunctionBlock,
     declaration: Option<&typeql::Function>,
-) -> Result<Function, FunctionRepresentationError> {
+) -> Result<Function, Box<FunctionRepresentationError>> {
     let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
         FunctionRepresentationError::IllegalKeywordAsIdentifier {
             identifier: signature.ident.as_str_unchecked().to_owned(),
@@ -76,10 +76,10 @@ pub fn translate_function_from(
             }
         }) {
             let argument_variable = context.variable_registry.get_variable_name(arg).unwrap();
-            return Err(FunctionRepresentationError::FunctionArgumentUnused {
+            return Err(Box::new(FunctionRepresentationError::FunctionArgumentUnused {
                 argument_variable: argument_variable.clone(),
                 declaration: declaration.unwrap().clone(),
-            });
+            }));
         }
     }
     // Check return declaration aligns with definition
@@ -97,10 +97,10 @@ pub fn translate_function_from(
         _ => false,
     };
     if !returns_consistent {
-        return Err(FunctionRepresentationError::InconsistentReturn {
+        return Err(Box::new(FunctionRepresentationError::InconsistentReturn {
             signature: signature.clone(),
             return_: block.return_stmt.clone(),
-        });
+        }));
     }
     Ok(Function::new(
         checked_name,
@@ -119,7 +119,7 @@ pub(crate) fn translate_function_block(
     context: &mut TranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
-) -> Result<FunctionBody, FunctionRepresentationError> {
+) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
     let (stages, fetch) =
         translate_pipeline_stages(snapshot, function_index, context, value_parameters, &function_block.stages)
             .map_err(|err| FunctionRepresentationError::BlockDefinition {
@@ -143,10 +143,10 @@ pub(crate) fn translate_function_block(
     });
 
     if has_illegal_stages {
-        return Err(FunctionRepresentationError::IllegalStages { declaration: function_block.clone() });
+        return Err(Box::new(FunctionRepresentationError::IllegalStages { declaration: function_block.clone() }));
     }
     if fetch.is_some() {
-        return Err(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() });
+        return Err(Box::new(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() }));
     }
 
     let return_operation = match &function_block.return_stmt {

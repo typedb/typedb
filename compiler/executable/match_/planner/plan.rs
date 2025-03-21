@@ -83,6 +83,7 @@ pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
     variable_positions: &HashMap<Variable, VariablePosition>,
+    shared_variables: &HashSet<Variable>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -93,6 +94,7 @@ pub(crate) fn plan_conjunction<'a>(
         conjunction,
         block_context,
         variable_positions,
+        shared_variables,
         type_annotations,
         variable_registry,
         expressions,
@@ -106,6 +108,7 @@ fn make_builder<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
     variable_positions: &HashMap<Variable, VariablePosition>,
+    shared_variables: &HashSet<Variable>,
     type_annotations: &'a TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -116,56 +119,72 @@ fn make_builder<'a>(
     let mut disjunction_planners = Vec::new();
     for pattern in conjunction.nested_patterns() {
         match pattern {
-            NestedPattern::Disjunction(disjunction) => disjunction_planners.push(DisjunctionPlanBuilder::new(
-                disjunction
-                    .conjunctions()
-                    .iter()
-                    .map(|conj| {
-                        make_builder(
-                            conj,
-                            block_context,
-                            variable_positions,
-                            type_annotations,
-                            variable_registry,
-                            expressions,
-                            statistics,
-                            call_cost_provider,
-                        )
-                    })
-                    .collect::<Result<Vec<_>, _>>()?,
-            )),
-            NestedPattern::Negation(negation) => negation_subplans.push(
-                make_builder(
-                    negation.conjunction(),
-                    block_context,
-                    variable_positions,
-                    type_annotations,
-                    variable_registry,
-                    expressions,
-                    statistics,
-                    call_cost_provider,
-                )?
-                .with_inputs(negation.conjunction().captured_variables(block_context))
-                .plan()?,
-            ),
+            NestedPattern::Disjunction(disjunction) => {
+                let mut shared_variables = shared_variables.clone();
+                shared_variables.extend(disjunction.named_producible_variables(block_context));
+                shared_variables.extend(disjunction.required_inputs(block_context));
+                shared_variables =
+                    shared_variables.intersection(&disjunction.referenced_variables().collect()).copied().collect();
+                let planner = DisjunctionPlanBuilder::new(
+                    disjunction
+                        .conjunctions()
+                        .iter()
+                        .map(|conj| {
+                            make_builder(
+                                conj,
+                                block_context,
+                                variable_positions,
+                                &shared_variables,
+                                type_annotations,
+                                variable_registry,
+                                expressions,
+                                statistics,
+                                call_cost_provider,
+                            )
+                        })
+                        .collect::<Result<Vec<_>, _>>()?,
+                    disjunction.required_inputs(block_context).collect(),
+                );
+                disjunction_planners.push(planner)
+            }
+            NestedPattern::Negation(negation) => {
+                let mut shared_variables = shared_variables.clone();
+                shared_variables.extend(negation.required_inputs(block_context));
+                shared_variables =
+                    shared_variables.intersection(&negation.referenced_variables().collect()).copied().collect();
+                negation_subplans.push(
+                    make_builder(
+                        negation.conjunction(),
+                        block_context,
+                        variable_positions,
+                        &shared_variables,
+                        type_annotations,
+                        variable_registry,
+                        expressions,
+                        statistics,
+                        call_cost_provider,
+                    )?
+                    .with_inputs(negation.required_inputs(block_context))
+                    .plan()?,
+                )
+            }
             NestedPattern::Optional(_) => unimplemented_feature!(Optionals),
         }
     }
 
-    let mut plan_builder = ConjunctionPlanBuilder::new(
-        Vec::from_iter(conjunction.captured_required_variables(block_context)),
-        type_annotations,
-        statistics,
-    );
+    let mut plan_builder =
+        ConjunctionPlanBuilder::new(conjunction.required_inputs(block_context).collect(), type_annotations, statistics);
+
     plan_builder.register_variables(
         variable_positions.keys().copied(),
-        conjunction.captured_variables(block_context),
+        shared_variables.iter().copied(),
         conjunction.local_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
     plan_builder.register_negations(negation_subplans);
     plan_builder.register_disjunctions(disjunction_planners);
+
     Ok(plan_builder)
 }
 
@@ -1486,6 +1505,7 @@ impl ConjunctionPlan<'_> {
     ) -> Result<(), QueryPlanningError> {
         match &self.graph.elements()[&VertexId::Pattern(pattern)] {
             PlannerVertex::Variable(_) => unreachable!("encountered variable @ pattern id {pattern:?}"),
+
             PlannerVertex::FunctionCall(call_planner) => {
                 // We push exactly the same as if it weren't a check.
                 let call_binding = call_planner.call_binding;
@@ -1515,6 +1535,7 @@ impl ConjunctionPlan<'_> {
                 });
                 match_builder.push_step(&HashMap::new(), step_builder.into());
             }
+
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
                     match_builder.current_outputs.iter().copied(),
@@ -1532,12 +1553,14 @@ impl ConjunctionPlan<'_> {
                     StepInstructionsBuilder::Negation(NegationBuilder::new(negation)).into(),
                 )
             }
+
             PlannerVertex::Is(is) => {
                 let lhs = is.is().lhs().as_variable().unwrap();
                 let rhs = is.is().rhs().as_variable().unwrap();
                 let check = CheckInstruction::Is { lhs, rhs }.map(match_builder.position_mapping());
                 match_builder.push_check(&[lhs, rhs], check)
             }
+
             PlannerVertex::LinksDeduplication(deduplication) => {
                 let role1 = deduplication.links_deduplication().links1().role_type().as_variable().unwrap();
                 let player1 = deduplication.links_deduplication().links1().player().as_variable().unwrap();
@@ -1547,6 +1570,7 @@ impl ConjunctionPlan<'_> {
                     .map(match_builder.position_mapping());
                 match_builder.push_check(&[role1, player1, role2, player2], check)
             }
+
             PlannerVertex::Comparison(comparison) => {
                 let comparison = comparison.comparison();
                 let lhs = comparison.lhs();
@@ -1555,7 +1579,7 @@ impl ConjunctionPlan<'_> {
 
                 let lhs_var = lhs.as_variable();
                 let rhs_var = rhs.as_variable();
-                let num_input_variables = [lhs_var, rhs_var].into_iter().filter(|x| x.is_some()).count();
+                let num_input_variables = [lhs_var, rhs_var].into_iter().flatten().dedup().count();
                 assert!(num_input_variables > 0);
 
                 let order = self.element_to_order[&VertexId::Pattern(pattern)];
@@ -1579,11 +1603,15 @@ impl ConjunctionPlan<'_> {
                 let vars = [lhs_var, rhs_var].into_iter().flatten().collect_vec();
                 match_builder.push_check(&vars, check)
             }
+
             PlannerVertex::Constraint(constraint) => self.lower_constraint_check(match_builder, constraint),
-            PlannerVertex::Unsatisfiable(_) => match_builder.push_check(&Vec::new(), CheckInstruction::Unsatisfiable),
+
+            PlannerVertex::Unsatisfiable(_) => match_builder.push_check(&[], CheckInstruction::Unsatisfiable),
+
             PlannerVertex::Expression(_) => {
                 unreachable!("Would require multiple assignments to the same variable and be flagged")
             }
+
             PlannerVertex::Disjunction(disjunction) => {
                 let step_builder = disjunction
                     .builder()
@@ -1919,11 +1947,12 @@ impl ConjunctionPlan<'_> {
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanBuilder<'a> {
     branches: Vec<ConjunctionPlanBuilder<'a>>,
+    required_inputs: Vec<Variable>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    pub(super) fn new(branches: Vec<ConjunctionPlanBuilder<'a>>) -> Self {
-        Self { branches }
+    fn new(branches: Vec<ConjunctionPlanBuilder<'a>>, required_inputs: Vec<Variable>) -> Self {
+        Self { branches, required_inputs }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
@@ -1941,6 +1970,10 @@ impl<'a> DisjunctionPlanBuilder<'a> {
             .collect::<Result<Vec<_>, _>>()?;
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
         Ok(DisjunctionPlan { branches, _cost: cost })
+    }
+
+    pub(crate) fn required_inputs(&self) -> &[Variable] {
+        &self.required_inputs
     }
 }
 

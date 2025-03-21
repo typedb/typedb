@@ -5,16 +5,17 @@
  */
 
 use std::{
-    collections::HashSet,
+    collections::{hash_map, HashMap},
     fmt,
     hash::{DefaultHasher, Hasher},
-    slice::Iter,
+    ops::ControlFlow,
 };
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
-use itertools::{ExactlyOneError, Itertools};
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::{
     pattern::{
@@ -23,9 +24,10 @@ use crate::{
         negation::Negation,
         nested_pattern::NestedPattern,
         optional::Optional,
-        Scope, ScopeId,
+        Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
+    RepresentationError,
 };
 
 #[derive(Debug, Clone)]
@@ -69,22 +71,15 @@ impl Conjunction {
         }
     }
 
-    pub fn captured_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+    pub fn local_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
         let self_scope = self.scope_id;
-        self.referenced_variables().filter(move |var| {
-            let scope = block_context.get_scope(var).unwrap();
-            block_context.is_child_scope(self_scope, scope) || self_scope != scope && !var.is_anonymous()
-        })
-    }
-
-    pub fn captured_required_variables<'a>(
-        &'a self,
-        block_context: &'a BlockContext,
-    ) -> impl Iterator<Item = Variable> + 'a {
-        let producible_variables = self.producible_variables(block_context);
-        self.referenced_variables()
-            .filter(|v| block_context.is_variable_available(self.scope_id(), *v))
-            .filter(move |v| !producible_variables.contains(v))
+        block_context
+            .get_variable_scopes()
+            .filter(move |&(var, scope)| {
+                scope == self_scope || block_context.is_visible_child(scope, self_scope) && var.is_named()
+            })
+            .map(|(var, _)| var)
+            .unique()
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -101,34 +96,43 @@ impl Conjunction {
             .unique()
     }
 
-    pub fn local_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        let self_scope = self.scope_id;
-        block_context
-            .get_variable_scopes()
-            .filter(move |&(var, scope)| {
-                scope == self_scope || block_context.is_visible_child(scope, self_scope) && !var.is_anonymous()
-            })
-            .map(|(var, _)| var)
-            .unique()
+    pub fn named_producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.producible_variables(block_context).filter(Variable::is_named)
     }
 
-    fn producible_variables(&self, block_context: &BlockContext) -> HashSet<Variable> {
-        let mut produced_variables: HashSet<Variable> =
-            self.constraints().iter().flat_map(|constraint| constraint.produced_ids()).collect();
-        let available_referenced_variables: HashSet<Variable> =
-            self.referenced_variables().filter(|v| block_context.is_variable_available(self.scope_id(), *v)).collect();
-        available_referenced_variables
-            .iter()
-            .filter(|v| {
-                self.nested_patterns.iter().filter_map(|nested| nested.as_disjunction()).any(|disjunction| {
-                    disjunction.conjunctions().iter().all(|b| b.producible_variables(block_context).contains(v))
-                })
-            })
-            .copied()
-            .for_each(|v| {
-                produced_variables.insert(v);
-            });
-        produced_variables
+    fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
+    }
+
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+    }
+
+    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
+        let mut dependencies = self.constraints.variable_dependency();
+        for nested in self.nested_patterns.iter() {
+            let nested_pattern_data_modes = nested.variable_dependency(block_context);
+            for (var, mode) in nested_pattern_data_modes {
+                match dependencies.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= mode,
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(mode);
+                    }
+                }
+            }
+        }
+        dependencies
+    }
+
+    pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+        for nested in &self.nested_patterns {
+            match nested {
+                NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint(block_context, self.scope_id)?,
+                NestedPattern::Negation(negation) => negation.conjunction().find_disjoint(block_context)?,
+                NestedPattern::Optional(optional) => optional.conjunction().find_disjoint(block_context)?,
+            }
+        }
+        ControlFlow::Continue(())
     }
 }
 

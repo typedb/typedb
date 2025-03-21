@@ -144,12 +144,8 @@ impl PatternExecutor {
                         unreachable!();
                     };
                     let mut negation_suspensions = QueryPatternSuspensions::new_root();
-                    let result = inner.compute_next_batch(
-                        context,
-                        interrupt,
-                        tabled_functions,
-                        &mut negation_suspensions,
-                    )?;
+                    let result =
+                        inner.compute_next_batch(context, interrupt, tabled_functions, &mut negation_suspensions)?;
                     debug_assert!(negation_suspensions.is_empty());
                     match result {
                         None => {
@@ -235,12 +231,9 @@ impl PatternExecutor {
                 ControlInstruction::CollectingStage(CollectingStage { index }) => {
                     let (inner, collector) = executors[index.0].unwrap_collecting_stage().to_parts_mut();
                     let mut inner_suspensions = QueryPatternSuspensions::new_root();
-                    while let Some(batch) = inner.compute_next_batch(
-                        context,
-                        interrupt,
-                        tabled_functions,
-                        &mut inner_suspensions,
-                    )? {
+                    while let Some(batch) =
+                        inner.compute_next_batch(context, interrupt, tabled_functions, &mut inner_suspensions)?
+                    {
                         collector.accept(context, batch);
                     }
                     debug_assert!(inner_suspensions.is_empty());

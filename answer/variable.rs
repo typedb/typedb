@@ -26,6 +26,10 @@ impl Variable {
     pub fn is_anonymous(&self) -> bool {
         self.anonymous
     }
+
+    pub fn is_named(&self) -> bool {
+        !self.anonymous
+    }
 }
 
 impl fmt::Display for Variable {

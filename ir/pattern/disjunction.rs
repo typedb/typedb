@@ -4,15 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{
+    collections::{hash_map, HashMap},
+    fmt,
+    ops::ControlFlow,
+};
 
 use answer::variable::Variable;
+use itertools::{ExactlyOneError, Itertools};
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
-use super::conjunction::ConjunctionBuilder;
+use super::constraint::Constraint;
 use crate::{
-    pattern::{conjunction::Conjunction, Scope, ScopeId},
-    pipeline::block::{BlockBuilderContext, ScopeTransparency},
+    pattern::{
+        conjunction::{Conjunction, ConjunctionBuilder},
+        Scope, ScopeId, VariableDependency,
+    },
+    pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
+    RepresentationError,
 };
 
 #[derive(Clone, Debug, Default)]
@@ -33,12 +43,75 @@ impl Disjunction {
         &mut self.conjunctions
     }
 
+    pub fn named_producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.producible_variables(block_context).filter(Variable::is_named)
+    }
+
+    fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
+    }
+
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }
 
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
         self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
+    }
+
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+    }
+
+    pub(crate) fn variable_dependency(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, VariableDependency<'_>> {
+        if self.conjunctions.is_empty() {
+            return HashMap::new();
+        }
+        let mut dependencies = self.conjunctions[0].variable_dependency(block_context);
+        for branch in &self.conjunctions[1..] {
+            let branch_dependency_modes = branch.variable_dependency(block_context);
+            for (var, dependency) in &mut dependencies {
+                if !branch_dependency_modes.contains_key(var) && dependency.is_producing() {
+                    dependency.set_referencing()
+                }
+            }
+            for (var, mut dependency) in branch_dependency_modes {
+                let entry = dependencies.entry(var);
+                match entry {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        *entry.get_mut() |= dependency;
+                    }
+                    hash_map::Entry::Vacant(entry) => {
+                        if dependency.is_producing() {
+                            dependency.set_referencing();
+                        }
+                        entry.insert(dependency);
+                    }
+                }
+            }
+        }
+        dependencies
+    }
+
+    pub(crate) fn find_disjoint(
+        &self,
+        block_context: &BlockContext,
+        scope_id: ScopeId,
+    ) -> ControlFlow<(Variable, Option<Span>)> {
+        let dependencies = self.variable_dependency(block_context);
+        let branch_dependencies =
+            self.conjunctions.iter().map(|conj| conj.variable_dependency(block_context)).collect_vec();
+        for (var, dep) in dependencies {
+            if dep.is_referencing() && block_context.get_scope(&var) == Some(scope_id) {
+                if let Err(mut err) = branch_dependencies.iter().filter_map(|d| d.get(&var)).exactly_one() {
+                    return ControlFlow::Break((var, err.next().unwrap().referencing_constraints()[0].source_span()));
+                }
+            }
+        }
+        ControlFlow::Continue(())
     }
 }
 
@@ -54,7 +127,7 @@ impl StructuralEquality for Disjunction {
 
 impl fmt::Display for Disjunction {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        debug_assert!(self.conjunctions.len() > 0);
+        debug_assert!(!self.conjunctions.is_empty());
         write!(f, "{}", self.conjunctions[0])?;
         for i in 1..self.conjunctions.len() {
             write!(f, " or {}", self.conjunctions[i])?;

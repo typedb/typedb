@@ -4,11 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, mem};
+use std::{collections::HashMap, fmt, mem};
 
+use answer::variable::Variable;
 use structural_equality::StructuralEquality;
 
-use crate::pattern::{disjunction::Disjunction, negation::Negation, optional::Optional};
+use crate::{
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, VariableDependency},
+    pipeline::block::BlockContext,
+};
 
 #[derive(Debug, Clone)]
 pub enum NestedPattern {
@@ -57,6 +61,17 @@ impl NestedPattern {
         match self {
             NestedPattern::Optional(optional) => Some(optional),
             _ => None,
+        }
+    }
+
+    pub(crate) fn variable_dependency(
+        &self,
+        block_context: &BlockContext,
+    ) -> HashMap<Variable, VariableDependency<'_>> {
+        match self {
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency(block_context),
+            NestedPattern::Negation(negation) => negation.variable_dependency(block_context),
+            NestedPattern::Optional(optional) => optional.variable_dependency(block_context),
         }
     }
 }

@@ -56,13 +56,7 @@ fn row_batch_result_to_answer(
 }
 
 fn row_answers_to_string(rows: &[HashMap<String, VariableValue<'static>>]) -> String {
-    rows.iter()
-        .map(|row| {
-            let mut row_strings: Vec<String> = row.iter().map(|(key, value)| format!("{}: {}", key, value)).collect();
-            row_strings.join(", ")
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+    rows.iter().map(|row| row.iter().map(|(key, value)| format!("{key}: {value}")).join(", ")).join("\n")
 }
 
 fn execute_read_query(
@@ -299,7 +293,7 @@ async fn uniquely_identify_answer_concepts(context: &mut Context, step: &Step) {
     with_rows_answer!(context, |query_answer| {
         let num_answers = query_answer.len();
         if num_specs != num_answers {
-            assert!(false, "expected the number of identifier entries to match the number of answers, found {} expected entries and {} real answers. Real answers: \n{}",
+            panic!("expected the number of identifier entries to match the number of answers, found {} expected entries and {} real answers. Real answers: \n{}",
             num_specs, num_answers, row_answers_to_string(query_answer))
         }
         for row in iter_table_map(step) {
@@ -579,10 +573,10 @@ async fn verify_answer_set(context: &mut Context, step: &Step) {
             todo!()
         }
         (QueryAnswer::ConceptDocuments(_, _), QueryAnswer::ConceptRows(_)) => {
-            assert!(false, "Expected Rows found documents")
+            panic!("Expected rows, found documents")
         }
         (QueryAnswer::ConceptRows(_), QueryAnswer::ConceptDocuments(_, _)) => {
-            assert!(false, "Expected documents, found rows")
+            panic!("Expected documents, found rows")
         }
     }
     let num_answers = context.query_answer.as_ref().unwrap().as_rows().len();

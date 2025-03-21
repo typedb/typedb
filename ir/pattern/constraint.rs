@@ -5,10 +5,10 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{hash_map, HashMap},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
-    mem,
+    iter, mem,
     ops::Deref,
 };
 
@@ -23,7 +23,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, Scope, ScopeId, ValueType, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, VariableDependency, Vertex,
     },
     pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
     LiteralParseError, RepresentationError,
@@ -63,6 +63,32 @@ impl Constraints {
         let constraint = constraint.into();
         self.constraints.push(constraint);
         self.constraints.last().unwrap()
+    }
+
+    pub(crate) fn variable_dependency(&self) -> HashMap<Variable, VariableDependency<'_>> {
+        self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
+            for var in constraint.produced_ids() {
+                match acc.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        *entry.get_mut() &= VariableDependency::producing(constraint);
+                    }
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(VariableDependency::producing(constraint));
+                    }
+                }
+            }
+            for var in constraint.required_ids() {
+                match acc.entry(var) {
+                    hash_map::Entry::Occupied(mut entry) => {
+                        *entry.get_mut() &= VariableDependency::required(constraint);
+                    }
+                    hash_map::Entry::Vacant(vacant_entry) => {
+                        vacant_entry.insert(VariableDependency::required(constraint));
+                    }
+                }
+            }
+            acc
+        })
     }
 }
 
@@ -125,6 +151,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         &mut self,
         kind: typeql::token::Kind,
         variable: Variable,
+        source_span: Option<Span>,
     ) -> Result<&Kind<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let category = match kind {
@@ -133,7 +160,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             typeql::token::Kind::Attribute => VariableCategory::ThingType,
             typeql::token::Kind::Role => VariableCategory::RoleType,
         };
-        let kind = Kind::new(kind, variable);
+        let kind = Kind::new(kind, variable, source_span);
         self.context.set_variable_category(variable, category, kind.clone().into())?;
         let as_ref = self.constraints.add_constraint(kind);
         Ok(as_ref.as_kind().unwrap())
@@ -487,10 +514,6 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         self.context.get_or_declare_variable(name, self.constraints.scope, source_span)
     }
 
-    pub(crate) fn set_variable_optionality(&mut self, variable: Variable, optional: bool) {
-        self.context.set_variable_is_optional(variable, optional)
-    }
-
     pub(crate) fn parameters(&mut self) -> &mut ParameterRegistry {
         self.context.parameters()
     }
@@ -583,13 +606,37 @@ impl<ID: IrID> Constraint<ID> {
             Constraint::Has(has) => Box::new(has.ids()),
             Constraint::ExpressionBinding(binding) => Box::new(binding.ids_assigned()),
             Constraint::FunctionCallBinding(binding) => Box::new(binding.ids_assigned()),
-            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
+            Constraint::Comparison(_) => Box::new(iter::empty()),
             Constraint::Owns(owns) => Box::new(owns.ids()),
             Constraint::Relates(relates) => Box::new(relates.ids()),
             Constraint::Plays(plays) => Box::new(plays.ids()),
             Constraint::Value(value) => Box::new(value.ids()),
-            Constraint::LinksDeduplication(dedup) => Box::new(dedup.ids()),
+            Constraint::LinksDeduplication(_) => Box::new(iter::empty()),
             Constraint::Unsatisfiable(inner) => Box::new(inner.ids()),
+        }
+    }
+
+    pub fn required_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+        match self {
+            Constraint::Is(is) => Box::new(is.ids()), // FIXME _technically_ it's legal to only have one side of `is` bound
+            | Constraint::Kind(_)
+            | Constraint::Label(_)
+            | Constraint::RoleName(_)
+            | Constraint::Sub(_)
+            | Constraint::Isa(_)
+            | Constraint::Iid(_)
+            | Constraint::Links(_)
+            | Constraint::IndexedRelation(_)
+            | Constraint::Has(_)
+            | Constraint::Owns(_)
+            | Constraint::Relates(_)
+            | Constraint::Plays(_)
+            | Constraint::Value(_)
+            | Constraint::LinksDeduplication(_)
+            | Constraint::Unsatisfiable(_) => Box::new(iter::empty()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.required_ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.required_ids()),
+            Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
     }
 
@@ -1094,11 +1141,18 @@ impl<ID: IrID> fmt::Display for RoleName<ID> {
 pub struct Kind<ID> {
     kind: typeql::token::Kind,
     type_: Vertex<ID>,
+    source_span: Option<Span>,
+}
+
+impl<ID> Kind<ID> {
+    fn source_span(&self) -> Option<Span> {
+        self.source_span
+    }
 }
 
 impl<ID: IrID> Kind<ID> {
-    pub fn new(kind: typeql::token::Kind, type_: ID) -> Self {
-        Self { kind, type_: Vertex::Variable(type_) }
+    pub fn new(kind: typeql::token::Kind, type_: ID, source_span: Option<Span>) -> Self {
+        Self { kind, type_: Vertex::Variable(type_), source_span }
     }
 
     pub fn type_(&self) -> &Vertex<ID> {
@@ -1125,7 +1179,7 @@ impl<ID: IrID> Kind<ID> {
     }
 
     pub fn map<T: Clone>(self, mapping: &HashMap<ID, T>) -> Kind<T> {
-        Kind { kind: self.kind, type_: self.type_.map(mapping) }
+        Kind { kind: self.kind, type_: self.type_.map(mapping), source_span: self.source_span }
     }
 }
 
@@ -1966,6 +2020,10 @@ impl<ID: IrID> ExpressionBinding<ID> {
         [&self.left].into_iter()
     }
 
+    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.expression.variables()
+    }
+
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
         self.left.as_variable().into_iter()
     }
@@ -1978,8 +2036,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
     where
         F: FnMut(ID),
     {
-        self.ids_assigned().for_each(|id| function(id));
-        self.expression().variables().for_each(|id| function(id));
+        self.ids_assigned().for_each(&mut function);
+        self.expression().variables().for_each(function);
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
@@ -2072,6 +2130,10 @@ impl<ID: IrID> FunctionCallBinding<ID> {
 
     pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.ids_assigned().chain(self.function_call.argument_ids())
+    }
+
+    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.function_call.argument_ids()
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> + '_ {

@@ -8,7 +8,6 @@
 #![deny(elided_lifetimes_in_paths)]
 #![allow(unused_variables)]
 
-use encoding::value::value::Value;
 use error::typedb_error;
 use typeql::{common::Span, statement::InIterable, token, value::StringLiteral};
 
@@ -96,24 +95,24 @@ typedb_error! {
         FunctionReadError(
             10,
             "Error reading function.",
-            typedb_source: FunctionReadError ,
+            typedb_source: FunctionReadError,
         ),
         ParseError(
             11,
             "Error parsing query.",
-            typedb_source: typeql::Error ,
+            typedb_source: typeql::Error,
         ),
         LiteralParseError(
             12,
             "Error parsing literal '{literal}'.",
             literal: String,
             source_span: Option<Span>,
-            typedb_source: LiteralParseError ,
+            typedb_source: LiteralParseError,
         ),
         ExpressionRepresentationError(
             13,
             "Expression error.",
-            typedb_source: ExpressionRepresentationError ,
+            typedb_source: ExpressionRepresentationError,
             source_span: Option<Span>,
         ),
         ExpressionAssignmentMustOneVariable(
@@ -175,7 +174,7 @@ typedb_error! {
         FetchRepresentation(
             23,
             "Error building representation of fetch stage.",
-            typedb_source: Box<FetchRepresentationError> ,
+            typedb_source: Box<FetchRepresentationError>,
         ),
         NonTerminalFetch(
             24,
@@ -231,15 +230,24 @@ typedb_error! {
             constraint_type: String,
             source_span: Option<Span>,
         ),
-        RegexExpectedStringLiteral(50,
-            "Expected a string literal as regex.",
-            source_span: Option<Span>
+        UnboundRequiredVariable(
+            44,
+            "{variable} is required to be bound to a value before it's used.",
+            variable: String,
+            source_span: Option<Span>,
+            _rest: Vec<Option<Span>>,
         ),
-        RegexFailedCompilation(51,
+        RegexExpectedStringLiteral(
+            50,
+            "Expected a string literal as regex.",
+            source_span: Option<Span>,
+        ),
+        RegexFailedCompilation(
+            51,
             "The regular expression failed compilation: '{value}'.",
             value: String,
             source: regex::Error,
-            source_span: Option<Span>
+            source_span: Option<Span>,
         ),
         UnimplementedLanguageFeature(
             254,

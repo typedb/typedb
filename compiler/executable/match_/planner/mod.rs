@@ -14,6 +14,7 @@ use ir::{
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
+use tracing::{debug, trace};
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -47,7 +48,7 @@ typedb_error! {
 pub fn compile(
     block: &Block,
     input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &[Variable],
+    selected_variables: &HashSet<Variable>,
     type_annotations: &TypeAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -57,16 +58,16 @@ pub fn compile(
     let conjunction = block.conjunction();
     let block_context = block.block_context();
 
+    debug!("Planning conjunction:\n{conjunction}");
+
     let assigned_identities =
         input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
-    let mut selected_variables: HashSet<_> = selected_variables.iter().copied().collect();
-    selected_variables.extend(variable_registry.variable_names().keys().copied());
-
-    Ok(plan_conjunction(
+    let plan = plan_conjunction(
         conjunction,
         block_context,
         input_variables,
+        selected_variables,
         type_annotations,
         variable_registry,
         expressions,
@@ -76,7 +77,12 @@ pub fn compile(
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .lower(input_variables.keys().copied(), selected_variables.iter().copied(), &assigned_identities, variable_registry)
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .finish(variable_registry))
+    .finish(variable_registry);
+
+    trace!("Finished planning conjunction:\n{conjunction}");
+    debug!("Lowered plan:\n{plan}");
+
+    Ok(plan)
 }
 
 #[derive(Debug)]
@@ -212,9 +218,11 @@ impl StepBuilder {
                     output_width,
                 ))
             }
+
             StepInstructionsBuilder::Check(CheckBuilder { instructions }) => {
                 ExecutionStep::Check(CheckStep::new(instructions, selected_variables, output_width))
             }
+
             StepInstructionsBuilder::Expression(ExpressionBuilder { executable_expression, output }) => {
                 let input_positions = executable_expression.variables.iter().copied().unique().collect_vec();
                 ExecutionStep::Assignment(AssignmentStep::new(
@@ -225,9 +233,11 @@ impl StepBuilder {
                     output_width,
                 ))
             }
+
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
             ),
+
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
                     branches.into_iter().map(|builder| builder.finish(variable_registry)).collect(),
@@ -235,13 +245,20 @@ impl StepBuilder {
                     output_width,
                 ))
             }
+
             StepInstructionsBuilder::FunctionCall(FunctionCallBuilder {
                 function_id,
                 arguments,
                 assigned,
                 output_width,
                 ..
-            }) => ExecutionStep::FunctionCall(FunctionCallStep { function_id, arguments, assigned, output_width }),
+            }) => ExecutionStep::FunctionCall(FunctionCallStep {
+                function_id,
+                arguments,
+                assigned,
+                selected_variables,
+                output_width,
+            }),
         }
     }
 }

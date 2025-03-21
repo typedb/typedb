@@ -16,7 +16,6 @@ use typeql::{
     common::Span,
     schema::definable::function::{Output, SingleSelector},
     type_::NamedTypeAny,
-    TypeRefAny,
 };
 
 use crate::{

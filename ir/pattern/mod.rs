@@ -10,10 +10,11 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     mem,
-    ops::BitXor,
+    ops::{BitAndAssign, BitOrAssign, BitXor},
 };
 
 use answer::variable::Variable;
+use constraint::Constraint;
 use encoding::value::label::Label;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
@@ -346,5 +347,90 @@ impl fmt::Display for ValueType {
             Self::Builtin(var) => fmt::Display::fmt(var, f),
             Self::Struct(name) => fmt::Display::fmt(name, f),
         }
+    }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum VariableDependencyMode {
+    Required,
+    Producing,
+    Referencing,
+}
+
+impl BitAndAssign for VariableDependencyMode {
+    fn bitand_assign(&mut self, rhs: Self) {
+        match (*self, rhs) {
+            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
+            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
+            (Self::Referencing, Self::Referencing) => (),
+        }
+    }
+}
+
+impl BitOrAssign for VariableDependencyMode {
+    fn bitor_assign(&mut self, rhs: Self) {
+        match (*self, rhs) {
+            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
+            (Self::Referencing, _) | (_, Self::Referencing) => *self = Self::Referencing,
+            (Self::Producing, Self::Producing) => (),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct VariableDependency<'a> {
+    mode: VariableDependencyMode,
+    referencing_constraints: Vec<&'a Constraint<Variable>>,
+}
+
+impl<'a> VariableDependency<'a> {
+    pub fn required(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: VariableDependencyMode::Required, referencing_constraints: vec![constraint] }
+    }
+
+    pub fn producing(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: VariableDependencyMode::Producing, referencing_constraints: vec![constraint] }
+    }
+
+    pub fn referencing(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: VariableDependencyMode::Referencing, referencing_constraints: vec![constraint] }
+    }
+
+    pub fn set_required(&mut self) {
+        self.mode = VariableDependencyMode::Required;
+    }
+
+    pub fn set_referencing(&mut self) {
+        self.mode = VariableDependencyMode::Referencing;
+    }
+
+    pub fn is_required(&self) -> bool {
+        self.mode == VariableDependencyMode::Required
+    }
+
+    pub fn is_producing(&self) -> bool {
+        self.mode == VariableDependencyMode::Producing
+    }
+
+    pub fn is_referencing(&self) -> bool {
+        self.mode == VariableDependencyMode::Referencing
+    }
+
+    pub fn referencing_constraints(&self) -> &[&Constraint<Variable>] {
+        &self.referencing_constraints
+    }
+}
+
+impl BitAndAssign for VariableDependency<'_> {
+    fn bitand_assign(&mut self, rhs: Self) {
+        self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
+        self.mode &= rhs.mode;
+    }
+}
+
+impl BitOrAssign for VariableDependency<'_> {
+    fn bitor_assign(&mut self, rhs: Self) {
+        self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
+        self.mode |= rhs.mode;
     }
 }

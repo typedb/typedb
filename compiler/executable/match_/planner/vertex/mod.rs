@@ -15,7 +15,7 @@ use ir::pattern::{
     constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
     Vertex,
 };
-use itertools::{chain, Itertools};
+use itertools::chain;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
@@ -53,14 +53,7 @@ pub(super) enum PlannerVertex<'a> {
 }
 
 impl PlannerVertex<'_> {
-    pub(super) fn is_valid(&self, id: VertexId, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
-        for var in self.variables().filter(|&var| !vertex_plan.contains(&VertexId::Variable(var))) {
-            let variable_vertex = graph.elements()[&VertexId::Variable(var)].as_variable().unwrap();
-            if variable_vertex.binding().is_some_and(|binding| VertexId::Pattern(binding) != id) {
-                return false;
-            }
-        }
-
+    pub(super) fn is_valid(&self, _id: VertexId, vertex_plan: &[VertexId], graph: &Graph<'_>) -> bool {
         match self {
             Self::Variable(_) => false,
             Self::Constraint(inner) => inner.is_valid(vertex_plan, graph),
@@ -68,9 +61,7 @@ impl PlannerVertex<'_> {
             Self::LinksDeduplication(inner) => inner.is_valid(vertex_plan, graph),
             Self::Comparison(inner) => inner.is_valid(vertex_plan, graph),
             Self::Expression(inner) => inner.is_valid(vertex_plan, graph),
-            Self::FunctionCall(FunctionCallPlanner { arguments, .. }) => {
-                arguments.iter().all(|&arg| vertex_plan.contains(&VertexId::Variable(arg)))
-            }
+            Self::FunctionCall(inner) => inner.is_valid(vertex_plan, graph),
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
             Self::Unsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
@@ -354,6 +345,10 @@ impl<'a> FunctionCallPlanner<'a> {
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         self.arguments.iter().chain(self.assigned.iter()).copied()
     }
+
+    fn is_valid(&self, vertex_plan: &[VertexId], _graph: &Graph<'_>) -> bool {
+        self.arguments.iter().all(|&arg| vertex_plan.contains(&VertexId::Variable(arg)))
+    }
 }
 
 impl Costed for FunctionCallPlanner<'_> {
@@ -519,20 +514,20 @@ impl Costed for ComparisonPlanner<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct UnsatisfiablePlanner<'a> {
-    unsatisfiable: &'a Unsatisfiable,
+    _unsatisfiable: &'a Unsatisfiable,
 }
 
 impl<'a> UnsatisfiablePlanner<'a> {
     pub(crate) fn from_constraint(
-        optimised_unsatisfiable: &'a Unsatisfiable,
-        variable_index: &HashMap<Variable, VariableVertexId>,
+        _unsatisfiable: &'a Unsatisfiable,
+        _variable_index: &HashMap<Variable, VariableVertexId>,
         _type_annotations: &TypeAnnotations,
         _statistics: &Statistics,
     ) -> Self {
-        Self { unsatisfiable: optimised_unsatisfiable }
+        Self { _unsatisfiable }
     }
 
-    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+    fn is_valid(&self, _ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
         true
     }
 
@@ -602,12 +597,7 @@ impl<'a> DisjunctionPlanner<'a> {
     ) -> Self {
         let shared_variables: HashSet<_> =
             builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
-        let input_variables = builder
-            .branches()
-            .iter()
-            .flat_map(|branch| branch.required_inputs().iter().map(|v| variable_index[v]))
-            .dedup()
-            .collect();
+        let input_variables = builder.required_inputs().iter().map(|v| variable_index[v]).collect();
         Self { input_variables, shared_variables, builder }
     }
 

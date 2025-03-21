@@ -173,7 +173,7 @@ pub fn translate_pipeline(
         .iter()
         .map(|preamble| translate_typeql_function(snapshot, all_function_signatures, &preamble.function))
         .collect::<Result<Vec<_>, _>>()
-        .map_err(|source| RepresentationError::FunctionRepresentation { typedb_source: source })?;
+        .map_err(|source| RepresentationError::FunctionRepresentation { typedb_source: *source })?;
 
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();

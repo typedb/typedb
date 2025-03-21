@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    ops::ControlFlow,
+};
 
 use answer::variable::Variable;
 use itertools::Itertools;
@@ -99,7 +102,7 @@ impl<'reg> BlockBuilder<'reg> {
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
         let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
-        validate_conjunction(&conjunction, variable_registry)?;
+        validate_conjunction(&conjunction, variable_registry, &block_context)?;
         Ok(Block { conjunction, block_context })
     }
 
@@ -115,12 +118,11 @@ impl<'reg> BlockBuilder<'reg> {
 fn validate_conjunction(
     conjunction: &Conjunction,
     variable_registry: &VariableRegistry,
+    block_context: &BlockContext,
 ) -> Result<(), Box<RepresentationError>> {
-    let unbound =
-        conjunction.referenced_variables().find(|&variable| match variable_registry.get_variable_category(variable) {
-            Some(VariableCategory::AttributeOrValue) | None => true,
-            _ => false,
-        });
+    let unbound = conjunction.referenced_variables().find(|&variable| {
+        matches!(variable_registry.get_variable_category(variable), Some(VariableCategory::AttributeOrValue) | None)
+    });
     if let Some(variable) = unbound {
         return Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
@@ -132,6 +134,24 @@ fn validate_conjunction(
         let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
         lhs_category.narrowest(rhs_category).is_none()
     });
+
+    if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint(block_context) {
+        let name = variable_registry.get_variable_name(var).unwrap().clone();
+        return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
+    }
+
+    for (var, mode) in conjunction.variable_dependency(block_context) {
+        if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
+            let variable = variable_registry.get_variable_name(var).unwrap().clone();
+            let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
+            return Err(Box::new(RepresentationError::UnboundRequiredVariable {
+                variable,
+                source_span: spans[0],
+                _rest: spans,
+            }));
+        }
+    }
+
     if let Some(is) = is_with_mismatched_category {
         let lhs = is.lhs().as_variable().unwrap();
         let rhs = is.rhs().as_variable().unwrap();
@@ -185,17 +205,23 @@ impl BlockContext {
     ) -> Result<(), Box<RepresentationError>> {
         debug_assert!(self.variable_declaration.contains_key(&var));
         self.add_referenced_variable(var);
-        let existing_scope = self.variable_declaration.get_mut(&var).unwrap();
-        if is_equal_or_parent_scope(&self.scope_parents, scope, *existing_scope) {
+        let recorded_scope = self.variable_declaration[&var];
+        if is_equal_or_parent_scope(&self.scope_parents, scope, recorded_scope) {
             // Parent defines same name: ok, reuse the variable
-            Ok(())
-        } else if is_child_scope(&self.scope_parents, scope, *existing_scope) {
+        } else if is_child_scope(&self.scope_parents, scope, recorded_scope) {
             // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
-            *existing_scope = scope;
-            Ok(())
+            *self.variable_declaration.get_mut(&var).unwrap() = scope;
         } else {
-            Err(Box::new(RepresentationError::DisjointVariableReuse { name: var_name.to_string(), source_span }))
+            let ancestor = common_ancestor(&self.scope_parents, recorded_scope, scope);
+            if !self.is_visible_child(scope, ancestor) || !self.is_visible_child(recorded_scope, ancestor) {
+                return Err(Box::new(RepresentationError::DisjointVariableReuse {
+                    name: var_name.to_owned(),
+                    source_span,
+                }));
+            }
+            *self.variable_declaration.get_mut(&var).unwrap() = ancestor;
         }
+        Ok(())
     }
 
     pub fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
@@ -240,6 +266,24 @@ impl BlockContext {
     pub fn get_variable_scopes(&self) -> impl Iterator<Item = (Variable, ScopeId)> + '_ {
         self.variable_declaration.iter().map(|(&var, &scope)| (var, scope))
     }
+
+    pub fn variable_status_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
+        let var_scope = self.variable_declaration[&var];
+        if var_scope == scope {
+            VariableLocality::Local
+        } else if self.is_child_scope(scope, var_scope) {
+            VariableLocality::Parent
+        } else {
+            VariableLocality::None // or an error
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum VariableLocality {
+    Parent,
+    Local,
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -297,15 +341,15 @@ impl<'a> BlockBuilderContext<'a> {
                 self.variable_names_index.insert(name.to_string(), variable);
                 Ok(variable)
             }
-            Some(existing_variable) => self
-                .block_context
-                .may_update_declaration_scope(
-                    *existing_variable,
+            Some(&existing_variable) => {
+                self.block_context.may_update_declaration_scope(
+                    existing_variable,
                     name,
-                    self.variable_registry.source_span(*existing_variable),
+                    self.variable_registry.source_span(existing_variable),
                     scope,
-                )
-                .map(|_| *existing_variable),
+                )?;
+                Ok(existing_variable)
+            }
         }
     }
 
@@ -345,10 +389,6 @@ impl<'a> BlockBuilderContext<'a> {
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
     }
 
-    pub(crate) fn set_variable_is_optional(&mut self, variable: Variable, optional: bool) {
-        self.variable_registry.set_variable_is_optional(variable, optional)
-    }
-
     pub fn parameters(&mut self) -> &mut ParameterRegistry {
         self.parameters
     }
@@ -360,4 +400,14 @@ fn is_equal_or_parent_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId,
 
 fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_child: ScopeId) -> bool {
     parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
+}
+
+fn common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, right: ScopeId) -> ScopeId {
+    if left == right || is_child_scope(parents, left, right) {
+        left
+    } else if is_child_scope(parents, right, left) {
+        right
+    } else {
+        common_ancestor(parents, parents[&left], parents[&right])
+    }
 }

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::fmt;
+use std::{collections::HashMap, fmt};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
@@ -12,9 +12,9 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId,
+        Scope, ScopeId, VariableDependency,
     },
-    pipeline::block::BlockBuilderContext,
+    pipeline::block::{BlockBuilderContext, BlockContext, VariableLocality},
 };
 
 #[derive(Debug, Clone)]
@@ -42,8 +42,28 @@ impl Negation {
         &mut self.conjunction
     }
 
-    pub(crate) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
+    }
+
+    pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
+        self.conjunction
+            .variable_dependency(block_context)
+            .into_iter()
+            .filter_map(|(var, mut mode)| {
+                let status = block_context.variable_status_in_scope(var, self.scope_id());
+                if status == VariableLocality::Parent || mode.is_required() {
+                    mode.set_required();
+                    Some((var, mode))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
     }
 }
 

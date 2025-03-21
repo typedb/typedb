@@ -15,6 +15,7 @@ rust_library(
         "//answer:answer",
         "//common/error",
         "//common/lending_iterator",
+        "//common/logger",
         "//common/options",
         "//common/primitive",
         "//compiler:compiler",
