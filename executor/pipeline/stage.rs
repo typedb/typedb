@@ -44,9 +44,16 @@ pub struct ExecutionContext<Snapshot> {
 
 impl<Snapshot> ExecutionContext<Snapshot> {
     pub fn new(snapshot: Arc<Snapshot>, thing_manager: Arc<ThingManager>, parameters: Arc<ParameterRegistry>) -> Self {
-        // TODO: in the future, we should use a parameter passed either at Query or Transaction time
-        let is_tracing = tracing::enabled!(Level::TRACE);
-        Self { snapshot, thing_manager, parameters, profile: Arc::new(QueryProfile::new(is_tracing)) }
+        Self::new_with_profile(snapshot, thing_manager, parameters, Arc::new(QueryProfile::new(false)))
+    }
+
+    pub fn new_with_profile(
+        snapshot: Arc<Snapshot>,
+        thing_manager: Arc<ThingManager>,
+        parameters: Arc<ParameterRegistry>,
+        query_profile: Arc<QueryProfile>,
+    ) -> Self {
+        Self { snapshot, thing_manager, parameters, profile: query_profile }
     }
 
     pub(crate) fn clone_with_replaced_parameters(&self, parameters: Arc<ParameterRegistry>) -> Self {

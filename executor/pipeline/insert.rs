@@ -63,7 +63,7 @@ where
         let Self { executable, previous } = self;
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
 
-        let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id);
+        let profile = context.profile.profile_stage(|| String::from("Insert"), executable.executable_id as i64);
 
         // prepare_output_rows copies unmapped
         let input_output_mapping = executable

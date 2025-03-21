@@ -119,25 +119,6 @@ impl SnapshotRangeIterator {
         }
     }
 
-    fn advance_and_find_next_state(&mut self) {
-        match self.ready_item_source {
-            Some(ReadyItemSource::Storage) => {
-                self.storage_iterator.as_mut().unwrap().next();
-            }
-            Some(ReadyItemSource::Buffered) => {
-                assert!(self.buffered_iterator.is_some());
-                self.buffered_iterator.as_mut().map(|iter| iter.next());
-            }
-            Some(ReadyItemSource::Both) => {
-                assert!(self.buffered_iterator.is_some());
-                self.buffered_iterator.as_mut().map(|iter| iter.next());
-                self.storage_iterator.as_mut().unwrap().next();
-            }
-            None => (),
-        }
-        self.find_next_state();
-    }
-
     fn get_buffered_peek(buffered_iterator: &mut BufferRangeIterator) -> (StorageKeyReference<'_>, &[u8]) {
         let (key, write) = buffered_iterator.peek().unwrap();
         (StorageKeyReference::from(key), write.get_value())

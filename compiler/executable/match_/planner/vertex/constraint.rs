@@ -16,6 +16,7 @@ use ir::pattern::constraint::{
     Constraint, Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
 };
 use itertools::Itertools;
+use tracing::{event, log::trace, Level};
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -32,6 +33,7 @@ use crate::{
 };
 
 const MIN_SCAN_SIZE: f64 = 1.0;
+const MAX_SCAN_SIZE: f64 = 10e12;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {
@@ -460,7 +462,7 @@ impl<'a> IsaPlanner<'a> {
             scan_size *= thing_selectivity; // account for restrictions (like iid), which (we assume) can be used to reduce scan size
         }
         scan_size = f64::max(scan_size, VariableVertex::OUTPUT_SIZE_MIN); // TODO: verify if this is useful (part of previous model)
-        scan_size.max(MIN_SCAN_SIZE)
+        scan_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 }
 
@@ -608,7 +610,7 @@ impl<'a> HasPlanner<'a> {
         } else {
             scan_size_canonical *= owner_selectivity; // restrictions (like iid) apply if var still unbound
         }
-        scan_size_canonical.max(MIN_SCAN_SIZE)
+        scan_size_canonical.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 
     pub(crate) fn reverse_scan_size_estimate(
@@ -628,7 +630,7 @@ impl<'a> HasPlanner<'a> {
         } else {
             scan_size_reverse *= attribute_selectivity; // restrictions (like iid) apply if var still unbound
         }
-        scan_size_reverse.max(MIN_SCAN_SIZE)
+        scan_size_reverse.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 
     pub(crate) fn output_size_estimate(
@@ -651,7 +653,7 @@ impl<'a> HasPlanner<'a> {
         } else {
             scan_size *= attribute_selectivity;
         }
-        scan_size.max(MIN_SCAN_SIZE)
+        scan_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 }
 
@@ -849,7 +851,7 @@ impl<'a> LinksPlanner<'a> {
         } else {
             scan_size_canonical *= relation_selectivity; // restrictions (like iid) apply if var still unbound
         }
-        scan_size_canonical.max(MIN_SCAN_SIZE)
+        scan_size_canonical.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 
     pub(crate) fn reverse_scan_size_estimate(
@@ -869,7 +871,7 @@ impl<'a> LinksPlanner<'a> {
         } else {
             scan_size_reverse *= player_selectivity; // restrictions (like iid) apply if var still unbound
         }
-        scan_size_reverse.max(MIN_SCAN_SIZE)
+        scan_size_reverse.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 
     pub(crate) fn output_size_estimate(
@@ -892,7 +894,7 @@ impl<'a> LinksPlanner<'a> {
         } else {
             scan_size *= player_selectivity;
         }
-        scan_size.max(MIN_SCAN_SIZE)
+        scan_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 }
 
@@ -1068,7 +1070,7 @@ impl<'a> IndexedRelationPlanner<'a> {
         } else {
             scan_size_canonical *= player1_selectivity; // restrictions (like iid) apply if var still unbound
         }
-        scan_size_canonical.max(MIN_SCAN_SIZE)
+        scan_size_canonical.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 
     pub(crate) fn reverse_scan_size_estimate(
@@ -1090,7 +1092,7 @@ impl<'a> IndexedRelationPlanner<'a> {
         } else {
             scan_size_reverse *= player2_selectivity; // restrictions (like iid) apply if var still unbound
         }
-        scan_size_reverse.max(MIN_SCAN_SIZE)
+        scan_size_reverse.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 
     pub(crate) fn output_size_estimate(
@@ -1115,7 +1117,7 @@ impl<'a> IndexedRelationPlanner<'a> {
         if is_relation_bound {
             output_size = 1.0;
         } // Ignore relation selectivity for now
-        output_size.max(MIN_SCAN_SIZE)
+        output_size.max(MIN_SCAN_SIZE).min(MAX_SCAN_SIZE) // protect against an inf
     }
 }
 

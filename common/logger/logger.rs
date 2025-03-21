@@ -17,11 +17,12 @@ pub mod result;
 pub fn initialise_logging_global() {
     let filter = EnvFilter::from_default_env()
         .add_directive(LevelFilter::INFO.into())
-        // .add_directive("database=trace".parse().unwrap())
+        .add_directive("database=trace".parse().unwrap())
         // .add_directive("durability=trace".parse().unwrap())
         // .add_directive("server=trace".parse().unwrap())
         // .add_directive("storage=trace".parse().unwrap())
-        .add_directive("executor=trace".parse().unwrap())
+        // .add_directive("concept=trace".parse().unwrap())
+        // .add_directive("executor=trace".parse().unwrap())
         .add_directive("query=trace".parse().unwrap())
         // .add_directive("compiler=trace".parse().unwrap())
         // useful for debugging what tonic is doing:

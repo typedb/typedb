@@ -88,7 +88,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         let ExecutionContext { snapshot, thing_manager, parameters, profile } = context.clone();
         let executable = self.executable;
         let functions = self.functions;
-        let stage_profile = profile.profile_stage(|| String::from("Fetch"), executable.executable_id);
+        let stage_profile = profile.profile_stage(|| String::from("Fetch"), executable.executable_id as i64);
         let documents_iterator = previous_iterator
             .map_static(move |row_result| match row_result {
                 Ok(row) => execute_fetch(
@@ -376,6 +376,7 @@ fn execute_list_subfetch(
             Some(fetch.clone()),
             parameters,
             None,
+            query_profile,
         )
     } else {
         let max_position = input_position_mapping.values().max().map(|pos| pos.as_usize()).unwrap();
@@ -395,6 +396,7 @@ fn execute_list_subfetch(
             Some(fetch.clone()),
             parameters,
             Some(initial_row),
+            query_profile,
         )
     }
     .map_err(|typedb_source| FetchExecutionError::Pipeline { typedb_source })?;

@@ -28,6 +28,7 @@ use resource::{
     constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
     profile::StorageCounters,
 };
+use tracing::trace;
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
@@ -133,11 +134,13 @@ impl<Durability> MVCCStorage<Durability> {
                 fs::create_dir_all(&storage_dir)
                     .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
                 let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
-                let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
+                trace!("No checkpoint found, loading from WAL");
+                let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client, usize::MAX)
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
                 let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
                 apply_recovered(commits, &durability_client, &keyspaces)
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
+                trace!("Finished applying commits from WAL.");
                 (keyspaces, next_sequence_number)
             }
             Some(checkpoint) => checkpoint
@@ -362,7 +365,13 @@ impl<Durability> MVCCStorage<Durability> {
         open_sequence_number: SequenceNumber,
         storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
-        self.get_mapped(iterator_pool, key, open_sequence_number, |byte_ref| ByteArray::from(byte_ref))
+        self.get_mapped(
+            iterator_pool,
+            key,
+            open_sequence_number,
+            |byte_ref| ByteArray::from(byte_ref),
+            storage_counters,
+        )
     }
 
     pub fn get_mapped<'a, 'pool, Mapper, V>(
@@ -371,6 +380,7 @@ impl<Durability> MVCCStorage<Durability> {
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
         mapper: Mapper,
+        storage_counters: StorageCounters,
     ) -> Result<Option<V>, MVCCReadError>
     where
         Mapper: Fn(&[u8]) -> V,
@@ -380,7 +390,7 @@ impl<Durability> MVCCStorage<Durability> {
             iterator_pool,
             &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
-            StorageCounters::DISABLED.clone(), // gets are not measured right now
+            storage_counters,
         );
         loop {
             match iterator.next().transpose()? {

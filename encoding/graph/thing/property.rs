@@ -51,7 +51,6 @@ impl ObjectVertexProperty {
 
     const LENGTH_NO_SUFFIX: usize = PrefixID::LENGTH + ObjectVertex::LENGTH + InfixID::LENGTH;
     const LENGTH_PREFIX: usize = PrefixID::LENGTH;
-    const LENGTH_PREFIX_TYPE: usize = PrefixID::LENGTH + ObjectVertex::LENGTH;
 
     fn new(object: ObjectVertex, infix: Infix) -> Self {
         Self { object, infix, suffix: None }

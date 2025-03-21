@@ -17,6 +17,7 @@ use ir::{
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
 use itertools::Itertools;
+use tracing::{event, Level};
 
 use crate::{
     annotation::{

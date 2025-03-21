@@ -42,7 +42,7 @@ use storage::{
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
-use tracing::{event, Level};
+use tracing::{event, trace, Level};
 
 use crate::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
@@ -131,7 +131,6 @@ impl Statistics {
             return Ok(());
         }
 
-        let start_seq_nr = self.sequence_number;
         let start = Instant::now();
 
         // make it a little more likely that we capture concurrent commits
@@ -140,31 +139,39 @@ impl Statistics {
         );
 
         let mut data_commits = BTreeMap::new();
-        for (seq, status) in load_commit_data_from(load_start, storage.durability())
+        for (seq, status) in load_commit_data_from(load_start, storage.durability(), usize::MAX)
             .map_err(|err| ReloadCommitData { typedb_source: err })?
         {
-            if let RecoveryCommitStatus::Validated(record) = status {
-                let commit_type = record.commit_type();
-                let writes = CommittedWrites {
-                    open_sequence_number: record.open_sequence_number(),
-                    operations: record.into_operations(),
-                };
-                match commit_type {
-                    CommitType::Data => _ = data_commits.insert(seq, writes),
-                    CommitType::Schema => {
-                        if self.sequence_number < seq {
-                            // If last write was at Seq[11] and this schema commit is at Seq[12],
-                            // no changes need to be applied or persisted.
-                            if self.last_durable_write_sequence_number.next() < seq {
-                                self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
-                                self.durably_write(storage.durability())?;
+            match status {
+                RecoveryCommitStatus::Pending(_) => {
+                    // there's a gap/incomplete data in the log that means we can't apply beyond this sequence number
+                    break;
+                }
+                RecoveryCommitStatus::Validated(record) => {
+                    let commit_type = record.commit_type();
+                    let writes = CommittedWrites {
+                        open_sequence_number: record.open_sequence_number(),
+                        operations: record.into_operations(),
+                    };
+                    match commit_type {
+                        CommitType::Data => _ = data_commits.insert(seq, writes),
+                        CommitType::Schema => {
+                            if self.sequence_number < seq {
+                                // If last write was at Seq[11] and this schema commit is at Seq[12],
+                                // no changes need to be applied or persisted.
+                                if self.last_durable_write_sequence_number.next() < seq {
+                                    self.update_writes(&data_commits, storage)
+                                        .map_err(|err| DataRead { source: err })?;
+                                    self.durably_write(storage.durability())?;
+                                }
+                                self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
+                                    .map_err(|err| DataRead { source: err })?;
                             }
-                            self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
-                                .map_err(|err| DataRead { source: err })?;
+                            data_commits.clear();
                         }
-                        data_commits.clear();
                     }
                 }
+                RecoveryCommitStatus::Rejected => {}
             }
         }
 
@@ -183,8 +190,9 @@ impl Statistics {
             "Statistics sync finished in {} ms. Storage watermark was initially: {}. Current statistics sequence is from: {}",
             millis,
             storage_watermark,
-            start_seq_nr
+            self.sequence_number
         );
+        event!(Level::TRACE, "{:?}", self);
         Ok(())
     }
 
@@ -205,6 +213,7 @@ impl Statistics {
             let delta = self.update_write(*sequence_number, writes, commits, storage)?;
             self.total_count = self.total_count.checked_add_signed(delta).unwrap();
             self.sequence_number = *sequence_number;
+            trace!("Updating statistics based on sequence number {sequence_number}. Delta: '{}'", delta);
         }
         Ok(())
     }
@@ -659,15 +668,6 @@ enum SerialisableType {
 }
 
 impl SerialisableType {
-    pub(crate) fn id(&self) -> TypeIDUInt {
-        match *self {
-            SerialisableType::Entity(id) => id,
-            SerialisableType::Relation(id) => id,
-            SerialisableType::Attribute(id) => id,
-            SerialisableType::Role(id) => id,
-        }
-    }
-
     pub(crate) fn into_entity_type(self) -> EntityType {
         match self {
             Self::Entity(id) => EntityType::build_from_type_id(TypeID::new(id)),

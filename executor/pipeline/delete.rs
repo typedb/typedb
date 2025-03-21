@@ -55,7 +55,7 @@ where
         };
 
         // TODO: all write stages will have the same block below: we could merge them
-        let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id);
+        let profile = context.profile.profile_stage(|| String::from("Delete"), self.executable.executable_id as i64);
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();

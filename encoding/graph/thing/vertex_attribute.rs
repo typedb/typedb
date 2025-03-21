@@ -366,10 +366,6 @@ impl AttributeID {
         }
     }
 
-    pub(crate) fn encoded_value_length(&self) -> ValueEncodingLength {
-        Self::value_type_encoded_value_length(self.value_type_category())
-    }
-
     pub(crate) const fn max_length() -> usize {
         ValueTypeBytes::CATEGORY_LENGTH + ValueEncodingLength::max_length()
     }

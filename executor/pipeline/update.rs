@@ -61,7 +61,7 @@ where
         let Self { executable, previous } = self;
         let (previous_iterator, mut context) = previous.into_iterator(interrupt.clone())?;
 
-        let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id);
+        let profile = context.profile.profile_stage(|| String::from("Update"), executable.executable_id as i64);
 
         let input_output_mapping = executable
             .output_row_schema

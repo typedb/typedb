@@ -150,7 +150,7 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
     must_insert: &[bool],
 ) -> Result<(), Box<PipelineExecutionError>> {
     let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
-    let stage_profile = context.profile.profile_stage(|| String::from("PutInsert"), executable.executable_id);
+    let stage_profile = context.profile.profile_stage(|| String::from("PutInsert"), executable.executable_id as _);
     for index in 0..output_batch.len() {
         // TODO: parallelise -- though this requires our snapshots support parallel writes!
         let mut row = output_batch.get_row_mut(index);

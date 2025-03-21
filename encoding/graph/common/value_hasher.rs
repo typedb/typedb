@@ -80,7 +80,7 @@ pub(crate) trait HashedID<const DISAMBIGUATED_HASH_LENGTH: usize> {
                 StorageKey::<BUFFER_KEY_INLINE>::new_ref(keyspace, key_without_tail_byte),
                 Self::FIXED_WIDTH_KEYS,
             ),
-            StorageCounters::DISABLED.clone(),
+            StorageCounters::DISABLED,
         );
         let mut next = iter.next().transpose()?;
         let mut first_unused_tail: Option<u8> = None;

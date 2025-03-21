@@ -342,6 +342,7 @@ impl Database<WALClient> {
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
         event!(Level::TRACE, "Synchronising database '{}' statistics", &name);
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
 
         let type_cache = Arc::new(

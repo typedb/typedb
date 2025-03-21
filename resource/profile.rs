@@ -18,21 +18,33 @@ use std::{
 use itertools::Itertools;
 
 #[derive(Debug)]
+pub struct TransactionProfile {}
+
+pub struct CommitProfile {
+    counters: StorageCounters,
+}
+
+#[derive(Debug)]
 pub struct QueryProfile {
-    stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
+    compile_profile: CompileProfile,
+    stage_profiles: RwLock<HashMap<i64, Arc<StageProfile>>>,
     enabled: bool,
 }
 
 impl QueryProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { stage_profiles: RwLock::new(HashMap::new()), enabled }
+        Self { compile_profile: CompileProfile::new(enabled), stage_profiles: RwLock::new(HashMap::new()), enabled }
     }
 
     pub fn is_enabled(&self) -> bool {
         self.enabled
     }
 
-    pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
+    pub fn profile_compilation(&mut self) -> &mut CompileProfile {
+        &mut self.compile_profile
+    }
+
+    pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: i64) -> Arc<StageProfile> {
         if self.enabled {
             let profiles = self.stage_profiles.read().unwrap();
             if let Some(profile) = profiles.get(&id) {
@@ -48,37 +60,143 @@ impl QueryProfile {
         }
     }
 
-    pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
+    pub fn stage_profiles(&self) -> &RwLock<HashMap<i64, Arc<StageProfile>>> {
         &self.stage_profiles
     }
 }
 
 impl fmt::Display for QueryProfile {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let profiles = self.stage_profiles.read().unwrap();
-        let total_micros = profiles
-            .iter()
-            .map(|(_, stage_profile)| {
-                stage_profile
-                    .step_profiles
-                    .read()
-                    .unwrap()
-                    .iter()
-                    .map(|step_profile| {
-                        step_profile.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
-                    })
-                    .sum::<u64>()
-            })
-            .sum::<u64>() as f64
-            / 1000.0;
+        let compile_micros = self.compile_profile.total_micros();
+        let stage_profiles = self.stage_profiles.read().unwrap();
+        let total_micros = compile_micros
+            + stage_profiles
+                .iter()
+                .map(|(_, stage_profile)| {
+                    stage_profile
+                        .step_profiles
+                        .read()
+                        .unwrap()
+                        .iter()
+                        .map(|step_profile| {
+                            step_profile.data.as_ref().map(|data| data.nanos.load(Ordering::SeqCst)).unwrap_or(0)
+                        })
+                        .sum::<u64>()
+                })
+                .sum::<u64>() as f64
+                / 1000.0;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
-        for (id, pattern_profile) in profiles.iter().sorted_by_key(|(id, _)| *id) {
+        writeln!(f, "{}", self.compile_profile);
+        for (id, pattern_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
             writeln!(f, "  -----")?;
             writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;
             write!(f, "{}", pattern_profile)?;
         }
         Ok(())
     }
+}
+
+#[derive(Debug)]
+pub struct CompileProfile {
+    data: Option<CompileProfileData>,
+}
+
+impl CompileProfile {
+    fn new(enabled: bool) -> Self {
+        if enabled {
+            Self {
+                data: Some(CompileProfileData {
+                    start: Instant::now(), // irrelevant
+                    translation_nanos: 0,
+                    validation_nanos: 0,
+                    annotation_nanos: 0,
+                    compilation_nanos: 0,
+                }),
+            }
+        } else {
+            Self { data: None }
+        }
+    }
+
+    pub fn start(&mut self) {
+        match &mut self.data {
+            None => {}
+            Some(data) => data.start = Instant::now(),
+        }
+    }
+
+    pub fn translation_finished(&mut self) {
+        match &mut self.data {
+            None => {}
+            Some(data) => data.translation_nanos = Instant::now().duration_since(data.start).as_nanos(),
+        }
+    }
+
+    pub fn validation_finished(&mut self) {
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.validation_nanos = Instant::now().duration_since(data.start).as_nanos() - data.translation_nanos
+            }
+        }
+    }
+
+    pub fn annotation_finished(&mut self) {
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.annotation_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.translation_nanos
+                    - data.translation_nanos
+            }
+        }
+    }
+
+    pub fn compilation_finished(&mut self) {
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.compilation_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.translation_nanos
+                    - data.translation_nanos
+                    - data.annotation_nanos
+            }
+        }
+    }
+
+    fn total_micros(&self) -> f64 {
+        match &self.data {
+            None => 0.0,
+            Some(data) => {
+                (data.translation_nanos + data.validation_nanos + data.annotation_nanos + data.compilation_nanos) as f64
+                    / 1000.0
+            }
+        }
+    }
+}
+
+impl Display for CompileProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.data {
+            None => writeln!(f, "  Compile[enabled=false]"),
+            Some(data) => {
+                writeln!(f, "  Compile[enabled=true, total micros={}", self.total_micros())?;
+                writeln!(f, "    translation micros: {}", data.translation_nanos as f64 / 1000.0)?;
+                writeln!(f, "    validation micros: {}", data.validation_nanos as f64 / 1000.0)?;
+                writeln!(f, "    annotation micros: {}", data.annotation_nanos as f64 / 1000.0)?;
+                writeln!(f, "    compilation micros: {}", data.compilation_nanos as f64 / 1000.0)
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+struct CompileProfileData {
+    start: Instant,
+    translation_nanos: u128,
+    validation_nanos: u128,
+    annotation_nanos: u128,
+    compilation_nanos: u128,
 }
 
 #[derive(Debug)]
@@ -167,7 +285,7 @@ impl StepProfile {
         if let Some(data) = self.data.as_ref() {
             data.storage.clone()
         } else {
-            StorageCounters::DISABLED.clone()
+            StorageCounters::DISABLED
         }
     }
 }

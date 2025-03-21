@@ -22,7 +22,7 @@ use encoding::{
     AsBytes, Keyable, Prefixed,
 };
 use itertools::Itertools;
-use lending_iterator::{higher_order::Hkt, LendingIterator};
+use lending_iterator::higher_order::Hkt;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::StorageCounters,

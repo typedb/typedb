@@ -21,7 +21,7 @@ use encoding::{
     value::{decode_value_u64, value::Value, value_type::ValueTypeCategory},
     Keyable, Prefixed,
 };
-use lending_iterator::{higher_order::Hkt, LendingIterator};
+use lending_iterator::higher_order::Hkt;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
     profile::StorageCounters,

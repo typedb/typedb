@@ -23,6 +23,7 @@ use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
+use tracing::log::trace;
 
 use crate::Database;
 

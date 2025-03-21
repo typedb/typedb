@@ -54,7 +54,7 @@ use encoding::{
 };
 use iterator::minmax_or;
 use itertools::{Itertools, MinMaxResult};
-use lending_iterator::{LendingIterator, Peekable};
+use lending_iterator::Peekable;
 use primitive::either::Either;
 use resource::{
     constants::{

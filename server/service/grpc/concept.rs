@@ -223,7 +223,7 @@ pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
             nanos: duration.nanos,
         }),
         Value::String(string) => typedb_protocol::value::Value::String(string.to_string()),
-        Value::Struct(struct_) => {
+        Value::Struct(_struct) => {
             unimplemented_feature!(Structs)
         }
     };
