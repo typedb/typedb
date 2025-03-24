@@ -96,7 +96,7 @@ fn index_available(
     relation: &Vertex<Variable>,
     type_annotations: &TypeAnnotations,
 ) -> Result<bool, StaticOptimiserError> {
-    let relation_types = type_annotations.vertex_annotations_of(&relation).unwrap();
+    let relation_types = type_annotations.vertex_annotations_of(relation).unwrap();
     for type_ in relation_types.iter() {
         let index_available = type_manager
             .relation_index_available(snapshot, type_.as_relation_type())
@@ -105,7 +105,7 @@ fn index_available(
             return Ok(false);
         }
     }
-    return Ok(true);
+    Ok(true)
 }
 
 fn with_iid_or_constant_attribute(relation: &Vertex<Variable>, conjunction: &Conjunction) -> bool {
@@ -120,7 +120,7 @@ fn with_iid_or_constant_attribute(relation: &Vertex<Variable>, conjunction: &Con
             }
         }
     }
-    return false;
+    false
 }
 
 fn attribute_has_value(attribute: &Vertex<Variable>, conjunction: &Conjunction) -> bool {

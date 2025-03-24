@@ -400,7 +400,7 @@ impl IndexedRelationInstruction<Variable> {
                 player_start_to_player_end_types.entry(*player_start_type).or_insert(BTreeSet::new());
             for relation_type in relation_types {
                 player_end_types
-                    .extend(relation_to_player_end_types.get(&relation_type).iter().flat_map(|vec| vec.iter()));
+                    .extend(relation_to_player_end_types.get(relation_type).iter().flat_map(|vec| vec.iter()));
             }
         }
 

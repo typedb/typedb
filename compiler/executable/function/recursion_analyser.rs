@@ -65,11 +65,11 @@ fn collect_dependencies<FIDType: FunctionIDAPI>(
     forward_dependencies: &mut HashMap<FIDType, HashSet<FIDType>>,
     fid: &FIDType,
 ) -> Result<(), ExecutableCompilationError> {
-    if forward_dependencies.contains_key(&fid) {
+    if forward_dependencies.contains_key(fid) {
         return Ok(());
     }
 
-    let function = to_compile.get(&fid).unwrap();
+    let function = to_compile.get(fid).unwrap();
     let all_called_ids = all_calls_in_pipeline(function.stages.as_slice())
         .iter()
         .filter_map(|id| FIDType::try_from(id.clone()).ok())
@@ -90,7 +90,7 @@ fn determine_post_order_and_cycle_breakers<FIDType: FunctionIDAPI>(
     let mut closed_set = HashSet::new();
     forward_dependencies.keys().for_each(|fid| {
         determine_post_order_and_cycle_breakers_impl(
-            &forward_dependencies,
+            forward_dependencies,
             &mut post_order,
             &mut cycle_breakers,
             &mut open_set,

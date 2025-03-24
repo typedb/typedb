@@ -19,7 +19,7 @@ use crate::{
     executable::{
         function::{
             recursion_analyser::{all_calls_in_pipeline, determine_compilation_order_and_tabling_types},
-            ExecutableFunctionRegistry, FunctionCallCostProvider, FunctionTablingType, StronglyConnectedComponentID,
+            ExecutableFunctionRegistry, FunctionCallCostProvider, FunctionTablingType,
         },
         match_::planner::vertex::Cost,
         next_executable_id,
@@ -38,7 +38,7 @@ pub struct ExecutableFunction {
     pub returns: ExecutableReturn,
     pub tabling_type: FunctionTablingType,
     pub parameter_registry: Arc<ParameterRegistry>,
-    pub single_call_cost: Cost,
+    pub(crate) single_call_cost: Cost,
 }
 
 #[derive(Debug, Clone)]
@@ -165,7 +165,7 @@ impl<'a, FIDType: FunctionIDAPI> FunctionCompilationContext<'a, FIDType> {
         if let Some(plan) = self.precompiled.get(function_id) {
             Some(plan)
         } else if let Ok(key) = &FIDType::try_from(function_id.clone()) {
-            self.compiled.get(&key)
+            self.compiled.get(key)
         } else {
             None
         }
@@ -176,10 +176,10 @@ impl<'a, FIDType: FunctionIDAPI> FunctionCompilationContext<'a, FIDType> {
     }
 }
 
-impl<'a, FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompilationContext<'a, FIDType> {
+impl<FIDType: FunctionIDAPI> FunctionCallCostProvider for FunctionCompilationContext<'_, FIDType> {
     fn get_call_cost(&self, function_id: &FunctionID) -> Cost {
         if let Some(function) = self.get_executable_function(function_id) {
-            function.single_call_cost.clone()
+            function.single_call_cost
         } else {
             debug_assert!(matches!(
                 FIDType::try_from(function_id.clone())
