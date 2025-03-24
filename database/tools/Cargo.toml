@@ -13,7 +13,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.31"
+		version = "4.5.35"
 		default-features = false
 
 	[dependencies.durability]

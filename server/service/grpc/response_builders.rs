@@ -7,19 +7,27 @@
 pub(crate) mod connection {
     use std::time::Instant;
 
-    use crate::service::ConnectionID;
+    use crate::service::grpc::ConnectionID;
 
     pub(crate) fn connection_open_res(
         connection_id: ConnectionID,
         receive_time: Instant,
         databases_all_res: typedb_protocol::database_manager::all::Res,
+        token_create_res: typedb_protocol::authentication::token::create::Res,
     ) -> typedb_protocol::connection::open::Res {
         let processing_millis = Instant::now().duration_since(receive_time).as_millis();
         typedb_protocol::connection::open::Res {
             connection_id: Some(typedb_protocol::ConnectionId { id: Vec::from(connection_id) }),
             server_duration_millis: processing_millis as u64,
             databases_all: Some(databases_all_res),
+            authentication: Some(token_create_res),
         }
+    }
+}
+
+pub(crate) mod authentication {
+    pub(crate) fn token_create_res(token: String) -> typedb_protocol::authentication::token::create::Res {
+        typedb_protocol::authentication::token::create::Res { token }
     }
 }
 

@@ -6,8 +6,9 @@
 
 use encoding::graph::type_::Kind;
 use macro_rules_attribute::apply;
+use params;
 
-use crate::{generic_step, params, Context};
+use crate::{generic_step, Context};
 
 #[apply(generic_step)]
 #[step(expr = r"{kind} {var} {exists_or_doesnt}")]

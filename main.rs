@@ -22,7 +22,7 @@ fn main() {
     initialise_logging_global();
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
-        let server = Server::create(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
+        let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
         match server.serve().await {
             Ok(_) => println!("Exited."),
             Err(err) => println!("Exited with error: {:?}", err),
@@ -41,7 +41,7 @@ fn initialise_abort_on_panic() {
 }
 
 fn may_initialise_error_reporting(config: &Config) {
-    if config.diagnostics.is_reporting_error_enabled && !config.server_config().is_development_mode {
+    if config.diagnostics.is_reporting_error_enabled && !config.is_development_mode {
         let opts =
             (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() });
         let _ = sentry::init(opts);

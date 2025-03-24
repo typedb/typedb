@@ -156,7 +156,6 @@ impl<D> Database<D> {
         timeout: Duration,
     ) -> Result<(MutexGuard<'_, SchemaWriteTransactionState>, Duration), TransactionError> {
         let start_time = Instant::now();
-
         let guard = loop {
             match self.schema_write_transaction_exclusivity.try_lock() {
                 Ok(guard) => break guard,

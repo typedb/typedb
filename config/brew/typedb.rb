@@ -19,14 +19,8 @@ class Typedb < Formula
 
   license "MPL-2.0"
 
-  # TODO: Remove when console no longer requires jre
-  depends_on "openjdk"
-
-
   def install
     libexec.install Dir["*"]
     bin.install libexec / "typedb"
-    # TODO: Remove when console no longer requires jre
-    bin.env_script_all_files(libexec, Language::Java.java_home_env)
   end
 end

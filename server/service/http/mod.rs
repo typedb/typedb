@@ -4,4 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub const SERVICE_API_VERSION: u64 = 1;
+pub(crate) mod authenticator;
+mod diagnostics;
+pub(crate) mod encryption;
+mod error;
+pub mod message;
+pub(crate) mod transaction_service;
+pub(crate) mod typedb_service;

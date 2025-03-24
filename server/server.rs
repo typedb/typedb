@@ -9,27 +9,27 @@ use std::{
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
+    time::Duration,
 };
 
+use axum_server::{tls_rustls::RustlsConfig, Handle};
 use concurrency::IntervalRunner;
 use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use rand::seq::SliceRandom;
 use resource::constants::server::{
-    DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
+    ASCII_LOGO, DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH,
 };
 use system::initialise_system_database;
 use tokio::net::lookup_host;
-use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{
-    authenticator::Authenticator,
-    authenticator_cache::AuthenticatorCache,
+    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager},
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig, EncryptionConfig},
-    service::typedb_service::TypeDBService,
+    service::{grpc, http},
 };
 
 #[derive(Debug)]
@@ -40,23 +40,47 @@ pub struct Server {
     distribution: &'static str,
     version: &'static str,
     config: Config,
-    address: SocketAddr,
     data_directory: PathBuf,
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_diagnostics_updater: IntervalRunner,
     user_manager: Arc<UserManager>,
-    authenticator_cache: Arc<AuthenticatorCache>,
-    typedb_service: TypeDBService,
+    credential_verifier: Arc<CredentialVerifier>,
+    token_manager: Arc<TokenManager>,
+    grpc_service: grpc::typedb_service::TypeDBService,
+    http_service: Option<http::typedb_service::TypeDBService>,
     shutdown_sender: tokio::sync::watch::Sender<()>,
+    shutdown_receiver: tokio::sync::watch::Receiver<()>,
 }
 
 impl Server {
-    pub async fn create(
+    pub async fn new(
         config: Config,
         logo: &'static str,
         distribution: &'static str,
         version: &'static str,
         deployment_id: Option<String>,
+    ) -> Result<Self, ServerOpenError> {
+        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+        Self::new_with_external_shutdown(
+            config,
+            logo,
+            distribution,
+            version,
+            deployment_id,
+            shutdown_sender,
+            shutdown_receiver,
+        )
+        .await
+    }
+
+    pub async fn new_with_external_shutdown(
+        config: Config,
+        logo: &'static str,
+        distribution: &'static str,
+        version: &'static str,
+        deployment_id: Option<String>,
+        shutdown_sender: tokio::sync::watch::Sender<()>,
+        shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
         let storage_directory = &config.storage.data;
         let server_config = &config.server;
@@ -68,8 +92,6 @@ impl Server {
 
         let deployment_id = deployment_id.unwrap_or(server_id.clone());
 
-        let server_address = Self::resolve_address(server_config.address.clone()).await;
-
         let diagnostics_manager = Arc::new(
             Self::initialise_diagnostics(
                 deployment_id.clone(),
@@ -78,7 +100,7 @@ impl Server {
                 version,
                 diagnostics_config,
                 storage_directory.clone(),
-                server_config.is_development_mode,
+                config.is_development_mode,
             )
             .await,
         );
@@ -90,18 +112,39 @@ impl Server {
         let user_manager = Arc::new(UserManager::new(system_database));
         initialise_default_user(&user_manager);
 
-        let authenticator_cache = Arc::new(AuthenticatorCache::new());
+        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
+        let token_manager = Arc::new(
+            TokenManager::new(server_config.authentication.token_expiration_seconds)
+                .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,
+        );
 
-        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+        let grpc_server_address = Self::resolve_address(server_config.address.clone()).await;
 
-        let typedb_service = TypeDBService::new(
-            &server_address,
+        let grpc_service = grpc::typedb_service::TypeDBService::new(
+            grpc_server_address,
             database_manager.clone(),
             user_manager.clone(),
-            authenticator_cache.clone(),
+            credential_verifier.clone(),
+            token_manager.clone(),
             diagnostics_manager.clone(),
-            shutdown_receiver,
+            shutdown_receiver.clone(),
         );
+
+        let http_server_address = match server_config.http_address.clone() {
+            Some(http_address) => Some(Self::resolve_address(http_address).await),
+            None => None,
+        };
+        let http_service = http_server_address.map(|http_address| {
+            http::typedb_service::TypeDBService::new(
+                http_address,
+                database_manager.clone(),
+                user_manager.clone(),
+                credential_verifier.clone(),
+                token_manager.clone(),
+                diagnostics_manager.clone(),
+                shutdown_receiver.clone(),
+            )
+        });
 
         Ok(Self {
             id: server_id,
@@ -109,7 +152,6 @@ impl Server {
             logo,
             distribution,
             version,
-            address: server_address,
             data_directory: storage_directory.to_owned(),
             diagnostics_manager: diagnostics_manager.clone(),
             database_diagnostics_updater: IntervalRunner::new(
@@ -117,9 +159,12 @@ impl Server {
                 DATABASE_METRICS_UPDATE_INTERVAL,
             ),
             user_manager,
-            authenticator_cache,
-            typedb_service,
+            credential_verifier,
+            token_manager,
+            grpc_service,
+            http_service,
             shutdown_sender,
+            shutdown_receiver,
             config,
         })
     }
@@ -218,62 +263,127 @@ impl Server {
     }
 
     pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service);
-        let authenticator = Authenticator::new(
-            self.user_manager.clone(),
-            self.authenticator_cache.clone(),
+        Self::print_hello(ASCII_LOGO, self.distribution, self.version, self.config.is_development_mode);
+
+        Self::install_default_encryption_provider()?;
+
+        let grpc_address = *self.grpc_service.address();
+        let grpc_server = Self::serve_grpc(
+            grpc_address,
+            self.credential_verifier.clone(),
+            self.token_manager.clone(),
             self.diagnostics_manager.clone(),
+            &self.config.server.encryption,
+            self.shutdown_receiver.clone(),
+            self.grpc_service,
         );
 
-        Self::print_hello(self.logo, self.distribution, self.version, self.config.server.is_development_mode);
+        let (http_server, http_address) = if let Some(mut http_service) = self.http_service {
+            let http_address = *http_service.address();
+            if grpc_address == http_address {
+                return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
+            }
+            let server = Self::serve_http(
+                http_address,
+                self.credential_verifier,
+                self.token_manager,
+                self.diagnostics_manager,
+                &self.config.server.encryption,
+                self.shutdown_receiver,
+                http_service,
+            );
+            (Some(server), Some(http_address))
+        } else {
+            (None, None)
+        };
 
-        Self::create_tonic_server(&self.config.server.encryption)?
+        Self::spawn_shutdown_handler(self.shutdown_sender);
+
+        Self::print_serving_information(grpc_address, http_address);
+
+        if let Some(http_server) = http_server {
+            let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
+            grpc_result?;
+            http_result?;
+        } else {
+            grpc_server.await?;
+        }
+        Ok(())
+    }
+
+    fn install_default_encryption_provider() -> Result<(), ServerOpenError> {
+        tokio_rustls::rustls::crypto::ring::default_provider()
+            .install_default()
+            .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
+    }
+
+    async fn serve_grpc(
+        address: SocketAddr,
+        credential_verifier: Arc<CredentialVerifier>,
+        token_manager: Arc<TokenManager>,
+        diagnostics_manager: Arc<DiagnosticsManager>,
+        encryption_config: &EncryptionConfig,
+        mut shutdown_receiver: tokio::sync::watch::Receiver<()>,
+        service: grpc::typedb_service::TypeDBService,
+    ) -> Result<(), ServerOpenError> {
+        let mut grpc_server =
+            tonic::transport::Server::builder().http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE));
+        if let Some(tls_config) = grpc::encryption::prepare_tls_config(encryption_config)? {
+            grpc_server = grpc_server
+                .tls_config(tls_config)
+                .map_err(|source| ServerOpenError::GrpcTlsFailedConfiguration { source: Arc::new(source) })?;
+        }
+        let authenticator =
+            grpc::authenticator::Authenticator::new(credential_verifier, token_manager, diagnostics_manager);
+
+        grpc_server
             .layer(&authenticator)
-            .add_service(service)
-            .serve_with_shutdown(self.address, async {
+            .add_service(typedb_protocol::type_db_server::TypeDbServer::new(service))
+            .serve_with_shutdown(address, async {
                 // The tonic server starts a shutdown process when this closure execution finishes
-                Self::shutdown_handler(self.shutdown_sender).await;
+                shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
             })
             .await
-            .map_err(|source| ServerOpenError::Serve { address: self.address, source: Arc::new(source) })
+            .map_err(|source| ServerOpenError::GrpcServe { address, source: Arc::new(source) })
     }
 
-    fn create_tonic_server(encryption_config: &EncryptionConfig) -> Result<tonic::transport::Server, ServerOpenError> {
-        let tonic_server =
-            Self::configure_tonic_server_encryption(tonic::transport::Server::builder(), encryption_config)?;
-        Ok(tonic_server.http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE)))
-    }
-
-    fn configure_tonic_server_encryption(
-        server: tonic::transport::Server,
+    async fn serve_http(
+        address: SocketAddr,
+        credential_verifier: Arc<CredentialVerifier>,
+        token_manager: Arc<TokenManager>,
+        diagnostics_manager: Arc<DiagnosticsManager>,
         encryption_config: &EncryptionConfig,
-    ) -> Result<tonic::transport::Server, ServerOpenError> {
-        if !encryption_config.enabled {
-            return Ok(server);
-        }
+        mut shutdown_receiver: tokio::sync::watch::Receiver<()>,
+        service: http::typedb_service::TypeDBService,
+    ) -> Result<(), ServerOpenError> {
+        let authenticator =
+            http::authenticator::Authenticator::new(credential_verifier, token_manager, diagnostics_manager);
 
-        let cert_path = encryption_config.cert.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
-        let cert = fs::read_to_string(cert_path).map_err(|source| ServerOpenError::CouldNotReadTLSCertificate {
-            path: cert_path.display().to_string(),
-            source: Arc::new(source),
-        })?;
-        let cert_key_path =
-            encryption_config.cert_key.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
-        let cert_key =
-            fs::read_to_string(cert_key_path).map_err(|source| ServerOpenError::CouldNotReadTLSCertificateKey {
-                path: cert_key_path.display().to_string(),
-                source: Arc::new(source),
-            })?;
-        let mut tls_config = ServerTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
+        let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
+        let http_service = Arc::new(service);
+        let router_service = http::typedb_service::TypeDBService::create_protected_router(http_service.clone())
+            .layer(authenticator)
+            .merge(http::typedb_service::TypeDBService::create_unprotected_router(http_service))
+            .layer(http::typedb_service::TypeDBService::create_cors_layer())
+            .into_make_service();
 
-        if let Some(root_ca_path) = &encryption_config.root_ca {
-            let root_ca = fs::read_to_string(root_ca_path).map_err(|source| ServerOpenError::CouldNotReadRootCA {
-                path: root_ca_path.display().to_string(),
-                source: Arc::new(source),
-            })?;
-            tls_config = tls_config.client_ca_root(Certificate::from_pem(root_ca)).client_auth_optional(true);
+        let shutdown_handle = Handle::new();
+        let shutdown_handle_clone = shutdown_handle.clone();
+        tokio::spawn(async move {
+            shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
+            shutdown_handle_clone.graceful_shutdown(None); // None: indefinite shutdown time
+        });
+
+        match encryption_config {
+            Some(encryption_config) => {
+                axum_server::bind_rustls(address, RustlsConfig::from_config(Arc::new(encryption_config)))
+                    .handle(shutdown_handle)
+                    .serve(router_service)
+                    .await
+            }
+            None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
-        server.tls_config(tls_config).map_err(|source| ServerOpenError::TLSConfigError { source: Arc::new(source) })
+        .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
     }
 
     async fn resolve_address(address: String) -> SocketAddr {
@@ -286,20 +396,30 @@ impl Server {
 
     fn print_hello(logo: &str, distribution: &str, version: &str, is_development_mode_enabled: bool) {
         println!("{logo}"); // very important
+        let version = version.trim();
         if is_development_mode_enabled {
             println!("Running {distribution} {version} in development mode.");
         } else {
             println!("Running {distribution} {version}.");
         }
-        println!("Ready!");
     }
 
-    async fn shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
-        Self::listen_to_ctrl_c_signal().await;
-        println!("\nReceived CTRL-C. Initiating shutdown...");
-        shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
+    fn print_serving_information(grpc_address: SocketAddr, http_address: Option<SocketAddr>) {
+        print!("Serving gRPC on {grpc_address}");
+        if let Some(http_address) = http_address {
+            print!(" and HTTP on {http_address}");
+        }
+        println!(".\nReady!");
+    }
 
-        tokio::spawn(Self::forced_shutdown_handler());
+    fn spawn_shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
+        tokio::spawn(async move {
+            Self::listen_to_ctrl_c_signal().await;
+            println!("\nReceived CTRL-C. Initiating shutdown...");
+            shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
+
+            tokio::spawn(Self::forced_shutdown_handler());
+        });
     }
 
     async fn forced_shutdown_handler() {
@@ -313,6 +433,6 @@ impl Server {
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
-        self.typedb_service.database_manager()
+        self.grpc_service.database_manager()
     }
 }

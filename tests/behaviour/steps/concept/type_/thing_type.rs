@@ -14,9 +14,10 @@ use cucumber::gherkin::Step;
 use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use params;
 
 use crate::{
-    generic_step, params,
+    generic_step,
     transaction_context::{with_read_tx, with_schema_tx, with_write_tx},
     util, with_type, Context,
 };

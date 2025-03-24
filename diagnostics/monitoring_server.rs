@@ -69,7 +69,7 @@ impl MonitoringServer {
         let (content_type, body) = if query.contains("format=json") {
             ("application/json", diagnostics.to_monitoring_json().to_string().into_bytes())
         } else {
-            ("text/plain", diagnostics.to_prometheus_data().into_bytes())
+            ("text/plain", diagnostics.to_monitoring_prometheus().into_bytes())
         };
 
         Ok(Response::builder()

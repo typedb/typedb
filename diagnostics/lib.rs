@@ -14,18 +14,26 @@ use std::{
     sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use serde_json::{json, Value as JSONValue};
+use serde_json::Value as JSONValue;
 use xxhash_rust::xxh3::Xxh3;
 
-use crate::metrics::{
-    ActionKind, ActionMetrics, DatabaseMetrics, ErrorMetrics, LoadKind, LoadMetrics, ServerMetrics, ServerProperties,
+use crate::{
+    metrics::{
+        client_endpoints_map, ActionKind, ActionMetrics, ClientEndpoint, DatabaseMetrics, ErrorMetrics, LoadKind,
+        LoadMetrics, ServerMetrics, ServerProperties, ALL_CLIENT_ENDPOINTS,
+    },
+    reports::{
+        json_monitoring::to_monitoring_json,
+        posthog::{to_full_posthog_reporting_json, to_minimal_posthog_reporting_json},
+        prometheus_monitoring::to_monitoring_prometheus,
+    },
 };
 
 pub mod diagnostics_manager;
 pub mod metrics;
 mod monitoring_server;
 mod reporter;
-mod version;
+mod reports;
 
 type DatabaseHash = u64;
 type DatabaseHashOpt = Option<u64>;
@@ -35,8 +43,8 @@ pub struct Diagnostics {
     server_properties: ServerProperties,
     server_metrics: ServerMetrics,
     load_metrics: RwLock<HashMap<DatabaseHash, LoadMetrics>>,
-    action_metrics: RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>,
-    error_metrics: RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>,
+    action_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ActionMetrics>>>,
+    error_metrics: HashMap<ClientEndpoint, RwLock<HashMap<DatabaseHashOpt, ErrorMetrics>>>,
 
     is_full_reporting: bool,
     owned_databases: RwLock<HashSet<DatabaseHash>>,
@@ -55,8 +63,8 @@ impl Diagnostics {
             server_properties: ServerProperties::new(deployment_id, server_id, distribution, is_reporting_enabled),
             server_metrics: ServerMetrics::new(version, data_directory),
             load_metrics: RwLock::new(HashMap::new()),
-            action_metrics: RwLock::new(HashMap::new()),
-            error_metrics: RwLock::new(HashMap::new()),
+            action_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
+            error_metrics: client_endpoints_map!(RwLock::new(HashMap::new())),
 
             is_full_reporting: is_reporting_enabled,
             owned_databases: RwLock::new(HashSet::new()),
@@ -83,209 +91,90 @@ impl Diagnostics {
         }
     }
 
-    pub fn increment_load_count(&self, database_name: &str, load_kind: LoadKind) {
+    pub fn increment_load_count(
+        &self,
+        client: ClientEndpoint,
+        database_name: impl AsRef<str> + Hash,
+        load_kind: LoadKind,
+    ) {
         let database_hash = Self::hash_database(database_name);
         let loads = self.lock_load_metrics_read_for_database(database_hash);
-        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(load_kind);
+        loads.get(&database_hash).expect("Expected database in loads").increment_connection_count(client, load_kind);
     }
 
-    pub fn decrement_load_count(&self, database_name: &str, load_kind: LoadKind) {
+    pub fn decrement_load_count(
+        &self,
+        client: ClientEndpoint,
+        database_name: impl AsRef<str> + Hash,
+        load_kind: LoadKind,
+    ) {
         let database_hash = Self::hash_database(database_name);
         let loads = self.lock_load_metrics_read_for_database(database_hash);
-        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(load_kind);
+        loads.get(&database_hash).expect("Expected database in loads").decrement_connection_count(client, load_kind);
     }
 
-    pub fn submit_action_success(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind) {
+    pub fn submit_action_success(
+        &self,
+        client: ClientEndpoint,
+        database_name: Option<impl AsRef<str> + Hash>,
+        action_kind: ActionKind,
+    ) {
         let database_hash = Self::hash_database_opt(database_name);
-        let actions = self.lock_action_metrics_read_for_database(database_hash);
+        let actions = self.lock_action_metrics_read_for_database(client, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_success(action_kind);
     }
 
-    pub fn submit_action_fail(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind) {
+    pub fn submit_action_fail(
+        &self,
+        client: ClientEndpoint,
+        database_name: Option<impl AsRef<str> + Hash>,
+        action_kind: ActionKind,
+    ) {
         let database_hash = Self::hash_database_opt(database_name);
-        let actions = self.lock_action_metrics_read_for_database(database_hash);
+        let actions = self.lock_action_metrics_read_for_database(client, database_hash);
         actions.get(&database_hash).expect("Expected database in actions").submit_fail(action_kind);
     }
 
-    pub fn submit_error(&self, database_name: Option<impl AsRef<str> + Hash>, error_code: String) {
+    pub fn submit_error(
+        &self,
+        client: ClientEndpoint,
+        database_name: Option<impl AsRef<str> + Hash>,
+        error_code: String,
+    ) {
         let database_hash = Self::hash_database_opt(database_name);
-        let errors = self.lock_error_metrics_read_for_database(database_hash);
+        let errors = self.lock_error_metrics_read_for_database(client, database_hash);
         errors.get(&database_hash).expect("Expected database in errors").submit(error_code);
     }
 
-    pub fn take_service_snapshot(&self) {
+    pub fn take_snapshot(&self) {
         self.lock_load_metrics_read().values().for_each(|metrics| metrics.take_snapshot());
-        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.take_service_snapshot());
-        self.lock_error_metrics_write().values_mut().for_each(|metrics| metrics.take_snapshot());
-    }
-
-    pub fn take_posthog_snapshot(&self) {
-        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.take_posthog_snapshot());
+        for client in ALL_CLIENT_ENDPOINTS {
+            self.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
+            self.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.take_snapshot());
+        }
     }
 
     pub fn restore_posthog_snapshot(&self) {
-        self.lock_action_metrics_write().values_mut().for_each(|metrics| metrics.restore_posthog_snapshot());
-    }
-
-    pub fn to_service_reporting_json_against_snapshot(&self) -> JSONValue {
-        match self.is_full_reporting {
-            true => self.to_full_service_reporting_json(),
-            false => self.to_minimal_service_reporting_json(),
+        self.lock_load_metrics_read().values().for_each(|metrics| metrics.restore_snapshot());
+        for client in ALL_CLIENT_ENDPOINTS {
+            self.lock_action_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
+            self.lock_error_metrics_write(client).values_mut().for_each(|metrics| metrics.restore_snapshot());
         }
-    }
-
-    fn to_full_service_reporting_json(&self) -> JSONValue {
-        let mut diagnostics = self.server_properties.to_reporting_json();
-
-        diagnostics["server"] = self.server_metrics.to_full_json();
-
-        let load = self
-            .lock_load_metrics_read()
-            .iter()
-            .filter_map(|(database_hash, metrics)| {
-                metrics.to_reporting_json(database_hash, self.is_owned(database_hash))
-            })
-            .collect();
-        diagnostics["load"] = JSONValue::Array(load);
-
-        let actions = self
-            .lock_action_metrics_read()
-            .iter()
-            .flat_map(|(database_hash, metrics)| metrics.to_service_reporting_json(database_hash))
-            .collect();
-        diagnostics["actions"] = JSONValue::Array(actions);
-
-        let errors = self
-            .lock_error_metrics_read()
-            .iter()
-            .flat_map(|(database_hash, metrics)| metrics.to_reporting_json(database_hash))
-            .collect();
-        diagnostics["errors"] = JSONValue::Array(errors);
-
-        diagnostics
-    }
-
-    fn to_minimal_service_reporting_json(&self) -> JSONValue {
-        let mut diagnostics = self.server_properties.to_reporting_json();
-        diagnostics["server"] = self.server_metrics.to_minimal_reporting_json();
-        diagnostics
     }
 
     pub fn to_monitoring_json(&self) -> JSONValue {
-        let mut diagnostics = self.server_properties.to_monitoring_json();
-
-        diagnostics["server"] = self.server_metrics.to_full_json();
-
-        let load = self
-            .lock_load_metrics_read()
-            .iter()
-            .filter_map(|(database_hash, metrics)| {
-                metrics.to_monitoring_json(database_hash, self.is_owned(database_hash))
-            })
-            .collect();
-        diagnostics["load"] = JSONValue::Array(load);
-
-        let actions = self
-            .lock_action_metrics_read()
-            .iter()
-            .flat_map(|(database_hash, metrics)| metrics.to_monitoring_json(database_hash))
-            .collect();
-        diagnostics["actions"] = JSONValue::Array(actions);
-
-        let errors = self
-            .lock_error_metrics_read()
-            .iter()
-            .flat_map(|(database_hash, metrics)| metrics.to_monitoring_json(database_hash))
-            .collect();
-        diagnostics["errors"] = JSONValue::Array(errors);
-
-        diagnostics
+        to_monitoring_json(self)
     }
 
-    pub fn to_prometheus_data(&self) -> String {
-        let mut database_load_data = LoadMetrics::prometheus_header().to_owned() + "\n";
-        let database_load_data_header_length = database_load_data.len();
-        for (database_hash, metrics) in self.lock_load_metrics_read().iter() {
-            database_load_data.push_str(&metrics.to_prometheus_data(database_hash, self.is_owned(database_hash)));
-        }
-
-        let mut requests_data_attempted = ActionMetrics::prometheus_header_attempted().to_owned() + "\n";
-        let requests_data_attempted_header_length = requests_data_attempted.len();
-        for (database_hash, metrics) in self.lock_action_metrics_read().iter() {
-            requests_data_attempted.push_str(&metrics.to_prometheus_data_attempted(database_hash));
-        }
-
-        let mut requests_data_successful = ActionMetrics::prometheus_header_successful().to_owned() + "\n";
-        let requests_data_successful_header_length = requests_data_successful.len();
-        for (database_hash, metrics) in self.lock_action_metrics_read().iter() {
-            requests_data_successful.push_str(&metrics.to_prometheus_data_successful(database_hash));
-        }
-
-        let mut user_errors_data = ErrorMetrics::prometheus_header().to_owned() + "\n";
-        let user_errors_data_header_length = user_errors_data.len();
-        for (database_hash, metrics) in self.lock_error_metrics_read().iter() {
-            user_errors_data.push_str(&metrics.to_prometheus_data(database_hash));
-        }
-
-        [
-            self.server_properties.to_prometheus_comment() + &self.server_metrics.to_prometheus_comment(),
-            ServerMetrics::prometheus_header().to_owned(),
-            self.server_metrics.to_prometheus_data(),
-            if database_load_data.len() > database_load_data_header_length {
-                database_load_data
-            } else {
-                String::new()
-            },
-            if requests_data_attempted.len() > requests_data_attempted_header_length {
-                requests_data_attempted
-            } else {
-                String::new()
-            },
-            if requests_data_successful.len() > requests_data_successful_header_length {
-                requests_data_successful
-            } else {
-                String::new()
-            },
-            if user_errors_data.len() > user_errors_data_header_length { user_errors_data } else { String::new() },
-        ]
-        .join("\n")
+    pub fn to_monitoring_prometheus(&self) -> String {
+        to_monitoring_prometheus(self)
     }
 
     pub fn to_posthog_reporting_json_against_snapshot(&self, api_key: &str) -> JSONValue {
         match self.is_full_reporting {
-            true => self.to_full_posthog_reporting_json(api_key),
-            false => self.to_minimal_posthog_reporting_json(api_key),
+            true => to_full_posthog_reporting_json(self, api_key),
+            false => to_minimal_posthog_reporting_json(self, api_key),
         }
-    }
-
-    fn to_full_posthog_reporting_json(&self, api_key: &str) -> JSONValue {
-        let mut common_properties = self.server_properties.to_posthog_reporting_json();
-        common_properties.extend(self.server_metrics.to_posthog_full_reporting_json().into_iter());
-
-        let mut batch: Vec<_> = self
-            .lock_action_metrics_read()
-            .iter()
-            .filter_map(|(database_hash, metrics)| {
-                metrics.to_posthog_reporting_json(database_hash, common_properties.clone())
-            })
-            .collect();
-        if batch.is_empty() {
-            batch.push(ActionMetrics::empty_posthog_reporting_json(common_properties));
-        }
-
-        json!({
-            "api_key": api_key,
-            "batch": batch,
-        })
-    }
-
-    fn to_minimal_posthog_reporting_json(&self, api_key: &str) -> JSONValue {
-        let mut common_properties = self.server_properties.to_posthog_reporting_json();
-        common_properties.extend(self.server_metrics.to_posthog_minimal_reporting_json().into_iter());
-        json!({
-            "api_key": api_key,
-            "batch": vec![ActionMetrics::empty_posthog_reporting_json(common_properties)],
-        })
     }
 
     fn hash_database(database_name: impl AsRef<str> + Hash) -> DatabaseHash {
@@ -362,6 +251,68 @@ macro_rules! generate_metric_functions {
             }
         }
     };
+    (
+        $metrics_field:ident,
+        $metrics_type:ty,
+        $hash_type:ty,
+        $metric_new_fn:expr,
+        $lock_read_fn:ident,
+        $lock_write_fn:ident,
+        $lock_read_for_database_fn:ident,
+        $try_lock_read_for_database_fn:ident,
+        $add_database_fn:ident,
+        $client_type:ty
+    ) => {
+        impl Diagnostics {
+            fn $lock_read_for_database_fn(
+                &self,
+                client: $client_type,
+                database_hash: $hash_type,
+            ) -> RwLockReadGuard<'_, HashMap<$hash_type, $metrics_type>> {
+                if let Some(lock) = self.$try_lock_read_for_database_fn(client, database_hash) {
+                    return lock;
+                }
+                self.$add_database_fn(client, database_hash);
+                self.$try_lock_read_for_database_fn(client, database_hash)
+                    .expect("Expected metrics lock acquisition for database after adding")
+            }
+
+            fn $try_lock_read_for_database_fn(
+                &self,
+                client: $client_type,
+                database_hash: $hash_type,
+            ) -> Option<RwLockReadGuard<'_, HashMap<$hash_type, $metrics_type>>> {
+                let read_lock = self.$lock_read_fn(client);
+                match read_lock.contains_key(&database_hash) {
+                    true => Some(read_lock),
+                    false => None,
+                }
+            }
+
+            fn $add_database_fn(&self, client: $client_type, database_hash: $hash_type) {
+                let mut write_lock = self.$lock_write_fn(client);
+                if !write_lock.contains_key(&database_hash) {
+                    write_lock.insert(database_hash, $metric_new_fn());
+                }
+            }
+
+            fn $lock_read_fn(&self, client: $client_type) -> RwLockReadGuard<'_, HashMap<$hash_type, $metrics_type>> {
+                self.$metrics_field
+                    .get(&client)
+                    .expect("Expected client {client}")
+                    .read()
+                    .expect("Expected read lock acquisition")
+            }
+
+            fn $lock_write_fn(&self, client: $client_type) -> RwLockWriteGuard<'_, HashMap<$hash_type, $metrics_type>> {
+                self.$metrics_field
+                    .get(&client)
+                    .expect("Expected client {client}")
+                    .write()
+                    .expect("Expected write lock acquisition")
+            }
+        }
+    };
 }
 
 generate_metric_functions!(
@@ -385,7 +336,8 @@ generate_metric_functions!(
     lock_action_metrics_write,
     lock_action_metrics_read_for_database,
     try_lock_action_metrics_read_for_database,
-    add_database_to_action_metrics
+    add_database_to_action_metrics,
+    ClientEndpoint
 );
 
 generate_metric_functions!(
@@ -397,7 +349,8 @@ generate_metric_functions!(
     lock_error_metrics_write,
     lock_error_metrics_read_for_database,
     try_lock_error_metrics_read_for_database,
-    add_database_to_error_metrics
+    add_database_to_error_metrics,
+    ClientEndpoint
 );
 
 // Used when the hash has to be consistent over time and restarts (default hasher does not suit)

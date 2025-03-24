@@ -28,7 +28,7 @@ impl Credential {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct PasswordHash {
     pub value: String,
 }

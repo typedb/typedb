@@ -10,6 +10,7 @@ rust_library(
     name = "diagnostics",
     srcs = glob([
         "*.rs",
+        "*/*.rs",
     ]),
     deps = [
         "//common/error",
@@ -23,6 +24,7 @@ rust_library(
         "@crates//:futures",
         "@crates//:hyper",
         "@crates//:hyper-rustls",
+        "@crates//:serde",
         "@crates//:serde_json",
         "@crates//:sentry",
         "@crates//:sysinfo",
@@ -35,7 +37,7 @@ rust_library(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*", "*/*"]),
     exclude = glob([
         "Cargo.*",
     ]),

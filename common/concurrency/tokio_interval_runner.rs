@@ -70,7 +70,7 @@ impl TokioIntervalRunner {
 impl Drop for TokioIntervalRunner {
     fn drop(&mut self) {
         let (sender, receiver) = std_mpsc::sync_channel(1);
-        self.shutdown_sender.send(sender).unwrap();
-        receiver.recv().unwrap()
+        self.shutdown_sender.send(sender).expect("Expected shutdown signal sending");
+        receiver.recv().expect("Expected shutdown finalization")
     }
 }

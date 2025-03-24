@@ -4,21 +4,40 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{path::PathBuf, str::FromStr};
+use std::{path::PathBuf, str::FromStr, time::Duration};
 
 use clap::{ArgAction, Parser};
-use resource::constants::server::{MONITORING_DEFAULT_PORT, VERSION};
+use resource::constants::server::{
+    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS, DEFAULT_HTTP_ADDRESS, MONITORING_DEFAULT_PORT, VERSION,
+};
 
-use crate::parameters::config::{Config, DiagnosticsConfig, EncryptionConfig};
+use crate::parameters::config::{AuthenticationConfig, Config, DiagnosticsConfig, EncryptionConfig};
 
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
 #[clap(version = VERSION)]
 pub struct CLIArgs {
-    /// Server host and port, eg., 0.0.0.0:1729
-    #[arg(long = "server.address")]
-    pub server_address: Option<String>,
+    /// Server host and port (e.g., 0.0.0.0:1729)
+    #[arg(long = "server.address", default_value_t = DEFAULT_ADDRESS.to_string())]
+    pub server_address: String,
+
+    /// Enable/disable HTTP endpoint
+    #[arg(long = "server.http.enable", default_value_t = true, action=ArgAction::Set)]
+    pub server_http_enable: bool,
+
+    /// HTTP endpoint host and port (e.g., 0.0.0.0:8000)
+    #[arg(long = "server.http.address", default_value_t = DEFAULT_HTTP_ADDRESS.to_string())]
+    pub server_http_address: String,
+
+    /// The amount of seconds generated authentication tokens will remain valid, specified in seconds.
+    /// Use smaller values for better security and bigger values for better authentication performance and convenience
+    /// (min: 1 second, max: 1 year).
+    #[arg(
+        long = "server.authentication.token_ttl_seconds",
+        default_value_t = DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS,
+    )]
+    pub server_authentication_token_ttl_seconds: u64,
 
     /// Enable/disable in-flight encryption. Specify to enable, or leave out to disable
     #[arg(long = "server.encryption.enabled")]
@@ -65,6 +84,9 @@ pub struct CLIArgs {
 
 impl CLIArgs {
     pub fn to_config(&self) -> Config {
+        let authentication_config = AuthenticationConfig {
+            token_expiration_seconds: Duration::from_secs(self.server_authentication_token_ttl_seconds),
+        };
         let encryption_config = EncryptionConfig {
             enabled: self.server_encryption_enabled,
             cert: self.server_encryption_cert.clone().map(|path| PathBuf::from_str(path.as_str()).unwrap()),
@@ -77,13 +99,19 @@ impl CLIArgs {
             is_monitoring_enabled: self.diagnostics_monitoring_enable,
             monitoring_port: self.diagnostics_monitoring_port,
         };
-        let data_dir = self.storage_data.clone().map(|dir| PathBuf::from_str(dir.as_str()).unwrap());
-        Config::customised(
-            self.server_address.clone(),
-            Some(encryption_config),
-            Some(diagnostics_config),
-            data_dir,
-            self.development_mode_enabled,
-        )
+
+        let mut config = Config::new(self.server_address.clone())
+            .authentication(authentication_config)
+            .encryption(encryption_config)
+            .diagnostics(diagnostics_config)
+            .development_mode(self.development_mode_enabled);
+        if self.server_http_enable {
+            config = config.server_http_address(&self.server_http_address);
+        }
+        if let Some(data_directory) = self.storage_data.as_ref() {
+            config =
+                config.data_directory(&PathBuf::from_str(data_directory.as_str()).expect("Expected data directory"));
+        }
+        config.build()
     }
 }

@@ -71,6 +71,21 @@ pub trait TypeDBError {
     fn bottom_source_span(&self) -> Option<::typeql::common::Span> {
         self.source_typedb_error().and_then(|err| err.bottom_source_span()).or_else(|| self.source_span())
     }
+
+    fn stack_trace(&self) -> Vec<String>
+    where
+        Self: Sized + Sync,
+    {
+        let mut stack_trace = Vec::with_capacity(4); // definitely non-zero!
+        let mut error: &(dyn TypeDBError + Sync) = self;
+        stack_trace.push(error.format_code_and_description());
+        while let Some(source) = error.source_typedb_error() {
+            error = source;
+            stack_trace.push(error.format_code_and_description());
+        }
+        stack_trace.reverse();
+        stack_trace
+    }
 }
 
 impl PartialEq for dyn TypeDBError {

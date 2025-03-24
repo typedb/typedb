@@ -156,6 +156,13 @@ build:
         bazel test //tests/behaviour/query/functions:test_basic --test_output=streamed
         bazel test //tests/behaviour/query/functions:test_recursion --test_output=streamed
 
+    test-behaviour-service:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/service/... --test_output=streamed --jobs=1
+
 release:
   filter:
     owner: typedb

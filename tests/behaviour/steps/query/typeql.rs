@@ -22,14 +22,15 @@ use executor::{
     pipeline::stage::{ExecutionContext, StageIterator},
     ExecutionInterrupt,
 };
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
+use params;
 use query::error::QueryError;
 use test_utils::assert_matches;
 
 use crate::{
-    generic_step, params,
+    generic_step,
     query_answer_context::{with_rows_answer, QueryAnswer},
     transaction_context::{
         with_read_tx, with_schema_tx, with_write_tx_deconstructed,
@@ -201,7 +202,7 @@ fn execute_write_query(
 async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query);
-    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+    if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
         return;
     }
     let typeql_schema = parse_result.unwrap().into_schema();
@@ -222,7 +223,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             typeql_schema,
             query,
         );
-        if may_error.check_logic(result).is_some() {
+        if let Either::Right(_err) = may_error.check_logic(result) {
             context.close_active_transaction();
         }
     });
@@ -233,13 +234,13 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
 async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);
-    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+    if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
         return;
     }
     let query = parse_result.unwrap();
 
     let result = execute_write_query(context, query, query_str);
-    if may_error.check_logic(result).is_some() {
+    if let Either::Right(_) = may_error.check_logic(result) {
         context.close_active_transaction();
     }
 }
@@ -258,7 +259,7 @@ async fn get_answers_of_typeql_write_query(context: &mut Context, step: &Step) {
 async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);
-    if may_error.check_parsing(parse_result.as_ref()).is_some() {
+    if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
         return;
     }
     let query = parse_result.unwrap();

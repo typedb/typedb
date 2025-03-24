@@ -17,8 +17,7 @@ fi
 # ================================================
 
 print_usage() {
-    # TODO: Add [--help] back to server
-    echo "  Server:          typedb server"
+    echo "  Server:          typedb server [--help]"
     if [[ $CONSOLE_EXISTS ]]; then
       echo "  Console:         typedb console [--help]"
     fi

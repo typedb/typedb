@@ -4,14 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, future::Future, hash::Hash, sync::Arc};
+use std::{collections::HashSet, hash::Hash, sync::Arc};
 
 use resource::constants::database::INTERNAL_DATABASE_PREFIX;
-use tonic::Status;
-use tonic_types::StatusExt;
 
 use crate::{
-    metrics::{ActionKind, DatabaseMetrics, LoadKind},
+    metrics::{ActionKind, ClientEndpoint, DatabaseMetrics, LoadKind},
     monitoring_server::MonitoringServer,
     reporter::Reporter,
     Diagnostics,
@@ -65,11 +63,11 @@ impl DiagnosticsManager {
 
     diagnostics_method! {
         pub fn submit_database_metrics(&self, database_metrics: HashSet<DatabaseMetrics>);
-        pub fn submit_error(&self, database_name: Option<impl AsRef<str> + Hash>, error_code: String);
-        pub fn submit_action_success(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn submit_action_fail(&self, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
-        pub fn increment_load_count(&self, database_name: &str, connection_: LoadKind);
-        pub fn decrement_load_count(&self, database_name: &str, connection_: LoadKind);
+        pub fn submit_error(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, error_code: String);
+        pub fn submit_action_success(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
+        pub fn submit_action_fail(&self, client: ClientEndpoint, database_name: Option<impl AsRef<str> + Hash>, action_kind: ActionKind);
+        pub fn increment_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: LoadKind);
+        pub fn decrement_load_count(&self, client: ClientEndpoint, database_name: impl AsRef<str> + Hash, connection_: LoadKind);
     }
 
     pub async fn may_start_reporting(&self) {
@@ -85,67 +83,7 @@ impl DiagnosticsManager {
     }
 }
 
-pub fn run_with_diagnostics<F, T>(
-    diagnostics_manager: &DiagnosticsManager,
-    database_name: Option<impl AsRef<str> + Hash>,
-    action_kind: ActionKind,
-    f: F,
-) -> Result<T, Status>
-where
-    F: FnOnce() -> Result<T, Status>,
-{
-    let result = f();
-    submit_result_metrics(diagnostics_manager, database_name, action_kind, &result);
-    result
-}
-
-pub async fn run_with_diagnostics_async<F, Fut, T>(
-    diagnostics_manager: Arc<DiagnosticsManager>,
-    database_name: Option<impl AsRef<str> + Hash>,
-    action_kind: ActionKind,
-    f: F,
-) -> Result<T, Status>
-where
-    F: FnOnce() -> Fut,
-    Fut: Future<Output = Result<T, Status>> + Send,
-    T: Send,
-{
-    let result = f().await;
-    submit_result_metrics(&diagnostics_manager, database_name, action_kind, &result);
-    result
-}
-
-fn submit_result_metrics<T>(
-    diagnostics_manager: &DiagnosticsManager,
-    database_name: Option<impl AsRef<str> + Hash>,
-    action_kind: ActionKind,
-    result: &Result<T, Status>,
-) {
-    if !is_diagnostics_needed(database_name.as_ref()) {
-        return;
-    }
-
-    match result {
-        Ok(_) => diagnostics_manager.submit_action_success(database_name, action_kind),
-        Err(status) => {
-            diagnostics_manager.submit_action_fail(database_name.as_ref(), action_kind);
-            if let Some(error_code) = get_status_error_code(status) {
-                diagnostics_manager.submit_error(database_name, error_code.clone());
-            }
-        }
-    }
-}
-
-fn get_status_error_code(status: &Status) -> Option<String> {
-    if let Ok(details) = status.check_error_details() {
-        if let Some(error_info) = details.error_info() {
-            return Some(error_info.reason.clone());
-        }
-    }
-    None // status.code() can return too long string descriptions from external libraries
-}
-
-fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
+pub fn is_diagnostics_needed(database_name: Option<impl AsRef<str> + Hash>) -> bool {
     // TODO: Would be good to reuse DatabaseManager's is_user_database() instead
     match database_name {
         Some(database_name) => !database_name.as_ref().starts_with(INTERNAL_DATABASE_PREFIX),
