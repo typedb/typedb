@@ -358,7 +358,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(
@@ -1339,7 +1339,7 @@ fn intersections_seeks_with_extra_values() {
     .owner();
     let age_12 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(12)).unwrap();
     person_4.set_has_unordered(&mut snapshot, &thing_manager, &age_12, StorageCounters::DISABLED).unwrap();
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     // IR to compute type annotations
     let mut translation_context = TranslationContext::new();

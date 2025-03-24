@@ -65,7 +65,7 @@ fn setup(
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
         .unwrap();
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_pipeline();
@@ -84,7 +84,7 @@ fn setup(
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let mut statistics = Statistics::new(SequenceNumber::new(0));
     statistics.may_synchronise(storage).unwrap();

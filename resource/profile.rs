@@ -18,10 +18,150 @@ use std::{
 use itertools::Itertools;
 
 #[derive(Debug)]
-pub struct TransactionProfile {}
+pub struct TransactionProfile {
+    commit_profile: CommitProfile,
+}
 
+impl TransactionProfile {
+    pub fn new(enabled: bool) -> Self {
+        Self { commit_profile: CommitProfile::new(enabled) }
+    }
+
+    pub fn commit_profile(&mut self) -> &mut CommitProfile {
+        &mut self.commit_profile
+    }
+}
+
+#[derive(Debug)]
 pub struct CommitProfile {
+    data: Option<CommitProfileData>,
+}
+
+impl CommitProfile {
+    pub const DISABLED: Self = Self { data: None };
+
+    pub fn new(enabled: bool) -> Self {
+        match enabled {
+            true => Self { data: Some(CommitProfileData::new()) },
+            false => Self { data: None },
+        }
+    }
+
+    pub fn start(&mut self) {
+        if let Some(data) = &mut self.data {
+            data.start = Instant::now();
+        }
+    }
+
+    pub fn types_validated(&mut self) {
+        todo!()
+    }
+
+    pub fn things_finalised(&mut self) {
+        todo!()
+    }
+
+    pub fn functions_finalised(&mut self) {
+        todo!()
+    }
+
+    pub fn schema_update_statistics_durably_written(&mut self) {}
+
+    pub fn snapshot_put_statuses_checked(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_commit_record_created(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_durable_write_data_submitted(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_isolation_validated(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_durable_write_data_confirmed(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_storage_written(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_isolation_manager_notified(&mut self) {
+        todo!()
+    }
+
+    pub fn snapshot_durable_write_commit_status_submitted(&mut self) {
+        todo!()
+    }
+
+    pub fn schema_update_caches_updated(&mut self) {
+        todo!()
+    }
+
+    pub fn schema_update_statistics_keys_updated(&mut self) {
+        todo!()
+    }
+
+    pub fn end(&mut self) {
+        todo!()
+    }
+
+    pub fn storage_counters(&self) -> StorageCounters {
+        match &self.data {
+            None => StorageCounters::DISABLED,
+            Some(data) => data.counters.clone(),
+        }
+    }
+}
+
+/// Record the time different stages of a commit.
+/// This struct is simplified to expect that we execute exactly these steps in a fixed order with no other (significant) operations.
+#[derive(Debug)]
+struct CommitProfileData {
     counters: StorageCounters,
+    start: Instant,
+    types_validation_nanos: u128,
+    things_finalise_nanos: u128,
+    functions_finalise_nanos: u128,
+    schema_update_statistics_durable_write_nanos: u128,
+    snapshot_put_statuses_check_nanos: u128,
+    snapshot_commit_record_create_nanos: u128,
+    snapshot_durable_write_data_submit_nanos: u128,
+    snapshot_isolation_validate_nanos: u128,
+    snapshot_durable_write_data_confirm_nanos: u128,
+    snapshot_storage_write_nanos: u128,
+    snapshot_isolation_manager_notify_nanos: u128,
+    snapshot_durable_write_commit_status_submit_nanos: u128,
+    schema_update_caches_update_nanos: u128,
+    schema_update_statistics_update_nanos: u128,
+}
+
+impl CommitProfileData {
+    fn new() -> Self {
+        Self {
+            counters: StorageCounters::new_enabled(),
+            start: Instant::now(), // DUMMY
+            types_validation_nanos: 0,
+            things_finalise_nanos: 0,
+            functions_finalise_nanos: 0,
+            schema_update_statistics_durable_write_nanos: 0,
+            snapshot_put_statuses_check_nanos: 0,
+            snapshot_commit_record_create_nanos: 0,
+            snapshot_durable_write_data_submit_nanos: 0,
+            snapshot_isolation_validate_nanos: 0,
+            snapshot_durable_write_data_confirm_nanos: 0,
+            snapshot_storage_write_nanos: 0,
+            snapshot_isolation_manager_notify_nanos: 0,
+            snapshot_durable_write_commit_status_submit_nanos: 0,
+            schema_update_caches_update_nanos: 0,
+            schema_update_statistics_update_nanos: 0,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -190,6 +330,8 @@ impl Display for CompileProfile {
     }
 }
 
+/// Record the time different stages of a query compilation take.
+/// This struct is simplified to expect that we execute exactly these steps in a fixed order with no other (significant) operations.
 #[derive(Debug)]
 struct CompileProfileData {
     start: Instant,

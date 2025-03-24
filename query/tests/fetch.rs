@@ -11,7 +11,7 @@ use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerato
 use executor::ExecutionInterrupt;
 use function::function_manager::FunctionManager;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
-use resource::profile::StorageCounters;
+use resource::profile::CommitProfile;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -36,7 +36,7 @@ fn define_schema(
     query_manager
         .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, schema_query, query_str)
         .unwrap();
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn insert_data(
@@ -54,7 +54,7 @@ fn insert_data(
         .unwrap();
     let (_iterator, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
     let snapshot = Arc::into_inner(context.snapshot).unwrap();
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 #[test]

@@ -1803,7 +1803,7 @@ pub mod tests {
                     Ordering::Unordered,
                 )
                 .unwrap();
-            snapshot.commit(StorageCounters::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
             (TypeAnnotation::Entity(type_owner), TypeAnnotation::Attribute(type_age))
         };
 

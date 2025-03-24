@@ -148,6 +148,7 @@ pub(crate) async fn execute_schema_query(
         query_manager,
         database,
         transaction_options,
+        profile,
     } = transaction;
     let mut snapshot = Arc::into_inner(snapshot).unwrap();
     let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) = spawn_blocking(move || {
@@ -164,7 +165,7 @@ pub(crate) async fn execute_schema_query(
     .await
     .expect("Expected schema query execution finishing");
 
-    let transaction = TransactionSchema::from(
+    let transaction = TransactionSchema::from_parts(
         snapshot,
         type_manager,
         thing_manager,
@@ -172,6 +173,7 @@ pub(crate) async fn execute_schema_query(
         query_manager,
         database,
         transaction_options,
+        profile,
     );
 
     (transaction, result)
@@ -192,6 +194,7 @@ pub(crate) fn execute_write_query_in_schema(
         query_manager,
         database,
         transaction_options,
+        profile,
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
@@ -206,7 +209,7 @@ pub(crate) fn execute_write_query_in_schema(
         interrupt,
     );
 
-    let transaction = Transaction::Schema(TransactionSchema::from(
+    let transaction = Transaction::Schema(TransactionSchema::from_parts(
         snapshot,
         type_manager,
         thing_manager,
@@ -214,6 +217,7 @@ pub(crate) fn execute_write_query_in_schema(
         query_manager,
         database,
         transaction_options,
+        profile,
     ));
 
     (transaction, result)
@@ -234,6 +238,7 @@ pub(crate) fn execute_write_query_in_write(
         query_manager,
         database,
         transaction_options,
+        profile,
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
@@ -248,7 +253,7 @@ pub(crate) fn execute_write_query_in_write(
         interrupt,
     );
 
-    let transaction = Transaction::Write(TransactionWrite::from(
+    let transaction = Transaction::Write(TransactionWrite::from_parts(
         Arc::new(snapshot),
         type_manager,
         thing_manager,
@@ -256,6 +261,7 @@ pub(crate) fn execute_write_query_in_write(
         query_manager,
         database,
         transaction_options,
+        profile,
     ));
 
     (transaction, result)

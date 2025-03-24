@@ -12,7 +12,10 @@ use bytes::byte_array::ByteArray;
 use criterion::{criterion_group, criterion_main, profiler::Profiler, Criterion};
 use durability::wal::WAL;
 use pprof::ProfilerGuard;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::{
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    profile::{CommitProfile, CompileProfile, StorageCounters},
+};
 use storage::{
     durability_client::WALClient,
     key_range::KeyRange,
@@ -61,16 +64,16 @@ fn populate_storage(storage: Arc<MVCCStorage<WALClient>>, keyspace: TestKeyspace
     let mut snapshot = storage.clone().open_snapshot_write();
     for i in 0..key_count {
         if i % BATCH_SIZE == 0 {
-            snapshot.commit().unwrap();
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
             snapshot = storage.clone().open_snapshot_write();
         }
         snapshot.put(random_key_24(keyspace));
     }
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     println!("Keys written: {}", key_count);
     let snapshot = storage.open_snapshot_read();
     let prefix: StorageKey<'_, 48> = StorageKey::Reference(StorageKeyReference::new(keyspace, &[0_u8]));
-    let iterator = snapshot.iterate_range(&KeyRange::new_within(prefix, false));
+    let iterator = snapshot.iterate_range(&KeyRange::new_within(prefix, false), StorageCounters::DISABLED);
     let count = iterator.collect_cloned_vec(|_, _| ((), ())).unwrap().len();
     println!("Keys confirmed to be written: {}", count);
     count
@@ -83,7 +86,8 @@ fn bench_snapshot_read_get(
     let snapshot = storage.open_snapshot_read();
     let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..1 {
-        last = snapshot.get(StorageKey::Array(random_key_24(keyspace)).as_reference()).unwrap();
+        last =
+            snapshot.get(StorageKey::Array(random_key_24(keyspace)).as_reference(), StorageCounters::DISABLED).unwrap();
     }
     last
 }
@@ -95,7 +99,8 @@ fn bench_snapshot_read_iterate<const ITERATE_COUNT: usize>(
     let snapshot = storage.open_snapshot_read();
     let mut last: Option<ByteArray<BUFFER_VALUE_INLINE>> = None;
     for _ in 0..ITERATE_COUNT {
-        last = snapshot.get(StorageKey::Array(random_key_4(keyspace)).as_reference()).unwrap();
+        last =
+            snapshot.get(StorageKey::Array(random_key_4(keyspace)).as_reference(), StorageCounters::DISABLED).unwrap();
     }
     last
 }
@@ -105,7 +110,7 @@ fn bench_snapshot_write_put(storage: Arc<MVCCStorage<WALClient>>, keyspace: Test
     for _ in 0..batch_size {
         snapshot.put(random_key_24(keyspace));
     }
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn setup_storage(storage_path: &Path, key_count: usize) -> Arc<MVCCStorage<WALClient>> {

@@ -26,7 +26,7 @@ use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
 use resource::{
     constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
-    profile::StorageCounters,
+    profile::{CommitProfile, StorageCounters},
 };
 use tracing::trace;
 
@@ -219,52 +219,66 @@ impl<Durability> MVCCStorage<Durability> {
     fn snapshot_commit(
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
-        storage_counters: StorageCounters,
+        commit_profile: &mut CommitProfile,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot, storage_counters.clone())
+        self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
             .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
+        commit_profile.snapshot_put_statuses_checked();
+
         let commit_record = snapshot.into_commit_record();
+        commit_profile.snapshot_commit_record_created();
 
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+        commit_profile.snapshot_durable_write_data_submitted();
 
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
+        commit_profile.snapshot_isolation_validated();
 
         match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
+                commit_profile.snapshot_durable_write_data_confirmed();
+
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
+                commit_profile.snapshot_storage_written();
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
+                commit_profile.snapshot_isolation_manager_notified();
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+                commit_profile.snapshot_durable_write_commit_status_submitted();
 
                 Ok(commit_sequence_number)
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();
+                commit_profile.snapshot_durable_write_data_confirmed();
+
                 Self::persist_commit_status(false, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+                commit_profile.snapshot_durable_write_commit_status_submitted();
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
             Err(error) => {
                 sync_notifier.recv().unwrap();
+                commit_profile.snapshot_durable_write_data_confirmed();
                 Err(Durability { name: self.name.clone(), typedb_source: error })
             }
         }

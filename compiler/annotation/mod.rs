@@ -306,7 +306,7 @@ pub mod tests {
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};
-        use resource::profile::StorageCounters;
+        use resource::profile::{CommitProfile, StorageCounters};
         use storage::{
             durability_client::WALClient,
             snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -400,7 +400,7 @@ pub mod tests {
             cat.set_plays(&mut snapshot, type_manager, thing_manager, has_fear).unwrap();
             dog.set_plays(&mut snapshot, type_manager, thing_manager, is_feared).unwrap();
 
-            snapshot.commit(StorageCounters::DISABLED).unwrap();
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
             (
                 (TypeAnnotation::Entity(animal), TypeAnnotation::Entity(cat), TypeAnnotation::Entity(dog)),

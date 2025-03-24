@@ -19,7 +19,7 @@ pub fn initialise_logging_global() {
         .add_directive(LevelFilter::INFO.into())
         .add_directive("database=trace".parse().unwrap())
         // .add_directive("durability=trace".parse().unwrap())
-        // .add_directive("server=trace".parse().unwrap())
+        .add_directive("server=trace".parse().unwrap())
         // .add_directive("storage=trace".parse().unwrap())
         // .add_directive("concept=trace".parse().unwrap())
         // .add_directive("executor=trace".parse().unwrap())

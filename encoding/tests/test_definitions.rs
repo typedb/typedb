@@ -18,7 +18,10 @@ use encoding::{
     value::value_type::ValueType,
     AsBytes, Keyable,
 };
-use resource::{constants::snapshot::BUFFER_VALUE_INLINE, profile::StorageCounters};
+use resource::{
+    constants::snapshot::BUFFER_VALUE_INLINE,
+    profile::{CommitProfile, StorageCounters},
+};
 use storage::snapshot::{CommittableSnapshot, ReadableSnapshot, WritableSnapshot};
 use test_utils_encoding::create_core_storage;
 
@@ -78,7 +81,7 @@ fn test_struct_definition() {
         let read_1_definition = get_struct_definition(&snapshot, &read_1_key);
         assert_eq!(struct_1_definition, read_1_definition);
     }
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     // Read back commmitted
     {

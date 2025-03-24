@@ -36,7 +36,7 @@ use encoding::{
     },
     value::{decimal_value::Decimal, label::Label, timezone::TimeZone, value::Value, value_type::ValueType},
 };
-use resource::profile::StorageCounters;
+use resource::profile::CommitProfile;
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -158,7 +158,7 @@ fn entity_usage() {
             }
         }
     }
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     {
         // With cache, committed
@@ -257,7 +257,7 @@ fn role_usage() {
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type));
         debug_assert_eq!(plays.role(), role_type);
     }
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     {
         // With cache, committed
@@ -471,7 +471,7 @@ fn annotations_with_range_arguments() {
             )
             .unwrap();
     }
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     {
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
@@ -836,7 +836,7 @@ fn annotations_with_value_arguments() {
             )
             .unwrap();
     }
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     {
         let snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
@@ -1055,7 +1055,7 @@ fn test_struct_definition() {
         assert_eq!(&outer_struct_name, &read_outer_definition.name);
         assert_eq!(&outer_struct_fields, &remap_struct_fields(read_outer_definition.borrow()));
     }
-    snapshot.commit(StorageCounters::DISABLED).unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     // Persisted, without cache
     {
@@ -1151,7 +1151,7 @@ fn test_struct_definition_updates() {
             remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
         );
 
-        snapshot.commit(StorageCounters::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
         struct_key
     };
 
@@ -1172,7 +1172,7 @@ fn test_struct_definition_updates() {
             remap_struct_fields(&type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap())
         );
 
-        snapshot.commit(StorageCounters::DISABLED).unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     };
 
     {

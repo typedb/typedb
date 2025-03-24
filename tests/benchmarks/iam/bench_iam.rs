@@ -37,6 +37,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         query_manager,
         database,
         transaction_options,
+        profile,
     } = tx;
     let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
     query_manager
@@ -49,7 +50,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
             &schema_str,
         )
         .unwrap();
-    let tx = TransactionSchema::from(
+    let tx = TransactionSchema::from_parts(
         inner_snapshot,
         type_manager,
         thing_manager,
@@ -57,6 +58,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         query_manager,
         database,
         transaction_options,
+        profile,
     );
     tx.commit().unwrap();
 }
@@ -76,6 +78,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         query_manager,
         database,
         transaction_options,
+        profile,
     } = tx;
     let write_pipeline = query_manager
         .prepare_write_pipeline(
@@ -88,7 +91,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         )
         .unwrap();
     let (_output, context) = write_pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    let tx = TransactionWrite::from(
+    let tx = TransactionWrite::from_parts(
         context.snapshot,
         type_manager,
         thing_manager,
@@ -96,6 +99,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         query_manager,
         database,
         transaction_options,
+        profile,
     );
     tx.commit().unwrap();
 }

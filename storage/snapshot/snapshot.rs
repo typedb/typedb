@@ -11,7 +11,7 @@ use error::typedb_error;
 use lending_iterator::LendingIterator;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
-    profile::StorageCounters,
+    profile::{CommitProfile, StorageCounters},
 };
 
 use crate::{
@@ -202,7 +202,7 @@ pub trait CommittableSnapshot<D>: WritableSnapshot
 where
     D: DurabilityClient,
 {
-    fn commit(self, storage_counters: StorageCounters) -> Result<Option<SequenceNumber>, SnapshotError>;
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError>;
 
     fn into_commit_record(self) -> CommitRecord;
 }
@@ -439,11 +439,11 @@ impl<D> WritableSnapshot for WriteSnapshot<D> {
 }
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for WriteSnapshot<D> {
-    fn commit(self, storage_counters: StorageCounters) -> Result<Option<SequenceNumber>, SnapshotError> {
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
             Ok(None)
         } else {
-            match self.storage.clone().snapshot_commit(self, storage_counters) {
+            match self.storage.clone().snapshot_commit(self, commit_profile) {
                 Ok(sequence_number) => Ok(Some(sequence_number)),
                 Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
             }
@@ -598,11 +598,11 @@ impl<D> WritableSnapshot for SchemaSnapshot<D> {
 
 impl<D: DurabilityClient> CommittableSnapshot<D> for SchemaSnapshot<D> {
     // TODO: extract these two methods into separate trait
-    fn commit(self, storage_counters: StorageCounters) -> Result<Option<SequenceNumber>, SnapshotError> {
+    fn commit(self, commit_profile: &mut CommitProfile) -> Result<Option<SequenceNumber>, SnapshotError> {
         if self.operations.is_writes_empty() && self.operations.locks_empty() {
             Ok(None)
         } else {
-            match self.storage.clone().snapshot_commit(self, storage_counters) {
+            match self.storage.clone().snapshot_commit(self, commit_profile) {
                 Ok(sequence_number) => Ok(Some(sequence_number)),
                 Err(error) => Err(SnapshotError::Commit { typedb_source: error }),
             }
