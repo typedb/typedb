@@ -9,7 +9,7 @@
 
 mod authenticator;
 pub mod authenticator_cache;
-pub mod parameters;
-mod service;
-pub mod server;
 mod error;
+pub mod parameters;
+pub mod server;
+mod service;

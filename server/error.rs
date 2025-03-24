@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::net::SocketAddr;
-use std::sync::Arc;
-use error::typedb_error;
+use std::{io, net::SocketAddr, sync::Arc};
+
 use database::DatabaseOpenError;
-use std::io;
+use error::typedb_error;
 
 typedb_error! {
     pub ServerOpenError(component = "Server open", prefix = "SRO") {

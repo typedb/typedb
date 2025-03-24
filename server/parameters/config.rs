@@ -70,11 +70,7 @@ impl Config {
         });
         let is_development_mode = ServerConfig::IS_DEVELOPMENT_MODE_FORCED || is_development_mode;
         Self {
-            server: ServerConfig {
-                address: server_address,
-                encryption: encryption_config,
-                is_development_mode,
-            },
+            server: ServerConfig { address: server_address, encryption: encryption_config, is_development_mode },
             diagnostics: diagnostics_config,
             storage: StorageConfig { data: data_directory.to_owned() },
         }

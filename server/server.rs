@@ -16,7 +16,7 @@ use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use rand::seq::SliceRandom;
 use resource::constants::server::{
-    DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
+    ASCII_LOGO, DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH,
 };
 use system::initialise_system_database;
@@ -27,11 +27,10 @@ use user::{initialise_default_user, user_manager::UserManager};
 use crate::{
     authenticator::Authenticator,
     authenticator_cache::AuthenticatorCache,
+    error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig, EncryptionConfig},
     service::typedb_service::TypeDBService,
 };
-use resource::constants::server::ASCII_LOGO;
-use crate::error::ServerOpenError;
 
 #[derive(Debug)]
 pub struct Server {
@@ -78,7 +77,8 @@ impl Server {
                 &diagnostics_config,
                 storage_directory.clone(),
                 server_config.is_development_mode,
-            ).await
+            )
+            .await,
         );
 
         let database_manager = DatabaseManager::new(storage_directory)
@@ -189,14 +189,22 @@ impl Server {
             storage_directory,
             config.is_reporting_metric_enabled,
         );
-        let diagnostics_manager = DiagnosticsManager::new(diagnostics, config.monitoring_port, config.is_monitoring_enabled, is_development_mode);
+        let diagnostics_manager = DiagnosticsManager::new(
+            diagnostics,
+            config.monitoring_port,
+            config.is_monitoring_enabled,
+            is_development_mode,
+        );
         diagnostics_manager.may_start_monitoring().await;
         diagnostics_manager.may_start_reporting().await;
 
         diagnostics_manager
     }
 
-    fn synchronize_database_metrics(diagnostics_manager: Arc<DiagnosticsManager>, database_manager: Arc<DatabaseManager>) {
+    fn synchronize_database_metrics(
+        diagnostics_manager: Arc<DiagnosticsManager>,
+        database_manager: Arc<DatabaseManager>,
+    ) {
         let metrics = database_manager
             .databases()
             .values()
