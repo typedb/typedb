@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use ir::{pattern::constraint::Constraint, pipeline::VariableRegistry};
-use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{
@@ -64,7 +63,14 @@ pub fn compile(
     let mut connection_inserts = Vec::with_capacity(constraints.len());
 
     add_has(constraints, &variable_positions, variable_registry, &mut connection_inserts)?;
-    add_links(constraints, type_annotations, input_variables, &variable_positions, variable_registry, &mut connection_inserts)?;
+    add_links(
+        constraints,
+        type_annotations,
+        input_variables,
+        &variable_positions,
+        variable_registry,
+        &mut connection_inserts,
+    )?;
 
     Ok(UpdateExecutable {
         executable_id: next_executable_id(),
@@ -101,7 +107,7 @@ fn add_has(
 fn add_links(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
-    input_variables:  &HashMap<Variable, VariablePosition>, // Strictly input
+    input_variables: &HashMap<Variable, VariablePosition>, // Strictly input
     variable_positions: &HashMap<Variable, VariablePosition>, // Also contains ones inserted.
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
@@ -120,8 +126,7 @@ fn add_links(
             variable_registry,
             links.source_span(),
         )?;
-        let role =
-            resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
+        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())

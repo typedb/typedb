@@ -10,7 +10,7 @@ use std::{
 
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionError, TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
 use options::TransactionOptions;
@@ -18,11 +18,11 @@ use storage::durability_client::WALClient;
 use test_utils::{create_tmp_dir, init_logging, TempDir};
 use tokio::{
     runtime::Runtime,
-    sync::{broadcast, mpsc, Notify},
+    sync::{broadcast, Notify},
     time::sleep,
 };
 
-const DB_NAME: &'static str = "test";
+const DB_NAME: &str = "test";
 
 macro_rules! assert_ok {
     ($res:ident) => {

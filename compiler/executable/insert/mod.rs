@@ -4,10 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::error::Error;
-
 use ir::pattern::ParameterID;
-use itertools::Itertools;
 
 use crate::VariablePosition;
 

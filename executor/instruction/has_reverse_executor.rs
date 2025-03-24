@@ -28,7 +28,6 @@ use super::has_executor::HasFilterMapFn;
 use crate::{
     instruction::{
         has_executor::{HasFilterFn, HasOrderingFn, HasTupleIterator, EXTRACT_ATTRIBUTE, EXTRACT_OWNER},
-        iid_executor::IidExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, Tuple, TuplePositions},

@@ -4,17 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt::format, net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use database::database_manager::DatabaseManager;
 use diagnostics::{
     diagnostics_manager::{run_with_diagnostics, DiagnosticsManager},
     metrics::ActionKind,
-    Diagnostics,
 };
 use error::typedb_error;
-use resource::constants::server::{AUTHENTICATOR_USERNAME_FIELD, DEFAULT_USER_NAME};
-use system::concepts::{Credential, PasswordHash, User};
+use resource::constants::server::AUTHENTICATOR_USERNAME_FIELD;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{metadata::MetadataMap, Request, Response, Status, Streaming};
@@ -24,11 +22,7 @@ use typedb_protocol::{
     server_manager::all::{Req, Res},
     transaction::{Client, Server},
 };
-use user::{
-    errors::{UserCreateError, UserUpdateError},
-    permission_manager::PermissionManager,
-    user_manager::UserManager,
-};
+use user::{permission_manager::PermissionManager, user_manager::UserManager};
 use uuid::Uuid;
 
 use crate::{

@@ -29,7 +29,6 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        has_reverse_executor::HasReverseExecutor,
         iterator::{SortedTupleIterator, TupleIterator},
         min_max_types,
         tuple::{has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, HasToTupleFn, Tuple, TuplePositions},

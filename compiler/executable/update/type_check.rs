@@ -17,13 +17,10 @@ use ir::{
 };
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    annotation::{
-        type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
-        write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
-        TypeInferenceError,
-    },
-    executable::insert,
+use crate::annotation::{
+    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
+    write_type_check::{validate_has_type_combinations_for_write, validate_links_type_combinations_for_write},
+    TypeInferenceError,
 };
 
 pub fn check_annotations(

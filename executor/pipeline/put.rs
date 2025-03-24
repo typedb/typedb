@@ -10,7 +10,6 @@ use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
     VariablePosition,
 };
-use lending_iterator::LendingIterator;
 use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -94,7 +93,7 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
         let input_row = input_row_result?;
         let size_before = output_batch.len();
         let mut match_iterator =
-            match_iterator_for_row(&context, &interrupt, &executable, function_registry.clone(), input_row.clone())?;
+            match_iterator_for_row(context, interrupt, executable, function_registry.clone(), input_row.clone())?;
         match_iterator
             .try_for_each(|row_result| {
                 output_batch.append(row_result?);
@@ -147,7 +146,7 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
     interrupt: &mut ExecutionInterrupt,
     executable: &PutExecutable,
     output_batch: &mut Batch,
-    must_insert: &Vec<bool>,
+    must_insert: &[bool],
 ) -> Result<(), Box<PipelineExecutionError>> {
     let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
     let stage_profile = context.profile.profile_stage(|| String::from("PutInsert"), executable.executable_id);

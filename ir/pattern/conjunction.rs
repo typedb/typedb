@@ -27,7 +27,6 @@ use crate::{
         Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
-    RepresentationError,
 };
 
 #[derive(Debug, Clone)]

@@ -14,7 +14,6 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::{
     error::ConceptReadError,
-    thing::thing_manager::validation::DataValidationError,
     type_::{object_type::ObjectType, type_manager::TypeManager, OwnerAPI, PlayerAPI, TypeAPI},
 };
 use encoding::value::value_type::{ValueType, ValueTypeCategory};

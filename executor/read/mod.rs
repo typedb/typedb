@@ -11,7 +11,6 @@ use compiler::executable::{
     match_::planner::match_executable::MatchExecutable,
 };
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
-use ir::pipeline::function_signature::FunctionID;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -19,7 +18,7 @@ use crate::{
     read::{
         pattern_executor::{BranchIndex, ExecutorIndex, PatternExecutor},
         tabled_call_executor::TabledCallExecutor,
-        tabled_functions::{TableIndex, TabledFunctions},
+        tabled_functions::TableIndex,
     },
     row::MaybeOwnedRow,
 };

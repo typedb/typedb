@@ -42,10 +42,9 @@ pub(super) fn prune_redundant_roleplayer_deduplication(
                 .as_links()
                 .player_to_role();
             first.iter().any(|(player, role_types)| {
-                return second
-                    .get(&player)
-                    .map(|type_set| role_types.iter().any(|role_type| type_set.contains(role_type)))
-                    .unwrap_or(false);
+                second
+                    .get(player)
+                    .is_some_and(|type_set| role_types.iter().any(|role_type| type_set.contains(role_type)))
             })
         } else {
             true

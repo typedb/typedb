@@ -10,9 +10,10 @@
 use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
-use server::parameters::config::Config;
-use server::parameters::cli::CLIArgs;
-use server::server::Server;
+use server::{
+    parameters::{cli::CLIArgs, config::Config},
+    server::Server,
+};
 use tokio::runtime::Runtime;
 
 fn main() {
@@ -20,20 +21,13 @@ fn main() {
     initialise_abort_on_panic();
     initialise_logging_global();
     may_initialise_error_reporting(&config);
-    create_tokio_runtime().block_on(
-        async {
-            let server = Server::create(
-                config,
-                DISTRIBUTION,
-                VERSION,
-                None
-            ).await.unwrap();
-            match server.serve().await {
-                Ok(_) => println!("Exited."),
-                Err(err) => println!("Exited with error: {:?}", err),
-            }
-        },
-    );
+    create_tokio_runtime().block_on(async {
+        let server = Server::create(config, DISTRIBUTION, VERSION, None).await.unwrap();
+        match server.serve().await {
+            Ok(_) => println!("Exited."),
+            Err(err) => println!("Exited with error: {:?}", err),
+        }
+    });
 }
 
 fn initialise_abort_on_panic() {
@@ -48,17 +42,12 @@ fn initialise_abort_on_panic() {
 
 fn may_initialise_error_reporting(config: &Config) {
     if config.diagnostics.is_reporting_error_enabled && !config.server_config().is_development_mode {
-        let opts = (
-            SENTRY_REPORTING_URI,
-            sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() },
-        );
+        let opts =
+            (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() });
         let _ = sentry::init(opts);
     }
 }
 
 fn create_tokio_runtime() -> Runtime {
-    tokio::runtime::Builder::new_multi_thread()
-        .enable_all()
-        .build()
-        .expect("Expected a main tokio runtime")
+    tokio::runtime::Builder::new_multi_thread().enable_all().build().expect("Expected a main tokio runtime")
 }

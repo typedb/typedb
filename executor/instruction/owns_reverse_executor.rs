@@ -27,7 +27,6 @@ use crate::{
             OwnsFilterFn, OwnsFilterMapFn, OwnsTupleIterator, OwnsVariableValueExtractor, EXTRACT_ATTRIBUTE,
             EXTRACT_OWNER,
         },
-        plays_executor::PlaysExecutor,
         tuple::{owns_to_tuple_attribute_owner, owns_to_tuple_owner_attribute, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
     },

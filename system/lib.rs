@@ -13,11 +13,10 @@ use std::sync::Arc;
 use database::{database_manager::DatabaseManager, Database};
 use resource::internal_database_prefix;
 use storage::durability_client::WALClient;
-use typeql;
 
 use crate::{repositories::SCHEMA, util::transaction_util::TransactionUtil};
 
-const SYSTEM_DB: &'static str = concat!(internal_database_prefix!(), "system");
+const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
 pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Database<WALClient>> {
     match database_manager.database_unrestricted(SYSTEM_DB) {
@@ -25,34 +24,30 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
         None => {
             database_manager
                 .create_database_unrestricted(SYSTEM_DB)
-                .expect(format!("Unable to create the {} database.", SYSTEM_DB).as_str());
+                .unwrap_or_else(|_| panic!("Unable to create the {} database.", SYSTEM_DB));
             let db = database_manager
                 .database_unrestricted(SYSTEM_DB)
-                .expect(format!("The {} database could not be found.", SYSTEM_DB).as_str());
+                .unwrap_or_else(|| panic!("The {} database could not be found.", SYSTEM_DB));
             let tx_util = TransactionUtil::new(db.clone());
             tx_util
                 .schema_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr| {
                     let query = typeql::parse_query(SCHEMA)
-                        .expect(
-                            format!(
-                                "Unexpected error occurred when parsing the schema for the {} database.",
-                                SYSTEM_DB
-                            )
-                            .as_str(),
-                        )
+                        .unwrap_or_else(|_| {
+                            panic!("Unexpected error occurred when parsing the schema for the {} database.", SYSTEM_DB)
+                        })
                         .into_schema();
-                    query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, &SCHEMA).expect(
-                        format!("Unexpected error occurred when defining the schema for the {} database.", SYSTEM_DB)
-                            .as_str(),
+                    query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(
+                        |_| {
+                            panic!("Unexpected error occurred when defining the schema for the {} database.", SYSTEM_DB)
+                        },
                     );
                 })
-                .expect(
-                    format!(
+                .unwrap_or_else(|_| {
+                    panic!(
                         "Unexpected error occurred when committing the schema transaction for {} database.",
                         SYSTEM_DB
                     )
-                    .as_str(),
-                );
+                });
             db
         }
     }

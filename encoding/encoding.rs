@@ -115,7 +115,7 @@ impl KeyspaceSet for EncodingKeyspace {
         // TODO: 2.x has   enable_index_compression: 1 set to 0
 
         let mut block_options = BlockBasedOptions::default();
-        block_options.set_block_cache(&cache);
+        block_options.set_block_cache(cache);
         block_options.set_block_restart_interval(16);
         block_options.set_index_block_restart_interval(16);
         block_options.set_format_version(6);

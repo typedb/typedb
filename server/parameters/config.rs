@@ -5,13 +5,11 @@
  */
 
 use std::{
-    net::SocketAddr,
     path::{Path, PathBuf},
     str::FromStr,
 };
 
 use resource::constants::server::{DEFAULT_ADDRESS, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT};
-use tokio::net::lookup_host;
 
 #[derive(Debug)]
 pub struct Config {
@@ -72,11 +70,7 @@ impl Config {
         });
         let is_development_mode = ServerConfig::IS_DEVELOPMENT_MODE_FORCED || is_development_mode;
         Self {
-            server: ServerConfig {
-                address: server_address,
-                encryption: encryption_config,
-                is_development_mode,
-            },
+            server: ServerConfig { address: server_address, encryption: encryption_config, is_development_mode },
             diagnostics: diagnostics_config,
             storage: StorageConfig { data: data_directory.to_owned() },
         }

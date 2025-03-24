@@ -8,10 +8,7 @@ use std::{collections::HashSet, sync::Arc};
 
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
-    executable::{
-        function::ExecutableFunctionRegistry,
-        pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
-    },
+    executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
     transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};

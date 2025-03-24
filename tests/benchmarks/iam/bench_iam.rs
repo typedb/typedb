@@ -28,7 +28,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let schema_str = String::from_utf8(contents).unwrap();
     let schema_query = typeql::parse_query(schema_str.as_str()).unwrap().into_schema();
 
-    let mut tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
+    let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionSchema {
         snapshot,
         type_manager,
@@ -67,7 +67,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
     File::open(data_tql).unwrap().read_to_end(&mut contents);
     let data_str = String::from_utf8(contents).unwrap();
     let data_query = typeql::parse_query(data_str.as_str()).unwrap().into_pipeline();
-    let mut tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
+    let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionWrite {
         snapshot,
         type_manager,
@@ -116,8 +116,8 @@ fn setup() -> Arc<Database<WALClient>> {
     }
     let dbm = DatabaseManager::new(&tmp_dir).unwrap();
     dbm.create_database(DB_NAME).unwrap();
-    let database = dbm.database(DB_NAME).unwrap();
-    database
+
+    dbm.database(DB_NAME).unwrap()
 }
 
 fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
@@ -127,16 +127,16 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),
-            &type_manager,
+            type_manager,
             thing_manager.clone(),
-            &function_manager,
+            function_manager,
             &query,
             query_str,
         )
         .unwrap();
     let (rows, context) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
-    let batch = rows.collect_owned().unwrap();
-    batch
+
+    rows.collect_owned().unwrap()
 }
 
 #[test]

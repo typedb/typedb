@@ -6,10 +6,10 @@
 
 use answer::variable::Variable;
 use typeql::{
-    common::{Span, Spanned},
+    common::Spanned,
     query::stage::{delete::DeletableKind, Put},
     statement::thing::{Constraint, HasValue, Head, RolePlayer},
-    Expression, Identifier, Statement,
+    Expression, Statement,
 };
 
 use crate::{
@@ -191,7 +191,7 @@ fn validate_update_expression_variables_availability(
             function_call
                 .args
                 .iter()
-                .try_fold((), |_, arg| validate_update_expression_variables_availability(context, &arg))
+                .try_fold((), |_, arg| validate_update_expression_variables_availability(context, arg))
         }
         Expression::Operation(operation) => {
             validate_update_expression_variables_availability(context, &operation.left)?;
@@ -199,7 +199,7 @@ fn validate_update_expression_variables_availability(
         }
         Expression::Paren(paren) => validate_update_expression_variables_availability(context, &paren.inner),
         Expression::List(list) => {
-            list.items.iter().try_fold((), |_, item| validate_update_expression_variables_availability(context, &item))
+            list.items.iter().try_fold((), |_, item| validate_update_expression_variables_availability(context, item))
         }
         Expression::ListIndexRange(list_index_range) => {
             verify_variable_available!(context, list_index_range.var => DeleteVariableUnavailable)?;
