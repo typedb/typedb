@@ -13,7 +13,6 @@ use ir::{
         constraint,
         constraint::{Comparator, Constraint},
         expression::Expression,
-        variable_category::VariableCategory,
         ParameterID, Vertex,
     },
     pipeline::VariableRegistry,

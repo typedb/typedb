@@ -31,7 +31,6 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
-        links_executor::LinksExecutor,
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapFn,
     },

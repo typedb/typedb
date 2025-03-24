@@ -46,7 +46,7 @@ use query::{error::QueryError, query_manager::QueryManager};
 use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
 use storage::{
     durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot},
+    snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::{
     sync::{

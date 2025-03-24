@@ -286,7 +286,7 @@ mod tests {
     use chrono_tz::Europe::London;
     use rand::{rngs::SmallRng, thread_rng, Rng, SeedableRng};
 
-    use super::{super::timezone::TimeZone, Duration, MAX_YEAR, MIN_YEAR};
+    use super::{Duration, MAX_YEAR, MIN_YEAR};
 
     fn random_naive_utc_date_time(rng: &mut impl Rng) -> NaiveDateTime {
         let year = rng.gen_range(MIN_YEAR..=MAX_YEAR);

@@ -10,7 +10,6 @@ use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
     VariablePosition,
 };
-use lending_iterator::LendingIterator;
 use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 

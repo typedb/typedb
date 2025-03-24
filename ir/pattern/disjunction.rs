@@ -11,18 +11,16 @@ use std::{
 };
 
 use answer::variable::Variable;
-use itertools::{ExactlyOneError, Itertools};
+use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use super::constraint::Constraint;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
-    RepresentationError,
 };
 
 #[derive(Clone, Debug, Default)]

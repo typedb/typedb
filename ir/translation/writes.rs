@@ -6,10 +6,10 @@
 
 use answer::variable::Variable;
 use typeql::{
-    common::{Span, Spanned},
+    common::Spanned,
     query::stage::{delete::DeletableKind, Put},
     statement::thing::{Constraint, HasValue, Head, RolePlayer},
-    Expression, Identifier, Statement,
+    Expression, Statement,
 };
 
 use crate::{

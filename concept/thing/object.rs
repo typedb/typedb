@@ -20,7 +20,7 @@ use encoding::{
     value::{decode_value_u64, value::Value},
     Prefixed,
 };
-use lending_iterator::{higher_order::Hkt, LendingIterator};
+use lending_iterator::higher_order::Hkt;
 use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
 use storage::{
     key_value::StorageKey,
@@ -40,7 +40,7 @@ use crate::{
     },
     type_::{
         attribute_type::AttributeType, object_type::ObjectType, relation_type::RelationType, role_type::RoleType,
-        ObjectTypeAPI, Ordering, OwnerAPI, TypeAPI,
+        ObjectTypeAPI, Ordering, OwnerAPI,
     },
     ConceptStatus,
 };

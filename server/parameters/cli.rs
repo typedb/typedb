@@ -3,11 +3,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::net::SocketAddr;
-use std::str::FromStr;
-use std::path::PathBuf;
+
+use std::{path::PathBuf, str::FromStr};
+
 use clap::{ArgAction, Parser};
 use resource::constants::server::{MONITORING_DEFAULT_PORT, VERSION};
+
 use crate::parameters::config::{Config, DiagnosticsConfig, EncryptionConfig};
 
 /// TypeDB CE usage
@@ -85,5 +86,5 @@ impl CLIArgs {
             self.development_mode_enabled,
         )
     }
-
 }
+

@@ -8,7 +8,6 @@ use std::collections::HashMap;
 
 use answer::variable::Variable;
 use ir::{pattern::constraint::Constraint, pipeline::VariableRegistry};
-use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{

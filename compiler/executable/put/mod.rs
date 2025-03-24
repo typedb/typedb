@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
-use itertools::Itertools;
+use std::collections::HashMap;
 
 use answer::variable::Variable;
 
@@ -26,9 +25,12 @@ pub struct PutExecutable {
 impl PutExecutable {
     pub(crate) fn new(match_: MatchExecutable, insert: InsertExecutable) -> PutExecutable {
         debug_assert!({
-            let match_positions = match_.variable_positions().clone().into_iter().filter(|(_, pos)| {
-                match_.selected_variables().contains(pos)
-            }).collect::<HashMap<_, _>>();
+            let match_positions = match_
+                .variable_positions()
+                .clone()
+                .into_iter()
+                .filter(|(_, pos)| match_.selected_variables().contains(pos))
+                .collect::<HashMap<_, _>>();
             match_positions.iter().all(|(v, pos)| insert.output_row_schema[pos.as_usize()].unwrap().0 == *v)
         });
         Self { executable_id: next_executable_id(), match_, insert }

@@ -93,7 +93,6 @@ pub(crate) mod database {
 }
 
 pub(crate) mod transaction {
-    use error::unimplemented_feature;
     use uuid::Uuid;
 
     pub(crate) fn transaction_open_res(

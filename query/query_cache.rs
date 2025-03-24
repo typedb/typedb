@@ -6,10 +6,7 @@
 
 use std::{
     hash::{DefaultHasher, Hash, Hasher},
-    sync::{
-        atomic::{AtomicU64, Ordering},
-        Arc, Mutex,
-    },
+    sync::{Arc, Mutex},
 };
 
 use compiler::executable::pipeline::ExecutablePipeline;
@@ -26,7 +23,6 @@ use resource::{
 use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
 use tracing::{event, Level};
-use typeql::query::stage::reduce::Stat;
 
 #[derive(Debug)]
 pub struct QueryCache {
