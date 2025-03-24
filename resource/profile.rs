@@ -56,7 +56,7 @@ impl Display for CommitProfile {
         match &self.data {
             None => writeln!(f, "  Commit[enabled=false]"),
             Some(data) => {
-                writeln!(f, "  Commit[enabled=true, total micros={}]", data.total_nanos as f64 / 1000.0)?;
+                writeln!(f, "  Commit[enabled=true, total timed micros={}]", data.total_nanos as f64 / 1000.0)?;
                 writeln!(f, "    storage counters: {}", self.storage_counters())?;
                 writeln!(f, "    types validation micros: {}", data.types_validation_nanos as f64 / 1000.0)?;
                 writeln!(f, "    things finalise micros: {}", data.things_finalise_nanos as f64 / 1000.0)?;
@@ -475,7 +475,7 @@ impl fmt::Display for QueryProfile {
                 .sum::<u64>() as f64
                 / 1000.0;
         writeln!(f, "Query profile[measurements_enabled={}, total micros: {}]", self.enabled, total_micros)?;
-        writeln!(f, "{}", self.compile_profile);
+        writeln!(f, "{}", self.compile_profile)?;
         for (id, pattern_profile) in stage_profiles.iter().sorted_by_key(|(id, _)| *id) {
             writeln!(f, "  -----")?;
             writeln!(f, "  Stage or Pattern [id={}] - {}", id, &pattern_profile.description)?;
@@ -569,7 +569,7 @@ impl Display for CompileProfile {
         match &self.data {
             None => writeln!(f, "  Compile[enabled=false]"),
             Some(data) => {
-                writeln!(f, "  Compile[enabled=true, total micros={}", self.total_micros())?;
+                writeln!(f, "  Compile[enabled=true, total micros={}]", self.total_micros())?;
                 writeln!(f, "    translation micros: {}", data.translation_nanos as f64 / 1000.0)?;
                 writeln!(f, "    validation micros: {}", data.validation_nanos as f64 / 1000.0)?;
                 writeln!(f, "    annotation micros: {}", data.annotation_nanos as f64 / 1000.0)?;

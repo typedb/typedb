@@ -79,7 +79,7 @@ pub mod database {
 
     // anything lower than 2.0 will cause too much replanning
     // anything over 8.0 often does not plan frequently enough, as the data scales
-    pub const QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION: f64 = 5.0;
+    pub const QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION: f64 = 6.0;
     pub const QUERY_PLAN_CACHE_SIZE: u64 = 100;
     pub const STATISTICS_DURABLE_WRITE_CHANGE_PERCENT: f64 = 0.04;
     pub const STATISTICS_UPDATE_INTERVAL: Duration = Duration::from_millis(50);
