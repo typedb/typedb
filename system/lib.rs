@@ -42,6 +42,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
                         },
                     );
                 })
+                .1
                 .unwrap_or_else(|_| {
                     panic!(
                         "Unexpected error occurred when committing the schema transaction for {} database.",

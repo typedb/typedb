@@ -29,6 +29,7 @@ pub fn initialise_logging_global() {
         // .add_directive("tonic=trace".parse().unwrap());
     ;
 
+    // TODO: remove
     // Create a file appender
     let file_appender = File::create("output.log").expect("Failed to create log file");
 

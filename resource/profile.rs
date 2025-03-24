@@ -19,12 +19,26 @@ use itertools::Itertools;
 
 #[derive(Debug)]
 pub struct TransactionProfile {
+    enabled: bool,
     commit_profile: CommitProfile,
 }
 
 impl TransactionProfile {
+    pub fn is_enabled(&self) -> bool {
+        self.enabled
+    }
+}
+
+impl Display for TransactionProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "Transaction profile[enabled={}]", self.enabled)?;
+        write!(f, "{}", self.commit_profile)
+    }
+}
+
+impl TransactionProfile {
     pub fn new(enabled: bool) -> Self {
-        Self { commit_profile: CommitProfile::new(enabled) }
+        Self { enabled, commit_profile: CommitProfile::new(enabled) }
     }
 
     pub fn commit_profile(&mut self) -> &mut CommitProfile {
@@ -34,7 +48,76 @@ impl TransactionProfile {
 
 #[derive(Debug)]
 pub struct CommitProfile {
-    data: Option<CommitProfileData>,
+    data: Option<Box<CommitProfileData>>,
+}
+
+impl Display for CommitProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.data {
+            None => writeln!(f, "  Commit[enabled=false]"),
+            Some(data) => {
+                writeln!(f, "  Commit[enabled=true, total micros={}]", data.total_nanos as f64 / 1000.0)?;
+                writeln!(f, "    types validation micros: {}", data.types_validation_nanos as f64 / 1000.0)?;
+                writeln!(f, "    things finalise micros: {}", data.things_finalise_nanos as f64 / 1000.0)?;
+                writeln!(f, "    functions finalise micros: {}", data.functions_finalise_nanos as f64 / 1000.0)?;
+                writeln!(
+                    f,
+                    "    schema update statistics durable write micros: {}",
+                    data.schema_update_statistics_durable_write_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot put statuses check micros: {}",
+                    data.snapshot_put_statuses_check_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot commit record create micros: {}",
+                    data.snapshot_commit_record_create_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot durable write data submit micros: {}",
+                    data.snapshot_durable_write_data_submit_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot isolation validate micros: {}",
+                    data.snapshot_isolation_validate_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot durable write data confirm micros: {}",
+                    data.snapshot_durable_write_data_confirm_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot storage write micros: {}",
+                    data.snapshot_storage_write_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot isolation manager notify micros: {}",
+                    data.snapshot_isolation_manager_notify_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    snapshot durable write commit status submit micros: {}",
+                    data.snapshot_durable_write_commit_status_submit_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    schema update caches update micros: {}",
+                    data.schema_update_caches_update_nanos as f64 / 1000.0
+                )?;
+                writeln!(
+                    f,
+                    "    schema update statistics update micros: {}",
+                    data.schema_update_statistics_update_nanos as f64 / 1000.0
+                )
+            }
+        }
+    }
 }
 
 impl CommitProfile {
@@ -42,7 +125,7 @@ impl CommitProfile {
 
     pub fn new(enabled: bool) -> Self {
         match enabled {
-            true => Self { data: Some(CommitProfileData::new()) },
+            true => Self { data: Some(Box::new(CommitProfileData::new())) },
             false => Self { data: None },
         }
     }
@@ -52,63 +135,226 @@ impl CommitProfile {
             data.start = Instant::now();
         }
     }
-
     pub fn types_validated(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => data.types_validation_nanos = Instant::now().duration_since(data.start).as_nanos(),
+        }
     }
 
     pub fn things_finalised(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.things_finalise_nanos =
+                    Instant::now().duration_since(data.start).as_nanos() - data.types_validation_nanos
+            }
+        }
     }
 
     pub fn functions_finalised(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.functions_finalise_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+            }
+        }
     }
 
-    pub fn schema_update_statistics_durably_written(&mut self) {}
+    pub fn schema_update_statistics_durably_written(&mut self) {
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.schema_update_statistics_durable_write_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+            }
+        }
+    }
 
     pub fn snapshot_put_statuses_checked(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_put_statuses_check_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+            }
+        }
     }
 
     pub fn snapshot_commit_record_created(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_commit_record_create_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+            }
+        }
     }
 
     pub fn snapshot_durable_write_data_submitted(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_durable_write_data_submit_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+            }
+        }
     }
 
     pub fn snapshot_isolation_validated(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_isolation_validate_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+                    - data.snapshot_durable_write_data_submit_nanos
+            }
+        }
     }
 
     pub fn snapshot_durable_write_data_confirmed(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_durable_write_data_confirm_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+                    - data.snapshot_durable_write_data_submit_nanos
+                    - data.snapshot_isolation_validate_nanos
+            }
+        }
     }
 
     pub fn snapshot_storage_written(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_storage_write_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+                    - data.snapshot_durable_write_data_submit_nanos
+                    - data.snapshot_isolation_validate_nanos
+                    - data.snapshot_durable_write_data_confirm_nanos
+            }
+        }
     }
 
     pub fn snapshot_isolation_manager_notified(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_isolation_manager_notify_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+                    - data.snapshot_durable_write_data_submit_nanos
+                    - data.snapshot_isolation_validate_nanos
+                    - data.snapshot_durable_write_data_confirm_nanos
+                    - data.snapshot_storage_write_nanos
+            }
+        }
     }
 
     pub fn snapshot_durable_write_commit_status_submitted(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.snapshot_durable_write_commit_status_submit_nanos =
+                    Instant::now().duration_since(data.start).as_nanos()
+                        - data.types_validation_nanos
+                        - data.things_finalise_nanos
+                        - data.functions_finalise_nanos
+                        - data.schema_update_statistics_durable_write_nanos
+                        - data.snapshot_put_statuses_check_nanos
+                        - data.snapshot_commit_record_create_nanos
+                        - data.snapshot_durable_write_data_submit_nanos
+                        - data.snapshot_isolation_validate_nanos
+                        - data.snapshot_durable_write_data_confirm_nanos
+                        - data.snapshot_storage_write_nanos
+                        - data.snapshot_isolation_manager_notify_nanos
+            }
+        }
     }
 
     pub fn schema_update_caches_updated(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.schema_update_caches_update_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+                    - data.snapshot_durable_write_data_submit_nanos
+                    - data.snapshot_isolation_validate_nanos
+                    - data.snapshot_durable_write_data_confirm_nanos
+                    - data.snapshot_storage_write_nanos
+                    - data.snapshot_isolation_manager_notify_nanos
+                    - data.snapshot_durable_write_commit_status_submit_nanos
+            }
+        }
     }
 
     pub fn schema_update_statistics_keys_updated(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => {
+                data.schema_update_statistics_update_nanos = Instant::now().duration_since(data.start).as_nanos()
+                    - data.types_validation_nanos
+                    - data.things_finalise_nanos
+                    - data.functions_finalise_nanos
+                    - data.schema_update_statistics_durable_write_nanos
+                    - data.snapshot_put_statuses_check_nanos
+                    - data.snapshot_commit_record_create_nanos
+                    - data.snapshot_durable_write_data_submit_nanos
+                    - data.snapshot_isolation_validate_nanos
+                    - data.snapshot_durable_write_data_confirm_nanos
+                    - data.snapshot_storage_write_nanos
+                    - data.snapshot_isolation_manager_notify_nanos
+                    - data.snapshot_durable_write_commit_status_submit_nanos
+                    - data.schema_update_caches_update_nanos
+            }
+        }
     }
-
     pub fn end(&mut self) {
-        todo!()
+        match &mut self.data {
+            None => {}
+            Some(data) => data.total_nanos = Instant::now().duration_since(data.start).as_nanos(),
+        }
     }
 
     pub fn storage_counters(&self) -> StorageCounters {
@@ -139,6 +385,7 @@ struct CommitProfileData {
     snapshot_durable_write_commit_status_submit_nanos: u128,
     schema_update_caches_update_nanos: u128,
     schema_update_statistics_update_nanos: u128,
+    total_nanos: u128,
 }
 
 impl CommitProfileData {
@@ -160,6 +407,7 @@ impl CommitProfileData {
             snapshot_durable_write_commit_status_submit_nanos: 0,
             schema_update_caches_update_nanos: 0,
             schema_update_statistics_update_nanos: 0,
+            total_nanos: 0,
         }
     }
 }

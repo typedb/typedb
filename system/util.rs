@@ -15,6 +15,7 @@ pub mod transaction_util {
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;
+    use resource::profile::TransactionProfile;
     use storage::{
         durability_client::WALClient,
         snapshot::{SchemaSnapshot, WriteSnapshot},
@@ -33,7 +34,7 @@ pub mod transaction_util {
         pub fn schema_transaction<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
-        ) -> Result<T, SchemaCommitError> {
+        ) -> (TransactionProfile, Result<T, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,
                 type_manager,
@@ -56,7 +57,8 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             );
-            tx.commit().1.map(|_| result)
+            let (profile, commit_result) = tx.commit();
+            (profile, commit_result.map(|_| result))
         }
 
         pub fn read_transaction<T>(&self, fn_: impl Fn(TransactionRead<WALClient>) -> T) -> T {
@@ -76,7 +78,7 @@ pub mod transaction_util {
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
-        ) -> Result<T, DataCommitError> {
+        ) -> (TransactionProfile, Result<T, DataCommitError>) {
             let TransactionWrite {
                 snapshot,
                 type_manager,
@@ -106,7 +108,8 @@ pub mod transaction_util {
                 TransactionOptions::default(),
                 profile,
             );
-            tx.commit().1.map(|()| rows)
+            let (profile, commit_result) = tx.commit();
+            (profile, commit_result.map(|_| rows))
         }
     }
 }
