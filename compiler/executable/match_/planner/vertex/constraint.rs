@@ -16,7 +16,6 @@ use ir::pattern::constraint::{
     Constraint, Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
 };
 use itertools::Itertools;
-use tracing::{event, log::trace, Level};
 
 use crate::{
     annotation::type_annotations::TypeAnnotations,
@@ -33,7 +32,7 @@ use crate::{
 };
 
 const MIN_SCAN_SIZE: f64 = 1.0;
-const MAX_SCAN_SIZE: f64 = 10e12;
+const MAX_SCAN_SIZE: f64 = 10e15;
 
 #[derive(Clone, Debug)]
 pub(crate) enum ConstraintVertex<'a> {

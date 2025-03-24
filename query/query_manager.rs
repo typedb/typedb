@@ -81,7 +81,7 @@ impl QueryManager {
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", query);
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let compile_profile = query_profile.profile_compilation();
+        let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         // 1: Translate
         let TranslatedPipeline {
@@ -197,7 +197,7 @@ impl QueryManager {
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", query);
         let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
-        let compile_profile = query_profile.profile_compilation();
+        let compile_profile = query_profile.compilation_profile();
         compile_profile.start();
         // 1: Translate
         let TranslatedPipeline {

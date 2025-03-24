@@ -451,7 +451,7 @@ impl OperationTimeValidation {
                         snapshot,
                         &attribute,
                         &owner_type_range,
-                        storage_counters.clone()
+                        storage_counters.clone(),
                     );
 
                     while let Some((has, _)) = has_iterator

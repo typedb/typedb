@@ -678,7 +678,11 @@ impl CartesianIterator {
               Ideally, we could use the bound Person1 as input to the getIterator to make sure we stick in the right range.
          */
         let mut reopened = executor
-            .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1, &Provenance::INITIAL), self.profile.storage_counters())
+            .get_iterator(
+                context,
+                MaybeOwnedRow::new_borrowed(&self.input_row, &1, &Provenance::INITIAL),
+                self.profile.storage_counters(),
+            )
             .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
         // TODO: use seek()
         reopened

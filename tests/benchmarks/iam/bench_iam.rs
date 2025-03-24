@@ -60,7 +60,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     );
-    tx.commit().unwrap();
+    tx.commit().1.unwrap();
 }
 
 fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
@@ -101,7 +101,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
         transaction_options,
         profile,
     );
-    tx.commit().unwrap();
+    tx.commit().1.unwrap();
 }
 
 fn setup() -> Arc<Database<WALClient>> {

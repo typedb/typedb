@@ -490,12 +490,7 @@ impl ActionMetrics {
             if successful == 0 && failed == 0 {
                 continue;
             }
-            actions.push(ActionReport {
-                database: database_hash.map(DatabaseReport),
-                kind: *kind,
-                successful,
-                failed,
-            });
+            actions.push(ActionReport { database: database_hash.map(DatabaseReport), kind: *kind, successful, failed });
         }
         actions
     }

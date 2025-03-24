@@ -28,7 +28,7 @@ use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
-use resource::profile::StorageCounters;
+use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},

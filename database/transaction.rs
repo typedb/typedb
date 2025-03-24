@@ -162,8 +162,8 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         self.profile.commit_profile().start();
-        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
-        let (mut profile, result) = self.try_commit(); // TODO: counters
+        let database = self.database.clone();
+        let (mut profile, result) = self.try_commit();
         database.release_write_transaction();
         profile.commit_profile().end();
         (profile, result)

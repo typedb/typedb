@@ -192,7 +192,6 @@ impl Statistics {
             storage_watermark,
             self.sequence_number
         );
-        event!(Level::TRACE, "{:?}", self);
         Ok(())
     }
 
@@ -213,7 +212,6 @@ impl Statistics {
             let delta = self.update_write(*sequence_number, writes, commits, storage)?;
             self.total_count = self.total_count.checked_add_signed(delta).unwrap();
             self.sequence_number = *sequence_number;
-            trace!("Updating statistics based on sequence number {sequence_number}. Delta: '{}'", delta);
         }
         Ok(())
     }

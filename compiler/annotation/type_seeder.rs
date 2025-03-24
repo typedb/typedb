@@ -1684,7 +1684,7 @@ pub mod tests {
         pipeline::{block::Block, ParameterRegistry},
         translation::TranslationContext,
     };
-    use resource::profile::StorageCounters;
+    use resource::profile::CommitProfile;
     use storage::snapshot::CommittableSnapshot;
 
     use crate::annotation::{

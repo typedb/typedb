@@ -57,6 +57,7 @@ impl Display for CommitProfile {
             None => writeln!(f, "  Commit[enabled=false]"),
             Some(data) => {
                 writeln!(f, "  Commit[enabled=true, total micros={}]", data.total_nanos as f64 / 1000.0)?;
+                writeln!(f, "    storage counters: {}", self.storage_counters())?;
                 writeln!(f, "    types validation micros: {}", data.types_validation_nanos as f64 / 1000.0)?;
                 writeln!(f, "    things finalise micros: {}", data.things_finalise_nanos as f64 / 1000.0)?;
                 writeln!(f, "    functions finalise micros: {}", data.functions_finalise_nanos as f64 / 1000.0)?;
@@ -428,7 +429,7 @@ impl QueryProfile {
         self.enabled
     }
 
-    pub fn profile_compilation(&mut self) -> &mut CompileProfile {
+    pub fn compilation_profile(&mut self) -> &mut CompileProfile {
         &mut self.compile_profile
     }
 

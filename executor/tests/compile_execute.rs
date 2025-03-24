@@ -32,7 +32,7 @@ use ir::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
-use resource::profile::{QueryProfile, StorageCounters};
+use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,

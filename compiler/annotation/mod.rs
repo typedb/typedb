@@ -306,7 +306,7 @@ pub mod tests {
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};
-        use resource::profile::{CommitProfile, StorageCounters};
+        use resource::profile::CommitProfile;
         use storage::{
             durability_client::WALClient,
             snapshot::{CommittableSnapshot, WritableSnapshot},

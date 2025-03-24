@@ -54,7 +54,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
-use resource::profile::{QueryProfile, StorageCounters};
+use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
@@ -1029,7 +1029,8 @@ fn value_hashed_string_equality_has_bound_owner() {
     let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
     // 6 seeks: for each person, we should skip directly to the person + owned name
-    assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 1 seek: for the unlined name, we have to get the value in order to filter it out
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 7);
     // 1 advance: the iterator matching the only person + name needs to step forward and finish
     assert_eq!(storage_counters.get_raw_advance().unwrap(), 1);
 }
@@ -1143,8 +1144,10 @@ fn value_string_inequality_reduces_has_reads_bound_owner() {
     let (_, match_profile) = stage_profiles.iter().next().unwrap();
     let intersection_step_profile = match_profile.extend_or_get(1, || String::new());
     let storage_counters = intersection_step_profile.storage_counters();
-    // 6 seeks: for each person, we should skip directly to the person + owned name
-    assert_eq!(storage_counters.get_raw_seek().unwrap(), 6);
+    // 6 seeks: for each person, we should skip directly to the person + owned name.
+    // 2 seeks: each of the 2 comparison check filters get the value of the Attribute repeatedly...
+    //      TODO: if we embed the Value cache into the AttributeVertex, this could be avoided? Note: only expensive for un-inlined values!
+    assert_eq!(storage_counters.get_raw_seek().unwrap(), 8);
     // 2 advance: the iterator matching person 1 will advance twice (once to find the second name, then to fail)
     assert_eq!(storage_counters.get_raw_advance().unwrap(), 2)
 }
