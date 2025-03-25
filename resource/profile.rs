@@ -416,7 +416,7 @@ impl CommitProfileData {
 #[derive(Debug)]
 pub struct QueryProfile {
     compile_profile: CompileProfile,
-    stage_profiles: RwLock<HashMap<i64, Arc<StageProfile>>>,
+    stage_profiles: RwLock<HashMap<u64, Arc<StageProfile>>>,
     enabled: bool,
 }
 
@@ -433,7 +433,7 @@ impl QueryProfile {
         &mut self.compile_profile
     }
 
-    pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: i64) -> Arc<StageProfile> {
+    pub fn profile_stage(&self, description_fn: impl Fn() -> String, id: u64) -> Arc<StageProfile> {
         if self.enabled {
             let profiles = self.stage_profiles.read().unwrap();
             if let Some(profile) = profiles.get(&id) {
@@ -449,7 +449,7 @@ impl QueryProfile {
         }
     }
 
-    pub fn stage_profiles(&self) -> &RwLock<HashMap<i64, Arc<StageProfile>>> {
+    pub fn stage_profiles(&self) -> &RwLock<HashMap<u64, Arc<StageProfile>>> {
         &self.stage_profiles
     }
 }
@@ -534,9 +534,7 @@ impl CompileProfile {
         match &mut self.data {
             None => {}
             Some(data) => {
-                data.annotation_nanos = Instant::now().duration_since(data.start).as_nanos()
-                    - data.translation_nanos
-                    - data.translation_nanos
+                data.annotation_nanos = Instant::now().duration_since(data.start).as_nanos() - data.translation_nanos
             }
         }
     }
@@ -546,7 +544,6 @@ impl CompileProfile {
             None => {}
             Some(data) => {
                 data.compilation_nanos = Instant::now().duration_since(data.start).as_nanos()
-                    - data.translation_nanos
                     - data.translation_nanos
                     - data.annotation_nanos
             }

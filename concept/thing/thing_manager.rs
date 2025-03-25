@@ -5,13 +5,11 @@
  */
 
 use std::{
-    any::Any,
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
     iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
-    time::Instant,
 };
 
 use bytes::{byte_array::ByteArray, util::increment, Bytes};
@@ -68,7 +66,6 @@ use storage::{
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
     snapshot::{lock::create_custom_lock_key, write::Write, ReadableSnapshot, WritableSnapshot},
 };
-use tracing::{event, Level};
 
 use crate::{
     error::{ConceptReadError, ConceptWriteError},

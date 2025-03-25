@@ -27,7 +27,6 @@ use std::{
 use itertools::Itertools;
 use logger::result::ResultExt;
 use resource::constants::storage::WAL_SYNC_INTERVAL_MICROSECONDS;
-use tracing::{event, trace};
 
 use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, DurabilityServiceError, RawRecord};
 

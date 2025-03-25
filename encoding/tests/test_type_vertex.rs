@@ -19,7 +19,7 @@ use encoding::{
     layout::prefix::Prefix,
     AsBytes, EncodingKeyspace, Keyable,
 };
-use resource::profile::{CommitProfile, StorageCounters};
+use resource::profile::CommitProfile;
 use storage::{
     durability_client::WALClient,
     key_value::StorageKeyReference,

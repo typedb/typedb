@@ -61,7 +61,7 @@ where
             Err(err) => return Err((err, context)),
         };
         let batch_len = batch.len();
-        let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id as i64);
+        let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
         let measurement = step_profile.start_measurement();
         let sorted_iterator =

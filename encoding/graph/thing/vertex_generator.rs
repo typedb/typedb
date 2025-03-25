@@ -15,7 +15,7 @@ use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyReference},
     snapshot::{iterator::SnapshotIteratorError, ReadableSnapshot, WritableSnapshot},
-    MVCCKey, MVCCStorage,
+    MVCCStorage,
 };
 
 use super::vertex_attribute::{

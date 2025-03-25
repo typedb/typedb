@@ -131,7 +131,7 @@ pub(crate) fn create_executors_for_match(
 ) -> Result<Vec<StepExecutors>, Box<ConceptReadError>> {
     let stage_profile = query_profile.profile_stage(
         || format!("Match\n  ~ {}", match_executable.planner_statistics()),
-        match_executable.executable_id() as i64,
+        match_executable.executable_id(),
     );
     let mut steps = Vec::with_capacity(match_executable.steps().len());
     for (index, step) in match_executable.steps().iter().enumerate() {

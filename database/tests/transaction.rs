@@ -80,7 +80,7 @@ fn open_close_schema_transaction() {
     init_logging();
     let databases_path = create_tmp_dir();
     let database = create_database(&databases_path);
-    let mut tx_schema = open_schema(database.clone());
+    let tx_schema = open_schema(database.clone());
     tx_schema.close()
 }
 
@@ -98,8 +98,8 @@ fn open_commit_schema_transaction() {
     init_logging();
     let databases_path = create_tmp_dir();
     let database = create_database(&databases_path);
-    let mut tx_schema = open_schema(database.clone());
-    let commit_result = tx_schema.commit();
+    let tx_schema = open_schema(database.clone());
+    let (_, commit_result) = tx_schema.commit();
     assert_ok!(commit_result);
 }
 
@@ -108,7 +108,7 @@ fn open_close_write_transaction() {
     init_logging();
     let databases_path = create_tmp_dir();
     let database = create_database(&databases_path);
-    let mut tx_write = open_write(database.clone());
+    let tx_write = open_write(database.clone());
     tx_write.close()
 }
 
@@ -126,8 +126,8 @@ fn open_commit_write_transaction() {
     init_logging();
     let databases_path = create_tmp_dir();
     let database = create_database(&databases_path);
-    let mut tx_write = open_write(database.clone());
-    let commit_result = tx_write.commit();
+    let tx_write = open_write(database.clone());
+    let (_, commit_result) = tx_write.commit();
     assert_ok!(commit_result);
 }
 
@@ -136,7 +136,7 @@ fn open_close_read_transaction() {
     init_logging();
     let databases_path = create_tmp_dir();
     let database = create_database(&databases_path);
-    let mut tx_read = open_read(database.clone());
+    let tx_read = open_read(database.clone());
     tx_read.close()
 }
 
@@ -219,7 +219,7 @@ fn schema_transaction_can_be_opened_after_prior_timeout_error() {
             let notify_transaction1_done = Arc::new(Notify::new());
             let notify_transaction1_done_clone = notify_transaction1_done.clone();
 
-            let mut tx_schema = open_schema(database_clone);
+            let tx_schema = open_schema(database_clone);
             let task1 = tokio::spawn(async move {
                 notify_transaction2_failed_clone.notified().await;
                 tx_schema.close();
@@ -254,7 +254,7 @@ fn schema_transaction_close_unblocks_concurrent_schema_transactions() {
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
 
             let task1 = tokio::spawn(async move {
-                let mut tx_schema = open_schema(database);
+                let tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
                 tx_schema.close();
@@ -284,10 +284,10 @@ fn schema_transaction_commit_unblocks_concurrent_schema_transactions() {
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
 
             let task1 = tokio::spawn(async move {
-                let mut tx_schema = open_schema(database);
+                let tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
-                tx_schema.commit().expect("Expected commit");
+                tx_schema.commit().1.expect("Expected commit");
             });
 
             let task2 = tokio::spawn(async move {
@@ -345,7 +345,7 @@ fn schema_transaction_close_unblocks_concurrent_write_transactions() {
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
 
             let task1 = tokio::spawn(async move {
-                let mut tx_schema = open_schema(database);
+                let tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
                 tx_schema.close();
@@ -375,10 +375,10 @@ fn schema_transaction_commit_unblocks_concurrent_write_transactions() {
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
 
             let task1 = tokio::spawn(async move {
-                let mut tx_schema = open_schema(database);
+                let tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
-                tx_schema.commit().expect("Expected commit");
+                tx_schema.commit().1.expect("Expected commit");
             });
 
             let task2 = tokio::spawn(async move {
@@ -469,7 +469,7 @@ fn write_transaction_close_unblocks_concurrent_schema_transactions() {
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
 
             let task1 = tokio::spawn(async move {
-                let mut tx_write = open_write(database);
+                let tx_write = open_write(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
                 tx_write.close();
@@ -499,10 +499,10 @@ fn write_transaction_commit_unblocks_concurrent_schema_transactions() {
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
 
             let task1 = tokio::spawn(async move {
-                let mut tx_write = open_write(database);
+                let tx_write = open_write(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
-                tx_write.commit().expect("Expected commit");
+                tx_write.commit().1.expect("Expected commit");
             });
 
             let task2 = tokio::spawn(async move {
@@ -682,14 +682,14 @@ fn blocked_schema_transactions_progress_one_at_a_time() {
         });
 
         let task_main = tokio::spawn(async move {
-            let mut tx_write = open_write(database);
+            let tx_write = open_write(database);
             sender.send(()).expect("Expected send");
             sleep(timeout_millis).await;
             tx_write.close();
         });
 
         let (_, result2, result3, result4, result5) = tokio::join!(task_main, task2, task3, task4, task5);
-        let mut opened = vec![
+        let mut opened = [
             result2.expect("expected result2"),
             result3.expect("expected result3"),
             result4.expect("expected result4"),
@@ -756,14 +756,14 @@ fn blocked_write_transactions_progress_together() {
         });
 
         let task_main = tokio::spawn(async move {
-            let mut tx_schema = open_schema(database);
+            let tx_schema = open_schema(database);
             sender.send(()).expect("Expected send");
             sleep(timeout_millis).await;
             tx_schema.close();
         });
 
         let (_, result2, result3, result4, result5) = tokio::join!(task_main, task2, task3, task4, task5);
-        let mut opened = vec![
+        let mut opened = [
             result2.expect("expected result2"),
             result3.expect("expected result3"),
             result4.expect("expected result4"),
@@ -831,7 +831,7 @@ fn blocked_schema_and_write_transactions_can_progress_in_different_orders() {
             });
 
             let task_main = tokio::spawn(async move {
-                let mut tx_schema = open_schema(database);
+                let tx_schema = open_schema(database);
                 sender.send(()).expect("Expected send");
                 sleep(timeout_millis).await;
                 tx_schema.close();

@@ -42,7 +42,7 @@ use storage::{
     snapshot::{buffer::OperationsBuffer, write::Write},
     MVCCStorage,
 };
-use tracing::{event, trace, Level};
+use tracing::{event, Level};
 
 use crate::{
     thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},

@@ -88,7 +88,7 @@ impl<Snapshot: ReadableSnapshot + 'static> FetchStageExecutor<Snapshot> {
         let ExecutionContext { snapshot, thing_manager, parameters, profile } = context.clone();
         let executable = self.executable;
         let functions = self.functions;
-        let stage_profile = profile.profile_stage(|| String::from("Fetch"), executable.executable_id as i64);
+        let stage_profile = profile.profile_stage(|| String::from("Fetch"), executable.executable_id);
         let documents_iterator = previous_iterator
             .map_static(move |row_result| match row_result {
                 Ok(row) => execute_fetch(
