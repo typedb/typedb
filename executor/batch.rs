@@ -64,7 +64,7 @@ impl FixedBatch {
     }
 
     pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {
-        debug_assert!(index <= self.entries);
+        debug_assert!(index < self.entries);
         let start = (index * self.width) as usize;
         let end = ((index + 1) * self.width) as usize;
         let slice = &self.data[start..end];
@@ -72,7 +72,7 @@ impl FixedBatch {
     }
 
     pub(crate) fn get_row_mut(&mut self, index: u32) -> Row<'_> {
-        debug_assert!(index <= self.entries);
+        debug_assert!(index < self.entries);
         self.row_internal_mut(index)
     }
 
@@ -180,7 +180,7 @@ impl Batch {
     }
 
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
-        debug_assert!(index <= self.len());
+        debug_assert!(index < self.len());
         let start = index * self.width as usize;
         let end = (index + 1) * self.width as usize;
         let slice = &self.data[start..end];
@@ -188,7 +188,7 @@ impl Batch {
     }
 
     pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
-        debug_assert!(index <= self.len());
+        debug_assert!(index < self.len());
         self.row_internal_mut(index)
     }
 
