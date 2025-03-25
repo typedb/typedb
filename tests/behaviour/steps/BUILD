@@ -26,6 +26,7 @@ rust_library(
         "//function",
         "//ir:ir",
         "//query:query",
+        "//resource",
         "//server:server",
         "//storage:storage",
         "//durability:durability",

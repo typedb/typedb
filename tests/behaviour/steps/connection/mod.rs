@@ -9,6 +9,7 @@ use std::{
     fmt,
     sync::{Arc, Mutex},
 };
+use resource::constants::server::ASCII_LOGO;
 
 use macro_rules_attribute::apply;
 use server::{parameters::config::Config, server::Server};
@@ -31,7 +32,7 @@ pub async fn typedb_starts(context: &mut Context) {
         .get_or_init(|| async {
             let server_dir = create_tmp_dir();
             let config = Config::new_with_data_directory(server_dir.as_ref(), true);
-            let server = Server::create(config, DISTRIBUTION, VERSION, None).await.unwrap();
+            let server = Server::create(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })
         .await;

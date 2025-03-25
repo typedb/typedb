@@ -16,7 +16,7 @@ use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use rand::seq::SliceRandom;
 use resource::constants::server::{
-    ASCII_LOGO, DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
+    DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
     SERVER_ID_LENGTH,
 };
 use system::initialise_system_database;
@@ -36,6 +36,7 @@ use crate::{
 pub struct Server {
     id: String,
     deployment_id: String,
+    logo: &'static str,
     distribution: &'static str,
     version: &'static str,
     config: Config,
@@ -45,13 +46,14 @@ pub struct Server {
     database_diagnostics_updater: IntervalRunner,
     user_manager: Arc<UserManager>,
     authenticator_cache: Arc<AuthenticatorCache>,
-    typedb_service: Option<TypeDBService>,
+    typedb_service: TypeDBService,
     shutdown_sender: tokio::sync::watch::Sender<()>,
 }
 
 impl Server {
     pub async fn create(
         config: Config,
+        logo: &'static str,
         distribution: &'static str,
         version: &'static str,
         deployment_id: Option<String>,
@@ -104,6 +106,7 @@ impl Server {
         Ok(Self {
             id: server_id,
             deployment_id,
+            logo,
             distribution,
             version,
             address: server_address,
@@ -115,7 +118,7 @@ impl Server {
             ),
             user_manager,
             authenticator_cache,
-            typedb_service: Some(typedb_service),
+            typedb_service,
             shutdown_sender,
             config,
         })
@@ -175,8 +178,8 @@ impl Server {
     async fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
-        distribution: &'static str,
-        version: &'static str,
+        distribution: &str,
+        version: &str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
         is_development_mode: bool,
@@ -215,14 +218,14 @@ impl Server {
     }
 
     pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service.take().unwrap());
+        let service = typedb_protocol::type_db_server::TypeDbServer::new(self.typedb_service);
         let authenticator = Authenticator::new(
             self.user_manager.clone(),
             self.authenticator_cache.clone(),
             self.diagnostics_manager.clone(),
         );
 
-        Self::print_hello(self.distribution, self.version, self.config.server.is_development_mode);
+        Self::print_hello(self.logo, self.distribution, self.version, self.config.server.is_development_mode);
 
         Self::create_tonic_server(&self.config.server.encryption)?
             .layer(&authenticator)
@@ -281,8 +284,8 @@ impl Server {
             .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
     }
 
-    fn print_hello(distribution: &'static str, version: &'static str, is_development_mode_enabled: bool) {
-        println!("{ASCII_LOGO}"); // very important
+    fn print_hello(logo: &str, distribution: &str, version: &str, is_development_mode_enabled: bool) {
+        println!("{logo}"); // very important
         if is_development_mode_enabled {
             println!("Running {distribution} {version} in development mode.");
         } else {
@@ -310,6 +313,6 @@ impl Server {
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
-        self.typedb_service.as_ref().unwrap().database_manager()
+        self.typedb_service.database_manager()
     }
 }
