@@ -24,8 +24,6 @@ pub(super) mod suspension;
 pub(crate) mod tabled_call_executor;
 pub mod tabled_functions;
 
-// And use the below one instead
-
 #[derive(Debug, Copy, Clone)]
 pub(crate) struct BranchIndex(pub usize);
 impl std::ops::Deref for BranchIndex {

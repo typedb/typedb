@@ -53,56 +53,56 @@ impl StepExecutors {
     pub(crate) fn unwrap_immediate(&mut self) -> &mut ImmediateExecutor {
         match self {
             StepExecutors::Immediate(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected Immediate"),
         }
     }
 
     pub(crate) fn unwrap_negation(&mut self) -> &mut NegationExecutor {
         match self {
             StepExecutors::Negation(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected Negation"),
         }
     }
 
     pub(crate) fn unwrap_disjunction(&mut self) -> &mut DisjunctionExecutor {
         match self {
             StepExecutors::Disjunction(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected Disjunction"),
         }
     }
 
     pub(crate) fn unwrap_inlined_call(&mut self) -> &mut InlinedCallExecutor {
         match self {
             StepExecutors::InlinedCall(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected InlinedCall"),
         }
     }
 
     pub(crate) fn unwrap_tabled_call(&mut self) -> &mut TabledCallExecutor {
         match self {
             StepExecutors::TabledCall(step) => step,
-            _ => unreachable!(),
+            _ => panic!("bad unwrap. Expected TabledCall"),
         }
     }
 
     pub(crate) fn unwrap_stream_modifier(&mut self) -> &mut StreamModifierExecutor {
         match self {
             StepExecutors::StreamModifier(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected StreamModifier"),
         }
     }
 
     pub(crate) fn unwrap_collecting_stage(&mut self) -> &mut CollectingStageExecutor {
         match self {
             StepExecutors::CollectingStage(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected CollectingStage"),
         }
     }
 
     pub(crate) fn unwrap_reshape(&self) -> &ReshapeForReturnExecutor {
         match self {
             StepExecutors::ReshapeForReturn(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected ReshapeForReturn"),
         }
     }
 }
