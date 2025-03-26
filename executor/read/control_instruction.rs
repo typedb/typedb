@@ -29,7 +29,7 @@ pub(super) enum ControlInstruction {
     MapBatchToRowsForNested(MapBatchToRowsForNested),
     ExecuteNegation(ExecuteNegation),
 
-    ExecuteBranch(ExecuteBranch),
+    ExecuteDisjunctionBranch(ExecuteDisjunctionBranch),
     ExecuteInlinedFunction(ExecuteInlinedFunction),
     ExecuteStreamModifier(ExecuteStreamModifier),
 
@@ -79,7 +79,7 @@ pub(super) struct ExecuteNegation {
 }
 
 #[derive(Debug)]
-pub(super) struct ExecuteBranch {
+pub(super) struct ExecuteDisjunctionBranch {
     pub(super) index: ExecutorIndex,
     pub(super) branch_index: BranchIndex,
     pub(super) input: MaybeOwnedRow<'static>, // Only needed for suspend points. We can actually use an empty one, because the nested pattern has all the info
@@ -143,7 +143,7 @@ impl_control_instruction_from_inner!(
     MapBatchToRowsForNested,
     ExecuteImmediate,
     ExecuteNegation,
-    ExecuteBranch,
+    ExecuteDisjunctionBranch,
     ExecuteInlinedFunction,
     ExecuteStreamModifier,
     ExecuteTabledCall,

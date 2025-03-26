@@ -15,7 +15,7 @@ use crate::{
     pipeline::stage::ExecutionContext,
     read::{
         control_instruction::{
-            CollectingStage, ControlInstruction, ExecuteBranch, ExecuteImmediate, ExecuteInlinedFunction,
+            CollectingStage, ControlInstruction, ExecuteDisjunctionBranch, ExecuteImmediate, ExecuteInlinedFunction,
             ExecuteNegation, ExecuteStreamModifier, ExecuteTabledCall, MapBatchToRowsForNested, PatternStart,
             ReshapeForReturn, RestoreSuspension, StreamCollected, Yield,
         },
@@ -137,14 +137,14 @@ impl PatternExecutor {
                         Some(_) => inner.reset(), // fail
                     };
                 }
-                ControlInstruction::ExecuteBranch(ExecuteBranch { index, branch_index, input }) => {
+                ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch { index, branch_index, input }) => {
                     let disjunction = &mut executors[*index].unwrap_disjunction();
                     let branch = &mut disjunction.branches[*branch_index];
                     let batch_opt = may_push_nested(suspensions, index, branch_index, &input, |suspensions| {
                         branch.batch_continue(context, interrupt, tabled_functions, suspensions)
                     })?;
                     if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(unmapped)) {
-                        control_stack.push(ExecuteBranch { index, branch_index, input }.into());
+                        control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input }.into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
                 }
@@ -255,7 +255,7 @@ impl PatternExecutor {
                     let branch_index = BranchIndex(idx);
                     branch.prepare(FixedBatch::from(input.as_reference()));
                     self.control_stack
-                        .push(ExecuteBranch { index, branch_index, input: input.clone().into_owned() }.into())
+                        .push(ExecuteDisjunctionBranch { index, branch_index, input: input.clone().into_owned() }.into())
                 }
             }
             StepExecutors::Negation(NegationExecutor { inner }) => {
@@ -365,7 +365,7 @@ fn restore_suspension(
                 }
                 StepExecutors::Disjunction(disjunction) => {
                     disjunction.branches[*branch_index].prepare_to_restore_from_suspension(nested_pattern_depth);
-                    control_stack.push(ExecuteBranch { index, branch_index, input: input_row.into_owned() }.into())
+                    control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input: input_row.into_owned() }.into())
                 }
                 StepExecutors::InlinedCall(inlined) => {
                     inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
