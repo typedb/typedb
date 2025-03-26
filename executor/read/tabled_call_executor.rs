@@ -87,7 +87,7 @@ impl TabledCallExecutor {
             .iter()
             .enumerate()
             .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?)))
-            .filter(|(src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
+            .filter(|(_, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
             .collect(); // TODO: Can we move this to compilation?
 
         for return_index in 0..returned_batch.len() {
@@ -95,13 +95,14 @@ impl TabledCallExecutor {
             let returned_row = returned_batch.get_row(return_index);
             if check_indices.iter().all(|(src, dst)| returned_row.get(*src) == input.get(*dst)) {
                 output_batch.append(|mut output_row| {
-                    for (i, element) in input.iter().enumerate() {
-                        output_row.set(VariablePosition::new(i as u32), element.clone());
-                    }
-                    for (returned_index, &output_position) in self.assignment_positions.iter().enumerate() {
-                        let Some(output_position) = output_position else { continue };
-                        output_row.set(output_position, returned_row[returned_index].clone().into_owned());
-                    }
+                    output_row.copy_from_row(input.as_reference());
+                    output_row.copy_mapped(
+                        returned_row,
+                        self.assignment_positions
+                            .iter()
+                            .enumerate()
+                            .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?))),
+                    );
                 });
             }
         }
