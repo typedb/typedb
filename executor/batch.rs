@@ -192,12 +192,17 @@ impl Batch {
         self.row_internal_mut(index)
     }
 
+    fn append_one_row(&mut self) -> Row<'_> {
+        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
+        self.multiplicities.push(1);
+        debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
+        self.get_row_mut(self.len()-1)
+    }
+
     // We keep the implementation of append & append_mapped separate
     // hoping copy_from_row does a memcpy that's better for large rows
     pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
-        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
-        self.multiplicities.push(1);
-        let mut destination_row = self.row_internal_mut(self.len() - 1);
+        let mut destination_row = self.append_one_row();
         destination_row.copy_from_row(row);
     }
 
@@ -206,10 +211,7 @@ impl Batch {
         row: MaybeOwnedRow<'_>,
         mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
     ) {
-        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
-        self.multiplicities.push(1);
-        debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
-        let mut destination_row = self.row_internal_mut(self.len() - 1);
+        let mut destination_row = self.append_one_row();
         destination_row.copy_mapped(row, mapping);
     }
 
