@@ -114,13 +114,13 @@ pub trait StageIterator:
             Some(row) => {
                 let row = row?;
                 let mut batch = Batch::new(row.len() as u32, BATCH_DEFAULT_CAPACITY);
-                batch.append(row);
+                batch.append_row(row);
                 batch
             }
         };
         while let Some(row) = self.next() {
             let row = row?;
-            batch.append(row);
+            batch.append_row(row);
         }
         Ok(batch)
     }

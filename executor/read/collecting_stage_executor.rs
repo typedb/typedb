@@ -278,7 +278,7 @@ impl CollectorTrait for SortCollector {
             if self.collector.is_none() {
                 self.collector = Some(Batch::new(row.len() as u32, 0usize))
             }
-            self.collector.as_mut().unwrap().append(row);
+            self.collector.as_mut().unwrap().append_row(row);
         }
     }
 
@@ -359,7 +359,7 @@ impl CollectorTrait for DistinctCollector {
             if self.collector.is_none() {
                 self.collector = Some(Batch::new(row.len() as u32, 0usize))
             }
-            self.collector.as_mut().unwrap().append(row);
+            self.collector.as_mut().unwrap().append_row(row);
         }
     }
 

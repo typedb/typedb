@@ -97,7 +97,7 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
             match_iterator_for_row(context, interrupt, executable, function_registry.clone(), input_row.clone())?;
         match_iterator
             .try_for_each(|row_result| {
-                output_batch.append(row_result?);
+                output_batch.append_row(row_result?);
                 must_insert.push(false);
                 Ok(())
             })

@@ -11,7 +11,6 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
@@ -189,37 +188,21 @@ impl Batch {
 
     pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
         debug_assert!(index < self.len());
-        self.row_internal_mut(index)
-    }
-
-    fn append_one_row(&mut self) -> Row<'_> {
-        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
-        self.multiplicities.push(1);
-        debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
-        self.get_row_mut(self.len()-1)
-    }
-
-    // We keep the implementation of append & append_mapped separate
-    // hoping copy_from_row does a memcpy that's better for large rows
-    pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
-        let mut destination_row = self.append_one_row();
-        destination_row.copy_from_row(row);
-    }
-
-    pub(crate) fn append_mapped(
-        &mut self,
-        row: MaybeOwnedRow<'_>,
-        mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
-    ) {
-        let mut destination_row = self.append_one_row();
-        destination_row.copy_mapped(row, mapping);
-    }
-
-    fn row_internal_mut(&mut self, index: usize) -> Row<'_> {
         let start = index * self.width as usize;
         let end = start + self.width as usize;
         let slice = &mut self.data[start..end];
         Row::new(slice, &mut self.multiplicities[index])
+    }
+
+    pub(crate) fn append_row(&mut self, row: MaybeOwnedRow<'_>) {
+        self.append(|mut appended| appended.copy_from_row(row))
+    }
+
+    pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
+        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
+        self.multiplicities.push(1);
+        debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
+        writer(self.get_row_mut(self.len()-1))
     }
 
     pub fn into_iterator_mut(self) -> MutableBatchRowIterator {
