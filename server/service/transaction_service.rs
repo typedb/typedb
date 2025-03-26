@@ -887,7 +887,7 @@ impl TransactionService {
 
                     return Ok(ImmediateQueryResponse::ok(message_ok_done));
                 }
-                transaction @ _ => self.transaction = Some(transaction),
+                transaction => self.transaction = Some(transaction),
             }
         }
 
