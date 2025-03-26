@@ -9,9 +9,9 @@ use std::{
     fmt,
     sync::{Arc, Mutex},
 };
-use resource::constants::server::ASCII_LOGO;
 
 use macro_rules_attribute::apply;
+use resource::constants::server::ASCII_LOGO;
 use server::{parameters::config::Config, server::Server};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;

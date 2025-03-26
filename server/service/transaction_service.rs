@@ -566,7 +566,8 @@ impl TransactionService {
 
         let diagnostics_manager = self.diagnostics_manager.clone();
         match self.transaction.take().unwrap() {
-            Transaction::Read(_) => {
+            Transaction::Read(transaction) => {
+                self.transaction = Some(Transaction::Read(transaction));
                 Err(TransactionServiceError::CannotCommitReadTransaction {}.into_error_message().into_status())
             }
             Transaction::Write(transaction) => spawn_blocking(move || {
@@ -838,54 +839,59 @@ impl TransactionService {
         query: SchemaQuery,
         source_query: String,
     ) -> Result<ImmediateQueryResponse, Status> {
-        if let Some(Transaction::Schema(schema_transaction)) = self.transaction.take() {
-            let TransactionSchema {
-                snapshot,
-                type_manager,
-                thing_manager,
-                function_manager,
-                query_manager,
-                database,
-                transaction_options,
-            } = schema_transaction;
-            let mut snapshot = Arc::into_inner(snapshot).unwrap();
-            let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) =
-                spawn_blocking(move || {
-                    let result = query_manager.execute_schema(
-                        &mut snapshot,
-                        &type_manager,
-                        &thing_manager,
-                        &function_manager,
-                        query,
-                        &source_query,
+        if let Some(transaction) = self.transaction.take() {
+            match transaction {
+                Transaction::Schema(schema_transaction) => {
+                    let TransactionSchema {
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        function_manager,
+                        query_manager,
+                        database,
+                        transaction_options,
+                    } = schema_transaction;
+                    let mut snapshot = Arc::into_inner(snapshot).unwrap();
+                    let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) =
+                        spawn_blocking(move || {
+                            let result = query_manager.execute_schema(
+                                &mut snapshot,
+                                &type_manager,
+                                &thing_manager,
+                                &function_manager,
+                                query,
+                                &source_query,
+                            );
+                            (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
+                        })
+                        .await
+                        .unwrap();
+
+                    let transaction = TransactionSchema::from(
+                        snapshot,
+                        type_manager,
+                        thing_manager,
+                        function_manager,
+                        query_manager,
+                        database,
+                        transaction_options,
                     );
-                    (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
-                })
-                .await
-                .unwrap();
+                    self.transaction = Some(Transaction::Schema(transaction));
 
-            let transaction = TransactionSchema::from(
-                snapshot,
-                type_manager,
-                thing_manager,
-                function_manager,
-                query_manager,
-                database,
-                transaction_options,
-            );
-            self.transaction = Some(Transaction::Schema(transaction));
+                    let message_ok_done =
+                        result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
+                            TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err }
+                                .into_error_message()
+                                .into_status()
+                        })?;
 
-            let message_ok_done =
-                result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
-                    TransactionServiceError::TxnAbortSchemaQueryFailed { typedb_source: *err }
-                        .into_error_message()
-                        .into_status()
-                })?;
-
-            Ok(ImmediateQueryResponse::ok(message_ok_done))
-        } else {
-            Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
+                    return Ok(ImmediateQueryResponse::ok(message_ok_done));
+                }
+                transaction @ _ => self.transaction = Some(transaction),
+            }
         }
+
+        Ok(ImmediateQueryResponse::non_fatal_err(TransactionServiceError::SchemaQueryRequiresSchemaTransaction {}))
     }
 
     async fn run_write_query(&mut self, req_id: Uuid, pipeline: typeql::query::Pipeline, source_query: String) {
