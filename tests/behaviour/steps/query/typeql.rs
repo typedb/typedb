@@ -200,7 +200,6 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     let query = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_active_transaction();
         return;
     }
     let typeql_schema = parse_result.unwrap().into_schema();
@@ -221,7 +220,9 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
             typeql_schema,
             query,
         );
-        may_error.check_logic(result);
+        if may_error.check_logic(result).is_some() {
+            context.close_active_transaction();
+        }
     });
 }
 
@@ -231,13 +232,14 @@ async fn typeql_write_query(context: &mut Context, may_error: params::TypeQLMayE
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_active_transaction();
         return;
     }
     let query = parse_result.unwrap();
 
     let result = execute_write_query(context, query, query_str);
-    may_error.check_logic(result);
+    if may_error.check_logic(result).is_some() {
+        context.close_active_transaction();
+    }
 }
 
 #[apply(generic_step)]
@@ -255,12 +257,11 @@ async fn typeql_read_query(context: &mut Context, may_error: params::TypeQLMayEr
     let query_str = step.docstring.as_ref().unwrap().as_str();
     let parse_result = typeql::parse_query(query_str);
     if may_error.check_parsing(parse_result.as_ref()).is_some() {
-        context.close_active_transaction();
         return;
     }
     let query = parse_result.unwrap();
     let result = execute_read_query(context, query, query_str);
-    may_error.check_logic(result);
+    may_error.check_logic(result); // we don't close read transactions with logical errors
 }
 
 fn record_answers_of_typeql_read_query(context: &mut Context, query_str: &str) {
