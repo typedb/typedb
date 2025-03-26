@@ -26,7 +26,7 @@ use crate::{
 pub(crate) struct TabledCallExecutor {
     function_id: FunctionID,
     argument_positions: Vec<VariablePosition>,
-    assignment_positions: Vec<VariablePosition>,
+    assignment_positions: Vec<Option<VariablePosition>>,
     output_width: u32,
     active_executor: Option<TabledCallExecutorState>,
 }
@@ -53,7 +53,7 @@ impl TabledCallExecutor {
     pub(crate) fn new(
         function_id: FunctionID,
         argument_positions: Vec<VariablePosition>,
-        assignment_positions: Vec<VariablePosition>,
+        assignment_positions: Vec<Option<VariablePosition>>,
         output_width: u32,
     ) -> Self {
         Self { function_id, argument_positions, assignment_positions, output_width, active_executor: None }
@@ -86,7 +86,7 @@ impl TabledCallExecutor {
             .assignment_positions
             .iter()
             .enumerate()
-            .map(|(src, &dst)| (VariablePosition::new(src as u32), dst))
+            .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?)))
             .filter(|(src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
             .collect(); // TODO: Can we move this to compilation?
 
@@ -98,8 +98,9 @@ impl TabledCallExecutor {
                     for (i, element) in input.iter().enumerate() {
                         output_row.set(VariablePosition::new(i as u32), element.clone());
                     }
-                    for (returned_index, output_position) in self.assignment_positions.iter().enumerate() {
-                        output_row.set(*output_position, returned_row[returned_index].clone().into_owned());
+                    for (returned_index, &output_position) in self.assignment_positions.iter().enumerate() {
+                        let Some(output_position) = output_position else { continue };
+                        output_row.set(output_position, returned_row[returned_index].clone().into_owned());
                     }
                 });
             }

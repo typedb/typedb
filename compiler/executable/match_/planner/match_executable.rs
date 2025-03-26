@@ -491,7 +491,7 @@ impl fmt::Display for OptionalStep {
 pub struct FunctionCallStep {
     // TODO: Deduplication, selection counting etc.
     pub function_id: FunctionID,
-    pub assigned: Vec<VariablePosition>,
+    pub assigned: Vec<Option<VariablePosition>>,
     pub arguments: Vec<VariablePosition>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
