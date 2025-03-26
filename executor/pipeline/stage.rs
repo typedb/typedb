@@ -108,8 +108,7 @@ pub trait StageIterator:
         let first = self.next();
         let mut batch = match first {
             None => {
-                let batch = Batch::new(0, 0);
-                return Ok(batch);
+                return Ok(Batch::new(0, 0));
             }
             Some(row) => {
                 let row = row?;

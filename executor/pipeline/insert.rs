@@ -116,12 +116,12 @@ pub(crate) fn prepare_output_rows(
 ) -> Result<Batch, Box<PipelineExecutionError>> {
     let initial_output_batch_size = input_iterator
         .multiplicity_sum_if_collected()
-        .map(|sum| 10 + sum + (sum / 8)) // Some breathing room to avoid re-allocation
         .unwrap_or(BATCH_DEFAULT_CAPACITY);
     let mut output_batch = Batch::new(output_width, initial_output_batch_size);
     while let Some(row) = input_iterator.next().transpose()? {
         append_row_for_insert_mapped(&mut output_batch, row.as_reference(), mapping);
     }
+    debug_assert!(initial_output_batch_size == BATCH_DEFAULT_CAPACITY || initial_output_batch_size == output_batch.len());
     Ok(output_batch)
 }
 
