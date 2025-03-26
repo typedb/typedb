@@ -194,7 +194,7 @@ impl Batch {
         self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
         self.multiplicities.push(1);
         debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
-        writer(self.get_row_mut(self.len()-1))
+        writer(self.get_row_mut(self.len() - 1))
     }
 
     pub fn into_iterator_mut(self) -> MutableBatchRowIterator {
