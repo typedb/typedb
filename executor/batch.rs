@@ -64,9 +64,7 @@ impl FixedBatch {
 
     pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {
         debug_assert!(index < self.entries);
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &self.data[start..end];
+        let slice = &self.data[row_range(index as usize, self.width)];
         MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index as usize])
     }
 
@@ -84,9 +82,7 @@ impl FixedBatch {
     }
 
     fn row_internal_mut(&mut self, index: u32) -> Row<'_> {
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &mut self.data[start..end];
+        let slice = &mut self.data[row_range(index as usize, self.width)];
         Row::new(slice, &mut self.multiplicities[index as usize])
     }
 }
@@ -180,17 +176,13 @@ impl Batch {
 
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
         debug_assert!(index < self.len());
-        let start = index * self.width as usize;
-        let end = (index + 1) * self.width as usize;
-        let slice = &self.data[start..end];
+        let slice = &self.data[row_range(index, self.width)];
         MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
         debug_assert!(index < self.len());
-        let start = index * self.width as usize;
-        let end = start + self.width as usize;
-        let slice = &mut self.data[start..end];
+        let slice = &mut self.data[row_range(index, self.width)];
         Row::new(slice, &mut self.multiplicities[index])
     }
 
@@ -266,4 +258,10 @@ impl LendingIterator for BatchRowIterator {
             Some(row)
         }
     }
+}
+
+fn row_range(index: usize, width: u32) -> std::ops::Range<usize> {
+    let start = index * width as usize;
+    let end = start + width as usize;
+    start..end
 }
