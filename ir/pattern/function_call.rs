@@ -37,10 +37,7 @@ impl<ID: IrID> FunctionCall<ID> {
     }
 
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCall<T> {
-        FunctionCall::new(
-            self.function_id.clone(),
-            self.arguments.iter().map(|(var)| var.map(mapping)).collect(),
-        )
+        FunctionCall::new(self.function_id.clone(), self.arguments.iter().map(|(var)| var.map(mapping)).collect())
     }
 }
 
@@ -59,11 +56,7 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for FunctionCall<ID> {
 
 impl<ID: IrID> fmt::Display for FunctionCall<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let formatted_args = self
-            .arguments
-            .iter()
-            .map(|call_var| format!("{call_var}"))
-            .join(", ");
+        let formatted_args = self.arguments.iter().map(|call_var| format!("{call_var}")).join(", ");
 
         write!(f, "fn_{}({})", self.function_id, formatted_args)
     }

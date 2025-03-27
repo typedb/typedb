@@ -154,7 +154,7 @@ impl PatternExecutor {
                         Some(batch) => {
                             debug_assert!(!batch.is_empty());
                             inner.reset()
-                        },
+                        }
                     };
                 }
                 ControlInstruction::ExecuteDisjunction(ExecuteDisjunction { index, branch_index, input }) => {
