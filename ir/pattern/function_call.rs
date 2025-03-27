@@ -18,13 +18,12 @@ use crate::{pattern::IrID, pipeline::function_signature::FunctionID};
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionCall<ID> {
     function_id: FunctionID,
-    // map call variable to index of argument
-    call_variable_mapping: BTreeMap<ID, usize>,
+    arguments: Vec<ID>,
 }
 
 impl<ID> FunctionCall<ID> {
-    pub fn new(function_id: FunctionID, call_variable_mapping: BTreeMap<ID, usize>) -> Self {
-        Self { function_id, call_variable_mapping }
+    pub fn new(function_id: FunctionID, arguments: Vec<ID>) -> Self {
+        Self { function_id, arguments }
     }
 }
 
@@ -33,18 +32,14 @@ impl<ID: IrID> FunctionCall<ID> {
         self.function_id.clone()
     }
 
-    pub fn call_id_mapping(&self) -> &BTreeMap<ID, usize> {
-        &self.call_variable_mapping
-    }
-
     pub fn argument_ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.call_variable_mapping.keys().cloned()
+        self.arguments.iter().cloned()
     }
 
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCall<T> {
         FunctionCall::new(
             self.function_id.clone(),
-            self.call_variable_mapping.iter().map(|(k, v)| (k.map(mapping), v.clone())).collect(),
+            self.arguments.iter().map(|(var)| var.map(mapping)).collect(),
         )
     }
 }
@@ -53,21 +48,21 @@ impl<ID: StructuralEquality + Ord> StructuralEquality for FunctionCall<ID> {
     fn hash(&self) -> u64 {
         let mut hasher = DefaultHasher::new();
         self.function_id.hash_into(&mut hasher);
-        self.call_variable_mapping.hash_into(&mut hasher);
+        self.arguments.hash_into(&mut hasher);
         hasher.finish()
     }
 
     fn equals(&self, other: &Self) -> bool {
-        self.function_id.equals(&other.function_id) && self.call_variable_mapping.equals(&other.call_variable_mapping)
+        self.function_id.equals(&other.function_id) && self.arguments.equals(&other.arguments)
     }
 }
 
 impl<ID: IrID> fmt::Display for FunctionCall<ID> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let formatted_args = self
-            .call_variable_mapping
+            .arguments
             .iter()
-            .map(|(call_var, function_var)| format!("{} = {}", function_var, call_var))
+            .map(|call_var| format!("{call_var}"))
             .join(", ");
 
         write!(f, "fn_{}({})", self.function_id, formatted_args)

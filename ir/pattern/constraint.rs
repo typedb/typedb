@@ -341,10 +341,10 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         for (index, var) in binding.ids_assigned().enumerate() {
             self.context.set_variable_category(var, callee_signature.returns[index].0, binding.clone().into())?;
         }
-        for (caller_var, callee_arg_index) in binding.function_call.call_id_mapping() {
+        for (callee_arg_index, caller_var) in binding.function_call.argument_ids().enumerate() {
             self.context.set_variable_category(
-                *caller_var,
-                callee_signature.arguments[*callee_arg_index],
+                caller_var,
+                callee_signature.arguments[callee_arg_index],
                 binding.clone().into(),
             )?;
         }
@@ -382,9 +382,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
             })?
         }
 
-        // Construct
-        let call_variable_mapping = arguments.iter().enumerate().map(|(index, variable)| (*variable, index)).collect();
-        Ok(FunctionCall::new(callee_signature.function_id.clone(), call_variable_mapping))
+        Ok(FunctionCall::new(callee_signature.function_id.clone(), arguments))
     }
 
     pub fn add_assignment(

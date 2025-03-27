@@ -134,7 +134,10 @@ impl PatternExecutor {
                         None => {
                             self.push_next_instruction(context, index.next(), FixedBatch::from(input.as_reference()))?
                         }
-                        Some(_) => inner.reset(), // fail
+                        Some(batch) => {
+                            debug_assert!(!batch.is_empty());
+                            inner.reset()
+                        },
                     };
                 }
                 ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch {
