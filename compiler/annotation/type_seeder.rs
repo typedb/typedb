@@ -825,15 +825,8 @@ impl UnaryConstraint for FunctionCallBinding<Variable> {
                     graph_vertices.add_or_intersect(assigned_variable, Cow::Borrowed(types));
                 }
             }
-            let args_by_position: Vec<Variable> = self
-                .function_call()
-                .call_id_mapping()
-                .iter()
-                .map(|(var, index)| (index, var))
-                .sorted()
-                .map(|(_, var)| *var)
-                .collect();
-            for (arg_var, arg_annotations) in zip(args_by_position, &annotated_function_signature.arguments) {
+            let args = self.function_call().argument_ids();
+            for (arg_var, arg_annotations) in zip(args, &annotated_function_signature.arguments) {
                 if let FunctionParameterAnnotation::Concept(types) = arg_annotations {
                     graph_vertices.add_or_intersect(&Vertex::Variable(arg_var), Cow::Borrowed(types));
                 }
