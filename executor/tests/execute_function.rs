@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, iter, sync::Arc};
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
@@ -16,6 +16,7 @@ use executor::{
     ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
+use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
@@ -129,8 +130,17 @@ fn run_read_query(
     let rows_positions = pipeline.rows_positions().unwrap().clone();
     let (iterator, _) = pipeline.into_rows_iterator(ExecutionInterrupt::new_uninterruptible()).unwrap();
 
-    let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
-        iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
+    let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .flat_map(|res| match res {
+            Ok(row) => {
+                let multiplicity = row.multiplicity() as usize;
+                Either::Left(iter::repeat(Ok(row)).take(multiplicity))
+            }
+            Err(_) => Either::Right(iter::once(res)),
+        })
+        .collect();
 
     result.map(move |rows| (rows, rows_positions))
 }
