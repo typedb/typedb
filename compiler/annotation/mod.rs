@@ -157,7 +157,7 @@ typedb_error!(
         ),
         RoleNameNotResolved(
             3,
-            "Role label not found '{name}'.",
+            "Role label not found '{name}'. If this is an inherited role type, it can only be used via its original declaring relation.",
             name: String,
             source_span: Option<Span>,
         ),
