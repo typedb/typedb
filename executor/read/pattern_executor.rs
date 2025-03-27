@@ -137,7 +137,11 @@ impl PatternExecutor {
                         Some(_) => inner.reset(), // fail
                     };
                 }
-                ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch { index, branch_index, input }) => {
+                ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch {
+                    index,
+                    branch_index,
+                    input,
+                }) => {
                     let disjunction = &mut executors[*index].unwrap_disjunction();
                     let branch = &mut disjunction.branches[*branch_index];
                     let batch_opt = may_push_nested(suspensions, index, branch_index, &input, |suspensions| {
@@ -254,8 +258,9 @@ impl PatternExecutor {
                 for (idx, branch) in branches.iter_mut().enumerate() {
                     let branch_index = BranchIndex(idx);
                     branch.prepare(FixedBatch::from(input.as_reference()));
-                    self.control_stack
-                        .push(ExecuteDisjunctionBranch { index, branch_index, input: input.clone().into_owned() }.into())
+                    self.control_stack.push(
+                        ExecuteDisjunctionBranch { index, branch_index, input: input.clone().into_owned() }.into(),
+                    )
                 }
             }
             StepExecutors::Negation(NegationExecutor { inner }) => {
@@ -365,7 +370,8 @@ fn restore_suspension(
                 }
                 StepExecutors::Disjunction(disjunction) => {
                     disjunction.branches[*branch_index].prepare_to_restore_from_suspension(nested_pattern_depth);
-                    control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input: input_row.into_owned() }.into())
+                    control_stack
+                        .push(ExecuteDisjunctionBranch { index, branch_index, input: input_row.into_owned() }.into())
                 }
                 StepExecutors::InlinedCall(inlined) => {
                     inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
