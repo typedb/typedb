@@ -69,7 +69,7 @@ impl<'a> Row<'a> {
         *self.multiplicity = *row.multiplicity;
     }
 
-    pub(crate) fn get_multiplicity(&self) -> u64 {
+    pub fn get_multiplicity(&self) -> u64 {
         *self.multiplicity
     }
 
