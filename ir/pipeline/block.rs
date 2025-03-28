@@ -328,6 +328,10 @@ impl<'a> BlockBuilderContext<'a> {
         self.variable_names_index.get(name)
     }
 
+    pub(crate) fn get_variable_name(&self, variable: Variable) -> Option<&String> {
+        self.variable_registry.get_variable_name(variable)
+    }
+
     pub(crate) fn get_or_declare_variable(
         &mut self,
         name: &str,
@@ -369,6 +373,10 @@ impl<'a> BlockBuilderContext<'a> {
 
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
         self.block_context.is_variable_available(scope, variable)
+    }
+
+    pub(crate) fn is_variable_input(&self, variable: Variable) -> bool {
+        self.block_context.variable_declaration.get(&variable) == Some(&ScopeId::INPUT)
     }
 
     pub(crate) fn create_child_scope(&mut self, parent: ScopeId, transparency: ScopeTransparency) -> ScopeId {
