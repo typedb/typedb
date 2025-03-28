@@ -277,7 +277,7 @@ docker_container_image(
     name = "assemble-docker-x86_64",
     operating_system = "linux",
     architecture = "amd64",
-    base = "//docker:typedb-ubuntu-22.04-x86_64",
+    base = "@typedb-ubuntu-x86_64//image",
     cmd = ["/opt/typedb-server-linux-x86_64/typedb", "server"],
     directory = "opt",
     env = {
@@ -296,7 +296,7 @@ docker_container_image(
     name = "assemble-docker-arm64",
     operating_system = "linux",
     architecture = "arm64",
-    base = "//docker:typedb-ubuntu-22.04-arm64",
+    base = "@typedb-ubuntu-arm64//image",
     cmd = ["/opt/typedb-server-linux-arm64/typedb", "server"],
     directory = "opt",
     env = {
@@ -309,37 +309,6 @@ docker_container_image(
     volumes = ["/opt/typedb-server-linux-arm64/server/data/"],
     workdir = "/opt/typedb-server-linux-arm64",
     target_compatible_with = constraint_linux_arm64,
-)
-
-# TODO: Make a typedb-distribution rule similar to `deploy_apt`
-
-docker_container_push(
-    name = "deploy-docker-snapshot-x86_64",
-    format = "Docker",
-    image = ":assemble-docker-x86_64",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.snapshot.repository"],
-    ),
-    # using $(version) propagates to `assemble-docker` and breaks the image so it doesn't boot
-    tag = "$(container-version)",
-    target_compatible_with = constraint_linux_x86_64,
-    tags = ["manual"],
-)
-
-docker_container_push(
-    name = "deploy-docker-snapshot-arm64",
-    format = "Docker",
-    image = ":assemble-docker-arm64",
-    registry = deployment_docker["docker.index"],
-    repository = "{}/{}".format(
-        deployment_docker["docker.organisation"],
-        deployment_docker["docker.snapshot.repository"],
-    ),
-    tag = "$(container-version)",
-    target_compatible_with = constraint_linux_arm64,
-    tags = ["manual"],
 )
 
 docker_container_push(

@@ -118,6 +118,11 @@ impl Reporter {
         let service_task = Self::report_service(is_service_enabled, diagnostics.clone());
         let posthog_task = Self::report_posthog(is_posthog_enabled, diagnostics.clone());
         let (is_service_reported, is_posthog_reported) = tokio::join!(service_task, posthog_task);
+        if is_service_reported && is_posthog_reported {
+            println!("The image is healthy");
+        } else {
+            println!("The image is NOT healthy. Please debug!")
+        }
         is_service_reported && is_posthog_reported
     }
 
@@ -249,19 +254,7 @@ impl Reporter {
     }
 
     fn calculate_initial_delay(&self) -> Duration {
-        let report_interval_secs = REPORT_INTERVAL.as_secs();
-        assert!(report_interval_secs == 3600, "Modify the algorithm if you change the interval!");
-
-        let current_minute = Utc::now().minute() as u64;
-        let scheduled_minute =
-            hash_string_consistently(&self.deployment_id) % (report_interval_secs / SECONDS_IN_MINUTE);
-
-        let delay_secs = if current_minute > scheduled_minute {
-            report_interval_secs - current_minute * SECONDS_IN_MINUTE + scheduled_minute * SECONDS_IN_MINUTE
-        } else {
-            (scheduled_minute - current_minute) * SECONDS_IN_MINUTE
-        };
-        Duration::from_secs(delay_secs)
+        Duration::from_secs(10)
     }
 
     fn report_inner_error(error: DiagnosticsReporterError) {
