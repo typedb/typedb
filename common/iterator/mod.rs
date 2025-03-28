@@ -43,6 +43,8 @@ impl<T: Hash + Eq + PartialEq> Collector<T> for HashSet<T> {
 #[macro_export]
 macro_rules! minmax_or {
     ($iter:expr, $no_elements_expr:expr) => {{
+        use itertools::{Itertools, MinMaxResult};
+
         match $iter.minmax() {
             MinMaxResult::NoElements => $no_elements_expr,
             MinMaxResult::OneElement(element) => (element, element),
