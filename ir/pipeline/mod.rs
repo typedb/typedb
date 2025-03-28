@@ -48,43 +48,41 @@ typedb_error! {
     pub FunctionRepresentationError(component = "Function representation", prefix = "FRP") {
         FunctionArgumentUnused(
             1,
-            "Function argument variable '{argument_variable}' is unused.\nSource:\n{declaration}",
-            argument_variable: String,
-            declaration: Function
+            "Function argument variable '{variable}' is unused.",
+            variable: String,
+            source_span: Option<Span>,
         ),
         StreamReturnVariableUnavailable(
             2,
-            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration}", // TODO: formatted
-            return_variable: String,
-            declaration: ReturnStream
+            "Function return variable '{variable}' is not available or defined.", // TODO: formatted
+            variable: String,
+            source_span: Option<Span>,
         ),
         SingleReturnVariableUnavailable(
             3,
-            "Function return variable '{return_variable}' is not available or defined.\nSource:\n{declaration}", // TODO: formatted
-            return_variable: String,
-            declaration: ReturnSingle
+            "Function return variable '{variable}' is not available or defined.", // TODO: formatted
+            variable: String,
+            source_span: Option<Span>,
         ),
         BlockDefinition(
             4,
-            "Function pattern contains an error.\nSource:\n{declaration}",
-            declaration: FunctionBlock,
+            "Function pattern contains an error.",
             typedb_source: Box<RepresentationError>,
         ),
         ReturnReduction(
             5,
-            "Error building representation of the return reduction.\nSource:\n{declaration}",
-            declaration: ReturnReduction,
+            "Error building representation of the return reduction.",
             typedb_source: Box<RepresentationError>,
         ),
         IllegalFetch(
             6,
-            "Fetch clauses cannot be used inside of functions or function blocks that terminate in a 'return' statement.\nSource:\n{declaration}",
-            declaration: FunctionBlock
+            "Fetch clauses cannot be used inside of functions or function blocks that terminate in a 'return' statement.",
+            source_span: Option<Span>,
         ),
         IllegalStages(
             7,
-            "Functions may not contain write stages.\nSource:\n{declaration}",
-            declaration: FunctionBlock
+            "Functions may not contain write stages.",
+            source_span: Option<Span>,
         ),
         InconsistentReturn(
             8,
@@ -95,7 +93,13 @@ typedb_error! {
         IllegalKeywordAsIdentifier(
             9,
             "The reserved keyword '{identifier}' cannot be used as function name",
-            identifier: String
+            identifier: String,
+            source_span: Option<Span>,
+        ),
+        NonAnonymousVariableExpected(
+            10,
+            "A non-anonymous variable is expected in this context.",
+            source_span: Option<Span>,
         ),
     }
 }

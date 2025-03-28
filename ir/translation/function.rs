@@ -30,6 +30,20 @@ use crate::{
     },
 };
 
+macro_rules! verify_variable_available {
+    ($context:ident, $var:expr => $error:ident ) => {
+        match $context.get_variable(
+            $var.name()
+                .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: $var.span() })?,
+        ) {
+            Some(translated) => Ok(translated),
+            None => Err(FunctionRepresentationError::$error {
+                variable: $var.name().unwrap().to_owned(),
+                source_span: $var.span(),
+            }),
+        }
+    };
+}
 pub fn translate_typeql_function(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
@@ -48,6 +62,7 @@ pub fn translate_function_from(
     let checked_name = &signature.ident.as_str_unreserved().map_err(|_source| {
         FunctionRepresentationError::IllegalKeywordAsIdentifier {
             identifier: signature.ident.as_str_unchecked().to_owned(),
+            source_span: signature.ident.span(),
         }
     })?;
     let argument_labels = signature.args.iter().map(|arg| arg.type_.clone()).collect();
@@ -55,19 +70,24 @@ pub fn translate_function_from(
         .args
         .iter()
         .map(|arg| {
-            (
-                arg.var.name().unwrap().to_owned(),
+            let name = arg
+                .var
+                .name()
+                .ok_or(FunctionRepresentationError::NonAnonymousVariableExpected { source_span: arg.var.span() })?
+                .to_owned();
+            Ok::<_, FunctionRepresentationError>((
+                name,
                 arg.var.span(),
                 named_type_any_to_category_and_optionality(&arg.type_).0,
-            )
+            ))
         })
-        .collect::<Vec<_>>();
+        .collect::<Result<Vec<_>, _>>()?;
     let (mut context, arguments) = TranslationContext::new_with_function_arguments(args_sources_categories);
     let mut value_parameters = ParameterRegistry::new();
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
 
     // Check for unused arguments
-    for &arg in &arguments {
+    for (index, &arg) in arguments.iter().enumerate() {
         if !body.stages.iter().any(|stage| {
             if let TranslatedStage::Match { block, .. } = stage {
                 block.conjunction().referenced_variables().contains(&arg)
@@ -77,8 +97,8 @@ pub fn translate_function_from(
         }) {
             let argument_variable = context.variable_registry.get_variable_name(arg).unwrap();
             return Err(Box::new(FunctionRepresentationError::FunctionArgumentUnused {
-                argument_variable: argument_variable.clone(),
-                declaration: declaration.unwrap().clone(),
+                variable: argument_variable.clone(),
+                source_span: signature.args[index].span.clone(),
             }));
         }
     }
@@ -122,10 +142,7 @@ pub(crate) fn translate_function_block(
 ) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
     let (stages, fetch) =
         translate_pipeline_stages(snapshot, function_index, context, value_parameters, &function_block.stages)
-            .map_err(|err| FunctionRepresentationError::BlockDefinition {
-                declaration: function_block.clone(),
-                typedb_source: err,
-            })?;
+            .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
 
     let has_illegal_stages = stages.iter().any(|stage| match stage {
         TranslatedStage::Insert { .. }
@@ -143,10 +160,10 @@ pub(crate) fn translate_function_block(
     });
 
     if has_illegal_stages {
-        return Err(Box::new(FunctionRepresentationError::IllegalStages { declaration: function_block.clone() }));
+        return Err(Box::new(FunctionRepresentationError::IllegalStages { source_span: function_block.span.clone() }));
     }
-    if fetch.is_some() {
-        return Err(Box::new(FunctionRepresentationError::IllegalFetch { declaration: function_block.clone() }));
+    if let Some(fetch) = fetch {
+        return Err(Box::new(FunctionRepresentationError::IllegalFetch { source_span: function_block.span.clone() }));
     }
 
     let return_operation = match &function_block.return_stmt {
@@ -214,14 +231,7 @@ fn build_return_stream(
     let variables = stream
         .vars
         .iter()
-        .map(|typeql_var| {
-            context.get_variable(typeql_var.name().unwrap()).ok_or_else(|| {
-                FunctionRepresentationError::StreamReturnVariableUnavailable {
-                    return_variable: typeql_var.name().unwrap().to_string(),
-                    declaration: stream.clone(),
-                }
-            })
-        })
+        .map(|typeql_var| verify_variable_available!(context, typeql_var => StreamReturnVariableUnavailable))
         .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
     Ok(ReturnOperation::Stream(variables, stream.span()))
 }
@@ -233,14 +243,7 @@ fn build_return_single(
     let variables = single
         .vars
         .iter()
-        .map(|typeql_var| {
-            context.get_variable(typeql_var.name().unwrap()).ok_or_else(|| {
-                FunctionRepresentationError::SingleReturnVariableUnavailable {
-                    return_variable: typeql_var.name().unwrap().to_string(),
-                    declaration: single.clone(),
-                }
-            })
-        })
+        .map(|typeql_var| verify_variable_available!(context, typeql_var => SingleReturnVariableUnavailable))
         .collect::<Result<Vec<Variable>, FunctionRepresentationError>>()?;
     let selector = single.selector.clone();
     Ok(ReturnOperation::Single(selector, variables, single.span()))
@@ -255,12 +258,8 @@ fn build_return_reduce(
         ReturnReduction::Value(typeql_reducers, _) => {
             let mut reducers = Vec::new();
             for typeql_reducer in typeql_reducers {
-                let reducer = build_reducer(context, typeql_reducer).map_err(|err| {
-                    FunctionRepresentationError::ReturnReduction {
-                        declaration: reduction.clone(),
-                        typedb_source: err.clone(),
-                    }
-                })?;
+                let reducer = build_reducer(context, typeql_reducer)
+                    .map_err(|typedb_source| FunctionRepresentationError::ReturnReduction { typedb_source })?;
                 reducers.push(reducer);
             }
             Ok(ReturnOperation::ReduceReducer(reducers, reduction.span()))
