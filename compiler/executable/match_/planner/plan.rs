@@ -1459,7 +1459,7 @@ impl ConjunctionPlan<'_> {
                         .clone() // FIXME
                         .plan(match_builder.produced_so_far.iter().filter(|&&v| v != variable).copied())?
                         .lower(
-                            match_builder.produced_so_far.iter().copied(),
+                            match_builder.row_variables(),
                             match_builder.current_outputs.iter().copied(),
                             match_builder.position_mapping(),
                             variable_registry,
@@ -1530,7 +1530,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
-                    match_builder.current_outputs.iter().copied(),
+                    match_builder.row_variables(),
                     match_builder.selected_variables.iter().copied(),
                     match_builder.position_mapping(),
                     variable_registry,
@@ -1610,7 +1610,7 @@ impl ConjunctionPlan<'_> {
                     .clone() // FIXME
                     .plan(match_builder.position_mapping().keys().copied())?
                     .lower(
-                        match_builder.produced_so_far.iter().copied(),
+                        match_builder.row_variables(),
                         match_builder.current_outputs.iter().copied(),
                         match_builder.position_mapping(),
                         variable_registry,
