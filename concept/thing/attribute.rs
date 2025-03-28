@@ -10,7 +10,6 @@ use std::{
     fmt,
     hash::{Hash, Hasher},
     iter,
-    ops::RangeBounds,
     sync::{Arc, OnceLock},
 };
 
@@ -41,11 +40,11 @@ use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
     thing::{
-        object::{HasReverseIterator, Object},
+        object::Object,
         thing_manager::ThingManager,
         HKInstance, ThingAPI,
     },
-    type_::{attribute_type::AttributeType, object_type::ObjectType, ObjectTypeAPI},
+    type_::{attribute_type::AttributeType, ObjectTypeAPI},
     ConceptAPI, ConceptStatus,
 };
 
