@@ -6,6 +6,7 @@
 
 use typeql::{
     common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator,
+    Variable,
 };
 
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
         reduce::{AssignedReduction, Reduce, Reducer},
         VariableRegistry,
     },
-    translation::TranslationContext,
+    translation::{verify_variable_available, TranslationContext},
     RepresentationError,
 };
 
@@ -26,13 +27,12 @@ pub fn translate_reduce(
     for reduce_assign in &typeql_reduce.reduce_assignments {
         let reducer = build_reducer(context, &reduce_assign.reducer)?;
         let (category, is_optional) = resolve_category_optionality(&reducer, &context.variable_registry);
-        let assigned_var = context.register_reduced_variable(
-            reduce_assign.variable.name().unwrap(),
-            category,
-            is_optional,
-            reduce_assign.variable.span(),
-            reducer,
-        );
+        let var_name =
+            reduce_assign.variable.name().ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected {
+                source_span: reduce_assign.variable.span(),
+            }))?;
+        let assigned_var =
+            context.register_reduced_variable(var_name, category, is_optional, reduce_assign.variable.span(), reducer);
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 
@@ -40,22 +40,7 @@ pub fn translate_reduce(
         None => Vec::new(),
         Some(group) => group
             .iter()
-            .map(|typeql_var| {
-                let Some(var_name) = typeql_var.name() else {
-                    return Err(RepresentationError::IllegalAnonymousVariableUsage {
-                        source_span: typeql_var.span(),
-                    });
-                };
-                context.visible_variables.get(var_name).map_or_else(
-                    || {
-                        Err(RepresentationError::OperatorStageVariableUnavailable {
-                            variable_name: var_name.to_owned(),
-                            source_span: typeql_var.span(),
-                        })
-                    },
-                    |&variable| Ok(variable),
-                )
-            })
+            .map(|typeql_var| verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable))
             .collect::<Result<Vec<_>, _>>()?,
     };
     Ok(Reduce::new(reductions, group, typeql_reduce.span()))
@@ -81,21 +66,13 @@ pub(crate) fn build_reducer(
     match reduce_value {
         TypeQLReducer::Count(count) => match &count.variable {
             None => Ok(Reducer::Count),
-            Some(typeql_var) => match context.get_variable(typeql_var.name().unwrap()) {
-                None => Err(Box::new(RepresentationError::ReduceVariableNotAvailable {
-                    variable_name: typeql_var.name().unwrap().to_owned(),
-                    source_span: typeql_var.span(),
-                })),
-                Some(var) => Ok(Reducer::CountVar(var)),
-            },
+            Some(typeql_var) => {
+                let var = verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable)?;
+                Ok(Reducer::CountVar(var))
+            }
         },
         TypeQLReducer::Stat(stat) => {
-            let Some(var) = context.get_variable(stat.variable.name().unwrap()) else {
-                return Err(Box::new(RepresentationError::ReduceVariableNotAvailable {
-                    variable_name: stat.variable.name().unwrap().to_owned(),
-                    source_span: stat.variable.span(),
-                }));
-            };
+            let var = verify_variable_available!(context, stat.variable => ReduceVariableNotAvailable)?;
             match &stat.reduce_operator {
                 TypeQLReduceOperator::Sum => Ok(Reducer::Sum(var)),
                 TypeQLReduceOperator::Max => Ok(Reducer::Max(var)),

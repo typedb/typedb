@@ -7,11 +7,12 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use typeql::common::Span;
+use typeql::common::{Span, Spanned};
 
 use crate::{
     pattern::variable_category::VariableCategory,
     pipeline::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
+    RepresentationError,
 };
 
 mod constraints;
@@ -89,3 +90,19 @@ impl TranslationContext {
         self.visible_variables.get(variable).cloned()
     }
 }
+
+macro_rules! verify_variable_available {
+    ($context:ident, $var:expr => $error:ident ) => {
+        match $context.get_variable(
+            $var.name()
+                .ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: $var.span() }))?,
+        ) {
+            Some(translated) => Ok(translated),
+            None => Err(Box::new(RepresentationError::$error {
+                variable: $var.name().unwrap().to_owned(),
+                source_span: $var.span(),
+            })),
+        }
+    };
+}
+pub(super) use verify_variable_available;

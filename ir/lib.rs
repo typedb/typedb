@@ -141,14 +141,14 @@ typedb_error! {
         ),
         OperatorStageVariableUnavailable(
             18,
-            "The variable '{variable_name}' was not available in the stage.",
-            variable_name: String,
+            "The variable '{variable}' was not available in the stage.",
+            variable: String,
             source_span: Option<Span>,
         ),
         ReduceVariableNotAvailable(
             19,
-            "The variable '{variable_name}' was not available in for use in the reduce.",
-            variable_name: String,
+            "The variable '{variable}' was not available in for use in the reduce.",
+            variable: String,
             source_span: Option<Span>,
         ),
         LabelWithKind(
@@ -160,16 +160,6 @@ typedb_error! {
             21,
             "The variable '{variable}' may not be assigned to, as it was already bound in a previous stage",
             variable: String,
-            source_span: Option<Span>,
-        ),
-        LabelWithLabel(
-            30,
-            "Specifying a label constraint on a label is not allowed.",
-            source_span: Option<Span>,
-        ),
-        ScopedLabelWithLabel(
-            31,
-            "Specifying a scoped label constraint on a label is not allowed.",
             source_span: Option<Span>,
         ),
         UnrecognisedClause(
@@ -208,9 +198,14 @@ typedb_error! {
             rhs_category: VariableCategory,
             source_span: Option<Span>,
         ),
-        IllegalAnonymousVariableUsageInWithin(
-            29,
-            "An anonymous variable may not be used in this context.",
+        LabelWithLabel(
+            30,
+            "Specifying a label constraint on a label is not allowed.",
+            source_span: Option<Span>,
+        ),
+        ScopedLabelWithLabel(
+            31,
+            "Specifying a scoped label constraint on a label is not allowed.",
             source_span: Option<Span>,
         ),
         UpdateVariableUnavailable(

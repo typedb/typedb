@@ -254,7 +254,11 @@ impl TypeInferenceGraph<'_> {
         &self,
         variable_registry: &VariableRegistry,
     ) -> Result<(), TypeInferenceError> {
-        let thing_variable_present = self.vertices.annotations.iter().filter_map(|(var, _)| var.as_variable())
+        let thing_variable_present = self
+            .vertices
+            .annotations
+            .iter()
+            .filter_map(|(var, _)| var.as_variable())
             .any(|var| variable_registry.get_variable_category(var).unwrap().is_category_thing());
 
         let any_vertex_empty = self.vertices.annotations.iter().any(|(_, types)| types.is_empty());

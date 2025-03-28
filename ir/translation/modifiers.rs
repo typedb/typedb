@@ -10,7 +10,7 @@ use typeql::{common::Spanned, token::Order};
 
 use crate::{
     pipeline::modifier::{Distinct, Limit, Offset, Require, Select, Sort},
-    translation::{literal::FromTypeQLLiteral, TranslationContext},
+    translation::{literal::FromTypeQLLiteral, verify_variable_available, TranslationContext},
     RepresentationError,
 };
 
@@ -21,13 +21,7 @@ pub fn translate_select(
     let selected_variables = typeql_select
         .variables
         .iter()
-        .map(|typeql_var| match context.get_variable(typeql_var.name().unwrap()) {
-            None => Err(RepresentationError::OperatorStageVariableUnavailable {
-                variable_name: typeql_var.name().unwrap().to_owned(),
-                source_span: typeql_select.span(),
-            }),
-            Some(variable) => Ok(variable),
-        })
+        .map(|typeql_var| verify_variable_available!(context, typeql_var => OperatorStageVariableUnavailable))
         .collect::<Result<HashSet<_>, _>>()?;
     let select = Select::new(selected_variables, typeql_select.span());
     context.visible_variables.retain(|name, var| select.variables.contains(var));
@@ -43,13 +37,8 @@ pub fn translate_sort(
         .iter()
         .map(|ordered_var| {
             let is_ascending = ordered_var.ordering.map(|order| order == Order::Asc).unwrap_or(true);
-            match context.get_variable(ordered_var.variable.name().unwrap()) {
-                None => Err(RepresentationError::OperatorStageVariableUnavailable {
-                    variable_name: ordered_var.variable.name().unwrap().to_owned(),
-                    source_span: sort.span(),
-                }),
-                Some(variable) => Ok((variable, is_ascending)),
-            }
+            verify_variable_available!(context, ordered_var.variable => OperatorStageVariableUnavailable)
+                .map(|variable| (variable, is_ascending))
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(Sort::new(sort_on, sort.span()))
@@ -92,13 +81,7 @@ pub fn translate_require(
     let required_variables = typeql_require
         .variables
         .iter()
-        .map(|typeql_var| match context.visible_variables.get(typeql_var.name().unwrap()) {
-            None => Err(RepresentationError::OperatorStageVariableUnavailable {
-                variable_name: typeql_var.name().unwrap().to_owned(),
-                source_span: typeql_require.span(),
-            }),
-            Some(&variable) => Ok(variable),
-        })
+        .map(|typeql_var| verify_variable_available!(context, typeql_var => OperatorStageVariableUnavailable))
         .collect::<Result<HashSet<_>, _>>()?;
     let require = Require::new(required_variables, typeql_require.span());
     Ok(require)
