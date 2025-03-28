@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, Bound, HashMap};
+use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
@@ -425,6 +425,8 @@ impl OperationTimeValidation {
                 root_owner_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+            let owner_and_subtypes: HashSet<ObjectType> =
+                TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()).collect();
             let (owner_type_min, owner_type_max) = minmax_or!(
                 TypeAPI::chain_types(root_owner_type, root_owner_subtypes.into_iter().cloned()),
                 unreachable!("Expected at least one object type")
@@ -443,14 +445,19 @@ impl OperationTimeValidation {
                     .get_attribute_with_value(snapshot, attribute_type, value.clone())
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                 {
-                    let mut has_iterator = attribute.get_has_by_owner_types(snapshot, thing_manager, &owner_type_range);
+                    let mut has_iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
+                        snapshot,
+                        &attribute,
+                        &owner_type_range,
+                    );
 
                     while let Some((has, _)) = has_iterator
                         .next()
                         .transpose()
                         .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                     {
-                        if has.owner() != owner {
+                        // Iterator can return types outside the list based on the storage specifics
+                        if has.owner() != owner && owner_and_subtypes.contains(&has.owner().type_()) {
                             return Err(DataValidation::create_data_validation_uniqueness_error(
                                 snapshot,
                                 thing_manager.type_manager(),

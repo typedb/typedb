@@ -98,15 +98,6 @@ impl Attribute {
         thing_manager.get_owners_by_type(snapshot, self, owner_type)
     }
 
-    pub fn get_has_by_owner_types(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        thing_manager: &ThingManager,
-        owner_type_range: &impl RangeBounds<ObjectType>,
-    ) -> HasReverseIterator {
-        thing_manager.get_has_reverse_by_attribute_and_owner_type_range(snapshot, self, owner_type_range)
-    }
-
     pub fn next_possible(&self) -> Attribute {
         let mut bytes = self.vertex.to_bytes().into_array();
         bytes.increment().unwrap();
