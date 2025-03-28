@@ -25,7 +25,9 @@ use crate::{
         variable_category::VariableCategory,
         IrID, ParameterID, ScopeId, ValueType, VariableDependency, Vertex,
     },
-    pipeline::{block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry},
+    pipeline::{
+        block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
+    },
     LiteralParseError, RepresentationError,
 };
 
@@ -335,6 +337,15 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         function_name: &str,
         source_span: Option<Span>,
     ) -> Result<&FunctionCallBinding<Variable>, Box<RepresentationError>> {
+        if let Some(variable) = assigned.iter().find(|var| self.context.is_variable_input(**var)) {
+            let variable = self
+                .context
+                .get_variable_name(*variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
+        }
+
         let function_call =
             self.create_function_call(&assigned, callee_signature, arguments, function_name, source_span)?;
         let binding = FunctionCallBinding::new(assigned, function_call, callee_signature.return_is_stream, source_span);
@@ -392,6 +403,14 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
         source_span: Option<Span>,
     ) -> Result<&ExpressionBinding<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
+        if self.context.is_variable_input(variable) {
+            let variable = self
+                .context
+                .get_variable_name(variable)
+                .cloned()
+                .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+            return Err(Box::new(RepresentationError::AssigningToInputVariable { variable, source_span }));
+        }
         let binding = ExpressionBinding::new(variable, expression, source_span);
         binding.validate(self.context).map_err(|typedb_source| RepresentationError::ExpressionRepresentationError {
             typedb_source,

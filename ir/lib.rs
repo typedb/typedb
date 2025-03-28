@@ -156,6 +156,12 @@ typedb_error! {
             "Specifying a kind on a label is not allowed.",
             source_span: Option<Span>,
         ),
+        AssigningToInputVariable(
+            21,
+            "The variable '{variable}' may not be assigned to, as it was already bound in a previous stage",
+            variable: String,
+            source_span: Option<Span>,
+        ),
         LabelWithLabel(
             30,
             "Specifying a label constraint on a label is not allowed.",
