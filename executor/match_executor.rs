@@ -16,10 +16,7 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     profile::QueryProfile,
-    read::{
-        pattern_executor::PatternExecutor, tabled_functions::TabledFunctions, QueryPatternSuspensions,
-        TODO_REMOVE_create_executors_for_match,
-    },
+    read::{create_pattern_executor_for_match, pattern_executor::PatternExecutor, tabled_functions::TabledFunctions},
     row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
@@ -28,7 +25,6 @@ pub struct MatchExecutor {
     entry: PatternExecutor,
     input: Option<MaybeOwnedRow<'static>>,
     tabled_functions: TabledFunctions,
-    suspensions: QueryPatternSuspensions,
 }
 
 impl MatchExecutor {
@@ -41,7 +37,7 @@ impl MatchExecutor {
         profile: &QueryProfile,
     ) -> Result<Self, Box<ConceptReadError>> {
         Ok(Self {
-            entry: TODO_REMOVE_create_executors_for_match(
+            entry: create_pattern_executor_for_match(
                 snapshot,
                 thing_manager,
                 &function_registry,
@@ -50,7 +46,6 @@ impl MatchExecutor {
             )?,
             tabled_functions: TabledFunctions::new(function_registry),
             input: Some(input.into_owned()),
-            suspensions: QueryPatternSuspensions::new_root(),
         })
     }
 
@@ -72,9 +67,7 @@ impl MatchExecutor {
         if let Some(input) = self.input.take() {
             self.entry.prepare(FixedBatch::from(input.into_owned()));
         }
-        self.entry
-            .compute_next_batch(context, interrupt, &mut self.tabled_functions, &mut self.suspensions)
-            .map_err(|err| Box::new(err))
+        self.entry.compute_next_batch(context, interrupt, &mut self.tabled_functions).map_err(|err| Box::new(err))
     }
 }
 

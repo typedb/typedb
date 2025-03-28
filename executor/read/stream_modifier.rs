@@ -96,33 +96,19 @@ pub(super) enum StreamModifierResultMapper {
 }
 
 impl StreamModifierResultMapper {
-    pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+    pub(super) fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         match self {
-            Self::Select(mapper) => mapper.map_output(subquery_result),
-            Self::Offset(mapper) => mapper.map_output(subquery_result),
-            Self::Limit(mapper) => mapper.map_output(subquery_result),
-            Self::Distinct(mapper) => mapper.map_output(subquery_result),
-            Self::Last(mapper) => mapper.map_output(subquery_result),
+            Self::Select(inner) => inner.map_output(subquery_result),
+            Self::Offset(inner) => inner.map_output(subquery_result),
+            Self::Limit(inner) => inner.map_output(subquery_result),
+            Self::Distinct(inner) => inner.map_output(subquery_result),
+            Self::Last(inner) => inner.map_output(subquery_result),
         }
     }
 }
 
-pub(super) trait StreamModifierResultMapperTrait {
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl;
-}
-
-pub(super) enum StreamModifierControl {
-    Retry(Option<FixedBatch>),
-    Done(Option<FixedBatch>),
-}
-
-impl StreamModifierControl {
-    pub(crate) fn into_parts(self) -> (bool, Option<FixedBatch>) {
-        match self {
-            StreamModifierControl::Retry(batch_opt) => (true, batch_opt),
-            StreamModifierControl::Done(batch_opt) => (false, batch_opt),
-        }
-    }
+trait StreamModifierResultMapperTrait {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch>;
 }
 
 #[derive(Debug)]
@@ -137,7 +123,7 @@ impl SelectMapper {
 }
 
 impl StreamModifierResultMapperTrait for SelectMapper {
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         if let Some(mut input_batch) = subquery_result {
             for i in 0..input_batch.len() {
                 let mut row = input_batch.get_row_mut(i);
@@ -145,9 +131,9 @@ impl StreamModifierResultMapperTrait for SelectMapper {
                     row.unset(*pos);
                 }
             }
-            StreamModifierControl::Retry(Some(input_batch))
+            Some(input_batch)
         } else {
-            StreamModifierControl::Done(None)
+            None
         }
     }
 }
@@ -165,13 +151,13 @@ impl OffsetMapper {
 }
 
 impl StreamModifierResultMapperTrait for OffsetMapper {
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         if let Some(input_batch) = subquery_result {
             if self.current >= self.required {
-                StreamModifierControl::Retry(Some(input_batch))
+                Some(input_batch)
             } else if (self.required - self.current) >= input_batch.len() as u64 {
                 self.current += input_batch.len() as u64;
-                StreamModifierControl::Retry(None)
+                Some(FixedBatch::EMPTY) // Retry this instruction without returning any rows
             } else {
                 let offset_in_batch = (self.required - self.current) as u32;
                 let mut output_batch = FixedBatch::new(input_batch.width());
@@ -179,10 +165,10 @@ impl StreamModifierResultMapperTrait for OffsetMapper {
                     output_batch.append(|mut output_row| output_row.copy_from_row(input_batch.get_row(row_index)));
                 }
                 self.current = self.required;
-                StreamModifierControl::Retry(Some(output_batch))
+                Some(output_batch)
             }
         } else {
-            StreamModifierControl::Done(None)
+            None
         }
     }
 }
@@ -200,13 +186,13 @@ impl LimitMapper {
 }
 
 impl StreamModifierResultMapperTrait for LimitMapper {
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         if let Some(input_batch) = subquery_result {
             if self.current >= self.required {
-                StreamModifierControl::Done(None)
+                None
             } else if (self.required - self.current) >= input_batch.len() as u64 {
                 self.current += input_batch.len() as u64;
-                StreamModifierControl::Retry(Some(input_batch))
+                Some(input_batch)
             } else {
                 let mut output_batch = FixedBatch::new(input_batch.width());
                 let mut i = 0;
@@ -218,10 +204,10 @@ impl StreamModifierResultMapperTrait for LimitMapper {
                     self.current += 1;
                 }
                 debug_assert!(self.current == self.required);
-                StreamModifierControl::Done(Some(output_batch))
+                Some(output_batch)
             }
         } else {
-            StreamModifierControl::Done(None)
+            None
         }
     }
 }
@@ -240,10 +226,11 @@ impl DistinctMapper {
 }
 
 impl StreamModifierResultMapperTrait for DistinctMapper {
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
-        let Some(mut input_batch) = subquery_result else { return StreamModifierControl::Done(None) };
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
+        let mut input_batch = subquery_result?;
         if input_batch.is_empty() {
-            return StreamModifierControl::Done(None);
+            // Wait why?
+            return None;
         };
 
         for i in 0..input_batch.len() {
@@ -252,7 +239,7 @@ impl StreamModifierResultMapperTrait for DistinctMapper {
                 row.set_multiplicity(0);
             }
         }
-        StreamModifierControl::Retry(Some(input_batch))
+        Some(input_batch)
     }
 }
 
@@ -268,12 +255,12 @@ impl LastMapper {
 }
 
 impl StreamModifierResultMapperTrait for LastMapper {
-    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> StreamModifierControl {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         if let Some(input_batch) = subquery_result {
             self.last_row = Some(input_batch.get_row(input_batch.len() - 1).into_owned());
-            StreamModifierControl::Retry(None)
+            Some(FixedBatch::EMPTY) // Retry this instruction without returning any rows
         } else {
-            StreamModifierControl::Done(self.last_row.clone().map(FixedBatch::from))
+            self.last_row.take().map(FixedBatch::from)
         }
     }
 }

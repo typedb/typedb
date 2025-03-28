@@ -25,65 +25,100 @@ use storage::snapshot::ReadableSnapshot;
 use typeql::schema::definable::function::SingleSelector;
 
 use crate::{
+    batch::FixedBatch,
     profile::QueryProfile,
     read::{
-        collecting_stage_executor::CollectingStageExecutor, immediate_executor::ImmediateExecutor,
-        nested_pattern_executor::NestedPatternExecutor, pattern_executor::PatternExecutor,
-        stream_modifier::StreamModifierExecutor, tabled_call_executor::TabledCallExecutor,
+        collecting_stage_executor::CollectingStageExecutor,
+        immediate_executor::ImmediateExecutor,
+        nested_pattern_executor::{DisjunctionExecutor, InlinedCallExecutor, NegationExecutor},
+        pattern_executor::PatternExecutor,
+        stream_modifier::StreamModifierExecutor,
+        tabled_call_executor::TabledCallExecutor,
     },
 };
 
 #[derive(Debug)]
 pub enum StepExecutors {
     Immediate(ImmediateExecutor),
-    Nested(NestedPatternExecutor),
+    Disjunction(DisjunctionExecutor),
+    Negation(NegationExecutor),
+    InlinedCall(InlinedCallExecutor),
+    TabledCall(TabledCallExecutor),
     StreamModifier(StreamModifierExecutor),
     CollectingStage(CollectingStageExecutor),
-    TabledCall(TabledCallExecutor),
-    ReshapeForReturn(Vec<VariablePosition>),
+    ReshapeForReturn(ReshapeForReturnExecutor),
 }
 
 impl StepExecutors {
     pub(crate) fn unwrap_immediate(&mut self) -> &mut ImmediateExecutor {
         match self {
             StepExecutors::Immediate(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected Immediate"),
         }
     }
 
-    pub(crate) fn unwrap_nested(&mut self) -> &mut NestedPatternExecutor {
+    pub(crate) fn unwrap_negation(&mut self) -> &mut NegationExecutor {
         match self {
-            StepExecutors::Nested(step) => step,
-            _ => panic!("bad unwrap"),
+            StepExecutors::Negation(step) => step,
+            _ => panic!("bad unwrap. Expected Negation"),
+        }
+    }
+
+    pub(crate) fn unwrap_disjunction(&mut self) -> &mut DisjunctionExecutor {
+        match self {
+            StepExecutors::Disjunction(step) => step,
+            _ => panic!("bad unwrap. Expected Disjunction"),
+        }
+    }
+
+    pub(crate) fn unwrap_inlined_call(&mut self) -> &mut InlinedCallExecutor {
+        match self {
+            StepExecutors::InlinedCall(step) => step,
+            _ => panic!("bad unwrap. Expected InlinedCall"),
         }
     }
 
     pub(crate) fn unwrap_tabled_call(&mut self) -> &mut TabledCallExecutor {
         match self {
             StepExecutors::TabledCall(step) => step,
-            _ => unreachable!(),
+            _ => panic!("bad unwrap. Expected TabledCall"),
         }
     }
 
     pub(crate) fn unwrap_stream_modifier(&mut self) -> &mut StreamModifierExecutor {
         match self {
             StepExecutors::StreamModifier(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected StreamModifier"),
         }
     }
 
     pub(crate) fn unwrap_collecting_stage(&mut self) -> &mut CollectingStageExecutor {
         match self {
             StepExecutors::CollectingStage(step) => step,
-            _ => panic!("bad unwrap"),
+            _ => panic!("bad unwrap. Expected CollectingStage"),
         }
     }
 
-    pub(crate) fn unwrap_reshape(&self) -> &[VariablePosition] {
+    pub(crate) fn unwrap_reshape(&self) -> &ReshapeForReturnExecutor {
         match self {
-            StepExecutors::ReshapeForReturn(return_positions) => return_positions,
-            _ => panic!("bad unwrap"),
+            StepExecutors::ReshapeForReturn(step) => step,
+            _ => panic!("bad unwrap. Expected ReshapeForReturn"),
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct ReshapeForReturnExecutor(Vec<VariablePosition>);
+
+impl ReshapeForReturnExecutor {
+    pub(super) fn map_output(&self, batch: FixedBatch) -> FixedBatch {
+        let mut output_batch = FixedBatch::new(self.0.len() as u32);
+        batch.into_iter().for_each(|row| output_batch.append(|mut out| out.copy_mapped(row, self.as_mapping())));
+        output_batch
+    }
+
+    fn as_mapping(&self) -> impl Iterator<Item = (VariablePosition, VariablePosition)> + '_ {
+        self.0.iter().enumerate().map(|(dst, src)| (*src, VariablePosition::new(dst as u32)))
     }
 }
 
@@ -137,11 +172,7 @@ pub(crate) fn create_executors_for_match(
                 )?;
                 // I shouldn't need to pass recursive here since it's stratified
                 steps.push(
-                    NestedPatternExecutor::new_negation(PatternExecutor::new(
-                        negation_step.negation.executable_id(),
-                        inner,
-                    ))
-                    .into(),
+                    NegationExecutor::new(PatternExecutor::new(negation_step.negation.executable_id(), inner)).into(),
                 )
             }
             ExecutionStep::FunctionCall(function_call) => {
@@ -166,11 +197,7 @@ pub(crate) fn create_executors_for_match(
                         function,
                     )?;
                     let inner = PatternExecutor::new(function.executable_id, inner_executors);
-                    let step = NestedPatternExecutor::new_inlined_function(
-                        inner,
-                        function_call,
-                        function.parameter_registry.clone(),
-                    );
+                    let step = InlinedCallExecutor::new(inner, function_call, function.parameter_registry.clone());
                     steps.push(step.into())
                 }
             }
@@ -193,12 +220,8 @@ pub(crate) fn create_executors_for_match(
                         Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
                     })
                     .try_collect()?;
-                let inner_step = NestedPatternExecutor::new_disjunction(
-                    branches,
-                    step.selected_variables.clone(),
-                    step.output_width,
-                )
-                .into();
+                let inner_step =
+                    DisjunctionExecutor::new(branches, step.selected_variables.clone(), step.output_width).into();
                 // Hack: wrap it in a distinct
                 let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
                     PatternExecutor::new(next_executable_id(), vec![inner_step]),
@@ -230,18 +253,15 @@ pub(crate) fn create_executors_for_function(
     )?;
     match &executable_function.returns {
         ExecutableReturn::Stream(positions) => {
-            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            steps.push(StepExecutors::ReshapeForReturn(ReshapeForReturnExecutor(positions.clone())));
             Ok(steps)
         }
         ExecutableReturn::Single(selector, positions) => {
-            steps.push(StepExecutors::ReshapeForReturn(positions.clone()));
+            steps.push(StepExecutors::ReshapeForReturn(ReshapeForReturnExecutor(positions.clone())));
+            let pattern_executor = PatternExecutor::new(executable_function.executable_id, steps);
             let step = match selector {
-                SingleSelector::First => {
-                    StreamModifierExecutor::new_first(PatternExecutor::new(executable_function.executable_id, steps))
-                }
-                SingleSelector::Last => {
-                    StreamModifierExecutor::new_last(PatternExecutor::new(executable_function.executable_id, steps))
-                }
+                SingleSelector::First => StreamModifierExecutor::new_first(pattern_executor),
+                SingleSelector::Last => StreamModifierExecutor::new_last(pattern_executor),
             };
             Ok(vec![step.into()])
         }

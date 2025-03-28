@@ -6,22 +6,11 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{
-    function::{ExecutableFunctionRegistry, StronglyConnectedComponentID},
-    match_::planner::match_executable::MatchExecutable,
-};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    profile::QueryProfile,
-    read::{
-        pattern_executor::{BranchIndex, ExecutorIndex, PatternExecutor},
-        tabled_call_executor::TabledCallExecutor,
-        tabled_functions::TableIndex,
-    },
-    row::MaybeOwnedRow,
-};
+use crate::{profile::QueryProfile, read::pattern_executor::PatternExecutor};
 
 mod collecting_stage_executor;
 pub(super) mod control_instruction;
@@ -31,11 +20,38 @@ pub(crate) mod nested_pattern_executor;
 pub(crate) mod pattern_executor;
 pub(crate) mod step_executor;
 mod stream_modifier;
+pub(super) mod suspension;
 pub(crate) mod tabled_call_executor;
 pub mod tabled_functions;
 
-// And use the below one instead
-pub(super) fn TODO_REMOVE_create_executors_for_match(
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct BranchIndex(pub usize);
+impl std::ops::Deref for BranchIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub(crate) struct ExecutorIndex(pub usize);
+
+impl ExecutorIndex {
+    fn next(&self) -> ExecutorIndex {
+        ExecutorIndex(self.0 + 1)
+    }
+}
+
+impl std::ops::Deref for ExecutorIndex {
+    type Target = usize;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub(super) fn create_pattern_executor_for_match(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
@@ -50,121 +66,4 @@ pub(super) fn TODO_REMOVE_create_executors_for_match(
         match_executable,
     )?;
     Ok(PatternExecutor::new(match_executable.executable_id(), executors))
-}
-
-#[derive(Debug)]
-pub(crate) enum PatternSuspension {
-    AtTabledCall(TabledCallSuspension),
-    AtNestedPattern(NestedPatternSuspension),
-}
-
-impl PatternSuspension {
-    fn depth(&self) -> usize {
-        match self {
-            PatternSuspension::AtTabledCall(tabled_call) => tabled_call.depth,
-            PatternSuspension::AtNestedPattern(nested) => nested.depth,
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq)]
-struct SuspensionCount(usize);
-
-#[derive(Debug)]
-pub(super) struct TabledCallSuspension {
-    pub(crate) executor_index: ExecutorIndex,
-    pub(crate) depth: usize,
-    pub(crate) input_row: MaybeOwnedRow<'static>,
-    pub(crate) next_table_row: TableIndex,
-}
-
-#[derive(Debug)]
-pub(super) struct NestedPatternSuspension {
-    pub(crate) executor_index: ExecutorIndex,
-    pub(crate) depth: usize,
-    pub(crate) branch_index: BranchIndex,
-    pub(crate) input_row: MaybeOwnedRow<'static>,
-}
-
-#[derive(Debug)]
-pub(super) struct QueryPatternSuspensions {
-    scc: Option<StronglyConnectedComponentID>,
-    current_depth: usize,
-    suspending_patterns_tree: Vec<PatternSuspension>,
-    restoring_patterns_tree: Vec<PatternSuspension>,
-}
-
-impl QueryPatternSuspensions {
-    pub(crate) fn new_root() -> Self {
-        Self { scc: None, current_depth: 0, suspending_patterns_tree: Vec::new(), restoring_patterns_tree: Vec::new() }
-    }
-
-    pub(crate) fn new_tabled_call(scc: StronglyConnectedComponentID) -> Self {
-        Self {
-            scc: Some(scc),
-            current_depth: 0,
-            suspending_patterns_tree: Vec::new(),
-            restoring_patterns_tree: Vec::new(),
-        }
-    }
-
-    pub(crate) fn scc(&self) -> Option<&StronglyConnectedComponentID> {
-        return self.scc.as_ref();
-    }
-
-    pub(super) fn prepare_restoring_from_suspending(&mut self) {
-        debug_assert!(self.restoring_patterns_tree.is_empty());
-        self.restoring_patterns_tree.clear();
-        std::mem::swap(&mut self.restoring_patterns_tree, &mut self.suspending_patterns_tree);
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.suspending_patterns_tree.is_empty()
-    }
-
-    pub(crate) fn current_depth(&self) -> usize {
-        self.current_depth
-    }
-
-    fn record_nested_pattern_entry(&mut self) -> SuspensionCount {
-        self.current_depth += 1;
-        SuspensionCount(self.suspending_patterns_tree.len())
-    }
-
-    fn record_nested_pattern_exit(&mut self) -> SuspensionCount {
-        self.current_depth -= 1;
-        SuspensionCount(self.suspending_patterns_tree.len())
-    }
-
-    fn push_nested(
-        &mut self,
-        executor_index: ExecutorIndex,
-        branch_index: BranchIndex,
-        input_row: MaybeOwnedRow<'static>,
-    ) {
-        self.suspending_patterns_tree.push(PatternSuspension::AtNestedPattern(NestedPatternSuspension {
-            depth: self.current_depth,
-            executor_index,
-            branch_index,
-            input_row,
-        }))
-    }
-
-    fn push_tabled_call(&mut self, executor_index: ExecutorIndex, tabled_call_executor: &TabledCallExecutor) {
-        self.suspending_patterns_tree
-            .push(tabled_call_executor.create_suspension_at(executor_index, self.current_depth))
-    }
-
-    fn next_restore_point_at_current_depth(&mut self) -> Option<PatternSuspension> {
-        let has_next = if let Some(point) = self.restoring_patterns_tree.last() {
-            point.depth() == self.current_depth
-        } else {
-            false
-        };
-        if has_next {
-            self.restoring_patterns_tree.pop()
-        } else {
-            None
-        }
-    }
 }
