@@ -415,13 +415,13 @@ impl MatchExecutableBuilder {
         self.steps.push(step);
     }
 
-    fn row_variables(&self) -> impl Iterator<Item = Variable> + Clone + '_ {
+    fn row_variables(&self) -> &[Variable] {
         if let Some(current) = &self.current {
-            current.selected_variables.iter().copied()
+            &current.selected_variables
         } else if let Some(last) = self.steps.last() {
-            last.selected_variables.iter().copied()
+            &last.selected_variables
         } else {
-            self.input_variables.iter().copied()
+            &self.input_variables
         }
     }
 
