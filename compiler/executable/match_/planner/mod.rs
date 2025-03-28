@@ -134,7 +134,7 @@ impl DisjunctionBuilder {
 struct FunctionCallBuilder {
     function_id: FunctionID,
     arguments: Vec<VariablePosition>,
-    assigned: Vec<VariablePosition>,
+    assigned: Vec<Option<VariablePosition>>,
     output_width: u32,
 }
 

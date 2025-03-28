@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr, sync::Arc};
+use std::{collections::HashMap, iter, str::FromStr, sync::Arc};
 
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
@@ -50,8 +50,10 @@ fn row_batch_result_to_answer(
                 .iter()
                 .map(|(v, p)| (v.clone().to_owned(), row.get(*p).clone().into_owned()))
                 .collect::<HashMap<_, _>>();
-            answer_map
+            iter::repeat(answer_map).take(row.get_multiplicity() as usize)
         })
+        .into_iter()
+        .flatten()
         .collect::<Vec<HashMap<String, VariableValue<'static>>>>()
 }
 

@@ -1474,9 +1474,7 @@ impl ConjunctionPlan<'_> {
                     let assigned = call_binding
                         .assigned()
                         .iter()
-                        .map(|variable| {
-                            match_builder.index[&variable.as_variable().unwrap()].clone().as_position().unwrap()
-                        })
+                        .map(|variable| match_builder.index[&variable.as_variable().unwrap()].clone().as_position())
                         .collect();
                     let arguments = call_binding
                         .function_call()
@@ -1513,13 +1511,7 @@ impl ConjunctionPlan<'_> {
                     .assigned()
                     .iter()
                     .map(|variable| {
-                        match_builder
-                            .index
-                            .get(&variable.as_variable().unwrap())
-                            .unwrap()
-                            .clone()
-                            .as_position()
-                            .unwrap()
+                        match_builder.index.get(&variable.as_variable().unwrap()).unwrap().clone().as_position()
                     })
                     .collect();
                 let arguments = call_binding

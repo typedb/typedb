@@ -44,7 +44,7 @@ pub struct Negation {
 pub struct InlinedFunction {
     pub inner: PatternExecutor,
     pub arg_mapping: Vec<VariablePosition>,
-    pub assignment_positions: Vec<VariablePosition>,
+    pub assignment_positions: Vec<Option<VariablePosition>>,
     pub output_width: u32,
     pub parameter_registry: Arc<ParameterRegistry>,
 }
@@ -56,7 +56,7 @@ impl InlinedFunction {
             .assignment_positions
             .iter()
             .enumerate()
-            .map(|(src, &dst)| (VariablePosition::new(src as u32), dst))
+            .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?)))
             .filter(|(_src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
             .collect(); // TODO: Can we move this to compilation?
         for return_index in 0..batch.len() {
@@ -69,7 +69,7 @@ impl InlinedFunction {
                         self.assignment_positions
                             .iter()
                             .enumerate()
-                            .map(|(src, &dst)| (VariablePosition::new(src as u32), dst)),
+                            .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?))),
                     );
                 });
             }
