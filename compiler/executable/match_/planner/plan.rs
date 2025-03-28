@@ -2024,6 +2024,24 @@ impl fmt::Debug for Graph<'_> {
     }
 }
 
+impl fmt::Display for Graph<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}:", type_name_of_val(self))?;
+        write!(f, "    variable index: {:?}", self.variable_index)?;
+
+        writeln!(f, "    patterns: ")?;
+        for (vertex, elt) in &self.elements {
+            writeln!(f, "        {vertex:?}: {elt:?}")?;
+        }
+
+        for (p, vars) in &self.pattern_to_variable {
+            writeln!(f, "    {p:?} -> {vars:?}")?;
+        }
+
+        Ok(())
+    }
+}
+
 impl<'a> Graph<'a> {
     fn push_variable(&mut self, variable: Variable, vertex: VariableVertex) {
         let index = self.next_variable_index();
