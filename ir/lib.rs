@@ -208,6 +208,11 @@ typedb_error! {
             rhs_category: VariableCategory,
             source_span: Option<Span>,
         ),
+        IllegalAnonymousVariableUsageInWithin(
+            29,
+            "An anonymous variable may not be used in this context.",
+            source_span: Option<Span>,
+        ),
         UpdateVariableUnavailable(
             39,
             "The variable '{variable}' referenced in the update stage is unavailable. It should be bound in the previous stage.",

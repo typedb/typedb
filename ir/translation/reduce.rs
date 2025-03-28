@@ -41,7 +41,11 @@ pub fn translate_reduce(
         Some(group) => group
             .iter()
             .map(|typeql_var| {
-                let var_name = typeql_var.name().unwrap();
+                let Some(var_name) = typeql_var.name() else {
+                    return Err(RepresentationError::IllegalAnonymousVariableUsage {
+                        source_span: typeql_var.span(),
+                    });
+                };
                 context.visible_variables.get(var_name).map_or_else(
                     || {
                         Err(RepresentationError::OperatorStageVariableUnavailable {
