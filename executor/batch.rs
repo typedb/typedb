@@ -11,7 +11,6 @@ use std::{
 };
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
@@ -64,15 +63,13 @@ impl FixedBatch {
     }
 
     pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {
-        debug_assert!(index <= self.entries);
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &self.data[start..end];
+        debug_assert!(index < self.entries);
+        let slice = &self.data[row_range(index as usize, self.width)];
         MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index as usize])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: u32) -> Row<'_> {
-        debug_assert!(index <= self.entries);
+        debug_assert!(index < self.entries);
         self.row_internal_mut(index)
     }
 
@@ -85,9 +82,7 @@ impl FixedBatch {
     }
 
     fn row_internal_mut(&mut self, index: u32) -> Row<'_> {
-        let start = (index * self.width) as usize;
-        let end = ((index + 1) * self.width) as usize;
-        let slice = &mut self.data[start..end];
+        let slice = &mut self.data[row_range(index as usize, self.width)];
         Row::new(slice, &mut self.multiplicities[index as usize])
     }
 }
@@ -160,69 +155,46 @@ impl LendingIterator for FixedBatchRowIterator {
 #[derive(Debug)]
 pub struct Batch {
     width: u32,
-    entries: usize,
     data: Vec<VariableValue<'static>>,
     multiplicities: Vec<u64>,
 }
 
 impl Batch {
-    pub(crate) fn new(width: u32, length: usize) -> Self {
-        let size = width as usize * length;
-        Batch { width, data: vec![VariableValue::Empty; size], entries: 0, multiplicities: vec![1; length] }
+    pub(crate) fn new(width: u32, capacity: usize) -> Self {
+        let size = width as usize * capacity;
+        Batch { width, data: Vec::with_capacity(size), multiplicities: Vec::with_capacity(capacity) }
     }
 
     pub fn len(&self) -> usize {
-        self.entries
-    }
-
-    pub(crate) fn is_full(&self) -> bool {
-        (self.entries * self.width as usize) == self.data.len()
+        debug_assert!(self.multiplicities.len() * self.width as usize == self.data.len());
+        self.multiplicities.len()
     }
 
     pub(crate) fn get_multiplicities(&self) -> &[u64] {
-        &self.multiplicities[0..self.entries]
+        &self.multiplicities
     }
 
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
-        debug_assert!(index <= self.entries);
-        let start = index * self.width as usize;
-        let end = (index + 1) * self.width as usize;
-        let slice = &self.data[start..end];
+        debug_assert!(index < self.len());
+        let slice = &self.data[row_range(index, self.width)];
         MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
-        debug_assert!(index <= self.entries);
-        self.row_internal_mut(index)
-    }
-
-    // We keep the implementation of append & append_mapped separate
-    // hoping copy_from_row does a memcpy that's better for large rows
-    pub(crate) fn append(&mut self, row: MaybeOwnedRow<'_>) {
-        let mut destination_row = self.row_internal_mut(self.entries);
-        destination_row.copy_from_row(row);
-        self.entries += 1;
-    }
-
-    pub(crate) fn append_mapped(
-        &mut self,
-        row: MaybeOwnedRow<'_>,
-        mapping: impl Iterator<Item = (VariablePosition, VariablePosition)>,
-    ) {
-        let mut destination_row = self.row_internal_mut(self.entries);
-        destination_row.copy_mapped(row, mapping);
-        self.entries += 1;
-    }
-
-    fn row_internal_mut(&mut self, index: usize) -> Row<'_> {
-        let start = index * self.width as usize;
-        let end = (index + 1) * self.width as usize;
-        if end > self.data.len() {
-            self.data.resize(end, VariableValue::Empty);
-            self.multiplicities.resize(index + 1, 1);
-        }
-        let slice = &mut self.data[start..end];
+        debug_assert!(index < self.len());
+        let slice = &mut self.data[row_range(index, self.width)];
         Row::new(slice, &mut self.multiplicities[index])
+    }
+
+    pub(crate) fn append_row(&mut self, row: MaybeOwnedRow<'_>) {
+        self.append(|mut appended| appended.copy_from_row(row))
+    }
+
+    pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
+        self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
+        self.multiplicities.push(1);
+        debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
+        writer(self.get_row_mut(self.len() - 1))
     }
 
     pub fn into_iterator_mut(self) -> MutableBatchRowIterator {
@@ -231,6 +203,10 @@ impl Batch {
 
     pub fn into_iterator(self) -> BatchRowIterator {
         BatchRowIterator::new(self)
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = MaybeOwnedRow<'_>> {
+        (0..self.len()).map(|i| self.get_row(i))
     }
 }
 
@@ -282,4 +258,10 @@ impl LendingIterator for BatchRowIterator {
             Some(row)
         }
     }
+}
+
+fn row_range(index: usize, width: u32) -> std::ops::Range<usize> {
+    let start = index * width as usize;
+    let end = start + width as usize;
+    start..end
 }

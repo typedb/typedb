@@ -10,7 +10,8 @@ use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
     VariablePosition,
 };
-use resource::constants::traversal::BATCH_DEFAULT_LENGTH;
+use lending_iterator::LendingIterator;
+use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -77,7 +78,7 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
     function_registry: Arc<ExecutableFunctionRegistry>,
     mut previous_iterator: impl StageIterator,
 ) -> Result<WrittenRowsIterator, Box<PipelineExecutionError>> {
-    let mut output_batch = Batch::new(executable.output_width() as u32, BATCH_DEFAULT_LENGTH);
+    let mut output_batch = Batch::new(executable.output_width() as u32, BATCH_DEFAULT_CAPACITY);
     let mut must_insert = Vec::new();
     let input_output_mapping = executable
         .insert
@@ -96,7 +97,7 @@ fn into_iterator_impl<Snapshot: WritableSnapshot + 'static>(
             match_iterator_for_row(context, interrupt, executable, function_registry.clone(), input_row.clone())?;
         match_iterator
             .try_for_each(|row_result| {
-                output_batch.append(row_result?);
+                output_batch.append_row(row_result?);
                 must_insert.push(false);
                 Ok(())
             })

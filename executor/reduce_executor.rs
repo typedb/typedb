@@ -86,7 +86,7 @@ impl GroupedReducer {
             for reducer in reducers.into_iter() {
                 reused_row.push(reducer.finalise().unwrap_or(VariableValue::Empty));
             }
-            batch.append(MaybeOwnedRow::new_borrowed(reused_row.as_slice(), &reused_multiplicity))
+            batch.append_row(MaybeOwnedRow::new_borrowed(reused_row.as_slice(), &reused_multiplicity))
         }
         batch
     }
