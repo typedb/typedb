@@ -39,7 +39,11 @@ use storage::{
 use crate::{
     edge_iterator,
     error::{ConceptReadError, ConceptWriteError},
-    thing::{object::Object, thing_manager::ThingManager, HKInstance, ThingAPI},
+    thing::{
+        object::Object,
+        thing_manager::ThingManager,
+        HKInstance, ThingAPI,
+    },
     type_::{attribute_type::AttributeType, ObjectTypeAPI},
     ConceptAPI, ConceptStatus,
 };
