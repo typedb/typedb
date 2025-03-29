@@ -15,10 +15,17 @@ use compiler::executable::function::{
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{batch::FixedBatch, error::ReadExecutionError, pipeline::stage::ExecutionContext, Provenance, read::{
-    pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
-    suspension::QueryPatternSuspensions,
-}, row::MaybeOwnedRow};
+use crate::{
+    batch::FixedBatch,
+    error::ReadExecutionError,
+    pipeline::stage::ExecutionContext,
+    read::{
+        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
+        suspension::QueryPatternSuspensions,
+    },
+    row::MaybeOwnedRow,
+    Provenance,
+};
 
 pub struct TabledFunctions {
     function_registry: Arc<ExecutableFunctionRegistry>,

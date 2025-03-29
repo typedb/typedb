@@ -14,6 +14,7 @@ use compiler::{
         },
         function::{executable::ExecutableFunction, ExecutableFunctionRegistry},
         next_executable_id,
+        pipeline::ParametrisedQueryStructure,
     },
     VariablePosition,
 };
@@ -30,7 +31,6 @@ use error::{typedb_error, unimplemented_feature};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use iterator::minmax_or;
 use itertools::{Itertools, MinMaxResult};
-use compiler::executable::pipeline::ParametrisedQueryStructure;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 

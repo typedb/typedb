@@ -8,14 +8,17 @@ use std::{collections::HashMap, sync::Arc};
 
 use answer::variable::Variable;
 use compiler::{
-    executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
+    executable::{
+        fetch::executable::ExecutableFetch,
+        function::ExecutableFunctionRegistry,
+        pipeline::{ExecutableStage, ParametrisedQueryStructure, QueryStructure},
+    },
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use compiler::executable::pipeline::{ParametrisedQueryStructure, QueryStructure};
 
 use crate::{
     document::ConceptDocument,

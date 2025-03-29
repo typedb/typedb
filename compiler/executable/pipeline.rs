@@ -10,26 +10,26 @@ use std::{
     sync::Arc,
 };
 
-use answer::variable::Variable;
+use answer::{variable::Variable, variable_value::VariableValue, Type};
 use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{ParameterRegistry, function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
-use itertools::Itertools;
-use answer::Type;
-use encoding::value::label::Label;
-use encoding::value::value::Value;
+use encoding::value::{label::Label, value::Value};
 use error::unimplemented_feature;
-use ir::pattern::{BranchID, ParameterID, Vertex};
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::constraint::Constraint;
-use ir::pattern::nested_pattern::NestedPattern;
+use ir::{
+    pattern::{
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, ParameterID, Vertex,
+    },
+};
+use itertools::Itertools;
 
 use crate::{
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
         pipeline::AnnotatedStage,
+        type_annotations::TypeAnnotations,
     },
     executable::{
         delete::executable::DeleteExecutable,
@@ -47,7 +47,6 @@ use crate::{
     },
     VariablePosition,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
@@ -162,8 +161,16 @@ pub fn compile_pipeline_and_functions(
         input_variables,
     )?;
     debug_assert!(!executable_stages.is_empty());
-    let query_structure = Arc::new(extract_query_structure_from(annotated_stages, executable_stages.last().unwrap().output_row_mapping()));
-    Ok(ExecutablePipeline { query_structure, executable_functions: schema_and_preamble_functions, executable_stages, executable_fetch })
+    let query_structure = Arc::new(extract_query_structure_from(
+        annotated_stages,
+        executable_stages.last().unwrap().output_row_mapping(),
+    ));
+    Ok(ExecutablePipeline {
+        query_structure,
+        executable_functions: schema_and_preamble_functions,
+        executable_stages,
+        executable_fetch,
+    })
 }
 
 pub fn compile_stages_and_fetch(
@@ -555,14 +562,13 @@ pub struct ParametrisedQueryStructure {
 }
 
 impl ParametrisedQueryStructure {
-    pub fn empty() -> Self{
-        Self { branches: [();64].map(|_| None), variable_positions: HashMap::new(), resolved_labels: HashMap::new() }
+    pub fn empty() -> Self {
+        Self { branches: [(); 64].map(|_| None), variable_positions: HashMap::new(), resolved_labels: HashMap::new() }
     }
 
     pub fn with_parameters(self: Arc<Self>, parameters: Arc<ParameterRegistry>) -> QueryStructure {
         QueryStructure { parametrised_structure: self, parameters }
     }
-
 }
 
 #[derive(Debug, Clone)]
@@ -586,8 +592,11 @@ impl QueryStructure {
     }
 }
 
-fn extract_query_structure_from(annotated_stages: Vec<AnnotatedStage>, variable_positions: HashMap<Variable, VariablePosition>) -> ParametrisedQueryStructure {
-    let mut branches: [Option<_>; 64] = [();64].map(|_| None);
+fn extract_query_structure_from(
+    annotated_stages: Vec<AnnotatedStage>,
+    variable_positions: HashMap<Variable, VariablePosition>,
+) -> ParametrisedQueryStructure {
+    let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
     let mut resolved_labels = HashMap::new();
 
     annotated_stages.into_iter().for_each(|stage| {
@@ -628,7 +637,11 @@ fn extend_labels_from<'a>(resolved_labels: &mut HashMap<Label, Type>, vertex_ann
     );
 }
 
-fn extract_query_structure_from_branch(branches: &mut [Option<Vec<Constraint<Variable>>>; 64], branch_id: BranchID, conjunction: &Conjunction) {
+fn extract_query_structure_from_branch(
+    branches: &mut [Option<Vec<Constraint<Variable>>>; 64],
+    branch_id: BranchID,
+    conjunction: &Conjunction,
+) {
     if branches[branch_id.0 as usize].is_none() {
         branches[branch_id.0 as usize] = Some(Vec::new());
     }
@@ -639,7 +652,7 @@ fn extract_query_structure_from_branch(branches: &mut [Option<Vec<Constraint<Var
                 extract_query_structure_from_branch(branches, *id, branch);
             })
         }
-        NestedPattern::Negation(_) => {},
+        NestedPattern::Negation(_) => {}
         NestedPattern::Optional(_) => {
             unimplemented_feature!(Optionals);
         }

@@ -153,7 +153,8 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } = executable_pipeline;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } =
+            executable_pipeline;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
@@ -303,7 +304,8 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } = executable_pipeline;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } =
+            executable_pipeline;
 
         // 4: Executor
         Ok(Pipeline::build_write_pipeline(

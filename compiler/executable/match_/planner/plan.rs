@@ -1997,7 +1997,11 @@ pub(super) struct DisjunctionPlanBuilder<'a> {
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionPlanBuilder<'a>>, required_inputs: Vec<Variable>) -> Self {
+    fn new(
+        branch_ids: Vec<BranchID>,
+        branches: Vec<ConjunctionPlanBuilder<'a>>,
+        required_inputs: Vec<Variable>,
+    ) -> Self {
         Self { branch_ids, branches, required_inputs }
     }
 

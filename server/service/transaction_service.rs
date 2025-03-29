@@ -14,7 +14,7 @@ use std::{
     time::Instant,
 };
 
-use compiler::VariablePosition;
+use compiler::{executable::pipeline::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -69,7 +69,6 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
-use compiler::executable::pipeline::QueryStructure;
 
 use crate::service::{
     document::encode_document,
@@ -1751,7 +1750,6 @@ typedb_error! {
         ServiceClosingFailedQueueCleanup(14, "The operation failed since the service is closing."),
     }
 }
-
 
 fn dump_query_structure(query_structure: QueryStructure) {
     use crate::service::query_structure::encode_query_structure;
