@@ -77,17 +77,15 @@ impl GroupedReducer {
             (executable.input_group_positions.len() + sample_reducers.len()) as u32,
             grouped_reductions.len(),
         );
-        let mut reused_row = Vec::with_capacity(executable.input_group_positions.len() + sample_reducers.len());
         for (group, reducers) in grouped_reductions.into_iter() {
-            reused_row.clear();
-            for value in group.into_iter() {
-                reused_row.push(value);
-            }
-            for reducer in reducers.into_iter() {
-                reused_row.push(reducer.finalise().unwrap_or(VariableValue::Empty));
-            }
-            // Reducers combine many rows. provenance is pointless
-            batch.append_row(MaybeOwnedRow::new_borrowed(reused_row.as_slice(), &1, &Provenance::INITIAL))
+            batch.append(|mut row| {
+                group.into_iter().chain(
+                    reducers.into_iter().map(|reducer| reducer.finalise().unwrap_or(VariableValue::Empty))
+                ).enumerate().for_each(|(index, value)| row.set(VariablePosition::new(index as u32), value));
+                // Reducers combine many rows. provenance is pointless
+                row.set_multiplicity(1);
+                row.set_provenance(Provenance::INITIAL)
+            });
         }
         batch
     }
