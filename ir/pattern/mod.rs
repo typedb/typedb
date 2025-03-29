@@ -32,6 +32,9 @@ pub mod expression;
 pub mod function_call;
 pub mod nested_pattern;
 
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub struct BranchID(pub u16);
+
 pub trait Scope {
     fn scope_id(&self) -> ScopeId;
 }

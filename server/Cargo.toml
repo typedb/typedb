@@ -107,6 +107,11 @@
 		version = "1.43.0"
 		default-features = false
 
+	[dependencies.axum]
+		features = ["base64", "default", "form", "http1", "json", "matched-path", "original-uri", "query", "serde_json", "serde_urlencoded", "sha-1", "tokio-tungstenite", "tower-log", "ws", "json"]
+		version = "0.5.17"
+		default-features = false
+
 	[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
 		version = "0.1.41"

@@ -25,6 +25,7 @@ use crate::{
     error::ReadExecutionError,
     pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
+    Provenance,
 };
 
 #[derive(Debug)]
@@ -33,15 +34,28 @@ pub struct FixedBatch {
     entries: u32,
     data: Vec<VariableValue<'static>>,
     multiplicities: [u64; FIXED_BATCH_ROWS_MAX as usize],
+    provenance: [Provenance; FIXED_BATCH_ROWS_MAX as usize],
 }
 
 impl FixedBatch {
     pub(crate) const INIT_MULTIPLICITIES: [u64; FIXED_BATCH_ROWS_MAX as usize] = [1; FIXED_BATCH_ROWS_MAX as usize];
-    pub(crate) const SINGLE_EMPTY_ROW: FixedBatch =
-        FixedBatch { width: 0, entries: 1, data: Vec::new(), multiplicities: FixedBatch::INIT_MULTIPLICITIES };
+    pub(crate) const INIT_PROVENANCE: [Provenance; FIXED_BATCH_ROWS_MAX as usize] =
+        [Provenance(0); FIXED_BATCH_ROWS_MAX as usize];
+    pub(crate) const SINGLE_EMPTY_ROW: FixedBatch = FixedBatch {
+        width: 0,
+        entries: 1,
+        data: Vec::new(),
+        multiplicities: FixedBatch::INIT_MULTIPLICITIES,
+        provenance: FixedBatch::INIT_PROVENANCE,
+    };
 
-    pub(crate) const EMPTY: FixedBatch =
-        FixedBatch { width: 0, entries: 0, data: Vec::new(), multiplicities: FixedBatch::INIT_MULTIPLICITIES };
+    pub(crate) const EMPTY: FixedBatch = FixedBatch {
+        width: 0,
+        entries: 0,
+        data: Vec::new(),
+        multiplicities: FixedBatch::INIT_MULTIPLICITIES,
+        provenance: FixedBatch::INIT_PROVENANCE,
+    };
 
     pub(crate) fn new(width: u32) -> Self {
         let size = width * FIXED_BATCH_ROWS_MAX;
@@ -50,6 +64,7 @@ impl FixedBatch {
             data: vec![VariableValue::Empty; size as usize],
             entries: 0,
             multiplicities: FixedBatch::INIT_MULTIPLICITIES,
+            provenance: FixedBatch::INIT_PROVENANCE,
         }
     }
 
@@ -72,7 +87,7 @@ impl FixedBatch {
     pub(crate) fn get_row(&self, index: u32) -> MaybeOwnedRow<'_> {
         debug_assert!(index < self.entries);
         let slice = &self.data[row_range(index as usize, self.width)];
-        MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index as usize])
+        MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index as usize], &self.provenance[index as usize])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: u32) -> Row<'_> {
@@ -90,7 +105,7 @@ impl FixedBatch {
 
     fn row_internal_mut(&mut self, index: u32) -> Row<'_> {
         let slice = &mut self.data[row_range(index as usize, self.width)];
-        Row::new(slice, &mut self.multiplicities[index as usize])
+        Row::new(slice, &mut self.multiplicities[index as usize], &mut self.provenance[index as usize])
     }
 }
 
@@ -99,14 +114,24 @@ impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
         let width = row.len() as u32;
         let mut multiplicities = FixedBatch::INIT_MULTIPLICITIES;
         multiplicities[0] = row.multiplicity();
-        FixedBatch { width, data: row.row().to_owned(), entries: 1, multiplicities }
+        let mut branch_provenance = FixedBatch::INIT_PROVENANCE;
+        branch_provenance[0] = row.provenance();
+        FixedBatch { width, data: row.row().to_owned(), entries: 1, multiplicities, provenance: branch_provenance }
     }
 }
 
 impl IntoIterator for FixedBatch {
     type IntoIter = Map<
-        Take<Zip<vec::IntoIter<Vec<VariableValue<'static>>>, array::IntoIter<u64, { FIXED_BATCH_ROWS_MAX as usize }>>>,
-        fn((Vec<VariableValue<'static>>, u64)) -> MaybeOwnedRow<'static>,
+        Take<
+            Zip<
+                vec::IntoIter<Vec<VariableValue<'static>>>,
+                Zip<
+                    array::IntoIter<u64, { FIXED_BATCH_ROWS_MAX as usize }>,
+                    array::IntoIter<Provenance, { FIXED_BATCH_ROWS_MAX as usize }>,
+                >,
+            >,
+        >,
+        fn((Vec<VariableValue<'static>>, (u64, Provenance))) -> MaybeOwnedRow<'static>,
     >;
 
     type Item = MaybeOwnedRow<'static>;
@@ -118,9 +143,9 @@ impl IntoIterator for FixedBatch {
             self.data.into_iter().chunks(self.width as usize).into_iter().map(|chunk| chunk.collect_vec()).collect_vec()
         };
         rows.into_iter()
-            .zip(self.multiplicities)
+            .zip(self.multiplicities.into_iter().zip(self.provenance.into_iter()))
             .take(self.entries as usize)
-            .map(|(row, mult)| MaybeOwnedRow::new_owned(row, mult))
+            .map(|(row, (mult, provenance))| MaybeOwnedRow::new_owned(row, mult, provenance))
     }
 }
 
@@ -164,12 +189,18 @@ pub struct Batch {
     width: u32,
     data: Vec<VariableValue<'static>>,
     multiplicities: Vec<u64>,
+    provenance: Vec<Provenance>,
 }
 
 impl Batch {
     pub(crate) fn new(width: u32, capacity: usize) -> Self {
         let size = width as usize * capacity;
-        Batch { width, data: Vec::with_capacity(size), multiplicities: Vec::with_capacity(capacity) }
+        Batch {
+            width,
+            data: Vec::with_capacity(size),
+            multiplicities: Vec::with_capacity(capacity),
+            provenance: Vec::with_capacity(capacity),
+        }
     }
 
     pub fn len(&self) -> usize {
@@ -184,13 +215,13 @@ impl Batch {
     pub(crate) fn get_row(&self, index: usize) -> MaybeOwnedRow<'_> {
         debug_assert!(index < self.len());
         let slice = &self.data[row_range(index, self.width)];
-        MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index])
+        MaybeOwnedRow::new_borrowed(slice, &self.multiplicities[index], &self.provenance[index])
     }
 
     pub(crate) fn get_row_mut(&mut self, index: usize) -> Row<'_> {
         debug_assert!(index < self.len());
         let slice = &mut self.data[row_range(index, self.width)];
-        Row::new(slice, &mut self.multiplicities[index])
+        Row::new(slice, &mut self.multiplicities[index], &mut self.provenance[index])
     }
 
     pub(crate) fn append_row(&mut self, row: MaybeOwnedRow<'_>) {
@@ -200,7 +231,9 @@ impl Batch {
     pub(crate) fn append<T>(&mut self, writer: impl FnOnce(Row<'_>) -> T) -> T {
         self.data.resize(self.data.len() + self.width as usize, VariableValue::Empty);
         self.multiplicities.push(1);
+        self.provenance.push(Provenance::INITIAL);
         debug_assert!(self.data.len() == self.multiplicities.len() * self.width as usize);
+        debug_assert!(self.multiplicities.len() == self.provenance.len());
         writer(self.get_row_mut(self.len() - 1))
     }
 

@@ -11,7 +11,7 @@ use std::{
 
 use answer::variable::Variable;
 use error::unimplemented_feature;
-use ir::pipeline::function_signature::FunctionID;
+use ir::{pattern::BranchID, pipeline::function_signature::FunctionID};
 
 use crate::{
     annotation::expression::compiled_expression::ExecutableExpression,
@@ -420,14 +420,20 @@ impl fmt::Display for VarMappedCheckStep<'_> {
 
 #[derive(Clone, Debug)]
 pub struct DisjunctionStep {
+    pub branch_ids: Vec<BranchID>,
     pub branches: Vec<MatchExecutable>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl DisjunctionStep {
-    pub fn new(branches: Vec<MatchExecutable>, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
-        Self { branches, selected_variables, output_width }
+    pub fn new(
+        branch_ids: Vec<BranchID>,
+        branches: Vec<MatchExecutable>,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { branch_ids, branches, selected_variables, output_width }
     }
 
     pub fn output_width(&self) -> u32 {

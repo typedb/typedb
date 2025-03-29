@@ -18,7 +18,7 @@ use typeql::common::Span;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableDependency,
+        BranchID, Scope, ScopeId, VariableDependency,
     },
     pipeline::block::{BlockBuilderContext, BlockContext, ScopeTransparency},
 };
@@ -26,6 +26,7 @@ use crate::{
 #[derive(Clone, Debug, Default)]
 pub struct Disjunction {
     conjunctions: Vec<Conjunction>,
+    branch_ids: Vec<BranchID>,
 }
 
 impl Disjunction {
@@ -33,6 +34,9 @@ impl Disjunction {
         Self::default()
     }
 
+    pub fn branch_ids(&self) -> &[BranchID] {
+        self.branch_ids.as_slice()
+    }
     pub fn conjunctions(&self) -> &[Conjunction] {
         &self.conjunctions
     }
@@ -141,6 +145,7 @@ impl<'cx, 'reg> DisjunctionBuilder<'cx, 'reg> {
     pub fn add_conjunction(&mut self) -> ConjunctionBuilder<'_, 'reg> {
         let conj_scope_id = self.context.create_child_scope(self.scope_id, ScopeTransparency::Transparent);
         self.disjunction.conjunctions.push(Conjunction::new(conj_scope_id));
+        self.disjunction.branch_ids.push(self.context.next_branch_id());
         ConjunctionBuilder::new(self.context, self.disjunction.conjunctions.last_mut().unwrap())
     }
 }

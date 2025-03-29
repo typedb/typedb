@@ -30,6 +30,7 @@ use error::{typedb_error, unimplemented_feature};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
 use iterator::minmax_or;
 use itertools::{Itertools, MinMaxResult};
+use compiler::executable::pipeline::ParametrisedQueryStructure;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
 
@@ -48,7 +49,7 @@ use crate::{
         tabled_functions::TabledFunctions,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, Provenance,
 };
 
 macro_rules! exactly_one_or_return_err {
@@ -363,6 +364,7 @@ fn execute_list_subfetch(
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
+            Arc::new(ParametrisedQueryStructure::empty()), // TODO:?
             functions_registry,
             stages,
             Some(fetch.clone()),
@@ -376,11 +378,12 @@ fn execute_list_subfetch(
             initial_row[local_row_position.as_usize()] =
                 row[parent_row_position.as_usize()].as_reference().into_owned();
         });
-        let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity());
+        let initial_row = MaybeOwnedRow::new_owned(initial_row, row.multiplicity(), Provenance::INITIAL);
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
+            Arc::new(ParametrisedQueryStructure::empty()), // TODO:?
             functions_registry,
             stages,
             Some(fetch.clone()),
@@ -554,7 +557,7 @@ fn prepare_single_function_execution<Snapshot: ReadableSnapshot + 'static>(
         debug_assert!(write_pos.as_usize() < args.len());
         args[write_pos.as_usize()] = row.get(*variable_positions.get(var).unwrap()).clone().into_owned();
     }
-    let args = MaybeOwnedRow::new_owned(args, row.multiplicity());
+    let args = MaybeOwnedRow::new_owned(args, row.multiplicity(), Provenance::INITIAL);
 
     let step_executors =
         create_executors_for_function(&snapshot, &thing_manager, &functions_registry, &query_profile, function)

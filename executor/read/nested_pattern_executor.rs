@@ -8,39 +8,43 @@ use std::sync::Arc;
 
 use answer::variable_value::VariableValue;
 use compiler::{executable::match_::planner::match_executable::FunctionCallStep, VariablePosition};
-use ir::pipeline::ParameterRegistry;
+use ir::{pattern::BranchID, pipeline::ParameterRegistry};
 
 use crate::{
     batch::FixedBatch,
-    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
+    read::{pattern_executor::PatternExecutor, step_executor::StepExecutors, BranchIndex},
     row::MaybeOwnedRow,
 };
 
 #[derive(Debug)]
 pub struct DisjunctionExecutor {
     pub branches: Vec<PatternExecutor>,
+    pub branch_ids: Vec<BranchID>,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
 }
 
 impl DisjunctionExecutor {
     pub(crate) fn new(
+        branch_ids: Vec<BranchID>,
         branches: Vec<PatternExecutor>,
         selected_variables: Vec<VariablePosition>,
         output_width: u32,
     ) -> Self {
-        Self { branches, selected_variables, output_width }
+        debug_assert!(branch_ids.len() == branches.len());
+        Self { branches, branch_ids, selected_variables, output_width }
     }
 
     pub(crate) fn reset(&mut self) {
         self.branches.iter_mut().for_each(|branch| branch.reset())
     }
 
-    pub(crate) fn map_output(&self, unmapped: FixedBatch) -> FixedBatch {
+    pub(crate) fn map_output(&self, branch_index: BranchIndex, unmapped: FixedBatch) -> FixedBatch {
         let mut uniform_batch = FixedBatch::new(self.output_width);
         unmapped.into_iter().for_each(|row| {
             uniform_batch.append(|mut output_row| {
                 output_row.copy_mapped(row, self.selected_variables.iter().map(|&pos| (pos, pos)));
+                output_row.set_branch_id_in_provenance(self.branch_ids[*branch_index]);
             })
         });
         uniform_batch

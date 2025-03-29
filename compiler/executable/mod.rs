@@ -7,7 +7,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use error::typedb_error;
-use ir::pattern::constraint::Comparator;
+use ir::pattern::{constraint::Comparator, ScopeId};
 use typeql::common::Span;
 
 use crate::executable::{
@@ -30,6 +30,8 @@ static EXECUTABLE_ID: AtomicU64 = AtomicU64::new(0);
 pub fn next_executable_id() -> u64 {
     EXECUTABLE_ID.fetch_add(1, Ordering::Relaxed)
 }
+
+// TODO: ScopeId must be unique across a conjunction for this to work
 
 typedb_error! {
     pub ExecutableCompilationError(component = "Executable compiler", prefix = "ECP") {

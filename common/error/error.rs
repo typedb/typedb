@@ -319,6 +319,8 @@ macro_rules! typedb_error {
 // Check for usages.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UnimplementedFeature {
+    GraphViz, // TODO: Must remove
+
     Optionals,
     Lists,
     Structs,

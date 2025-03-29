@@ -138,7 +138,7 @@ fn compile_some(
                 statistics,
                 &variable_registry,
                 available_functions,
-                stages,
+                &stages,
                 Some(fetch),
                 &input_variables,
             )

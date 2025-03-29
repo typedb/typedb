@@ -23,7 +23,7 @@ use crate::{
     pattern::{
         constraint::Constraint,
         variable_category::{VariableCategory, VariableOptionality},
-        ParameterID,
+        BranchID, ParameterID,
     },
     pipeline::{function_signature::FunctionID, reduce::Reducer},
     RepresentationError,
@@ -106,6 +106,7 @@ typedb_error! {
 
 #[derive(Debug, Clone)]
 pub struct VariableRegistry {
+    branch_id_allocator: u16,
     variable_names: HashMap<Variable, String>,
     variable_id_allocator: u16,
     variable_categories: HashMap<Variable, (VariableCategory, VariableCategorySource)>,
@@ -118,12 +119,18 @@ impl VariableRegistry {
 
     pub(crate) fn new() -> VariableRegistry {
         Self {
+            branch_id_allocator: 1, // 0 is reserved for the path through the query that's always taken
             variable_names: HashMap::new(),
             variable_id_allocator: 0,
             variable_categories: HashMap::new(),
             variable_optionality: HashMap::new(),
             variable_source_spans: HashMap::new(),
         }
+    }
+    pub(crate) fn next_branch_id(&mut self) -> BranchID {
+        let branch_id = self.branch_id_allocator;
+        self.branch_id_allocator += 1;
+        BranchID(branch_id)
     }
 
     fn register_variable_named(&mut self, name: String, source_span: Option<Span>) -> Variable {

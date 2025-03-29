@@ -9,6 +9,7 @@ mod document;
 mod error;
 mod request_parser;
 mod response_builders;
+mod query_structure;
 mod row;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;

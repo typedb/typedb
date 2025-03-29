@@ -18,6 +18,7 @@ use crate::{
     batch::Batch,
     pipeline::{stage::ExecutionContext, PipelineExecutionError},
     row::MaybeOwnedRow,
+    Provenance,
 };
 
 #[derive(Debug)]
@@ -77,7 +78,6 @@ impl GroupedReducer {
             grouped_reductions.len(),
         );
         let mut reused_row = Vec::with_capacity(executable.input_group_positions.len() + sample_reducers.len());
-        let reused_multiplicity = 1;
         for (group, reducers) in grouped_reductions.into_iter() {
             reused_row.clear();
             for value in group.into_iter() {
@@ -86,7 +86,8 @@ impl GroupedReducer {
             for reducer in reducers.into_iter() {
                 reused_row.push(reducer.finalise().unwrap_or(VariableValue::Empty));
             }
-            batch.append_row(MaybeOwnedRow::new_borrowed(reused_row.as_slice(), &reused_multiplicity))
+            // Reducers combine many rows. provenance is pointless
+            batch.append_row(MaybeOwnedRow::new_borrowed(reused_row.as_slice(), &1, &Provenance::INITIAL))
         }
         batch
     }
