@@ -122,6 +122,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         // Prune abstract types from type annotations of thing variables
         self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
 
+        // Temporary(?) fix to avoid bad unwraps based on category
+        self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(graph);
+
         // Seed edges in root & disjunctions
         self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
 
@@ -341,6 +344,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             VariableCategory::RoleType => (false, false, false, true),
             VariableCategory::ThingList | VariableCategory::Thing => (true, true, true, false),
             VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),
+            VariableCategory::Relation | VariableCategory::RelationList => (false, true, false, false),
             VariableCategory::AttributeList | VariableCategory::Attribute => (false, false, true, false),
             VariableCategory::ValueList | VariableCategory::Value => (false, false, true, false),
             VariableCategory::AttributeOrValue => unreachable!("Insufficiently bound variable!"),
@@ -606,6 +610,36 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             self.prune_abstract_types_from_thing_vertex_annotations_recursive(nested)?;
         }
         Ok(())
+    }
+
+    fn prune_mismatched_categories_from_thing_vertex_annotations_recursive(
+        &self,
+        graph: &mut TypeInferenceGraph<'_>,
+    ) {
+        for annotated_vertex in &mut graph.vertices {
+            let (Vertex::Variable(id), annotations) = annotated_vertex else {
+                continue;
+            };
+            let category = self.variable_registry.get_variable_category(*id);
+            if category.map_or(false, |cat| cat.is_category_thing()) {
+                match category.unwrap() {
+                    VariableCategory::Object => {
+                        annotations.retain(|type_| type_.is_entity_type() || type_.is_relation_type())
+                    },
+                    VariableCategory::Attribute => annotations.retain(|type_| type_.is_attribute_type()),
+                    _ => {}
+                };
+            }
+        }
+        for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
+            self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(nested);
+        }
+        for nested in &mut graph.nested_negations {
+            self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(nested);
+        }
+        for nested in &mut graph.nested_optionals {
+            self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(nested);
+        }
     }
 }
 

@@ -272,7 +272,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
                 && self.context.is_variable_available(self.constraints.scope, role_type)
         );
 
-        self.context.set_variable_category(relation, VariableCategory::Object, links.clone())?;
+        self.context.set_variable_category(relation, VariableCategory::Relation, links.clone())?;
         self.context.set_variable_category(player, VariableCategory::Object, links.clone())?;
 
         self.context.set_variable_category(role_type, VariableCategory::RoleType, links.clone())?;

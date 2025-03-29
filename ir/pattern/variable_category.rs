@@ -15,6 +15,7 @@ pub enum VariableCategory {
 
     Thing,
     Object,
+    Relation,
 
     AttributeOrValue,
     Attribute,
@@ -22,6 +23,7 @@ pub enum VariableCategory {
 
     ThingList,
     ObjectList,
+    RelationList,
 
     AttributeList,
     ValueList,
@@ -52,10 +54,15 @@ impl VariableCategory {
             (Self::Thing, Self::Object) | (Self::Object, Self::Thing) => Some(Self::Object),
             (Self::Thing, Self::AttributeOrValue) | (Self::AttributeOrValue, Self::Thing) => Some(Self::Attribute),
             (Self::Thing, Self::Attribute) | (Self::Attribute, Self::Thing) => Some(Self::Attribute),
+            (Self::Thing, Self::Relation) | (Self::Relation, Self::Thing) => Some(Self::Relation),
             (_, Self::Thing) | (Self::Thing, _) => None,
 
             (Self::Object, Self::Object) => Some(Self::Object),
+            (Self::Relation, Self::Object) | (Self::Object, Self::Relation) => Some(Self::Relation),
             (_, Self::Object) | (Self::Object, _) => None,
+
+            (Self::Relation, Self::Relation) => Some(Self::Relation),
+            (Self::Relation, _) | (_, Self::Relation) => None,
 
             (Self::AttributeOrValue, Self::AttributeOrValue) => Some(Self::AttributeOrValue),
             (Self::AttributeOrValue, Self::Attribute) | (Self::Attribute, Self::AttributeOrValue) => {
@@ -69,6 +76,11 @@ impl VariableCategory {
 
             (Self::Value, Self::Value) => Some(Self::Value),
             (_, Self::Value) | (Self::Value, _) => None,
+
+            (Self::RelationList, Self::RelationList) => Some(Self::RelationList),
+            (Self::ObjectList, Self::RelationList) | (Self::RelationList, Self::ObjectList) => Some(Self::RelationList),
+            (Self::ThingList, Self::RelationList) | (Self::RelationList, Self::ThingList) => Some(Self::RelationList),
+            (Self::RelationList, _) | (_, Self::RelationList) => None,
 
             (Self::ObjectList, Self::ObjectList) => Some(Self::ObjectList),
             (Self::ThingList, Self::ObjectList) | (Self::ObjectList, Self::ThingList) => Some(Self::ObjectList),

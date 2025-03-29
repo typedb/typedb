@@ -53,7 +53,7 @@ pub mod tests {
     };
 
     use answer::{variable::Variable, Type};
-    use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
+    use concept::type_::{entity_type::EntityType, Ordering, OwnerAPI, relation_type::RelationType, role_type::RoleType};
     use encoding::{
         graph::{
             definition::definition_key::{DefinitionID, DefinitionKey},
@@ -77,6 +77,7 @@ pub mod tests {
         translation::{pipeline::TranslatedStage, TranslationContext},
     };
     use itertools::Itertools;
+    use storage::snapshot::CommittableSnapshot;
     use test_utils::assert_matches;
 
     use crate::annotation::{
@@ -1510,5 +1511,130 @@ pub mod tests {
             assert_eq!(expected_graph.vertices, graph.vertices);
             assert_eq!(expected_graph.edges, graph.edges);
         }
+    }
+
+    #[test]
+    fn negations_with_different_category() {
+        // TODO: This test was introduced when we saw crashes because of mismatched VariableCategories.
+        //  This means VariableCategories now affect the semantics - which is not great.
+        //  This test can go away if we make it better.
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let (type_cat, type_catname) = {
+            let mut snapshot = storage.clone().open_snapshot_write();
+            let type_catname = type_manager.create_attribute_type(&mut snapshot, &LABEL_CATNAME).unwrap();
+            let type_cat = type_manager.create_entity_type(&mut snapshot, &LABEL_CAT).unwrap();
+            type_cat.set_owns(&mut snapshot, &type_manager, &thing_manager, type_catname, Ordering::Unordered).unwrap();
+            snapshot.commit().unwrap();
+            (answer::Type::Entity(type_cat), answer::Type::Attribute(type_catname))
+        };
+
+        let mut translation_context = TranslationContext::new();
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+        let mut conjunction = builder.conjunction_mut();
+
+        // Case 1: $a isa $t; not { $a has name $n; };
+        let var_cat = conjunction.constraints_mut().get_or_declare_variable("cat", None).unwrap();
+        let var_cat_type  = conjunction.constraints_mut().get_or_declare_variable("cat_type", None).unwrap();
+        conjunction.constraints_mut().add_isa(IsaKind::Subtype, var_cat, var_cat_type.into(), None).unwrap();
+
+        let mut negation = conjunction.add_negation();
+        let var_catname = negation.constraints_mut().get_or_declare_variable("name", None).unwrap();
+        negation.constraints_mut().add_has(var_cat, var_catname, None).unwrap();
+        let block = builder.finish().unwrap();
+
+        let snapshot = storage.clone().open_snapshot_write();
+        let graph = compute_type_inference_graph(
+            &snapshot,
+            &block,
+            &translation_context.variable_registry,
+            &type_manager,
+            &BTreeMap::new(),
+            &EmptyAnnotatedFunctionSignatures,
+            false,
+        )
+            .unwrap();
+
+        let conjunction = block.conjunction();
+        let negation = conjunction.nested_patterns()[0].as_negation().unwrap().conjunction();
+        {
+            let _ideal_negation = TypeInferenceGraph {
+                conjunction: negation,
+                vertices: VertexAnnotations::from([
+                    (var_cat.into(), BTreeSet::from([type_cat])),
+                    (var_catname.into(), BTreeSet::from([type_catname])),
+                ]),
+                edges: vec![expected_edge(
+                    &negation.constraints()[0],
+                    var_cat.into(),
+                    var_catname.into(),
+                    vec![(type_cat, type_catname)],
+                )],
+                nested_disjunctions: Vec::new(),
+                nested_negations: Vec::new(),
+                nested_optionals: Vec::new(),
+            };
+
+
+            // TODO: This is the ideal graph, if we didn't have the category fix
+            let _ideal_graph = TypeInferenceGraph {
+                conjunction,
+                vertices: VertexAnnotations::from([
+                    (var_cat.into(), BTreeSet::from([type_cat, type_catname])),
+                    (var_cat_type.into(), BTreeSet::from([type_cat, type_catname])),
+                ]),
+                edges: vec![
+                    expected_edge(
+                        &conjunction.constraints()[0],
+                        var_cat.into(),
+                        var_cat_type.into(),
+                        vec![(type_cat, type_cat), (type_catname, type_catname)],
+                    ),
+                ],
+                nested_disjunctions: Vec::new(),
+                nested_negations: vec![_ideal_negation],
+                nested_optionals: Vec::new(),
+            };
+        }
+
+        let expected_nested_negation = TypeInferenceGraph {
+            conjunction: negation,
+            vertices: VertexAnnotations::from([
+                (var_cat.into(), BTreeSet::from([type_cat])),
+                (var_catname.into(), BTreeSet::from([type_catname])),
+            ]),
+            edges: vec![expected_edge(
+                &negation.constraints()[0],
+                var_cat.into(),
+                var_catname.into(),
+                vec![(type_cat, type_catname)],
+            )],
+            nested_disjunctions: Vec::new(),
+            nested_negations: Vec::new(),
+            nested_optionals: Vec::new(),
+        };
+
+        let expected_but_not_ideal_graph = TypeInferenceGraph {
+            conjunction,
+            vertices: VertexAnnotations::from([
+                (var_cat.into(), BTreeSet::from([type_cat])),
+                (var_cat_type.into(), BTreeSet::from([type_cat])),
+            ]),
+            edges: vec![
+                expected_edge(
+                    &conjunction.constraints()[0],
+                    var_cat.into(),
+                    var_cat_type.into(),
+                    vec![(type_cat, type_cat)],
+                ),
+            ],
+            nested_disjunctions: Vec::new(),
+            nested_negations: vec![expected_nested_negation],
+            nested_optionals: Vec::new(),
+        };
+
+        assert_eq!(expected_but_not_ideal_graph, graph);
     }
 }

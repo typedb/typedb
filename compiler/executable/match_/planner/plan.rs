@@ -334,7 +334,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::AttributeType
                 | VariableCategory::RoleType => self.register_type_var(variable),
 
-                | VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                | VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute | VariableCategory::Relation => {
                     self.register_thing_var(variable)
                 }
 
@@ -343,7 +343,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
-                | VariableCategory::ValueList => unimplemented_feature!(Lists),
+                | VariableCategory::ValueList
+                | VariableCategory::RelationList => unimplemented_feature!(Lists),
                 VariableCategory::AttributeOrValue => {
                     unreachable!("Insufficiently bound variable should have been flagged earlier")
                 }
@@ -361,12 +362,13 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 | VariableCategory::AttributeType
                 | VariableCategory::RoleType => self.register_type_var(variable),
 
-                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+                VariableCategory::Thing | VariableCategory::Object | VariableCategory::Relation | VariableCategory::Attribute => {
                     self.register_thing_var(variable)
                 }
 
                 VariableCategory::Value => self.register_value_var(variable),
 
+                VariableCategory::RelationList
                 | VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
