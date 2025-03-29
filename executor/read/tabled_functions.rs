@@ -15,16 +15,10 @@ use compiler::executable::function::{
 use ir::pipeline::{function_signature::FunctionID, ParameterRegistry};
 use storage::snapshot::ReadableSnapshot;
 
-use crate::{
-    batch::FixedBatch,
-    error::ReadExecutionError,
-    pipeline::stage::ExecutionContext,
-    read::{
-        pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
-        suspension::QueryPatternSuspensions,
-    },
-    row::MaybeOwnedRow,
-};
+use crate::{batch::FixedBatch, error::ReadExecutionError, pipeline::stage::ExecutionContext, Provenance, read::{
+    pattern_executor::PatternExecutor, step_executor::create_executors_for_function,
+    suspension::QueryPatternSuspensions,
+}, row::MaybeOwnedRow};
 
 pub struct TabledFunctions {
     function_registry: Arc<ExecutableFunctionRegistry>,
@@ -177,8 +171,9 @@ impl AnswerTable {
     }
 
     fn try_add_row(&mut self, row: MaybeOwnedRow<'_>) -> bool {
-        if !self.answers.contains(&row) {
-            self.answers.push(row.clone().into_owned());
+        let row_data_only = MaybeOwnedRow::new_borrowed(row.row(), &1, &Provenance::INITIAL);
+        if !self.answers.contains(&row_data_only) {
+            self.answers.push(row_data_only.clone().into_owned());
             true
         } else {
             false
