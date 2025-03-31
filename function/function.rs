@@ -6,6 +6,7 @@
 
 use encoding::graph::definition::{definition_key::DefinitionKey, function::FunctionDefinition};
 use ir::pipeline::{function_signature::FunctionIDAPI, FunctionRepresentationError};
+use typeql::common::Spanned;
 
 use crate::FunctionError;
 
@@ -35,6 +36,7 @@ impl<FunctionIDType: FunctionIDAPI> Function<FunctionIDType> {
         parsed.signature.ident.as_str_unreserved().map_err(|_| FunctionError::FunctionTranslation {
             typedb_source: FunctionRepresentationError::IllegalKeywordAsIdentifier {
                 identifier: parsed.signature.ident.as_str_unchecked().to_owned(),
+                source_span: parsed.signature.ident.span(),
             },
         })?;
         Ok(Self { function_id, parsed, compiled: None })

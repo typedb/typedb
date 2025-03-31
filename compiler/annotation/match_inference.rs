@@ -254,16 +254,15 @@ impl TypeInferenceGraph<'_> {
         &self,
         variable_registry: &VariableRegistry,
     ) -> Result<(), TypeInferenceError> {
-        let mut thing_variable_present = false;
-        let mut any_variable_empty = false;
-        self.vertices.annotations.iter().filter_map(|(var, types)| var.as_variable().map(|v| (v, types))).for_each(
-            |(var, types)| {
-                thing_variable_present =
-                    thing_variable_present || variable_registry.get_variable_category(var).unwrap().is_category_thing();
-                any_variable_empty = any_variable_empty || types.is_empty();
-            },
-        );
-        if any_variable_empty && thing_variable_present {
+        let thing_variable_present = self
+            .vertices
+            .annotations
+            .iter()
+            .filter_map(|(var, _)| var.as_variable())
+            .any(|var| variable_registry.get_variable_category(var).unwrap().is_category_thing());
+
+        let any_vertex_empty = self.vertices.annotations.iter().any(|(_, types)| types.is_empty());
+        if any_vertex_empty && thing_variable_present {
             return Err(TypeInferenceError::DetectedUnsatisfiablePattern {});
         }
         self.nested_disjunctions

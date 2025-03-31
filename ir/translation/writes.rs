@@ -16,25 +16,10 @@ use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
-        TranslationContext,
+        verify_variable_available, TranslationContext,
     },
     RepresentationError,
 };
-
-macro_rules! verify_variable_available {
-    ($context:ident, $var:expr => $error:ident ) => {
-        match $context.get_variable(
-            $var.name()
-                .ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected { source_span: $var.span() }))?,
-        ) {
-            Some(translated) => Ok(translated),
-            None => Err(Box::new(RepresentationError::$error {
-                variable: $var.name().unwrap().to_owned(),
-                source_span: $var.span(),
-            })),
-        }
-    };
-}
 
 pub fn translate_insert(
     context: &mut TranslationContext,
