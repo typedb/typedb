@@ -12,14 +12,14 @@ use std::{
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use ir::pattern::conjunction::Conjunction;
-use ir::pattern::nested_pattern::NestedPattern;
-use ir::pipeline::{reduce::AssignedReduction, VariableRegistry};
-use ir::pipeline::function_signature::FunctionID;
+use ir::{
+    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern},
+    pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
+};
 
 use crate::{
     annotation::{
-        fetch::AnnotatedFetch,
+        fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
         pipeline::AnnotatedStage,
     },
@@ -39,7 +39,6 @@ use crate::{
     },
     VariablePosition,
 };
-use crate::annotation::fetch::{AnnotatedFetchObject, AnnotatedFetchSome};
 
 #[derive(Debug, Clone)]
 pub struct ExecutablePipeline {
@@ -115,21 +114,30 @@ pub fn compile_pipeline_and_functions(
     input_variables: &HashSet<Variable>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
-    let referenced_functions = find_referenced_functions(annotated_schema_functions, &annotated_preamble, &annotated_stages, annotated_fetch.as_ref());
-    let referenced_schema_functions = annotated_schema_functions.iter().filter_map(|(fid, function)| {
-        referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
-    }).collect();
-    let arced_executable_schema_functions = Arc::new(compile_functions(
-        statistics,
-        &ExecutableFunctionRegistry::empty(),
-        referenced_schema_functions,
-    )?);
+    let referenced_functions = find_referenced_functions(
+        annotated_schema_functions,
+        &annotated_preamble,
+        &annotated_stages,
+        annotated_fetch.as_ref(),
+    );
+    let referenced_schema_functions = annotated_schema_functions
+        .iter()
+        .filter_map(|(fid, function)| {
+            referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
+        })
+        .collect();
+    let arced_executable_schema_functions =
+        Arc::new(compile_functions(statistics, &ExecutableFunctionRegistry::empty(), referenced_schema_functions)?);
     let schema_function_registry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions.clone(), HashMap::new());
 
-    let referenced_preamble_functions = annotated_preamble.into_iter().enumerate().filter_map(|(fid, function)| {
-        referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
-    }).collect();
+    let referenced_preamble_functions = annotated_preamble
+        .into_iter()
+        .enumerate()
+        .filter_map(|(fid, function)| {
+            referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
+        })
+        .collect();
     let executable_preamble_functions =
         compile_functions(statistics, &schema_function_registry, referenced_preamble_functions)?;
 
@@ -373,58 +381,133 @@ fn compile_stage(
     }
 }
 
-fn find_referenced_functions(annotated_schema_functions: &AnnotatedSchemaFunctions, preamble: &AnnotatedPreambleFunctions, stages: &[AnnotatedStage], fetch: Option<&AnnotatedFetch>) -> HashSet<FunctionID> {
+fn find_referenced_functions(
+    annotated_schema_functions: &AnnotatedSchemaFunctions,
+    preamble: &AnnotatedPreambleFunctions,
+    stages: &[AnnotatedStage],
+    fetch: Option<&AnnotatedFetch>,
+) -> HashSet<FunctionID> {
     let mut referenced_functions = HashSet::new();
     find_referenced_functions_in_pipeline(annotated_schema_functions, preamble, stages, &mut referenced_functions);
     if let Some(fetch) = fetch {
-        find_referenced_functions_in_fetch(annotated_schema_functions, preamble, &fetch.object, &mut referenced_functions);
+        find_referenced_functions_in_fetch(
+            annotated_schema_functions,
+            preamble,
+            &fetch.object,
+            &mut referenced_functions,
+        );
     }
     referenced_functions
 }
-fn find_referenced_functions_in_pipeline(annotated_schema_functions: &AnnotatedSchemaFunctions, preamble: &AnnotatedPreambleFunctions, stages: &[AnnotatedStage], referenced_functions: &mut HashSet<FunctionID>) {
-    stages.iter().filter_map(|stage| {
-        if let AnnotatedStage::Match { block, .. } = stage { Some(block.conjunction()) } else { None }
-    }).for_each(|conjunction| {
-        find_referenced_functions_in_conjunction(annotated_schema_functions, preamble, conjunction, referenced_functions);
-    });
+fn find_referenced_functions_in_pipeline(
+    annotated_schema_functions: &AnnotatedSchemaFunctions,
+    preamble: &AnnotatedPreambleFunctions,
+    stages: &[AnnotatedStage],
+    referenced_functions: &mut HashSet<FunctionID>,
+) {
+    stages
+        .iter()
+        .filter_map(
+            |stage| {
+                if let AnnotatedStage::Match { block, .. } = stage {
+                    Some(block.conjunction())
+                } else {
+                    None
+                }
+            },
+        )
+        .for_each(|conjunction| {
+            find_referenced_functions_in_conjunction(
+                annotated_schema_functions,
+                preamble,
+                conjunction,
+                referenced_functions,
+            );
+        });
 }
 
-fn find_referenced_functions_in_conjunction(annotated_schema_functions: &AnnotatedSchemaFunctions, preamble: &AnnotatedPreambleFunctions, conjunction: &Conjunction, referenced_functions: &mut HashSet<FunctionID>) {
-    conjunction.constraints().iter().filter_map(|constraint| {
-        constraint.as_function_call_binding().map(|call| call.function_call().function_id())
-    }).for_each(|function_id| {
-        if !referenced_functions.contains(&function_id) {
-            let function = match &function_id {
-                FunctionID::Schema(key) => annotated_schema_functions.get(key).unwrap(),
-                FunctionID::Preamble(key) => preamble.get(*key).unwrap(),
-            };
-            referenced_functions.insert(function_id);
-            find_referenced_functions_in_pipeline(annotated_schema_functions, preamble, &function.stages, referenced_functions);
-        }
-    });
+fn find_referenced_functions_in_conjunction(
+    annotated_schema_functions: &AnnotatedSchemaFunctions,
+    preamble: &AnnotatedPreambleFunctions,
+    conjunction: &Conjunction,
+    referenced_functions: &mut HashSet<FunctionID>,
+) {
+    conjunction
+        .constraints()
+        .iter()
+        .filter_map(|constraint| constraint.as_function_call_binding().map(|call| call.function_call().function_id()))
+        .for_each(|function_id| {
+            if !referenced_functions.contains(&function_id) {
+                let function = match &function_id {
+                    FunctionID::Schema(key) => annotated_schema_functions.get(key).unwrap(),
+                    FunctionID::Preamble(key) => preamble.get(*key).unwrap(),
+                };
+                referenced_functions.insert(function_id);
+                find_referenced_functions_in_pipeline(
+                    annotated_schema_functions,
+                    preamble,
+                    &function.stages,
+                    referenced_functions,
+                );
+            }
+        });
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Negation(inner) => find_referenced_functions_in_conjunction(annotated_schema_functions, preamble, inner.conjunction(), referenced_functions),
-        NestedPattern::Optional(inner) => find_referenced_functions_in_conjunction(annotated_schema_functions, preamble, inner.conjunction(), referenced_functions),
+        NestedPattern::Negation(inner) => find_referenced_functions_in_conjunction(
+            annotated_schema_functions,
+            preamble,
+            inner.conjunction(),
+            referenced_functions,
+        ),
+        NestedPattern::Optional(inner) => find_referenced_functions_in_conjunction(
+            annotated_schema_functions,
+            preamble,
+            inner.conjunction(),
+            referenced_functions,
+        ),
         NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().for_each(|inner| {
             find_referenced_functions_in_conjunction(annotated_schema_functions, preamble, inner, referenced_functions);
         }),
     })
 }
 
-fn find_referenced_functions_in_fetch(annotated_schema_functions: &AnnotatedSchemaFunctions, preamble: &AnnotatedPreambleFunctions, fetch: &AnnotatedFetchObject, referenced_functions: &mut HashSet<FunctionID>) {
+fn find_referenced_functions_in_fetch(
+    annotated_schema_functions: &AnnotatedSchemaFunctions,
+    preamble: &AnnotatedPreambleFunctions,
+    fetch: &AnnotatedFetchObject,
+    referenced_functions: &mut HashSet<FunctionID>,
+) {
     if let AnnotatedFetchObject::Entries(entries) = fetch {
         entries.values().for_each(|fetch_object| {
             match fetch_object {
-                AnnotatedFetchSome::SingleFunction(function)
-                | AnnotatedFetchSome::ListFunction(function) => {
-                    find_referenced_functions_in_pipeline(annotated_schema_functions, preamble, &function.stages, referenced_functions);
-                },
+                AnnotatedFetchSome::SingleFunction(function) | AnnotatedFetchSome::ListFunction(function) => {
+                    find_referenced_functions_in_pipeline(
+                        annotated_schema_functions,
+                        preamble,
+                        &function.stages,
+                        referenced_functions,
+                    );
+                }
                 AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
-                    find_referenced_functions_in_pipeline(annotated_schema_functions, preamble, &sub_fetch.stages, referenced_functions);
-                    find_referenced_functions_in_fetch(annotated_schema_functions, preamble, &sub_fetch.fetch.object, referenced_functions)
+                    find_referenced_functions_in_pipeline(
+                        annotated_schema_functions,
+                        preamble,
+                        &sub_fetch.stages,
+                        referenced_functions,
+                    );
+                    find_referenced_functions_in_fetch(
+                        annotated_schema_functions,
+                        preamble,
+                        &sub_fetch.fetch.object,
+                        referenced_functions,
+                    )
                 }
                 AnnotatedFetchSome::Object(inner) => {
-                    find_referenced_functions_in_fetch(annotated_schema_functions, preamble, inner, referenced_functions);
+                    find_referenced_functions_in_fetch(
+                        annotated_schema_functions,
+                        preamble,
+                        inner,
+                        referenced_functions,
+                    );
                 }
                 AnnotatedFetchSome::SingleVar(_)
                 | AnnotatedFetchSome::SingleAttribute(_, _)
