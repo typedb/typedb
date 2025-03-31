@@ -266,6 +266,7 @@ impl StepBuilder {
 #[derive(Debug)]
 struct MatchExecutableBuilder {
     selected_variables: Vec<Variable>,
+    input_variables: Vec<Variable>,
     current_outputs: HashSet<Variable>,
     produced_so_far: HashSet<Variable>,
 
@@ -299,6 +300,7 @@ impl MatchExecutableBuilder {
         let next_output = VariablePosition::new(next_position);
         Self {
             selected_variables,
+            input_variables,
             current_outputs,
             produced_so_far,
             steps: Vec::new(),
@@ -411,6 +413,16 @@ impl MatchExecutableBuilder {
         step.selected_variables = Vec::from_iter(self.current_outputs.iter().copied());
 
         self.steps.push(step);
+    }
+
+    fn row_variables(&self) -> &[Variable] {
+        if let Some(current) = &self.current {
+            &current.selected_variables
+        } else if let Some(last) = self.steps.last() {
+            &last.selected_variables
+        } else {
+            &self.input_variables
+        }
     }
 
     fn position_mapping(&self) -> &HashMap<Variable, ExecutorVariable> {

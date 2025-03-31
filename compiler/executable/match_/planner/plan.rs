@@ -1459,7 +1459,7 @@ impl ConjunctionPlan<'_> {
                         .clone() // FIXME
                         .plan(match_builder.produced_so_far.iter().filter(|&&v| v != variable).copied())?
                         .lower(
-                            match_builder.produced_so_far.iter().copied(),
+                            match_builder.row_variables().iter().copied(),
                             match_builder.current_outputs.iter().copied(),
                             match_builder.position_mapping(),
                             variable_registry,
@@ -1530,7 +1530,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
-                    match_builder.current_outputs.iter().copied(),
+                    match_builder.row_variables().iter().copied(),
                     match_builder.selected_variables.iter().copied(),
                     match_builder.position_mapping(),
                     variable_registry,
@@ -1610,7 +1610,7 @@ impl ConjunctionPlan<'_> {
                     .clone() // FIXME
                     .plan(match_builder.position_mapping().keys().copied())?
                     .lower(
-                        match_builder.produced_so_far.iter().copied(),
+                        match_builder.row_variables().iter().copied(),
                         match_builder.current_outputs.iter().copied(),
                         match_builder.position_mapping(),
                         variable_registry,
@@ -2021,6 +2021,24 @@ impl fmt::Debug for Graph<'_> {
             .field("pattern_to_variable", &self.pattern_to_variable)
             .field("variable_to_pattern", &self.variable_to_pattern)
             .finish()
+    }
+}
+
+impl fmt::Display for Graph<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{}:", type_name_of_val(self))?;
+        write!(f, "    variable index: {:?}", self.variable_index)?;
+
+        writeln!(f, "    patterns: ")?;
+        for (vertex, elt) in &self.elements {
+            writeln!(f, "        {vertex:?}: {elt:?}")?;
+        }
+
+        for (p, vars) in &self.pattern_to_variable {
+            writeln!(f, "    {p:?} -> {vars:?}")?;
+        }
+
+        Ok(())
     }
 }
 
