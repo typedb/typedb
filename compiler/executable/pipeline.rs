@@ -117,7 +117,7 @@ pub fn compile_pipeline_and_functions(
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let referenced_functions = find_referenced_functions(annotated_schema_functions, &annotated_preamble, &annotated_stages, annotated_fetch.as_ref());
     let referenced_schema_functions = annotated_schema_functions.iter().filter_map(|(fid, function)| {
-        referenced_functions.contains(&FunctionID::Schema((*fid).clone())).then(|| (fid.clone(), function.clone()))
+        referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
     }).collect();
     let arced_executable_schema_functions = Arc::new(compile_functions(
         statistics,
@@ -127,8 +127,11 @@ pub fn compile_pipeline_and_functions(
     let schema_function_registry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions.clone(), HashMap::new());
 
+    let referenced_preamble_functions = annotated_preamble.into_iter().enumerate().filter_map(|(fid, function)| {
+        referenced_functions.contains(&fid.clone().into()).then(|| (fid.clone(), function.clone()))
+    }).collect();
     let executable_preamble_functions =
-        compile_functions(statistics, &schema_function_registry, annotated_preamble.into_iter().enumerate().collect())?;
+        compile_functions(statistics, &schema_function_registry, referenced_preamble_functions)?;
 
     let schema_and_preamble_functions: ExecutableFunctionRegistry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions, executable_preamble_functions);
