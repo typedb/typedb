@@ -10,12 +10,12 @@ def base_images():
         architecture = "amd64",
         registry = "index.docker.io",
         repository = "typedb/ubuntu",
-        tag = "3.1.0b-amd64",
+        tag = "3.1.0",
     )
     container_pull(
         name = "typedb-ubuntu-arm64",
         architecture = "arm64",
         registry = "index.docker.io",
         repository = "typedb/ubuntu",
-        tag = "3.1.0b-arm64",
+        tag = "3.1.0",
     )
