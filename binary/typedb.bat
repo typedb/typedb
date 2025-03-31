@@ -23,12 +23,12 @@ goto print_usage
 :startconsole
 
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
-%TYPEDB_HOME%\console\typedb_console_bin.exe %ARGS%
+"%TYPEDB_HOME%\console\typedb_console_bin.exe" %ARGS%
 goto exit
 
 :startserver
 for /f "tokens=1,* delims= " %%a in ("%*") do set ARGS=%%b
-%TYPEDB_HOME%\server\typedb_server_bin.exe %ARGS%
+"%TYPEDB_HOME%\server\typedb_server_bin.exe" %ARGS%
 goto exit
 
 :exit
