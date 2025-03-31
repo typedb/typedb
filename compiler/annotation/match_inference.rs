@@ -11,7 +11,7 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation, Type};
+use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
@@ -164,14 +164,14 @@ fn construct_error_message_for_unsatisfiable_edge(
     graph: &TypeInferenceGraph<'_>,
     edge: &TypeInferenceEdge<'_>,
 ) -> TypeInferenceError {
-    let resolve_vertex = (|vertex: &Vertex<Variable>| match vertex {
+    let resolve_vertex = |vertex: &Vertex<Variable>| match vertex {
         Vertex::Variable(v) => variable_registry
             .get_variable_name(*v)
             .cloned()
             .unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
         Vertex::Label(label) => label.scoped_name().as_str().to_string(),
         Vertex::Parameter(_) => unreachable!("Parameters can't be involved in TypeInferenceEdges"),
-    });
+    };
     let resolve_type_label = |type_: &answer::Type| {
         type_
             .get_label(snapshot, type_manager)

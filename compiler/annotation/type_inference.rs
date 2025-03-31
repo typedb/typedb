@@ -77,7 +77,6 @@ pub mod tests {
         translation::{pipeline::TranslatedStage, TranslationContext},
     };
     use itertools::Itertools;
-    use test_utils::assert_matches;
 
     use crate::annotation::{
         function::{
