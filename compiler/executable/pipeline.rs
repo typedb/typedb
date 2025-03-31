@@ -115,12 +115,14 @@ pub fn compile_pipeline_and_functions(
     input_variables: &HashSet<Variable>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
-    compile_error!("Start here.");
     let referenced_functions = find_referenced_functions(annotated_schema_functions, &annotated_preamble, &annotated_stages, annotated_fetch.as_ref());
+    let referenced_schema_functions = annotated_schema_functions.iter().filter_map(|(fid, function)| {
+        referenced_functions.contains(&FunctionID::Schema((*fid).clone())).then(|| (fid.clone(), function.clone()))
+    }).collect();
     let arced_executable_schema_functions = Arc::new(compile_functions(
         statistics,
         &ExecutableFunctionRegistry::empty(),
-        annotated_schema_functions.clone(),
+        referenced_schema_functions,
     )?);
     let schema_function_registry =
         ExecutableFunctionRegistry::new(arced_executable_schema_functions.clone(), HashMap::new());
