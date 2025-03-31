@@ -840,7 +840,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
+    pub fn as_function_call_binding(&self) -> Option<&FunctionCallBinding<ID>> {
         match self {
             Constraint::FunctionCallBinding(binding) => Some(binding),
             _ => None,
