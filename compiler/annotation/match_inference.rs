@@ -195,7 +195,11 @@ fn construct_error_message_for_unsatisfiable_edge(
 fn pre_check_edges_for_trivial_unsatisfiability<'a>(
     graph: &'a TypeInferenceGraph<'a>,
 ) -> Result<(), &'a TypeInferenceEdge<'a>> {
-    if let Some(edge) = graph.edges.iter().find(|edge| edge.left_to_right.is_empty() || edge.right_to_left.is_empty()) {
+    let mut thing_edges = graph.edges.iter().filter(|edge| match &edge.constraint {
+        Constraint::Links(_) | Constraint::Has(_) | Constraint::Isa(_) => true,
+        _ => false,
+    });
+    if let Some(edge) = thing_edges.find(|edge| edge.left_to_right.is_empty() || edge.right_to_left.is_empty()) {
         return Err(edge);
     }
     graph
