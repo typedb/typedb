@@ -11,6 +11,8 @@ pub enum VariableCategory {
     Type,
     ThingType,
     AttributeType,
+    ObjectType,
+    RelationType,
     RoleType,
 
     Thing,
@@ -42,6 +44,24 @@ impl VariableCategory {
             }
             (Self::AttributeType, Self::AttributeType) => Some(Self::AttributeType),
             (Self::AttributeType, _) | (_, Self::AttributeType) => None,
+
+            (Self::Type, Self::RelationType) | (Self::RelationType, Self::Type) => Some(Self::RelationType),
+            (Self::ThingType, Self::RelationType) | (Self::RelationType, Self::ThingType) => {
+                Some(Self::RelationType)
+            }
+            (Self::ObjectType, Self::RelationType) | (Self::RelationType, Self::ObjectType) => {
+                Some(Self::RelationType)
+            }
+            (Self::RelationType, Self::RelationType) => Some(Self::RelationType),
+            (Self::RelationType, _) | (_, Self::RelationType) => None,
+
+            (Self::Type, Self::ObjectType) | (Self::ObjectType, Self::Type) => Some(Self::ObjectType),
+            (Self::ThingType, Self::ObjectType) | (Self::ObjectType, Self::ThingType) => {
+                Some(Self::ObjectType)
+            }
+            (Self::ObjectType, Self::ObjectType) => Some(Self::RelationType),
+            (Self::ObjectType, _) | (_, Self::ObjectType) => None,
+
 
             (Self::ThingType, Self::ThingType) => Some(Self::ThingType),
             (Self::ThingType, Self::Type) | (Self::Type, Self::ThingType) => Some(Self::ThingType),

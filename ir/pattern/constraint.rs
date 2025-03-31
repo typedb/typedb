@@ -155,9 +155,9 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
     ) -> Result<&Kind<Variable>, Box<RepresentationError>> {
         debug_assert!(self.context.is_variable_available(self.constraints.scope, variable));
         let category = match kind {
-            typeql::token::Kind::Entity => VariableCategory::ThingType,
-            typeql::token::Kind::Relation => VariableCategory::ThingType,
-            typeql::token::Kind::Attribute => VariableCategory::ThingType,
+            typeql::token::Kind::Entity => VariableCategory::ObjectType,
+            typeql::token::Kind::Relation => VariableCategory::RelationType,
+            typeql::token::Kind::Attribute => VariableCategory::AttributeType,
             typeql::token::Kind::Role => VariableCategory::RoleType,
         };
         let kind = Kind::new(kind, variable, source_span);
@@ -421,7 +421,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(owner_type) = owner_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, owner_type));
-            self.context.set_variable_category(owner_type, VariableCategory::ThingType, owns.clone())?;
+            self.context.set_variable_category(owner_type, VariableCategory::ObjectType, owns.clone())?;
         };
 
         if let Some(attribute_type) = attribute_type_var {
@@ -445,7 +445,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(relation_type) = relation_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, relation_type));
-            self.context.set_variable_category(relation_type, VariableCategory::ThingType, relates.clone())?;
+            self.context.set_variable_category(relation_type, VariableCategory::RelationType, relates.clone())?;
         };
 
         if let Some(role_type) = role_type_var {
@@ -469,7 +469,7 @@ impl<'cx, 'reg> ConstraintsBuilder<'cx, 'reg> {
 
         if let Some(player_type) = player_type_var {
             debug_assert!(self.context.is_variable_available(self.constraints.scope, player_type));
-            self.context.set_variable_category(player_type, VariableCategory::ThingType, plays.clone())?;
+            self.context.set_variable_category(player_type, VariableCategory::ObjectType, plays.clone())?;
         };
 
         if let Some(role_type) = role_type_var {

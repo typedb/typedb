@@ -123,7 +123,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         self.prune_abstract_types_from_thing_vertex_annotations_recursive(graph)?;
 
         // Temporary(?) fix to avoid bad unwraps based on category
-        self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(graph);
+        self.prune_mismatched_categories_from_vertex_annotations_recursive(graph);
 
         // Seed edges in root & disjunctions
         self.seed_edges(graph).map_err(|source| TypeInferenceError::ConceptRead { typedb_source: source })?;
@@ -612,7 +612,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         Ok(())
     }
 
-    fn prune_mismatched_categories_from_thing_vertex_annotations_recursive(
+    fn prune_mismatched_categories_from_vertex_annotations_recursive(
         &self,
         graph: &mut TypeInferenceGraph<'_>,
     ) {
@@ -630,16 +630,28 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     },
                     _ => {}
                 };
+            } else if category.map_or(false, |cat| cat.is_category_type()) {
+                match category.unwrap() {
+                    VariableCategory::AttributeType => annotations.retain(|type_| type_.is_attribute_type()),
+                    VariableCategory::RelationType => annotations.retain(|type_| type_.is_relation_type()),
+                    VariableCategory::ObjectType => {
+                        annotations.retain(|type_| type_.is_entity_type() || type_.is_relation_type())
+                    },
+                    VariableCategory::RoleType => {
+                        annotations.retain(|type_| type_.is_role_type())
+                    },
+                    _ => {}
+                };
             }
         }
         for nested in graph.nested_disjunctions.iter_mut().flat_map(|nested| nested.disjunction.iter_mut()) {
-            self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(nested);
+            self.prune_mismatched_categories_from_vertex_annotations_recursive(nested);
         }
         for nested in &mut graph.nested_negations {
-            self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(nested);
+            self.prune_mismatched_categories_from_vertex_annotations_recursive(nested);
         }
         for nested in &mut graph.nested_optionals {
-            self.prune_mismatched_categories_from_thing_vertex_annotations_recursive(nested);
+            self.prune_mismatched_categories_from_vertex_annotations_recursive(nested);
         }
     }
 }
