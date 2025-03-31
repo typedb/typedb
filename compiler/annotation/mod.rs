@@ -203,6 +203,16 @@ typedb_error!(
             variable: Variable,
             source_span: Option<Span>,
         ),
+        DetectedUnsatisfiableEdge(
+            11,
+            "Type-inference was unable to find compatible types for the pair of variables '{left_variable}' & '{right_variable}' across the constraint. Types were:\n- {left_variable}: [{left_types}]\n- {right_variable}: [{right_types}]",
+            constraint: ir::pattern::constraint::Constraint<Variable>,
+            left_variable: String,
+            right_variable: String,
+            left_types: String,
+            right_types: String,
+            source_span: Option<Span>,
+        ),
         OptionalTypesUnsupported(255, "Optional types are not yet supported."),
         ListTypesUnsupported(256, "List types are not yet supported."),
     }

@@ -597,7 +597,12 @@ pub mod tests {
             )
             .unwrap_err();
 
-            assert_matches!(err, TypeInferenceError::DetectedUnsatisfiablePattern {})
+            assert!(match err {
+                TypeInferenceError::DetectedUnsatisfiableEdge { left_variable, right_variable, .. } => {
+                    left_variable == "animal" && right_variable == "name"
+                }
+                _ => false,
+            });
         }
 
         {
@@ -1440,7 +1445,12 @@ pub mod tests {
                 false,
             )
             .unwrap_err();
-            assert_matches!(err, TypeInferenceError::DetectedUnsatisfiablePattern {});
+            assert!(match err {
+                TypeInferenceError::DetectedUnsatisfiableEdge { left_variable, right_variable, .. } => {
+                    left_variable == "animal" && right_variable == "name"
+                }
+                _ => false,
+            });
         }
 
         {

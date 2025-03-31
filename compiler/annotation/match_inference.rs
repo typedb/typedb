@@ -11,13 +11,13 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type as TypeAnnotation};
+use answer::{variable::Variable, Type as TypeAnnotation, Type};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
     pipeline::{block::Block, VariableRegistry},
 };
-use itertools::chain;
+use itertools::{chain, Itertools};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -147,10 +147,65 @@ pub(crate) fn compute_type_inference_graph<'graph>(
         is_write_stage,
     )
     .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
+    pre_check_edges_for_trivial_unsatisfiability(&graph).map_err(|edge| {
+        construct_error_message_for_unsatisfiable_edge(snapshot, type_manager, variable_registry, &graph, edge)
+    })?;
+
     prune_types(&mut graph);
     // TODO: Throw error when any set becomes empty happens, rather than waiting for the it to propagate
     graph.check_thing_constraints_satisfiable(variable_registry)?;
     Ok(graph)
+}
+
+fn construct_error_message_for_unsatisfiable_edge(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    variable_registry: &VariableRegistry,
+    graph: &TypeInferenceGraph<'_>,
+    edge: &TypeInferenceEdge<'_>,
+) -> TypeInferenceError {
+    let resolve_vertex = (|vertex: &Vertex<Variable>| match vertex {
+        Vertex::Variable(v) => variable_registry
+            .get_variable_name(*v)
+            .cloned()
+            .unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
+        Vertex::Label(label) => label.scoped_name().as_str().to_string(),
+        Vertex::Parameter(_) => unreachable!("Parameters can't be involved in TypeInferenceEdges"),
+    });
+    let resolve_type_label = |type_: &answer::Type| {
+        type_
+            .get_label(snapshot, type_manager)
+            .map(|label| label.scoped_name().to_string())
+            .unwrap_or("(Error while resolving label)".to_owned())
+    };
+    let left_variable = resolve_vertex(&edge.left);
+    let right_variable = resolve_vertex(&edge.right);
+    let left_types = graph.vertices.annotations.get(&edge.left).unwrap().iter().map(resolve_type_label).join(", ");
+    let right_types = graph.vertices.annotations.get(&edge.right).unwrap().iter().map(resolve_type_label).join(", ");
+    TypeInferenceError::DetectedUnsatisfiableEdge {
+        constraint: edge.constraint.clone(),
+        left_variable,
+        right_variable,
+        left_types,
+        right_types,
+        source_span: edge.constraint.source_span(),
+    }
+}
+
+fn pre_check_edges_for_trivial_unsatisfiability<'a>(
+    graph: &'a TypeInferenceGraph<'a>,
+) -> Result<(), &'a TypeInferenceEdge<'a>> {
+    if let Some(edge) = graph.edges.iter().find(|edge| edge.left_to_right.is_empty() || edge.right_to_left.is_empty()) {
+        return Err(edge);
+    }
+    graph
+        .nested_disjunctions
+        .iter()
+        .flat_map(|d| d.disjunction.iter())
+        .chain(graph.nested_negations.iter())
+        .chain(graph.nested_optionals.iter())
+        .try_for_each(|nested| pre_check_edges_for_trivial_unsatisfiability(nested))?;
+    Ok(())
 }
 
 pub(crate) fn prune_types(graph: &mut TypeInferenceGraph<'_>) {
