@@ -623,10 +623,11 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let category = self.variable_registry.get_variable_category(*id);
             if category.map_or(false, |cat| cat.is_category_thing()) {
                 match category.unwrap() {
+                    VariableCategory::Attribute => annotations.retain(|type_| type_.is_attribute_type()),
+                    VariableCategory::Relation => annotations.retain(|type_| type_.is_relation_type()),
                     VariableCategory::Object => {
                         annotations.retain(|type_| type_.is_entity_type() || type_.is_relation_type())
                     },
-                    VariableCategory::Attribute => annotations.retain(|type_| type_.is_attribute_type()),
                     _ => {}
                 };
             }
