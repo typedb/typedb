@@ -399,6 +399,7 @@ fn find_referenced_functions(
     }
     referenced_functions
 }
+
 fn find_referenced_functions_in_pipeline(
     annotated_schema_functions: &AnnotatedSchemaFunctions,
     preamble: &AnnotatedPreambleFunctions,
