@@ -119,7 +119,7 @@ pub fn infer_types(
         is_write_stage,
     )?;
     let mut type_annotations_by_scope = HashMap::new();
-    graph.collect_type_annotations(variable_registry, &mut type_annotations_by_scope);
+    graph.collect_type_annotations(Some(variable_registry), &mut type_annotations_by_scope);
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
@@ -263,7 +263,7 @@ impl TypeInferenceGraph<'_> {
 
     pub(crate) fn collect_type_annotations(
         self,
-        _variable_registry: &VariableRegistry,
+        _variable_registry: Option<&VariableRegistry>,
         type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
     ) {
         let TypeInferenceGraph {
@@ -301,11 +301,11 @@ impl TypeInferenceGraph<'_> {
             .into_iter()
             .map(|(variable, types)| (variable.into(), Arc::new(types)))
             .collect::<BTreeMap<_, _>>();
-        debug_assert!(conjunction
+        debug_assert!(_variable_registry.is_none() || conjunction
             .constraints()
             .iter()
             .flat_map(|constraint| constraint.ids())
-            .filter(|variable| match _variable_registry.get_variable_category(*variable) {
+            .filter(|variable| match _variable_registry.unwrap().get_variable_category(*variable) {
                 None => false,
                 Some(VariableCategory::Value | VariableCategory::ValueList) => false,
                 Some(_) => true,

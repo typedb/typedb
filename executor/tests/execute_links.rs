@@ -239,7 +239,7 @@ fn traverse_links_unbounded_sorted_from() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -249,6 +249,7 @@ fn traverse_links_unbounded_sorted_from() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_membership, var_group, var_person],
@@ -341,7 +342,7 @@ fn traverse_links_unbounded_sorted_to() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -351,6 +352,7 @@ fn traverse_links_unbounded_sorted_to() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_membership, var_person],
@@ -443,7 +445,7 @@ fn traverse_links_bounded_relation() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -453,6 +455,7 @@ fn traverse_links_bounded_relation() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_membership, var_person],
@@ -561,7 +564,7 @@ fn traverse_links_bounded_relation_player() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -571,6 +574,7 @@ fn traverse_links_bounded_relation_player() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_membership, var_person, var_membership_member_type],
@@ -684,7 +688,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
     let variable_registry = &translation_context.variable_registry;
     let snapshot1 = &*snapshot;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         snapshot1,
         &entry,
         variable_registry,
@@ -694,6 +698,7 @@ fn traverse_links_reverse_unbounded_sorted_from() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_membership, var_person],
@@ -783,7 +788,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
     let variable_registry = &translation_context.variable_registry;
     let snapshot1 = &*snapshot;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         snapshot1,
         &entry,
         variable_registry,
@@ -793,6 +798,7 @@ fn traverse_links_reverse_unbounded_sorted_to() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_membership, var_person],
@@ -885,7 +891,7 @@ fn traverse_links_reverse_bounded_player() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -895,6 +901,7 @@ fn traverse_links_reverse_bounded_player() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_person, var_membership],
@@ -1003,7 +1010,7 @@ fn traverse_links_reverse_bounded_player_relation() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -1013,6 +1020,7 @@ fn traverse_links_reverse_bounded_player_relation() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_person, var_membership],

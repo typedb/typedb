@@ -162,7 +162,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &block,
         variable_registry,
@@ -172,6 +172,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 
     let insert_plan = compiler::executable::insert::executable::compile(
         block.conjunction().constraints(),
@@ -226,7 +227,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let entry_annotations = {
+    let (block, block_annotations) = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
             .into_pipeline()
@@ -245,7 +246,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
         .unwrap();
         let variable_registry = &translation_context.variable_registry;
         let previous_stage_variable_annotations = &BTreeMap::new();
-        infer_types(
+        let block_annotations = infer_types(
             &snapshot,
             &block,
             variable_registry,
@@ -254,8 +255,10 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
             &EmptyAnnotatedFunctionSignatures,
             false,
         )
-        .unwrap()
+        .unwrap();
+        (block, block_annotations)
     };
+    let entry_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 
     let typeql_delete = typeql::parse_query(delete_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
     let (block, deleted_concepts) =

@@ -1782,65 +1782,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_no_constraints() {
-        // dog sub animal, owns dog-name; cat sub animal owns cat-name;
-        // cat-name sub animal-name; dog-name sub animal-name;
-        let (_tmp_dir, storage) = setup_storage();
-        let (type_manager, thing_manager) = managers();
-
-        let ((_type_animal, type_cat, type_dog), (_type_name, type_catname, type_dogname), (type_fears, _, _)) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-
-        // Case 1: $a has $n;
-        let mut translation_context = TranslationContext::new();
-        let mut value_parameters = ParameterRegistry::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let mut conjunction = builder.conjunction_mut();
-        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
-        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
-
-        // Try seeding
-        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
-
-        let block = builder.finish().unwrap();
-        let conjunction = block.conjunction();
-
-        let constraints = conjunction.constraints();
-        let mut expected_graph = TypeInferenceGraph {
-            conjunction,
-            vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
-                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
-            ]),
-            edges: vec![expected_edge(
-                &constraints[0],
-                var_animal.into(),
-                var_name.into(),
-                vec![(type_cat, type_catname), (type_dog, type_dogname)],
-            )],
-            nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
-        };
-
-        let snapshot = storage.clone().open_snapshot_write();
-        let empty_function_cache = EmptyAnnotatedFunctionSignatures;
-        let seeder = TypeGraphSeedingContext::new(
-            &snapshot,
-            &type_manager,
-            &empty_function_cache,
-            &translation_context.variable_registry,
-            false,
-        );
-        let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
-        if expected_graph != graph {
-            // We need this because of non-determinism
-            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
-            assert_eq!(expected_graph, graph)
-        }
-    }
-
-    #[test]
     fn test_comparison() {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();

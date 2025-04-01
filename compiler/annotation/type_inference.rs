@@ -53,18 +53,16 @@ pub mod tests {
     };
 
     use answer::{variable::Variable, Type};
-    use concept::type_::{entity_type::EntityType, relation_type::RelationType, role_type::RoleType};
     use encoding::{
         graph::{
             definition::definition_key::{DefinitionID, DefinitionKey},
-            type_::vertex::{PrefixedTypeVertexEncoding, TypeID},
         },
         layout::prefix::Prefix,
         value::label::Label,
     };
     use ir::{
         pattern::{
-            constraint::{Constraint, IsaKind, Links, SubKind},
+            constraint::{Constraint, IsaKind, SubKind},
             variable_category::{VariableCategory, VariableOptionality},
             Vertex,
         },
@@ -96,125 +94,20 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LinksAnnotations},
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };
-
-    #[test]
-    fn test_translation() {
-        let (var_relation, var_role_type, var_player) = (0..3).map(Variable::new).collect_tuple().unwrap();
-        let type_rel_0 = Type::Relation(RelationType::build_from_type_id(TypeID::new(0)));
-        let type_rel_1 = Type::Relation(RelationType::build_from_type_id(TypeID::new(1)));
-        let type_role_0 = Type::RoleType(RoleType::build_from_type_id(TypeID::new(0)));
-        let type_role_1 = Type::RoleType(RoleType::build_from_type_id(TypeID::new(1)));
-        let type_player_0 = Type::Entity(EntityType::build_from_type_id(TypeID::new(0)));
-        let type_player_1 = Type::Relation(RelationType::build_from_type_id(TypeID::new(2)));
-
-        let mut translation_context = TranslationContext::new();
-        let mut value_parameters = ParameterRegistry::new();
-        let dummy =
-            Block::builder(translation_context.new_block_builder_context(&mut value_parameters)).finish().unwrap();
-        let constraint1 = Constraint::Links(Links::new(var_relation, var_player, var_role_type, None));
-        let constraint2 = Constraint::Links(Links::new(var_relation, var_player, var_role_type, None));
-        let nested1 = TypeInferenceGraph {
-            conjunction: dummy.conjunction(),
-            vertices: VertexAnnotations::from([
-                (var_relation.into(), BTreeSet::from([type_rel_0])),
-                (var_role_type.into(), BTreeSet::from([type_role_0])),
-                (var_player.into(), BTreeSet::from([type_player_0])),
-            ]),
-            edges: vec![
-                expected_edge(&constraint1, var_relation.into(), var_role_type.into(), vec![(type_rel_0, type_role_0)]),
-                expected_edge(
-                    &constraint1,
-                    var_player.into(),
-                    var_role_type.into(),
-                    vec![(type_player_0, type_role_0)],
-                ),
-            ],
-            nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
-        };
-        let vertex_annotations = VertexAnnotations::from([
-            (var_relation.into(), BTreeSet::from([type_rel_1])),
-            (var_role_type.into(), BTreeSet::from([type_role_1])),
-            (var_player.into(), BTreeSet::from([type_player_1])),
-        ]);
-        let shared_variables = vertex_annotations.keys().filter_map(Vertex::as_variable).collect();
-        let nested2 = TypeInferenceGraph {
-            conjunction: dummy.conjunction(),
-            vertices: vertex_annotations.clone(),
-            edges: vec![
-                expected_edge(&constraint1, var_relation.into(), var_role_type.into(), vec![(type_rel_1, type_role_1)]),
-                expected_edge(
-                    &constraint1,
-                    var_player.into(),
-                    var_role_type.into(),
-                    vec![(type_player_1, type_role_1)],
-                ),
-            ],
-            nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
-        };
-        let graph = TypeInferenceGraph {
-            conjunction: dummy.conjunction(),
-            vertices: VertexAnnotations::from([
-                (var_relation.into(), BTreeSet::from([type_rel_0, type_rel_1])),
-                (var_role_type.into(), BTreeSet::from([type_role_0, type_role_1])),
-                (var_player.into(), BTreeSet::from([type_player_0, type_player_1])),
-            ]),
-            edges: vec![],
-            nested_disjunctions: vec![NestedTypeInferenceGraphDisjunction {
-                disjunction: vec![nested1, nested2],
-                shared_variables,
-                shared_vertex_annotations: vertex_annotations,
-            }],
-            nested_negations: vec![],
-            nested_optionals: vec![],
-        };
-        let mut vertex_annotations = BTreeMap::new();
-        let mut constraint_annotations = HashMap::new();
-        graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
-        let type_annotations = BlockAnnotations::new(vertex_annotations, constraint_annotations);
-
-        let lra1 = LinksAnnotations {
-            relation_to_player: Arc::new(BTreeMap::from([(type_rel_0, vec![type_player_0])])),
-            player_to_role: Arc::new(BTreeMap::from([(type_player_0, BTreeSet::from([type_role_0]))])),
-            player_to_relation: Arc::new(BTreeMap::from([(type_player_0, vec![type_rel_0])])),
-            relation_to_role: Arc::new(BTreeMap::from([(type_rel_0, BTreeSet::from([type_role_0]))])),
-        };
-        let lra2 = LinksAnnotations {
-            relation_to_player: Arc::new(BTreeMap::from([(type_rel_1, vec![type_player_1])])),
-            player_to_role: Arc::new(BTreeMap::from([(type_player_1, BTreeSet::from([type_role_1]))])),
-            player_to_relation: Arc::new(BTreeMap::from([(type_player_1, vec![type_rel_1])])),
-            relation_to_role: Arc::new(BTreeMap::from([(type_rel_1, BTreeSet::from([type_role_1]))])),
-        };
-        let expected_annotations = BlockAnnotations::new(
-            BTreeMap::from([
-                (var_relation.into(), Arc::new(BTreeSet::from([type_rel_0, type_rel_1]))),
-                (var_role_type.into(), Arc::new(BTreeSet::from([type_role_0, type_role_1]))),
-                (var_player.into(), Arc::new(BTreeSet::from([type_player_0, type_player_1]))),
-            ]),
-            HashMap::from([
-                (constraint1, ConstraintTypeAnnotations::Links(lra1)),
-                (constraint2, ConstraintTypeAnnotations::Links(lra2)),
-            ]),
-        );
-        assert_eq!(expected_annotations.vertex_annotations(), type_annotations.vertex_annotations());
-        assert_eq!(expected_annotations.constraint_annotations(), type_annotations.constraint_annotations());
-    }
+    use crate::annotation::match_inference::prune_types;
 
     #[test]
     fn test_functions() {
         let (_tmp_dir, storage) = setup_storage();
         let (type_manager, thing_manager) = managers();
 
-        let ((_, type_cat, type_dog), (_, type_catname, _), (type_fears, _, _)) =
+        let ((_, type_cat, type_dog), (_, type_catname, type_dogname), (type_fears, _, _)) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-        let concrete_object_types = [type_cat, type_dog, type_fears];
+        // let concrete_object_types = [type_cat, type_dog, type_fears];
+        let all_concrete_instance_types = [type_cat, type_dog, type_fears, type_catname, type_dogname];
 
         let (with_no_cache, with_local_cache, _with_schema_cache) = [
             FunctionID::Preamble(0),
@@ -291,10 +184,10 @@ pub mod tests {
                 &EmptyAnnotatedFunctionSignatures,
                 false,
             )
-            .unwrap();
+            .unwrap().into_parts().into_iter().exactly_one().unwrap().1;
             assert_eq!(
                 *annotations_without_schema_cache.vertex_annotations(),
-                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(concrete_object_types)))])
+                BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(all_concrete_instance_types)))])
             );
         }
 
@@ -311,9 +204,9 @@ pub mod tests {
             let f_var_animal_type =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
             let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
-            let AnnotatedStage::Match { block_annotations, .. } = &f_annotations.stages[0] else { unreachable!() };
+            let AnnotatedStage::Match { block, block_annotations, .. } = &f_annotations.stages[0] else { unreachable!() };
             assert_eq!(
-                block_annotations.vertex_annotations(),
+                block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations(),
                 &BTreeMap::from([
                     (f_var_animal.into(), Arc::new(BTreeSet::from([type_cat]))),
                     (f_var_animal_type.into(), Arc::new(BTreeSet::from([type_cat]))),
@@ -343,7 +236,7 @@ pub mod tests {
             )
             .unwrap();
             assert_eq!(
-                entry_annotations.vertex_annotations(),
+                entry_annotations.type_annotations_of(entry.conjunction()).unwrap().vertex_annotations(),
                 &BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from([type_cat])))]),
             );
         }
@@ -1520,4 +1413,65 @@ pub mod tests {
             assert_eq!(expected_graph.edges, graph.edges);
         }
     }
+
+    #[test]
+    fn no_labels() {
+        // dog sub animal, owns dog-name; cat sub animal owns cat-name;
+        // cat-name sub animal-name; dog-name sub animal-name;
+        let (_tmp_dir, storage) = setup_storage();
+        let (type_manager, thing_manager) = managers();
+
+        let ((_type_animal, type_cat, type_dog), (_type_name, type_catname, type_dogname), (type_fears, _, _)) =
+            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
+
+        // Case 1: $a has $n;
+        let mut translation_context = TranslationContext::new();
+        let mut value_parameters = ParameterRegistry::new();
+        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
+        let mut conjunction = builder.conjunction_mut();
+        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
+        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
+
+        // Try seeding
+        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
+
+        let block = builder.finish().unwrap();
+        let conjunction = block.conjunction();
+
+        let constraints = conjunction.constraints();
+        let mut expected_graph = TypeInferenceGraph {
+            conjunction,
+            vertices: VertexAnnotations::from([
+                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
+                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
+            ]),
+            edges: vec![expected_edge(
+                &constraints[0],
+                var_animal.into(),
+                var_name.into(),
+                vec![(type_cat, type_catname), (type_dog, type_dogname)],
+            )],
+            nested_disjunctions: vec![],
+            nested_negations: vec![],
+            nested_optionals: vec![],
+        };
+
+        let snapshot = storage.clone().open_snapshot_write();
+        let empty_function_cache = EmptyAnnotatedFunctionSignatures;
+        let seeder = TypeGraphSeedingContext::new(
+            &snapshot,
+            &type_manager,
+            &empty_function_cache,
+            &translation_context.variable_registry,
+            false,
+        );
+        let mut graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
+        prune_types(&mut graph);
+        if expected_graph != graph {
+            // We need this because of non-determinism
+            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
+            assert_eq!(expected_graph, graph)
+        }
+    }
+
 }

@@ -185,7 +185,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
-    let entry_annotations = {
+    let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
         let variable_registry = &translation_context.variable_registry;
@@ -201,6 +201,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
         )
         .unwrap()
     };
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping) =
         position_mapping([var_person], [var_person_type, var_attribute, var_attribute_type]);
@@ -279,7 +280,7 @@ fn unselected_named_vars_counted() {
     conjunction.constraints_mut().add_label(var_person_type, PERSON_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
-    let entry_annotations = {
+    let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
         let variable_registry = &translation_context.variable_registry;
@@ -295,6 +296,7 @@ fn unselected_named_vars_counted() {
         )
         .unwrap()
     };
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping) =
         position_mapping([var_person], [var_attribute, var_person_type, var_attribute_type]);
@@ -386,7 +388,7 @@ fn cartesian_named_counted_checked() {
     conjunction.constraints_mut().add_label(var_email_type, EMAIL_LABEL.clone()).unwrap();
     let entry = builder.finish().unwrap();
 
-    let entry_annotations = {
+    let block_annotations = {
         let snapshot: ReadSnapshot<WALClient> = storage.clone().open_snapshot_read();
         let (type_manager, _) = load_managers(storage.clone(), None);
         let variable_registry = &translation_context.variable_registry;
@@ -402,6 +404,7 @@ fn cartesian_named_counted_checked() {
         )
         .unwrap()
     };
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping) = position_mapping(
         [var_person, var_age],

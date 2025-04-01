@@ -122,7 +122,7 @@ fn traverse_isa_unbounded_sorted_thing() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -132,6 +132,7 @@ fn traverse_isa_unbounded_sorted_thing() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
 
@@ -199,7 +200,7 @@ fn traverse_isa_unbounded_sorted_type() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -209,6 +210,7 @@ fn traverse_isa_unbounded_sorted_type() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
 
@@ -280,7 +282,7 @@ fn traverse_isa_bounded_thing() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -290,6 +292,7 @@ fn traverse_isa_bounded_thing() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_thing, var_type_to], [var_type_from]);
@@ -375,7 +378,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -385,6 +388,7 @@ fn traverse_isa_reverse_unbounded_sorted_thing() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
 
@@ -452,7 +456,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -462,6 +466,7 @@ fn traverse_isa_reverse_unbounded_sorted_type() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_dog, var_dog_type], []);
 
@@ -533,7 +538,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -543,6 +548,7 @@ fn traverse_isa_reverse_bounded_type_exact() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_thing_from, var_type, var_thing_to], []);
@@ -630,7 +636,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -640,6 +646,7 @@ fn traverse_isa_reverse_bounded_type_subtype() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_thing_from, var_type, var_thing_to], []);
@@ -727,7 +734,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -737,6 +744,7 @@ fn traverse_isa_reverse_fixed_type_exact() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_thing], []);
     // Plan
@@ -805,7 +813,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -815,6 +823,7 @@ fn traverse_isa_reverse_fixed_type_subtype() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping([var_thing], []);
 
