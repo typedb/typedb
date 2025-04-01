@@ -286,7 +286,11 @@ impl TypeInferenceGraph<'_> {
 
         let vertex_annotations = vertices.into_iter().map(|(variable, types)| {
             (variable.into(), Arc::new(types))
-        }).collect();
+        }).collect::<BTreeMap<_, _>>();
+        debug_assert!(conjunction.constraints().iter().flat_map(|c| c.ids()).all(|var| {
+            vertex_annotations.contains_key(&var.into())
+        }));
+
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
 

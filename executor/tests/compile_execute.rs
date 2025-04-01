@@ -1021,5 +1021,5 @@ fn test_mismatched_input_types() {
         println!()
     }
 
-   todo!("Add some assert");
+   debug_assert_eq!(rows.len(), 3);
 }

@@ -178,10 +178,13 @@ fn make_builder<'a>(
     let mut plan_builder =
         ConjunctionPlanBuilder::new(conjunction.required_inputs(block_context).collect(), conjunction_annotations, statistics);
 
+
+    #[cfg(debug_assertions)] // Break on purpose. We should fix conjunction.local_variables()
+    let TMP__local_variables = conjunction.constraints().iter().flat_map(|c| c.ids()).dedup();
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         shared_variables.iter().copied(),
-        conjunction.local_variables(block_context),
+        TMP__local_variables, // conjunction.local_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
