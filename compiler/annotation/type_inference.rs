@@ -96,7 +96,7 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_annotations::{ConstraintTypeAnnotations, LinksAnnotations, TypeAnnotations},
+        type_annotations::{ConstraintTypeAnnotations, LinksAnnotations, BlockAnnotations},
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };
@@ -178,7 +178,7 @@ pub mod tests {
         let mut vertex_annotations = BTreeMap::new();
         let mut constraint_annotations = HashMap::new();
         graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
-        let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
+        let type_annotations = BlockAnnotations::new(vertex_annotations, constraint_annotations);
 
         let lra1 = LinksAnnotations {
             relation_to_player: Arc::new(BTreeMap::from([(type_rel_0, vec![type_player_0])])),
@@ -192,7 +192,7 @@ pub mod tests {
             player_to_relation: Arc::new(BTreeMap::from([(type_player_1, vec![type_rel_1])])),
             relation_to_role: Arc::new(BTreeMap::from([(type_rel_1, BTreeSet::from([type_role_1]))])),
         };
-        let expected_annotations = TypeAnnotations::new(
+        let expected_annotations = BlockAnnotations::new(
             BTreeMap::from([
                 (var_relation.into(), Arc::new(BTreeSet::from([type_rel_0, type_rel_1]))),
                 (var_role_type.into(), Arc::new(BTreeSet::from([type_role_0, type_role_1]))),

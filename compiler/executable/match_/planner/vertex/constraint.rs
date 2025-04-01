@@ -12,9 +12,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::constraint::{
-    Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value,
-};
+use ir::pattern::constraint::{Constraint, Has, Iid, IndexedRelation, Isa, Kind, Label, Links, Owns, Plays, Relates, RoleName, Sub, Value};
 use itertools::Itertools;
 
 use crate::{

@@ -21,6 +21,7 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::match_::instructions::{CheckInstruction, Inputs},
 };
+use crate::annotation::type_annotations::LeftRightAnnotations;
 
 #[derive(Debug, Clone)]
 pub struct TypeListInstruction<ID> {

@@ -17,9 +17,10 @@ use ir::pattern::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    annotation::type_annotations::{ConstraintTypeAnnotations, IndexedRelationAnnotations, TypeAnnotations},
+    annotation::type_annotations::{ConstraintTypeAnnotations, IndexedRelationAnnotations, BlockAnnotations},
     transformation::StaticOptimiserError,
 };
+use crate::annotation::type_annotations::TypeAnnotations;
 
 /// Precondition:
 ///   1) $r links $x (role: $role1)
@@ -36,7 +37,7 @@ use crate::{
 ///   3) $x indexed_relation $y via $r ($role1, $role2)
 pub fn relation_index_transformation(
     conjunction: &mut Conjunction,
-    type_annotations: &mut TypeAnnotations,
+    block_annotations: &mut BlockAnnotations,
     type_manager: &TypeManager,
     snapshot: &impl ReadableSnapshot,
 ) -> Result<(), StaticOptimiserError> {
@@ -51,6 +52,7 @@ pub fn relation_index_transformation(
         }
     }
 
+    let type_annotations = block_annotations.type_annotations_mut_of(conjunction).unwrap();
     while let Some(relation) = candidates.keys().next() {
         let relation = relation.clone(); // release borrow on candidates
         let (links_index, other_links_indices) = candidates.remove(&relation).unwrap();
@@ -76,14 +78,14 @@ pub fn relation_index_transformation(
         match nested {
             NestedPattern::Disjunction(disjunction) => {
                 for branch_conjunction in disjunction.conjunctions_mut() {
-                    relation_index_transformation(branch_conjunction, type_annotations, type_manager, snapshot)?;
+                    relation_index_transformation(branch_conjunction, block_annotations, type_manager, snapshot)?;
                 }
             }
             NestedPattern::Negation(negation) => {
-                relation_index_transformation(negation.conjunction_mut(), type_annotations, type_manager, snapshot)?;
+                relation_index_transformation(negation.conjunction_mut(), block_annotations, type_manager, snapshot)?;
             }
             NestedPattern::Optional(optional) => {
-                relation_index_transformation(optional.conjunction_mut(), type_annotations, type_manager, snapshot)?;
+                relation_index_transformation(optional.conjunction_mut(), block_annotations, type_manager, snapshot)?;
             }
         }
     }

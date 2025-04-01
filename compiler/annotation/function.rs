@@ -464,8 +464,9 @@ fn annotate_arguments(
             let body_variable_annotations = annotated_stages
                 .iter()
                 .filter_map(|stage| {
-                    if let AnnotatedStage::Match { block_annotations, .. } = stage {
-                        block_annotations.vertex_annotations_of(&Vertex::Variable(var)).cloned()
+                    if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
+                        let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
+                        root_annotations.vertex_annotations_of(&Vertex::Variable(var)).cloned()
                     } else {
                         None
                     }

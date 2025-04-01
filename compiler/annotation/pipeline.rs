@@ -10,6 +10,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
@@ -46,13 +47,14 @@ use crate::{
             AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
         },
         match_inference::infer_types,
-        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
+        type_annotations::{ConstraintTypeAnnotations, BlockAnnotations},
         type_inference::resolve_value_types,
         write_type_check::check_type_combinations_for_write,
         AnnotationError,
     },
     executable::{reduce::ReduceInstruction, update},
 };
+use crate::annotation::type_annotations::TypeAnnotations;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
@@ -64,7 +66,7 @@ pub struct AnnotatedPipeline {
 pub enum AnnotatedStage {
     Match {
         block: Block,
-        block_annotations: TypeAnnotations,
+        block_annotations: BlockAnnotations,
         // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
         executable_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         source_span: Option<Span>,
@@ -81,7 +83,7 @@ pub enum AnnotatedStage {
     },
     Put {
         block: Block,
-        match_annotations: TypeAnnotations,
+        match_annotations: BlockAnnotations,
         insert_annotations: TypeAnnotations,
         source_span: Option<Span>,
     },
@@ -215,10 +217,10 @@ pub(crate) fn annotate_pipeline_stages(
     for stage in translated_stages {
         let running_constraint_annotations = latest_match_index
             .map(|idx| {
-                let AnnotatedStage::Match { block_annotations, .. } = annotated_stages.get(idx).unwrap() else {
+                let AnnotatedStage::Match { block_annotations, block, .. } = annotated_stages.get(idx).unwrap() else {
                     unreachable!("LatestMatchIndex will always be a match");
                 };
-                block_annotations.constraint_annotations()
+                block_annotations.type_annotations_of(block.conjunction()).unwrap().constraint_annotations()
             })
             .unwrap_or(&empty_constraint_annotations);
         let annotated_stage = annotate_stage(
@@ -263,7 +265,8 @@ fn annotate_stage(
                 false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+            let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
+            root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
                     running_variable_annotations.insert(var, types.clone());
                 }
@@ -375,7 +378,8 @@ fn annotate_stage(
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
             // Update running annotations based on match annotations as they will be less strict.
-            match_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+            let root_annotations = match_annotations.type_annotations_of(block.conjunction()).unwrap();
+            root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
                     running_variable_annotations.insert(var, types.clone());
                 }
@@ -494,7 +498,7 @@ fn annotate_write_stage(
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     block: &Block,
 ) -> Result<TypeAnnotations, AnnotationError> {
-    let annotations = infer_types(
+    let block_annotations = infer_types(
         snapshot,
         block,
         variable_registry,
@@ -504,35 +508,39 @@ fn annotate_write_stage(
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-
+    let root_annotations_map = block_annotations.into_parts();
+    debug_assert!(1 == root_annotations_map.len()); // Break if we introduce nested-patterns in writes.
+    let root_annotations = root_annotations_map.into_iter().map(|(_, annotations)| annotations).exactly_one()
+        .expect("Writes have only one conjunction");
     // Extend running annotations for variables introduced in this stage.
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
                 isa.thing().as_variable().unwrap(),
-                annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
+                root_annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
             );
         }
         Constraint::RoleName(role_name) => {
             running_variable_annotations.insert(
                 role_name.type_().as_variable().unwrap(),
-                annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
+                root_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
             );
         }
         Constraint::Links(links) => {
             if let Some(variable) = links.role_type().as_variable() {
                 if !running_variable_annotations.contains_key(&variable)
-                    && annotations.vertex_annotations_of(links.role_type()).is_some()
+                    && root_annotations.vertex_annotations_of(links.role_type()).is_some()
                 {
                     running_variable_annotations
-                        .insert(variable, annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
+                        .insert(variable, root_annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
                 }
             }
         }
         _ => (),
     });
-
-    Ok(annotations)
+    // Break if we introduce nested patterns in writes.
+    debug_assert!(block.conjunction().nested_patterns().is_empty());
+    Ok(root_annotations)
 }
 
 pub fn resolve_reducer_by_value_type(

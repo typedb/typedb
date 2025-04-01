@@ -17,6 +17,7 @@ use ir::{
     pattern::{conjunction::Conjunction, nested_pattern::NestedPattern},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
+use ir::pattern::Vertex;
 
 use crate::{
     annotation::{
@@ -217,8 +218,8 @@ pub(crate) fn compile_pipeline_stages(
                 &stage,
             )?,
         };
-        if let AnnotatedStage::Match { block_annotations, .. } = stage {
-            last_match_annotations = Some(block_annotations.vertex_annotations())
+        if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
+            last_match_annotations = Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
         }
         executable_stages.push(executable_stage);
     }

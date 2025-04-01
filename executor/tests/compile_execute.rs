@@ -134,7 +134,7 @@ fn test_has_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -234,7 +234,7 @@ fn test_expression_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -322,7 +322,7 @@ fn test_links_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -417,7 +417,7 @@ fn test_links_intersection() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -503,7 +503,7 @@ fn test_negation_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -610,7 +610,7 @@ fn test_forall_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -704,7 +704,7 @@ fn test_named_var_select() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -797,7 +797,7 @@ fn test_disjunction_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -894,7 +894,7 @@ fn test_disjunction_planning_nested_negations() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block,
+        &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -932,4 +932,94 @@ fn test_disjunction_planning_nested_negations() {
     }
 
     assert_eq!(rows.len(), 2);
+}
+
+#[test]
+fn test_mismatched_input_types() {
+    let (_tmp_dir, mut storage) = create_core_storage();
+    setup_concept_storage(&mut storage);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let schema = "define
+        attribute age value integer;
+        attribute name value string;
+        relation friendship, relates friend, owns age @card(0..);
+        entity person, owns age @card(0..), owns name @card(0..), plays friendship:friend;
+    ";
+    let data = "insert
+        $p1 isa person, has name 'John', has age 25;
+        $p2 isa person, has name 'James', has age 27;
+        $_ isa friendship, links (friend: $p1, friend: $p2), has age 5;
+    ";
+    let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+
+    let query = "match
+        $x has age $age;
+        { $x links (friend: $p); }  or
+        { $x has name $n; };
+    ";
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+
+    // IR
+    let empty_function_index = HashMapFunctionSignatureIndex::empty();
+    let mut translation_context = TranslationContext::new();
+    let mut value_parameters = ParameterRegistry::new();
+    let builder =
+        translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
+    let block = builder.finish().unwrap();
+
+    // Executor
+    let snapshot = Arc::new(storage.clone().open_snapshot_read());
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+
+    let entry_annotations = infer_types(
+        &*snapshot,
+        &block,
+        &translation_context.variable_registry,
+        &type_manager,
+        &BTreeMap::new(),
+        &EmptyAnnotatedFunctionSignatures,
+        false,
+    )
+        .unwrap();
+
+
+    let match_executable = compiler::executable::match_::planner::compile(
+        &block, &BTreeMap::new(),
+        &HashMap::new(),
+        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &entry_annotations,
+        &translation_context.variable_registry,
+        &HashMap::new(),
+        &statistics,
+        &ExecutableFunctionRegistry::empty(),
+    ).unwrap();
+    let executor = MatchExecutor::new(
+        &match_executable,
+        &snapshot,
+        &thing_manager,
+        MaybeOwnedRow::empty(),
+        Arc::new(ExecutableFunctionRegistry::empty()),
+        &QueryProfile::new(false),
+    )
+        .unwrap();
+
+    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
+    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+
+    let rows = iterator
+        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+        .into_iter()
+        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
+        .try_collect::<_, Vec<_>, _>()
+        .unwrap();
+
+    for row in &rows {
+        for value in row {
+            print!("{}, ", value);
+        }
+        println!()
+    }
+
+   todo!("Add some assert");
 }

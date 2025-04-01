@@ -18,14 +18,16 @@ use ir::{
     pipeline::{block::Block, VariableRegistry},
 };
 use itertools::{chain, Itertools};
+use ir::pattern::{Scope, ScopeId};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     function::AnnotatedFunctionSignatures,
-    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
+    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, BlockAnnotations},
     type_seeder::TypeGraphSeedingContext,
     TypeInferenceError,
 };
+use crate::annotation::type_annotations::TypeAnnotations;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
@@ -104,7 +106,7 @@ pub fn infer_types(
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     is_write_stage: bool,
-) -> Result<TypeAnnotations, TypeInferenceError> {
+) -> Result<BlockAnnotations, TypeInferenceError> {
     let graph = compute_type_inference_graph(
         snapshot,
         block,
@@ -114,20 +116,9 @@ pub fn infer_types(
         annotated_function_signatures,
         is_write_stage,
     )?;
-    let mut vertex_annotations = BTreeMap::new();
-    let mut constraint_annotations = HashMap::new();
-    graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
-    let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
-    debug_assert!(block.block_context().referenced_variables().all(|var| {
-        match variable_registry.get_variable_category(var) {
-            None => {
-                unreachable!("Safe to ignore. But can we know the ValueTypeCategory of an assignment at translation?")
-            }
-            Some(VariableCategory::Value) | Some(VariableCategory::ValueList) => true,
-            Some(_) => type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some(),
-        }
-    }));
-    Ok(type_annotations)
+    let mut type_annotations_by_scope = HashMap::new();
+    graph.collect_type_annotations(&mut type_annotations_by_scope);
+    Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
 pub(crate) fn compute_type_inference_graph<'graph>(
@@ -268,13 +259,9 @@ impl TypeInferenceGraph<'_> {
         is_modified
     }
 
-    pub(crate) fn collect_type_annotations(
-        self,
-        vertex_annotations: &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<TypeAnnotation>>>,
-        constraint_annotations: &mut HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
-    ) {
-        let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, .. } = self;
-
+    pub(crate) fn collect_type_annotations(self, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
+        let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, conjunction } = self;
+        let mut constraint_annotations = HashMap::new();
         let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
             let TypeInferenceEdge { constraint, left_to_right, right_to_left, .. } = edge;
@@ -297,15 +284,17 @@ impl TypeInferenceGraph<'_> {
             }
         });
 
-        vertices.into_iter().for_each(|(variable, types)| {
-            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types));
-        });
+        let vertex_annotations = vertices.into_iter().map(|(variable, types)| {
+            (variable.into(), Arc::new(types))
+        }).collect();
+        let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
+        type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
 
         chain(
             chain(nested_negations, nested_optionals),
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
-        .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
+        .for_each(|nested| nested.collect_type_annotations(type_annotations_by_scope));
     }
 
     fn check_thing_constraints_satisfiable(

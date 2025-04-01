@@ -10,7 +10,35 @@ use std::{
 };
 
 use answer::{variable::Variable, Type};
-use ir::pattern::{constraint::Constraint, Vertex};
+use ir::pattern::{constraint::Constraint, Scope, ScopeId, Vertex};
+use ir::pattern::conjunction::Conjunction;
+
+#[derive(Debug, Clone)]
+pub struct BlockAnnotations {
+    by_scope: HashMap<ScopeId, TypeAnnotations>,
+}
+
+impl BlockAnnotations {
+    pub(crate) fn new(by_scope: HashMap<ScopeId, TypeAnnotations>) -> Self {
+        Self { by_scope }
+    }
+    pub fn type_annotations_of_scope(&self, scope_id: ScopeId) -> Option<&TypeAnnotations> {
+        self.by_scope.get(&scope_id)
+    }
+
+    pub fn type_annotations_of(&self, conjunction: &Conjunction) -> Option<&TypeAnnotations> {
+        self.type_annotations_of_scope(conjunction.scope_id())
+    }
+
+    pub fn type_annotations_mut_of(&mut self, conjunction: &Conjunction) -> Option<&mut TypeAnnotations> {
+        self.by_scope.get_mut(&conjunction.scope_id())
+    }
+
+    pub(crate) fn into_parts(self) -> HashMap<ScopeId, TypeAnnotations> {
+        self.by_scope
+    }
+
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeAnnotations {

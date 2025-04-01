@@ -19,7 +19,7 @@ use tracing::{debug, trace};
 use ir::pattern::Vertex;
 
 use crate::{
-    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
+    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
     executable::{
         function::FunctionCallCostProvider,
         match_::{
@@ -52,7 +52,7 @@ pub fn compile(
     input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
     input_variables: &HashMap<Variable, VariablePosition>,
     selected_variables: &HashSet<Variable>,
-    type_annotations: &TypeAnnotations,
+    type_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
