@@ -507,9 +507,11 @@ fn annotate_write_stage(
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-    let root_annotations_map = block_annotations.into_parts();
-    debug_assert!(1 == root_annotations_map.len()); // Break if we introduce nested-patterns in writes.
-    let root_annotations = root_annotations_map
+    let annotations_by_scope = block_annotations.into_parts();
+
+    // Break if we introduce nested patterns in writes.
+    debug_assert!(block.conjunction().nested_patterns().is_empty() && 1 == annotations_by_scope.len());
+    let annotations = annotations_by_scope
         .into_iter()
         .map(|(_, annotations)| annotations)
         .exactly_one()
@@ -519,30 +521,28 @@ fn annotate_write_stage(
         Constraint::Isa(isa) => {
             running_variable_annotations.insert(
                 isa.thing().as_variable().unwrap(),
-                root_annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
+                annotations.vertex_annotations_of(isa.thing()).unwrap().clone(),
             );
         }
         Constraint::RoleName(role_name) => {
             running_variable_annotations.insert(
                 role_name.type_().as_variable().unwrap(),
-                root_annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
+                annotations.vertex_annotations_of(role_name.type_()).unwrap().clone(),
             );
         }
         Constraint::Links(links) => {
             if let Some(variable) = links.role_type().as_variable() {
                 if !running_variable_annotations.contains_key(&variable)
-                    && root_annotations.vertex_annotations_of(links.role_type()).is_some()
+                    && annotations.vertex_annotations_of(links.role_type()).is_some()
                 {
                     running_variable_annotations
-                        .insert(variable, root_annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
+                        .insert(variable, annotations.vertex_annotations_of(links.role_type()).unwrap().clone());
                 }
             }
         }
         _ => (),
     });
-    // Break if we introduce nested patterns in writes.
-    debug_assert!(block.conjunction().nested_patterns().is_empty());
-    Ok(root_annotations)
+    Ok(annotations)
 }
 
 pub fn resolve_reducer_by_value_type(

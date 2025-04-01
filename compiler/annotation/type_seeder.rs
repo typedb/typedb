@@ -306,6 +306,12 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
         context: &BlockContext,
     ) -> Result<bool, Box<ConceptReadError>> {
+        // TODO: We could look for constraints (instead of variable categories) as a basis for annotation.
+        //  We'd need TypeManager methods to iterate over all owns / relates / plays declarations.
+
+        // If any variables remain that aren't in any producing constraint, seed them with all types
+        //  TODO: This isn't very uncommon - when all disjunction branches produce a variable.
+        //   Ideally, we'd use annotations from the disjunction.
         let unannotated_var = self.local_variables(context, graph.conjunction.scope_id()).find(|&var| {
             let vertex = Vertex::Variable(var);
             self.variable_registry.get_variable_category(var).unwrap_or(VariableCategory::Value)

@@ -18,7 +18,7 @@ use ir::pattern::{
 use itertools::Itertools;
 
 use crate::{
-    annotation::type_annotations::{LeftRightAnnotations, TypeAnnotations},
+    annotation::type_annotations::TypeAnnotations,
     executable::match_::instructions::{CheckInstruction, Inputs},
 };
 

@@ -16,7 +16,7 @@ use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{
-    annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
+    annotation::type_annotations::TypeAnnotations,
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{

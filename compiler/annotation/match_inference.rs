@@ -119,7 +119,7 @@ pub fn infer_types(
         is_write_stage,
     )?;
     let mut type_annotations_by_scope = HashMap::new();
-    graph.collect_type_annotations(&mut type_annotations_by_scope);
+    graph.collect_type_annotations(variable_registry, &mut type_annotations_by_scope);
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
@@ -261,7 +261,7 @@ impl TypeInferenceGraph<'_> {
         is_modified
     }
 
-    pub(crate) fn collect_type_annotations(self, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
+    pub(crate) fn collect_type_annotations(self, _variable_registry: &VariableRegistry, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
         let TypeInferenceGraph {
             vertices,
             edges,
@@ -300,8 +300,12 @@ impl TypeInferenceGraph<'_> {
         debug_assert!(conjunction
             .constraints()
             .iter()
-            .flat_map(|c| c.ids())
-            .all(|var| { vertex_annotations.contains_key(&var.into()) }));
+            .flat_map(|constraint| constraint.ids())
+            .filter(|variable| match _variable_registry.get_variable_category(*variable) {
+                None => false,
+                Some(VariableCategory::Value | VariableCategory::ValueList) => false,
+                Some(_) => true,
+            }).all(|var| { vertex_annotations.contains_key(&var.into()) }));
 
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
@@ -310,7 +314,7 @@ impl TypeInferenceGraph<'_> {
             chain(nested_negations, nested_optionals),
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
-        .for_each(|nested| nested.collect_type_annotations(type_annotations_by_scope));
+        .for_each(|nested| nested.collect_type_annotations(_variable_registry, type_annotations_by_scope));
     }
 
     fn check_thing_constraints_satisfiable(
