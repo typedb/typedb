@@ -9,6 +9,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use std::collections::{BTreeMap, BTreeSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -169,7 +170,7 @@ pub fn compile_stages_and_fetch(
         statistics,
         variable_registry,
         available_functions,
-        annotated_stages,
+        &annotated_stages,
         input_variables.iter().copied(),
         None,
     )?;
@@ -190,29 +191,35 @@ pub(crate) fn compile_pipeline_stages(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
     call_cost_provider: &impl FunctionCallCostProvider,
-    annotated_stages: Vec<AnnotatedStage>,
+    annotated_stages: &[AnnotatedStage],
     input_variables: impl Iterator<Item = Variable>,
     function_return: Option<&[Variable]>,
 ) -> Result<(HashMap<Variable, VariablePosition>, Vec<ExecutableStage>, Cost), ExecutableCompilationError> {
     let mut executable_stages: Vec<ExecutableStage> = Vec::with_capacity(annotated_stages.len());
     let input_variable_positions =
         input_variables.enumerate().map(|(i, var)| (var, VariablePosition::new(i as u32))).collect();
-
+    let mut last_match_annotations = None;
     for stage in annotated_stages {
         // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
             Some(row_mapping) => {
-                compile_stage(statistics, variable_registry, call_cost_provider, &row_mapping, function_return, stage)?
+                compile_stage(
+                    statistics, variable_registry, call_cost_provider, &row_mapping, last_match_annotations.unwrap_or(&BTreeMap::new()), function_return, &stage
+                )?
             }
             None => compile_stage(
                 statistics,
                 variable_registry,
                 call_cost_provider,
                 &input_variable_positions,
+                last_match_annotations.unwrap_or(&BTreeMap::new()),
                 function_return,
-                stage,
+                &stage,
             )?,
         };
+        if let AnnotatedStage::Match { block_annotations, .. } = stage {
+            last_match_annotations = Some(block_annotations.vertex_annotations())
+        }
         executable_stages.push(executable_stage);
     }
     let total_cost =
@@ -235,16 +242,18 @@ fn compile_stage(
     variable_registry: &VariableRegistry,
     call_cost_provider: &impl FunctionCallCostProvider,
     input_variables: &HashMap<Variable, VariablePosition>,
+    input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
     function_return: Option<&[Variable]>,
-    annotated_stage: AnnotatedStage,
+    annotated_stage: &AnnotatedStage,
 ) -> Result<ExecutableStage, ExecutableCompilationError> {
-    match &annotated_stage {
+    match annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(input_variables.keys().copied());
             selected_variables.extend(block.conjunction().named_producible_variables(block.block_context()));
             let plan = crate::executable::match_::planner::compile(
                 block,
+                input_variable_annotations,
                 input_variables,
                 &selected_variables,
                 block_annotations,
@@ -285,6 +294,7 @@ fn compile_stage(
             selected_variables.extend(block.conjunction().named_producible_variables(block.block_context()));
             let match_plan = crate::executable::match_::planner::compile(
                 block,
+                input_variable_annotations,
                 input_variables,
                 &selected_variables,
                 match_annotations,

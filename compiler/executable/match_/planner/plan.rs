@@ -12,6 +12,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
 };
+use std::collections::{BTreeMap, BTreeSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -1313,6 +1314,7 @@ impl fmt::Debug for ConjunctionPlan<'_> {
 impl ConjunctionPlan<'_> {
     pub(super) fn lower(
         &self,
+        input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         input_variables: impl IntoIterator<Item = Variable> + Clone,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
@@ -1321,10 +1323,10 @@ impl ConjunctionPlan<'_> {
         let mut match_builder = MatchExecutableBuilder::new(
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
-            input_variables.into_iter().collect(),
+            input_variables.clone().into_iter().collect(),
             self.planner_statistics,
         );
-
+        self.may_make_input_check_step(&mut match_builder, input_variables.into_iter(), input_variable_annotations, variable_registry);
         for &index in &self.ordering {
             match index {
                 VertexId::Variable(var) => {
@@ -1459,6 +1461,7 @@ impl ConjunctionPlan<'_> {
                         .clone() // FIXME
                         .plan(match_builder.produced_so_far.iter().filter(|&&v| v != variable).copied())?
                         .lower(
+                            self.type_annotations.vertex_annotations(),
                             match_builder.row_variables().iter().copied(),
                             match_builder.current_outputs.iter().copied(),
                             match_builder.position_mapping(),
@@ -1530,6 +1533,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
+                    self.type_annotations.vertex_annotations(),
                     match_builder.row_variables().iter().copied(),
                     match_builder.selected_variables.iter().copied(),
                     match_builder.position_mapping(),
@@ -1610,6 +1614,7 @@ impl ConjunctionPlan<'_> {
                     .clone() // FIXME
                     .plan(match_builder.position_mapping().keys().copied())?
                     .lower(
+                        self.type_annotations.vertex_annotations(),
                         match_builder.row_variables().iter().copied(),
                         match_builder.current_outputs.iter().copied(),
                         match_builder.position_mapping(),
@@ -1934,6 +1939,30 @@ impl ConjunctionPlan<'_> {
     pub(super) fn cost(&self) -> Cost {
         self.planner_statistics.query_cost
     }
+
+    fn may_make_input_check_step(&self, match_builder:&mut MatchExecutableBuilder, input_variables: impl Iterator<Item=Variable>, input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>, variable_registry: &VariableRegistry) {
+        let mut pushed_any = false;
+        input_variables.filter_map(|variable| {
+            let vertex = variable.clone().into();
+            let local_annotations = self.type_annotations.vertex_annotations_of(&vertex)?;
+            input_variable_annotations.get(&vertex).unwrap()
+                .iter().any(|type_| !local_annotations.contains(type_))
+                .then(|| (variable, local_annotations.clone()))
+        }).for_each(|(variable, types)| {
+            let category = variable_registry.get_variable_category(variable).unwrap();
+            debug_assert!(category.is_category_thing() || category.is_category_type());
+            let executor_var = match_builder.position(variable);
+            let check = match category.is_category_thing() {
+                true => CheckInstruction::ThingTypeList { thing_var: executor_var, types },
+                false => CheckInstruction::TypeList { type_var: executor_var, types },
+            };
+            match_builder.push_check(&[variable], check);
+            pushed_any = true;
+        });
+        if pushed_any {
+            match_builder.finish_one();
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1978,6 +2007,7 @@ pub(super) struct DisjunctionPlan<'a> {
 impl DisjunctionPlan<'_> {
     fn lower(
         &self,
+        input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         disjunction_inputs: impl IntoIterator<Item = Variable> + Clone,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
@@ -1987,6 +2017,7 @@ impl DisjunctionPlan<'_> {
         let mut assigned_positions = assigned_positions.clone();
         for branch in &self.branches {
             let lowered_branch = branch.lower(
+                input_variable_annotations,
                 disjunction_inputs.clone(),
                 selected_variables.clone(),
                 &assigned_positions,

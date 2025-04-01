@@ -561,6 +561,10 @@ pub enum CheckInstruction<ID> {
         type_var: ID,
         types: Arc<BTreeSet<Type>>,
     },
+    ThingTypeList {
+        thing_var: ID,
+        types: Arc<BTreeSet<Type>>,
+    },
     Iid {
         var: ID,
         iid: ParameterID,
@@ -628,6 +632,7 @@ impl<ID: IrID> CheckInstruction<ID> {
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> CheckInstruction<T> {
         match self {
             Self::TypeList { type_var, types } => CheckInstruction::TypeList { type_var: mapping[&type_var], types },
+            Self::ThingTypeList { thing_var, types } => CheckInstruction::ThingTypeList { thing_var: mapping[&thing_var], types },
             Self::Iid { var, iid } => CheckInstruction::Iid { var: mapping[&var], iid },
             Self::Sub { sub_kind: kind, subtype, supertype } => CheckInstruction::Sub {
                 sub_kind: kind,
@@ -684,6 +689,13 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
         match self {
             Self::TypeList { type_var, types } => {
                 write!(f, "{type_var} type (")?;
+                for type_ in types.as_ref() {
+                    write!(f, "{type_}, ")?;
+                }
+                write!(f, ")")?;
+            }
+            Self::ThingTypeList { thing_var, types } => {
+                write!(f, "{thing_var} thing_is_of_type (")?;
                 for type_ in types.as_ref() {
                     write!(f, "{type_}, ")?;
                 }
