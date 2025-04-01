@@ -33,7 +33,7 @@ use crate::annotation::{
     type_inference::resolve_value_types,
 };
 
-type AssignmentIndex<'a> = HashMap<Variable, Vec<(ScopeId, &'a ExpressionBinding<Variable>)>>;
+type AssignmentIndex<'a> = HashMap<Variable, Vec<(&'a Conjunction, &'a ExpressionBinding<Variable>)>>;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block Block,
@@ -111,7 +111,7 @@ fn index_expressions_conjunction<'block, Snapshot: ReadableSnapshot>(
 ) -> Result<(), Box<ExpressionCompileError>> {
     for expression_binding in conjunction.constraints().iter().filter_map(|c| c.as_expression_binding()) {
         let left = expression_binding.left().as_variable().unwrap();
-        if index.insert(left, vec![(conjunction.scope_id(), expression_binding)]).is_some() {
+        if index.insert(left, vec![(conjunction, expression_binding)]).is_some() {
             return Err(Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
                 variable: context.variable_name(&left),
                 source_span: expression_binding.source_span(),
@@ -169,7 +169,7 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
 #[allow(clippy::map_entry, reason = "false positive, this is not a trivial `contains_key()` followed by `insert()`")]
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
-    scope_id: ScopeId,
+    in_conjunction: &Conjunction,
     variable: Variable,
     expression_assignments: &AssignmentIndex<'a>,
     assignment_span: Option<Span>,
@@ -178,7 +178,9 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
         Ok(value.clone())
     } else if let Some(value) = try_value_type_from_assignments(context, variable, expression_assignments)? {
         Ok(value)
-    } else if let Some(value) = try_value_type_from_type_annotations(context, scope_id, variable, assignment_span)? {
+    } else if let Some(value) =
+        try_value_type_from_type_annotations(context, in_conjunction, variable, assignment_span)?
+    {
         Ok(value)
     } else {
         Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
@@ -201,9 +203,9 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
             }));
         }
         let mut return_types = HashSet::new();
-        for (scope_id, assignment) in assignments_for_variable {
+        for (conjunction, assignment) in assignments_for_variable {
             assignment.expression().variables().try_for_each(|var| {
-                resolve_type_for_variable(context, *scope_id, var, expression_assignments, assignment.source_span())
+                resolve_type_for_variable(context, conjunction, var, expression_assignments, assignment.source_span())
                     .map(|_| ())
             })?;
             let compiled = ExpressionCompilationContext::compile(
@@ -232,11 +234,11 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
 
 fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'_, Snapshot>,
-    scope_id: ScopeId,
+    in_conjunction: &Conjunction,
     variable: Variable,
     source_span: Option<Span>,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
-    let type_annotations = context.block_annotations.type_annotations_of_scope(scope_id).unwrap();
+    let type_annotations = context.block_annotations.type_annotations_of(in_conjunction).unwrap();
     let Some(annotations) = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) else {
         return Ok(None);
     };

@@ -261,7 +261,11 @@ impl TypeInferenceGraph<'_> {
         is_modified
     }
 
-    pub(crate) fn collect_type_annotations(self, _variable_registry: &VariableRegistry, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
+    pub(crate) fn collect_type_annotations(
+        self,
+        _variable_registry: &VariableRegistry,
+        type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
+    ) {
         let TypeInferenceGraph {
             vertices,
             edges,
@@ -305,7 +309,8 @@ impl TypeInferenceGraph<'_> {
                 None => false,
                 Some(VariableCategory::Value | VariableCategory::ValueList) => false,
                 Some(_) => true,
-            }).all(|var| { vertex_annotations.contains_key(&var.into()) }));
+            })
+            .all(|var| { vertex_annotations.contains_key(&var.into()) }));
 
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
