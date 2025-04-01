@@ -334,32 +334,28 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         category: VariableCategory,
     ) -> Result<BTreeSet<TypeAnnotation>, Box<ConceptReadError>> {
-        let (include_entities, include_relations, include_attributes, include_roles) = match category {
-            VariableCategory::Type => (true, true, true, true),
-            VariableCategory::ThingType => (true, true, true, false),
-            VariableCategory::AttributeType => (false, false, true, false),
-            VariableCategory::RoleType => (false, false, false, true),
-            VariableCategory::ThingList | VariableCategory::Thing => (true, true, true, false),
-            VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),
-            VariableCategory::AttributeList | VariableCategory::Attribute => (false, false, true, false),
-            VariableCategory::ValueList | VariableCategory::Value => (false, false, true, false),
+        // We can't refine based on categories since categories are global.
+        // Had categories been per scope, we could indeed have been more specific.
+        let (include_thing_types, include_role_types) = match category {
+            VariableCategory::Type => (true, true),
+            VariableCategory::RoleType => (false, true),
+            VariableCategory::ValueList | VariableCategory::Value => (false, false),
+            VariableCategory::ThingType  | VariableCategory::AttributeType
+            | VariableCategory::ThingList | VariableCategory::Thing
+            | VariableCategory::ObjectList | VariableCategory::Object
+            | VariableCategory::AttributeList | VariableCategory::Attribute => (true, false),
             VariableCategory::AttributeOrValue => unreachable!("Insufficiently bound variable!"),
         };
         let mut annotations = BTreeSet::new();
 
         let snapshot = self.snapshot;
         let type_manager = self.type_manager;
-
-        if include_entities {
+        if include_thing_types {
             annotations.extend(type_manager.get_entity_types(snapshot)?.into_iter().map(TypeAnnotation::Entity));
-        }
-        if include_relations {
             annotations.extend(type_manager.get_relation_types(snapshot)?.into_iter().map(TypeAnnotation::Relation));
-        }
-        if include_attributes {
             annotations.extend(type_manager.get_attribute_types(snapshot)?.into_iter().map(TypeAnnotation::Attribute));
         }
-        if include_roles {
+        if include_role_types {
             annotations.extend(type_manager.get_role_types(snapshot)?.into_iter().map(TypeAnnotation::RoleType));
         }
         Ok(annotations)

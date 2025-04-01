@@ -31,11 +31,13 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
+use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{
     durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
 };
+use storage::snapshot::{ReadableSnapshot, ReadSnapshot};
 use test_utils::assert_matches;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -952,15 +954,80 @@ fn test_mismatched_input_types() {
         $_ isa friendship, links (friend: $p1, friend: $p2), has age 5;
     ";
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
+    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
+    {
+        let query = "match
+            $x has age $age;
+            { $x links (friend: $p); }  or
+            { $x has name $n; };
+            select $x;
+        ";
+        let snapshot = Arc::new(storage.clone().open_snapshot_read());
+        let match_executable = compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let executor = MatchExecutor::new(
+            &match_executable,
+            &snapshot,
+            &thing_manager,
+            MaybeOwnedRow::empty(),
+            Arc::new(ExecutableFunctionRegistry::empty()),
+            &QueryProfile::new(false),
+        ).unwrap();
+        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
+        let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+        let rows = iterator
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+            .into_iter()
+            .unique_by(|res| res.as_ref().unwrap().row().to_vec())
+            .try_collect::<_, Vec<_>, _>()
+            .unwrap();
 
-    let query = "match
-        $x has age $age;
-        { $x links (friend: $p); }  or
-        { $x has name $n; };
-    ";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+        for row in &rows {
+            for value in row {
+                print!("{}, ", value);
+            }
+            println!()
+        }
+    }
 
+    {
+        let query = "match
+            { $x isa $_; } or { $_ has $x; };
+            select $x;
+            distinct;
+        ";
+        let snapshot = Arc::new(storage.clone().open_snapshot_read());
+        let match_executable = compile_query(&*snapshot, &type_manager, thing_manager.clone(), &statistics, query);
+        let executor = MatchExecutor::new(
+            &match_executable,
+            &snapshot,
+            &thing_manager,
+            MaybeOwnedRow::empty(),
+            Arc::new(ExecutableFunctionRegistry::empty()),
+            &QueryProfile::new(false),
+        ).unwrap();
+        let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
+        let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
+        let rows = iterator
+            .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
+            .into_iter()
+            .unique_by(|res| res.as_ref().unwrap().row().to_vec())
+            .try_collect::<_, Vec<_>, _>()
+            .unwrap();
+
+        for row in &rows {
+            for value in row {
+                print!("{}, ", value);
+            }
+            println!()
+        }
+        debug_assert_ne!(rows.len(), 5); // Returns the 5 attributes if type-inference considers categories.
+        debug_assert_eq!(rows.len(), 8);
+    }
+}
+
+fn compile_query(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, thing_manager: Arc<ThingManager>, statistics: &Statistics, query: &str) -> MatchExecutable {
     // IR
+    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
@@ -969,22 +1036,17 @@ fn test_mismatched_input_types() {
     let block = builder.finish().unwrap();
 
     // Executor
-    let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let (type_manager, thing_manager) = load_managers(storage.clone(), None);
-
     let entry_annotations = infer_types(
-        &*snapshot,
+        snapshot,
         &block,
         &translation_context.variable_registry,
         &type_manager,
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
         false,
-    )
-        .unwrap();
+    ).unwrap();
 
-
-    let match_executable = compiler::executable::match_::planner::compile(
+    compiler::executable::match_::planner::compile(
         &block, &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
@@ -993,33 +1055,5 @@ fn test_mismatched_input_types() {
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap();
-    let executor = MatchExecutor::new(
-        &match_executable,
-        &snapshot,
-        &thing_manager,
-        MaybeOwnedRow::empty(),
-        Arc::new(ExecutableFunctionRegistry::empty()),
-        &QueryProfile::new(false),
-    )
-        .unwrap();
-
-    let context = ExecutionContext::new(snapshot, thing_manager, Arc::default());
-    let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
-
-    let rows = iterator
-        .map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone()))
-        .into_iter()
-        .unique_by(|res| res.as_ref().unwrap().row().to_vec())
-        .try_collect::<_, Vec<_>, _>()
-        .unwrap();
-
-    for row in &rows {
-        for value in row {
-            print!("{}, ", value);
-        }
-        println!()
-    }
-
-   debug_assert_eq!(rows.len(), 3);
+    ).unwrap()
 }

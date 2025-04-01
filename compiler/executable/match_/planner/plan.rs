@@ -178,7 +178,6 @@ fn make_builder<'a>(
     let mut plan_builder =
         ConjunctionPlanBuilder::new(conjunction.required_inputs(block_context).collect(), conjunction_annotations, statistics);
 
-
     #[cfg(debug_assertions)] // Break on purpose. We should fix conjunction.local_variables()
     let TMP__local_variables = conjunction.constraints().iter().flat_map(|c| c.ids()).dedup();
     plan_builder.register_variables(

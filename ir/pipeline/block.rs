@@ -129,12 +129,6 @@ fn validate_conjunction(
             source_span: variable_registry.source_span(variable),
         }));
     }
-    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find_or_first(|is| {
-        let lhs_category = variable_registry.get_variable_category(is.lhs().as_variable().unwrap()).unwrap();
-        let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
-        lhs_category.narrowest(rhs_category).is_none()
-    });
-
     if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint(block_context) {
         let name = variable_registry.get_variable_name(var).unwrap().clone();
         return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
@@ -152,6 +146,11 @@ fn validate_conjunction(
         }
     }
 
+    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find_or_first(|is| {
+        let lhs_category = variable_registry.get_variable_category(is.lhs().as_variable().unwrap()).unwrap();
+        let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
+        lhs_category.narrowest(rhs_category).is_none()
+    });
     if let Some(is) = is_with_mismatched_category {
         let lhs = is.lhs().as_variable().unwrap();
         let rhs = is.rhs().as_variable().unwrap();
