@@ -18,10 +18,9 @@ use ir::pattern::{
 use itertools::Itertools;
 
 use crate::{
-    annotation::type_annotations::TypeAnnotations,
+    annotation::type_annotations::{LeftRightAnnotations, TypeAnnotations},
     executable::match_::instructions::{CheckInstruction, Inputs},
 };
-use crate::annotation::type_annotations::LeftRightAnnotations;
 
 #[derive(Debug, Clone)]
 pub struct TypeListInstruction<ID> {

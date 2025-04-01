@@ -4,19 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::{BTreeMap, BTreeSet, hash_map, HashMap, HashSet};
-use std::sync::Arc;
+use std::{
+    collections::{hash_map, BTreeMap, BTreeSet, HashMap, HashSet},
+    sync::Arc,
+};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::constraint::ExpressionBinding,
+    pattern::{constraint::ExpressionBinding, Vertex},
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
 use tracing::{debug, trace};
-use ir::pattern::Vertex;
 
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
@@ -78,7 +79,13 @@ pub fn compile(
         call_cost_provider,
     )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
-    .lower(input_variable_annotations, input_variables.keys().copied(), selected_variables.iter().copied(), &assigned_identities, variable_registry)
+    .lower(
+        input_variable_annotations,
+        input_variables.keys().copied(),
+        selected_variables.iter().copied(),
+        &assigned_identities,
+        variable_registry,
+    )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry);
 

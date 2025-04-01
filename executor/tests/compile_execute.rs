@@ -14,7 +14,7 @@ use compiler::{
         expression::block_compiler::compile_expressions, function::EmptyAnnotatedFunctionSignatures,
         match_inference::infer_types,
     },
-    executable::function::ExecutableFunctionRegistry,
+    executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable},
 };
 use concept::{
     thing::{statistics::Statistics, thing_manager::ThingManager},
@@ -31,13 +31,14 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
-use compiler::executable::match_::planner::match_executable::MatchExecutable;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
 use storage::{
-    durability_client::WALClient, sequence_number::SequenceNumber, snapshot::CommittableSnapshot, MVCCStorage,
+    durability_client::WALClient,
+    sequence_number::SequenceNumber,
+    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot},
+    MVCCStorage,
 };
-use storage::snapshot::{ReadableSnapshot, ReadSnapshot};
 use test_utils::assert_matches;
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -136,7 +137,8 @@ fn test_has_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -236,7 +238,8 @@ fn test_expression_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -324,7 +327,8 @@ fn test_links_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -419,7 +423,8 @@ fn test_links_intersection() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -505,7 +510,8 @@ fn test_negation_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -612,7 +618,8 @@ fn test_forall_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -706,7 +713,8 @@ fn test_named_var_select() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -799,7 +807,8 @@ fn test_disjunction_planning_traversal() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -896,7 +905,8 @@ fn test_disjunction_planning_nested_negations() {
     .unwrap();
 
     let match_executable = compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -971,7 +981,8 @@ fn test_mismatched_input_types() {
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
             &QueryProfile::new(false),
-        ).unwrap();
+        )
+        .unwrap();
         let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
         let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
         let rows = iterator
@@ -1004,7 +1015,8 @@ fn test_mismatched_input_types() {
             MaybeOwnedRow::empty(),
             Arc::new(ExecutableFunctionRegistry::empty()),
             &QueryProfile::new(false),
-        ).unwrap();
+        )
+        .unwrap();
         let context = ExecutionContext::new(snapshot, thing_manager.clone(), Arc::default());
         let iterator = executor.into_iterator(context, ExecutionInterrupt::new_uninterruptible());
         let rows = iterator
@@ -1025,7 +1037,13 @@ fn test_mismatched_input_types() {
     }
 }
 
-fn compile_query(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, thing_manager: Arc<ThingManager>, statistics: &Statistics, query: &str) -> MatchExecutable {
+fn compile_query(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    thing_manager: Arc<ThingManager>,
+    statistics: &Statistics,
+    query: &str,
+) -> MatchExecutable {
     // IR
     let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -1044,10 +1062,12 @@ fn compile_query(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, t
         &BTreeMap::new(),
         &EmptyAnnotatedFunctionSignatures,
         false,
-    ).unwrap();
+    )
+    .unwrap();
 
     compiler::executable::match_::planner::compile(
-        &block, &BTreeMap::new(),
+        &block,
+        &BTreeMap::new(),
         &HashMap::new(),
         &block.conjunction().named_producible_variables(block.block_context()).collect(),
         &entry_annotations,
@@ -1055,5 +1075,6 @@ fn compile_query(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, t
         &HashMap::new(),
         &statistics,
         &ExecutableFunctionRegistry::empty(),
-    ).unwrap()
+    )
+    .unwrap()
 }

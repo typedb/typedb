@@ -14,20 +14,22 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
+    pattern::{
+        conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Scope, ScopeId, Vertex,
+    },
     pipeline::{block::Block, VariableRegistry},
 };
 use itertools::{chain, Itertools};
-use ir::pattern::{Scope, ScopeId};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     function::AnnotatedFunctionSignatures,
-    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, BlockAnnotations},
+    type_annotations::{
+        BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
+    },
     type_seeder::TypeGraphSeedingContext,
     TypeInferenceError,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub(crate) struct VertexAnnotations {
@@ -260,7 +262,14 @@ impl TypeInferenceGraph<'_> {
     }
 
     pub(crate) fn collect_type_annotations(self, type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>) {
-        let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, conjunction } = self;
+        let TypeInferenceGraph {
+            vertices,
+            edges,
+            nested_disjunctions,
+            nested_negations,
+            nested_optionals,
+            conjunction,
+        } = self;
         let mut constraint_annotations = HashMap::new();
         let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
@@ -284,12 +293,15 @@ impl TypeInferenceGraph<'_> {
             }
         });
 
-        let vertex_annotations = vertices.into_iter().map(|(variable, types)| {
-            (variable.into(), Arc::new(types))
-        }).collect::<BTreeMap<_, _>>();
-        debug_assert!(conjunction.constraints().iter().flat_map(|c| c.ids()).all(|var| {
-            vertex_annotations.contains_key(&var.into())
-        }));
+        let vertex_annotations = vertices
+            .into_iter()
+            .map(|(variable, types)| (variable.into(), Arc::new(types)))
+            .collect::<BTreeMap<_, _>>();
+        debug_assert!(conjunction
+            .constraints()
+            .iter()
+            .flat_map(|c| c.ids())
+            .all(|var| { vertex_annotations.contains_key(&var.into()) }));
 
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);

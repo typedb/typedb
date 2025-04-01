@@ -10,7 +10,6 @@ use std::{
     iter::zip,
     sync::Arc,
 };
-use itertools::Itertools;
 
 use answer::{variable::Variable, Type};
 use concept::type_::type_manager::TypeManager;
@@ -31,6 +30,7 @@ use ir::{
     },
     translation::pipeline::TranslatedStage,
 };
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
@@ -47,14 +47,13 @@ use crate::{
             AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
         },
         match_inference::infer_types,
-        type_annotations::{ConstraintTypeAnnotations, BlockAnnotations},
+        type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
         write_type_check::check_type_combinations_for_write,
         AnnotationError,
     },
     executable::{reduce::ReduceInstruction, update},
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 pub struct AnnotatedPipeline {
     pub annotated_preamble: AnnotatedPreambleFunctions,
@@ -510,7 +509,10 @@ fn annotate_write_stage(
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
     let root_annotations_map = block_annotations.into_parts();
     debug_assert!(1 == root_annotations_map.len()); // Break if we introduce nested-patterns in writes.
-    let root_annotations = root_annotations_map.into_iter().map(|(_, annotations)| annotations).exactly_one()
+    let root_annotations = root_annotations_map
+        .into_iter()
+        .map(|(_, annotations)| annotations)
+        .exactly_one()
         .expect("Writes have only one conjunction");
     // Extend running annotations for variables introduced in this stage.
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {

@@ -96,7 +96,7 @@ pub mod tests {
             },
             setup_storage,
         },
-        type_annotations::{ConstraintTypeAnnotations, LinksAnnotations, BlockAnnotations},
+        type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, LinksAnnotations},
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };

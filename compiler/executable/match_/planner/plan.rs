@@ -7,12 +7,11 @@
 use std::{
     any::type_name_of_val,
     cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
 };
-use std::collections::{BTreeMap, BTreeSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -34,7 +33,10 @@ use itertools::{chain, Itertools};
 use tracing::{event, Level};
 
 use crate::{
-    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
+    annotation::{
+        expression::compiled_expression::ExecutableExpression,
+        type_annotations::{BlockAnnotations, TypeAnnotations},
+    },
     executable::{
         function::FunctionCallCostProvider,
         match_::{
@@ -67,7 +69,6 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 pub const MAX_BEAM_WIDTH: usize = 96;
 pub const MIN_BEAM_WIDTH: usize = 1;
@@ -175,8 +176,11 @@ fn make_builder<'a>(
     }
 
     let conjunction_annotations = block_annotations.type_annotations_of(conjunction).unwrap();
-    let mut plan_builder =
-        ConjunctionPlanBuilder::new(conjunction.required_inputs(block_context).collect(), conjunction_annotations, statistics);
+    let mut plan_builder = ConjunctionPlanBuilder::new(
+        conjunction.required_inputs(block_context).collect(),
+        conjunction_annotations,
+        statistics,
+    );
 
     #[cfg(debug_assertions)] // Break on purpose. We should fix conjunction.local_variables()
     let TMP__local_variables = conjunction.constraints().iter().flat_map(|c| c.ids()).dedup();
@@ -1330,7 +1334,12 @@ impl ConjunctionPlan<'_> {
             input_variables.clone().into_iter().collect(),
             self.planner_statistics,
         );
-        self.may_make_input_check_step(&mut match_builder, input_variables.into_iter(), input_variable_annotations, variable_registry);
+        self.may_make_input_check_step(
+            &mut match_builder,
+            input_variables.into_iter(),
+            input_variable_annotations,
+            variable_registry,
+        );
         for &index in &self.ordering {
             match index {
                 VertexId::Variable(var) => {
@@ -1944,25 +1953,36 @@ impl ConjunctionPlan<'_> {
         self.planner_statistics.query_cost
     }
 
-    fn may_make_input_check_step(&self, match_builder:&mut MatchExecutableBuilder, input_variables: impl Iterator<Item=Variable>, input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>, variable_registry: &VariableRegistry) {
+    fn may_make_input_check_step(
+        &self,
+        match_builder: &mut MatchExecutableBuilder,
+        input_variables: impl Iterator<Item = Variable>,
+        input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
+        variable_registry: &VariableRegistry,
+    ) {
         let mut pushed_any = false;
-        input_variables.filter_map(|variable| {
-            let vertex = variable.clone().into();
-            let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
-            input_variable_annotations.get(&vertex).unwrap()
-                .iter().any(|type_| !local_annotations.contains(type_))
-                .then(|| (variable, local_annotations.clone()))
-        }).for_each(|(variable, types)| {
-            let category = variable_registry.get_variable_category(variable).unwrap();
-            debug_assert!(category.is_category_thing() || category.is_category_type());
-            let executor_var = match_builder.position(variable);
-            let check = match category.is_category_thing() {
-                true => CheckInstruction::ThingTypeList { thing_var: executor_var, types },
-                false => CheckInstruction::TypeList { type_var: executor_var, types },
-            };
-            match_builder.push_check(&[variable], check);
-            pushed_any = true;
-        });
+        input_variables
+            .filter_map(|variable| {
+                let vertex = variable.clone().into();
+                let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
+                input_variable_annotations
+                    .get(&vertex)
+                    .unwrap()
+                    .iter()
+                    .any(|type_| !local_annotations.contains(type_))
+                    .then(|| (variable, local_annotations.clone()))
+            })
+            .for_each(|(variable, types)| {
+                let category = variable_registry.get_variable_category(variable).unwrap();
+                debug_assert!(category.is_category_thing() || category.is_category_type());
+                let executor_var = match_builder.position(variable);
+                let check = match category.is_category_thing() {
+                    true => CheckInstruction::ThingTypeList { thing_var: executor_var, types },
+                    false => CheckInstruction::TypeList { type_var: executor_var, types },
+                };
+                match_builder.push_check(&[variable], check);
+                pushed_any = true;
+            });
         if pushed_any {
             match_builder.finish_one();
         }

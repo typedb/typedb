@@ -16,7 +16,7 @@ use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{
-    annotation::type_annotations::BlockAnnotations,
+    annotation::type_annotations::{BlockAnnotations, TypeAnnotations},
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
@@ -27,7 +27,6 @@ use crate::{
     },
     VariablePosition,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 #[derive(Debug)]
 pub struct DeleteExecutable {

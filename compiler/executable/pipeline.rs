@@ -5,25 +5,25 @@
  */
 
 use std::{
-    collections::{HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
     iter::zip,
     sync::Arc,
 };
-use std::collections::{BTreeMap, BTreeSet};
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use ir::{
-    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern},
+    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
-use ir::pattern::Vertex;
 
 use crate::{
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
+        match_inference::VertexAnnotations,
         pipeline::AnnotatedStage,
+        type_annotations::BlockAnnotations,
     },
     executable::{
         delete::executable::DeleteExecutable,
@@ -203,11 +203,15 @@ pub(crate) fn compile_pipeline_stages(
     for stage in annotated_stages {
         // TODO: We can filter out the variables that are no longer needed in the future stages, but are carried as selected variables from the previous one
         let executable_stage = match executable_stages.last().map(|stage| stage.output_row_mapping()) {
-            Some(row_mapping) => {
-                compile_stage(
-                    statistics, variable_registry, call_cost_provider, &row_mapping, last_match_annotations.unwrap_or(&BTreeMap::new()), function_return, &stage
-                )?
-            }
+            Some(row_mapping) => compile_stage(
+                statistics,
+                variable_registry,
+                call_cost_provider,
+                &row_mapping,
+                last_match_annotations.unwrap_or(&BTreeMap::new()),
+                function_return,
+                &stage,
+            )?,
             None => compile_stage(
                 statistics,
                 variable_registry,
@@ -219,7 +223,8 @@ pub(crate) fn compile_pipeline_stages(
             )?,
         };
         if let AnnotatedStage::Match { block, block_annotations, .. } = stage {
-            last_match_annotations = Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
+            last_match_annotations =
+                Some(block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations())
         }
         executable_stages.push(executable_stage);
     }

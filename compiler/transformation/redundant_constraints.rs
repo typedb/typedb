@@ -23,7 +23,7 @@ Since this will have been taken into account by type inference.
 
 use ir::pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope};
 
-use crate::annotation::type_annotations::{ConstraintTypeAnnotations, BlockAnnotations};
+use crate::annotation::type_annotations::{BlockAnnotations, ConstraintTypeAnnotations};
 
 pub(super) fn prune_redundant_roleplayer_deduplication(
     conjunction: &mut Conjunction,
@@ -51,14 +51,17 @@ pub(super) fn prune_redundant_roleplayer_deduplication(
             true
         }
     });
-    conjunction.nested_patterns_mut().iter_mut().for_each(|nested| match  nested {
-        NestedPattern::Negation(inner) => prune_redundant_roleplayer_deduplication(inner.conjunction_mut(), block_annotations),
-        NestedPattern::Optional(inner) => prune_redundant_roleplayer_deduplication(inner.conjunction_mut(), block_annotations),
-        NestedPattern::Disjunction(disjunction) => {
-            disjunction.conjunctions_mut().iter_mut().for_each(|inner| {
-                prune_redundant_roleplayer_deduplication(inner, block_annotations)
-            })
+    conjunction.nested_patterns_mut().iter_mut().for_each(|nested| match nested {
+        NestedPattern::Negation(inner) => {
+            prune_redundant_roleplayer_deduplication(inner.conjunction_mut(), block_annotations)
         }
+        NestedPattern::Optional(inner) => {
+            prune_redundant_roleplayer_deduplication(inner.conjunction_mut(), block_annotations)
+        }
+        NestedPattern::Disjunction(disjunction) => disjunction
+            .conjunctions_mut()
+            .iter_mut()
+            .for_each(|inner| prune_redundant_roleplayer_deduplication(inner, block_annotations)),
     })
 }
 

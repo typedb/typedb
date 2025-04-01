@@ -15,14 +15,13 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
+        Scope, ScopeId, Vertex,
     },
     pipeline::{block::Block, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
-use ir::pattern::{Scope, ScopeId};
 
 use crate::annotation::{
     expression::{
@@ -204,7 +203,8 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
         let mut return_types = HashSet::new();
         for (scope_id, assignment) in assignments_for_variable {
             assignment.expression().variables().try_for_each(|var| {
-                resolve_type_for_variable(context, *scope_id, var, expression_assignments, assignment.source_span()).map(|_| ())
+                resolve_type_for_variable(context, *scope_id, var, expression_assignments, assignment.source_span())
+                    .map(|_| ())
             })?;
             let compiled = ExpressionCompilationContext::compile(
                 assignment.expression(),

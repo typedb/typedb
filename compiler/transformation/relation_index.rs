@@ -17,10 +17,11 @@ use ir::pattern::{
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
-    annotation::type_annotations::{ConstraintTypeAnnotations, IndexedRelationAnnotations, BlockAnnotations},
+    annotation::type_annotations::{
+        BlockAnnotations, ConstraintTypeAnnotations, IndexedRelationAnnotations, TypeAnnotations,
+    },
     transformation::StaticOptimiserError,
 };
-use crate::annotation::type_annotations::TypeAnnotations;
 
 /// Precondition:
 ///   1) $r links $x (role: $role1)
