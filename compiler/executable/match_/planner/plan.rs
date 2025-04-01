@@ -1965,7 +1965,8 @@ impl ConjunctionPlan<'_> {
             .filter_map(|variable| {
                 let vertex = variable.clone().into();
                 let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
-                input_variable_annotations.get(&vertex)? // Functions don't have any
+                input_variable_annotations
+                    .get(&vertex)? // Functions don't have any
                     .iter()
                     .any(|type_| !local_annotations.contains(type_))
                     .then(|| (variable, local_annotations.clone()))

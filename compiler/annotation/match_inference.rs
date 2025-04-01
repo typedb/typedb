@@ -301,16 +301,19 @@ impl TypeInferenceGraph<'_> {
             .into_iter()
             .map(|(variable, types)| (variable.into(), Arc::new(types)))
             .collect::<BTreeMap<_, _>>();
-        debug_assert!(_variable_registry.is_none() || conjunction
-            .constraints()
-            .iter()
-            .flat_map(|constraint| constraint.ids())
-            .filter(|variable| match _variable_registry.unwrap().get_variable_category(*variable) {
-                None => false,
-                Some(VariableCategory::Value | VariableCategory::ValueList) => false,
-                Some(_) => true,
-            })
-            .all(|var| { vertex_annotations.contains_key(&var.into()) }));
+        debug_assert!(
+            _variable_registry.is_none()
+                || conjunction
+                    .constraints()
+                    .iter()
+                    .flat_map(|constraint| constraint.ids())
+                    .filter(|variable| match _variable_registry.unwrap().get_variable_category(*variable) {
+                        None => false,
+                        Some(VariableCategory::Value | VariableCategory::ValueList) => false,
+                        Some(_) => true,
+                    })
+                    .all(|var| { vertex_annotations.contains_key(&var.into()) })
+        );
 
         let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
         type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);

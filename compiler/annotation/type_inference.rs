@@ -54,9 +54,7 @@ pub mod tests {
 
     use answer::{variable::Variable, Type};
     use encoding::{
-        graph::{
-            definition::definition_key::{DefinitionID, DefinitionKey},
-        },
+        graph::definition::definition_key::{DefinitionID, DefinitionKey},
         layout::prefix::Prefix,
         value::label::Label,
     };
@@ -82,8 +80,8 @@ pub mod tests {
             EmptyAnnotatedFunctionSignatures,
         },
         match_inference::{
-            compute_type_inference_graph, infer_types, NestedTypeInferenceGraphDisjunction, TypeInferenceEdge,
-            TypeInferenceGraph, VertexAnnotations,
+            compute_type_inference_graph, infer_types, prune_types, NestedTypeInferenceGraphDisjunction,
+            TypeInferenceEdge, TypeInferenceGraph, VertexAnnotations,
         },
         pipeline::AnnotatedStage,
         tests::{
@@ -97,7 +95,6 @@ pub mod tests {
         type_seeder::TypeGraphSeedingContext,
         TypeInferenceError,
     };
-    use crate::annotation::match_inference::prune_types;
 
     #[test]
     fn test_functions() {
@@ -184,7 +181,12 @@ pub mod tests {
                 &EmptyAnnotatedFunctionSignatures,
                 false,
             )
-            .unwrap().into_parts().into_iter().exactly_one().unwrap().1;
+            .unwrap()
+            .into_parts()
+            .into_iter()
+            .exactly_one()
+            .unwrap()
+            .1;
             assert_eq!(
                 *annotations_without_schema_cache.vertex_annotations(),
                 BTreeMap::from([(var_animal.into(), Arc::new(BTreeSet::from(all_concrete_instance_types)))])
@@ -204,7 +206,9 @@ pub mod tests {
             let f_var_animal_type =
                 var_from_registry(&f_ir.translation_context().variable_registry, "called_animal_type").unwrap();
             let f_var_name = var_from_registry(&f_ir.translation_context().variable_registry, "called_name").unwrap();
-            let AnnotatedStage::Match { block, block_annotations, .. } = &f_annotations.stages[0] else { unreachable!() };
+            let AnnotatedStage::Match { block, block_annotations, .. } = &f_annotations.stages[0] else {
+                unreachable!()
+            };
             assert_eq!(
                 block_annotations.type_annotations_of(block.conjunction()).unwrap().vertex_annotations(),
                 &BTreeMap::from([
@@ -1473,5 +1477,4 @@ pub mod tests {
             assert_eq!(expected_graph, graph)
         }
     }
-
 }
