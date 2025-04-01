@@ -15,5 +15,5 @@ git apply .circleci\windows\git.patch
 SET DEPLOY_ARTIFACT_USERNAME=%REPO_TYPEDB_USERNAME%
 SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%
 set /p VER=<VERSION
-bazel --windows_enable_symlinks run --define version=%VER%  --enable_runfiles //:deploy-typedb-server -- release
+bazel --windows_enable_symlinks run --define version=%VER% --//server:mode=published --enable_runfiles //:deploy-typedb-server -- release
 
