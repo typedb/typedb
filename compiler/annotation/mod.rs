@@ -205,8 +205,7 @@ typedb_error!(
         ),
         DetectedUnsatisfiableEdge(
             11,
-            "Type-inference was unable to find compatible types for the pair of variables '{left_variable}' & '{right_variable}' across the constraint '{constraint}'. Types were:\n- {left_variable}: [{left_types}]\n- {right_variable}: [{right_types}]",
-            constraint: ir::pattern::constraint::Constraint<Variable>,
+            "Type-inference was unable to find compatible types for the pair of variables '{left_variable}' & '{right_variable}' across a constraint. Types were:\n- {left_variable}: [{left_types}]\n- {right_variable}: [{right_types}]",
             left_variable: String,
             right_variable: String,
             left_types: String,

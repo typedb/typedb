@@ -183,7 +183,6 @@ fn construct_error_message_for_unsatisfiable_edge(
     let left_types = graph.vertices.annotations.get(&edge.left).unwrap().iter().map(resolve_type_label).join(", ");
     let right_types = graph.vertices.annotations.get(&edge.right).unwrap().iter().map(resolve_type_label).join(", ");
     TypeInferenceError::DetectedUnsatisfiableEdge {
-        constraint: edge.constraint.clone(),
         left_variable,
         right_variable,
         left_types,
