@@ -3,17 +3,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{borrow::Cow, cmp::Ordering, collections::HashSet, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::variable_value::VariableValue;
 use compiler::{
     executable::modifiers::{
         DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
     },
     VariablePosition,
 };
-use encoding::value::value::Value;
-use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;

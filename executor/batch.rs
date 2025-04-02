@@ -6,27 +6,26 @@
 
 use std::{
     array,
+    borrow::Cow,
+    cmp::Ordering,
     iter::{Map, Take, Zip},
+    sync::Arc,
     vec,
 };
-use std::borrow::Cow;
-use std::cmp::Ordering;
-use std::sync::Arc;
 
-use answer::variable_value::VariableValue;
-use itertools::Itertools;
-use answer::Thing;
+use answer::{variable_value::VariableValue, Thing};
 use encoding::value::value::Value;
 use error::unimplemented_feature;
+use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ReadExecutionError,
+    pipeline::stage::ExecutionContext,
     row::{MaybeOwnedRow, Row},
 };
-use crate::pipeline::stage::ExecutionContext;
 
 #[derive(Debug)]
 pub struct FixedBatch {
@@ -217,7 +216,11 @@ impl Batch {
         (0..self.len()).map(|i| self.get_row(i))
     }
 
-    pub(crate) fn indices_sorted_by(&self, context: &ExecutionContext<impl ReadableSnapshot>, sort_by: &[(usize, bool)]) -> Vec<usize> {
+    pub(crate) fn indices_sorted_by(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot>,
+        sort_by: &[(usize, bool)],
+    ) -> Vec<usize> {
         let mut indices: Vec<usize> = (0..self.len()).collect();
         indices.sort_by(|x, y| {
             let x_row_as_row = self.get_row(*x);

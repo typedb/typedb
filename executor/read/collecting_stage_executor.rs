@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, cmp::Ordering, fmt, hash::Hash, iter::Peekable, sync::Arc};
+use std::{fmt, hash::Hash, iter::Peekable, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
-use encoding::value::value::Value;
-use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
