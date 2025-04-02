@@ -16,7 +16,7 @@ def typedb_dependencies():
     git_repository(
         name = "typedb_dependencies",
         remote = "https://github.com/farost/typedb-dependencies",
-        commit = "bb93bf52852526bd98c2a1771408f92297ef660f",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        commit = "ee1324d8869d248ba71adaa426b8334fdefab827",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typeql():
