@@ -81,6 +81,9 @@ rust_library(
         ":development_mode": [],
         ":published_mode": ["published"],
     }),
+    tags = [
+        "declared-features=published",
+    ]
 )
 
 checkstyle_test(

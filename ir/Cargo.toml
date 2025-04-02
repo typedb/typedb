@@ -41,13 +41,13 @@ features = {}
 		features = []
 		default-features = false
 
-	[dependencies.durability]
-		path = "../durability"
+	[dependencies.concept]
+		path = "../concept"
 		features = []
 		default-features = false
 
-	[dependencies.concept]
-		path = "../concept"
+	[dependencies.durability]
+		path = "../durability"
 		features = []
 		default-features = false
 

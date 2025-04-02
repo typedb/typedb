@@ -8,7 +8,7 @@ REM by Chocolatey in prepare.bat is accessible
 CALL refreshenv
 
 REM build file
-cargo build --profile=release --features published
+cargo build --profile=release --features server/published
 copy target\release\typedb_server_bin.exe  .\
 git apply .circleci\windows\git.patch
 
