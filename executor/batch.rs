@@ -9,16 +9,24 @@ use std::{
     iter::{Map, Take, Zip},
     vec,
 };
+use std::borrow::Cow;
+use std::cmp::Ordering;
+use std::sync::Arc;
 
 use answer::variable_value::VariableValue;
 use itertools::Itertools;
+use answer::Thing;
+use encoding::value::value::Value;
+use error::unimplemented_feature;
 use lending_iterator::LendingIterator;
 use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
+use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     error::ReadExecutionError,
     row::{MaybeOwnedRow, Row},
 };
+use crate::pipeline::stage::ExecutionContext;
 
 #[derive(Debug)]
 pub struct FixedBatch {
@@ -208,6 +216,28 @@ impl Batch {
     pub fn iter(&self) -> impl Iterator<Item = MaybeOwnedRow<'_>> {
         (0..self.len()).map(|i| self.get_row(i))
     }
+
+    pub(crate) fn indices_sorted_by(&self, context: &ExecutionContext<impl ReadableSnapshot>, sort_by: &[(usize, bool)]) -> Vec<usize> {
+        let mut indices: Vec<usize> = (0..self.len()).collect();
+        indices.sort_by(|x, y| {
+            let x_row_as_row = self.get_row(*x);
+            let y_row_as_row = self.get_row(*y);
+            let x_row = x_row_as_row.row();
+            let y_row = y_row_as_row.row();
+            for (idx, asc) in sort_by.iter() {
+                let ord = get_value(&x_row[*idx], context)
+                    .partial_cmp(&get_value(&y_row[*idx], context))
+                    .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
+                match (asc, ord) {
+                    (true, Ordering::Less) | (false, Ordering::Greater) => return Ordering::Less,
+                    (true, Ordering::Greater) | (false, Ordering::Less) => return Ordering::Greater,
+                    (true, Ordering::Equal) | (false, Ordering::Equal) => {}
+                };
+            }
+            Ordering::Equal
+        });
+        indices
+    }
 }
 
 pub struct MutableBatchRowIterator {
@@ -264,4 +294,24 @@ fn row_range(index: usize, width: u32) -> std::ops::Range<usize> {
     let start = index * width as usize;
     let end = start + width as usize;
     start..end
+}
+
+fn get_value<'a, T: ReadableSnapshot>(
+    entry: &'a VariableValue<'a>,
+    context: &'a ExecutionContext<T>,
+) -> Option<Cow<'a, Value<'a>>> {
+    let snapshot: &T = &context.snapshot;
+    match entry {
+        VariableValue::Value(value) => Some(Cow::Borrowed(value)),
+        VariableValue::Thing(Thing::Attribute(attribute)) => {
+            Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
+        }
+        VariableValue::Empty => None,
+        VariableValue::Type(_) | VariableValue::Thing(_) => {
+            unreachable!("Should have been caught earlier")
+        }
+
+        | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
+        | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
+    }
 }
