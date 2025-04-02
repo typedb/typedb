@@ -21,9 +21,7 @@ use crate::{
     annotation::{
         fetch::{AnnotatedFetch, AnnotatedFetchObject, AnnotatedFetchSome},
         function::{AnnotatedPreambleFunctions, AnnotatedSchemaFunctions},
-        match_inference::VertexAnnotations,
         pipeline::AnnotatedStage,
-        type_annotations::BlockAnnotations,
     },
     executable::{
         delete::executable::DeleteExecutable,
