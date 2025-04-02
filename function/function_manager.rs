@@ -600,11 +600,12 @@ pub mod tests {
             assert_eq!(expected_signature.function_id(), looked_up.function_id());
 
             let function_annotations = cache.get_annotated_function(expected_function_id.clone()).unwrap();
-            let AnnotatedStage::Match { block_annotations: body_annotations, .. } =
+            let AnnotatedStage::Match { block_annotations, block, .. } =
                 function_annotations.stages.first().as_ref().unwrap()
             else {
                 unreachable!()
             };
+            let body_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
             let var_c = function_annotations.arguments[0];
             let var_c_annotations = body_annotations.vertex_annotations_of(&Vertex::Variable(var_c)).unwrap();
             assert_eq!(&Arc::new(BTreeSet::from([type_cat])), var_c_annotations);
