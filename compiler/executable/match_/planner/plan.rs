@@ -130,12 +130,16 @@ fn make_builder<'a>(
                     disjunction
                         .conjunctions()
                         .iter()
-                        .map(|conj| {
+                        .map(|branch| {
+                            let branch_shared_variables = shared_variables
+                                .intersection(&branch.referenced_variables().collect())
+                                .copied()
+                                .collect();
                             make_builder(
-                                conj,
+                                branch,
                                 block_context,
                                 variable_positions,
-                                &shared_variables.intersection(&conj.referenced_variables().collect()).copied().collect(),
+                                &branch_shared_variables,
                                 block_annotations,
                                 variable_registry,
                                 expressions,
