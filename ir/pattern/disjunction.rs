@@ -46,7 +46,7 @@ impl Disjunction {
     }
 
     fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_producing().then_some(v))
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -58,7 +58,7 @@ impl Disjunction {
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
     }
 
     pub(crate) fn variable_dependency(
@@ -70,13 +70,13 @@ impl Disjunction {
         }
         let mut dependencies = self.conjunctions[0].variable_dependency(block_context);
         for branch in &self.conjunctions[1..] {
-            let branch_dependency_modes = branch.variable_dependency(block_context);
+            let branch_dependencies = branch.variable_dependency(block_context);
             for (var, dependency) in &mut dependencies {
-                if !branch_dependency_modes.contains_key(var) && dependency.is_producing() {
+                if !branch_dependencies.contains_key(var) && dependency.is_producing() {
                     dependency.set_referencing()
                 }
             }
-            for (var, mut dependency) in branch_dependency_modes {
+            for (var, mut dependency) in branch_dependencies {
                 let entry = dependencies.entry(var);
                 match entry {
                     hash_map::Entry::Occupied(mut entry) => {

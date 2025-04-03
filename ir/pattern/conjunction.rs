@@ -100,18 +100,18 @@ impl Conjunction {
     }
 
     fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_producing().then_some(v))
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
     }
 
     pub fn variable_dependency(&self, block_context: &BlockContext) -> HashMap<Variable, VariableDependency<'_>> {
         let mut dependencies = self.constraints.variable_dependency();
         for nested in self.nested_patterns.iter() {
-            let nested_pattern_data_modes = nested.variable_dependency(block_context);
-            for (var, mode) in nested_pattern_data_modes {
+            let nested_pattern_dependencies = nested.variable_dependency(block_context);
+            for (var, mode) in nested_pattern_dependencies {
                 match dependencies.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => *entry.get_mut() &= mode,
                     hash_map::Entry::Vacant(vacant_entry) => {
@@ -124,10 +124,10 @@ impl Conjunction {
     }
 
     pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for (var, mode) in self.variable_dependency(block_context) {
+        for (var, dep) in self.variable_dependency(block_context) {
             let scope = block_context.get_scope(&var).unwrap();
-            if scope == self.scope_id && mode.is_referencing() {
-                return ControlFlow::Break((var, mode.referencing_constraints().first().and_then(|c| c.source_span())));
+            if scope == self.scope_id && dep.is_referencing() {
+                return ControlFlow::Break((var, dep.referencing_constraints().first().and_then(|c| c.source_span())));
             }
         }
         for nested in &self.nested_patterns {
