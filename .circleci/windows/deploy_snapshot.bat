@@ -16,5 +16,5 @@ SET DEPLOY_ARTIFACT_USERNAME=%REPO_TYPEDB_USERNAME%
 SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%
 git rev-parse HEAD > version_snapshot.txt
 set /p VER=<version_snapshot.txt
-bazel --windows_enable_symlinks run --define version=%VER%  --enable_runfiles //:deploy-typedb-server -- snapshot
+bazel --windows_enable_symlinks run --define version=%VER% --enable_runfiles //:deploy-typedb-server -- snapshot
 
