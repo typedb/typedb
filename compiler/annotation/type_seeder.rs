@@ -159,7 +159,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for pattern in conjunction.nested_patterns() {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
-                    nested_disjunctions.push(self.build_disjunction_recursive(context, conjunction, disjunction));
+                    nested_disjunctions.push(self.build_disjunction_recursive(context, disjunction));
                 }
                 NestedPattern::Negation(negation) => {
                     nested_negations.push(self.build_recursive(context, negation.conjunction()));
@@ -183,29 +183,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn build_disjunction_recursive<'conj>(
         &self,
         context: &BlockContext,
-        parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
         let nested_graphs =
             disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
-        let shared_variables: BTreeSet<Variable> = nested_graphs
-            .iter()
-            .flat_map(|nested_graph| {
-                Iterator::chain(
-                    nested_graph
-                        .conjunction
-                        .constraints()
-                        .iter()
-                        .flat_map(|c| c.vertices())
-                        .filter_map(|v| v.as_variable()),
-                    nested_graph.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
-                )
-                .filter(|variable| context.is_variable_available(parent_conjunction.scope_id(), *variable))
-            })
-            .collect();
         NestedTypeInferenceGraphDisjunction {
             disjunction: nested_graphs,
-            shared_variables,
+            shared_variables: disjunction.referenced_variables().collect(),
             shared_vertex_annotations: VertexAnnotations::default(),
         }
     }
@@ -460,6 +444,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let vertex = Vertex::Variable(variable);
             if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
                 for nested_graph in &mut nested.disjunction {
+                    // Note: This adds a vertex annotation even if this branch does not reference the variable
+                    // This is needed to prevent one branch from narrowing the parent's annotations
                     nested_graph.vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
                 }
             }

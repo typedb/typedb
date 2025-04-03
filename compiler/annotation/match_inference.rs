@@ -480,6 +480,3 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
         is_modified
     }
 }
-
-#[cfg(test)]
-pub mod tests {}
