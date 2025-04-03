@@ -3,17 +3,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{borrow::Cow, cmp::Ordering, collections::HashSet, sync::Arc};
+use std::{collections::HashSet, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
+use answer::variable_value::VariableValue;
 use compiler::{
     executable::modifiers::{
         DistinctExecutable, LimitExecutable, OffsetExecutable, RequireExecutable, SelectExecutable, SortExecutable,
     },
     VariablePosition,
 };
-use encoding::value::value::Value;
-use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
 use storage::snapshot::ReadableSnapshot;
@@ -83,7 +81,6 @@ impl SortStageIterator {
         sort_executable: &SortExecutable,
         context: &ExecutionContext<impl ReadableSnapshot>,
     ) -> Self {
-        let mut indices: Vec<usize> = (0..unsorted.len()).collect();
         let sort_by: Vec<(usize, bool)> = sort_executable
             .sort_on
             .iter()
@@ -92,46 +89,8 @@ impl SortStageIterator {
                 SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
             })
             .collect();
-        indices.sort_by(|x, y| {
-            let x_row_as_row = unsorted.get_row(*x);
-            let y_row_as_row = unsorted.get_row(*y);
-            let x_row = x_row_as_row.row();
-            let y_row = y_row_as_row.row();
-            for &(idx, asc) in &sort_by {
-                let ord = Self::get_value(&x_row[idx], context)
-                    .partial_cmp(&Self::get_value(&y_row[idx], context))
-                    .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
-                if ord != Ordering::Equal {
-                    if asc {
-                        return ord;
-                    } else {
-                        return ord.reverse();
-                    }
-                };
-            }
-            Ordering::Equal
-        });
-        Self { unsorted, sorted_indices: indices, next_index_index: 0 }
-    }
-
-    fn get_value<'a, T: ReadableSnapshot>(
-        entry: &'a VariableValue<'a>,
-        context: &'a ExecutionContext<T>,
-    ) -> Option<Cow<'a, Value<'a>>> {
-        let snapshot: &T = &context.snapshot;
-        match entry {
-            VariableValue::Value(value) => Some(Cow::Borrowed(value)),
-            VariableValue::Thing(Thing::Attribute(attribute)) => {
-                Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
-            }
-            VariableValue::Empty => None,
-            VariableValue::Type(_) | VariableValue::Thing(_) => {
-                unreachable!("Should have been caught earlier")
-            }
-
-            | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
-            | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-        }
+        let sorted_indices = unsorted.indices_sorted_by(context, &sort_by);
+        Self { unsorted, sorted_indices, next_index_index: 0 }
     }
 }
 

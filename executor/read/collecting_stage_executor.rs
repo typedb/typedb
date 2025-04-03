@@ -4,12 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Cow, cmp::Ordering, fmt, hash::Hash, iter::Peekable, sync::Arc};
+use std::{fmt, hash::Hash, iter::Peekable, sync::Arc};
 
-use answer::{variable_value::VariableValue, Thing};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
-use encoding::value::value::Value;
-use error::unimplemented_feature;
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
 use storage::snapshot::ReadableSnapshot;
@@ -203,26 +200,6 @@ impl SortCollector {
         // let output_width = sort_executable.output_width;  // TODO: Get this information into the sort_executable.
         Self { sort_on, collector: None }
     }
-
-    fn get_value<'a, T: ReadableSnapshot>(
-        entry: &'a VariableValue<'a>,
-        context: &'a ExecutionContext<T>,
-    ) -> Option<Cow<'a, Value<'a>>> {
-        let snapshot: &T = &context.snapshot;
-        match entry {
-            VariableValue::Value(value) => Some(Cow::Borrowed(value)),
-            VariableValue::Thing(Thing::Attribute(attribute)) => {
-                Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
-            }
-            VariableValue::Empty => None,
-            VariableValue::Type(_) | VariableValue::Thing(_) => {
-                unreachable!("Should have been caught earlier")
-            }
-
-            | VariableValue::ThingList(_) => unimplemented_feature!(Lists),
-            | VariableValue::ValueList(_) => unimplemented_feature!(Lists),
-        }
-    }
 }
 
 impl CollectorTrait for SortCollector {
@@ -238,25 +215,7 @@ impl CollectorTrait for SortCollector {
     fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
         let unsorted = collector.unwrap();
-        let mut indices: Vec<usize> = (0..unsorted.len()).collect();
-        indices.sort_by(|x, y| {
-            let x_row_as_row = unsorted.get_row(*x);
-            let y_row_as_row = unsorted.get_row(*y);
-            let x_row = x_row_as_row.row();
-            let y_row = y_row_as_row.row();
-            for (idx, asc) in sort_on.iter() {
-                let ord = Self::get_value(&x_row[*idx], context)
-                    .partial_cmp(&Self::get_value(&y_row[*idx], context))
-                    .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
-                match (asc, ord) {
-                    (true, Ordering::Less) | (false, Ordering::Greater) => return Ordering::Less,
-                    (true, Ordering::Greater) | (false, Ordering::Less) => return Ordering::Greater,
-                    (true, Ordering::Equal) | (false, Ordering::Equal) => {}
-                };
-            }
-            Ordering::Equal
-        });
-        let sorted_indices = indices.into_iter().peekable();
+        let sorted_indices = unsorted.indices_sorted_by(context, &sort_on).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted, sorted_indices })
     }
 }
