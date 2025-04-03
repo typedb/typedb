@@ -126,8 +126,6 @@ fn make_builder<'a>(
                 let mut shared_variables = shared_variables.clone();
                 shared_variables.extend(disjunction.named_producible_variables(block_context));
                 shared_variables.extend(disjunction.required_inputs(block_context));
-                shared_variables =
-                    shared_variables.intersection(&disjunction.referenced_variables().collect()).copied().collect();
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction
                         .conjunctions()
@@ -137,7 +135,7 @@ fn make_builder<'a>(
                                 conj,
                                 block_context,
                                 variable_positions,
-                                &shared_variables,
+                                &shared_variables.intersection(&conj.referenced_variables().collect()).copied().collect(),
                                 block_annotations,
                                 variable_registry,
                                 expressions,
