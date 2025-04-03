@@ -124,12 +124,14 @@ impl Conjunction {
     }
 
     pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for nested in &self.nested_patterns {
-            match nested {
-                NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint(block_context, self.scope_id)?,
-                NestedPattern::Negation(negation) => negation.conjunction().find_disjoint(block_context)?,
-                NestedPattern::Optional(optional) => optional.conjunction().find_disjoint(block_context)?,
+        for (var, mode) in self.variable_dependency(block_context) {
+            let scope = block_context.get_scope(&var).unwrap();
+            if scope == self.scope_id && mode.is_referencing() {
+                return ControlFlow::Break((var, mode.referencing_constraints().first().and_then(|c| c.source_span())));
             }
+        }
+        for nested in &self.nested_patterns {
+            nested.find_disjoint(block_context)?;
         }
         ControlFlow::Continue(())
     }
