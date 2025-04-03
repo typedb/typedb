@@ -732,7 +732,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn source_span(&self) -> Option<Span> {
+    pub fn source_span(&self) -> Option<Span> {
         match self {
             Constraint::Is(inner) => inner.source_span(),
             Constraint::Kind(inner) => None,
