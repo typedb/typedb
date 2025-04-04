@@ -7,7 +7,7 @@
 use std::{
     any::type_name_of_val,
     cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
+    collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
@@ -31,9 +31,13 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
+use ir::pattern::Scope;
 
 use crate::{
-    annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::TypeAnnotations},
+    annotation::{
+        expression::compiled_expression::ExecutableExpression,
+        type_annotations::{BlockAnnotations, TypeAnnotations},
+    },
     executable::{
         function::FunctionCallCostProvider,
         match_::{
@@ -84,7 +88,7 @@ pub(crate) fn plan_conjunction<'a>(
     block_context: &BlockContext,
     variable_positions: &HashMap<Variable, VariablePosition>,
     shared_variables: &HashSet<Variable>,
-    type_annotations: &'a TypeAnnotations,
+    type_annotations: &'a BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
@@ -109,7 +113,7 @@ fn make_builder<'a>(
     block_context: &BlockContext,
     variable_positions: &HashMap<Variable, VariablePosition>,
     shared_variables: &HashSet<Variable>,
-    type_annotations: &'a TypeAnnotations,
+    block_annotations: &'a BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &'a Statistics,
@@ -120,22 +124,20 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
-                let mut shared_variables = shared_variables.clone();
-                shared_variables.extend(disjunction.named_producible_variables(block_context));
-                shared_variables.extend(disjunction.required_inputs(block_context));
-                shared_variables =
-                    shared_variables.intersection(&disjunction.referenced_variables().collect()).copied().collect();
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction
                         .conjunctions()
                         .iter()
-                        .map(|conj| {
+                        .map(|branch| {
+                            let branch_shared_variables = branch.referenced_variables()
+                                .filter(|var| block_context.is_variable_available(conjunction.scope_id(), *var))
+                                .collect();
                             make_builder(
-                                conj,
+                                branch,
                                 block_context,
                                 variable_positions,
-                                &shared_variables,
-                                type_annotations,
+                                &branch_shared_variables,
+                                block_annotations,
                                 variable_registry,
                                 expressions,
                                 statistics,
@@ -158,7 +160,7 @@ fn make_builder<'a>(
                         block_context,
                         variable_positions,
                         &shared_variables,
-                        type_annotations,
+                        block_annotations,
                         variable_registry,
                         expressions,
                         statistics,
@@ -172,8 +174,12 @@ fn make_builder<'a>(
         }
     }
 
-    let mut plan_builder =
-        ConjunctionPlanBuilder::new(conjunction.required_inputs(block_context).collect(), type_annotations, statistics);
+    let conjunction_annotations = block_annotations.type_annotations_of(conjunction).unwrap();
+    let mut plan_builder = ConjunctionPlanBuilder::new(
+        conjunction.required_inputs(block_context).collect(),
+        conjunction_annotations,
+        statistics,
+    );
 
     plan_builder.register_variables(
         variable_positions.keys().copied(),
@@ -255,7 +261,7 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
     shared_variables: Vec<Variable>,
     required_inputs: Vec<Variable>,
     graph: Graph<'a>,
-    type_annotations: &'a TypeAnnotations,
+    local_annotations: &'a TypeAnnotations,
     statistics: &'a Statistics,
     planner_statistics: PlannerStatistics,
 }
@@ -270,11 +276,11 @@ impl fmt::Debug for ConjunctionPlanBuilder<'_> {
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
-    fn new(required_inputs: Vec<Variable>, type_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
+    fn new(required_inputs: Vec<Variable>, local_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self {
             shared_variables: Vec::new(),
             graph: Graph::default(),
-            type_annotations,
+            local_annotations,
             statistics,
             planner_statistics: PlannerStatistics::new(),
             required_inputs,
@@ -385,12 +391,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_type_var(&mut self, variable: Variable) {
-        let planner = TypePlanner::from_variable(variable, self.type_annotations);
+        let planner = TypePlanner::from_variable(variable, self.local_annotations);
         self.graph.push_variable(variable, VariableVertex::Type(planner));
     }
 
     fn register_thing_var(&mut self, variable: Variable) {
-        let planner = ThingPlanner::from_variable(variable, self.type_annotations, self.statistics);
+        let planner = ThingPlanner::from_variable(variable, self.local_annotations, self.statistics);
         self.planner_statistics.increment_var(planner.unrestricted_expected_size);
         self.graph.push_variable(variable, VariableVertex::Thing(planner));
     }
@@ -438,29 +444,29 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_label(&mut self, label: &'a Label<Variable>) {
-        let planner = TypeListPlanner::from_label_constraint(label, &self.graph.variable_index, self.type_annotations);
+        let planner = TypeListPlanner::from_label_constraint(label, &self.graph.variable_index, self.local_annotations);
         self.graph.push_constraint(ConstraintVertex::TypeList(planner));
     }
 
     fn register_role_name(&mut self, role_name: &'a RoleName<Variable>) {
         let planner =
-            TypeListPlanner::from_role_name_constraint(role_name, &self.graph.variable_index, self.type_annotations);
+            TypeListPlanner::from_role_name_constraint(role_name, &self.graph.variable_index, self.local_annotations);
         self.graph.push_constraint(ConstraintVertex::TypeList(planner));
     }
 
     fn register_kind(&mut self, kind: &'a Kind<Variable>) {
-        let planner = TypeListPlanner::from_kind_constraint(kind, &self.graph.variable_index, self.type_annotations);
+        let planner = TypeListPlanner::from_kind_constraint(kind, &self.graph.variable_index, self.local_annotations);
         self.graph.push_constraint(ConstraintVertex::TypeList(planner));
     }
 
     fn register_sub(&mut self, sub: &'a Sub<Variable>) {
-        let planner = SubPlanner::from_constraint(sub, &self.graph.variable_index, self.type_annotations);
+        let planner = SubPlanner::from_constraint(sub, &self.graph.variable_index, self.local_annotations);
         self.graph.push_constraint(ConstraintVertex::Sub(planner));
     }
 
     fn register_owns(&mut self, owns: &'a Owns<Variable>) {
         let planner =
-            OwnsPlanner::from_constraint(owns, &self.graph.variable_index, self.type_annotations, self.statistics);
+            OwnsPlanner::from_constraint(owns, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Owns(planner));
     }
 
@@ -468,7 +474,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner = RelatesPlanner::from_constraint(
             relates,
             &self.graph.variable_index,
-            self.type_annotations,
+            self.local_annotations,
             self.statistics,
         );
         self.graph.push_constraint(ConstraintVertex::Relates(planner));
@@ -476,24 +482,24 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_plays(&mut self, plays: &'a Plays<Variable>) {
         let planner =
-            PlaysPlanner::from_constraint(plays, &self.graph.variable_index, self.type_annotations, self.statistics);
+            PlaysPlanner::from_constraint(plays, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Plays(planner));
     }
 
     fn register_value(&mut self, value: &'a Value<Variable>) {
-        let planner = TypeListPlanner::from_value_constraint(value, &self.graph.variable_index, self.type_annotations);
+        let planner = TypeListPlanner::from_value_constraint(value, &self.graph.variable_index, self.local_annotations);
         self.graph.push_constraint(ConstraintVertex::TypeList(planner));
     }
 
     fn register_isa(&mut self, isa: &'a Isa<Variable>) {
         let planner =
-            IsaPlanner::from_constraint(isa, &self.graph.variable_index, self.type_annotations, self.statistics);
+            IsaPlanner::from_constraint(isa, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.graph.push_constraint(ConstraintVertex::Isa(planner));
     }
 
     fn register_iid(&mut self, iid: &'a Iid<Variable>) {
         let planner =
-            IidPlanner::from_constraint(iid, &self.graph.variable_index, self.type_annotations, self.statistics);
+            IidPlanner::from_constraint(iid, &self.graph.variable_index, self.local_annotations, self.statistics);
         // TODO not setting exact bound for the var here as the checker can't currently take advantage of that
         //      so the cost would be misleading the planner
         self.graph.push_constraint(ConstraintVertex::Iid(planner));
@@ -501,14 +507,14 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_has(&mut self, has: &'a Has<Variable>) {
         let planner =
-            HasPlanner::from_constraint(has, &self.graph.variable_index, self.type_annotations, self.statistics);
+            HasPlanner::from_constraint(has, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.planner_statistics.increment_has(planner.unbound_typed_expected_size);
         self.graph.push_constraint(ConstraintVertex::Has(planner));
     }
 
     fn register_links(&mut self, links: &'a Links<Variable>) {
         let planner =
-            LinksPlanner::from_constraint(links, &self.graph.variable_index, self.type_annotations, self.statistics);
+            LinksPlanner::from_constraint(links, &self.graph.variable_index, self.local_annotations, self.statistics);
         self.planner_statistics.increment_links(planner.unbound_typed_expected_size);
         self.graph.push_constraint(ConstraintVertex::Links(planner));
     }
@@ -517,7 +523,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner = IndexedRelationPlanner::from_constraint(
             indexed_relation,
             &self.graph.variable_index,
-            self.type_annotations,
+            self.local_annotations,
             self.statistics,
         );
         self.graph.push_constraint(ConstraintVertex::IndexedRelation(planner))
@@ -563,7 +569,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.push_is(IsPlanner::from_constraint(
             is,
             &self.graph.variable_index,
-            self.type_annotations,
+            self.local_annotations,
             self.statistics,
         ));
     }
@@ -572,7 +578,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.push_links_deduplication(LinksDeduplicationPlanner::from_constraint(
             links_deduplication,
             &self.graph.variable_index,
-            self.type_annotations,
+            self.local_annotations,
             self.statistics,
         ));
     }
@@ -605,7 +611,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.graph.push_comparison(ComparisonPlanner::from_constraint(
             comparison,
             &self.graph.variable_index,
-            self.type_annotations,
+            self.local_annotations,
             self.statistics,
         ));
     }
@@ -614,7 +620,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         let planner = UnsatisfiablePlanner::from_constraint(
             optimised_unsatisfiable,
             &self.graph.variable_index,
-            self.type_annotations,
+            self.local_annotations,
             self.statistics,
         );
         self.graph.push_optimised_to_unsatisfiable(planner);
@@ -788,13 +794,13 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { shared_variables, graph, type_annotations, mut planner_statistics, .. } = self;
+        let Self { shared_variables, graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {
             shared_variables,
             graph,
-            type_annotations,
+            local_annotations: type_annotations,
             ordering,
             metadata,
             element_to_order,
@@ -1293,7 +1299,7 @@ impl Ord for StepExtension {
 pub(crate) struct ConjunctionPlan<'a> {
     shared_variables: Vec<Variable>,
     graph: Graph<'a>,
-    type_annotations: &'a TypeAnnotations,
+    local_annotations: &'a TypeAnnotations,
     ordering: Vec<VertexId>,
     metadata: HashMap<PatternVertexId, CostMetaData>,
     element_to_order: HashMap<VertexId, usize>,
@@ -1313,6 +1319,7 @@ impl fmt::Debug for ConjunctionPlan<'_> {
 impl ConjunctionPlan<'_> {
     pub(super) fn lower(
         &self,
+        input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         input_variables: impl IntoIterator<Item = Variable> + Clone,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
@@ -1321,10 +1328,15 @@ impl ConjunctionPlan<'_> {
         let mut match_builder = MatchExecutableBuilder::new(
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
-            input_variables.into_iter().collect(),
+            input_variables.clone().into_iter().collect(),
             self.planner_statistics,
         );
-
+        self.may_make_input_check_step(
+            &mut match_builder,
+            input_variables.into_iter(),
+            input_variable_annotations,
+            variable_registry,
+        );
         for &index in &self.ordering {
             match index {
                 VertexId::Variable(var) => {
@@ -1459,6 +1471,7 @@ impl ConjunctionPlan<'_> {
                         .clone() // FIXME
                         .plan(match_builder.produced_so_far.iter().filter(|&&v| v != variable).copied())?
                         .lower(
+                            self.local_annotations.vertex_annotations(),
                             match_builder.row_variables().iter().copied(),
                             match_builder.current_outputs.iter().copied(),
                             match_builder.position_mapping(),
@@ -1530,6 +1543,7 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Negation(negation) => {
                 let negation = negation.plan().lower(
+                    self.local_annotations.vertex_annotations(),
                     match_builder.row_variables().iter().copied(),
                     match_builder.selected_variables.iter().copied(),
                     match_builder.position_mapping(),
@@ -1587,8 +1601,8 @@ impl ConjunctionPlan<'_> {
                 let rhs_pos = rhs.clone().map(match_builder.position_mapping());
 
                 let check = CheckInstruction::Comparison {
-                    lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                    rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                    lhs: CheckVertex::resolve(lhs_pos, self.local_annotations),
+                    rhs: CheckVertex::resolve(rhs_pos, self.local_annotations),
                     comparator,
                 };
 
@@ -1610,6 +1624,7 @@ impl ConjunctionPlan<'_> {
                     .clone() // FIXME
                     .plan(match_builder.position_mapping().keys().copied())?
                     .lower(
+                        self.local_annotations.vertex_annotations(),
                         match_builder.row_variables().iter().copied(),
                         match_builder.current_outputs.iter().copied(),
                         match_builder.position_mapping(),
@@ -1669,8 +1684,8 @@ impl ConjunctionPlan<'_> {
 
                 let con = $con.clone();
                 let instruction = match direction {
-                    Direction::Canonical => ConstraintInstruction::$fw($fwi::new(con, inputs, self.type_annotations)),
-                    Direction::Reverse => ConstraintInstruction::$bw($bwi::new(con, inputs, self.type_annotations)),
+                    Direction::Canonical => ConstraintInstruction::$fw($fwi::new(con, inputs, self.local_annotations)),
+                    Direction::Reverse => ConstraintInstruction::$bw($bwi::new(con, inputs, self.local_annotations)),
                 };
 
                 let lhs_produced = lhs_var.xor(lhs_input);
@@ -1699,7 +1714,7 @@ impl ConjunctionPlan<'_> {
             ConstraintVertex::Iid(iid) => {
                 let var = iid.iid().var().as_variable().unwrap();
                 let instruction =
-                    ConstraintInstruction::Iid(IidInstruction::new(iid.iid().clone(), self.type_annotations));
+                    ConstraintInstruction::Iid(IidInstruction::new(iid.iid().clone(), self.local_annotations));
                 match_builder.push_instruction(var, instruction);
             }
 
@@ -1742,7 +1757,7 @@ impl ConjunctionPlan<'_> {
                 let player_2_role = planner.indexed_relation().role_type_2().as_variable().unwrap();
 
                 let annotations = self
-                    .type_annotations
+                    .local_annotations
                     .constraint_annotations_of(planner.indexed_relation().clone().into())
                     .unwrap()
                     .as_indexed_relation();
@@ -1835,8 +1850,8 @@ impl ConjunctionPlan<'_> {
                 let lhs_pos = lhs.clone().map(match_builder.position_mapping());
                 let rhs_pos = rhs.clone().map(match_builder.position_mapping());
                 let check = CheckInstruction::$fw {
-                    $lhs: CheckVertex::resolve(lhs_pos, self.type_annotations),
-                    $rhs: CheckVertex::resolve(rhs_pos, self.type_annotations),
+                    $lhs: CheckVertex::resolve(lhs_pos, self.local_annotations),
+                    $rhs: CheckVertex::resolve(rhs_pos, self.local_annotations),
                     $($with: $con.$with(),)?
                 };
 
@@ -1895,9 +1910,9 @@ impl ConjunctionPlan<'_> {
                 let role_pos = match_builder.position(role).into();
 
                 let check = CheckInstruction::Links {
-                    relation: CheckVertex::resolve(relation_pos, self.type_annotations),
-                    player: CheckVertex::resolve(player_pos, self.type_annotations),
-                    role: CheckVertex::resolve(role_pos, self.type_annotations),
+                    relation: CheckVertex::resolve(relation_pos, self.local_annotations),
+                    player: CheckVertex::resolve(player_pos, self.local_annotations),
+                    role: CheckVertex::resolve(role_pos, self.local_annotations),
                 };
 
                 match_builder.push_check(&[relation, player, role], check);
@@ -1916,11 +1931,11 @@ impl ConjunctionPlan<'_> {
                 let start_role_pos = match_builder.position(player_1_role).into();
                 let end_role_pos = match_builder.position(player_2_role).into();
                 let check = CheckInstruction::IndexedRelation {
-                    start_player: CheckVertex::resolve(start_player_pos, self.type_annotations),
-                    end_player: CheckVertex::resolve(end_player_pos, self.type_annotations),
-                    relation: CheckVertex::resolve(relation_pos, self.type_annotations),
-                    start_role: CheckVertex::resolve(start_role_pos, self.type_annotations),
-                    end_role: CheckVertex::resolve(end_role_pos, self.type_annotations),
+                    start_player: CheckVertex::resolve(start_player_pos, self.local_annotations),
+                    end_player: CheckVertex::resolve(end_player_pos, self.local_annotations),
+                    relation: CheckVertex::resolve(relation_pos, self.local_annotations),
+                    start_role: CheckVertex::resolve(start_role_pos, self.local_annotations),
+                    end_role: CheckVertex::resolve(end_role_pos, self.local_annotations),
                 };
                 match_builder.push_check(&[player_1, player_2, relation, player_1_role, player_2_role], check);
             }
@@ -1933,6 +1948,40 @@ impl ConjunctionPlan<'_> {
 
     pub(super) fn cost(&self) -> Cost {
         self.planner_statistics.query_cost
+    }
+
+    fn may_make_input_check_step(
+        &self,
+        match_builder: &mut MatchExecutableBuilder,
+        input_variables: impl Iterator<Item = Variable>,
+        input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
+        variable_registry: &VariableRegistry,
+    ) {
+        let mut pushed_any = false;
+        input_variables
+            .filter_map(|variable| {
+                let vertex = variable.clone().into();
+                let local_annotations = self.local_annotations.vertex_annotations_of(&vertex)?;
+                input_variable_annotations
+                    .get(&vertex)? // Functions don't have any
+                    .iter()
+                    .any(|type_| !local_annotations.contains(type_))
+                    .then(|| (variable, local_annotations.clone()))
+            })
+            .for_each(|(variable, types)| {
+                let category = variable_registry.get_variable_category(variable).unwrap();
+                debug_assert!(category.is_category_thing() || category.is_category_type());
+                let executor_var = match_builder.position(variable);
+                let check = match category.is_category_thing() {
+                    true => CheckInstruction::ThingTypeList { thing_var: executor_var, types },
+                    false => CheckInstruction::TypeList { type_var: executor_var, types },
+                };
+                match_builder.push_check(&[variable], check);
+                pushed_any = true;
+            });
+        if pushed_any {
+            match_builder.finish_one();
+        }
     }
 }
 
@@ -1978,6 +2027,7 @@ pub(super) struct DisjunctionPlan<'a> {
 impl DisjunctionPlan<'_> {
     fn lower(
         &self,
+        input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         disjunction_inputs: impl IntoIterator<Item = Variable> + Clone,
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
@@ -1987,6 +2037,7 @@ impl DisjunctionPlan<'_> {
         let mut assigned_positions = assigned_positions.clone();
         for branch in &self.branches {
             let lowered_branch = branch.lower(
+                input_variable_annotations,
                 disjunction_inputs.clone(),
                 selected_variables.clone(),
                 &assigned_positions,

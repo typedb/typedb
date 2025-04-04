@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
+    io::Read,
     ops::{Deref, DerefMut},
     sync::Arc,
 };
@@ -14,15 +15,23 @@ use std::{
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Vertex},
-    pipeline::{block::Block, VariableRegistry},
+    pattern::{
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern,
+        variable_category::VariableCategory, Scope, ScopeId, Vertex,
+    },
+    pipeline::{
+        block::{Block, BlockContext},
+        VariableRegistry,
+    },
 };
 use itertools::{chain, Itertools};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
     function::AnnotatedFunctionSignatures,
-    type_annotations::{ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations},
+    type_annotations::{
+        BlockAnnotations, ConstraintTypeAnnotations, LeftRightAnnotations, LinksAnnotations, TypeAnnotations,
+    },
     type_seeder::TypeGraphSeedingContext,
     TypeInferenceError,
 };
@@ -104,7 +113,7 @@ pub fn infer_types(
     previous_stage_variable_annotations: &BTreeMap<Variable, Arc<BTreeSet<TypeAnnotation>>>,
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     is_write_stage: bool,
-) -> Result<TypeAnnotations, TypeInferenceError> {
+) -> Result<BlockAnnotations, TypeInferenceError> {
     let graph = compute_type_inference_graph(
         snapshot,
         block,
@@ -114,20 +123,39 @@ pub fn infer_types(
         annotated_function_signatures,
         is_write_stage,
     )?;
-    let mut vertex_annotations = BTreeMap::new();
-    let mut constraint_annotations = HashMap::new();
-    graph.collect_type_annotations(&mut vertex_annotations, &mut constraint_annotations);
-    let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
-    debug_assert!(block.block_context().referenced_variables().all(|var| {
-        match variable_registry.get_variable_category(var) {
-            None => {
-                unreachable!("Safe to ignore. But can we know the ValueTypeCategory of an assignment at translation?")
-            }
-            Some(VariableCategory::Value) | Some(VariableCategory::ValueList) => true,
-            Some(_) => type_annotations.vertex_annotations_of(&Vertex::Variable(var)).is_some(),
+    let mut type_annotations_by_scope = HashMap::new();
+    graph.collect_type_annotations(Some(variable_registry), &mut type_annotations_by_scope);
+    debug_assert_all_vertex_annotations_available(
+        block.block_context(),
+        block.conjunction(),
+        &type_annotations_by_scope,
+    );
+    Ok(BlockAnnotations::new(type_annotations_by_scope))
+}
+
+fn debug_assert_all_vertex_annotations_available(
+    context: &BlockContext,
+    conjunction: &Conjunction,
+    by_scope: &HashMap<ScopeId, TypeAnnotations>,
+) {
+    let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
+    conjunction
+        .named_producible_variables(context)
+        .chain(conjunction.variable_dependency(context).keys().copied())
+        .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some());
+    conjunction.nested_patterns().iter().for_each(|nested| match nested {
+        NestedPattern::Disjunction(disj) => {
+            disj.conjunctions()
+                .iter()
+                .for_each(|inner| debug_assert_all_vertex_annotations_available(context, inner, by_scope));
         }
-    }));
-    Ok(type_annotations)
+        NestedPattern::Negation(inner) => {
+            debug_assert_all_vertex_annotations_available(context, inner.conjunction(), by_scope)
+        }
+        NestedPattern::Optional(inner) => {
+            debug_assert_all_vertex_annotations_available(context, inner.conjunction(), by_scope)
+        }
+    })
 }
 
 pub(crate) fn compute_type_inference_graph<'graph>(
@@ -147,8 +175,8 @@ pub(crate) fn compute_type_inference_graph<'graph>(
         is_write_stage,
     )
     .create_graph(block.block_context(), previous_stage_variable_annotations, block.conjunction())?;
-    pre_check_edges_for_trivial_unsatisfiability(&graph).map_err(|edge| {
-        construct_error_message_for_unsatisfiable_edge(snapshot, type_manager, variable_registry, &graph, edge)
+    pre_check_edges_for_trivial_unsatisfiability(&graph).map_err(|(graph, edge)| {
+        construct_error_message_for_unsatisfiable_edge(snapshot, type_manager, variable_registry, graph, edge)
     })?;
 
     prune_types(&mut graph);
@@ -193,13 +221,13 @@ fn construct_error_message_for_unsatisfiable_edge(
 
 fn pre_check_edges_for_trivial_unsatisfiability<'a>(
     graph: &'a TypeInferenceGraph<'a>,
-) -> Result<(), &'a TypeInferenceEdge<'a>> {
+) -> Result<(), (&'a TypeInferenceGraph<'a>, &'a TypeInferenceEdge<'a>)> {
     let mut thing_edges = graph.edges.iter().filter(|edge| match &edge.constraint {
         Constraint::Links(_) | Constraint::Has(_) | Constraint::Isa(_) => true,
         _ => false,
     });
     if let Some(edge) = thing_edges.find(|edge| edge.left_to_right.is_empty() || edge.right_to_left.is_empty()) {
-        return Err(edge);
+        return Err((graph, edge));
     }
     graph
         .nested_disjunctions
@@ -270,11 +298,18 @@ impl TypeInferenceGraph<'_> {
 
     pub(crate) fn collect_type_annotations(
         self,
-        vertex_annotations: &mut BTreeMap<Vertex<Variable>, Arc<BTreeSet<TypeAnnotation>>>,
-        constraint_annotations: &mut HashMap<Constraint<Variable>, ConstraintTypeAnnotations>,
+        _variable_registry: Option<&VariableRegistry>,
+        type_annotations_by_scope: &mut HashMap<ScopeId, TypeAnnotations>,
     ) {
-        let TypeInferenceGraph { vertices, edges, nested_disjunctions, nested_negations, nested_optionals, .. } = self;
-
+        let TypeInferenceGraph {
+            vertices,
+            edges,
+            nested_disjunctions,
+            nested_negations,
+            nested_optionals,
+            conjunction,
+        } = self;
+        let mut constraint_annotations = HashMap::new();
         let mut combine_links_edges = HashMap::new();
         edges.into_iter().for_each(|edge| {
             let TypeInferenceEdge { constraint, left_to_right, right_to_left, .. } = edge;
@@ -297,15 +332,19 @@ impl TypeInferenceGraph<'_> {
             }
         });
 
-        vertices.into_iter().for_each(|(variable, types)| {
-            vertex_annotations.entry(variable).or_insert_with(|| Arc::new(types));
-        });
+        let vertex_annotations = vertices
+            .into_iter()
+            .map(|(variable, types)| (variable.into(), Arc::new(types)))
+            .collect::<BTreeMap<_, _>>();
+
+        let type_annotations = TypeAnnotations::new(vertex_annotations, constraint_annotations);
+        type_annotations_by_scope.insert(conjunction.scope_id(), type_annotations);
 
         chain(
             chain(nested_negations, nested_optionals),
             nested_disjunctions.into_iter().flat_map(|disjunction| disjunction.disjunction),
         )
-        .for_each(|nested| nested.collect_type_annotations(vertex_annotations, constraint_annotations));
+        .for_each(|nested| nested.collect_type_annotations(_variable_registry, type_annotations_by_scope));
     }
 
     fn check_thing_constraints_satisfiable(
@@ -463,6 +502,3 @@ impl NestedTypeInferenceGraphDisjunction<'_> {
         is_modified
     }
 }
-
-#[cfg(test)]
-pub mod tests {}

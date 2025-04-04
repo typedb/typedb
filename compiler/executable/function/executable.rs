@@ -94,7 +94,7 @@ fn compile_function(
         statistics,
         &variable_registry,
         call_cost_provider,
-        stages,
+        &stages,
         arguments.into_iter(),
         Some(&return_.referenced_variables()),
     )?;

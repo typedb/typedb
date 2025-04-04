@@ -15,7 +15,7 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
+        Scope, ScopeId, Vertex,
     },
     pipeline::{block::Block, ParameterRegistry, VariableRegistry},
 };
@@ -29,9 +29,11 @@ use crate::annotation::{
         expression_compiler::ExpressionCompilationContext,
         ExpressionCompileError,
     },
-    type_annotations::TypeAnnotations,
+    type_annotations::BlockAnnotations,
     type_inference::resolve_value_types,
 };
+
+type AssignmentIndex<'a> = HashMap<Variable, Vec<(&'a Conjunction, &'a ExpressionBinding<Variable>)>>;
 
 struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
     block: &'block Block,
@@ -40,7 +42,7 @@ struct BlockExpressionsCompilationContext<'block, Snapshot: ReadableSnapshot> {
 
     snapshot: &'block Snapshot,
     type_manager: &'block TypeManager,
-    type_annotations: &'block TypeAnnotations,
+    block_annotations: &'block BlockAnnotations,
 
     variable_value_types: HashMap<Variable, ExpressionValueType>,
     compiled_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -63,7 +65,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
     block: &'block Block,
     variable_registry: &'block mut VariableRegistry,
     parameters: &'block ParameterRegistry,
-    type_annotations: &'block TypeAnnotations,
+    block_annotations: &'block BlockAnnotations,
     input_value_type_annotations: &mut BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>, Box<ExpressionCompileError>> {
     let mut context = BlockExpressionsCompilationContext {
@@ -72,7 +74,7 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
         parameters,
         snapshot,
         type_manager,
-        type_annotations,
+        block_annotations,
         variable_value_types: input_value_type_annotations.iter().map(|(&k, v)| (k, v.clone())).collect(),
         visited_expressions: HashSet::new(),
         compiled_expressions: HashMap::new(),
@@ -105,11 +107,11 @@ pub fn compile_expressions<'block, Snapshot: ReadableSnapshot>(
 fn index_expressions_conjunction<'block, Snapshot: ReadableSnapshot>(
     context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     conjunction: &'block Conjunction,
-    index: &mut HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>,
+    index: &mut AssignmentIndex<'block>,
 ) -> Result<(), Box<ExpressionCompileError>> {
     for expression_binding in conjunction.constraints().iter().filter_map(|c| c.as_expression_binding()) {
         let left = expression_binding.left().as_variable().unwrap();
-        if index.insert(left, vec![expression_binding]).is_some() {
+        if index.insert(left, vec![(conjunction, expression_binding)]).is_some() {
             return Err(Box::new(ExpressionCompileError::MultipleAssignmentsForVariable {
                 variable: context.variable_name(&left),
                 source_span: expression_binding.source_span(),
@@ -136,9 +138,9 @@ fn index_expressions_conjunction<'block, Snapshot: ReadableSnapshot>(
 fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
     context: &BlockExpressionsCompilationContext<'_, Snapshot>,
     disjunction: &'block Disjunction,
-    index: &mut HashMap<Variable, Vec<&'block ExpressionBinding<Variable>>>,
+    index: &mut AssignmentIndex<'block>,
 ) -> Result<(), Box<ExpressionCompileError>> {
-    let mut combined_indices = HashMap::<Variable, Vec<&'block ExpressionBinding<Variable>>>::new();
+    let mut combined_indices: AssignmentIndex<'block> = HashMap::new();
     let branch_indices = disjunction
         .conjunctions()
         .iter()
@@ -156,7 +158,7 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
             debug_assert!(!index.get(&var).unwrap().is_empty());
             Err(ExpressionCompileError::MultipleAssignmentsForVariable {
                 variable: context.variable_name(&var),
-                source_span: index.get(&var).unwrap().first().unwrap().source_span(),
+                source_span: index.get(&var).unwrap().first().unwrap().1.source_span(),
             })
         }
         None => Ok(()),
@@ -167,15 +169,18 @@ fn index_expressions_disjunction<'block, Snapshot: ReadableSnapshot>(
 #[allow(clippy::map_entry, reason = "false positive, this is not a trivial `contains_key()` followed by `insert()`")]
 fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
+    in_conjunction: &Conjunction,
     variable: Variable,
-    expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
+    expression_assignments: &AssignmentIndex<'a>,
     assignment_span: Option<Span>,
 ) -> Result<ExpressionValueType, Box<ExpressionCompileError>> {
     if let Some(value) = context.variable_value_types.get(&variable) {
         Ok(value.clone())
     } else if let Some(value) = try_value_type_from_assignments(context, variable, expression_assignments)? {
         Ok(value)
-    } else if let Some(value) = try_value_type_from_type_annotations(context, variable, assignment_span)? {
+    } else if let Some(value) =
+        try_value_type_from_type_annotations(context, in_conjunction, variable, assignment_span)?
+    {
         Ok(value)
     } else {
         Err(Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
@@ -188,7 +193,7 @@ fn resolve_type_for_variable<'a, Snapshot: ReadableSnapshot>(
 fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'a, Snapshot>,
     variable: Variable,
-    expression_assignments: &HashMap<Variable, Vec<&'a ExpressionBinding<Variable>>>,
+    expression_assignments: &AssignmentIndex<'a>,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
     if let Some(assignments_for_variable) = expression_assignments.get(&variable) {
         if !context.visited_expressions.insert(variable) {
@@ -198,9 +203,10 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
             }));
         }
         let mut return_types = HashSet::new();
-        for assignment in assignments_for_variable {
+        for (conjunction, assignment) in assignments_for_variable {
             assignment.expression().variables().try_for_each(|var| {
-                resolve_type_for_variable(context, var, expression_assignments, assignment.source_span()).map(|_| ())
+                resolve_type_for_variable(context, conjunction, var, expression_assignments, assignment.source_span())
+                    .map(|_| ())
             })?;
             let compiled = ExpressionCompilationContext::compile(
                 assignment.expression(),
@@ -228,10 +234,12 @@ fn try_value_type_from_assignments<'a, Snapshot: ReadableSnapshot>(
 
 fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
     context: &mut BlockExpressionsCompilationContext<'_, Snapshot>,
+    in_conjunction: &Conjunction,
     variable: Variable,
     source_span: Option<Span>,
 ) -> Result<Option<ExpressionValueType>, Box<ExpressionCompileError>> {
-    let Some(annotations) = context.type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) else {
+    let type_annotations = context.block_annotations.type_annotations_of(in_conjunction).unwrap();
+    let Some(annotations) = type_annotations.vertex_annotations_of(&Vertex::Variable(variable)) else {
         return Ok(None);
     };
     let variable_category = context.variable_registry.get_variable_category(variable).unwrap();

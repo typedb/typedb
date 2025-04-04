@@ -171,7 +171,7 @@ fn traverse_has_unbounded_sorted_from() {
 
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -181,6 +181,7 @@ fn traverse_has_unbounded_sorted_from() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_age], [var_age_type, var_person_type]);
@@ -266,7 +267,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     let entry = builder.finish().unwrap();
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -276,7 +277,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
         false,
     )
     .unwrap();
-
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person_1, var_person_2, var_name], [var_person_type, var_name_type]);
 
@@ -375,7 +376,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -385,6 +386,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_name, var_age], [var_person_type, var_name_type, var_age_type]);
@@ -461,7 +463,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -471,6 +473,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_attribute], [var_person_type]);
@@ -568,7 +571,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -578,6 +581,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) =
         position_mapping([var_person, var_age, var_person_type, var_age_type], []);

@@ -30,6 +30,7 @@ use ir::{
     },
     translation::pipeline::TranslatedStage,
 };
+use itertools::Itertools;
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
 
@@ -46,7 +47,7 @@ use crate::{
             AnnotatedPreambleFunctions, AnnotatedSchemaFunctions, FunctionParameterAnnotation,
         },
         match_inference::infer_types,
-        type_annotations::{ConstraintTypeAnnotations, TypeAnnotations},
+        type_annotations::{BlockAnnotations, ConstraintTypeAnnotations, TypeAnnotations},
         type_inference::resolve_value_types,
         write_type_check::check_type_combinations_for_write,
         AnnotationError,
@@ -64,7 +65,7 @@ pub struct AnnotatedPipeline {
 pub enum AnnotatedStage {
     Match {
         block: Block,
-        block_annotations: TypeAnnotations,
+        block_annotations: BlockAnnotations,
         // expressions skip annotation and go straight to executable, breaking the abstraction a bit...
         executable_expressions: HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         source_span: Option<Span>,
@@ -81,7 +82,7 @@ pub enum AnnotatedStage {
     },
     Put {
         block: Block,
-        match_annotations: TypeAnnotations,
+        match_annotations: BlockAnnotations,
         insert_annotations: TypeAnnotations,
         source_span: Option<Span>,
     },
@@ -215,10 +216,10 @@ pub(crate) fn annotate_pipeline_stages(
     for stage in translated_stages {
         let running_constraint_annotations = latest_match_index
             .map(|idx| {
-                let AnnotatedStage::Match { block_annotations, .. } = annotated_stages.get(idx).unwrap() else {
+                let AnnotatedStage::Match { block_annotations, block, .. } = annotated_stages.get(idx).unwrap() else {
                     unreachable!("LatestMatchIndex will always be a match");
                 };
-                block_annotations.constraint_annotations()
+                block_annotations.type_annotations_of(block.conjunction()).unwrap().constraint_annotations()
             })
             .unwrap_or(&empty_constraint_annotations);
         let annotated_stage = annotate_stage(
@@ -263,7 +264,8 @@ fn annotate_stage(
                 false,
             )
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
-            block_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+            let root_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
+            root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
                     running_variable_annotations.insert(var, types.clone());
                 }
@@ -375,7 +377,8 @@ fn annotate_stage(
             .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
 
             // Update running annotations based on match annotations as they will be less strict.
-            match_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
+            let root_annotations = match_annotations.type_annotations_of(block.conjunction()).unwrap();
+            root_annotations.vertex_annotations().iter().for_each(|(vertex, types)| {
                 if let Some(var) = vertex.as_variable() {
                     running_variable_annotations.insert(var, types.clone());
                 }
@@ -494,7 +497,7 @@ fn annotate_write_stage(
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     block: &Block,
 ) -> Result<TypeAnnotations, AnnotationError> {
-    let annotations = infer_types(
+    let block_annotations = infer_types(
         snapshot,
         block,
         variable_registry,
@@ -504,7 +507,15 @@ fn annotate_write_stage(
         true,
     )
     .map_err(|typedb_source| AnnotationError::TypeInference { typedb_source })?;
+    let annotations_by_scope = block_annotations.into_parts();
 
+    // Break if we introduce nested patterns in writes.
+    debug_assert!(block.conjunction().nested_patterns().is_empty() && 1 == annotations_by_scope.len());
+    let annotations = annotations_by_scope
+        .into_iter()
+        .map(|(_, annotations)| annotations)
+        .exactly_one()
+        .expect("Writes have only one conjunction");
     // Extend running annotations for variables introduced in this stage.
     block.conjunction().constraints().iter().for_each(|constraint| match constraint {
         Constraint::Isa(isa) => {
@@ -531,7 +542,6 @@ fn annotate_write_stage(
         }
         _ => (),
     });
-
     Ok(annotations)
 }
 

@@ -8,7 +8,7 @@ use std::{collections::BTreeMap, sync::Arc};
 
 use compiler::{
     annotation::{
-        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::TypeAnnotations,
+        function::EmptyAnnotatedFunctionSignatures, match_inference::infer_types, type_annotations::BlockAnnotations,
     },
     transformation::{
         redundant_constraints::optimize_away_statically_unsatisfiable_conjunctions,
@@ -345,7 +345,7 @@ fn translate_and_annotate(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query: &str,
-) -> (Conjunction, TypeAnnotations) {
+) -> (Conjunction, BlockAnnotations) {
     let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();

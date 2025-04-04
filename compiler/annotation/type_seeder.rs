@@ -27,7 +27,7 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Scope, ScopeId, Vertex,
+        Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -188,20 +188,9 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
         let nested_graphs =
             disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
-        let shared_variables: BTreeSet<Variable> = nested_graphs
-            .iter()
-            .flat_map(|nested_graph| {
-                Iterator::chain(
-                    nested_graph
-                        .conjunction
-                        .constraints()
-                        .iter()
-                        .flat_map(|c| c.vertices())
-                        .filter_map(|v| v.as_variable()),
-                    nested_graph.nested_disjunctions.iter().flat_map(|disj| disj.shared_variables.iter().copied()),
-                )
-                .filter(|variable| context.is_variable_available(parent_conjunction.scope_id(), *variable))
-            })
+        let shared_variables = disjunction
+            .referenced_variables()
+            .filter(|var| context.is_variable_available(parent_conjunction.scope_id(), *var))
             .collect();
         NestedTypeInferenceGraphDisjunction {
             disjunction: nested_graphs,
@@ -293,12 +282,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         constraints.iter().flat_map(|con| con.vertices().filter(|v| !v.is_variable()))
     }
 
-    fn local_variables<'a>(
-        &self,
-        context: &'a BlockContext,
-        conjunction_scope_id: ScopeId,
-    ) -> impl Iterator<Item = Variable> + 'a {
-        context.get_variable_scopes().filter(move |&(_, scope)| scope == conjunction_scope_id).map(|(var, _)| var)
+    fn variables_in_constraints<'a>(&self, conjunction: &'a Conjunction) -> impl Iterator<Item = Variable> + 'a {
+        conjunction.constraints().iter().flat_map(|constraint| constraint.ids())
     }
 
     fn annotate_some_unannotated_vertex(
@@ -306,7 +291,13 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         graph: &mut TypeInferenceGraph<'_>,
         context: &BlockContext,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let unannotated_var = self.local_variables(context, graph.conjunction.scope_id()).find(|&var| {
+        // TODO: We could look for constraints (instead of variable categories) as a basis for annotation.
+        //  We'd need TypeManager methods to iterate over all owns / relates / plays declarations.
+
+        // If any variables remain that aren't in any producing constraint, seed them with all types
+        //  TODO: This isn't very uncommon - when all disjunction branches produce a variable.
+        //   Ideally, we'd use annotations from the disjunction.
+        let unannotated_var = self.variables_in_constraints(&graph.conjunction).find(|&var| {
             let vertex = Vertex::Variable(var);
             self.variable_registry.get_variable_category(var).unwrap_or(VariableCategory::Value)
                 != VariableCategory::Value
@@ -334,32 +325,32 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         &self,
         category: VariableCategory,
     ) -> Result<BTreeSet<TypeAnnotation>, Box<ConceptReadError>> {
-        let (include_entities, include_relations, include_attributes, include_roles) = match category {
-            VariableCategory::Type => (true, true, true, true),
-            VariableCategory::ThingType => (true, true, true, false),
-            VariableCategory::AttributeType => (false, false, true, false),
-            VariableCategory::RoleType => (false, false, false, true),
-            VariableCategory::ThingList | VariableCategory::Thing => (true, true, true, false),
-            VariableCategory::ObjectList | VariableCategory::Object => (true, true, false, false),
-            VariableCategory::AttributeList | VariableCategory::Attribute => (false, false, true, false),
-            VariableCategory::ValueList | VariableCategory::Value => (false, false, true, false),
+        // We can't refine based on categories since categories are global.
+        // Had categories been per scope, we could indeed have been more specific.
+        let (include_thing_types, include_role_types) = match category {
+            VariableCategory::Type => (true, true),
+            VariableCategory::RoleType => (false, true),
+            VariableCategory::ValueList | VariableCategory::Value => (false, false),
+            VariableCategory::ThingType
+            | VariableCategory::AttributeType
+            | VariableCategory::ThingList
+            | VariableCategory::Thing
+            | VariableCategory::ObjectList
+            | VariableCategory::Object
+            | VariableCategory::AttributeList
+            | VariableCategory::Attribute => (true, false),
             VariableCategory::AttributeOrValue => unreachable!("Insufficiently bound variable!"),
         };
         let mut annotations = BTreeSet::new();
 
         let snapshot = self.snapshot;
         let type_manager = self.type_manager;
-
-        if include_entities {
+        if include_thing_types {
             annotations.extend(type_manager.get_entity_types(snapshot)?.into_iter().map(TypeAnnotation::Entity));
-        }
-        if include_relations {
             annotations.extend(type_manager.get_relation_types(snapshot)?.into_iter().map(TypeAnnotation::Relation));
-        }
-        if include_attributes {
             annotations.extend(type_manager.get_attribute_types(snapshot)?.into_iter().map(TypeAnnotation::Attribute));
         }
-        if include_roles {
+        if include_role_types {
             annotations.extend(type_manager.get_role_types(snapshot)?.into_iter().map(TypeAnnotation::RoleType));
         }
         Ok(annotations)
@@ -454,6 +445,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             let vertex = Vertex::Variable(variable);
             if let Some(parent_annotations) = parent_vertices.get_mut(&vertex) {
                 for nested_graph in &mut nested.disjunction {
+                    // Note: This adds a vertex annotation even if this branch does not reference the variable
+                    // This is needed to prevent one branch from narrowing the parent's annotations
                     nested_graph.vertices.add_or_intersect(&vertex, Cow::Borrowed(parent_annotations));
                 }
             }
@@ -576,6 +569,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
             inner.annotate_left_to_right(self, vertices.get(&left).unwrap(), vertices.get(&right).unwrap())?;
         let right_to_left =
             inner.annotate_right_to_left(self, vertices.get(&right).unwrap(), vertices.get(&left).unwrap())?;
+        debug_assert!(left_to_right.values().all(|v| !v.is_empty()));
+        debug_assert!(right_to_left.values().all(|v| !v.is_empty()));
         Ok(TypeInferenceEdge::build(constraint, left, right, left_to_right, right_to_left))
     }
 
@@ -1771,65 +1766,6 @@ pub mod tests {
         );
         let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
         assert_eq!(expected_graph, graph);
-    }
-
-    #[test]
-    fn test_no_constraints() {
-        // dog sub animal, owns dog-name; cat sub animal owns cat-name;
-        // cat-name sub animal-name; dog-name sub animal-name;
-        let (_tmp_dir, storage) = setup_storage();
-        let (type_manager, thing_manager) = managers();
-
-        let ((_type_animal, type_cat, type_dog), (_type_name, type_catname, type_dogname), (type_fears, _, _)) =
-            setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
-
-        // Case 1: $a has $n;
-        let mut translation_context = TranslationContext::new();
-        let mut value_parameters = ParameterRegistry::new();
-        let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
-        let mut conjunction = builder.conjunction_mut();
-        let var_animal = conjunction.constraints_mut().get_or_declare_variable("animal", None).unwrap();
-        let var_name = conjunction.constraints_mut().get_or_declare_variable("name", None).unwrap();
-
-        // Try seeding
-        conjunction.constraints_mut().add_has(var_animal, var_name, None).unwrap();
-
-        let block = builder.finish().unwrap();
-        let conjunction = block.conjunction();
-
-        let constraints = conjunction.constraints();
-        let mut expected_graph = TypeInferenceGraph {
-            conjunction,
-            vertices: VertexAnnotations::from([
-                (var_animal.into(), BTreeSet::from([type_cat, type_dog])),
-                (var_name.into(), BTreeSet::from([type_catname, type_dogname])),
-            ]),
-            edges: vec![expected_edge(
-                &constraints[0],
-                var_animal.into(),
-                var_name.into(),
-                vec![(type_cat, type_catname), (type_dog, type_dogname)],
-            )],
-            nested_disjunctions: vec![],
-            nested_negations: vec![],
-            nested_optionals: vec![],
-        };
-
-        let snapshot = storage.clone().open_snapshot_write();
-        let empty_function_cache = EmptyAnnotatedFunctionSignatures;
-        let seeder = TypeGraphSeedingContext::new(
-            &snapshot,
-            &type_manager,
-            &empty_function_cache,
-            &translation_context.variable_registry,
-            false,
-        );
-        let graph = seeder.create_graph(block.block_context(), &BTreeMap::new(), conjunction).unwrap();
-        if expected_graph != graph {
-            // We need this because of non-determinism
-            expected_graph.vertices.get_mut(&var_animal.into()).unwrap().insert(type_fears);
-            assert_eq!(expected_graph, graph)
-        }
     }
 
     #[test]

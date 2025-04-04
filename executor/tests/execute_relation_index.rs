@@ -275,7 +275,7 @@ fn traverse_index_from_unbound() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -285,6 +285,7 @@ fn traverse_index_from_unbound() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_movie, var_character, var_casting],
@@ -529,7 +530,7 @@ fn traverse_index_from_bound() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -539,6 +540,7 @@ fn traverse_index_from_bound() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_id, var_movie, var_person, var_casting],
@@ -694,7 +696,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     let (type_manager, thing_manager) = load_managers(storage.clone(), None);
     let variable_registry = &translation_context.variable_registry;
     let previous_stage_variable_annotations = &BTreeMap::new();
-    let entry_annotations = infer_types(
+    let block_annotations = infer_types(
         &snapshot,
         &entry,
         variable_registry,
@@ -704,6 +706,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
         false,
     )
     .unwrap();
+    let entry_annotations = block_annotations.type_annotations_of(entry.conjunction()).unwrap();
 
     let (row_vars, variable_positions, mapping, named_variables) = position_mapping(
         [var_casting_movie_type, var_casting_other_type, var_movie, var_person, var_casting],

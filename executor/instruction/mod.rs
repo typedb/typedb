@@ -4,7 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, marker::PhantomData, ops::Bound};
+use std::{
+    collections::HashMap,
+    fmt,
+    marker::PhantomData,
+    ops::Bound,
+};
 
 use ::iterator::minmax_or;
 use answer::{variable_value::VariableValue, Thing, Type};
@@ -524,6 +529,9 @@ impl<T> Checker<T> {
                 &CheckInstruction::TypeList { type_var, ref types } => {
                     self.filter_type_list(context, row, type_var, types)
                 }
+                &CheckInstruction::ThingTypeList { thing_var, ref types } => {
+                    self.filter_thing_type_list(context, row, thing_var, types)
+                }
                 &CheckInstruction::Sub { sub_kind, ref subtype, ref supertype } => {
                     self.filter_sub(context, row, sub_kind, subtype, supertype)
                 }
@@ -608,6 +616,22 @@ impl<T> Checker<T> {
         };
         let types = types.clone();
         Box::new(move |value: &T| Ok(types.contains(&unwrap_or_bail!(type_(value) => Type))))
+    }
+
+    fn filter_thing_type_list(
+        &self,
+        context: &ExecutionContext<impl ReadableSnapshot + 'static>,
+        row: &MaybeOwnedRow<'_>,
+        thing_var: ExecutorVariable,
+        types: &std::sync::Arc<std::collections::BTreeSet<Type>>,
+    ) -> Box<dyn Fn(&T) -> Result<bool, Box<ConceptReadError>>> {
+        let maybe_type_extractor = self.extractors.get(&thing_var);
+        let thing: BoxExtractor<T> = match maybe_type_extractor {
+            Some(&subtype) => Box::new(subtype),
+            None => make_const_extractor(&CheckVertex::Variable(thing_var), row, context),
+        };
+        let types = types.clone();
+        Box::new(move |value: &T| Ok(types.contains(&unwrap_or_bail!(thing(value) => Thing).type_())))
     }
 
     fn filter_sub(

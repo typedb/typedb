@@ -23,20 +23,21 @@ Since this will have been taken into account by type inference.
 
 use ir::pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope};
 
-use crate::annotation::type_annotations::{ConstraintTypeAnnotations, TypeAnnotations};
+use crate::annotation::type_annotations::{BlockAnnotations, ConstraintTypeAnnotations};
 
 pub(super) fn prune_redundant_roleplayer_deduplication(
     conjunction: &mut Conjunction,
-    block_annotations: &mut TypeAnnotations,
+    block_annotations: &mut BlockAnnotations,
 ) {
+    let local_annotations = block_annotations.type_annotations_of(conjunction).unwrap();
     conjunction.constraints_mut().constraints_mut().retain(|constraint| {
         if let Constraint::LinksDeduplication(dedup) = constraint {
-            let first = block_annotations
+            let first = local_annotations
                 .constraint_annotations_of(Constraint::Links(dedup.links1().clone()))
                 .unwrap()
                 .as_links()
                 .player_to_role();
-            let second = block_annotations
+            let second = local_annotations
                 .constraint_annotations_of(Constraint::Links(dedup.links2().clone()))
                 .unwrap()
                 .as_links()
@@ -50,11 +51,23 @@ pub(super) fn prune_redundant_roleplayer_deduplication(
             true
         }
     });
+    conjunction.nested_patterns_mut().iter_mut().for_each(|nested| match nested {
+        NestedPattern::Negation(inner) => {
+            prune_redundant_roleplayer_deduplication(inner.conjunction_mut(), block_annotations)
+        }
+        NestedPattern::Optional(inner) => {
+            prune_redundant_roleplayer_deduplication(inner.conjunction_mut(), block_annotations)
+        }
+        NestedPattern::Disjunction(disjunction) => disjunction
+            .conjunctions_mut()
+            .iter_mut()
+            .for_each(|inner| prune_redundant_roleplayer_deduplication(inner, block_annotations)),
+    })
 }
 
 pub fn optimize_away_statically_unsatisfiable_conjunctions(
     conjunction: &mut Conjunction,
-    block_annotations: &TypeAnnotations,
+    block_annotations: &BlockAnnotations,
 ) {
     let mut must_optimise_away = false;
     for nested in conjunction.nested_patterns_mut() {
@@ -78,9 +91,10 @@ pub fn optimize_away_statically_unsatisfiable_conjunctions(
             }
         }
     }
-    let must_optimise_away = must_optimise_away
+    let local_annotations = block_annotations.type_annotations_of(conjunction).unwrap();
+    must_optimise_away = must_optimise_away
         || conjunction.constraints().iter().any(|constraint| {
-            if let Some(constraint_annotation) = block_annotations.constraint_annotations_of(constraint.clone()) {
+            if let Some(constraint_annotation) = local_annotations.constraint_annotations_of(constraint.clone()) {
                 match constraint_annotation {
                     ConstraintTypeAnnotations::LeftRight(lr) => {
                         debug_assert!(lr.left_to_right().is_empty() == lr.right_to_left().is_empty());
