@@ -31,6 +31,7 @@ use ir::{
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
+use ir::pattern::Scope;
 
 use crate::{
     annotation::{
@@ -123,17 +124,13 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
-                let mut shared_variables = shared_variables.clone();
-                shared_variables.extend(disjunction.named_producible_variables(block_context));
-                shared_variables.extend(disjunction.required_inputs(block_context));
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction
                         .conjunctions()
                         .iter()
                         .map(|branch| {
-                            let branch_shared_variables = shared_variables
-                                .intersection(&branch.referenced_variables().collect())
-                                .copied()
+                            let branch_shared_variables = branch.referenced_variables()
+                                .filter(|var| block_context.is_variable_available(conjunction.scope_id(), *var))
                                 .collect();
                             make_builder(
                                 branch,
