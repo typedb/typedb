@@ -27,7 +27,7 @@ use ir::{
         disjunction::Disjunction,
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Scope, ScopeId, Vertex,
+        Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -159,7 +159,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         for pattern in conjunction.nested_patterns() {
             match pattern {
                 NestedPattern::Disjunction(disjunction) => {
-                    nested_disjunctions.push(self.build_disjunction_recursive(context, disjunction));
+                    nested_disjunctions.push(self.build_disjunction_recursive(context, conjunction, disjunction));
                 }
                 NestedPattern::Negation(negation) => {
                     nested_negations.push(self.build_recursive(context, negation.conjunction()));
@@ -183,13 +183,18 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn build_disjunction_recursive<'conj>(
         &self,
         context: &BlockContext,
+        parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
         let nested_graphs =
             disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
+        let shared_variables = disjunction
+            .referenced_variables()
+            .filter(|var| context.is_variable_available(parent_conjunction.scope_id(), *var))
+            .collect();
         NestedTypeInferenceGraphDisjunction {
             disjunction: nested_graphs,
-            shared_variables: disjunction.referenced_variables().collect(),
+            shared_variables,
             shared_vertex_annotations: VertexAnnotations::default(),
         }
     }
@@ -277,12 +282,8 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         constraints.iter().flat_map(|con| con.vertices().filter(|v| !v.is_variable()))
     }
 
-    fn local_variables<'a>(
-        &self,
-        context: &'a BlockContext,
-        conjunction_scope_id: ScopeId,
-    ) -> impl Iterator<Item = Variable> + 'a {
-        context.get_variable_scopes().filter(move |&(_, scope)| scope == conjunction_scope_id).map(|(var, _)| var)
+    fn variables_in_constraints<'a>(&self, conjunction: &'a Conjunction) -> impl Iterator<Item = Variable> + 'a {
+        conjunction.constraints().iter().flat_map(|constraint| constraint.ids())
     }
 
     fn annotate_some_unannotated_vertex(
@@ -296,7 +297,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
         // If any variables remain that aren't in any producing constraint, seed them with all types
         //  TODO: This isn't very uncommon - when all disjunction branches produce a variable.
         //   Ideally, we'd use annotations from the disjunction.
-        let unannotated_var = self.local_variables(context, graph.conjunction.scope_id()).find(|&var| {
+        let unannotated_var = self.variables_in_constraints(&graph.conjunction).find(|&var| {
             let vertex = Vertex::Variable(var);
             self.variable_registry.get_variable_category(var).unwrap_or(VariableCategory::Value)
                 != VariableCategory::Value

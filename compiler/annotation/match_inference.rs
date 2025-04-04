@@ -7,22 +7,24 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
+    io::Read,
     ops::{Deref, DerefMut},
     sync::Arc,
 };
-use std::io::Read;
 
 use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, variable_category::VariableCategory, Scope, ScopeId, Vertex,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern,
+        variable_category::VariableCategory, Scope, ScopeId, Vertex,
     },
-    pipeline::{block::Block, VariableRegistry},
+    pipeline::{
+        block::{Block, BlockContext},
+        VariableRegistry,
+    },
 };
 use itertools::{chain, Itertools};
-use ir::pattern::nested_pattern::NestedPattern;
-use ir::pipeline::block::BlockContext;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{
@@ -123,26 +125,36 @@ pub fn infer_types(
     )?;
     let mut type_annotations_by_scope = HashMap::new();
     graph.collect_type_annotations(Some(variable_registry), &mut type_annotations_by_scope);
-    debug_assert_all_vertex_annotations_available(block.block_context(), block.conjunction(), &type_annotations_by_scope);
+    debug_assert_all_vertex_annotations_available(
+        block.block_context(),
+        block.conjunction(),
+        &type_annotations_by_scope,
+    );
     Ok(BlockAnnotations::new(type_annotations_by_scope))
 }
 
-fn debug_assert_all_vertex_annotations_available(context: &BlockContext, conjunction: &Conjunction, by_scope: &HashMap<ScopeId, TypeAnnotations>) {
+fn debug_assert_all_vertex_annotations_available(
+    context: &BlockContext,
+    conjunction: &Conjunction,
+    by_scope: &HashMap<ScopeId, TypeAnnotations>,
+) {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
-    conjunction.named_producible_variables(context).chain(conjunction.variable_dependency(context).keys().copied())
+    conjunction
+        .named_producible_variables(context)
+        .chain(conjunction.variable_dependency(context).keys().copied())
         .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some());
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(disj) => {
-            disj.conjunctions().iter().for_each(|inner| {
-                debug_assert_all_vertex_annotations_available(context, inner, by_scope)
-            });
+            disj.conjunctions()
+                .iter()
+                .for_each(|inner| debug_assert_all_vertex_annotations_available(context, inner, by_scope));
         }
         NestedPattern::Negation(inner) => {
             debug_assert_all_vertex_annotations_available(context, inner.conjunction(), by_scope)
-        },
+        }
         NestedPattern::Optional(inner) => {
             debug_assert_all_vertex_annotations_available(context, inner.conjunction(), by_scope)
-        },
+        }
     })
 }
 
@@ -215,7 +227,7 @@ fn pre_check_edges_for_trivial_unsatisfiability<'a>(
         _ => false,
     });
     if let Some(edge) = thing_edges.find(|edge| edge.left_to_right.is_empty() || edge.right_to_left.is_empty()) {
-        return Err((graph,edge));
+        return Err((graph, edge));
     }
     graph
         .nested_disjunctions

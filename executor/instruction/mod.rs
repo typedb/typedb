@@ -5,11 +5,10 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::HashMap,
     fmt,
     marker::PhantomData,
     ops::Bound,
-    sync::Arc,
 };
 
 use ::iterator::minmax_or;

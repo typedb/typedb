@@ -184,11 +184,10 @@ fn make_builder<'a>(
         statistics,
     );
 
-    let local_variables = conjunction.variable_dependency(block_context);
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         shared_variables.iter().copied(),
-        local_variables.keys().copied(),
+        conjunction.local_variables(block_context),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
