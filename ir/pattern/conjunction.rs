@@ -70,15 +70,8 @@ impl Conjunction {
         }
     }
 
-    pub fn local_variables<'a>(&self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        let self_scope = self.scope_id;
-        block_context
-            .get_variable_scopes()
-            .filter(move |&(var, scope)| {
-                scope == self_scope || block_context.is_visible_child(scope, self_scope) && var.is_named()
-            })
-            .map(|(var, _)| var)
-            .unique()
+    pub fn local_variables<'a>(&self) -> impl Iterator<Item = Variable> + 'a {
+        self.constraints().iter().flat_map(|c| c.ids()).dedup()
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {

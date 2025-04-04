@@ -185,11 +185,10 @@ fn make_builder<'a>(
     );
 
     #[cfg(debug_assertions)] // Break on purpose. We should fix conjunction.local_variables()
-    let TMP__local_variables = conjunction.constraints().iter().flat_map(|c| c.ids()).dedup();
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         shared_variables.iter().copied(),
-        TMP__local_variables, // conjunction.local_variables(block_context),
+        conjunction.local_variables(),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
