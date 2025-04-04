@@ -46,7 +46,7 @@ impl Disjunction {
     }
 
     fn producible_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_producing().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_producing().then_some(v))
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
@@ -58,7 +58,7 @@ impl Disjunction {
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, mode)| mode.is_required().then_some(v))
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
     }
 
     pub(crate) fn variable_dependency(
@@ -70,13 +70,13 @@ impl Disjunction {
         }
         let mut dependencies = self.conjunctions[0].variable_dependency(block_context);
         for branch in &self.conjunctions[1..] {
-            let branch_dependency_modes = branch.variable_dependency(block_context);
+            let branch_dependencies = branch.variable_dependency(block_context);
             for (var, dependency) in &mut dependencies {
-                if !branch_dependency_modes.contains_key(var) && dependency.is_producing() {
+                if !branch_dependencies.contains_key(var) && dependency.is_producing() {
                     dependency.set_referencing()
                 }
             }
-            for (var, mut dependency) in branch_dependency_modes {
+            for (var, mut dependency) in branch_dependencies {
                 let entry = dependencies.entry(var);
                 match entry {
                     hash_map::Entry::Occupied(mut entry) => {
@@ -94,20 +94,9 @@ impl Disjunction {
         dependencies
     }
 
-    pub(crate) fn find_disjoint(
-        &self,
-        block_context: &BlockContext,
-        scope_id: ScopeId,
-    ) -> ControlFlow<(Variable, Option<Span>)> {
-        let dependencies = self.variable_dependency(block_context);
-        let branch_dependencies =
-            self.conjunctions.iter().map(|conj| conj.variable_dependency(block_context)).collect_vec();
-        for (var, dep) in dependencies {
-            if dep.is_referencing() && block_context.get_scope(&var) == Some(scope_id) {
-                if let Err(mut err) = branch_dependencies.iter().filter_map(|d| d.get(&var)).exactly_one() {
-                    return ControlFlow::Break((var, err.next().unwrap().referencing_constraints()[0].source_span()));
-                }
-            }
+    pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+        for conjunction in &self.conjunctions {
+            conjunction.find_disjoint(block_context)?;
         }
         ControlFlow::Continue(())
     }

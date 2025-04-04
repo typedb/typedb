@@ -4,10 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, mem};
+use std::{collections::HashMap, fmt, mem, ops::ControlFlow};
 
 use answer::variable::Variable;
 use structural_equality::StructuralEquality;
+use typeql::common::Span;
 
 use crate::{
     pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, VariableDependency},
@@ -72,6 +73,14 @@ impl NestedPattern {
             NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency(block_context),
             NestedPattern::Negation(negation) => negation.variable_dependency(block_context),
             NestedPattern::Optional(optional) => optional.variable_dependency(block_context),
+        }
+    }
+
+    pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+        match self {
+            NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint(block_context),
+            NestedPattern::Negation(negation) => negation.conjunction().find_disjoint(block_context),
+            NestedPattern::Optional(optional) => optional.conjunction().find_disjoint(block_context),
         }
     }
 }

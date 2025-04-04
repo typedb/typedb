@@ -140,10 +140,10 @@ fn validate_conjunction(
         return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
     }
 
-    for (var, mode) in conjunction.variable_dependency(block_context) {
-        if mode.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
+    for (var, dep) in conjunction.variable_dependency(block_context) {
+        if dep.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
-            let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
+            let spans = dep.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
             return Err(Box::new(RepresentationError::UnboundRequiredVariable {
                 variable,
                 source_span: spans[0],
