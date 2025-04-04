@@ -70,7 +70,7 @@ impl Conjunction {
         }
     }
 
-    pub fn local_variables<'a>(&self) -> impl Iterator<Item = Variable> + 'a {
+    pub fn local_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.constraints().iter().flat_map(|c| c.ids()).dedup()
     }
 
