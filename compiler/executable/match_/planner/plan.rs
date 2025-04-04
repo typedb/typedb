@@ -184,11 +184,11 @@ fn make_builder<'a>(
         statistics,
     );
 
-    #[cfg(debug_assertions)] // Break on purpose. We should fix conjunction.local_variables()
+    let local_variables = conjunction.variable_dependency(block_context);
     plan_builder.register_variables(
         variable_positions.keys().copied(),
         shared_variables.iter().copied(),
-        conjunction.local_variables(),
+        local_variables.keys().copied(),
         variable_registry,
     );
     plan_builder.register_constraints(conjunction, expressions, call_cost_provider);
