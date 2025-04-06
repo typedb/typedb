@@ -392,6 +392,7 @@ impl IntersectionExecutor {
         let peek = self.input.as_mut().unwrap().peek();
         if let Some(input) = peek {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
+            self.intersection_provenance = next_row.provenance();
             for executor in &self.instruction_executors {
                 self.iterators.push(executor.get_iterator(context, next_row.as_reference()).map_err(|err| {
                     ReadExecutionError::CreatingIterator {
