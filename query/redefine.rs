@@ -182,7 +182,7 @@ fn redefine_struct_fields(
     struct_definable: &Struct,
 ) -> Result<(), RedefineError> {
     let name = checked_identifier(&struct_definable.ident)?;
-    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
+    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name, struct_definable.ident.span())
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
     for field in &struct_definable.fields {
@@ -646,8 +646,13 @@ fn redefine_relates_specialise(
     storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
-        let specialised_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), checked_identifier(&specialised_label.ident)?)
+        let specialised_relates = resolve_relates(
+            snapshot,
+            type_manager,
+            relates.relation(),
+            checked_identifier(&specialised_label.ident)?,
+            specialised_label.ident.span()
+        )
                 .map_err(|typedb_source| RedefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())

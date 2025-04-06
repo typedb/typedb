@@ -9,6 +9,7 @@ use std::{
     fmt,
     sync::Arc,
 };
+use std::fmt::Write;
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -44,6 +45,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::TypeQLSyntax;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct AttributeType {
@@ -207,6 +209,29 @@ impl KindAPI for AttributeType {
 
 impl ThingTypeAPI for AttributeType {
     type InstanceType = Attribute;
+}
+
+impl TypeQLSyntax for AttributeType {
+    fn capabilities_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        if let Some(value_type) = self.get_value_type_declared(snapshot, type_manager)? {
+            write!(f, ",\n  {} {}", typeql::token::Keyword::Value, value_type).map_err(|err| Box::new(err.into()))?;
+            for annotation in self.get_value_type_annotations_declared(snapshot, type_manager)? {
+                let annotation: Annotation = annotation.clone().into();
+                write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+            }
+        }
+        Ok(())
+    }
+
+    fn type_annotations_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        for annotation in self.get_annotations_declared(snapshot, type_manager)?.iter()
+            .filter(|annotation| !annotation.is_value_type_annotation())
+        {
+            let annotation: Annotation = annotation.clone().into();
+            write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+        }
+        Ok(())
+    }
 }
 
 impl AttributeType {

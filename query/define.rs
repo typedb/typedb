@@ -160,11 +160,15 @@ fn define_types<'a>(
     for label in undefined_labels {
         let existing =
             try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
-                typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: err }),
+                typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead {
+                    typedb_source: err,
+                    source_span: label.source_span(),
+                }),
             })?;
         if existing.is_none() {
+            let span = label.source_span();
             return Err(DefineError::SymbolResolution {
-                typedb_source: Box::new(SymbolResolutionError::TypeNotFound { label }),
+                typedb_source: Box::new(SymbolResolutionError::TypeNotFound { label, source_span: span, }),
             });
         }
     }
@@ -199,7 +203,7 @@ fn define_struct_fields(
     struct_definable: &Struct,
 ) -> Result<(), DefineError> {
     let name = checked_identifier(&struct_definable.ident)?;
-    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
+    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name, struct_definable.ident.span())
         .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
     for field in &struct_definable.fields {
@@ -250,7 +254,10 @@ fn define_type(
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let existing =
         try_resolve_typeql_type(snapshot, type_manager, &label).map_err(|err| DefineError::SymbolResolution {
-            typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: err }),
+            typedb_source: Box::new(SymbolResolutionError::UnexpectedConceptRead {
+                typedb_source: err,
+                source_span: type_declaration.label.span()
+            }),
         })?;
     match type_declaration.kind {
         None => {
@@ -695,7 +702,7 @@ fn define_relates_specialises(
 
         let (role_label, _ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
-        let relates = resolve_relates_declared(snapshot, type_manager, *relation_type, role_label.name.as_str())
+        let relates = resolve_relates_declared(snapshot, type_manager, *relation_type, role_label.name.as_str(), role_label.source_span())
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
         define_relates_specialise(
@@ -722,7 +729,7 @@ fn define_relates_specialise(
 ) -> Result<(), DefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
         let checked_specialised = checked_identifier(&specialised_label.ident)?;
-        let specialised_relates = resolve_relates(snapshot, type_manager, relates.relation(), checked_specialised)
+        let specialised_relates = resolve_relates(snapshot, type_manager, relates.relation(), checked_specialised, specialised_label.ident.span())
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())

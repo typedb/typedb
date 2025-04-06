@@ -9,6 +9,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use std::fmt::Write;
 
 use bytes::{byte_array::ByteArray, Bytes};
 use compiler::annotation::function::{annotate_stored_functions, AnnotatedSchemaFunctions};
@@ -45,6 +46,7 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use typeql::common::Spanned;
+use concept::error::ConceptReadError;
 
 use crate::{function::SchemaFunction, function_cache::FunctionCache, FunctionError};
 
@@ -222,6 +224,17 @@ impl FunctionManager {
         } else {
             Ok(MaybeOwns::Owned(FunctionReader::get_function(snapshot, definition_key, name)?))
         }
+    }
+
+    pub fn get_functions_syntax(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<String, FunctionReadError> {
+        let mut builder = String::new();
+        for function in FunctionReader::get_functions_all(snapshot)? {
+            write!(builder, "\n{}", function.parsed.unparsed).map_err(|err| err.into())?;
+        }
+        Ok(builder)
     }
 }
 

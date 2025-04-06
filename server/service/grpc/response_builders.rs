@@ -92,6 +92,22 @@ pub(crate) mod database_manager {
     ) -> typedb_protocol::database_manager::create::Res {
         typedb_protocol::database_manager::create::Res { database: Some(database_replicas(name, server_address)) }
     }
+
+    pub(crate) fn database_schema_res(
+        schema: String
+    ) -> typedb_protocol::database::schema::Res {
+        typedb_protocol::database::schema::Res {
+            schema
+        }
+    }
+
+    pub(crate) fn database_type_schema_res(
+        schema: String
+    ) -> typedb_protocol::database::type_schema::Res {
+        typedb_protocol::database::type_schema::Res {
+            schema
+        }
+    }
 }
 
 pub(crate) mod database {

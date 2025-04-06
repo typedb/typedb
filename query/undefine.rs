@@ -182,13 +182,14 @@ fn undefine_specialise(
 
     let (role_label, _) = type_ref_to_label_and_ordering(&label, &specialise_undefinable.capability.related)
         .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-    let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
+    let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str(), role_label.source_span())
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
     let specialised_relates = resolve_relates(
         snapshot,
         type_manager,
         relates.relation(),
         checked_identifier(&specialise_undefinable.specialised.ident)?,
+        specialise_undefinable.specialised.ident.span()
     )
     .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
 
@@ -281,7 +282,7 @@ fn undefine_capability_annotation(
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
             let attribute_type = resolve_attribute_type(snapshot, type_manager, &attr_label)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let owns = resolve_owns_declared(snapshot, type_manager, object_type, attribute_type)
+            let owns = resolve_owns_declared(snapshot, type_manager, object_type, attribute_type, attr_label.source_span())
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
             let owns_definition_status = get_owns_status(
@@ -328,7 +329,7 @@ fn undefine_capability_annotation(
             );
             let role_type = resolve_role_type(snapshot, type_manager, &role_label)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let plays = resolve_plays_declared(snapshot, type_manager, object_type, role_type)
+            let plays = resolve_plays_declared(snapshot, type_manager, object_type, role_type, role_label.source_span())
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
             check_can_and_need_undefine_capability_annotation(
@@ -346,7 +347,7 @@ fn undefine_capability_annotation(
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
             let (role_label, ordering) = type_ref_to_label_and_ordering(&label, &typeql_relates.related)
                 .map_err(|typedb_source| UndefineError::DefinitionResolution { typedb_source })?;
-            let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str())
+            let relates = resolve_relates_declared(snapshot, type_manager, relation_type, role_label.name.as_str(), role_label.source_span())
                 .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
             let relates_definition_status = get_relates_status(
@@ -851,7 +852,7 @@ fn undefine_struct(
     struct_undefinable: &Struct,
 ) -> Result<(), UndefineError> {
     let name = checked_identifier(&struct_undefinable.ident)?;
-    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
+    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name, struct_undefinable.ident.span())
         .map_err(|source| UndefineError::DefinitionResolution { typedb_source: source })?;
 
     type_manager.delete_struct(snapshot, thing_manager, &struct_key).map_err(|err| UndefineError::StructDeleteError {

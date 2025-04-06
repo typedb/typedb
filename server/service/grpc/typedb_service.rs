@@ -19,6 +19,12 @@ use typedb_protocol::{
 };
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 use uuid::Uuid;
+use concept::error::ConceptReadError;
+use database::Database;
+use database::transaction::TransactionRead;
+use ir::pipeline::FunctionReadError;
+use options::TransactionOptions;
+use storage::durability_client::WALClient;
 
 use crate::{
     authentication::{
@@ -47,6 +53,7 @@ use crate::{
         ServiceError,
     },
 };
+use crate::service::response_builders::database_manager::{database_schema_res, database_type_schema_res};
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -244,9 +251,21 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
         let message = request.into_inner();
         run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseSchema, || {
-            Err(ServiceError::Unimplemented { description: "Database schema retrieval.".to_string() }
-                .into_error_message()
-                .into_status())
+            match self.database_manager.database(&message.name) {
+                None => {
+                    Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }.into_error_message().into_status())
+                }
+                Some(database) => {
+                    let transaction = TransactionRead::open(database, TransactionOptions::default())
+                        .map_err(|err| ServiceError::FailedToOpenPrerequisiteTransaction {}.into_error_message().into_status())?;
+                    let types_syntax = transaction.type_manager.get_types_syntax(transaction.snapshot())
+                        .map_err(|err| ServiceError::ConceptReadError { typedb_source: err }.into_error_message().into_status())?;
+                    let functions_syntax = transaction.function_manager.get_functions_syntax(transaction.snapshot())
+                        .map_err(|err| ServiceError::FunctionReadError { typedb_source: err }.into_error_message().into_status())?;
+                    let define_syntax = format!("{} {} {}", typeql::token::Clause::Define, types_syntax, functions_syntax);
+                    Ok(Response::new(database_schema_res(define_syntax)))
+                }
+            }
         })
     }
 
@@ -255,10 +274,20 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
         let message = request.into_inner();
-        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseTypeSchema, || {
-            Err(ServiceError::Unimplemented { description: "Database schema (types only) retrieval.".to_string() }
-                .into_error_message()
-                .into_status())
+        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseSchema, || {
+            match self.database_manager.database(&message.name) {
+                None => {
+                    Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }.into_error_message().into_status())
+                }
+                Some(database) => {
+                    let transaction = TransactionRead::open(database, TransactionOptions::default())
+                        .map_err(|err| ServiceError::FailedToOpenPrerequisiteTransaction {}.into_error_message().into_status())?;
+                    let syntax = transaction.type_manager.get_types_syntax(transaction.snapshot())
+                        .map_err(|err| ServiceError::ConceptReadError { typedb_source: err }.into_error_message().into_status())?;
+                    let define_syntax = format!("{} {}", typeql::token::Clause::Define, syntax);
+                    Ok(Response::new(database_type_schema_res(define_syntax)))
+                }
+            }
         })
     }
 

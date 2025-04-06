@@ -48,6 +48,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::TypeQLSyntax;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType {
@@ -199,6 +200,15 @@ impl KindAPI for RelationType {
 
 impl ThingTypeAPI for RelationType {
     type InstanceType = Relation;
+}
+
+impl TypeQLSyntax for RelationType {
+    fn capabilities_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        self.relates_syntax(f, snapshot, type_manager)?;
+        self.owns_syntax(f, snapshot, type_manager)?;
+        self.plays_syntax(f, snapshot, type_manager)?;
+        Ok(())
+    }
 }
 
 impl ObjectTypeAPI for RelationType {
@@ -568,6 +578,33 @@ impl RelationType {
         } else {
             Ok(None)
         }
+    }
+
+    fn relates_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        let mut declared_relates = HashSet::new();
+        let mut super_roles = HashSet::new();
+        for relates in self.get_relates_declared(snapshot, type_manager)?.iter() {
+            declared_relates.insert(relates.clone());
+            if let Some(role_supertype) = relates.role().get_supertype(snapshot, type_manager)? {
+                super_roles.insert(role_supertype);
+            }
+        }
+        for relates in declared_relates.into_iter() {
+            let role = relates.role();
+            if !super_roles.contains(&role) {
+                let label = role.get_label(snapshot, type_manager)?;
+                write!(f, ",\n  {} {}", typeql::token::Keyword::Relates, label.name().as_str()).map_err(|err| Box::new(err.into()))?;
+                if let Some(role_supertype) = role.get_supertype(snapshot, type_manager)? {
+                    let supertype_label = role_supertype.get_label(snapshot, type_manager)?;
+                    write!(f, " {} {}", typeql::token::Keyword::As, supertype_label.name.as_str()).map_err(|err| Box::new(err.into()))?;
+                }
+                for annotation in relates.get_annotations_declared(snapshot, type_manager)?.iter() {
+                    let annotation: Annotation = annotation.clone().into();
+                    write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+                }
+            }
+        }
+        Ok(())
     }
 }
 

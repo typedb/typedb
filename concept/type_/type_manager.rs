@@ -9,6 +9,7 @@ use std::{
     collections::{HashMap, HashSet},
     sync::Arc,
 };
+use std::fmt::Formatter;
 
 use encoding::{
     error::EncodingError,
@@ -57,6 +58,7 @@ use crate::{
         Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
+use crate::type_::TypeQLSyntax;
 
 pub mod type_cache;
 pub mod type_reader;
@@ -1133,6 +1135,20 @@ impl TypeManager {
             }
             Ok(Arc::new(independent))
         }
+    }
+
+    pub fn get_types_syntax(&self, snapshot: &impl ReadableSnapshot) -> Result<String, Box<ConceptReadError>> {
+        let mut builder = String::new();
+        for attribute_type in self.get_attribute_types(snapshot)?.iter() {
+            attribute_type.format_syntax(&mut builder, snapshot, self)?;
+        }
+        for entity_type in self.get_entity_types(snapshot)?.iter() {
+            entity_type.format_syntax(&mut builder, snapshot, self)?;
+        }
+        for relation_type in self.get_relation_types(snapshot)?.iter() {
+            relation_type.format_syntax(&mut builder, snapshot, self)?;
+        }
+        Ok(builder)
     }
 }
 

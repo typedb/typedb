@@ -5,6 +5,7 @@
  */
 
 use std::{collections::HashSet, fmt, sync::Arc};
+use std::fmt::Formatter;
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -44,6 +45,7 @@ use crate::{
     },
     ConceptAPI,
 };
+use crate::type_::TypeQLSyntax;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType {
@@ -202,6 +204,14 @@ impl KindAPI for EntityType {
 
 impl ThingTypeAPI for EntityType {
     type InstanceType = Entity;
+}
+
+impl TypeQLSyntax for EntityType {
+    fn capabilities_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        self.owns_syntax(f, snapshot, type_manager)?;
+        self.plays_syntax(f, snapshot, type_manager)?;
+        Ok(())
+    }
 }
 
 impl EntityType {

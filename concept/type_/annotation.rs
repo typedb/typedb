@@ -263,7 +263,8 @@ impl AnnotationRegex {
 
 impl fmt::Display for AnnotationRegex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.regex)
+        let escaped = regex::escape(self.regex());
+        write!(f, "@regex(\"{}\")", escaped)
     }
 }
 

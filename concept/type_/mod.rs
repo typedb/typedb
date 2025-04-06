@@ -209,6 +209,39 @@ pub trait ThingTypeAPI: TypeAPI {
     type InstanceType: ThingAPI;
 }
 
+pub trait TypeQLSyntax: KindAPI {
+    fn format_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        self.kind_syntax(f, snapshot, type_manager)?;
+        self.capabilities_syntax(f, snapshot, type_manager)?;
+        write!(f, ";").map_err(|err| Box::new(err.into()))?;
+        Ok(())
+    }
+
+    /// The capability methods trait all expect to add a comma and a newline to finish the previous capability,
+    /// if required. In other words, they should not terminate their string write with a comma or newline, and let the next
+    /// call decide if that is required.
+    fn capabilities_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>>;
+
+    fn kind_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        let label = self.get_label(snapshot, type_manager)?;
+        write!(f, "\n{} {}", Self::KIND, label.scoped_name().as_str()).map_err(|err| Box::new(err.into()))?;
+        self.type_annotations_syntax(f, snapshot, type_manager)?;
+        if let Some(supertype) = self.get_supertype(snapshot, type_manager)? {
+            let supertype_label = supertype.get_label(snapshot, type_manager)?;
+            write!(f, ",\n  {} {}", typeql::token::Keyword::Sub, supertype_label.name.as_str()).map_err(|err| Box::new(err.into()))?;
+        }
+        Ok(())
+    }
+
+    fn type_annotations_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        for annotation in self.get_annotations_declared(snapshot, type_manager)?.iter() {
+            let annotation: Annotation = annotation.clone().into();
+            write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+        }
+        Ok(())
+    }
+}
+
 pub trait OwnerAPI: TypeAPI {
     fn set_owns(
         &self,
@@ -404,6 +437,18 @@ pub trait OwnerAPI: TypeAPI {
             Some(owns) => Ok(owns),
         }
     }
+
+    fn owns_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        for owns in self.get_owns_declared(snapshot, type_manager)?.iter() {
+            let label = owns.attribute().get_label(snapshot, type_manager)?;
+            write!(f, ",\n  {} {}", typeql::token::Keyword::Owns, label.name().as_str()).map_err(|err| Box::new(err.into()))?;
+            for annotation in owns.get_annotations_declared(snapshot, type_manager)?.iter() {
+                let annotation: Annotation = annotation.clone().into();
+                write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+            }
+        }
+        Ok(())
+    }
 }
 
 pub trait PlayerAPI: TypeAPI {
@@ -567,6 +612,18 @@ pub trait PlayerAPI: TypeAPI {
             })),
             Some(plays) => Ok(plays),
         }
+    }
+
+    fn plays_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+        for plays in self.get_plays_declared(snapshot, type_manager)?.iter() {
+            let label = plays.role().get_label(snapshot, type_manager)?;
+            write!(f, ",\n  {} {}", typeql::token::Keyword::Plays, label.scoped_name().as_str()).map_err(|err| Box::new(err.into()))?;
+            for annotation in plays.get_annotations_declared(snapshot, type_manager)?.iter() {
+                let annotation: Annotation = annotation.clone().into();
+                write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+            }
+        }
+        Ok(())
     }
 }
 
