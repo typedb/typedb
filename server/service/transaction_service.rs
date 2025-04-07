@@ -1751,7 +1751,7 @@ typedb_error! {
     }
 }
 
-fn dump_query_structure(query_structure: QueryStructure) {
+fn dump_query_structure(query_structure: &QueryStructure) {
     use crate::service::query_structure::encode_query_structure;
     println!("{}", encode_query_structure(query_structure));
 }

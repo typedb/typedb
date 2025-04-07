@@ -13,8 +13,7 @@ use itertools::Itertools;
 
 const JSON_NONE: &str = "{}";
 
-// TODO: Use properly
-pub(super) fn encode_query_structure(query_structure: QueryStructure) -> String {
+pub(super) fn encode_query_structure(query_structure: &QueryStructure) -> String {
     let branches = query_structure
         .parametrised_structure
         .branches
@@ -25,17 +24,14 @@ pub(super) fn encode_query_structure(query_structure: QueryStructure) -> String 
         })
         .collect::<HashMap<_, _>>();
     format!("[\n{}\n]", branches.iter().sorted().map(|(i, b)| { format!("\t{i}: {b}",) }).join(",\n"))
-    // typedb_protocol::QueryStructure { branches }
 }
 
 fn encode_query_structure_branch(query_structure: &QueryStructure, branch: &[Constraint<Variable>]) -> String {
-    // compile_error!("Start here again");
     let constraints = branch
         .iter()
         .filter_map(|constraint| query_structure_constraint_edge(query_structure, constraint))
         .collect::<Vec<_>>();
     format!("[\n{}\n\t]", constraints.iter().map(|constraint| { format!("\t\t{constraint},") }).join("\n"))
-    //  typedb_protocol::query_structure::Branch { constraints }
 }
 
 macro_rules! format_edge {
@@ -75,7 +71,6 @@ fn query_structure_constraint_edge(
         | Constraint::FunctionCallBinding(_)
         | Constraint::Comparison(_) => {
             None
-            // unimplemented_feature!(GraphViz);
         }
 
         // Constraints that I may need to handle
@@ -97,14 +92,12 @@ fn query_structure_constraint_edge_vertex(query_structure: &QueryStructure, vert
                 .get_variable_position(variable)
                 .map(|position| format!("{{ \"variable\": {} }}", position.as_usize()))
                 .unwrap_or(JSON_NONE.to_string())
-            //.map(|pos| structure_vertex::Vertex::VariablePosition(pos.as_usize() as u64))
         }
         Vertex::Label(label) => {
             query_structure
                 .get_type(label)
                 .map(|type_| {
                     format!("{{ \"label\": \"{}\" }}", label.to_string())
-                    // structure_vertex::Vertex::Label(label.to_string())
                 })
                 .unwrap_or(JSON_NONE.to_string())
         }
@@ -119,5 +112,4 @@ fn query_structure_constraint_edge_vertex(query_structure: &QueryStructure, vert
             .unwrap_or(JSON_NONE.to_string()),
     };
     vertex
-    // vertex.map(|vertex| StructureVertex { vertex: Some(vertex) })
 }

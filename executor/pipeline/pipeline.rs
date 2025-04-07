@@ -77,8 +77,8 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         }
     }
 
-    pub fn query_structure(&self) -> QueryStructure {
-        self.query_structure.clone()
+    pub fn query_structure(&self) -> &QueryStructure {
+        &self.query_structure
     }
 
     pub fn into_rows_iterator(
