@@ -89,7 +89,7 @@
 	[dependencies.typeql]
 		features = []
 		git = "https://github.com/typedb/typeql"
-		tag = "3.1.0-rc0"
+		tag = "3.1.0"
 		default-features = false
 
 	[dependencies.compiler]
@@ -115,7 +115,7 @@
 	[dependencies.typedb-protocol]
 		features = []
 		git = "https://github.com/typedb/typedb-protocol"
-		tag = "3.0.0"
+		tag = "3.1.0"
 		default-features = false
 
 	[dependencies.resource]
