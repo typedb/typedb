@@ -633,7 +633,9 @@ fn extend_labels_from<'a>(
     vertex_annotations: impl Iterator<Item = (&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>,
 ) {
     resolved_labels.extend(vertex_annotations.filter_map(|(vertex, type_)| {
-        Some((vertex.as_label()?.clone(), type_.iter().exactly_one().expect("Label should have one type only").clone()))
+        vertex.as_label().cloned().map(|label| {
+            (label, type_.iter().exactly_one().expect("Label should have one type only").clone())
+        })
     }));
 }
 
