@@ -112,7 +112,7 @@ impl Clone for ExecutionInterrupt {
 pub struct Provenance(u64);
 
 impl Provenance {
-    pub(crate) const INITIAL: Provenance = Provenance(0);
+    pub const INITIAL: Provenance = Provenance(0);
 
     pub(crate) fn set_branch_id(&mut self, id: BranchID) {
         if id.0 < 64 {
