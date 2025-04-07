@@ -14,9 +14,7 @@ use crate::{
     annotation::type_annotations::TypeAnnotations,
     executable::{
         insert::{
-            executable::{
-                add_inserted_concepts, resolve_role_types, get_thing_position, prepare_output_row_schema,
-            },
+            executable::{add_inserted_concepts, get_thing_position, prepare_output_row_schema, resolve_links_roles},
             instructions::ConceptInstruction,
             VariableSource,
         },
@@ -111,7 +109,7 @@ fn add_links(
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let resolved_role_types = resolve_role_types(constraints, type_annotations, input_variables, variable_registry)?;
+    let resolved_role_types = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,

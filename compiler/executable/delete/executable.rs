@@ -20,7 +20,7 @@ use crate::{
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
-            executable::{resolve_role_types, get_thing_position},
+            executable::{get_thing_position, resolve_links_roles},
             ThingPosition,
         },
         next_executable_id, WriteCompilationError,
@@ -45,7 +45,7 @@ pub fn compile(
     deleted_concepts: &[Variable],
     source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let resolved_roles = resolve_role_types(constraints, type_annotations, input_variables, variable_registry)?;
+    let resolved_roles = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
     let mut connection_deletes = Vec::new();
     for constraint in constraints {
         match constraint {

@@ -273,7 +273,7 @@ fn add_links(
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let resolved_role_types = resolve_role_types(constraints, type_annotations, input_variables, variable_registry)?;
+    let resolved_role_types = resolve_links_roles(constraints, type_annotations, input_variables, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,
@@ -434,7 +434,7 @@ fn collect_type_bindings(
         .collect()
 }
 
-pub(crate) fn resolve_role_types(
+pub(crate) fn resolve_links_roles(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
     input_variables: &HashMap<Variable, VariablePosition>,
@@ -451,7 +451,8 @@ pub(crate) fn resolve_role_types(
                 if let Ok((type_)) = annotations.iter().exactly_one() {
                     Ok((role_type.clone(), TypeSource::Constant(*type_)))
                 } else {
-                    let variable = variable_registry.get_variable_name(role_type)
+                    let variable = variable_registry
+                        .get_variable_name(role_type)
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
                     Err(Box::new(WriteCompilationError::AmbiguousRoleType {

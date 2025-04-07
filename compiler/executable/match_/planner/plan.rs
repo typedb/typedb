@@ -25,13 +25,12 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Vertex,
+        Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::{chain, Itertools};
 use tracing::{event, Level};
-use ir::pattern::Scope;
 
 use crate::{
     annotation::{
@@ -129,7 +128,8 @@ fn make_builder<'a>(
                         .conjunctions()
                         .iter()
                         .map(|branch| {
-                            let branch_shared_variables = branch.referenced_variables()
+                            let branch_shared_variables = branch
+                                .referenced_variables()
                                 .filter(|var| block_context.is_variable_available(conjunction.scope_id(), *var))
                                 .collect();
                             make_builder(
