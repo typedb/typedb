@@ -31,8 +31,6 @@ pub fn next_executable_id() -> u64 {
     EXECUTABLE_ID.fetch_add(1, Ordering::Relaxed)
 }
 
-// TODO: ScopeId must be unique across a conjunction for this to work
-
 typedb_error! {
     pub ExecutableCompilationError(component = "Executable compiler", prefix = "ECP") {
         InsertExecutableCompilation(1, "Error compiling insert stage into executable.", typedb_source: Box<WriteCompilationError>),

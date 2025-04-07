@@ -104,7 +104,8 @@ struct ShimStage<Snapshot> {
 
 impl<Snapshot> ShimStage<Snapshot> {
     fn new(rows: Vec<Vec<VariableValue<'static>>>, context: ExecutionContext<Snapshot>) -> Self {
-        let rows = rows.into_iter().map(|values| Ok(MaybeOwnedRow::new_owned(values, 1, Provenance::INITIAL))).collect();
+        let rows =
+            rows.into_iter().map(|values| Ok(MaybeOwnedRow::new_owned(values, 1, Provenance::INITIAL))).collect();
         Self { rows, context }
     }
 }

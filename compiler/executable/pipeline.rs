@@ -12,15 +12,13 @@ use std::{
 
 use answer::{variable::Variable, variable_value::VariableValue, Type};
 use concept::thing::statistics::Statistics;
-use ir::{
-    pipeline::{ParameterRegistry, function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
-};
 use encoding::value::{label::Label, value::Value};
 use error::unimplemented_feature;
 use ir::{
     pattern::{
         conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, ParameterID, Vertex,
     },
+    pipeline::{function_signature::FunctionID, reduce::AssignedReduction, ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 
@@ -603,9 +601,10 @@ fn extract_query_structure_from(
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
                 extract_query_structure_from_branch(&mut branches, BranchID(0), block.conjunction());
-                let block_label_annotations = block_annotations.type_annotations().values().flat_map(|annotations| {
-                    annotations.vertex_annotations().iter()
-                });
+                let block_label_annotations = block_annotations
+                    .type_annotations()
+                    .values()
+                    .flat_map(|annotations| annotations.vertex_annotations().iter());
                 extend_labels_from(&mut resolved_labels, block_label_annotations);
             }
             AnnotatedStage::Insert { block, annotations, .. }
@@ -629,12 +628,13 @@ fn extract_query_structure_from(
     ParametrisedQueryStructure { branches, variable_positions, resolved_labels }
 }
 
-fn extend_labels_from<'a>(resolved_labels: &mut HashMap<Label, Type>, vertex_annotations: impl Iterator<Item=(&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>) {
-    resolved_labels.extend(
-        vertex_annotations.filter_map(|(vertex, type_)| {
-            Some((vertex.as_label()?.clone(), type_.iter().exactly_one().expect("Label should have one type only").clone()))
-        })
-    );
+fn extend_labels_from<'a>(
+    resolved_labels: &mut HashMap<Label, Type>,
+    vertex_annotations: impl Iterator<Item = (&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>,
+) {
+    resolved_labels.extend(vertex_annotations.filter_map(|(vertex, type_)| {
+        Some((vertex.as_label()?.clone(), type_.iter().exactly_one().expect("Label should have one type only").clone()))
+    }));
 }
 
 fn extract_query_structure_from_branch(

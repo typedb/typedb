@@ -71,10 +71,9 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
     }
 
     pub fn rows_positions(&self) -> Option<&HashMap<String, VariablePosition>> {
-        if self.has_fetch() {
-            None
-        } else {
-            Some(&self.named_outputs)
+        match self.fetch {
+            None => Some(&self.named_outputs),
+            Some(_) => None,
         }
     }
 
