@@ -10,7 +10,6 @@ use answer::{variable::Variable, Type};
 use encoding::graph::type_::Kind;
 use ir::{
     pattern::{
-        constraint,
         constraint::{Comparator, Constraint},
         expression::Expression,
         ParameterID, Vertex,
@@ -274,7 +273,7 @@ fn add_links(
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let named_role_types = collect_named_role_type_bindings(constraints, type_annotations, variable_registry)?;
+    let resolved_role_types = resolve_role_types(constraints, type_annotations, input_variables, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,
@@ -288,7 +287,7 @@ fn add_links(
             variable_registry,
             links.source_span(),
         )?;
-        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
+        let role = resolved_role_types.get(&links.role_type().as_variable().unwrap()).unwrap().clone();
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())
@@ -355,38 +354,6 @@ fn resolve_value_variable_for_inserted_attribute<'a>(
             comparator,
             source_span,
         }))
-    }
-}
-
-pub(crate) fn resolve_links_role(
-    type_annotations: &TypeAnnotations,
-    input_variables: &HashMap<Variable, VariablePosition>,
-    variable_registry: &VariableRegistry,
-    named_role_types: &HashMap<Variable, Type>,
-    links: &constraint::Links<Variable>,
-) -> Result<TypeSource, Box<WriteCompilationError>> {
-    let &Vertex::Variable(role_variable) = links.role_type() else { unreachable!() };
-    match (input_variables.get(&role_variable), named_role_types.get(&role_variable)) {
-        (Some(&input), None) => Ok(TypeSource::InputVariable(input)),
-        (None, Some(type_)) => Ok(TypeSource::Constant(*type_)),
-        (None, None) => {
-            // TODO: Do we want to support inserts with unspecified role-types?
-            let annotations = type_annotations.vertex_annotations_of(&Vertex::Variable(role_variable)).unwrap();
-            if annotations.len() == 1 {
-                Ok(TypeSource::Constant(*annotations.iter().find(|_| true).unwrap()))
-            } else {
-                return Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
-                    player_variable: variable_registry
-                        .variable_names()
-                        .get(&links.relation().as_variable().unwrap())
-                        .cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                    role_types: annotations.iter().join(", "),
-                    source_span: links.source_span(),
-                }));
-            }
-        }
-        (Some(_), Some(_)) => unreachable!(),
     }
 }
 
@@ -467,39 +434,33 @@ fn collect_type_bindings(
         .collect()
 }
 
-pub(crate) fn collect_named_role_type_bindings(
+pub(crate) fn resolve_role_types(
     constraints: &[Constraint<Variable>],
     type_annotations: &TypeAnnotations,
+    input_variables: &HashMap<Variable, VariablePosition>,
     variable_registry: &VariableRegistry,
-) -> Result<HashMap<Variable, answer::Type>, Box<WriteCompilationError>> {
-    #[cfg(debug_assertions)]
-    let mut seen = HashSet::new();
-
-    filter_variants!(Constraint::RoleName : constraints)
-        .map(|role_name| {
-            let annotations = type_annotations.vertex_annotations_of(role_name.type_()).unwrap();
-            let variable = role_name.type_().as_variable().unwrap();
-            let type_ = if annotations.len() == 1 {
-                annotations.iter().find(|_| true).unwrap()
+) -> Result<HashMap<Variable, TypeSource>, Box<WriteCompilationError>> {
+    filter_variants!(Constraint::Links : constraints)
+        .map(|links| links.role_type())
+        .map(|role_type_vertex| {
+            let role_type = role_type_vertex.as_variable().expect("links.role_type is always a variable");
+            if let Some(input_position) = input_variables.get(&role_type) {
+                Ok((role_type.clone(), TypeSource::InputVariable(*input_position)))
             } else {
-                return Err(Box::new(WriteCompilationError::AmbiguousRoleType {
-                    variable: variable_registry
-                        .variable_names()
-                        .get(&variable)
+                let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
+                if let Ok((type_)) = annotations.iter().exactly_one() {
+                    Ok((role_type.clone(), TypeSource::Constant(*type_)))
+                } else {
+                    let variable = variable_registry.get_variable_name(role_type)
                         .cloned()
-                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                    role_types: annotations.iter().join(", "),
-                    source_span: role_name.source_span(),
-                }));
-            };
-
-            #[cfg(debug_assertions)]
-            {
-                debug_assert!(!seen.contains(&variable));
-                seen.insert(variable);
+                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
+                    Err(Box::new(WriteCompilationError::AmbiguousRoleType {
+                        variable,
+                        role_types: annotations.iter().join(", "),
+                        source_span: role_type_vertex.source_span(variable_registry),
+                    }))
+                }
             }
-
-            Ok((variable, *type_))
         })
         .collect()
 }

@@ -15,8 +15,7 @@ use crate::{
     executable::{
         insert::{
             executable::{
-                add_inserted_concepts, collect_named_role_type_bindings, get_thing_position, prepare_output_row_schema,
-                resolve_links_role,
+                add_inserted_concepts, resolve_role_types, get_thing_position, prepare_output_row_schema,
             },
             instructions::ConceptInstruction,
             VariableSource,
@@ -112,7 +111,7 @@ fn add_links(
     variable_registry: &VariableRegistry,
     instructions: &mut Vec<ConnectionInstruction>,
 ) -> Result<(), Box<WriteCompilationError>> {
-    let named_role_types = collect_named_role_type_bindings(constraints, type_annotations, variable_registry)?;
+    let resolved_role_types = resolve_role_types(constraints, type_annotations, input_variables, variable_registry)?;
     for links in filter_variants!(Constraint::Links: constraints) {
         let relation = get_thing_position(
             variable_positions,
@@ -126,7 +125,7 @@ fn add_links(
             variable_registry,
             links.source_span(),
         )?;
-        let role = resolve_links_role(type_annotations, input_variables, variable_registry, &named_role_types, links)?;
+        let role = resolved_role_types.get(&links.role_type().as_variable().unwrap()).unwrap().clone();
         instructions.push(ConnectionInstruction::Links(Links { relation, player, role }));
     }
     Ok(())

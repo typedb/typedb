@@ -20,8 +20,8 @@ use crate::{
     executable::{
         delete::instructions::{ConnectionInstruction, Has, Links, ThingInstruction},
         insert::{
-            executable::{collect_named_role_type_bindings, get_thing_position},
-            ThingPosition, TypeSource,
+            executable::{resolve_role_types, get_thing_position},
+            ThingPosition,
         },
         next_executable_id, WriteCompilationError,
     },
@@ -45,7 +45,7 @@ pub fn compile(
     deleted_concepts: &[Variable],
     source_span: Option<Span>,
 ) -> Result<DeleteExecutable, Box<WriteCompilationError>> {
-    let named_role_types = collect_named_role_type_bindings(constraints, type_annotations, variable_registry)?;
+    let resolved_roles = resolve_role_types(constraints, type_annotations, input_variables, variable_registry)?;
     let mut connection_deletes = Vec::new();
     for constraint in constraints {
         match constraint {
@@ -78,34 +78,7 @@ pub fn compile(
                     variable_registry,
                     links.source_span(),
                 )?;
-                let role_type = links.role_type();
-                let role = match role_type {
-                    &Vertex::Variable(input) => {
-                        if let Some(input) = input_variables.get(&input) {
-                            TypeSource::InputVariable(*input)
-                        } else if let Some(type_) = named_role_types.get(&input) {
-                            TypeSource::Constant(*type_)
-                        } else {
-                            let annotations = type_annotations.vertex_annotations_of(role_type).unwrap();
-                            if annotations.len() == 1 {
-                                TypeSource::Constant(*annotations.iter().next().unwrap())
-                            } else {
-                                return Err(WriteCompilationError::InsertLinksAmbiguousRoleType {
-                                    player_variable: variable_registry
-                                        .variable_names()
-                                        .get(&links.player().as_variable().unwrap())
-                                        .cloned()
-                                        .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string()),
-                                    // TODO: It prints `[RoleType:[0000]], [RoleType:[0001]]`, get labels somehow
-                                    role_types: annotations.iter().join(", "),
-                                    source_span: links.source_span(),
-                                })?;
-                            }
-                        }
-                    }
-                    Vertex::Label(_) => unreachable!("expected role name, found label in a `links` constraint"),
-                    Vertex::Parameter(_) => unreachable!(),
-                };
+                let role = resolved_roles.get(&links.role_type().as_variable().unwrap()).unwrap().clone();
                 connection_deletes.push(ConnectionInstruction::Links(Links { relation, player, role }));
             }
             Constraint::LinksDeduplication(_) | Constraint::RoleName(_) => (), // Ignore. It will have done its job during type-inference
