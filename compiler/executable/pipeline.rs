@@ -9,6 +9,7 @@ use std::{
     iter::zip,
     sync::Arc,
 };
+use std::collections::btree_set::Iter;
 
 use answer::{variable::Variable, variable_value::VariableValue, Type};
 use concept::thing::statistics::Statistics;
@@ -20,7 +21,7 @@ use ir::{
     },
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, ParameterRegistry, VariableRegistry},
 };
-use itertools::Itertools;
+use itertools::{ExactlyOneError, Itertools};
 
 use crate::{
     annotation::{
@@ -633,9 +634,10 @@ fn extend_labels_from<'a>(
     vertex_annotations: impl Iterator<Item = (&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>,
 ) {
     resolved_labels.extend(vertex_annotations.filter_map(|(vertex, type_)| {
-        vertex.as_label().cloned().map(|label| {
-            (label, type_.iter().exactly_one().expect("Label should have one type only").clone())
-        })
+        match (vertex.as_label(), type_.iter().exactly_one()) {
+            (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
+            _ => None,
+        }
     }));
 }
 
