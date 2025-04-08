@@ -451,12 +451,11 @@ pub(crate) fn resolve_links_roles(
                 if let Ok((type_)) = annotations.iter().exactly_one() {
                     Ok((role_type.clone(), TypeSource::Constant(*type_)))
                 } else {
-                    let variable = variable_registry
-                        .get_variable_name(role_type)
+                    let player_variable = variable_registry
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
-                    Err(Box::new(WriteCompilationError::AmbiguousRoleType {
-                        variable,
+                    Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
+                        player_variable,
                         role_types: annotations.iter().join(", "),
                         source_span: role_type_vertex.source_span(variable_registry),
                     }))

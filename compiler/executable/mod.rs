@@ -89,13 +89,6 @@ typedb_error! {
             variable: String,
             source_span: Option<Span>,
         ),
-        AmbiguousRoleType(
-            8,
-            "Could not uniquely resolve the role type for variable '{variable}'. Possible role types are: {role_types}.",
-            variable: String,
-            role_types: String,
-            source_span: Option<Span>,
-        ),
         InsertLinksAmbiguousRoleType(
             9,
             "Links insert for player '{player_variable}' requires unambiguous role type, but inferred: {role_types}.",
