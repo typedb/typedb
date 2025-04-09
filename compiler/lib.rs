@@ -13,6 +13,7 @@ use ir::pattern::IrID;
 
 pub mod annotation;
 pub mod executable;
+pub mod query_structure;
 pub mod transformation;
 
 macro_rules! filter_variants {

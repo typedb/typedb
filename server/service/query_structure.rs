@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::executable::pipeline::QueryStructure;
+use compiler::query_structure::QueryStructure;
 use ir::pattern::{constraint::Constraint, Vertex};
 use itertools::Itertools;
 

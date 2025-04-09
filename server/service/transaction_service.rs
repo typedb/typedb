@@ -14,7 +14,7 @@ use std::{
     time::Instant,
 };
 
-use compiler::{executable::pipeline::QueryStructure, VariablePosition};
+use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,

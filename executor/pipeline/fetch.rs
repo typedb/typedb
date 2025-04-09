@@ -14,8 +14,8 @@ use compiler::{
         },
         function::{executable::ExecutableFunction, ExecutableFunctionRegistry},
         next_executable_id,
-        pipeline::ParametrisedQueryStructure,
     },
+    query_structure::ParametrisedQueryStructure,
     VariablePosition,
 };
 use concept::{
