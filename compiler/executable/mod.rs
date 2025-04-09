@@ -7,7 +7,7 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
 use error::typedb_error;
-use ir::pattern::{constraint::Comparator, ScopeId};
+use ir::pattern::constraint::Comparator;
 use typeql::common::Span;
 
 use crate::executable::{

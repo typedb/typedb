@@ -69,9 +69,7 @@ fn query_structure_constraint_edge(
         | Constraint::Plays(_)
         | Constraint::ExpressionBinding(_)
         | Constraint::FunctionCallBinding(_)
-        | Constraint::Comparison(_) => {
-            None
-        }
+        | Constraint::Comparison(_) => None,
 
         // Constraints that I may need to handle
         Constraint::RoleName(_)
@@ -87,20 +85,14 @@ fn query_structure_constraint_edge(
 
 fn query_structure_constraint_edge_vertex(query_structure: &QueryStructure, vertex: &Vertex<Variable>) -> String {
     let vertex = match vertex {
-        Vertex::Variable(variable) => {
-            query_structure
-                .get_variable_position(variable)
-                .map(|position| format!("{{ \"variable\": {} }}", position.as_usize()))
-                .unwrap_or(JSON_NONE.to_string())
-        }
-        Vertex::Label(label) => {
-            query_structure
-                .get_type(label)
-                .map(|type_| {
-                    format!("{{ \"label\": \"{}\" }}", label.to_string())
-                })
-                .unwrap_or(JSON_NONE.to_string())
-        }
+        Vertex::Variable(variable) => query_structure
+            .get_variable_position(variable)
+            .map(|position| format!("{{ \"variable\": {} }}", position.as_usize()))
+            .unwrap_or(JSON_NONE.to_string()),
+        Vertex::Label(label) => query_structure
+            .get_type(label)
+            .map(|type_| format!("{{ \"label\": \"{}\" }}", label.to_string()))
+            .unwrap_or(JSON_NONE.to_string()),
         Vertex::Parameter(param) => query_structure
             .get_parameter_value(param)
             .map(|value| {

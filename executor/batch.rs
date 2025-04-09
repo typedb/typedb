@@ -39,14 +39,14 @@ pub struct FixedBatch {
 
 impl FixedBatch {
     pub(crate) const INIT_MULTIPLICITIES: [u64; FIXED_BATCH_ROWS_MAX as usize] = [1; FIXED_BATCH_ROWS_MAX as usize];
-    pub(crate) const INIT_PROVENANCE: [Provenance; FIXED_BATCH_ROWS_MAX as usize] =
+    pub(crate) const INIT_PROVENANCES: [Provenance; FIXED_BATCH_ROWS_MAX as usize] =
         [Provenance(0); FIXED_BATCH_ROWS_MAX as usize];
     pub(crate) const SINGLE_EMPTY_ROW: FixedBatch = FixedBatch {
         width: 0,
         entries: 1,
         data: Vec::new(),
         multiplicities: FixedBatch::INIT_MULTIPLICITIES,
-        provenance: FixedBatch::INIT_PROVENANCE,
+        provenance: FixedBatch::INIT_PROVENANCES,
     };
 
     pub(crate) const EMPTY: FixedBatch = FixedBatch {
@@ -54,7 +54,7 @@ impl FixedBatch {
         entries: 0,
         data: Vec::new(),
         multiplicities: FixedBatch::INIT_MULTIPLICITIES,
-        provenance: FixedBatch::INIT_PROVENANCE,
+        provenance: FixedBatch::INIT_PROVENANCES,
     };
 
     pub(crate) fn new(width: u32) -> Self {
@@ -64,7 +64,7 @@ impl FixedBatch {
             data: vec![VariableValue::Empty; size as usize],
             entries: 0,
             multiplicities: FixedBatch::INIT_MULTIPLICITIES,
-            provenance: FixedBatch::INIT_PROVENANCE,
+            provenance: FixedBatch::INIT_PROVENANCES,
         }
     }
 
@@ -114,7 +114,7 @@ impl<'a> From<MaybeOwnedRow<'a>> for FixedBatch {
         let width = row.len() as u32;
         let mut multiplicities = FixedBatch::INIT_MULTIPLICITIES;
         multiplicities[0] = row.multiplicity();
-        let mut branch_provenance = FixedBatch::INIT_PROVENANCE;
+        let mut branch_provenance = FixedBatch::INIT_PROVENANCES;
         branch_provenance[0] = row.provenance();
         FixedBatch { width, data: row.row().to_owned(), entries: 1, multiplicities, provenance: branch_provenance }
     }

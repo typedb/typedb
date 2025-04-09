@@ -39,12 +39,12 @@ impl DisjunctionExecutor {
         self.branches.iter_mut().for_each(|branch| branch.reset())
     }
 
-    pub(crate) fn map_output(&self, branch_index: BranchIndex, unmapped: FixedBatch) -> FixedBatch {
+    pub(crate) fn map_output(&self, source_branch_index: BranchIndex, unmapped: FixedBatch) -> FixedBatch {
         let mut uniform_batch = FixedBatch::new(self.output_width);
         unmapped.into_iter().for_each(|row| {
             uniform_batch.append(|mut output_row| {
                 output_row.copy_mapped(row, self.selected_variables.iter().map(|&pos| (pos, pos)));
-                output_row.set_branch_id_in_provenance(self.branch_ids[*branch_index]);
+                output_row.set_branch_id_in_provenance(self.branch_ids[*source_branch_index]);
             })
         });
         uniform_batch

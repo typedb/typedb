@@ -41,6 +41,7 @@ rust_library(
         "//common/concurrency",
         "//common/error",
         "//common/lending_iterator",
+        "//common/logger",
         "//common/options",
         "//compiler",
         "//concept",

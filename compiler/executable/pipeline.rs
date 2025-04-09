@@ -5,11 +5,10 @@
  */
 
 use std::{
-    collections::{BTreeMap, BTreeSet, HashMap, HashSet},
+    collections::{btree_set::Iter, BTreeMap, BTreeSet, HashMap, HashSet},
     iter::zip,
     sync::Arc,
 };
-use std::collections::btree_set::Iter;
 
 use answer::{variable::Variable, variable_value::VariableValue, Type};
 use concept::thing::statistics::Statistics;

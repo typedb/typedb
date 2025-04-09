@@ -1343,7 +1343,7 @@ impl TransactionService {
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
             #[cfg(debug_assertions)]
-            dump_query_structure(pipeline.query_structure());
+            logger::trace!("{}", crate::service::query_structure::encode_query_structure(pipeline.query_structure()));
 
             Self::submit_response_sync(sender, initial_response);
 
@@ -1749,9 +1749,4 @@ typedb_error! {
         ),
         ServiceClosingFailedQueueCleanup(14, "The operation failed since the service is closing."),
     }
-}
-
-fn dump_query_structure(query_structure: &QueryStructure) {
-    use crate::service::query_structure::encode_query_structure;
-    println!("{}", encode_query_structure(query_structure));
 }
