@@ -441,8 +441,8 @@ pub(crate) fn resolve_links_roles(
     variable_registry: &VariableRegistry,
 ) -> Result<HashMap<Variable, TypeSource>, Box<WriteCompilationError>> {
     filter_variants!(Constraint::Links : constraints)
-        .map(|links| links.role_type())
-        .map(|role_type_vertex| {
+        .map(|links| {
+            let role_type_vertex = links.role_type();
             let role_type = role_type_vertex.as_variable().expect("links.role_type is always a variable");
             if let Some(input_position) = input_variables.get(&role_type) {
                 Ok((role_type.clone(), TypeSource::InputVariable(*input_position)))
@@ -452,6 +452,7 @@ pub(crate) fn resolve_links_roles(
                     Ok((role_type.clone(), TypeSource::Constant(*type_)))
                 } else {
                     let player_variable = variable_registry
+                        .get_variable_name(links.player().as_variable().unwrap())
                         .cloned()
                         .unwrap_or_else(|| VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME.to_string());
                     Err(Box::new(WriteCompilationError::InsertLinksAmbiguousRoleType {
