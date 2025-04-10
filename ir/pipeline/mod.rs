@@ -127,6 +127,11 @@ impl VariableRegistry {
             variable_source_spans: HashMap::new(),
         }
     }
+
+    pub fn highest_branch_id_allocated(&self) -> u16 {
+        self.branch_id_allocator - 1
+    }
+
     pub(crate) fn next_branch_id(&mut self) -> BranchID {
         let branch_id = self.branch_id_allocator;
         self.branch_id_allocator += 1;

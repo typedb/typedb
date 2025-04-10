@@ -364,7 +364,7 @@ fn execute_list_subfetch(
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
-            Arc::new(ParametrisedQueryStructure::empty()), // TODO:?
+            None,
             functions_registry,
             stages,
             Some(fetch.clone()),
@@ -383,7 +383,7 @@ fn execute_list_subfetch(
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
-            Arc::new(ParametrisedQueryStructure::empty()), // TODO:?
+            None,
             functions_registry,
             stages,
             Some(fetch.clone()),

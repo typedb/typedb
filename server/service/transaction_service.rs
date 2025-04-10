@@ -1343,7 +1343,9 @@ impl TransactionService {
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
             #[cfg(debug_assertions)]
-            logger::trace!("{}", crate::service::query_structure::encode_query_structure(pipeline.query_structure()));
+            if let Some(query_structure) = pipeline.query_structure() {
+                logger::trace!("{}", crate::service::query_structure::encode_query_structure(query_structure));
+            }
 
             Self::submit_response_sync(sender, initial_response);
 

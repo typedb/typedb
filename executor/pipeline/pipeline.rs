@@ -42,14 +42,14 @@ use crate::{
 pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
     last_stage: Nonterminals,
     named_outputs: HashMap<String, VariablePosition>,
-    query_structure: QueryStructure,
+    query_structure: Option<QueryStructure>,
     fetch: Option<FetchStageExecutor<Snapshot>>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pipeline<Snapshot, Nonterminals> {
     fn build_with_fetch(
         variable_names: &HashMap<Variable, String>,
-        query_structure: QueryStructure,
+        query_structure: Option<QueryStructure>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
@@ -74,8 +74,8 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         }
     }
 
-    pub fn query_structure(&self) -> &QueryStructure {
-        &self.query_structure
+    pub fn query_structure(&self) -> Option<&QueryStructure> {
+        self.query_structure.as_ref()
     }
 
     pub fn into_rows_iterator(
@@ -119,7 +119,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
         variable_names: &HashMap<Variable, String>,
-        query_structure: Arc<ParametrisedQueryStructure>,
+        query_structure: Option<Arc<ParametrisedQueryStructure>>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -185,7 +185,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         }
         Ok(Pipeline::build_with_fetch(
             variable_names,
-            query_structure.with_parameters(parameters),
+            query_structure.map(|qs| qs.with_parameters(parameters)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,
@@ -198,7 +198,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     pub fn build_write_pipeline(
         snapshot: Snapshot,
         variable_names: &HashMap<Variable, String>,
-        query_structure: Arc<ParametrisedQueryStructure>,
+        query_structure: Option<Arc<ParametrisedQueryStructure>>,
         thing_manager: Arc<ThingManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: Vec<ExecutableStage>,
@@ -264,7 +264,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         }
         Pipeline::build_with_fetch(
             variable_names,
-            query_structure.with_parameters(parameters),
+            query_structure.map(|qs| qs.with_parameters(parameters)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,

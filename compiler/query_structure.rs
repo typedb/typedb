@@ -10,7 +10,7 @@ use ir::{
     pattern::{
         conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, ParameterID, Vertex,
     },
-    pipeline::ParameterRegistry,
+    pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 
@@ -24,10 +24,6 @@ pub struct ParametrisedQueryStructure {
 }
 
 impl ParametrisedQueryStructure {
-    pub fn empty() -> Self {
-        Self { branches: [(); 64].map(|_| None), variable_positions: HashMap::new(), resolved_labels: HashMap::new() }
-    }
-
     pub fn with_parameters(self: Arc<Self>, parameters: Arc<ParameterRegistry>) -> QueryStructure {
         QueryStructure { parametrised_structure: self, parameters }
     }
@@ -55,9 +51,13 @@ impl QueryStructure {
 }
 
 pub(crate) fn extract_query_structure_from(
+    variable_registry: &VariableRegistry,
     annotated_stages: Vec<AnnotatedStage>,
     variable_positions: HashMap<Variable, VariablePosition>,
-) -> ParametrisedQueryStructure {
+) -> Option<ParametrisedQueryStructure> {
+    if variable_registry.highest_branch_id_allocated() > 63 {
+        return None;
+    }
     let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
     let mut resolved_labels = HashMap::new();
 
@@ -89,7 +89,7 @@ pub(crate) fn extract_query_structure_from(
             | AnnotatedStage::Reduce(_, _) => {}
         }
     });
-    ParametrisedQueryStructure { branches, variable_positions, resolved_labels }
+    Some(ParametrisedQueryStructure { branches, variable_positions, resolved_labels })
 }
 
 fn extend_labels_from<'a>(
