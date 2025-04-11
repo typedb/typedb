@@ -51,7 +51,7 @@ use tokio::{
         mpsc::{channel, Receiver, Sender},
         watch,
     },
-    task::{spawn_blocking, JoinHandle},
+    task::{spawn_blocking, yield_now, JoinHandle},
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
@@ -1419,6 +1419,11 @@ impl TransactionService {
         let responder = self.responders.get_mut(&request_id);
         if let Some((worker_handle, stream_transmitter)) = responder {
             if stream_transmitter.check_finished_else_queue_continue().await {
+                while !worker_handle.is_finished() {
+                    // The worker _must_ be wrapping up and freeing resources here. We check on it every tick
+                    // as we can't proceed until it's done.
+                    yield_now().await;
+                }
                 debug_assert!(worker_handle.is_finished());
                 self.responders.remove(&request_id);
             }
