@@ -8,7 +8,7 @@ use std::{
     collections::{HashMap, VecDeque},
     ops::ControlFlow::{self, Break, Continue},
     sync::Arc,
-    time::Instant,
+    time::{Duration, Instant},
 };
 
 use compiler::VariablePosition;
@@ -1419,7 +1419,12 @@ impl TransactionService {
         let responder = self.responders.get_mut(&request_id);
         if let Some((worker_handle, stream_transmitter)) = responder {
             if stream_transmitter.check_finished_else_queue_continue().await {
+                const ALLOWED_CLEANUP_TIME: Duration = Duration::from_secs(60);
+                let start = Instant::now();
                 while !worker_handle.is_finished() {
+                    if start.elapsed() > ALLOWED_CLEANUP_TIME {
+                        panic!("Query stream {request_id:?} ended but has not responede in over {ALLOWED_CLEANUP_TIME:?}, aborting. (This is a bug!)");
+                    }
                     // The worker _must_ be wrapping up and freeing resources here. We check on it every tick
                     // as we can't proceed until it's done.
                     yield_now().await;
