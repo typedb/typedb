@@ -46,14 +46,13 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::{
-    select,
     sync::{
         broadcast,
         mpsc::{channel, Receiver, Sender},
         watch,
     },
     task::{spawn_blocking, JoinHandle},
-    time::sleep,
+    time::timeout,
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
@@ -1422,11 +1421,8 @@ impl TransactionService {
         if let Some((worker_handle, stream_transmitter)) = responder {
             if stream_transmitter.check_finished_else_queue_continue().await {
                 const ALLOWED_CLEANUP_TIME: Duration = Duration::from_secs(60);
-                select! {
-                    _ = sleep(ALLOWED_CLEANUP_TIME) => {
-                        panic!("Query stream {request_id:?} ended but has not responede in over {ALLOWED_CLEANUP_TIME:?}, aborting. (This is a bug!)");
-                    }
-                    _ = worker_handle => (),
+                if timeout(ALLOWED_CLEANUP_TIME, worker_handle).await.is_err() {
+                    panic!("Query stream {request_id:?} ended but has not responded in over {ALLOWED_CLEANUP_TIME:?}, aborting. (This is a bug!)");
                 }
                 self.responders.remove(&request_id);
             }
