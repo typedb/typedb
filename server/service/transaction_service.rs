@@ -46,12 +46,14 @@ use storage::{
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::{
+    select,
     sync::{
         broadcast,
         mpsc::{channel, Receiver, Sender},
         watch,
     },
-    task::{spawn_blocking, yield_now, JoinHandle},
+    task::{spawn_blocking, JoinHandle},
+    time::sleep,
 };
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
@@ -1420,16 +1422,12 @@ impl TransactionService {
         if let Some((worker_handle, stream_transmitter)) = responder {
             if stream_transmitter.check_finished_else_queue_continue().await {
                 const ALLOWED_CLEANUP_TIME: Duration = Duration::from_secs(60);
-                let start = Instant::now();
-                while !worker_handle.is_finished() {
-                    if start.elapsed() > ALLOWED_CLEANUP_TIME {
+                select! {
+                    _ = sleep(ALLOWED_CLEANUP_TIME) => {
                         panic!("Query stream {request_id:?} ended but has not responede in over {ALLOWED_CLEANUP_TIME:?}, aborting. (This is a bug!)");
                     }
-                    // The worker _must_ be wrapping up and freeing resources here. We check on it every tick
-                    // as we can't proceed until it's done.
-                    yield_now().await;
+                    _ = worker_handle => (),
                 }
-                debug_assert!(worker_handle.is_finished());
                 self.responders.remove(&request_id);
             }
             // valid query stream responses and control are reported by the transmitter directly, so no response here
