@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    fmt,
-    marker::PhantomData,
-    ops::Bound,
-};
+use std::{collections::HashMap, fmt, marker::PhantomData, ops::Bound};
 
 use ::iterator::minmax_or;
 use answer::{variable_value::VariableValue, Thing, Type};
