@@ -6,10 +6,7 @@
 
 use std::{
     collections::{HashMap, VecDeque},
-    ops::{
-        ControlFlow,
-        ControlFlow::{Break, Continue},
-    },
+    ops::ControlFlow::{self, Break, Continue},
     sync::Arc,
     time::Instant,
 };
@@ -1058,7 +1055,7 @@ impl TransactionService {
         };
 
         if pipeline.has_fetch() {
-            let (iterator, parameters, snapshot, query_profile) = match pipeline.into_documents_iterator(interrupt) {
+            let (iterator, parameters, snapshot, _query_profile) = match pipeline.into_documents_iterator(interrupt) {
                 Ok((iterator, ExecutionContext { snapshot, profile, parameters, .. })) => {
                     (iterator, parameters, snapshot, profile)
                 }
@@ -1093,7 +1090,7 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let query_output_descriptor: StreamQueryOutputDescriptor =
                 named_outputs.clone().into_iter().sorted().collect();
-            let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
+            let (iterator, snapshot, _query_profile) = match pipeline.into_rows_iterator(interrupt) {
                 Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
                 Err((err, ExecutionContext { snapshot, .. })) => {
                     return (
@@ -1106,7 +1103,7 @@ impl TransactionService {
                 }
             };
 
-            let result = match iterator.collect_owned() {
+            match iterator.collect_owned() {
                 Ok(batch) => (Arc::into_inner(snapshot).unwrap(), Ok(Either::Left((query_output_descriptor, batch)))),
                 Err(err) => (
                     Arc::into_inner(snapshot).unwrap(),
@@ -1115,8 +1112,7 @@ impl TransactionService {
                         typedb_source: err,
                     })),
                 ),
-            };
-            result
+            }
         }
     }
 
@@ -1171,10 +1167,10 @@ impl TransactionService {
         sender: Sender<StreamQueryResponse>,
         mut interrupt: ExecutionInterrupt,
     ) {
-        let mut as_lending_iter = batch.into_iterator();
+        let mut batch_iterator = batch.into_iterator();
         Self::submit_response_async(&sender, StreamQueryResponse::init_ok_rows(&output_descriptor, Write)).await;
 
-        while let Some(row) = as_lending_iter.next() {
+        while let Some(row) = batch_iterator.next() {
             if let Some(interrupt) = interrupt.check() {
                 Self::submit_response_async(
                     &sender,
@@ -1678,47 +1674,6 @@ impl QueryStreamTransmitter {
             transaction_server_res_parts_query_part(req_id, query_res_part_from_concept_documents(documents))
         );
         Continue(())
-    }
-}
-
-trait ControlFlowExt<B, C> {
-    fn map<T, F: FnOnce(B) -> T>(self, f: F) -> ControlFlow<T, C>;
-}
-
-impl<B, C> ControlFlowExt<B, C> for ControlFlow<B, C> {
-    fn map<T, F: FnOnce(B) -> T>(self, f: F) -> ControlFlow<T, C> {
-        match self {
-            Continue(c) => Continue(c),
-            Break(b) => Break(f(b)),
-        }
-    }
-}
-
-trait ControlFlowResultExt<T, E> {
-    fn transpose(self) -> ControlFlow<Result<T, E>>;
-}
-
-impl<T, E> ControlFlowResultExt<T, E> for Result<ControlFlow<T>, E> {
-    fn transpose(self) -> ControlFlow<Result<T, E>> {
-        match self {
-            Ok(Continue(())) => Continue(()),
-            Ok(Break(t)) => Break(Ok(t)),
-            Err(err) => Break(Err(err)),
-        }
-    }
-}
-
-trait ResultControlFlowExt<T, E> {
-    fn transpose(self) -> Result<ControlFlow<T>, E>;
-}
-
-impl<T, E> ResultControlFlowExt<T, E> for ControlFlow<Result<T, E>> {
-    fn transpose(self) -> Result<ControlFlow<T>, E> {
-        match self {
-            Continue(()) => Ok(Continue(())),
-            Break(Ok(t)) => Ok(Break(t)),
-            Break(Err(err)) => Err(err),
-        }
     }
 }
 
