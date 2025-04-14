@@ -27,6 +27,7 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::JsonBodyExpected { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::RequestTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
             HttpServiceError::NotFound { .. } => StatusCode::NOT_FOUND,
+            HttpServiceError::UnknownVersion { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::Service { typedb_source } => match typedb_source {

@@ -42,25 +42,13 @@ where
     }
 }
 
-#[derive(Debug)]
-pub(crate) struct ProtocolVersionParseError {
-    pub(crate) version: String,
-}
-
-impl IntoResponse for ProtocolVersionParseError {
-    fn into_response(self) -> Response {
-        let error = format!("Unknown version '{}'", self.version);
-        (StatusCode::NOT_FOUND, error).into_response()
-    }
-}
-
 impl FromStr for ProtocolVersion {
-    type Err = ProtocolVersionParseError;
+    type Err = HttpServiceError;
 
     fn from_str(version: &str) -> Result<Self, Self::Err> {
         match version {
             "v1" => Ok(ProtocolVersion::V1),
-            _ => Err(ProtocolVersionParseError { version: version.to_string() }),
+            _ => Err(HttpServiceError::UnknownVersion { version: version.to_string() }),
         }
     }
 }
