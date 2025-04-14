@@ -7,17 +7,14 @@
 use cucumber::gherkin::Step;
 use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
 use futures::future::join_all;
+use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
+use params::{self, check_boolean};
 use server::server::Server;
 use test_utils::assert_matches;
 
-use crate::{
-    connection::BehaviourConnectionTestExecutionError,
-    generic_step,
-    params::{self, check_boolean},
-    util, ActiveTransaction, Context,
-};
+use crate::{connection::BehaviourConnectionTestExecutionError, generic_step, util, ActiveTransaction, Context};
 
 async fn server_open_transaction_for_database(
     server: &'_ Server,
@@ -121,7 +118,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             ));
         }
         ActiveTransaction::Write(tx) => {
-            if let Some(error) = may_error.check(tx.commit()) {
+            if let Either::Right(error) = may_error.check(tx.commit()) {
                 match error {
                     DataCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
                         for error in errors {
@@ -138,7 +135,7 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             }
         }
         ActiveTransaction::Schema(tx) => {
-            if let Some(error) = may_error.check(tx.commit()) {
+            if let Either::Right(error) = may_error.check(tx.commit()) {
                 match error {
                     SchemaCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
                         for error in errors {

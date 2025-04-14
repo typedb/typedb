@@ -13,6 +13,7 @@ use concept::{
 };
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use params::{self, check_boolean};
 use test_utils::assert_matches;
 
 use crate::{
@@ -20,8 +21,7 @@ use crate::{
         attribute::{attribute_put_instance_with_value_impl, get_attribute_by_value},
         has::object_set_has_impl,
     },
-    generic_step, params,
-    params::check_boolean,
+    generic_step,
     thing_util::ObjectWithKey,
     transaction_context::{with_read_tx, with_write_tx},
     Context,

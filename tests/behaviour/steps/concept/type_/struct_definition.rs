@@ -8,11 +8,11 @@ use std::sync::Arc;
 
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
+use params::{self, check_boolean};
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
     generic_step,
-    params::{self, check_boolean},
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };

@@ -10,10 +10,11 @@ use concept::type_::{annotation, constraint::Constraint, plays::PlaysAnnotation,
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use params;
 
 use super::thing_type::get_as_object_type;
 use crate::{
-    generic_step, params,
+    generic_step,
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };

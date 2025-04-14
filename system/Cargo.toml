@@ -46,7 +46,7 @@ features = {}
 
 	[dependencies.uuid]
 		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.15.1"
+		version = "1.16.0"
 		default-features = false
 
 	[dependencies.database]
@@ -76,8 +76,8 @@ features = {}
 
 	[dependencies.typeql]
 		features = []
+		rev = "e8725d27a82d4b3a31da72821ae70309242c7f86"
 		git = "https://github.com/typedb/typeql"
-		tag = "3.1.0"
 		default-features = false
 
 	[dependencies.compiler]

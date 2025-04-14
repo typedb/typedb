@@ -32,8 +32,9 @@ rust_library(
     name = "server",
     srcs = glob([
         "*.rs",
+        "authentication/**/*.rs",
         "parameters/**/*.rs",
-        "service/*.rs",
+        "service/**/*.rs",
     ]),
     deps = [
         "//answer",
@@ -61,23 +62,33 @@ rust_library(
         "@typedb_protocol//grpc/rust:typedb_protocol",
 
         "@crates//:axum",
+        "@crates//:axum-extra",
+        "@crates//:axum-server",
         "@crates//:clap",
         "@crates//:chrono",
         "@crates//:chrono-tz",
         "@crates//:futures",
         "@crates//:http",
+        "@crates//:hyper",
         "@crates//:itertools",
+        "@crates//:jsonwebtoken",
         "@crates//:moka",
         "@crates//:prost",
         "@crates//:rand",
+        "@crates//:rustls-pemfile",
+        "@crates//:serde",
+        "@crates//:serde_json",
         "@crates//:tokio",
+        "@crates//:tokio-rustls",
         "@crates//:tokio-stream",
         "@crates//:tonic",
         "@crates//:tonic-types",
         "@crates//:tower",
+        "@crates//:tower-http",
         "@crates//:tracing",
         "@crates//:uuid",
         "@crates//:pwhash",
+        "@crates//:xxhash-rust",
     ],
     crate_features = select({
         ":development_mode": [],
@@ -90,7 +101,7 @@ rust_library(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*"]),
+    include = glob(["*", "*/*", "*/*/*", "*/*/*/*", "*/*/*/*/*"]),
     exclude = glob([
         "Cargo.*",
     ]),

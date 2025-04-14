@@ -12,11 +12,11 @@ use concept::type_::{
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
+use params::{self, check_boolean};
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
-    generic_step, params,
-    params::check_boolean,
+    generic_step,
     transaction_context::{with_read_tx, with_schema_tx},
     util, Context,
 };

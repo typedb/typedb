@@ -7,7 +7,14 @@
 pub mod common {
     pub const SECONDS_IN_MINUTE: u64 = 60;
     pub const MINUTES_IN_HOUR: u64 = 60;
+    pub const HOURS_IN_DAY: u64 = 24;
+    pub const DAYS_IN_MONTH: u64 = 30; // Approximate
+    pub const DAYS_IN_YEAR: u64 = 365;
+
     pub const SECONDS_IN_HOUR: u64 = SECONDS_IN_MINUTE * MINUTES_IN_HOUR;
+    pub const SECONDS_IN_DAY: u64 = SECONDS_IN_HOUR * HOURS_IN_DAY;
+    pub const SECONDS_IN_MONTH: u64 = SECONDS_IN_DAY * DAYS_IN_MONTH;
+    pub const SECONDS_IN_YEAR: u64 = SECONDS_IN_DAY * DAYS_IN_YEAR;
 
     pub const ERROR_QUERY_POINTER_LINES_BEFORE: usize = 2;
     pub const ERROR_QUERY_POINTER_LINES_AFTER: usize = 2;
@@ -16,7 +23,7 @@ pub mod common {
 pub mod server {
     use std::time::Duration;
 
-    use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE};
+    use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR};
 
     pub const DISTRIBUTION: &str = "TypeDB CE";
     pub const VERSION: &str = include_str!("../VERSION");
@@ -24,10 +31,15 @@ pub mod server {
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
 
-    pub const DEFAULT_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(5 * SECONDS_IN_MINUTE).as_millis() as u64;
+    // TODO: Maybe we start moving these options to separate crates?
     pub const DEFAULT_PREFETCH_SIZE: u64 = 32;
     pub const DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
+    pub const DEFAULT_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(5 * SECONDS_IN_MINUTE).as_millis() as u64;
     pub const DEFAULT_TRANSACTION_PARALLEL: bool = true;
+    pub const DEFAULT_INCLUDE_INSTANCE_TYPES: bool = true;
+    pub const DEFAULT_INCLUDE_INSTANCE_TYPES_FETCH: bool = false;
+    pub const DEFAULT_ANSWER_COUNT_LIMIT_GRPC: Option<usize> = None;
+    pub const DEFAULT_ANSWER_COUNT_LIMIT_HTTP: Option<usize> = Some(10_000);
 
     pub const PERF_COUNTERS_ENABLED: bool = true;
 
@@ -40,14 +52,18 @@ pub mod server {
         'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
     ];
 
-    pub const AUTHENTICATOR_USERNAME_FIELD: &str = "username";
-    pub const AUTHENTICATOR_PASSWORD_FIELD: &str = "password";
-    pub const AUTHENTICATOR_CACHE_TTL: Duration = Duration::from_secs(3 * SECONDS_IN_HOUR);
-    pub const AUTHENTICATOR_CACHE_TTI: Duration = Duration::from_secs(1 * SECONDS_IN_HOUR);
+    pub const MIN_AUTHENTICATION_TOKEN_TTL_SECONDS: u64 = 1;
+    pub const MAX_AUTHENTICATION_TOKEN_TTL_SECONDS: u64 = 1 * SECONDS_IN_YEAR;
+    pub const DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS: u64 = 4 * SECONDS_IN_HOUR;
+    pub const MIN_AUTHENTICATION_TOKEN_TTL: Duration = Duration::from_secs(MIN_AUTHENTICATION_TOKEN_TTL_SECONDS);
+    pub const MAX_AUTHENTICATION_TOKEN_TTL: Duration = Duration::from_secs(MAX_AUTHENTICATION_TOKEN_TTL_SECONDS);
+    pub const DEFAULT_AUTHENTICATION_TOKEN_TTL: Duration =
+        Duration::from_secs(DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS);
 
     pub const DATABASE_METRICS_UPDATE_INTERVAL: Duration = Duration::from_secs(10 * SECONDS_IN_MINUTE);
 
     pub const DEFAULT_ADDRESS: &str = "0.0.0.0:1729";
+    pub const DEFAULT_HTTP_ADDRESS: &str = "0.0.0.0:8000";
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";
     pub const DEFAULT_DATA_DIR: &str = "data";
@@ -126,7 +142,6 @@ pub mod diagnostics {
 
     pub const UNKNOWN_STR: &str = "Unknown";
 
-    pub const SERVICE_REPORTING_URI: &str = "https://diagnostics.typedb.com/";
     pub const POSTHOG_BATCH_REPORTING_URI: &str = "https://us.i.posthog.com/batch/";
     // The key is write-only and safe to expose
     pub const POSTHOG_API_KEY: &str = "phc_pYoyROZCtNDL8obeJfLZ8cP0UKzIAxmd0JcQQ03i07T";

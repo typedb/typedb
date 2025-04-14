@@ -34,7 +34,6 @@ use crate::query_answer_context::QueryAnswer;
 mod concept;
 mod connection;
 mod json;
-mod params;
 mod query;
 mod query_answer_context;
 mod transaction_context;

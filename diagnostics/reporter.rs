@@ -26,11 +26,10 @@ use hyper::{
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use logger::{debug, trace};
 use resource::constants::{
-    common::SECONDS_IN_MINUTE,
+    common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE},
     diagnostics::{
         DISABLED_REPORTING_FILE_NAME, POSTHOG_API_KEY, POSTHOG_BATCH_REPORTING_URI, REPORT_INITIAL_RETRY_DELAY,
         REPORT_INTERVAL, REPORT_MAX_RETRY_NUM, REPORT_ONCE_DELAY, REPORT_RETRY_DELAY_EXPONENTIAL_MULTIPLIER,
-        SERVICE_REPORTING_URI,
     },
 };
 
@@ -41,7 +40,6 @@ pub struct Reporter {
     deployment_id: String,
     diagnostics: Arc<Diagnostics>,
     data_directory: PathBuf,
-    is_service_enabled: Arc<AtomicBool>,
     is_posthog_enabled: Arc<AtomicBool>,
     _reporting_job: Arc<Mutex<Option<TokioIntervalRunner>>>,
 }
@@ -57,14 +55,13 @@ impl Reporter {
             deployment_id,
             diagnostics,
             data_directory,
-            is_service_enabled: Arc::new(AtomicBool::new(is_enabled)),
             is_posthog_enabled: Arc::new(AtomicBool::new(is_enabled)),
             _reporting_job: Arc::new(Mutex::new(None)),
         }
     }
 
     pub async fn may_start(&self) {
-        if self.is_service_enabled.load(Ordering::Relaxed) || self.is_posthog_enabled.load(Ordering::Relaxed) {
+        if self.is_posthog_enabled.load(Ordering::Relaxed) {
             Self::delete_disabled_reporting_file_if_exists(&self.data_directory);
             self.schedule_reporting().await;
         } else {
@@ -73,17 +70,15 @@ impl Reporter {
     }
 
     async fn schedule_reporting(&self) {
-        let is_service_enabled = self.is_service_enabled.clone();
         let is_posthog_enabled = self.is_posthog_enabled.clone();
         let diagnostics = self.diagnostics.clone();
 
         let reporting_job = TokioIntervalRunner::new_with_initial_delay(
             move || {
-                let is_service_enabled = is_service_enabled.clone();
                 let is_posthog_enabled = is_posthog_enabled.clone();
                 let diagnostics = diagnostics.clone();
                 async move {
-                    Self::report(is_service_enabled, is_posthog_enabled, diagnostics).await;
+                    Self::report(is_posthog_enabled, false, diagnostics).await;
                 }
             },
             REPORT_INTERVAL,
@@ -96,14 +91,13 @@ impl Reporter {
     fn report_once_if_needed(&self) {
         let disabled_reporting_file = self.data_directory.join(DISABLED_REPORTING_FILE_NAME);
         if !disabled_reporting_file.exists() {
-            let is_service_enabled = self.is_service_enabled.clone();
             let is_posthog_enabled = self.is_posthog_enabled.clone();
             let diagnostics = self.diagnostics.clone();
             let data_directory = self.data_directory.clone();
 
             tokio::spawn(async move {
                 tokio::time::sleep(REPORT_ONCE_DELAY).await;
-                if Self::report(is_service_enabled, is_posthog_enabled, diagnostics).await {
+                if Self::report(is_posthog_enabled, true, diagnostics).await {
                     Self::save_disabled_reporting_file(&data_directory);
                 }
             });
@@ -111,55 +105,31 @@ impl Reporter {
     }
 
     async fn report(
-        is_service_enabled: Arc<AtomicBool>,
         is_posthog_enabled: Arc<AtomicBool>,
+        ignore_disabling: bool,
         diagnostics: Arc<Diagnostics>,
     ) -> bool {
-        let service_task = Self::report_service(is_service_enabled, diagnostics.clone());
-        let posthog_task = Self::report_posthog(is_posthog_enabled, diagnostics.clone());
-        let (is_service_reported, is_posthog_reported) = tokio::join!(service_task, posthog_task);
-        is_service_reported && is_posthog_reported
+        let posthog_result = Self::report_posthog(is_posthog_enabled, ignore_disabling, diagnostics).await;
+        posthog_result
     }
 
-    async fn report_service(is_enabled: Arc<AtomicBool>, diagnostics: Arc<Diagnostics>) -> bool {
-        if !is_enabled.load(Ordering::Relaxed) {
-            return false;
-        }
-
-        let diagnostics_json = diagnostics.to_service_reporting_json_against_snapshot();
-
-        let uri = ReportingEndpoint::DiagnosticsService.get_uri();
-        let is_reported = match Self::send_request(diagnostics_json.to_string(), uri).await {
-            Ok(is_reported) => is_reported,
-            Err(error) => {
-                trace!("Service reporting got an error. Disabling Service reporting...");
-                is_enabled.store(false, Ordering::Relaxed);
-                Self::report_inner_error(error);
-                false
-            }
-        };
-
-        // The request is sent once, so it's fine to take a snapshot lossy with a small delay
-        if is_reported {
-            trace!("Service reporting is successful. Taking a snapshot...");
-            diagnostics.take_service_snapshot();
-        }
-        is_reported
-    }
-
-    async fn report_posthog(is_enabled: Arc<AtomicBool>, diagnostics: Arc<Diagnostics>) -> bool {
-        if !is_enabled.load(Ordering::Relaxed) {
+    async fn report_posthog(
+        is_enabled: Arc<AtomicBool>,
+        ignore_disabling: bool,
+        diagnostics: Arc<Diagnostics>,
+    ) -> bool {
+        if !ignore_disabling && !is_enabled.load(Ordering::Relaxed) {
             return false;
         }
 
         let events_json = diagnostics.to_posthog_reporting_json_against_snapshot(POSTHOG_API_KEY);
-        diagnostics.take_posthog_snapshot();
+        diagnostics.take_snapshot();
 
-        let uri = ReportingEndpoint::PostHog.get_uri();
+        let uri = ReportingEndpoint::Posthog.get_uri();
         let is_reported = match Self::send_request_with_retries(events_json.to_string(), uri).await {
             Ok(is_reported) => is_reported,
             Err(error) => {
-                trace!("PostHog reporting got an error. Disabling PostHog reporting...");
+                trace!("Posthog reporting got an error. Disabling Posthog reporting...");
                 is_enabled.store(false, Ordering::Relaxed);
                 Self::report_inner_error(error);
                 false
@@ -170,7 +140,7 @@ impl Reporter {
         // is taken right after the json creation, but can be restored to preserve the not sent data
         // for the next reporting action
         if !is_reported {
-            trace!("PostHog reporting is not successful. Restoring the snapshot...");
+            trace!("Posthog reporting is not successful. Restoring the snapshot...");
             diagnostics.restore_posthog_snapshot();
         }
         is_reported
@@ -286,15 +256,13 @@ impl Reporter {
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum ReportingEndpoint {
-    DiagnosticsService,
-    PostHog,
+    Posthog,
 }
 
 impl ReportingEndpoint {
     pub(crate) fn get_uri(&self) -> &'static str {
         match self {
-            ReportingEndpoint::DiagnosticsService => SERVICE_REPORTING_URI,
-            ReportingEndpoint::PostHog => POSTHOG_BATCH_REPORTING_URI,
+            ReportingEndpoint::Posthog => POSTHOG_BATCH_REPORTING_URI,
         }
     }
 }

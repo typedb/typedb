@@ -399,8 +399,7 @@ label_flag(
 )
 
 # apt
-# TODO: Remove when console no longer requires jre
-apt_depends = ["default-jre"]
+apt_depends = []
 
 apt_installation_dir = "/opt/typedb/core/"
 

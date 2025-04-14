@@ -23,27 +23,27 @@ pub(crate) fn encode_thing_concept(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    include_thing_types: bool,
+    include_instance_types: bool,
 ) -> Result<typedb_protocol::Concept, Box<ConceptReadError>> {
     let encoded = match thing {
         Thing::Entity(entity) => typedb_protocol::concept::Concept::Entity(encode_entity(
             entity,
             snapshot,
             type_manager,
-            include_thing_types,
+            include_instance_types,
         )?),
         Thing::Relation(relation) => typedb_protocol::concept::Concept::Relation(encode_relation(
             relation,
             snapshot,
             type_manager,
-            include_thing_types,
+            include_instance_types,
         )?),
         Thing::Attribute(attribute) => typedb_protocol::concept::Concept::Attribute(encode_attribute(
             attribute,
             snapshot,
             type_manager,
             thing_manager,
-            include_thing_types,
+            include_instance_types,
         )?),
     };
     Ok(typedb_protocol::Concept { concept: Some(encoded) })
@@ -53,11 +53,11 @@ pub(crate) fn encode_entity(
     entity: &Entity,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    include_thing_types: bool,
+    include_instance_types: bool,
 ) -> Result<typedb_protocol::Entity, Box<ConceptReadError>> {
     Ok(typedb_protocol::Entity {
         iid: Vec::from(entity.iid()),
-        entity_type: if include_thing_types {
+        entity_type: if include_instance_types {
             Some(encode_entity_type(&entity.type_(), snapshot, type_manager)?)
         } else {
             None
@@ -69,11 +69,11 @@ pub(crate) fn encode_relation(
     relation: &Relation,
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
-    include_thing_types: bool,
+    include_instance_types: bool,
 ) -> Result<typedb_protocol::Relation, Box<ConceptReadError>> {
     Ok(typedb_protocol::Relation {
         iid: Vec::from(relation.iid()),
-        relation_type: if include_thing_types {
+        relation_type: if include_instance_types {
             Some(encode_relation_type(&relation.type_(), snapshot, type_manager)?)
         } else {
             None
@@ -86,18 +86,19 @@ pub(crate) fn encode_attribute(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
-    include_thing_types: bool,
+    include_instance_types: bool,
 ) -> Result<typedb_protocol::Attribute, Box<ConceptReadError>> {
     Ok(typedb_protocol::Attribute {
         iid: Vec::from(attribute.iid()),
         value: Some(encode_value(attribute.get_value(snapshot, thing_manager)?)),
-        attribute_type: if include_thing_types {
+        attribute_type: if include_instance_types {
             Some(encode_attribute_type(&attribute.type_(), snapshot, type_manager)?)
         } else {
             None
         },
     })
 }
+
 pub(crate) fn encode_type_concept(
     type_: &Type,
     snapshot: &impl ReadableSnapshot,

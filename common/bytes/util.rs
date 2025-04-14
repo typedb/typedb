@@ -75,6 +75,14 @@ impl<'a> HexBytesFormatter<'a> {
     pub fn borrowed(bytes: &'a [u8]) -> Self {
         Self(Cow::Borrowed(bytes))
     }
+
+    pub fn format_iid(&self) -> String {
+        const PREFIX: &'static str = "0x";
+        let mut result = String::with_capacity(PREFIX.len() + self.0.len() * 2);
+        result.push_str(PREFIX);
+        self.0.iter().for_each(|byte| write!(result, "{byte:02x}").expect("Expected IID formatting"));
+        result
+    }
 }
 
 impl fmt::Display for HexBytesFormatter<'_> {

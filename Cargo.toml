@@ -21,35 +21,9 @@ features = {}
 		features = []
 		default-features = false
 
-	[dev-dependencies.answer]
-		path = "answer"
-		features = []
-		default-features = false
-
-	[dev-dependencies.executor]
-		path = "executor"
-		features = []
-		default-features = false
-
-	[dev-dependencies.function]
-		path = "function"
-		features = []
-		default-features = false
-
 	[dev-dependencies.query]
 		path = "query"
 		features = []
-		default-features = false
-
-	[dev-dependencies.options]
-		path = "common/options"
-		features = []
-		default-features = false
-
-	[dev-dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.1.0"
 		default-features = false
 
 	[dev-dependencies.test_utils_concept]
@@ -67,6 +41,37 @@ features = {}
 		features = []
 		default-features = false
 
+	[dev-dependencies.http_steps]
+		path = "tests/behaviour/service/http/http_steps"
+		features = []
+		default-features = false
+
+	[dev-dependencies.answer]
+		path = "answer"
+		features = []
+		default-features = false
+
+	[dev-dependencies.executor]
+		path = "executor"
+		features = []
+		default-features = false
+
+	[dev-dependencies.function]
+		path = "function"
+		features = []
+		default-features = false
+
+	[dev-dependencies.options]
+		path = "common/options"
+		features = []
+		default-features = false
+
+	[dev-dependencies.typeql]
+		features = []
+		rev = "e8725d27a82d4b3a31da72821ae70309242c7f86"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
+
 	[dev-dependencies.lending_iterator]
 		path = "common/lending_iterator"
 		features = []
@@ -76,7 +81,7 @@ features = {}
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.43.0"
+		version = "1.44.2"
 		default-features = false
 
 	[dependencies.server]
@@ -96,7 +101,7 @@ features = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.31"
+		version = "4.5.35"
 		default-features = false
 
 	[dependencies.logger]
@@ -176,6 +181,26 @@ features = {}
 [[test]]
 	path = "tests/behaviour/concept/migration/migration.rs"
 	name = "test_migration"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver.rs"
+	name = "test_http_driver"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/database.rs"
+	name = "test_http_database"
+
+[[test]]
+	path = "tests/behaviour/service/http/connection/transaction.rs"
+	name = "test_http_transaction"
+
+[[test]]
+	path = "tests/behaviour/service/http/user.rs"
+	name = "test_http_user"
+
+[[test]]
+	path = "tests/behaviour/service/http/debug/debug.rs"
+	name = "test_http_debug"
 
 [[test]]
 	path = "tests/behaviour/query/language/fetch.rs"
@@ -268,5 +293,5 @@ features = {}
 
 [workspace]
 	resolver = "2"
-	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
+	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
 

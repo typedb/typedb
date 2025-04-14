@@ -3,15 +3,43 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use error::typedb_error;
+use serde::{Deserialize, Serialize};
 
-mod concept;
-mod document;
-mod error;
+pub(crate) mod grpc;
+pub mod http;
 mod query_structure;
-mod request_parser;
-mod response_builders;
-mod row;
-pub(crate) mod transaction_service;
-pub(crate) mod typedb_service;
+mod transaction_service;
 
-pub(crate) type ConnectionID = uuid::Bytes;
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub enum TransactionType {
+    Read,
+    Write,
+    Schema,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub enum QueryType {
+    Read,
+    Write,
+    Schema,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
+#[serde(rename_all = "camelCase")]
+pub enum AnswerType {
+    Ok,
+    ConceptRows,
+    ConceptDocuments,
+}
+
+typedb_error! {
+    ServiceError(component = "Server", prefix = "SRV") {
+        Unimplemented(1, "Not implemented: {description}", description: String),
+        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
+        DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
+        UserDoesNotExist(4, "User does not exist"),
+    }
+}

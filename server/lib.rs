@@ -6,10 +6,10 @@
 
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
+extern crate core;
 
-mod authenticator;
-pub mod authenticator_cache;
-mod error;
+mod authentication;
+pub mod error;
 pub mod parameters;
 pub mod server;
-mod service;
+pub mod service;

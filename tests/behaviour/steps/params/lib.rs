@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+#![deny(unused_must_use)]
+#![deny(elided_lifetimes_in_paths)]
+
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
 use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
@@ -28,31 +31,29 @@ use encoding::{
         value_type::ValueType as TypeDBValueType,
     },
 };
-use itertools::Itertools;
+use itertools::{Either, Itertools};
+use regex::Regex;
 use storage::snapshot::ReadableSnapshot;
 use test_utils::assert_matches;
 
 #[derive(Debug, Clone, Parameter)]
 #[param(name = "may_error", regex = "(|; fails|; fails with a message containing: \".*\")")]
-pub(crate) enum MayError {
+pub enum MayError {
     False,
     True(Option<String>),
 }
 
 impl MayError {
-    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Option<E> {
+    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Either<T, E> {
         match self {
-            MayError::False => {
-                res.unwrap();
-                None
-            }
-            MayError::True(None) => Some(res.unwrap_err()),
+            MayError::False => Either::Left(res.unwrap()),
+            MayError::True(None) => Either::Right(res.unwrap_err()),
             MayError::True(Some(expected_message)) => {
                 let actual_error = res.unwrap_err();
                 let actual_message = format!("{actual_error:?}");
 
                 if actual_message.contains(expected_message) {
-                    Some(actual_error)
+                    Either::Right(actual_error)
                 } else {
                     panic!(
                         "Expected error message containing: '{}', but got error message: '{}'",
@@ -68,8 +69,8 @@ impl MayError {
         res: &Result<T, Box<ConceptWriteError>>,
     ) -> Option<Box<ConceptWriteError>> {
         match self.check(res.as_ref().map_err(|e| e.as_ref())) {
-            None => None,
-            Some(error) => match error {
+            Either::Left(_) => None,
+            Either::Right(error) => match error {
                 ConceptWriteError::ConceptRead { typedb_source: source } => {
                     panic!("Expected logic error, got ConceptRead {:?}", source)
                 }
@@ -88,6 +89,13 @@ impl MayError {
         match self {
             MayError::True(_) => true,
             MayError::False => false,
+        }
+    }
+
+    pub fn do_not_expect_error_message(self) -> Self {
+        match self {
+            MayError::False => MayError::False,
+            MayError::True(_) => MayError::True(None),
         }
     }
 }
@@ -111,18 +119,22 @@ impl FromStr for MayError {
 
 #[derive(Debug, Clone, Parameter)]
 #[param(name = "typeql_may_error", regex = "(|; fails|; parsing fails|; fails with a message containing: \".*\")")]
-pub(crate) enum TypeQLMayError {
+pub enum TypeQLMayError {
     False,
     Parsing,
     Logic(Option<String>),
 }
 
 impl TypeQLMayError {
-    pub fn check_parsing<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Option<E> {
+    pub fn check<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Either<T, E> {
+        self.as_may_error().check(res)
+    }
+
+    pub fn check_parsing<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Either<T, E> {
         self.as_may_error_parsing().check(res)
     }
 
-    pub fn check_logic<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Option<E> {
+    pub fn check_logic<T: fmt::Debug, E: fmt::Debug>(&self, res: Result<T, E>) -> Either<T, E> {
         self.as_may_error_logic().check(res)
     }
 
@@ -145,6 +157,14 @@ impl TypeQLMayError {
         match self {
             TypeQLMayError::Logic(message) => MayError::True(message.clone()),
             | TypeQLMayError::False | TypeQLMayError::Parsing => MayError::False,
+        }
+    }
+
+    pub fn as_may_error(&self) -> MayError {
+        match self {
+            TypeQLMayError::False => MayError::False,
+            TypeQLMayError::Parsing => MayError::True(None),
+            TypeQLMayError::Logic(message) => MayError::True(message.clone()),
         }
     }
 }
@@ -170,20 +190,20 @@ impl FromStr for TypeQLMayError {
 
 #[derive(Debug, Parameter)]
 #[param(name = "boolean", regex = "(true|false)")]
-pub(crate) enum Boolean {
+pub enum Boolean {
     False,
     True,
 }
 
+#[macro_export]
 macro_rules! check_boolean {
     ($boolean:ident, $expr:expr) => {
         match $boolean {
-            $crate::params::Boolean::True => assert!($expr),
-            $crate::params::Boolean::False => assert!(!$expr),
+            $crate::Boolean::True => assert!($expr),
+            $crate::Boolean::False => assert!(!$expr),
         }
     };
 }
-pub(crate) use check_boolean;
 
 impl FromStr for Boolean {
     type Err = String;
@@ -198,7 +218,7 @@ impl FromStr for Boolean {
 
 #[derive(Debug, Parameter)]
 #[param(name = "exists_or_doesnt", regex = "(exists|does not exist)")]
-pub(crate) enum ExistsOrDoesnt {
+pub enum ExistsOrDoesnt {
     Exists,
     DoesNotExist,
 }
@@ -234,7 +254,7 @@ impl FromStr for ExistsOrDoesnt {
 
 #[derive(Debug, Parameter)]
 #[param(name = "is_empty_or_not", regex = "(is empty|is not empty)")]
-pub(crate) enum IsEmptyOrNot {
+pub enum IsEmptyOrNot {
     IsEmpty,
     IsNotEmpty,
 }
@@ -265,7 +285,7 @@ impl FromStr for IsEmptyOrNot {
 
 #[derive(Debug, Parameter)]
 #[param(name = "contains_or_doesnt", regex = "(contain|contains|do not contain|does not contain)")]
-pub(crate) enum ContainsOrDoesnt {
+pub enum ContainsOrDoesnt {
     Contains,
     DoesNotContain,
 }
@@ -313,14 +333,8 @@ impl FromStr for ContainsOrDoesnt {
 
 #[derive(Debug, Parameter)]
 #[param(name = "type_label", regex = r"[A-Za-z0-9_:-]+")]
-pub(crate) struct Label {
-    label_string: String,
-}
-
-impl Default for Label {
-    fn default() -> Self {
-        unreachable!("Why is default called?");
-    }
+pub struct Label {
+    pub label_string: String,
 }
 
 impl Label {
@@ -341,7 +355,7 @@ impl FromStr for Label {
 
 #[derive(Debug, Parameter)]
 #[param(name = "kind", regex = r"(attribute|entity|relation)")]
-pub(crate) struct Kind {
+pub struct Kind {
     kind: TypeDBTypeKind,
 }
 
@@ -366,7 +380,7 @@ impl FromStr for Kind {
 
 #[derive(Debug, Parameter)]
 #[param(name = "object_kind", regex = r"(entity|relation|entities|relations)")]
-pub(crate) struct ObjectKind {
+pub struct ObjectKind {
     kind: TypeDBTypeKind,
 }
 
@@ -398,7 +412,7 @@ impl FromStr for ObjectKind {
 
 #[derive(Debug, Parameter)]
 #[param(name = "kind_extended", regex = r"(attribute|entity|relation|role|object)")]
-pub(crate) enum KindExtended {
+pub enum KindExtended {
     Attribute,
     Entity,
     Relation,
@@ -423,16 +437,16 @@ impl FromStr for KindExtended {
 #[derive(Debug, Parameter)]
 #[param(
     name = "value_type",
-    regex = "(boolean|integer|double|decimal|datetime(?:-tz)?|duration|string|[A-Za-z0-9_:-]+)"
+    regex = r"(boolean|integer|double|decimal|date|datetime(?:-tz)?|duration|string|struct|struct\([A-Za-z0-9_:-]+\))"
 )]
-pub(crate) enum ValueType {
+pub enum ValueType {
     Boolean,
     Integer,
     Double,
     Decimal,
     Date,
-    DateTime,
-    DateTimeTZ,
+    Datetime,
+    DatetimeTZ,
     Duration,
     String,
     Struct(Label),
@@ -446,8 +460,8 @@ impl ValueType {
             ValueType::Double => TypeDBValueType::Double,
             ValueType::Decimal => TypeDBValueType::Decimal,
             ValueType::Date => TypeDBValueType::Date,
-            ValueType::DateTime => TypeDBValueType::DateTime,
-            ValueType::DateTimeTZ => TypeDBValueType::DateTimeTZ,
+            ValueType::Datetime => TypeDBValueType::DateTime,
+            ValueType::DatetimeTZ => TypeDBValueType::DateTimeTZ,
             ValueType::Duration => TypeDBValueType::Duration,
             ValueType::String => TypeDBValueType::String,
             ValueType::Struct(label) => TypeDBValueType::Struct(
@@ -456,6 +470,36 @@ impl ValueType {
                     .unwrap()
                     .unwrap(),
             ),
+        }
+    }
+
+    pub fn into_typedb_static(self) -> TypeDBValueType {
+        match self {
+            ValueType::Boolean => TypeDBValueType::Boolean,
+            ValueType::Integer => TypeDBValueType::Integer,
+            ValueType::Double => TypeDBValueType::Double,
+            ValueType::Decimal => TypeDBValueType::Decimal,
+            ValueType::Date => TypeDBValueType::Date,
+            ValueType::Datetime => TypeDBValueType::DateTime,
+            ValueType::DatetimeTZ => TypeDBValueType::DateTimeTZ,
+            ValueType::Duration => TypeDBValueType::Duration,
+            ValueType::String => TypeDBValueType::String,
+            ValueType::Struct(_) => panic!("Structs are not static value types. Use `into_typedb` instead"),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        match self {
+            ValueType::Boolean => "boolean",
+            ValueType::Integer => "integer",
+            ValueType::Double => "double",
+            ValueType::Decimal => "decimal",
+            ValueType::Date => "date",
+            ValueType::Datetime => "datetime",
+            ValueType::DatetimeTZ => "datetime-tz",
+            ValueType::Duration => "duration",
+            ValueType::String => "string",
+            ValueType::Struct(value) => &value.label_string,
         }
     }
 }
@@ -469,19 +513,27 @@ impl FromStr for ValueType {
             "double" => Self::Double,
             "decimal" => Self::Decimal,
             "date" => Self::Date,
-            "datetime" => Self::DateTime,
-            "datetime-tz" => Self::DateTimeTZ,
+            "datetime" => Self::Datetime,
+            "datetime-tz" => Self::DatetimeTZ,
             "duration" => Self::Duration,
             "string" => Self::String,
-            _ => Self::Struct(Label { label_string: s.to_string() }),
+            "struct" => Self::Struct(Label { label_string: "struct".to_string() }),
+            other => {
+                let re = Regex::new(r"^struct\(([A-Za-z0-9_:-]+)\)$").unwrap();
+                if let Some(caps) = re.captures(other) {
+                    Self::Struct(Label { label_string: caps[1].to_string() })
+                } else {
+                    panic!("Cannot parse value type '{other}'")
+                }
+            }
         })
     }
 }
 
 #[derive(Debug, Default, Parameter, Clone)]
 #[param(name = "value", regex = ".*?")]
-pub(crate) struct Value {
-    raw_value: String,
+pub struct Value {
+    pub raw_value: String,
 }
 
 impl Value {
@@ -498,6 +550,10 @@ impl Value {
     const DATE_FORMAT: &'static str = "%Y-%m-%d";
 
     const FRACTIONAL_ZEROES: usize = 19;
+
+    pub fn as_str(&self) -> &str {
+        &self.raw_value
+    }
 
     pub fn into_typedb(self, value_type: TypeDBValueType) -> TypeDBValue<'static> {
         match value_type {
@@ -657,7 +713,7 @@ fn parse_subkey_annotation(subkey: &str) -> TypeDBAnnotation {
 
 #[derive(Debug, Parameter)]
 #[param(name = "annotation", regex = r"@[a-z]+(?:\(.+\))?")]
-pub(crate) struct Annotation {
+pub struct Annotation {
     raw_annotation: String,
 }
 
@@ -689,7 +745,7 @@ impl FromStr for Annotation {
 
 #[derive(Debug, Parameter)]
 #[param(name = "annotation_category", regex = r"@[a-z]+")]
-pub(crate) struct AnnotationCategory {
+pub struct AnnotationCategory {
     typedb_annotation_category: TypeDBAnnotationCategory,
 }
 
@@ -723,7 +779,7 @@ impl FromStr for AnnotationCategory {
 
 #[derive(Debug, Parameter)]
 #[param(name = "annotations", regex = r"@[a-z]+(?:\([^)]+\))?(?: +@[a-z]+(?:\([^)]+\))?)?")]
-pub(crate) struct Annotations {
+pub struct Annotations {
     typedb_annotations: Vec<TypeDBAnnotation>,
 }
 
@@ -757,7 +813,7 @@ impl FromStr for Annotations {
 
 #[derive(Debug, Parameter)]
 #[param(name = "constraint", regex = r"@[a-z]+(?:\(.+\))?")]
-pub(crate) struct Constraint {
+pub struct Constraint {
     raw_constraint: String,
 }
 
@@ -797,7 +853,7 @@ impl FromStr for Constraint {
 
 #[derive(Debug, Parameter)]
 #[param(name = "constraint_category", regex = r"@[a-z]+")]
-pub(crate) struct ConstraintCategory {
+pub struct ConstraintCategory {
     typedb_constraint_category: TypeDBConstraintCategory,
 }
 
@@ -856,7 +912,7 @@ impl FromStr for Vars {
 
 #[derive(Clone, Copy, Debug, Parameter)]
 #[param(name = "ordering", regex = "(unordered|ordered)")]
-pub(crate) enum Ordering {
+pub enum Ordering {
     Unordered,
     Ordered,
 }
@@ -883,7 +939,7 @@ impl FromStr for Ordering {
 
 #[derive(Clone, Copy, Debug, Parameter)]
 #[param(name = "optional", regex = "(|\\?)")]
-pub(crate) enum Optional {
+pub enum Optional {
     False,
     True,
 }

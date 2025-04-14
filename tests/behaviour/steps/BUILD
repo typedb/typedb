@@ -31,6 +31,7 @@ rust_library(
         "//storage:storage",
         "//durability:durability",
         "//util/test:test_utils",
+        "//tests/behaviour/steps/params:params",
 
         "@typeql//rust:typeql",
 

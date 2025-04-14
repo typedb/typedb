@@ -16,13 +16,135 @@
 
 [dependencies]
 
-	[dependencies.concept]
-		path = "../concept"
+	[dependencies.logger]
+		path = "../common/logger"
 		features = []
 		default-features = false
 
-	[dependencies.logger]
-		path = "../common/logger"
+	[dependencies.uuid]
+		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
+		version = "1.16.0"
+		default-features = false
+
+	[dependencies.rand]
+		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
+		version = "0.8.5"
+		default-features = false
+
+	[dependencies.prost]
+		features = ["default", "derive", "prost-derive", "std"]
+		version = "0.13.5"
+		default-features = false
+
+	[dependencies.tokio-rustls]
+		features = ["aws_lc_rs", "default", "logging", "ring", "tls12"]
+		version = "0.26.2"
+		default-features = false
+
+	[dependencies.executor]
+		path = "../executor"
+		features = []
+		default-features = false
+
+	[dependencies.rustls-pemfile]
+		features = ["default", "std"]
+		version = "2.2.0"
+		default-features = false
+
+	[dependencies.function]
+		path = "../function"
+		features = []
+		default-features = false
+
+	[dependencies.xxhash-rust]
+		features = ["xxh3"]
+		version = "0.8.15"
+		default-features = false
+
+	[dependencies.options]
+		path = "../common/options"
+		features = []
+		default-features = false
+
+	[dependencies.typeql]
+		features = []
+		rev = "e8725d27a82d4b3a31da72821ae70309242c7f86"
+		git = "https://github.com/typedb/typeql"
+		default-features = false
+
+	[dependencies.hyper]
+		features = ["client", "default", "full", "h2", "http1", "http2", "runtime", "server", "socket2", "stream", "tcp"]
+		version = "0.14.32"
+		default-features = false
+
+	[dependencies.tower]
+		features = ["__common", "balance", "buffer", "default", "discover", "filter", "futures-core", "futures-util", "indexmap", "limit", "load", "log", "make", "pin-project", "pin-project-lite", "rand", "ready-cache", "slab", "tokio", "tokio-util", "tracing", "util"]
+		version = "0.4.13"
+		default-features = false
+
+	[dependencies.axum]
+		features = ["default", "form", "http1", "json", "matched-path", "original-uri", "query", "tokio", "tower-log", "tracing", "ws"]
+		version = "0.7.9"
+		default-features = false
+
+	[dependencies.tracing]
+		features = ["attributes", "default", "log", "std", "tracing-attributes"]
+		version = "0.1.41"
+		default-features = false
+
+	[dependencies.typedb-protocol]
+		features = []
+		rev = "9e46e089a005d6ca9f017ffb482337b9d5718695"
+		git = "https://github.com/typedb/typedb-protocol"
+		default-features = false
+
+	[dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
+	[dependencies.query]
+		path = "../query"
+		features = []
+		default-features = false
+
+	[dependencies.ir]
+		path = "../ir"
+		features = []
+		default-features = false
+
+	[dependencies.encoding]
+		path = "../encoding"
+		features = []
+		default-features = false
+
+	[dependencies.system]
+		path = "../system"
+		features = []
+		default-features = false
+
+	[dependencies.axum-extra]
+		features = ["default", "multipart", "tracing", "typed-header"]
+		version = "0.9.6"
+		default-features = false
+
+	[dependencies.http]
+		features = ["default", "std"]
+		version = "1.3.1"
+		default-features = false
+
+	[dependencies.tonic]
+		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
+		version = "0.12.3"
+		default-features = false
+
+	[dependencies.lending_iterator]
+		path = "../common/lending_iterator"
+		features = []
+		default-features = false
+
+	[dependencies.concept]
+		path = "../concept"
 		features = []
 		default-features = false
 
@@ -51,19 +173,9 @@
 		version = "0.10.5"
 		default-features = false
 
-	[dependencies.uuid]
-		features = ["default", "fast-rng", "rng", "serde", "std", "v4"]
-		version = "1.15.1"
-		default-features = false
-
-	[dependencies.rand]
-		features = ["alloc", "default", "getrandom", "libc", "rand_chacha", "small_rng", "std", "std_rng"]
-		version = "0.8.5"
-		default-features = false
-
-	[dependencies.prost]
-		features = ["default", "derive", "prost-derive", "std"]
-		version = "0.13.5"
+	[dependencies.jsonwebtoken]
+		features = ["default", "pem", "simple_asn1", "use_pem"]
+		version = "9.3.1"
 		default-features = false
 
 	[dependencies.database]
@@ -76,71 +188,24 @@
 		version = "0.9.0"
 		default-features = false
 
-	[dependencies.executor]
-		path = "../executor"
-		features = []
-		default-features = false
-
-	[dependencies.function]
-		path = "../function"
-		features = []
-		default-features = false
-
-	[dependencies.options]
-		path = "../common/options"
-		features = []
-		default-features = false
-
-	[dependencies.typeql]
-		features = []
-		git = "https://github.com/typedb/typeql"
-		tag = "3.1.0"
-		default-features = false
-
 	[dependencies.compiler]
 		path = "../compiler"
 		features = []
 		default-features = false
 
-	[dependencies.tower]
-		features = ["__common", "balance", "buffer", "default", "discover", "filter", "futures-core", "futures-util", "indexmap", "limit", "load", "log", "make", "pin-project", "pin-project-lite", "rand", "ready-cache", "slab", "tokio", "tokio-util", "tracing", "util"]
-		version = "0.4.13"
-		default-features = false
-
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.43.0"
+		version = "1.44.2"
 		default-features = false
 
-	[dependencies.axum]
-		features = ["base64", "default", "form", "http1", "json", "matched-path", "original-uri", "query", "serde_json", "serde_urlencoded", "sha-1", "tokio-tungstenite", "tower-log", "ws"]
-		version = "0.5.17"
+	[dependencies.tower-http]
+		features = ["cors", "default"]
+		version = "0.6.2"
 		default-features = false
 
-	[dependencies.tracing]
-		features = ["attributes", "default", "log", "std", "tracing-attributes"]
-		version = "0.1.41"
-		default-features = false
-
-	[dependencies.typedb-protocol]
-		features = []
-		git = "https://github.com/typedb/typedb-protocol"
-		tag = "3.1.0"
-		default-features = false
-
-	[dependencies.resource]
-		path = "../resource"
-		features = []
-		default-features = false
-
-	[dependencies.query]
-		path = "../query"
-		features = []
-		default-features = false
-
-	[dependencies.ir]
-		path = "../ir"
-		features = []
+	[dependencies.serde]
+		features = ["alloc", "default", "derive", "rc", "serde_derive", "std"]
+		version = "1.0.219"
 		default-features = false
 
 	[dependencies.tokio-stream]
@@ -151,11 +216,6 @@
 	[dependencies.futures]
 		features = ["alloc", "async-await", "default", "executor", "futures-executor", "std", "thread-pool"]
 		version = "0.3.31"
-		default-features = false
-
-	[dependencies.encoding]
-		path = "../encoding"
-		features = []
 		default-features = false
 
 	[dependencies.concurrency]
@@ -173,11 +233,6 @@
 		version = "0.12.3"
 		default-features = false
 
-	[dependencies.system]
-		path = "../system"
-		features = []
-		default-features = false
-
 	[dependencies.answer]
 		path = "../answer"
 		features = []
@@ -185,7 +240,7 @@
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.31"
+		version = "4.5.35"
 		default-features = false
 
 	[dependencies.bytes]
@@ -193,14 +248,9 @@
 		features = []
 		default-features = false
 
-	[dependencies.http]
-		features = ["default", "std"]
-		version = "1.2.0"
-		default-features = false
-
-	[dependencies.tonic]
-		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
-		version = "0.12.3"
+	[dependencies.axum-server]
+		features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls", "tls-rustls-no-provider", "tokio-rustls"]
+		version = "0.7.2"
 		default-features = false
 
 	[dependencies.chrono]
@@ -213,8 +263,8 @@
 		features = []
 		default-features = false
 
-	[dependencies.lending_iterator]
-		path = "../common/lending_iterator"
-		features = []
+	[dependencies.serde_json]
+		features = ["alloc", "default", "indexmap", "preserve_order", "raw_value", "std"]
+		version = "1.0.140"
 		default-features = false
 
