@@ -38,21 +38,21 @@ pub struct TransactionOpenPayload {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct TransactionOptionsPayload {
-    pub parallel: Option<bool>,
+    // pub parallel: Option<bool>, // TODO: Uncomment when introduced
     pub schema_lock_acquire_timeout_millis: Option<u64>,
     pub transaction_timeout_millis: Option<u64>,
 }
 
 impl Default for TransactionOptionsPayload {
     fn default() -> Self {
-        Self { parallel: None, schema_lock_acquire_timeout_millis: None, transaction_timeout_millis: None }
+        Self { schema_lock_acquire_timeout_millis: None, transaction_timeout_millis: None }
     }
 }
 
 impl Into<TransactionOptions> for TransactionOptionsPayload {
     fn into(self) -> TransactionOptions {
         TransactionOptions {
-            parallel: self.parallel.unwrap_or(DEFAULT_TRANSACTION_PARALLEL),
+            parallel: DEFAULT_TRANSACTION_PARALLEL,
             schema_lock_acquire_timeout_millis: self
                 .schema_lock_acquire_timeout_millis
                 .unwrap_or(DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS),

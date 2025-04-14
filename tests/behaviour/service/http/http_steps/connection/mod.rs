@@ -35,7 +35,7 @@ mod transaction;
 mod user;
 
 const GRPC_ADDRESS: &str = "0.0.0.0:1729";
-const HTTP_ADDRESS: &str = "0.0.0.0:1730";
+const HTTP_ADDRESS: &str = "0.0.0.0:8000";
 const DISTRIBUTION: &str = "TypeDB CE TEST";
 const VERSION: &str = "0.0.0";
 
