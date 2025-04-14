@@ -289,7 +289,7 @@ where
     fn next(&mut self) -> Option<Self::Item<'_>> {
         self.previous.next().map(|res| {
             res.map(|row| {
-                let (input, mult) = row.into_owned_parts();
+                let (input, mult, provenance) = row.into_owned_parts();
                 let mut output = Vec::with_capacity(input.len());
                 for (i, val) in input.into_iter().enumerate() {
                     if self.retained_positions.contains(&VariablePosition::new(i as u32)) {
@@ -298,7 +298,7 @@ where
                         output.push(VariableValue::Empty);
                     }
                 }
-                MaybeOwnedRow::new_owned(output, mult)
+                MaybeOwnedRow::new_owned(output, mult, provenance)
             })
         })
     }

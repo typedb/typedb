@@ -19,7 +19,7 @@ use crate::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
         variable_category::VariableCategory,
-        Scope, ScopeId,
+        BranchID, Scope, ScopeId,
     },
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
@@ -321,6 +321,10 @@ impl<'a> BlockBuilderContext<'a> {
             scope_id_allocator: 2, // `0`, `1` are reserved for INPUT, ROOT respectively.
             block_context,
         }
+    }
+
+    pub(crate) fn next_branch_id(&mut self) -> BranchID {
+        self.variable_registry.next_branch_id()
     }
 
     pub fn get_variable_named(&self, name: &str) -> Option<&Variable> {

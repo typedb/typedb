@@ -10,12 +10,15 @@ use std::{
     sync::Arc,
 };
 
-use answer::variable::Variable;
+use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
+use encoding::value::label::Label;
+use error::unimplemented_feature;
 use ir::{
-    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
+    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
+use itertools::Itertools;
 
 use crate::{
     annotation::{
@@ -37,6 +40,7 @@ use crate::{
         update::executable::UpdateExecutable,
         ExecutableCompilationError,
     },
+    query_structure::{extract_query_structure_from, ParametrisedQueryStructure},
     VariablePosition,
 };
 
@@ -45,6 +49,7 @@ pub struct ExecutablePipeline {
     pub executable_functions: ExecutableFunctionRegistry,
     pub executable_stages: Vec<ExecutableStage>,
     pub executable_fetch: Option<Arc<ExecutableFetch>>,
+    pub query_structure: Option<Arc<ParametrisedQueryStructure>>,
 }
 
 #[derive(Debug, Clone)]
@@ -147,18 +152,30 @@ pub fn compile_pipeline_and_functions(
         statistics,
         variable_registry,
         &schema_and_preamble_functions,
-        annotated_stages,
+        &annotated_stages,
         annotated_fetch,
         input_variables,
     )?;
-    Ok(ExecutablePipeline { executable_functions: schema_and_preamble_functions, executable_stages, executable_fetch })
+    debug_assert!(!executable_stages.is_empty());
+    let query_structure = extract_query_structure_from(
+        variable_registry,
+        annotated_stages,
+        executable_stages.last().unwrap().output_row_mapping(),
+    )
+    .map(|query_structure| Arc::new(query_structure));
+    Ok(ExecutablePipeline {
+        query_structure,
+        executable_functions: schema_and_preamble_functions,
+        executable_stages,
+        executable_fetch,
+    })
 }
 
 pub fn compile_stages_and_fetch(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
     available_functions: &ExecutableFunctionRegistry,
-    annotated_stages: Vec<AnnotatedStage>,
+    annotated_stages: &[AnnotatedStage],
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
 ) -> Result<

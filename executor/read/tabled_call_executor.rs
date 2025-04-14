@@ -70,6 +70,7 @@ impl TabledCallExecutor {
         let arguments = MaybeOwnedRow::new_owned(
             self.argument_positions.iter().map(|pos| input.get(*pos).to_owned()).collect(),
             input.multiplicity(),
+            input.provenance(),
         );
         let call_key = CallKey { function_id: self.function_id.clone(), arguments };
         self.active_executor = Some(TabledCallExecutorState { call_key, input, next_table_row });

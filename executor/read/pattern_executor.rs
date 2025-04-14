@@ -27,7 +27,7 @@ use crate::{
         BranchIndex, ExecutorIndex,
     },
     row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    ExecutionInterrupt, Provenance,
 };
 
 #[derive(Debug)]
@@ -150,7 +150,7 @@ impl PatternExecutor {
                     let batch_opt = may_push_nested(suspensions, index, branch_index, &input, |suspensions| {
                         branch.batch_continue(context, interrupt, tabled_functions, suspensions)
                     })?;
-                    if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(unmapped)) {
+                    if let Some(mapped) = batch_opt.map(|unmapped| disjunction.map_output(branch_index, unmapped)) {
                         control_stack.push(ExecuteDisjunctionBranch { index, branch_index, input }.into());
                         self.push_next_instruction(context, index.next(), mapped)?;
                     }
@@ -274,6 +274,7 @@ impl PatternExecutor {
                 let mapped_input = MaybeOwnedRow::new_owned(
                     arg_mapping.iter().map(|&arg_pos| input.get(arg_pos).clone().into_owned()).collect(),
                     input.multiplicity(),
+                    Provenance::INITIAL,
                 );
                 inner.prepare(FixedBatch::from(mapped_input));
                 self.control_stack.push(ExecuteInlinedFunction { index, input: input.into_owned() }.into());

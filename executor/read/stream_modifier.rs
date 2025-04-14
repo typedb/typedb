@@ -12,6 +12,7 @@ use crate::{
     batch::FixedBatch,
     read::{pattern_executor::PatternExecutor, step_executor::StepExecutors},
     row::MaybeOwnedRow,
+    Provenance,
 };
 
 #[derive(Debug)]
@@ -228,15 +229,14 @@ impl DistinctMapper {
 impl StreamModifierResultMapperTrait for DistinctMapper {
     fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
         let mut input_batch = subquery_result?;
-        if input_batch.is_empty() {
-            // Wait why?
-            return None;
-        };
-
         for i in 0..input_batch.len() {
-            if !self.collector.insert(input_batch.get_row(i).into_owned()) {
-                let mut row = input_batch.get_row_mut(i);
-                row.set_multiplicity(0);
+            // Don't let multiplicity & provenance come into the picture:
+            let without_metadata =
+                MaybeOwnedRow::new_borrowed(input_batch.get_row(i).row(), &1, &Provenance::INITIAL).into_owned();
+            if !self.collector.insert(without_metadata) {
+                input_batch.get_row_mut(i).set_multiplicity(0);
+            } else {
+                input_batch.get_row_mut(i).set_multiplicity(1);
             }
         }
         Some(input_batch)

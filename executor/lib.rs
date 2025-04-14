@@ -10,6 +10,7 @@
 use std::{fmt, slice};
 
 use compiler::VariablePosition;
+use ir::pattern::BranchID;
 use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;
@@ -104,5 +105,23 @@ impl Clone for ExecutionInterrupt {
     // Note: going against tokio's broadcast signal convention, which explicitly isn't `clone()`
     fn clone(&self) -> Self {
         Self { signal: self.signal.as_ref().map(|signal| signal.resubscribe()) }
+    }
+}
+
+#[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
+pub struct Provenance(u64);
+
+impl Provenance {
+    pub const INITIAL: Provenance = Provenance(0);
+
+    pub(crate) fn set_branch_id(&mut self, id: BranchID) {
+        if id.0 < 64 {
+            self.0 |= 1 << id.0
+        }
+    }
+
+    pub(crate) fn branch_ids(&self) -> impl Iterator<Item = BranchID> {
+        let provenance = self.0;
+        (0..64).filter(move |id| 0 != provenance & (1 << id)).map(|id| BranchID(id))
     }
 }

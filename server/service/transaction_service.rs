@@ -11,7 +11,7 @@ use std::{
     time::{Duration, Instant},
 };
 
-use compiler::VariablePosition;
+use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -1339,6 +1339,11 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
+            #[cfg(debug_assertions)]
+            if let Some(query_structure) = pipeline.query_structure() {
+                logger::trace!("{}", crate::service::query_structure::encode_query_structure(query_structure));
+            }
+
             Self::submit_response_sync(sender, initial_response);
 
             let (mut iterator, context) =

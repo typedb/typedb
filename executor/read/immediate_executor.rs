@@ -32,7 +32,7 @@ use crate::{
         step_executor::StepExecutors,
     },
     row::{MaybeOwnedRow, Row},
-    ExecutionInterrupt, SelectedPositions,
+    ExecutionInterrupt, Provenance, SelectedPositions,
 };
 
 #[derive(Debug)]
@@ -163,6 +163,7 @@ pub(crate) struct IntersectionExecutor {
     intersection_value: VariableValue<'static>,
     intersection_row: Vec<VariableValue<'static>>,
     intersection_multiplicity: u64,
+    intersection_provenance: Provenance,
 
     profile: Arc<StepProfile>,
 }
@@ -201,6 +202,7 @@ impl IntersectionExecutor {
             intersection_value: VariableValue::Empty,
             intersection_row: vec![VariableValue::Empty; output_width as usize],
             intersection_multiplicity: 1,
+            intersection_provenance: Provenance::INITIAL,
             profile,
         })
     }
@@ -262,6 +264,7 @@ impl IntersectionExecutor {
                 row.set(position, value);
             }
         }
+        row.set_provenance(self.intersection_provenance);
     }
 
     fn compute_next_row(
@@ -389,6 +392,7 @@ impl IntersectionExecutor {
         let peek = self.input.as_mut().unwrap().peek();
         if let Some(input) = peek {
             let next_row: &MaybeOwnedRow<'_> = input.as_ref().map_err(|err| (*err).clone())?;
+            self.intersection_provenance = next_row.provenance();
             for executor in &self.instruction_executors {
                 self.iterators.push(executor.get_iterator(context, next_row.as_reference()).map_err(|err| {
                     ReadExecutionError::CreatingIterator {
@@ -424,7 +428,8 @@ impl IntersectionExecutor {
     fn record_intersection(&mut self) -> Result<(), ReadExecutionError> {
         self.intersection_value = VariableValue::Empty;
         self.intersection_row.fill(VariableValue::Empty);
-        let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity);
+        let mut provenance = Provenance::INITIAL;
+        let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity, &mut provenance);
         for iter in &mut self.iterators {
             if !self.intersection_value.is_empty() {
                 iter.peek_first_unbound_value()
@@ -627,7 +632,7 @@ impl CartesianIterator {
         executor: &InstructionExecutor,
     ) -> Result<TupleIterator, ReadExecutionError> {
         let mut reopened = executor
-            .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1))
+            .get_iterator(context, MaybeOwnedRow::new_borrowed(&self.input_row, &1, &Provenance::INITIAL))
             .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?;
         // TODO: use seek()
         reopened
@@ -842,10 +847,7 @@ impl CheckExecutor {
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {
-                    row.set_multiplicity(input_row.multiplicity());
-                    for &position in &self.selected_variables {
-                        row.set(position, input_row.get(position).clone().into_owned())
-                    }
+                    row.copy_mapped(input_row, self.selected_variables.iter().map(|pos| (*pos, *pos)));
                 })
             }
         }

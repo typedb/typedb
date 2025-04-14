@@ -7,6 +7,7 @@
 mod concept;
 mod document;
 mod error;
+mod query_structure;
 mod request_parser;
 mod response_builders;
 mod row;

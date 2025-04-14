@@ -25,7 +25,7 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        Scope, Vertex,
+        BranchID, Scope, ScopeId, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };
@@ -124,6 +124,7 @@ fn make_builder<'a>(
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
                 let planner = DisjunctionPlanBuilder::new(
+                    disjunction.branch_ids().iter().copied().collect(),
                     disjunction
                         .conjunctions()
                         .iter()
@@ -1324,8 +1325,10 @@ impl ConjunctionPlan<'_> {
         selected_variables: impl IntoIterator<Item = Variable> + Clone,
         already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
         variable_registry: &VariableRegistry,
+        branch_id: Option<BranchID>,
     ) -> Result<MatchExecutableBuilder, QueryPlanningError> {
         let mut match_builder = MatchExecutableBuilder::new(
+            branch_id,
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
             input_variables.clone().into_iter().collect(),
@@ -1548,6 +1551,7 @@ impl ConjunctionPlan<'_> {
                     match_builder.selected_variables.iter().copied(),
                     match_builder.position_mapping(),
                     variable_registry,
+                    None,
                 )?;
                 let variable_positions: HashMap<Variable, ExecutorVariable> = negation
                     .index
@@ -1987,13 +1991,18 @@ impl ConjunctionPlan<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanBuilder<'a> {
+    branch_ids: Vec<BranchID>,
     branches: Vec<ConjunctionPlanBuilder<'a>>,
     required_inputs: Vec<Variable>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
-    fn new(branches: Vec<ConjunctionPlanBuilder<'a>>, required_inputs: Vec<Variable>) -> Self {
-        Self { branches, required_inputs }
+    fn new(
+        branch_ids: Vec<BranchID>,
+        branches: Vec<ConjunctionPlanBuilder<'a>>,
+        required_inputs: Vec<Variable>,
+    ) -> Self {
+        Self { branch_ids, branches, required_inputs }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
@@ -2004,13 +2013,13 @@ impl<'a> DisjunctionPlanBuilder<'a> {
         self,
         input_variables: impl Iterator<Item = Variable> + Clone,
     ) -> Result<DisjunctionPlan<'a>, QueryPlanningError> {
-        let branches = self
-            .branches
+        let Self { branch_ids, branches, .. } = self;
+        let branches = branches
             .into_iter()
             .map(|branch| branch.with_inputs(input_variables.clone()).plan())
             .collect::<Result<Vec<_>, _>>()?;
         let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
-        Ok(DisjunctionPlan { branches, _cost: cost })
+        Ok(DisjunctionPlan { branch_ids, branches, _cost: cost })
     }
 
     pub(crate) fn required_inputs(&self) -> &[Variable] {
@@ -2020,6 +2029,7 @@ impl<'a> DisjunctionPlanBuilder<'a> {
 
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlan<'a> {
+    branch_ids: Vec<BranchID>,
     branches: Vec<ConjunctionPlan<'a>>,
     _cost: Cost,
 }
@@ -2035,18 +2045,19 @@ impl DisjunctionPlan<'_> {
     ) -> Result<DisjunctionBuilder, QueryPlanningError> {
         let mut branches: Vec<_> = Vec::with_capacity(self.branches.len());
         let mut assigned_positions = assigned_positions.clone();
-        for branch in &self.branches {
+        for (branch_id, branch) in self.branch_ids.iter().zip(self.branches.iter()) {
             let lowered_branch = branch.lower(
                 input_variable_annotations,
                 disjunction_inputs.clone(),
                 selected_variables.clone(),
                 &assigned_positions,
                 variable_registry,
+                Some(*branch_id),
             )?;
             assigned_positions = lowered_branch.position_mapping().clone();
             branches.push(lowered_branch);
         }
-        Ok(DisjunctionBuilder::new(branches))
+        Ok(DisjunctionBuilder::new(self.branch_ids.clone(), branches))
     }
 }
 

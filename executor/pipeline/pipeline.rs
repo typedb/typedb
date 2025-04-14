@@ -9,6 +9,7 @@ use std::{collections::HashMap, sync::Arc};
 use answer::variable::Variable;
 use compiler::{
     executable::{fetch::executable::ExecutableFetch, function::ExecutableFunctionRegistry, pipeline::ExecutableStage},
+    query_structure::{ParametrisedQueryStructure, QueryStructure},
     VariablePosition,
 };
 use concept::thing::thing_manager::ThingManager;
@@ -38,14 +39,17 @@ use crate::{
     ExecutionInterrupt,
 };
 
-pub enum Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
-    Unfetched(Nonterminals, HashMap<String, VariablePosition>),
-    Fetched(Nonterminals, FetchStageExecutor<Snapshot>),
+pub struct Pipeline<Snapshot: ReadableSnapshot, Nonterminals: StageAPI<Snapshot>> {
+    last_stage: Nonterminals,
+    named_outputs: HashMap<String, VariablePosition>,
+    query_structure: Option<QueryStructure>,
+    fetch: Option<FetchStageExecutor<Snapshot>>,
 }
 
 impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pipeline<Snapshot, Nonterminals> {
     fn build_with_fetch(
         variable_names: &HashMap<Variable, String>,
+        query_structure: Option<QueryStructure>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         last_stage: Nonterminals,
         last_stage_output_positions: HashMap<Variable, VariablePosition>,
@@ -55,25 +59,23 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
             .iter()
             .filter_map(|(variable, &position)| variable_names.get(variable).map(|name| (name.clone(), position)))
             .collect::<HashMap<_, _>>();
-
-        match executable_fetch {
-            None => Pipeline::Unfetched(last_stage, named_outputs),
-            Some(executable) => {
-                let fetch = FetchStageExecutor::new(executable, executable_functions);
-                Pipeline::Fetched(last_stage, fetch)
-            }
-        }
+        let fetch = executable_fetch.map(|executable| FetchStageExecutor::new(executable, executable_functions));
+        Self { named_outputs, last_stage, fetch, query_structure }
     }
 
     pub fn has_fetch(&self) -> bool {
-        matches!(self, Self::Fetched(_, _))
+        self.fetch.is_some()
     }
 
     pub fn rows_positions(&self) -> Option<&HashMap<String, VariablePosition>> {
-        match self {
-            Self::Unfetched(_, positions) => Some(positions),
-            Self::Fetched(_, _) => None,
+        match self.fetch {
+            None => Some(&self.named_outputs),
+            Some(_) => None,
         }
+    }
+
+    pub fn query_structure(&self) -> Option<&QueryStructure> {
+        self.query_structure.as_ref()
     }
 
     pub fn into_rows_iterator(
@@ -83,10 +85,10 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         (Nonterminals::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        match self {
-            Self::Unfetched(nonterminals, _) => nonterminals.into_iterator(execution_interrupt),
-            Self::Fetched(nonterminals, _) => {
-                let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
+        match self.fetch {
+            None => self.last_stage.into_iterator(execution_interrupt),
+            Some(_) => {
+                let (_, context) = self.last_stage.into_iterator(execution_interrupt)?;
                 Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), context))
             }
         }
@@ -99,13 +101,13 @@ impl<Snapshot: ReadableSnapshot + 'static, Nonterminals: StageAPI<Snapshot>> Pip
         (impl Iterator<Item = Result<ConceptDocument, Box<PipelineExecutionError>>>, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        match self {
-            Self::Unfetched(nonterminals, _) => {
-                let (_, context) = nonterminals.into_iterator(execution_interrupt)?;
-                Err((Box::new(PipelineExecutionError::FetchUsedAsRows {}), context))
+        match self.fetch {
+            None => {
+                let (_, context) = self.last_stage.into_iterator(execution_interrupt)?;
+                Err((Box::new(PipelineExecutionError::RowsUsedAsFetch {}), context))
             }
-            Self::Fetched(nonterminals, fetch_executor) => {
-                let (rows_iterator, context) = nonterminals.into_iterator(execution_interrupt.clone())?;
+            Some(fetch_executor) => {
+                let (rows_iterator, context) = self.last_stage.into_iterator(execution_interrupt.clone())?;
                 Ok(fetch_executor.into_iterator::<Nonterminals>(rows_iterator, context, execution_interrupt))
             }
         }
@@ -117,6 +119,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         snapshot: Arc<Snapshot>,
         thing_manager: Arc<ThingManager>,
         variable_names: &HashMap<Variable, String>,
+        query_structure: Option<Arc<ParametrisedQueryStructure>>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: &[ExecutableStage],
         executable_fetch: Option<Arc<ExecutableFetch>>,
@@ -124,7 +127,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         input: Option<MaybeOwnedRow<'_>>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(snapshot, thing_manager, parameters);
+        let context = ExecutionContext::new(snapshot, thing_manager, parameters.clone());
         let mut last_stage = ReadPipelineStage::Initial(Box::new(
             input
                 .map(|row| InitialStage::new_with(context.clone(), row))
@@ -182,6 +185,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         }
         Ok(Pipeline::build_with_fetch(
             variable_names,
+            query_structure.map(|qs| qs.with_parameters(parameters)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,
@@ -194,6 +198,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
     pub fn build_write_pipeline(
         snapshot: Snapshot,
         variable_names: &HashMap<Variable, String>,
+        query_structure: Option<Arc<ParametrisedQueryStructure>>,
         thing_manager: Arc<ThingManager>,
         executable_functions: Arc<ExecutableFunctionRegistry>,
         executable_stages: Vec<ExecutableStage>,
@@ -201,7 +206,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         parameters: Arc<ParameterRegistry>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters);
+        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters.clone());
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
         for executable_stage in executable_stages {
             match executable_stage {
@@ -259,6 +264,7 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         }
         Pipeline::build_with_fetch(
             variable_names,
+            query_structure.map(|qs| qs.with_parameters(parameters)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,

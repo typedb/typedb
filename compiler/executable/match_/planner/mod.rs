@@ -13,7 +13,7 @@ use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
 use error::typedb_error;
 use ir::{
-    pattern::{constraint::ExpressionBinding, Vertex},
+    pattern::{constraint::ExpressionBinding, BranchID, Vertex},
     pipeline::{block::Block, function_signature::FunctionID, VariableRegistry},
 };
 use itertools::Itertools;
@@ -85,6 +85,7 @@ pub fn compile(
         selected_variables.iter().copied(),
         &assigned_identities,
         variable_registry,
+        None,
     )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .finish(variable_registry);
@@ -131,12 +132,13 @@ impl NegationBuilder {
 
 #[derive(Debug)]
 struct DisjunctionBuilder {
+    branch_ids: Vec<BranchID>,
     branches: Vec<MatchExecutableBuilder>,
 }
 
 impl DisjunctionBuilder {
-    fn new(branches: Vec<MatchExecutableBuilder>) -> Self {
-        Self { branches }
+    fn new(branch_ids: Vec<BranchID>, branches: Vec<MatchExecutableBuilder>) -> Self {
+        Self { branch_ids, branches }
     }
 }
 
@@ -247,9 +249,9 @@ impl StepBuilder {
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
             ),
-
-            StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branches }) => {
+            StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
+                    branch_ids,
                     branches.into_iter().map(|builder| builder.finish(variable_registry)).collect(),
                     selected_variables,
                     output_width,
@@ -288,10 +290,12 @@ struct MatchExecutableBuilder {
     next_output: VariablePosition,
 
     planner_statistics: PlannerStatistics,
+    branch_id: Option<BranchID>,
 }
 
 impl MatchExecutableBuilder {
     fn new(
+        branch_id: Option<BranchID>,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         selected_variables: Vec<Variable>,
         input_variables: Vec<Variable>,
@@ -309,6 +313,7 @@ impl MatchExecutableBuilder {
             .unwrap_or(0);
         let next_output = VariablePosition::new(next_position);
         Self {
+            branch_id,
             selected_variables,
             input_variables,
             current_outputs,

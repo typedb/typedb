@@ -22,6 +22,10 @@ impl BlockAnnotations {
         Self { scope_annotations: by_scope }
     }
 
+    pub(crate) fn type_annotations(&self) -> &HashMap<ScopeId, TypeAnnotations> {
+        &self.scope_annotations
+    }
+
     pub fn type_annotations_of(&self, conjunction: &Conjunction) -> Option<&TypeAnnotations> {
         self.scope_annotations.get(&conjunction.scope_id())
     }

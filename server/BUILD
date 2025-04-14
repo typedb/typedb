@@ -41,6 +41,7 @@ rust_library(
         "//common/concurrency",
         "//common/error",
         "//common/lending_iterator",
+        "//common/logger",
         "//common/options",
         "//compiler",
         "//concept",
@@ -59,6 +60,7 @@ rust_library(
         "@typeql//rust:typeql",
         "@typedb_protocol//grpc/rust:typedb_protocol",
 
+        "@crates//:axum",
         "@crates//:clap",
         "@crates//:chrono",
         "@crates//:chrono-tz",

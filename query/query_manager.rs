@@ -153,13 +153,15 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = executable_pipeline;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } =
+            executable_pipeline;
 
         // 4: Executor
         Pipeline::build_read_pipeline(
             snapshot,
             thing_manager,
             variable_registry.variable_names(),
+            query_structure,
             Arc::new(executable_functions),
             &executable_stages,
             executable_fetch,
@@ -302,12 +304,14 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch } = executable_pipeline;
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } =
+            executable_pipeline;
 
         // 4: Executor
         Ok(Pipeline::build_write_pipeline(
             snapshot,
             variable_registry.variable_names(),
+            query_structure,
             thing_manager,
             Arc::new(executable_functions),
             executable_stages,

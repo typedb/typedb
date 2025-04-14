@@ -220,8 +220,13 @@ pub(crate) fn create_executors_for_match(
                         Ok::<_, Box<_>>(PatternExecutor::new(branch_executable.executable_id(), executors))
                     })
                     .try_collect()?;
-                let inner_step =
-                    DisjunctionExecutor::new(branches, step.selected_variables.clone(), step.output_width).into();
+                let inner_step = DisjunctionExecutor::new(
+                    step.branch_ids.clone(),
+                    branches,
+                    step.selected_variables.clone(),
+                    step.output_width,
+                )
+                .into();
                 // Hack: wrap it in a distinct
                 let step = StepExecutors::StreamModifier(StreamModifierExecutor::new_distinct(
                     PatternExecutor::new(next_executable_id(), vec![inner_step]),

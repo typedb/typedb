@@ -132,7 +132,8 @@ pub(crate) fn append_row_for_insert_mapped(
 ) {
     // copy out row multiplicity M, set it to 1, then append the row M times
     let one = 1;
-    let with_multiplicity_one = MaybeOwnedRow::new_borrowed(unmapped_row.row(), &one);
+    let provenance = unmapped_row.provenance();
+    let with_multiplicity_one = MaybeOwnedRow::new_borrowed(unmapped_row.row(), &one, &provenance);
     for _ in 0..unmapped_row.multiplicity() {
         output_batch.append(|mut appended| {
             appended.copy_mapped(with_multiplicity_one.as_reference(), mapping.iter().copied());
