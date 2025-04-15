@@ -80,10 +80,10 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    query_structure: EncodedQueryStructure,
+    query_structure: Option<EncodedQueryStructure>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
-    QueryAnswerResponse { query_type, answer_type: AnswerType::ConceptRows, answers: Some(rows), query_structure: Some(query_structure), warning }
+    QueryAnswerResponse { query_type, answer_type: AnswerType::ConceptRows, answers: Some(rows), query_structure: query_structure, warning }
 }
 
 pub(crate) fn encode_query_documents_answer(

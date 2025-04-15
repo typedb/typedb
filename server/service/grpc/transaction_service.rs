@@ -981,7 +981,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         output_descriptor: StreamQueryOutputDescriptor,
         query_options: QueryOptions,
-        query_structure: QueryStructure,
+        query_structure: Option<QueryStructure>,
         batch: Batch,
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,

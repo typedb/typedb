@@ -101,7 +101,7 @@ impl Transaction {
 }
 
 pub(crate) type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
-pub(crate) type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, QueryStructure);
+pub(crate) type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, Option<QueryStructure>);
 pub(crate) type WriteQueryDocumentsAnswer = (Arc<ParameterRegistry>, Vec<ConceptDocument>);
 
 #[derive(Debug)]
@@ -322,7 +322,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
         )
     } else {
         let named_outputs = pipeline.rows_positions().unwrap();
-        let query_structure = pipeline.query_structure();
+        let query_structure = pipeline.query_structure().cloned();
         let query_output_descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
         let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
             Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),

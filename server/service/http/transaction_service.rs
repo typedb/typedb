@@ -216,7 +216,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, EncodedQueryStructure, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<EncodedQueryStructure>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -881,7 +881,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         query_options: QueryOptions,
         output_descriptor: StreamQueryOutputDescriptor,
-        query_structure: QueryStructure,
+        query_structure: Option<QueryStructure>,
         batch: Batch,
         responder: TransactionResponder,
         timeout_at: Instant,
@@ -919,7 +919,7 @@ impl TransactionService {
                 }
             }
         }
-        let encoded_query_structure = encode_query_structure(&query_structure);
+        let encoded_query_structure = query_structure.as_ref().map(|qs| encode_query_structure(qs));
         match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, encoded_query_structure, None))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
