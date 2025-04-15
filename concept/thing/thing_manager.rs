@@ -976,7 +976,7 @@ impl ThingManager {
         Ok(iter)
     }
 
-    pub(crate) fn owner_get_has_unordered_all<'a>(
+    pub(crate) fn owner_get_has_unordered_all(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
@@ -1078,7 +1078,7 @@ impl ThingManager {
         ))
     }
 
-    fn get_has_from_thing_to_type_unordered_start_bound<'a>(
+    fn get_has_from_thing_to_type_unordered_start_bound(
         &self,
         owner: impl ObjectAPI,
         attribute_type_id: TypeID,
@@ -1097,7 +1097,7 @@ impl ThingManager {
         })
     }
 
-    fn get_has_from_thing_to_type_unordered_end_bound<'a>(
+    fn get_has_from_thing_to_type_unordered_end_bound(
         &self,
         owner: impl ObjectAPI,
         attribute_type_id: TypeID,
@@ -1455,7 +1455,7 @@ impl ThingManager {
             RangeEnd::EndPrefixInclusive(end),
             ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
         );
-        self.iterate_indexed_relations(snapshot, &range, relation_type, storage_counters)
+        self.iterate_indexed_relations(snapshot, range, relation_type, storage_counters)
     }
 
     pub(crate) fn has_indexed_relation_player(
@@ -1652,7 +1652,7 @@ impl ThingManager {
     ) -> Option<Bound<Value<'a>>> {
         debug_assert!(Self::value_types_in_order(ordered_possible_value_types));
         ordered_possible_value_types
-            .into_iter()
+            .iter()
             .filter_map(|value_type_category| Self::get_value_lower_bound(*value_type_category, range))
             .next()
     }
@@ -1668,7 +1668,7 @@ impl ThingManager {
             }
             current = other;
         }
-        return true;
+        true
     }
 
     fn get_value_upper_bound_across_types<'a>(

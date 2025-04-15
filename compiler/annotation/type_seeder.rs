@@ -32,7 +32,6 @@ use ir::{
     pipeline::{block::BlockContext, VariableRegistry},
 };
 use itertools::Itertools;
-use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::annotation::{

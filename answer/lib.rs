@@ -65,8 +65,6 @@ pub enum Type {
 pub static MIN_TYPE_STATIC: Type = Type::Entity(EntityType::MIN);
 
 impl Type {
-    const MIN: Self = Self::Entity(EntityType::MIN);
-
     pub fn kind(&self) -> Kind {
         match self {
             Type::Entity(_) => Kind::Entity,
@@ -305,8 +303,6 @@ pub enum Thing {
 pub static MIN_THING_STATIC: Thing = Thing::Entity(Entity::MIN);
 
 impl Thing {
-    const MIN: Self = Self::Entity(Entity::MIN);
-
     pub fn type_(&self) -> Type {
         match self {
             Thing::Entity(entity) => Type::Entity(entity.type_()),

@@ -16,7 +16,6 @@ use ir::{
     pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
-use itertools::Itertools;
 
 use crate::{
     annotation::{

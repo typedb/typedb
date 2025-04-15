@@ -84,7 +84,7 @@ impl MVCCRangeIterator {
                 self.iterator.next();
             }
         }
-        return false;
+        false
     }
 }
 
@@ -94,30 +94,25 @@ impl LendingIterator for MVCCRangeIterator {
     fn next(&mut self) -> Option<Self::Item<'_>> {
         if let Some(item) = self.item.take() {
             Some(item)
+        } else if self.find_next_state() {
+            let (key, value) = match self.iterator.next()? {
+                Ok(kv) => {
+                    self.storage_counters.increment_advance_mvcc_visible();
+                    kv
+                }
+                Err(error) => {
+                    return Some(Err(MVCCReadError::Keyspace {
+                        storage_name: self.storage_name.clone(),
+                        source: Arc::new(error.clone()),
+                    }))
+                }
+            };
+            Some(Ok((
+                StorageKeyReference::new_raw(self.keyspace_id, MVCCKey::wrap_slice(key).into_key().unwrap_reference()),
+                value,
+            )))
         } else {
-            if self.find_next_state() {
-                let (key, value) = match self.iterator.next()? {
-                    Ok(kv) => {
-                        self.storage_counters.increment_advance_mvcc_visible();
-                        kv
-                    }
-                    Err(error) => {
-                        return Some(Err(MVCCReadError::Keyspace {
-                            storage_name: self.storage_name.clone(),
-                            source: Arc::new(error.clone()),
-                        }))
-                    }
-                };
-                Some(Ok((
-                    StorageKeyReference::new_raw(
-                        self.keyspace_id,
-                        MVCCKey::wrap_slice(key).into_key().unwrap_reference(),
-                    ),
-                    value,
-                )))
-            } else {
-                return None;
-            }
+            None
         }
     }
 }

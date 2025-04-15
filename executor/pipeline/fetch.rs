@@ -4,12 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::{HashMap, HashSet},
-    marker::PhantomData,
-    ops::Bound,
-    sync::Arc,
-};
+use std::{collections::HashMap, marker::PhantomData, sync::Arc};
 
 use answer::{variable::Variable, variable_value::VariableValue, Concept, Thing};
 use compiler::{
@@ -25,18 +20,12 @@ use compiler::{
 };
 use concept::{
     error::ConceptReadError,
-    thing::{
-        has::Has,
-        object::{HasIterator, ObjectAPI},
-        thing_manager::ThingManager,
-    },
+    thing::{has::Has, object::ObjectAPI, thing_manager::ThingManager},
     type_::{attribute_type::AttributeType, OwnerAPI, TypeAPI},
 };
 use encoding::value::label::Label;
 use error::{typedb_error, unimplemented_feature};
 use ir::{pattern::ParameterID, pipeline::ParameterRegistry};
-use iterator::minmax_or;
-use itertools::{Itertools, MinMaxResult};
 use lending_iterator::LendingIterator;
 use resource::profile::{QueryProfile, StageProfile, StorageCounters};
 use storage::snapshot::ReadableSnapshot;

@@ -20,7 +20,7 @@ use ir::{pipeline::FunctionRepresentationError, RepresentationError};
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
-use resource::profile::{CommitProfile, StorageCounters};
+use resource::profile::CommitProfile;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};

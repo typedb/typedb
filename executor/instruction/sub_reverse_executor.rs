@@ -18,7 +18,6 @@ use itertools::Itertools;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
-use typeql::parser::Rule::annotation_subkey;
 
 use crate::{
     instruction::{

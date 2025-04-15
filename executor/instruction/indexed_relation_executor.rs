@@ -8,7 +8,7 @@ use std::{
     cmp::Ordering,
     collections::{BTreeMap, BTreeSet, HashMap},
     fmt,
-    ops::{Bound, Index},
+    ops::Bound,
     sync::Arc,
 };
 
@@ -25,7 +25,7 @@ use concept::{
         thing_manager::ThingManager,
         ThingAPI,
     },
-    type_::{object_type::ObjectType, relation_type::RelationType, role_type::RoleType, TypeAPI},
+    type_::{object_type::ObjectType, role_type::RoleType, TypeAPI},
 };
 use encoding::graph::{
     thing::vertex_object::{ObjectID, ObjectVertex},
@@ -40,10 +40,9 @@ use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        has_executor::FixedHasBounds,
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{unsafe_compare_result_tuple, Tuple, TupleOrderingFn, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapFn, FilterMapUnchangedFn,
+        Checker, FilterFn, FilterMapUnchangedFn,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

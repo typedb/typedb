@@ -26,7 +26,7 @@ use resource::{
     profile::QueryProfile,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use tracing::{event, log::logger, Level};
+use tracing::{event, Level};
 use typeql::query::SchemaQuery;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};

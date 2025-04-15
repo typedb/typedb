@@ -33,8 +33,8 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator},
         links_executor::{
-            may_get_role, verify_role, FixedLinksBounds, LinksFilterFn, LinksFilterMapFn, LinksOrderingFn,
-            LinksTupleIterator, EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
+            may_get_role, verify_role, FixedLinksBounds, LinksFilterFn, LinksFilterMapFn, LinksTupleIterator,
+            EXTRACT_PLAYER, EXTRACT_RELATION, EXTRACT_ROLE,
         },
         min_max_types,
         tuple::{

@@ -14,7 +14,7 @@ use durability::wal::WAL;
 use pprof::ProfilerGuard;
 use resource::{
     constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
-    profile::{CommitProfile, CompileProfile, StorageCounters},
+    profile::{CommitProfile, StorageCounters},
 };
 use storage::{
     durability_client::WALClient,

@@ -22,14 +22,10 @@ use concept::{
         has::Has,
         object::{HasIterator, Object, ObjectAPI},
         thing_manager::ThingManager,
-        ThingAPI,
     },
     type_::{attribute_type::AttributeType, object_type::ObjectType, TypeAPI},
 };
-use encoding::{
-    graph::type_::vertex::TypeVertexEncoding,
-    value::{value::Value, value_type::ValueTypeCategory},
-};
+use encoding::value::{value::Value, value_type::ValueTypeCategory};
 use itertools::Itertools;
 use lending_iterator::{kmerge::KMergeBy, LendingIterator, Peekable};
 use primitive::Bounds;

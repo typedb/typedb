@@ -16,7 +16,7 @@ use compiler::{
     ExecutorVariable, VariablePosition,
 };
 use concept::error::ConceptReadError;
-use itertools::{zip_eq, Itertools};
+use itertools::zip_eq;
 use lending_iterator::{adaptors::Inspect, kmerge, kmerge::KMergeBy, LendingIterator, Peekable};
 
 use crate::{

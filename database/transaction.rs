@@ -18,10 +18,9 @@ use error::typedb_error;
 use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
-use resource::profile::{QueryProfile, StorageCounters, TransactionProfile};
+use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
-    sequence_number::SequenceNumber,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
 use tracing::Level;

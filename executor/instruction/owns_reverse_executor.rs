@@ -18,7 +18,7 @@ use concept::{
     type_::{attribute_type::AttributeType, object_type::ObjectType},
 };
 use itertools::Itertools;
-use lending_iterator::{AsLendingIterator, Peekable};
+use lending_iterator::{AsLendingIterator, };
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 

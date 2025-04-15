@@ -22,17 +22,14 @@ use concept::{
         TypeAPI,
     },
 };
-use encoding::{
-    graph::{
-        thing::{
-            edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks},
-            vertex_attribute::{AttributeID, AttributeVertex},
-            vertex_object::ObjectVertex,
-        },
-        type_::vertex::TypeVertexEncoding,
-        Typed,
+use encoding::graph::{
+    thing::{
+        edge::{ThingEdgeHas, ThingEdgeHasReverse, ThingEdgeLinks},
+        vertex_attribute::{AttributeID, AttributeVertex},
+        vertex_object::ObjectVertex,
     },
-    value::value::Value,
+    type_::vertex::TypeVertexEncoding,
+    Typed,
 };
 use lending_iterator::higher_order::Hkt;
 

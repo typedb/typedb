@@ -489,7 +489,7 @@ pub mod tests {
             FunctionID, FunctionSignature, FunctionSignatureIndex, HashMapFunctionSignatureIndex,
         },
     };
-    use resource::profile::{CommitProfile, StorageCounters};
+    use resource::profile::CommitProfile;
     use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
     use test_utils::{create_tmp_dir, init_logging, TempDir};
 
@@ -628,7 +628,7 @@ pub mod tests {
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};
-        use resource::profile::{CommitProfile, StorageCounters};
+        use resource::profile::CommitProfile;
         use storage::{
             durability_client::WALClient,
             snapshot::{CommittableSnapshot, WritableSnapshot},

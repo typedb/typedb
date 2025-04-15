@@ -21,7 +21,6 @@ use itertools::Itertools;
 use lending_iterator::{LendingIterator, Peekable};
 use resource::profile::StepProfile;
 use storage::snapshot::ReadableSnapshot;
-use tracing::{event, Level};
 
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},

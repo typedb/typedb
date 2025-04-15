@@ -11,7 +11,6 @@ use ir::pipeline::ParameterRegistry;
 use lending_iterator::LendingIterator;
 use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::QueryProfile};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
-use tracing::Level;
 
 use crate::{
     batch::Batch,
