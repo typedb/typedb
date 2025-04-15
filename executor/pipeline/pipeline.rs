@@ -186,7 +186,7 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         let available_variables = output_variable_positions.keys().copied().collect();
         Ok(Pipeline::build_with_fetch(
             variable_names,
-            query_structure.map(|qs| qs.with_parameters(parameters)),
+            query_structure.map(|qs| qs.with_parameters(parameters, TODO, available_variables)),
             executable_functions.clone(),
             last_stage,
             output_variable_positions,

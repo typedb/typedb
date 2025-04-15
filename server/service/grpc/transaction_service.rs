@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 
-use compiler::{executable::pipeline::QueryStructure, VariablePosition};
+use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -70,7 +70,6 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
-use compiler::query_structure::QueryStructure;
 
 use crate::service::{
     grpc::{
@@ -88,7 +87,6 @@ use crate::service::{
         },
         row::encode_row,
     },
-    query_structure::encode_query_structure,
     transaction_service::{
         execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
         init_transaction_timeout, is_write_pipeline, prepare_read_query_in, unwrap_or_execute_and_return,

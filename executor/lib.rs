@@ -11,7 +11,6 @@ use std::{fmt, slice};
 
 use compiler::VariablePosition;
 use ir::pattern::BranchID;
-use serde::Deserialize;
 use tokio::sync::broadcast::error::TryRecvError;
 
 pub mod batch;

@@ -8,6 +8,7 @@ use std::{
     collections::{BTreeSet, HashMap},
     sync::Arc,
 };
+use std::collections::{BTreeMap, HashSet};
 
 use answer::{variable::Variable, Type};
 use encoding::value::{label::Label, value::Value};
@@ -21,23 +22,33 @@ use ir::{
 use itertools::Itertools;
 
 use crate::{annotation::pipeline::AnnotatedStage, VariablePosition};
-
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
-    pub variable_positions: HashMap<Variable, VariablePosition>,
     pub resolved_labels: HashMap<Label, answer::Type>,
+    pub resolved_role_names: HashMap<Variable, String>,
 }
 
 impl ParametrisedQueryStructure {
-    pub fn with_parameters(self: Arc<Self>, parameters: Arc<ParameterRegistry>) -> QueryStructure {
-        QueryStructure { parametrised_structure: self, parameters }
+    pub fn empty() -> Self {
+        Self { branches: [(); 64].map(|_| None), resolved_labels: HashMap::new(), resolved_role_names: HashMap::new() }
+    }
+
+    pub fn with_parameters(
+        self: Arc<Self>,
+        parameters: Arc<ParameterRegistry>,
+        variable_names: HashMap<Variable, String>,
+        available_variables: HashSet<Variable>,
+    ) -> QueryStructure {
+        QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
     pub parametrised_structure: Arc<ParametrisedQueryStructure>,
+    pub variable_names: HashMap<Variable, String>,
+    pub available_variables: HashSet<Variable>,
     pub parameters: Arc<ParameterRegistry>,
 }
 
@@ -47,8 +58,8 @@ impl QueryStructure {
         self.parameters.value(*param).cloned()
     }
 
-    pub fn get_variable_position(&self, variable: &Variable) -> Option<VariablePosition> {
-        self.parametrised_structure.variable_positions.get(&variable).copied()
+    pub fn get_variable_name(&self, variable: &Variable) -> Option<String> {
+        self.variable_names.get(&variable).cloned()
     }
 
     pub fn get_type(&self, label: &Label) -> Option<answer::Type> {
@@ -66,6 +77,7 @@ pub(crate) fn extract_query_structure_from(
     }
     let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
     let mut resolved_labels = HashMap::new();
+    let mut role_names = HashMap::new();
 
     annotated_stages.into_iter().for_each(|stage| {
         match stage {
@@ -76,6 +88,7 @@ pub(crate) fn extract_query_structure_from(
                     .values()
                     .flat_map(|annotations| annotations.vertex_annotations().iter());
                 extend_labels_from(&mut resolved_labels, block_label_annotations);
+                extend_role_names_from(&mut role_names, block.conjunction());
             }
             AnnotatedStage::Insert { block, annotations, .. }
             | AnnotatedStage::Put { block, insert_annotations: annotations, .. }
@@ -84,6 +97,7 @@ pub(crate) fn extract_query_structure_from(
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 extract_query_structure_from_branch(&mut branches, BranchID(0), block.conjunction());
                 extend_labels_from(&mut resolved_labels, annotations.vertex_annotations().iter());
+                extend_role_names_from(&mut role_names, block.conjunction());
             }
             AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
@@ -95,7 +109,27 @@ pub(crate) fn extract_query_structure_from(
             | AnnotatedStage::Reduce(_, _) => {}
         }
     });
-    Some(ParametrisedQueryStructure { branches, variable_positions, resolved_labels })
+    Some(ParametrisedQueryStructure { branches, resolved_labels, resolved_role_names: role_names })
+}
+
+fn extend_role_names_from(role_names: &mut HashMap<Variable, String>, conjunction: &Conjunction) {
+    conjunction
+        .constraints()
+        .iter()
+        .filter_map(|constraint| match constraint {
+            Constraint::RoleName(role_name) => Some(role_name),
+            _ => None,
+        })
+        .for_each(|role_name| {
+            role_names.insert(role_name.type_().as_variable().unwrap(), role_name.name().to_owned());
+        });
+    conjunction.nested_patterns().iter().for_each(|nested| match nested {
+        NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().for_each(|inner| {
+            extend_role_names_from(role_names, inner);
+        }),
+        NestedPattern::Negation(inner) => extend_role_names_from(role_names, inner.conjunction()),
+        NestedPattern::Optional(inner) => extend_role_names_from(role_names, inner.conjunction()),
+    })
 }
 
 fn extend_labels_from<'a>(

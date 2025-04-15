@@ -20,7 +20,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use compiler::{executable::pipeline::QueryStructure, VariablePosition};
+use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concurrency::TokioIntervalRunner;
 use database::{
@@ -90,7 +90,6 @@ use crate::service::{
             row::encode_row,
         },
     },
-    query_structure::encode_query_structure,
     transaction_service::{
         execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
         init_transaction_timeout, is_write_pipeline, prepare_read_query_in, with_readable_transaction,
