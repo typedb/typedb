@@ -232,7 +232,7 @@ impl QueryAnswer {
     pub(crate) fn status_code(&self) -> StatusCode {
         match self {
             QueryAnswer::ResOk(_) => StatusCode::OK,
-            QueryAnswer::ResRows((_, _, warning)) => match warning {
+            QueryAnswer::ResRows((_, _, _, warning)) => match warning {
                 None => StatusCode::OK,
                 Some(warning) => warning.status_code(),
             },
@@ -919,7 +919,7 @@ impl TransactionService {
                 }
             }
         }
-        let encoded_query_structure = encode_query_structure(query_structure);
+        let encoded_query_structure = encode_query_structure(&query_structure);
         match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, encoded_query_structure, None))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),

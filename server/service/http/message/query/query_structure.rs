@@ -65,7 +65,7 @@ pub enum EncodedQueryStructureVertex {
     UnavailableVariable { variable: String },
 }
 
-pub(crate) fn encode_query_structure(query_structure: QueryStructure) -> EncodedQueryStructure {
+pub(crate) fn encode_query_structure(query_structure: &QueryStructure) -> EncodedQueryStructure {
     let branches = query_structure
         .parametrised_structure
         .branches

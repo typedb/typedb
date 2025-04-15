@@ -37,7 +37,7 @@ pub fn encode_row<'a>(
         let variable_value = row.get(*position);
         let row_entry =
             encode_row_entry(variable_value, snapshot, type_manager, thing_manager, include_instance_types)?;
-        encoded_row.insert(variable, row_entry);
+        encoded_row.insert(variable.as_str(), row_entry);
     }
     Ok(json!(EncodedRow { data: encoded_row, provenance: row.provenance().0 }))
 }
