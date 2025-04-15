@@ -37,7 +37,7 @@
 		default-features = false
 
 	[dependencies.tokio-rustls]
-		features = ["aws_lc_rs", "default", "logging", "ring", "tls12"]
+		features = ["logging", "ring", "tls12"]
 		version = "0.26.2"
 		default-features = false
 
@@ -240,7 +240,7 @@
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.35"
+		version = "4.5.36"
 		default-features = false
 
 	[dependencies.bytes]
@@ -249,7 +249,7 @@
 		default-features = false
 
 	[dependencies.axum-server]
-		features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls", "tls-rustls-no-provider", "tokio-rustls"]
+		features = ["arc-swap", "default", "rustls", "rustls-pemfile", "rustls-pki-types", "tls-rustls-no-provider", "tokio-rustls"]
 		version = "0.7.2"
 		default-features = false
 
