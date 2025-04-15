@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeSet, HashMap},
     sync::Arc,
 };
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use answer::{variable::Variable, Type};
 use encoding::value::{label::Label, value::Value};
@@ -21,7 +21,7 @@ use ir::{
 };
 use itertools::Itertools;
 
-use crate::{annotation::pipeline::AnnotatedStage, VariablePosition};
+use crate::annotation::pipeline::AnnotatedStage;
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
@@ -30,10 +30,6 @@ pub struct ParametrisedQueryStructure {
 }
 
 impl ParametrisedQueryStructure {
-    pub fn empty() -> Self {
-        Self { branches: [(); 64].map(|_| None), resolved_labels: HashMap::new(), resolved_role_names: HashMap::new() }
-    }
-
     pub fn with_parameters(
         self: Arc<Self>,
         parameters: Arc<ParameterRegistry>,
@@ -70,7 +66,6 @@ impl QueryStructure {
 pub(crate) fn extract_query_structure_from(
     variable_registry: &VariableRegistry,
     annotated_stages: Vec<AnnotatedStage>,
-    variable_positions: HashMap<Variable, VariablePosition>,
 ) -> Option<ParametrisedQueryStructure> {
     if variable_registry.highest_branch_id_allocated() > 63 {
         return None;

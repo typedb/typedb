@@ -14,7 +14,6 @@ use ir::pattern::{
 };
 use serde::{Deserialize, Serialize};
 
-const JSON_NULL: &str = "{}";
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct EncodedQueryStructure {
