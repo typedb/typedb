@@ -20,7 +20,7 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use compiler::VariablePosition;
+use compiler::{executable::pipeline::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concurrency::TokioIntervalRunner;
 use database::{
@@ -84,7 +84,9 @@ use crate::service::{
     http::{
         error::HttpServiceError,
         message::query::{
-            document::encode_document, encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
+            document::encode_document,
+            encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
+            query_structure::{encode_query_structure, EncodedQueryStructure},
             row::encode_row,
         },
     },
@@ -215,7 +217,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, EncodedQueryStructure, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -223,7 +225,7 @@ impl QueryAnswer {
     pub(crate) fn query_type(&self) -> QueryType {
         match self {
             QueryAnswer::ResOk(query_type) => *query_type,
-            QueryAnswer::ResRows((query_type, _, _)) => *query_type,
+            QueryAnswer::ResRows((query_type, _, _, _)) => *query_type,
             QueryAnswer::ResDocuments((query_type, _, _)) => *query_type,
         }
     }
@@ -814,13 +816,14 @@ impl TransactionService {
             let interrupt = self.query_interrupt_receiver.clone();
             tokio::spawn(async move {
                 match answer.answer {
-                    Either::Left((output_descriptor, batch)) => {
+                    Either::Left((output_descriptor, batch, query_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
                             thing_manager,
                             answer.query_options,
                             output_descriptor,
+                            query_structure,
                             batch,
                             responder,
                             timeout_at,
@@ -879,6 +882,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         query_options: QueryOptions,
         output_descriptor: StreamQueryOutputDescriptor,
+        query_structure: QueryStructure,
         batch: Batch,
         responder: TransactionResponder,
         timeout_at: Instant,
@@ -916,7 +920,8 @@ impl TransactionService {
                 }
             }
         }
-        match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, None))) {
+        let encoded_query_structure = encode_query_structure(query_structure);
+        match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, encoded_query_structure, None))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
         }
@@ -1075,11 +1080,7 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            #[cfg(debug_assertions)]
-            if let Some(query_structure) = pipeline.query_structure() {
-                logger::trace!("{}", encode_query_structure(query_structure));
-            }
-
+            let encoded_query_structure = pipeline.query_structure().map(|qs| encode_query_structure(qs));
             let (mut iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_rows_iterator(interrupt.clone()),
                 responder,
@@ -1132,7 +1133,7 @@ impl TransactionService {
             }
             respond_else_return_break!(
                 responder,
-                TransactionServiceResponse::Query(QueryAnswer::ResRows((QueryType::Read, result, warning)))
+                TransactionServiceResponse::Query(QueryAnswer::ResRows((QueryType::Read, result, encoded_query_structure, warning)))
             );
             context.profile
         };

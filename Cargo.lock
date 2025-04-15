@@ -1452,6 +1452,7 @@ dependencies = [
  "query",
  "regex",
  "resource",
+ "serde",
  "storage",
  "test_utils",
  "test_utils_concept",
