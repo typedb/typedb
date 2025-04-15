@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::service::{
     http::{error::HttpServiceError, message::body::JsonBody},
+    transaction_service::TransactionServiceError,
     ServiceError,
 };
 
@@ -43,7 +44,26 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::UserUpdate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserDelete { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserGet { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::Transaction { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::Transaction { typedb_source } => match typedb_source {
+                TransactionServiceError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
+                TransactionServiceError::CannotCommitReadTransaction { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::CannotRollbackReadTransaction { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::TransactionFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::DataCommitFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::SchemaCommitFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::QueryParseFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::SchemaQueryRequiresSchemaTransaction { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::WriteQueryRequiresSchemaOrWriteTransaction { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::TxnAbortSchemaQueryFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::QueryFailed { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::NoOpenTransaction { .. } => StatusCode::NOT_FOUND,
+                TransactionServiceError::QueryInterrupted { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::QueryStreamNotFound { .. } => StatusCode::NOT_FOUND,
+                TransactionServiceError::ServiceFailedQueueCleanup { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::PipelineExecution { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::WriteResultsLimitExceeded { .. } => StatusCode::BAD_REQUEST,
+                TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
+            },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,
         };
