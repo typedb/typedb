@@ -45,7 +45,12 @@ pub(crate) async fn start_typedb(
     let shutdown_sender_clone = shutdown_sender.clone();
     let handle = std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
-        let config = Config::new(GRPC_ADDRESS).server_http_address(HTTP_ADDRESS).development_mode(true).build();
+        let server_dir = create_tmp_dir();
+        let config = Config::new(GRPC_ADDRESS)
+            .server_http_address(HTTP_ADDRESS)
+            .data_directory(server_dir.as_ref())
+            .development_mode(true)
+            .build();
 
         let server_future = async {
             let server = Server::new_with_external_shutdown(
