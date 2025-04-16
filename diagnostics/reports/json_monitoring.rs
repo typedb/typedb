@@ -6,7 +6,7 @@
 use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use serde::Serialize;
 use serde_json::{json, Value};
 
 use crate::{

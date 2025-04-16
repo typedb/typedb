@@ -15,7 +15,6 @@ use compiler::{
         function::{executable::ExecutableFunction, ExecutableFunctionRegistry},
         next_executable_id,
     },
-    query_structure::ParametrisedQueryStructure,
     VariablePosition,
 };
 use concept::{

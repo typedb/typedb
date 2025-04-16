@@ -14,43 +14,29 @@ use std::{
     time::Duration,
 };
 
-use compiler::{query_structure::QueryStructure, VariablePosition};
+use compiler::query_structure::QueryStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
-    transaction::{
-        DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
-    },
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
     metrics::{ActionKind, ClientEndpoint, LoadKind},
 };
-use error::typedb_error;
 use executor::{
     batch::Batch,
     document::ConceptDocument,
-    pipeline::{
-        pipeline::Pipeline,
-        stage::{ExecutionContext, ReadPipelineStage, StageIterator},
-        PipelineExecutionError,
-    },
+    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
     ExecutionInterrupt, InterruptType,
 };
-use function::function_manager::FunctionManager;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::QueryManager};
-use resource::{
-    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
-    profile::StorageCounters,
-};
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot},
-};
+use query::error::QueryError;
+use resource::{constants::server::DEFAULT_PREFETCH_SIZE, profile::StorageCounters};
+use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{
         broadcast,
@@ -67,11 +53,7 @@ use typedb_protocol::{
     query::Type::{Read, Write},
     transaction::{stream_signal::Req, Server as ProtocolServer},
 };
-use typeql::{
-    parse_query,
-    query::{stage::Stage, SchemaQuery},
-    Query,
-};
+use typeql::{parse_query, query::SchemaQuery, Query};
 use uuid::Uuid;
 
 use crate::service::{
@@ -91,10 +73,9 @@ use crate::service::{
         row::encode_row,
     },
     transaction_service::{
-        execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
-        init_transaction_timeout, is_write_pipeline, prepare_read_query_in, unwrap_or_execute_and_return,
-        with_readable_transaction, StreamQueryOutputDescriptor, Transaction, TransactionServiceError, WriteQueryAnswer,
-        WriteQueryBatchAnswer, WriteQueryDocumentsAnswer, WriteQueryResult,
+        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, init_transaction_timeout,
+        is_write_pipeline, prepare_read_query_in, unwrap_or_execute_and_return, with_readable_transaction,
+        StreamQueryOutputDescriptor, Transaction, TransactionServiceError, WriteQueryAnswer, WriteQueryResult,
     },
 };
 
@@ -320,7 +301,7 @@ impl TransactionService {
             Some(Ok(message)) => {
                 for request in message.reqs {
                     let request_id = Uuid::from_slice(&request.req_id).unwrap();
-                    let metadata = request.metadata;
+                    let _metadata = request.metadata;
                     match request.req {
                         None => {
                             return Err(ProtocolError::MissingField {

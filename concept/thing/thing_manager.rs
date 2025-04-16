@@ -51,7 +51,7 @@ use encoding::{
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 use iterator::minmax_or;
-use itertools::{Itertools, MinMaxResult};
+use itertools::Itertools;
 use lending_iterator::Peekable;
 use primitive::either::Either;
 use resource::{

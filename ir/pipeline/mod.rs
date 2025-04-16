@@ -14,9 +14,7 @@ use itertools::Itertools;
 use storage::snapshot::{iterator::SnapshotIteratorError, SnapshotGetError};
 use typeql::{
     common::Span,
-    schema::definable::function::{
-        Function, FunctionBlock, ReturnReduction, ReturnSingle, ReturnStatement, ReturnStream, Signature,
-    },
+    schema::definable::function::{ReturnStatement, Signature},
 };
 
 use crate::{

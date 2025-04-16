@@ -14,10 +14,8 @@ use error::typedb_error;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use rand::{self, Rng};
 use resource::constants::server::{MAX_AUTHENTICATION_TOKEN_TTL, MIN_AUTHENTICATION_TOKEN_TTL};
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use tokio::sync::RwLock;
-
-use crate::authentication::AuthenticationError;
 
 #[derive(Clone, Debug)]
 pub struct TokenManager {

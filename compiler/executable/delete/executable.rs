@@ -12,7 +12,6 @@ use ir::{
     pattern::{constraint::Constraint, Vertex},
     pipeline::VariableRegistry,
 };
-use itertools::Itertools;
 use typeql::common::Span;
 
 use crate::{

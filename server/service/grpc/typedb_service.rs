@@ -6,16 +6,11 @@
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
-use axum::response::IntoResponse;
 use database::database_manager::DatabaseManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
-use error::typedb_error;
-use http::StatusCode;
-use resource::constants::server::DEFAULT_USER_NAME;
-use system::concepts::{Credential, PasswordHash, User};
+use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{metadata::MetadataMap, IntoRequest, Request, Response, Status, Streaming};
+use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{
     self,
@@ -27,8 +22,7 @@ use uuid::Uuid;
 
 use crate::{
     authentication::{
-        credential_verifier::CredentialVerifier, extract_metadata_authorization_token,
-        extract_parts_authorization_token, token_manager::TokenManager, Accessor, AuthenticationError,
+        credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
     },
     service::{
         grpc::{
@@ -142,7 +136,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                         driver_version: message.driver_version.clone(),
                     };
                     event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
-                    return Err(err.into_status());
+                    Err(err.into_status())
                 } else {
                     let Some(authentication) = message.authentication else {
                         return Err(ProtocolError::MissingField {

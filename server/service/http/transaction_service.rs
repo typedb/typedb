@@ -5,99 +5,54 @@
  */
 
 use std::{
-    collections::{HashMap, VecDeque},
-    fmt,
-    fmt::{Debug, Error, Formatter},
+    collections::VecDeque,
+    fmt::{self, Debug},
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
     },
-    sync::{Arc, Mutex},
-    time::Duration,
+    sync::Arc,
 };
 
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
-use compiler::{query_structure::QueryStructure, VariablePosition};
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use concurrency::TokioIntervalRunner;
+use compiler::query_structure::QueryStructure;
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
-    transaction::{
-        DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
-    },
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
+    metrics::{ClientEndpoint, LoadKind},
 };
-use error::{typedb_error, TypeDBError};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
-    pipeline::{
-        pipeline::Pipeline,
-        stage::{ExecutionContext, ReadPipelineStage, StageIterator},
-        PipelineExecutionError,
-    },
+    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
     ExecutionInterrupt, InterruptType,
 };
-use function::function_manager::FunctionManager;
-use futures::channel;
 use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::QueryManager};
-use resource::{
-    constants::{
-        diagnostics::REPORT_INTERVAL,
-        server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
-    },
-    profile::StorageCounters,
-};
-use serde_json::json;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot},
-};
+use query::error::QueryError;
+use resource::profile::StorageCounters;
+use storage::snapshot::ReadableSnapshot;
 use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{channel, Receiver, Sender},
-        oneshot, watch,
-    },
+    sync::{broadcast, mpsc::Receiver, oneshot, watch},
     task::{spawn_blocking, JoinHandle},
-    time::{timeout, Instant},
+    time::Instant,
 };
-use tokio_stream::StreamExt;
-use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typeql::{
-    parse_query,
-    query::{stage::Stage, SchemaQuery},
-    Query,
-};
-use uuid::Uuid;
+use typeql::{parse_query, query::SchemaQuery, Query};
 
+use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
-    http::{
-        error::HttpServiceError,
-        message::query::{
-            document::encode_document,
-            encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
-            query_structure::{encode_query_structure, QueryStructureResponse},
-            row::encode_row,
-        },
-    },
+    http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
     transaction_service::{
-        execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
-        init_transaction_timeout, is_write_pipeline, prepare_read_query_in, with_readable_transaction,
-        StreamQueryOutputDescriptor, Transaction, TransactionServiceError, WriteQueryAnswer, WriteQueryBatchAnswer,
-        WriteQueryDocumentsAnswer, WriteQueryResult, TRANSACTION_REQUEST_BUFFER_SIZE,
+        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, init_transaction_timeout,
+        is_write_pipeline, prepare_read_query_in, with_readable_transaction, StreamQueryOutputDescriptor, Transaction,
+        TransactionServiceError, WriteQueryAnswer, WriteQueryResult,
     },
     QueryType, TransactionType,
 };
@@ -1171,7 +1126,7 @@ impl TransactionService {
                     row,
                     &descriptor,
                     snapshot.as_ref(),
-                    &type_manager,
+                    type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
                     storage_counters.clone(),

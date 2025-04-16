@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{str::FromStr, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use axum::response::IntoResponse;
 use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::transaction::{
@@ -25,26 +24,18 @@ use executor::{
     ExecutionInterrupt, InterruptType,
 };
 use function::function_manager::FunctionManager;
-use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{error::QueryError, query_manager::QueryManager};
-use resource::{
-    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
-    profile::StorageCounters,
-};
-use serde::{Deserialize, Serialize};
+use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::{task::spawn_blocking, time::Instant};
 use tracing::{event, Level};
-use typeql::{
-    query::{stage::Stage, SchemaQuery},
-    Query,
-};
+use typeql::query::{stage::Stage, SchemaQuery};
 use uuid::Uuid;
 
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;

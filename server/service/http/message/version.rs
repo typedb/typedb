@@ -8,12 +8,11 @@ use std::{collections::HashMap, str::FromStr};
 
 use axum::{
     async_trait,
-    extract::{FromRequest, FromRequestParts, Path},
+    extract::{FromRequestParts, Path},
     response::{IntoResponse, Response},
-    RequestExt, RequestPartsExt,
+    RequestPartsExt,
 };
-use futures::TryFutureExt;
-use http::{request::Parts, StatusCode};
+use http::request::Parts;
 
 use crate::service::http::error::HttpServiceError;
 

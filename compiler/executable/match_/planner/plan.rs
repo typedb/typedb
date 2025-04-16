@@ -25,7 +25,7 @@ use ir::{
         },
         nested_pattern::NestedPattern,
         variable_category::VariableCategory,
-        BranchID, Scope, ScopeId, Vertex,
+        BranchID, Scope, Vertex,
     },
     pipeline::{block::BlockContext, VariableRegistry},
 };

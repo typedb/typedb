@@ -3,35 +3,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::sync::{Arc, Mutex};
 
-use cucumber::{given, then, when};
-use hyper::{
-    client::HttpConnector,
-    header::{AUTHORIZATION, CONTENT_TYPE},
-    Body, Client, Method, Request, Uri,
-};
 use itertools::Either;
 use macro_rules_attribute::apply;
-use params::{self, check_boolean};
 use serde::Deserialize;
-use serde_json::json;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, Config},
     server::Server,
 };
-use test_utils::{create_tmp_dir, TempDir};
-use tokio::{
-    sync::OnceCell,
-    task::JoinHandle,
-    time::{sleep, Instant},
-};
+use test_utils::create_tmp_dir;
+use tokio::task::JoinHandle;
 
 use crate::{
     generic_step,
     message::{authenticate, authenticate_default, check_health, databases, users},
-    Context, HttpBehaviourTestError, HttpContext, TEST_TOKEN_EXPIRATION,
+    Context, TEST_TOKEN_EXPIRATION,
 };
 
 mod database;

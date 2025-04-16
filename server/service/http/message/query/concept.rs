@@ -19,7 +19,7 @@ use concept::{
 use encoding::value::{value::Value, value_type::ValueType, ValueEncodable};
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
-use serde::{ser::SerializeStruct, Deserialize, Serialize, Serializer};
+use serde::{ser::SerializeStruct, Deserialize, Serialize};
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 

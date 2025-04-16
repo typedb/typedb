@@ -36,8 +36,6 @@ macro_rules! from_request_parts_impl {
                 use axum::extract::Path;
                 use axum::response::IntoResponse;
                 use std::collections::HashMap;
-                use std::str::FromStr;
-                use http::StatusCode;
                 use $crate::service::http::message::stringify_kebab_case;
                 use crate::service::http::error::HttpServiceError;
 

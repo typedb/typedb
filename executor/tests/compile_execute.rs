@@ -36,7 +36,7 @@ use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot},
+    snapshot::{CommittableSnapshot, ReadableSnapshot},
     MVCCStorage,
 };
 use test_utils::assert_matches;

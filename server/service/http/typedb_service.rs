@@ -10,13 +10,12 @@ use axum::{
     extract::State,
     response::IntoResponse,
     routing::{delete, get, post, put},
-    RequestPartsExt, Router,
+    Router,
 };
 use concurrency::TokioIntervalRunner;
 use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use http::StatusCode;
-use itertools::Itertools;
 use options::{QueryOptions, TransactionOptions};
 use resource::constants::common::SECONDS_IN_MINUTE;
 use system::concepts::{Credential, User};
@@ -39,7 +38,7 @@ use crate::{
             error::HttpServiceError,
             message::{
                 authentication::{encode_token, SigninPayload},
-                body::{JsonBody, PlainTextBody},
+                body::JsonBody,
                 database::{encode_database, encode_databases, DatabasePath},
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},

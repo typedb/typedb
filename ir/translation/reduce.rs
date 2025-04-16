@@ -6,7 +6,6 @@
 
 use typeql::{
     common::Spanned, query::stage::reduce::Reducer as TypeQLReducer, token::ReduceOperator as TypeQLReduceOperator,
-    Variable,
 };
 
 use crate::{

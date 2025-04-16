@@ -9,12 +9,10 @@
 
 use std::{
     collections::VecDeque,
-    error::Error,
     fmt,
     fmt::Formatter,
     iter, mem,
     path::{Path, PathBuf},
-    str::FromStr,
     sync::Arc,
     time::Instant,
 };

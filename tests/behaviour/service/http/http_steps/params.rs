@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{borrow::Borrow, convert::Infallible, fmt, str::FromStr};
+use std::{convert::Infallible, fmt, str::FromStr};
 
 use cucumber::Parameter;
 

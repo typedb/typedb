@@ -9,7 +9,6 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     iter::{Map, Take, Zip},
-    sync::Arc,
     vec,
 };
 

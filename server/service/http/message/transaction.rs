@@ -4,20 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr};
-
-use axum::{
-    extract::{FromRequest, FromRequestParts, Path},
-    response::{IntoResponse, Response},
-    RequestExt, RequestPartsExt,
-};
-use futures::TryFutureExt;
+use axum::response::{IntoResponse, Response};
 use http::StatusCode;
 use options::TransactionOptions;
 use resource::constants::server::{
     DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::service::{

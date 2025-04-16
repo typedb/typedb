@@ -16,7 +16,6 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
-use lending_iterator::LendingIterator;
 use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::StageProfile};
 use storage::snapshot::WritableSnapshot;
 

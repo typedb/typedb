@@ -4,20 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::VecDeque, time::Duration};
+use std::collections::VecDeque;
 
-use cucumber::{gherkin::Step, given, then, when};
-use futures::{future::join_all, FutureExt};
-use itertools::Either;
+use cucumber::gherkin::Step;
+use futures::future::join_all;
 use macro_rules_attribute::apply;
-use params::{self, check_boolean};
 
 use crate::{
     generic_step,
     message::{transactions_close, transactions_commit, transactions_open, transactions_rollback},
     params::TokenMode,
     util::iter_table,
-    Context, HttpContext,
+    Context,
 };
 
 #[apply(generic_step)]
