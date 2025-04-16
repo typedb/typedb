@@ -160,7 +160,6 @@ pub fn compile_pipeline_and_functions(
     let query_structure = extract_query_structure_from(
         variable_registry,
         annotated_stages,
-        executable_stages.last().unwrap().output_row_mapping(),
     )
     .map(|query_structure| Arc::new(query_structure));
     Ok(ExecutablePipeline {

@@ -9,7 +9,6 @@ use std::{
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
 };
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
@@ -23,7 +22,6 @@ use resource::constants::server::{
 };
 use system::initialise_system_database;
 use tokio::net::lookup_host;
-use tonic::transport::{Certificate, Identity, ServerTlsConfig};
 use tower::ServiceExt;
 use user::{initialise_default_user, user_manager::UserManager};
 

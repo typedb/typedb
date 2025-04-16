@@ -919,7 +919,7 @@ impl TransactionService {
                 }
             }
         }
-        let encoded_query_structure = query_structure.as_ref().map(|qs| encode_query_structure(qs));
+        let encoded_query_structure = query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs));
         match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, encoded_query_structure, None))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
@@ -1079,7 +1079,7 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let encoded_query_structure = pipeline.query_structure().map(|qs| encode_query_structure(qs));
+            let encoded_query_structure = pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs));
             let (mut iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_rows_iterator(interrupt.clone()),
                 responder,
