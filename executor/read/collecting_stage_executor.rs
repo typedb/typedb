@@ -216,7 +216,8 @@ impl CollectorTrait for SortCollector {
     fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
         let unsorted = collector.unwrap();
-        let sorted_indices = unsorted.indices_sorted_by(context, &sort_on).into_iter().peekable();
+        let sorted_indices =
+            unsorted.indices_sorted_by(context, &sort_on, StorageCounters::DISABLED).into_iter().peekable(); // TODO storage counters
         CollectedStageIterator::Sort(SortStageIterator { unsorted, sorted_indices })
     }
 }

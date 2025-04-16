@@ -92,7 +92,7 @@ impl SortStageIterator {
                 SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
             })
             .collect();
-        let sorted_indices = unsorted.indices_sorted_by(context, &sort_by);
+        let sorted_indices = unsorted.indices_sorted_by(context, &sort_by, storage_counters);
         Self { unsorted, sorted_indices, next_index_index: 0 }
     }
 }
