@@ -157,8 +157,11 @@ pub fn compile_pipeline_and_functions(
         input_variables,
     )?;
     debug_assert!(!executable_stages.is_empty());
-    let query_structure = extract_query_structure_from(variable_registry, annotated_stages)
-        .map(|query_structure| Arc::new(query_structure));
+    let query_structure = extract_query_structure_from(
+        variable_registry,
+        annotated_stages,
+    )
+    .map(|query_structure| Arc::new(query_structure));
     Ok(ExecutablePipeline {
         query_structure,
         executable_functions: schema_and_preamble_functions,
