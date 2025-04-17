@@ -15,8 +15,8 @@ use server::service::{http::message::query::QueryAnswerResponse, AnswerType, Que
 
 use crate::{
     assert_err, generic_step,
-    message::{transactions_query, ConceptResponse},
-    params::{ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, Var},
+    message::{query, transactions_query, ConceptResponse},
+    params::{ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, WithCommit},
     util::{iter_table, list_contains_json, parse_json},
     Context, HttpBehaviourTestError,
 };
@@ -123,12 +123,63 @@ fn check_is_value(
 }
 
 #[apply(generic_step)]
-#[step(expr = "typeql schema query{typeql_may_error}")]
-#[step(expr = "typeql write query{typeql_may_error}")]
-#[step(expr = "typeql read query{typeql_may_error}")]
-pub async fn typeql_query(context: &mut Context, may_error: params::TypeQLMayError, step: &Step) {
+#[step(expr = "{token_mode}typeql schema query{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql write query{typeql_may_error}")]
+#[step(expr = "{token_mode}typeql read query{typeql_may_error}")]
+pub async fn typeql_query(
+    context: &mut Context,
+    token_mode: TokenMode,
+    may_error: params::TypeQLMayError,
+    step: &Step,
+) {
+    context.randomize_auth_token_if_needed(token_mode);
     context.cleanup_answers().await;
-    may_error.check(transactions_query(&context.http_context, context.transaction(), step.docstring().unwrap()).await);
+    may_error.check(
+        transactions_query(
+            context.http_client(),
+            context.auth_token_by_mode(token_mode),
+            context.transaction(),
+            &context.query_options,
+            step.docstring().unwrap(),
+        )
+        .await,
+    );
+}
+
+#[apply(generic_step)]
+#[step(
+    expr = "{token_mode}one-shot query{with_commit} with {word} transaction for database {word}: typeql schema query{typeql_may_error}"
+)]
+#[step(
+    expr = "{token_mode}one-shot query{with_commit} with {word} transaction for database {word}: typeql write query{typeql_may_error}"
+)]
+#[step(
+    expr = "{token_mode}one-shot query{with_commit} with {word} transaction for database {word}: typeql read query{typeql_may_error}"
+)]
+pub async fn one_shot_query_typeql_query(
+    context: &mut Context,
+    token_mode: TokenMode,
+    with_commit: WithCommit,
+    transaction_type: String,
+    database_name: String,
+    may_error: params::TypeQLMayError,
+    step: &Step,
+) {
+    context.randomize_auth_token_if_needed(token_mode);
+    context.cleanup_answers().await;
+    may_error.check(
+        query(
+            context.http_client(),
+            context.auth_token_by_mode(token_mode),
+            &database_name,
+            &transaction_type,
+            step.docstring().unwrap(),
+            &context.transaction_options,
+            &context.query_options,
+            with_commit.to_bool(),
+        )
+        .await,
+    );
 }
 
 #[apply(generic_step)]
@@ -138,7 +189,51 @@ pub async fn typeql_query(context: &mut Context, may_error: params::TypeQLMayErr
 pub async fn get_answers_of_typeql_query(context: &mut Context, step: &Step) {
     context.cleanup_answers().await;
     context
-        .set_answer(transactions_query(&context.http_context, context.transaction(), step.docstring().unwrap()).await)
+        .set_answer(
+            transactions_query(
+                context.http_client(),
+                context.auth_token(),
+                context.transaction(),
+                &context.query_options,
+                step.docstring().unwrap(),
+            )
+            .await,
+        )
+        .unwrap();
+}
+
+#[apply(generic_step)]
+#[step(
+    expr = "one-shot query{with_commit} with {word} transaction for database {word}: get answers of typeql schema query"
+)]
+#[step(
+    expr = "one-shot query{with_commit} with {word} transaction for database {word}: get answers of typeql write query"
+)]
+#[step(
+    expr = "one-shot query{with_commit} with {word} transaction for database {word}: get answers of typeql read query"
+)]
+pub async fn one_shot_query_get_answers_of_typeql_query(
+    context: &mut Context,
+    with_commit: WithCommit,
+    transaction_type: String,
+    database_name: String,
+    step: &Step,
+) {
+    context.cleanup_answers().await;
+    context
+        .set_answer(
+            query(
+                context.http_client(),
+                context.auth_token(),
+                &database_name,
+                &transaction_type,
+                step.docstring().unwrap(),
+                &context.transaction_options,
+                &context.query_options,
+                with_commit.to_bool(),
+            )
+            .await,
+        )
         .unwrap();
 }
 
@@ -150,15 +245,35 @@ pub async fn concurrently_get_answers_of_typeql_query_times(context: &mut Contex
     context.cleanup_concurrent_answers().await;
 
     let queries = vec![step.docstring().unwrap(); count];
-    let answers: Vec<QueryAnswerResponse> = join_all(
-        queries.into_iter().map(|query| transactions_query(&context.http_context, context.transaction(), query)),
-    )
+    let answers: Vec<QueryAnswerResponse> = join_all(queries.into_iter().map(|query| {
+        transactions_query(
+            context.http_client(),
+            context.auth_token(),
+            context.transaction(),
+            &context.query_options,
+            query,
+        )
+    }))
     .await
     .into_iter()
     .map(|result| result.unwrap())
     .collect();
 
     context.set_concurrent_answers(answers);
+}
+
+#[apply(generic_step)]
+#[step(expr = "set query option include_instance_types to: {boolean}")]
+pub async fn set_query_option_include_instance_types(context: &mut Context, value: params::Boolean) {
+    context.init_query_options_if_needed();
+    context.query_options.as_mut().unwrap().include_instance_types = Some(value.to_bool());
+}
+
+#[apply(generic_step)]
+#[step(expr = "set query option answer_count_limit to: {int}")]
+pub async fn set_query_option_answer_count_limit(context: &mut Context, value: usize) {
+    context.init_query_options_if_needed();
+    context.query_options.as_mut().unwrap().answer_count_limit = Some(value);
 }
 
 #[apply(generic_step)]

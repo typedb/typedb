@@ -85,7 +85,7 @@ pub struct CLIArgs {
 impl CLIArgs {
     pub fn to_config(&self) -> Config {
         let authentication_config = AuthenticationConfig {
-            token_expiration_seconds: Duration::from_secs(self.server_authentication_token_ttl_seconds),
+            token_expiration: Duration::from_secs(self.server_authentication_token_ttl_seconds),
         };
         let encryption_config = EncryptionConfig {
             enabled: self.server_encryption_enabled,

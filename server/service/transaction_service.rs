@@ -398,7 +398,6 @@ typedb_error! {
         ),
         ServiceFailedQueueCleanup(15, "The operation failed since the service is closing."),
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
-        WriteResultsLimitExceeded(17, "Write query results limit ({limit}) exceeded, and the transaction is aborted. Retry with an extended limit or break the query into multiple smaller queries to achieve the same result.", limit: usize),
-        TransactionTimeout(18, "Operation failed: transaction timeout."),
+        TransactionTimeout(17, "Operation failed: transaction timeout."),
     }
 }

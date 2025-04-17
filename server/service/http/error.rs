@@ -52,4 +52,8 @@ impl HttpServiceError {
     pub(crate) fn no_open_transaction() -> Self {
         Self::Transaction { typedb_source: TransactionServiceError::NoOpenTransaction {} }
     }
+
+    pub(crate) fn transaction_timeout() -> Self {
+        Self::Transaction { typedb_source: TransactionServiceError::TransactionTimeout {} }
+    }
 }

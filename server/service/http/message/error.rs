@@ -61,7 +61,6 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::QueryStreamNotFound { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::ServiceFailedQueueCleanup { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::PipelineExecution { .. } => StatusCode::BAD_REQUEST,
-                TransactionServiceError::WriteResultsLimitExceeded { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
             },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,

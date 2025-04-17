@@ -24,11 +24,17 @@ pub mod document;
 pub mod query_structure;
 pub mod row;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct QueryOptionsPayload {
     pub include_instance_types: Option<bool>,
     pub answer_count_limit: Option<usize>,
+}
+
+impl Default for QueryOptionsPayload {
+    fn default() -> Self {
+        Self { include_instance_types: None, answer_count_limit: None }
+    }
 }
 
 impl Into<QueryOptions> for QueryOptionsPayload {

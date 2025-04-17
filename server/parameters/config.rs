@@ -105,12 +105,12 @@ pub struct ServerConfig {
 
 #[derive(Debug)]
 pub struct AuthenticationConfig {
-    pub token_expiration_seconds: Duration,
+    pub token_expiration: Duration,
 }
 
 impl Default for AuthenticationConfig {
     fn default() -> Self {
-        Self { token_expiration_seconds: DEFAULT_AUTHENTICATION_TOKEN_TTL }
+        Self { token_expiration: DEFAULT_AUTHENTICATION_TOKEN_TTL }
     }
 }
 

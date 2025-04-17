@@ -255,3 +255,66 @@ impl fmt::Display for ConceptKind {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, Parameter)]
+#[param(name = "with_commit", regex = "(| with commit)")]
+pub(crate) enum WithCommit {
+    False,
+    True,
+}
+
+impl WithCommit {
+    pub fn to_bool(&self) -> bool {
+        match self {
+            WithCommit::False => false,
+            WithCommit::True => true,
+        }
+    }
+}
+
+impl FromStr for WithCommit {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "" => Self::False,
+            " with commit" => Self::True,
+            invalid => return Err(format!("Invalid `WithCommit`: {invalid}")),
+        })
+    }
+}
+
+impl fmt::Display for WithCommit {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            WithCommit::False => write!(f, ""),
+            WithCommit::True => write!(f, "with commit"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, Parameter)]
+#[param(name = "token_mode", regex = "(|with a wrong token, )")]
+pub(crate) enum TokenMode {
+    Saved,
+    Wrong,
+}
+
+impl FromStr for TokenMode {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Ok(match s {
+            "" => Self::Saved,
+            "with a wrong token, " => Self::Wrong,
+            invalid => return Err(format!("Invalid `TokenMode`: {invalid}")),
+        })
+    }
+}
+
+impl fmt::Display for TokenMode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TokenMode::Saved => write!(f, "with a saved token"),
+            TokenMode::Wrong => write!(f, "with a wrong token"),
+        }
+    }
+}

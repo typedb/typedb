@@ -29,6 +29,18 @@ rust_test(
     crate_features = ["bazel"],
 )
 
+rust_test(
+    name = "test_http",
+    srcs = ["http.rs"],
+    deps = [
+        "//tests/behaviour/service/http/http_steps:http_steps",
+
+        "@crates//:tokio",
+    ],
+    data = ["@typedb_behaviour//driver/http:http.feature"],
+    crate_features = ["bazel"],
+)
+
 checkstyle_test(
     name = "checkstyle",
     include = glob(["*"]),

@@ -131,19 +131,6 @@ macro_rules! check_timeout_else_respond_error_and_return_break {
     }};
 }
 
-macro_rules! check_answer_count_limit_else_respond_error_and_return_break {
-    ($answer_count_limit:expr, $result:ident, $responder:ident) => {{
-        if let Some(limit) = $answer_count_limit {
-            if $result.len() >= limit {
-                respond_error_and_return_break!(
-                    $responder,
-                    TransactionServiceError::WriteResultsLimitExceeded { limit }
-                );
-            }
-        }
-    }};
-}
-
 macro_rules! unwrap_or_execute_else_respond_error_and_return_break {
     ($expr:expr, $responder:ident, |$err:pat_param| $err_mapper: block) => {{
         match $expr {
@@ -247,12 +234,14 @@ impl QueryAnswer {
 #[derive(Debug)]
 pub(crate) enum QueryAnswerWarning {
     ReadResultsLimitExceeded { limit: usize },
+    WriteResultsLimitExceeded { limit: usize },
 }
 
 impl QueryAnswerWarning {
     pub(crate) fn status_code(&self) -> StatusCode {
         match self {
             QueryAnswerWarning::ReadResultsLimitExceeded { .. } => StatusCode::PARTIAL_CONTENT,
+            QueryAnswerWarning::WriteResultsLimitExceeded { .. } => StatusCode::PARTIAL_CONTENT,
         }
     }
 }
@@ -260,7 +249,8 @@ impl QueryAnswerWarning {
 impl fmt::Display for QueryAnswerWarning {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            QueryAnswerWarning::ReadResultsLimitExceeded { limit } => write!(f, "Write query results limit ({limit}) exceeded, and the transaction is aborted. Retry with an extended limit or break the query into multiple smaller queries to achieve the same result.")
+            QueryAnswerWarning::ReadResultsLimitExceeded { limit } => write!(f, "Read query results limit ({limit}) exceeded. Not all answers are returned."),
+            QueryAnswerWarning::WriteResultsLimitExceeded { limit } => write!(f, "Write query results limit ({limit}) exceeded. Not all answers are returned, but all the requested writes are completed.")
         }
     }
 }
@@ -889,6 +879,7 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
+        let mut warning = None;
         let encode_query_structure_result =
             query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
         let query_structure_response = match encode_query_structure_result {
@@ -906,11 +897,12 @@ impl TransactionService {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
             check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
             // TODO: Consider multiplicity?
-            check_answer_count_limit_else_respond_error_and_return_break!(
-                query_options.answer_count_limit,
-                result,
-                responder
-            );
+            if let Some(limit) = query_options.answer_count_limit {
+                if result.len() >= limit {
+                    warning = Some(QueryAnswerWarning::WriteResultsLimitExceeded { limit });
+                    break;
+                }
+            }
 
             let encoded_row = encode_row(
                 row,
@@ -934,7 +926,7 @@ impl TransactionService {
         }
         match respond_query_response(
             responder,
-            QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, None)),
+            QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, warning)),
         ) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
@@ -953,15 +945,17 @@ impl TransactionService {
         mut interrupt: ExecutionInterrupt,
     ) -> ControlFlow<(), ()> {
         let mut result = Vec::with_capacity(documents.len());
+        let mut warning = None;
         for document in documents {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
             check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
             // TODO: Consider multiplicity?
-            check_answer_count_limit_else_respond_error_and_return_break!(
-                query_options.answer_count_limit,
-                result,
-                responder
-            );
+            if let Some(limit) = query_options.answer_count_limit {
+                if result.len() >= limit {
+                    warning = Some(QueryAnswerWarning::WriteResultsLimitExceeded { limit });
+                    break;
+                }
+            }
 
             let encoded_document =
                 encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);

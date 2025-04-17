@@ -113,7 +113,7 @@ impl Server {
 
         let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
         let token_manager = Arc::new(
-            TokenManager::new(server_config.authentication.token_expiration_seconds)
+            TokenManager::new(server_config.authentication.token_expiration)
                 .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,
         );
 
