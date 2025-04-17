@@ -87,7 +87,7 @@ use crate::service::{
         message::query::{
             document::encode_document,
             encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
-            query_structure::{encode_query_structure, EncodedQueryStructure},
+            query_structure::{encode_query_structure, QueryStructureResponse},
             row::encode_row,
         },
     },
@@ -217,7 +217,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<EncodedQueryStructure>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<QueryStructureResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -890,8 +890,8 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
-        let encoded_query_structure_res = query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
-        let encoded_query_structure = match encoded_query_structure_res {
+        let encode_query_structure_result = query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+        let query_structure_response = match encode_query_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
                 respond_error_and_return_break!(
@@ -932,7 +932,7 @@ impl TransactionService {
                 }
             }
         }
-        match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, encoded_query_structure, None))) {
+        match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, None))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
         }
@@ -1092,8 +1092,8 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
 
-            let encoded_query_structure_res = pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
-            let encoded_query_structure = match encoded_query_structure_res {
+            let encode_query_structure_result = pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let query_structure_response = match encode_query_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
                     respond_error_and_return_break!(
@@ -1156,7 +1156,7 @@ impl TransactionService {
             }
             respond_else_return_break!(
                 responder,
-                TransactionServiceResponse::Query(QueryAnswer::ResRows((QueryType::Read, result, encoded_query_structure, warning)))
+                TransactionServiceResponse::Query(QueryAnswer::ResRows((QueryType::Read, result, query_structure_response, warning)))
             );
             context.profile
         };

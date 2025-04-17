@@ -19,7 +19,7 @@ use crate::service::{
     },
     AnswerType, QueryType,
 };
-use crate::service::http::message::query::query_structure::EncodedQueryStructure;
+use crate::service::http::message::query::query_structure::QueryStructureResponse;
 
 pub mod concept;
 pub mod document;
@@ -69,7 +69,7 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query_structure: Option<EncodedQueryStructure>,
+    pub query_structure: Option<QueryStructureResponse>,
     pub warning: Option<String>,
 }
 
@@ -80,7 +80,7 @@ pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerRespon
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
-    query_structure: Option<EncodedQueryStructure>,
+    query_structure: Option<QueryStructureResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse { query_type, answer_type: AnswerType::ConceptRows, answers: Some(rows), query_structure: query_structure, warning }
