@@ -79,6 +79,7 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
+use concept::error::ConceptReadError;
 
 use crate::service::{
     http::{
@@ -889,6 +890,18 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
+        let encoded_query_structure_res = query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+        let encoded_query_structure = match encoded_query_structure_res {
+            Ok(structure_opt) => structure_opt,
+            Err(typedb_source) => {
+                respond_error_and_return_break!(
+                        responder,
+                        TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        }
+                    );
+            }
+        };
         while let Some(row) = batch_iterator.next() {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
             check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
@@ -919,7 +932,6 @@ impl TransactionService {
                 }
             }
         }
-        let encoded_query_structure = query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs));
         match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, encoded_query_structure, None))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
@@ -1079,7 +1091,19 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            let encoded_query_structure = pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs));
+
+            let encoded_query_structure_res = pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let encoded_query_structure = match encoded_query_structure_res {
+                Ok(structure_opt) => structure_opt,
+                Err(typedb_source) => {
+                    respond_error_and_return_break!(
+                        responder,
+                        TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        }
+                    );
+                }
+            };
             let (mut iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_rows_iterator(interrupt.clone()),
                 responder,

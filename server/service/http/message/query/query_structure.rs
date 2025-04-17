@@ -14,8 +14,10 @@ use ir::pattern::{
     Vertex,
 };
 use serde::{Deserialize, Serialize};
+use concept::error::ConceptReadError;
 use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
+use crate::service::http::message::query::concept::{encode_role_type, encode_type_concept, encode_value, RoleTypeResponse, ValueResponse};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -60,8 +62,8 @@ pub struct EncodedQueryStructureEdge {
 #[serde(rename_all = "camelCase", tag = "kind", content = "value")]
 pub enum EncodedQueryStructureVertex {
     Variable { variable: String },
-    Label { kind: String, label: String },
-    Value { value_type: String, value: String }, // TODO: Try to re-use the standard encoding for values in rows.
+    Label(serde_json::Value),
+    Value(ValueResponse),
     Expression { repr: String },
     FunctionCall { repr: String },
     UnavailableVariable { variable: String },
@@ -73,40 +75,48 @@ struct QueryStructureContext<'a, Snapshot: ReadableSnapshot> {
     type_manager: &'a TypeManager,
 }
 
-pub(crate) fn encode_query_structure(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, query_structure: &QueryStructure) -> EncodedQueryStructure {
-    let context = QueryStructureContext { query_structure, snapshot, type_manager };
-    let branches = context.query_structure
+impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
+    pub(crate) fn get_role_type(&self, variable: &Variable) -> Option<&str> {
+        self.query_structure.parametrised_structure.role_names.get(variable).map(|name| name.as_str())
+    }
+}
+
+pub(crate) fn encode_query_structure(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, query_structure: &QueryStructure) -> Result<EncodedQueryStructure, Box<ConceptReadError>> {
+    let branches = query_structure
         .parametrised_structure
         .branches
         .iter()
         .filter_map(|branch_opt| {
-            branch_opt.as_ref().map(|branch| encode_query_structure_branch(&context, branch))
+            branch_opt.as_ref().map(|branch| encode_query_structure_branch(snapshot, type_manager, &query_structure, branch))
         })
-        .collect::<Vec<_>>();
-    EncodedQueryStructure { branches }
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(EncodedQueryStructure { branches })
 }
 
 fn encode_query_structure_branch(
-    context: &QueryStructureContext<'_, impl ReadableSnapshot>,
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    query_structure: &QueryStructure,
     branch: &[Constraint<Variable>],
-) -> EncodedQueryStructureBranch {
+) -> Result<EncodedQueryStructureBranch, Box<ConceptReadError>> {
     let mut edges = Vec::new();
+    let context = QueryStructureContext { query_structure, snapshot, type_manager };
     branch
         .iter()
         .enumerate()
-        .for_each(|(index, constraint)| query_structure_edge(context, constraint, &mut edges, index));
-    EncodedQueryStructureBranch { edges }
+        .try_for_each(|(index, constraint)| query_structure_edge(&context, constraint, &mut edges, index))?;
+    Ok(EncodedQueryStructureBranch { edges })
 }
 
 macro_rules! push_edge {
     ($edges:ident, $query_structure:expr, $from:expr, $to:expr, $variant:ident) => {{
-        let from = query_structure_vertex($query_structure, $from);
-        let to = query_structure_vertex($query_structure, $to);
+        let from = query_structure_vertex($query_structure, $from)?;
+        let to = query_structure_vertex($query_structure, $to)?;
         $edges.push(EncodedQueryStructureEdge { r#type: EncodedQueryStructureEdgeType::$variant, from, to });
     }};
     ($edges:ident, $query_structure:expr, $from:expr, $to:expr, $variant:ident($param:expr)) => {{
-        let from = query_structure_vertex($query_structure, $from);
-        let to = query_structure_vertex($query_structure, $to);
+        let from = query_structure_vertex($query_structure, $from)?;
+        let to = query_structure_vertex($query_structure, $to)?;
         $edges.push(EncodedQueryStructureEdge { r#type: EncodedQueryStructureEdgeType::$variant($param), from, to });
     }};
 }
@@ -116,10 +126,10 @@ fn query_structure_edge(
     constraint: &Constraint<Variable>,
     edges: &mut Vec<EncodedQueryStructureEdge>,
     index: usize,
-) {
+) -> Result<(), Box<ConceptReadError>> {
     match constraint {
         Constraint::Links(links) => {
-            let role_type = query_structure_role_type_as_vertex(context, links.role_type());
+            let role_type = query_structure_role_type_as_vertex(context, links.role_type())?;
             push_edge!(edges, context, links.relation(), links.player(), Links(role_type))
         }
         Constraint::Has(has) => push_edge!(edges, context, has.owner(), has.attribute(), Has),
@@ -138,44 +148,48 @@ fn query_structure_edge(
         Constraint::Plays(plays) => push_edge!(edges, context, plays.player(), plays.role_type(), Plays),
 
         Constraint::IndexedRelation(indexed) => {
-            let role_type_1 = query_structure_role_type_as_vertex(context, indexed.role_type_1());
-            let role_type_2 = query_structure_role_type_as_vertex(context, indexed.role_type_2());
+            let role_type_1 = query_structure_role_type_as_vertex(context, indexed.role_type_1())?;
+            let role_type_2 = query_structure_role_type_as_vertex(context, indexed.role_type_2())?;
             push_edge!(edges, context, indexed.relation(), indexed.player_1(), Links(role_type_1));
             push_edge!(edges, context, indexed.relation(), indexed.player_2(), Links(role_type_2));
         }
         Constraint::ExpressionBinding(expr) => {
             let expr_vertex =
                 { EncodedQueryStructureVertex::Expression { repr: format!("Expression#{index}").to_owned() } }; // TODO
-            expr.ids_assigned().for_each(|variable| {
-                let assigned = query_structure_vertex(context, &Vertex::Variable(variable));
+            expr.ids_assigned().try_for_each(|variable| {
+                let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let assigned_name =
                     context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = EncodedQueryStructureEdgeType::Assigned(assigned_name);
                 edges.push(EncodedQueryStructureEdge { r#type: edge_type, from: expr_vertex.clone(), to: assigned });
-            });
-            expr.required_ids().for_each(|variable| {
-                let argument = query_structure_vertex(context, &Vertex::Variable(variable));
+                Ok::<_, Box<ConceptReadError>>(())
+            })?;
+            expr.required_ids().try_for_each(|variable| {
+                let argument = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let arg_name = context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = EncodedQueryStructureEdgeType::Argument(arg_name);
                 edges.push(EncodedQueryStructureEdge { r#type: edge_type, from: argument, to: expr_vertex.clone() });
-            });
+                Ok::<_, Box<ConceptReadError>>(())
+            })?;
         }
         Constraint::FunctionCallBinding(function_call) => {
             let func_vertex =
                 { EncodedQueryStructureVertex::FunctionCall { repr: format!("Function#{index}").to_owned() } }; // TODO
-            function_call.ids_assigned().for_each(|variable| {
-                let assigned = query_structure_vertex(context, &Vertex::Variable(variable));
+            function_call.ids_assigned().try_for_each(|variable| {
+                let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let assigned_name =
                     context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = EncodedQueryStructureEdgeType::Assigned(assigned_name);
                 edges.push(EncodedQueryStructureEdge { r#type: edge_type, from: func_vertex.clone(), to: assigned });
-            });
-            function_call.required_ids().for_each(|variable| {
-                let argument = query_structure_vertex(context, &Vertex::Variable(variable));
+                Ok::<_, Box<ConceptReadError>>(())
+            })?;
+            function_call.required_ids().try_for_each(|variable| {
+                let argument = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let arg_name = context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = EncodedQueryStructureEdgeType::Argument(arg_name);
                 edges.push(EncodedQueryStructureEdge { r#type: edge_type, from: argument, to: func_vertex.clone() });
-            });
+                Ok::<_, Box<ConceptReadError>>(())
+            })?;
         }
         | Constraint::Comparison(_) => {}
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
@@ -188,10 +202,11 @@ fn query_structure_edge(
         | Constraint::Iid(_) => {}
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
-    }
+    };
+    Ok(())
 }
 
-fn query_structure_vertex(context: &QueryStructureContext<'_, impl ReadableSnapshot>, vertex: &Vertex<Variable>) -> EncodedQueryStructureVertex {
+fn query_structure_vertex(context: &QueryStructureContext<'_, impl ReadableSnapshot>, vertex: &Vertex<Variable>) -> Result<EncodedQueryStructureVertex, Box<ConceptReadError>> {
     let vertex = match vertex {
         Vertex::Variable(variable) => {
             let name = context.query_structure.get_variable_name(variable).unwrap_or_else(|| variable.to_string());
@@ -204,31 +219,25 @@ fn query_structure_vertex(context: &QueryStructureContext<'_, impl ReadableSnaps
         Vertex::Label(label) => {
             // TODO: Encode as in rows
             let type_ = context.query_structure.get_type(label).unwrap();
-            EncodedQueryStructureVertex::Label { label: label.to_string(), kind: type_.kind().name().to_string() }
+            EncodedQueryStructureVertex::Label(serde_json::json!(encode_type_concept(&type_, context.snapshot, context.type_manager)?))
         }
         Vertex::Parameter(param) => {
             // TODO: Encode as in rows
             let value = context.query_structure.get_parameter_value(param).unwrap();
-            let as_string = value.to_string();
-            let str = as_string.as_str();
-            let escaped = str.strip_prefix("\"").unwrap_or(str).strip_suffix("\"").unwrap_or(str).escape_default();
-            EncodedQueryStructureVertex::Value {
-                value_type: value.value_type().to_string(),
-                value: escaped.to_string(),
-            }
+            EncodedQueryStructureVertex::Value(encode_value(value))
         }
     };
-    vertex
+    Ok(vertex)
 }
 
 fn query_structure_role_type_as_vertex(
     context: &QueryStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
-) -> EncodedQueryStructureVertex {
+) -> Result<EncodedQueryStructureVertex, Box<ConceptReadError>> {
     if let Some(label) =
-        context.query_structure.parametrised_structure.resolved_role_names.get(&role_type.as_variable().unwrap())
+        context.get_role_type(&role_type.as_variable().unwrap())
     {
-        EncodedQueryStructureVertex::Label { kind: Kind::Role.to_string(), label: label.to_owned() }
+        Ok(EncodedQueryStructureVertex::Label(serde_json::json!(RoleTypeResponse {label: label.to_owned()})))
     } else {
         query_structure_vertex(context, role_type)
     }
