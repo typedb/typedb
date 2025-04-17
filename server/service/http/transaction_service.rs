@@ -21,7 +21,7 @@ use axum::{
     Json,
 };
 use compiler::{query_structure::QueryStructure, VariablePosition};
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concurrency::TokioIntervalRunner;
 use database::{
     database_manager::DatabaseManager,
@@ -79,7 +79,6 @@ use typeql::{
     Query,
 };
 use uuid::Uuid;
-use concept::error::ConceptReadError;
 
 use crate::service::{
     http::{
@@ -890,16 +889,17 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
-        let encode_query_structure_result = query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+        let encode_query_structure_result =
+            query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
         let query_structure_response = match encode_query_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
                 respond_error_and_return_break!(
-                        responder,
-                        TransactionServiceError::PipelineExecution {
-                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
-                        }
-                    );
+                    responder,
+                    TransactionServiceError::PipelineExecution {
+                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                    }
+                );
             }
         };
         while let Some(row) = batch_iterator.next() {
@@ -932,7 +932,10 @@ impl TransactionService {
                 }
             }
         }
-        match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, None))) {
+        match respond_query_response(
+            responder,
+            QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, None)),
+        ) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
         }
@@ -1092,7 +1095,8 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
 
-            let encode_query_structure_result = pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let encode_query_structure_result =
+                pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
             let query_structure_response = match encode_query_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
@@ -1156,7 +1160,12 @@ impl TransactionService {
             }
             respond_else_return_break!(
                 responder,
-                TransactionServiceResponse::Query(QueryAnswer::ResRows((QueryType::Read, result, query_structure_response, warning)))
+                TransactionServiceResponse::Query(QueryAnswer::ResRows((
+                    QueryType::Read,
+                    result,
+                    query_structure_response,
+                    warning
+                )))
             );
             context.profile
         };

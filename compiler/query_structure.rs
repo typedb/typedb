@@ -5,10 +5,9 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
-use std::collections::HashSet;
 
 use answer::{variable::Variable, Type};
 use encoding::value::{label::Label, value::Value};

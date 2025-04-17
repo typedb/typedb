@@ -9,8 +9,8 @@ use std::collections::HashMap;
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use executor::{row::MaybeOwnedRow, Provenance};
-use serde::{Deserialize, Serialize};
+use executor::row::MaybeOwnedRow;
+use serde::Serialize;
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 

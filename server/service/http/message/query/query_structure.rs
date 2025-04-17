@@ -5,18 +5,21 @@
  */
 
 use std::collections::HashMap;
+
 use answer::variable::Variable;
 use compiler::query_structure::QueryStructure;
-use itertools::Itertools;
+use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     Vertex,
 };
+use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use concept::error::ConceptReadError;
-use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
-use crate::service::http::message::query::concept::{encode_type_concept, encode_value, RoleTypeResponse, ValueResponse};
+
+use crate::service::http::message::query::concept::{
+    encode_type_concept, encode_value, RoleTypeResponse, ValueResponse,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -81,13 +84,19 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     }
 }
 
-pub(crate) fn encode_query_structure(snapshot: &impl ReadableSnapshot, type_manager: &TypeManager, query_structure: &QueryStructure) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
+pub(crate) fn encode_query_structure(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    query_structure: &QueryStructure,
+) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let branches = query_structure
         .parametrised_structure
         .branches
         .iter()
         .filter_map(|branch_opt| {
-            branch_opt.as_ref().map(|branch| encode_query_structure_branch(snapshot, type_manager, &query_structure, branch))
+            branch_opt
+                .as_ref()
+                .map(|branch| encode_query_structure_branch(snapshot, type_manager, &query_structure, branch))
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(QueryStructureResponse { branches })
@@ -100,7 +109,11 @@ fn encode_query_structure_branch(
     branch: &[Constraint<Variable>],
 ) -> Result<QueryStructureBranchResponse, Box<ConceptReadError>> {
     let mut edges = Vec::new();
-    let role_names = branch.iter().filter_map(|constraint| constraint.as_role_name()).map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned())).collect();
+    let role_names = branch
+        .iter()
+        .filter_map(|constraint| constraint.as_role_name())
+        .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
+        .collect();
     let context = QueryStructureContext { query_structure, snapshot, type_manager, role_names };
     branch
         .iter()
@@ -168,7 +181,8 @@ fn query_structure_edge(
             })?;
             expr.required_ids().try_for_each(|variable| {
                 let argument = query_structure_vertex(context, &Vertex::Variable(variable))?;
-                let arg_name = context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
+                let arg_name =
+                    context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = QueryStructureEdgeTypeResponse::Argument(arg_name);
                 edges.push(QueryStructureEdgeResponse { r#type: edge_type, from: argument, to: expr_vertex.clone() });
                 Ok::<_, Box<ConceptReadError>>(())
@@ -188,7 +202,8 @@ fn query_structure_edge(
             })?;
             function_call.required_ids().try_for_each(|variable| {
                 let argument = query_structure_vertex(context, &Vertex::Variable(variable))?;
-                let arg_name = context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
+                let arg_name =
+                    context.query_structure.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = QueryStructureEdgeTypeResponse::Argument(arg_name);
                 edges.push(QueryStructureEdgeResponse { r#type: edge_type, from: argument, to: func_vertex.clone() });
                 Ok::<_, Box<ConceptReadError>>(())
@@ -209,7 +224,10 @@ fn query_structure_edge(
     Ok(())
 }
 
-fn query_structure_vertex(context: &QueryStructureContext<'_, impl ReadableSnapshot>, vertex: &Vertex<Variable>) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
+fn query_structure_vertex(
+    context: &QueryStructureContext<'_, impl ReadableSnapshot>,
+    vertex: &Vertex<Variable>,
+) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
     let vertex = match vertex {
         Vertex::Variable(variable) => {
             let name = context.query_structure.get_variable_name(variable).unwrap_or_else(|| variable.to_string());
@@ -221,7 +239,11 @@ fn query_structure_vertex(context: &QueryStructureContext<'_, impl ReadableSnaps
         }
         Vertex::Label(label) => {
             let type_ = context.query_structure.get_type(label).unwrap();
-            QueryStructureVertexResponse::Label(serde_json::json!(encode_type_concept(&type_, context.snapshot, context.type_manager)?))
+            QueryStructureVertexResponse::Label(serde_json::json!(encode_type_concept(
+                &type_,
+                context.snapshot,
+                context.type_manager
+            )?))
         }
         Vertex::Parameter(param) => {
             let value = context.query_structure.get_parameter_value(param).unwrap();
@@ -235,10 +257,9 @@ fn query_structure_role_type_as_vertex(
     context: &QueryStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
 ) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
-    if let Some(label) =
-        context.get_role_type(&role_type.as_variable().unwrap())
-    {   // Manually encode, because it could be ambiguous so we don't want to pass through a type.
-        Ok(QueryStructureVertexResponse::Label(serde_json::json!(RoleTypeResponse {label: label.to_owned()})))
+    if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
+        // Manually encode, because it could be ambiguous so we don't want to pass through a type.
+        Ok(QueryStructureVertexResponse::Label(serde_json::json!(RoleTypeResponse { label: label.to_owned() })))
     } else {
         query_structure_vertex(context, role_type)
     }
