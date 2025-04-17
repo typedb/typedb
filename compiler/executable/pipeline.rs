@@ -10,12 +10,10 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
-use encoding::value::label::Label;
-use error::unimplemented_feature;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, Vertex},
+    pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
 use itertools::Itertools;
@@ -117,6 +115,7 @@ pub fn compile_pipeline_and_functions(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
+    source_query: &str,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let referenced_functions = find_referenced_functions(
@@ -157,11 +156,8 @@ pub fn compile_pipeline_and_functions(
         input_variables,
     )?;
     debug_assert!(!executable_stages.is_empty());
-    let query_structure = extract_query_structure_from(
-        variable_registry,
-        annotated_stages,
-    )
-    .map(|query_structure| Arc::new(query_structure));
+    let query_structure = extract_query_structure_from(variable_registry, annotated_stages, source_query)
+        .map(|query_structure| Arc::new(query_structure));
     Ok(ExecutablePipeline {
         query_structure,
         executable_functions: schema_and_preamble_functions,
