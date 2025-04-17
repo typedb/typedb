@@ -4,11 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::collections::HashMap;
 use answer::variable::Variable;
 use compiler::query_structure::QueryStructure;
 use itertools::Itertools;
-use encoding::{graph::type_::Kind, value::ValueEncodable};
 use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     Vertex,
@@ -17,7 +16,7 @@ use serde::{Deserialize, Serialize};
 use concept::error::ConceptReadError;
 use concept::type_::type_manager::TypeManager;
 use storage::snapshot::ReadableSnapshot;
-use crate::service::http::message::query::concept::{encode_role_type, encode_type_concept, encode_value, RoleTypeResponse, ValueResponse};
+use crate::service::http::message::query::concept::{encode_type_concept, encode_value, RoleTypeResponse, ValueResponse};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -73,11 +72,12 @@ struct QueryStructureContext<'a, Snapshot: ReadableSnapshot> {
     query_structure: &'a QueryStructure,
     snapshot: &'a Snapshot,
     type_manager: &'a TypeManager,
+    role_names: HashMap<Variable, String>,
 }
 
 impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     pub(crate) fn get_role_type(&self, variable: &Variable) -> Option<&str> {
-        self.query_structure.parametrised_structure.role_names.get(variable).map(|name| name.as_str())
+        self.role_names.get(variable).map(|name| name.as_str())
     }
 }
 
@@ -100,7 +100,8 @@ fn encode_query_structure_branch(
     branch: &[Constraint<Variable>],
 ) -> Result<EncodedQueryStructureBranch, Box<ConceptReadError>> {
     let mut edges = Vec::new();
-    let context = QueryStructureContext { query_structure, snapshot, type_manager };
+    let role_names = branch.iter().filter_map(|constraint| constraint.as_role_name()).map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned())).collect();
+    let context = QueryStructureContext { query_structure, snapshot, type_manager, role_names };
     branch
         .iter()
         .enumerate()
@@ -154,8 +155,9 @@ fn query_structure_edge(
             push_edge!(edges, context, indexed.relation(), indexed.player_2(), Links(role_type_2));
         }
         Constraint::ExpressionBinding(expr) => {
+            // TODO: get expression text from the query string
             let expr_vertex =
-                { EncodedQueryStructureVertex::Expression { repr: format!("Expression#{index}").to_owned() } }; // TODO
+                EncodedQueryStructureVertex::Expression { repr: format!("Expression#{index}").to_owned() };
             expr.ids_assigned().try_for_each(|variable| {
                 let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let assigned_name =
@@ -173,8 +175,9 @@ fn query_structure_edge(
             })?;
         }
         Constraint::FunctionCallBinding(function_call) => {
+            // TODO: get function call text from the query string
             let func_vertex =
-                { EncodedQueryStructureVertex::FunctionCall { repr: format!("Function#{index}").to_owned() } }; // TODO
+                { EncodedQueryStructureVertex::FunctionCall { repr: format!("Function#{index}").to_owned() } };
             function_call.ids_assigned().try_for_each(|variable| {
                 let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let assigned_name =
@@ -217,12 +220,10 @@ fn query_structure_vertex(context: &QueryStructureContext<'_, impl ReadableSnaps
             }
         }
         Vertex::Label(label) => {
-            // TODO: Encode as in rows
             let type_ = context.query_structure.get_type(label).unwrap();
             EncodedQueryStructureVertex::Label(serde_json::json!(encode_type_concept(&type_, context.snapshot, context.type_manager)?))
         }
         Vertex::Parameter(param) => {
-            // TODO: Encode as in rows
             let value = context.query_structure.get_parameter_value(param).unwrap();
             EncodedQueryStructureVertex::Value(encode_value(value))
         }
@@ -236,7 +237,7 @@ fn query_structure_role_type_as_vertex(
 ) -> Result<EncodedQueryStructureVertex, Box<ConceptReadError>> {
     if let Some(label) =
         context.get_role_type(&role_type.as_variable().unwrap())
-    {
+    {   // Manually encode, because it could be ambiguous so we don't want to pass through a type.
         Ok(EncodedQueryStructureVertex::Label(serde_json::json!(RoleTypeResponse {label: label.to_owned()})))
     } else {
         query_structure_vertex(context, role_type)

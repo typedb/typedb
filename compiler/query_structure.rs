@@ -8,7 +8,7 @@ use std::{
     collections::{BTreeSet, HashMap},
     sync::Arc,
 };
-use std::collections::{BTreeMap, HashSet};
+use std::collections::HashSet;
 
 use answer::{variable::Variable, Type};
 use encoding::value::{label::Label, value::Value};
@@ -26,7 +26,6 @@ use crate::annotation::pipeline::AnnotatedStage;
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
     pub resolved_labels: HashMap<Label, answer::Type>,
-    pub role_names: HashMap<Variable, String>,
 }
 
 impl ParametrisedQueryStructure {
@@ -72,8 +71,6 @@ pub(crate) fn extract_query_structure_from(
     }
     let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
     let mut resolved_labels = HashMap::new();
-    let mut role_names = HashMap::new();
-
     annotated_stages.into_iter().for_each(|stage| {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
@@ -83,7 +80,6 @@ pub(crate) fn extract_query_structure_from(
                     .values()
                     .flat_map(|annotations| annotations.vertex_annotations().iter());
                 extend_labels_from(&mut resolved_labels, block_label_annotations);
-                extend_role_names_from(&mut role_names, block.conjunction());
             }
             AnnotatedStage::Insert { block, annotations, .. }
             | AnnotatedStage::Put { block, insert_annotations: annotations, .. }
@@ -92,7 +88,6 @@ pub(crate) fn extract_query_structure_from(
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 extract_query_structure_from_branch(&mut branches, BranchID(0), block.conjunction());
                 extend_labels_from(&mut resolved_labels, annotations.vertex_annotations().iter());
-                extend_role_names_from(&mut role_names, block.conjunction());
             }
             AnnotatedStage::Delete { .. }
             | AnnotatedStage::Select(_)
@@ -104,27 +99,7 @@ pub(crate) fn extract_query_structure_from(
             | AnnotatedStage::Reduce(_, _) => {}
         }
     });
-    Some(ParametrisedQueryStructure { branches, resolved_labels, role_names })
-}
-
-fn extend_role_names_from(role_names: &mut HashMap<Variable, String>, conjunction: &Conjunction) {
-    conjunction
-        .constraints()
-        .iter()
-        .filter_map(|constraint| match constraint {
-            Constraint::RoleName(role_name) => Some(role_name),
-            _ => None,
-        })
-        .for_each(|role_name| {
-            role_names.insert(role_name.type_().as_variable().unwrap(), role_name.name().to_owned());
-        });
-    conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Disjunction(disjunction) => disjunction.conjunctions().iter().for_each(|inner| {
-            extend_role_names_from(role_names, inner);
-        }),
-        NestedPattern::Negation(inner) => extend_role_names_from(role_names, inner.conjunction()),
-        NestedPattern::Optional(inner) => extend_role_names_from(role_names, inner.conjunction()),
-    })
+    Some(ParametrisedQueryStructure { branches, resolved_labels })
 }
 
 fn extend_labels_from<'a>(
