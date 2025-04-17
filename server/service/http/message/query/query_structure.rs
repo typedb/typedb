@@ -43,8 +43,8 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
         self.query_structure.parametrised_structure.resolved_labels.get(label).cloned()
     }
 
-    fn get_function_text(&self, constraint: &Constraint<Variable>) -> Option<&String> {
-        self.query_structure.parametrised_structure.function_texts.get(constraint)
+    fn get_call_syntax(&self, constraint: &Constraint<Variable>) -> Option<&String> {
+        self.query_structure.parametrised_structure.calls_syntax.get(constraint)
     }
 
     fn get_role_type(&self, variable: &Variable) -> Option<&str> {
@@ -187,7 +187,7 @@ fn query_structure_edge(
         }
         Constraint::ExpressionBinding(expr) => {
             let repr = context
-                .get_function_text(constraint)
+                .get_call_syntax(constraint)
                 .map_or_else(|| format!("Expression#{index}"), |text| text.clone());
             let expr_vertex = QueryStructureVertexResponse::Expression { repr };
             expr.ids_assigned().try_for_each(|variable| {
@@ -207,7 +207,7 @@ fn query_structure_edge(
         }
         Constraint::FunctionCallBinding(function_call) => {
             let repr =
-                context.get_function_text(constraint).map_or_else(|| format!("Function#{index}"), |text| text.clone());
+                context.get_call_syntax(constraint).map_or_else(|| format!("Function#{index}"), |text| text.clone());
             let func_vertex = QueryStructureVertexResponse::FunctionCall { repr };
             function_call.ids_assigned().try_for_each(|variable| {
                 let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;

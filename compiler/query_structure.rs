@@ -23,7 +23,7 @@ use crate::annotation::pipeline::AnnotatedStage;
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
     pub resolved_labels: HashMap<Label, answer::Type>,
-    pub function_texts: HashMap<Constraint<Variable>, String>,
+    pub calls_syntax: HashMap<Constraint<Variable>, String>,
 }
 
 impl ParametrisedQueryStructure {
@@ -85,7 +85,7 @@ pub(crate) fn extract_query_structure_from(
             | AnnotatedStage::Reduce(_, _) => {}
         }
     });
-    Some(ParametrisedQueryStructure { branches, resolved_labels, function_texts })
+    Some(ParametrisedQueryStructure { branches, resolved_labels, calls_syntax: function_texts })
 }
 
 fn extract_query_structure_from_branch(
