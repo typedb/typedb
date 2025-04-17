@@ -971,7 +971,7 @@ impl TransactionService {
                 }
             }
         }
-        match respond_query_response(responder, QueryAnswer::ResDocuments((QueryType::Write, result, None))) {
+        match respond_query_response(responder, QueryAnswer::ResDocuments((QueryType::Write, result, warning))) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
         }
