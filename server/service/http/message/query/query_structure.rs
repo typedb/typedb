@@ -186,9 +186,8 @@ fn query_structure_edge(
             push_edge!(edges, context, indexed.relation(), indexed.player_2(), Links(role_type_2));
         }
         Constraint::ExpressionBinding(expr) => {
-            let repr = context
-                .get_call_syntax(constraint)
-                .map_or_else(|| format!("Expression#{index}"), |text| text.clone());
+            let repr =
+                context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
             let expr_vertex = QueryStructureVertexResponse::Expression { repr };
             expr.ids_assigned().try_for_each(|variable| {
                 let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;

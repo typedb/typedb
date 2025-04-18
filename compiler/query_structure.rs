@@ -55,7 +55,7 @@ pub(crate) fn extract_query_structure_from(
     }
     let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
     let mut resolved_labels = HashMap::new();
-    let mut function_texts = HashMap::new();
+    let mut function_calls_syntax = HashMap::new();
     annotated_stages.into_iter().for_each(|stage| {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
@@ -65,7 +65,7 @@ pub(crate) fn extract_query_structure_from(
                     .values()
                     .flat_map(|annotations| annotations.vertex_annotations().iter());
                 extend_labels_from(&mut resolved_labels, block_label_annotations);
-                extend_function_text_from(block.conjunction(), &mut function_texts, source_query);
+                extend_function_calls_syntax_from(block.conjunction(), &mut function_calls_syntax, source_query);
             }
             AnnotatedStage::Insert { block, annotations, .. }
             | AnnotatedStage::Put { block, insert_annotations: annotations, .. }
@@ -85,7 +85,7 @@ pub(crate) fn extract_query_structure_from(
             | AnnotatedStage::Reduce(_, _) => {}
         }
     });
-    Some(ParametrisedQueryStructure { branches, resolved_labels, calls_syntax: function_texts })
+    Some(ParametrisedQueryStructure { branches, resolved_labels, calls_syntax: function_calls_syntax })
 }
 
 fn extract_query_structure_from_branch(
@@ -122,23 +122,29 @@ fn extend_labels_from<'a>(
     }));
 }
 
-fn extend_function_text_from(
+fn extend_function_calls_syntax_from(
     conjunction: &Conjunction,
-    function_texts: &mut HashMap<Constraint<Variable>, String>,
+    function_calls_syntax: &mut HashMap<Constraint<Variable>, String>,
     source_query: &str,
 ) {
     conjunction.constraints().iter().for_each(|constraint| {
         if matches!(constraint, Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_)) {
             if let Some(span) = constraint.source_span() {
-                function_texts.insert(constraint.clone(), source_query[span.begin_offset..span.end_offset].to_owned());
+                function_calls_syntax
+                    .insert(constraint.clone(), source_query[span.begin_offset..span.end_offset].to_owned());
             }
         }
     });
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Disjunction(disj) => {
-            disj.conjunctions().iter().for_each(|conj| extend_function_text_from(conj, function_texts, source_query))
+        NestedPattern::Disjunction(disj) => disj
+            .conjunctions()
+            .iter()
+            .for_each(|conj| extend_function_calls_syntax_from(conj, function_calls_syntax, source_query)),
+        NestedPattern::Negation(inner) => {
+            extend_function_calls_syntax_from(inner.conjunction(), function_calls_syntax, source_query)
         }
-        NestedPattern::Negation(inner) => extend_function_text_from(inner.conjunction(), function_texts, source_query),
-        NestedPattern::Optional(inner) => extend_function_text_from(inner.conjunction(), function_texts, source_query),
+        NestedPattern::Optional(inner) => {
+            extend_function_calls_syntax_from(inner.conjunction(), function_calls_syntax, source_query)
+        }
     })
 }
