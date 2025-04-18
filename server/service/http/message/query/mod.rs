@@ -11,7 +11,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::service::{
     http::{
-        message::{body::JsonBody, transaction::TransactionOpenPayload},
+        message::{
+            body::JsonBody, query::query_structure::QueryStructureResponse, transaction::TransactionOpenPayload,
+        },
         transaction_service::QueryAnswer,
     },
     AnswerType, QueryType,
@@ -19,6 +21,7 @@ use crate::service::{
 
 pub mod concept;
 pub mod document;
+pub mod query_structure;
 pub mod row;
 
 #[derive(Serialize, Deserialize)]
@@ -64,19 +67,27 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
+    pub query_structure: Option<QueryStructureResponse>,
     pub warning: Option<String>,
 }
 
 pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerResponse {
-    QueryAnswerResponse { query_type, answer_type: AnswerType::Ok, answers: None, warning: None }
+    QueryAnswerResponse { query_type, answer_type: AnswerType::Ok, answers: None, query_structure: None, warning: None }
 }
 
 pub(crate) fn encode_query_rows_answer(
     query_type: QueryType,
     rows: Vec<serde_json::Value>,
+    query_structure: Option<QueryStructureResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
-    QueryAnswerResponse { query_type, answer_type: AnswerType::ConceptRows, answers: Some(rows), warning }
+    QueryAnswerResponse {
+        query_type,
+        answer_type: AnswerType::ConceptRows,
+        answers: Some(rows),
+        query_structure,
+        warning,
+    }
 }
 
 pub(crate) fn encode_query_documents_answer(
@@ -84,7 +95,13 @@ pub(crate) fn encode_query_documents_answer(
     documents: Vec<serde_json::Value>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
-    QueryAnswerResponse { query_type, answer_type: AnswerType::ConceptDocuments, answers: Some(documents), warning }
+    QueryAnswerResponse {
+        query_type,
+        answer_type: AnswerType::ConceptDocuments,
+        answers: Some(documents),
+        query_structure: None,
+        warning,
+    }
 }
 
 impl IntoResponse for QueryAnswer {
@@ -92,9 +109,12 @@ impl IntoResponse for QueryAnswer {
         let code = self.status_code();
         let body = match self {
             QueryAnswer::ResOk(query_type) => JsonBody(encode_query_ok_answer(query_type)),
-            QueryAnswer::ResRows((query_type, rows, warning)) => {
-                JsonBody(encode_query_rows_answer(query_type, rows, warning.map(|warning| warning.to_string())))
-            }
+            QueryAnswer::ResRows((query_type, rows, query_structure, warning)) => JsonBody(encode_query_rows_answer(
+                query_type,
+                rows,
+                query_structure,
+                warning.map(|warning| warning.to_string()),
+            )),
             QueryAnswer::ResDocuments((query_type, documents, warning)) => JsonBody(encode_query_documents_answer(
                 query_type,
                 documents,

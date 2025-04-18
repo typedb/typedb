@@ -158,7 +158,7 @@ impl<'a> MaybeOwnedRow<'a> {
         *self.multiplicity
     }
 
-    pub(crate) fn provenance(&self) -> Provenance {
+    pub fn provenance(&self) -> Provenance {
         *self.provenance
     }
 

@@ -9,7 +9,6 @@ use std::{
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
-    time::Duration,
 };
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};

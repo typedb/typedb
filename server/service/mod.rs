@@ -8,7 +8,6 @@ use serde::{Deserialize, Serialize};
 
 pub(crate) mod grpc;
 pub mod http;
-mod query_structure;
 mod transaction_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]

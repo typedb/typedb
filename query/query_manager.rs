@@ -140,6 +140,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
+                    source_query,
                 )
                 .map_err(|err| QueryError::ExecutableCompilation {
                     source_query: source_query.to_string(),
@@ -284,6 +285,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
+                    source_query,
                 ) {
                     Ok(executable) => executable,
                     Err(err) => {

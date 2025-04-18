@@ -5,68 +5,57 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::{BTreeSet, HashMap, HashSet},
     sync::Arc,
 };
 
 use answer::{variable::Variable, Type};
-use encoding::value::{label::Label, value::Value};
+use encoding::value::label::Label;
 use error::unimplemented_feature;
 use ir::{
-    pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, ParameterID, Vertex,
-    },
+    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, Vertex},
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
 
-use crate::{annotation::pipeline::AnnotatedStage, VariablePosition};
-
+use crate::annotation::pipeline::AnnotatedStage;
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
-    pub variable_positions: HashMap<Variable, VariablePosition>,
     pub resolved_labels: HashMap<Label, answer::Type>,
+    pub calls_syntax: HashMap<Constraint<Variable>, String>,
 }
 
 impl ParametrisedQueryStructure {
-    pub fn with_parameters(self: Arc<Self>, parameters: Arc<ParameterRegistry>) -> QueryStructure {
-        QueryStructure { parametrised_structure: self, parameters }
+    pub fn with_parameters(
+        self: Arc<Self>,
+        parameters: Arc<ParameterRegistry>,
+        variable_names: HashMap<Variable, String>,
+        available_variables: HashSet<Variable>,
+    ) -> QueryStructure {
+        QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
 }
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
     pub parametrised_structure: Arc<ParametrisedQueryStructure>,
+    pub variable_names: HashMap<Variable, String>,
+    pub available_variables: HashSet<Variable>,
     pub parameters: Arc<ParameterRegistry>,
-}
-
-impl QueryStructure {
-    pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
-        debug_assert!(matches!(param, ParameterID::Value(_, _)));
-        self.parameters.value(*param).cloned()
-    }
-
-    pub fn get_variable_position(&self, variable: &Variable) -> Option<VariablePosition> {
-        self.parametrised_structure.variable_positions.get(&variable).copied()
-    }
-
-    pub fn get_type(&self, label: &Label) -> Option<answer::Type> {
-        self.parametrised_structure.resolved_labels.get(label).cloned()
-    }
 }
 
 pub(crate) fn extract_query_structure_from(
     variable_registry: &VariableRegistry,
     annotated_stages: Vec<AnnotatedStage>,
-    variable_positions: HashMap<Variable, VariablePosition>,
+    source_query: &str,
 ) -> Option<ParametrisedQueryStructure> {
     if variable_registry.highest_branch_id_allocated() > 63 {
         return None;
     }
     let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
     let mut resolved_labels = HashMap::new();
-
+    let mut function_calls_syntax = HashMap::new();
     annotated_stages.into_iter().for_each(|stage| {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
@@ -76,6 +65,7 @@ pub(crate) fn extract_query_structure_from(
                     .values()
                     .flat_map(|annotations| annotations.vertex_annotations().iter());
                 extend_labels_from(&mut resolved_labels, block_label_annotations);
+                extend_function_calls_syntax_from(block.conjunction(), &mut function_calls_syntax, source_query);
             }
             AnnotatedStage::Insert { block, annotations, .. }
             | AnnotatedStage::Put { block, insert_annotations: annotations, .. }
@@ -95,19 +85,7 @@ pub(crate) fn extract_query_structure_from(
             | AnnotatedStage::Reduce(_, _) => {}
         }
     });
-    Some(ParametrisedQueryStructure { branches, variable_positions, resolved_labels })
-}
-
-fn extend_labels_from<'a>(
-    resolved_labels: &mut HashMap<Label, Type>,
-    vertex_annotations: impl Iterator<Item = (&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>,
-) {
-    resolved_labels.extend(vertex_annotations.filter_map(|(vertex, type_)| {
-        match (vertex.as_label(), type_.iter().exactly_one()) {
-            (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
-            _ => None,
-        }
-    }));
+    Some(ParametrisedQueryStructure { branches, resolved_labels, calls_syntax: function_calls_syntax })
 }
 
 fn extract_query_structure_from_branch(
@@ -128,6 +106,45 @@ fn extract_query_structure_from_branch(
         NestedPattern::Negation(_) => {}
         NestedPattern::Optional(_) => {
             unimplemented_feature!(Optionals);
+        }
+    })
+}
+
+fn extend_labels_from<'a>(
+    resolved_labels: &mut HashMap<Label, Type>,
+    vertex_annotations: impl Iterator<Item = (&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>,
+) {
+    resolved_labels.extend(vertex_annotations.filter_map(|(vertex, type_)| {
+        match (vertex.as_label(), type_.iter().exactly_one()) {
+            (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
+            _ => None,
+        }
+    }));
+}
+
+fn extend_function_calls_syntax_from(
+    conjunction: &Conjunction,
+    function_calls_syntax: &mut HashMap<Constraint<Variable>, String>,
+    source_query: &str,
+) {
+    conjunction.constraints().iter().for_each(|constraint| {
+        if matches!(constraint, Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_)) {
+            if let Some(span) = constraint.source_span() {
+                function_calls_syntax
+                    .insert(constraint.clone(), source_query[span.begin_offset..span.end_offset].to_owned());
+            }
+        }
+    });
+    conjunction.nested_patterns().iter().for_each(|nested| match nested {
+        NestedPattern::Disjunction(disj) => disj
+            .conjunctions()
+            .iter()
+            .for_each(|conj| extend_function_calls_syntax_from(conj, function_calls_syntax, source_query)),
+        NestedPattern::Negation(inner) => {
+            extend_function_calls_syntax_from(inner.conjunction(), function_calls_syntax, source_query)
+        }
+        NestedPattern::Optional(inner) => {
+            extend_function_calls_syntax_from(inner.conjunction(), function_calls_syntax, source_query)
         }
     })
 }

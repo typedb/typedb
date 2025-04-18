@@ -20,8 +20,8 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
-use compiler::VariablePosition;
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
+use compiler::{query_structure::QueryStructure, VariablePosition};
+use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use concurrency::TokioIntervalRunner;
 use database::{
     database_manager::DatabaseManager,
@@ -84,11 +84,12 @@ use crate::service::{
     http::{
         error::HttpServiceError,
         message::query::{
-            document::encode_document, encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
+            document::encode_document,
+            encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
+            query_structure::{encode_query_structure, QueryStructureResponse},
             row::encode_row,
         },
     },
-    query_structure::encode_query_structure,
     transaction_service::{
         execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
         init_transaction_timeout, is_write_pipeline, prepare_read_query_in, with_readable_transaction,
@@ -215,7 +216,7 @@ pub(crate) enum TransactionServiceResponse {
 #[derive(Debug)]
 pub(crate) enum QueryAnswer {
     ResOk(QueryType),
-    ResRows((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
+    ResRows((QueryType, Vec<serde_json::Value>, Option<QueryStructureResponse>, Option<QueryAnswerWarning>)),
     ResDocuments((QueryType, Vec<serde_json::Value>, Option<QueryAnswerWarning>)),
 }
 
@@ -223,7 +224,7 @@ impl QueryAnswer {
     pub(crate) fn query_type(&self) -> QueryType {
         match self {
             QueryAnswer::ResOk(query_type) => *query_type,
-            QueryAnswer::ResRows((query_type, _, _)) => *query_type,
+            QueryAnswer::ResRows((query_type, _, _, _)) => *query_type,
             QueryAnswer::ResDocuments((query_type, _, _)) => *query_type,
         }
     }
@@ -231,7 +232,7 @@ impl QueryAnswer {
     pub(crate) fn status_code(&self) -> StatusCode {
         match self {
             QueryAnswer::ResOk(_) => StatusCode::OK,
-            QueryAnswer::ResRows((_, _, warning)) => match warning {
+            QueryAnswer::ResRows((_, _, _, warning)) => match warning {
                 None => StatusCode::OK,
                 Some(warning) => warning.status_code(),
             },
@@ -814,13 +815,14 @@ impl TransactionService {
             let interrupt = self.query_interrupt_receiver.clone();
             tokio::spawn(async move {
                 match answer.answer {
-                    Either::Left((output_descriptor, batch)) => {
+                    Either::Left((output_descriptor, batch, query_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
                             thing_manager,
                             answer.query_options,
                             output_descriptor,
+                            query_structure,
                             batch,
                             responder,
                             timeout_at,
@@ -879,6 +881,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         query_options: QueryOptions,
         output_descriptor: StreamQueryOutputDescriptor,
+        query_structure: Option<QueryStructure>,
         batch: Batch,
         responder: TransactionResponder,
         timeout_at: Instant,
@@ -886,6 +889,19 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
+        let encode_query_structure_result =
+            query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+        let query_structure_response = match encode_query_structure_result {
+            Ok(structure_opt) => structure_opt,
+            Err(typedb_source) => {
+                respond_error_and_return_break!(
+                    responder,
+                    TransactionServiceError::PipelineExecution {
+                        typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                    }
+                );
+            }
+        };
         while let Some(row) = batch_iterator.next() {
             check_timeout_else_respond_error_and_return_break!(timeout_at, responder);
             check_interrupt_else_respond_error_and_return_break!(interrupt, responder);
@@ -916,7 +932,10 @@ impl TransactionService {
                 }
             }
         }
-        match respond_query_response(responder, QueryAnswer::ResRows((QueryType::Write, result, None))) {
+        match respond_query_response(
+            responder,
+            QueryAnswer::ResRows((QueryType::Write, result, query_structure_response, None)),
+        ) {
             Ok(_) => Continue(()),
             Err(_) => Break(()),
         }
@@ -1075,11 +1094,20 @@ impl TransactionService {
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-            #[cfg(debug_assertions)]
-            if let Some(query_structure) = pipeline.query_structure() {
-                logger::trace!("{}", encode_query_structure(query_structure));
-            }
 
+            let encode_query_structure_result =
+                pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let query_structure_response = match encode_query_structure_result {
+                Ok(structure_opt) => structure_opt,
+                Err(typedb_source) => {
+                    respond_error_and_return_break!(
+                        responder,
+                        TransactionServiceError::PipelineExecution {
+                            typedb_source: PipelineExecutionError::ConceptRead { typedb_source }
+                        }
+                    );
+                }
+            };
             let (mut iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
                 pipeline.into_rows_iterator(interrupt.clone()),
                 responder,
@@ -1132,7 +1160,12 @@ impl TransactionService {
             }
             respond_else_return_break!(
                 responder,
-                TransactionServiceResponse::Query(QueryAnswer::ResRows((QueryType::Read, result, warning)))
+                TransactionServiceResponse::Query(QueryAnswer::ResRows((
+                    QueryType::Read,
+                    result,
+                    query_structure_response,
+                    warning
+                )))
             );
             context.profile
         };

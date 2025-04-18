@@ -14,7 +14,7 @@ use std::{
     time::Duration,
 };
 
-use compiler::VariablePosition;
+use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
@@ -87,7 +87,6 @@ use crate::service::{
         },
         row::encode_row,
     },
-    query_structure::encode_query_structure,
     transaction_service::{
         execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
         init_transaction_timeout, is_write_pipeline, prepare_read_query_in, unwrap_or_execute_and_return,
@@ -943,13 +942,14 @@ impl TransactionService {
             let interrupt = self.query_interrupt_receiver.clone();
             tokio::spawn(async move {
                 match answer.answer {
-                    Either::Left((output_descriptor, batch)) => {
+                    Either::Left((output_descriptor, batch, query_structure)) => {
                         Self::submit_write_query_batch_answer(
                             snapshot,
                             type_manager,
                             thing_manager,
                             output_descriptor,
                             answer.query_options,
+                            query_structure,
                             batch,
                             sender,
                             timeout_at,
@@ -981,6 +981,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         output_descriptor: StreamQueryOutputDescriptor,
         query_options: QueryOptions,
+        query_structure: Option<QueryStructure>,
         batch: Batch,
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,
@@ -1191,10 +1192,6 @@ impl TransactionService {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
             let initial_response = StreamQueryResponse::init_ok_rows(&descriptor, Read);
-            #[cfg(debug_assertions)]
-            if let Some(query_structure) = pipeline.query_structure() {
-                logger::trace!("{}", encode_query_structure(query_structure));
-            }
 
             Self::submit_response_sync(sender, initial_response);
 

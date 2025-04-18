@@ -10,14 +10,22 @@ use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::row::MaybeOwnedRow;
+use serde::Serialize;
 use serde_json::json;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{encode_thing_concept, encode_type_concept, encode_value};
 
-pub fn encode_row(
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct EncodedRow<'a> {
+    data: HashMap<&'a str, serde_json::Value>,
+    provenance_bit_array: [u8; 8],
+}
+
+pub fn encode_row<'a>(
     row: MaybeOwnedRow<'_>,
-    columns: &[(String, VariablePosition)],
+    columns: &'a [(String, VariablePosition)],
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
@@ -29,9 +37,9 @@ pub fn encode_row(
         let variable_value = row.get(*position);
         let row_entry =
             encode_row_entry(variable_value, snapshot, type_manager, thing_manager, include_instance_types)?;
-        encoded_row.insert(variable, row_entry);
+        encoded_row.insert(variable.as_str(), row_entry);
     }
-    Ok(json!(encoded_row))
+    Ok(json!(EncodedRow { data: encoded_row, provenance_bit_array: row.provenance().0.to_le_bytes() }))
 }
 
 pub fn encode_row_entry(

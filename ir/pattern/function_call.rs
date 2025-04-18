@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeMap, HashMap},
+    collections::HashMap,
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
 };

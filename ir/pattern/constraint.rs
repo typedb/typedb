@@ -770,7 +770,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub(crate) fn as_role_name(&self) -> Option<&RoleName<ID>> {
+    pub fn as_role_name(&self) -> Option<&RoleName<ID>> {
         match self {
             Constraint::RoleName(role_name) => Some(role_name),
             _ => None,

@@ -109,7 +109,7 @@ impl Clone for ExecutionInterrupt {
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq)]
-pub struct Provenance(u64);
+pub struct Provenance(pub u64);
 
 impl Provenance {
     pub const INITIAL: Provenance = Provenance(0);
