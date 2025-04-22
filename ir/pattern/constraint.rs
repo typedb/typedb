@@ -5,6 +5,7 @@
  */
 
 use std::{
+    cmp::min,
     collections::{hash_map, HashMap},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
@@ -1780,7 +1781,8 @@ pub struct IndexedRelation<ID> {
     relation: Vertex<ID>,
     role_type_1: Vertex<ID>,
     role_type_2: Vertex<ID>,
-    source_span: Option<Span>,
+    source_span_1: Option<Span>,
+    source_span_2: Option<Span>,
 }
 
 impl<ID> IndexedRelation<ID> {
@@ -1790,7 +1792,8 @@ impl<ID> IndexedRelation<ID> {
         relation: ID,
         role_type_1: ID,
         role_type_2: ID,
-        source_span: Option<Span>,
+        source_span_1: Option<Span>,
+        source_span_2: Option<Span>,
     ) -> Self {
         Self {
             player_1: Vertex::Variable(player_1),
@@ -1798,12 +1801,27 @@ impl<ID> IndexedRelation<ID> {
             relation: Vertex::Variable(relation),
             role_type_1: Vertex::Variable(role_type_1),
             role_type_2: Vertex::Variable(role_type_2),
-            source_span,
+            source_span_1,
+            source_span_2,
         }
     }
 
     pub fn source_span(&self) -> Option<Span> {
-        self.source_span
+        match (self.source_span_1, self.source_span_2) {
+            (Some(s1), Some(s2)) => Some(Span {
+                begin_offset: min(s1.begin_offset, s2.begin_offset),
+                end_offset: min(s1.end_offset, s2.end_offset),
+            }),
+            _ => None,
+        }
+    }
+
+    pub fn source_span_1(&self) -> Option<Span> {
+        self.source_span_1
+    }
+
+    pub fn source_span_2(&self) -> Option<Span> {
+        self.source_span_2
     }
 }
 
@@ -1857,7 +1875,8 @@ impl<ID: IrID> IndexedRelation<ID> {
             relation: self.relation.map(mapping),
             role_type_1: self.role_type_1.map(mapping),
             role_type_2: self.role_type_2.map(mapping),
-            source_span: self.source_span,
+            source_span_1: self.source_span_1,
+            source_span_2: self.source_span_2,
         }
     }
 }
