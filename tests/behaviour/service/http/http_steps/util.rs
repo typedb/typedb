@@ -14,8 +14,13 @@ use std::{
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
 use serde_json::{Number, Value as JSON};
+use uuid::Uuid;
 
-use crate::{generic_step, Context};
+use crate::{generic_step, Context, TEST_TOKEN_EXPIRATION};
+
+pub(crate) fn random_uuid() -> String {
+    Uuid::new_v4().to_string()
+}
 
 pub(crate) fn iter_table(step: &Step) -> impl Iterator<Item = &str> {
     step.table().unwrap().rows.iter().flatten().map(String::as_str)
@@ -97,4 +102,10 @@ async fn set_time_zone(_: &mut Context, time_zone: String) {
 #[step(expr = "wait {int} seconds")]
 async fn wait_seconds(_: &mut Context, seconds: u64) {
     tokio::time::sleep(Duration::from_secs(seconds)).await
+}
+
+#[apply(generic_step)]
+#[step(expr = "wait authentication token expiration")]
+async fn wait_authentication_token_expiration(_: &mut Context) {
+    tokio::time::sleep(TEST_TOKEN_EXPIRATION).await
 }

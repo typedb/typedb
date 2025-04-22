@@ -16,12 +16,18 @@ use tokio::time::sleep;
 use crate::{
     assert_err, generic_step,
     message::{users, users_create, users_delete, users_get, users_update},
-    util::iter_table,
+    params::TokenMode,
+    util::{iter_table, random_uuid},
     Context, HttpContext,
 };
 
 async fn get_all_usernames(context: &HttpContext) -> impl IntoIterator<Item = String> {
-    users(context).await.expect("Expected users").users.into_iter().map(|user| user.username)
+    users(context.http_client(), context.auth_token())
+        .await
+        .expect("Expected users")
+        .users
+        .into_iter()
+        .map(|user| user.username)
 }
 
 #[apply(generic_step)]
@@ -33,9 +39,14 @@ async fn get_all_users(context: &mut Context, step: &Step) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "get all users{may_error}")]
-async fn get_all_users_error(context: &mut Context, may_error: params::MayError) {
-    may_error.check(users(&context.http_context).await);
+#[step(expr = "{token_mode}get all users{may_error}")]
+async fn with_a_wrong_token_get_all_users_error(
+    context: &mut Context,
+    token_mode: TokenMode,
+    may_error: params::MayError,
+) {
+    context.randomize_auth_token_if_needed(token_mode);
+    may_error.check(users(context.http_client(), context.auth_token_by_mode(token_mode)).await);
 }
 
 #[apply(generic_step)]
@@ -46,39 +57,62 @@ async fn get_all_users_contains(context: &mut Context, contains_or_doesnt: param
 }
 
 #[apply(generic_step)]
-#[step(expr = "get user: {word}{may_error}")]
-async fn get_user(context: &mut Context, username: String, may_error: params::MayError) {
-    may_error.check(users_get(&context.http_context, &username).await);
+#[step(expr = "{token_mode}get user: {word}{may_error}")]
+async fn with_a_wrong_token_get_user(
+    context: &mut Context,
+    token_mode: TokenMode,
+    username: String,
+    may_error: params::MayError,
+) {
+    context.randomize_auth_token_if_needed(token_mode);
+    may_error.check(users_get(context.http_client(), context.auth_token_by_mode(token_mode), &username).await);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"get user\({word}\) get name: {word}")]
 async fn get_user_get_name(context: &mut Context, user: String, name: String) {
-    let user = users_get(&context.http_context, &user).await.unwrap();
+    let user = users_get(context.http_client(), context.auth_token(), &user).await.unwrap();
     assert_eq!(user.username, name);
 }
 
 #[apply(generic_step)]
-#[step(expr = "create user with username '{word}', password '{word}'{may_error}")]
-async fn create_user(context: &mut Context, username: String, password: String, may_error: params::MayError) {
-    may_error.check(users_create(&context.http_context, &username, &password).await);
-}
-
-#[apply(generic_step)]
-#[step(expr = r"get user\({word}\) update password to '{word}'{may_error}")]
-async fn get_user_update_password(
+#[step(expr = "{token_mode}create user with username '{word}', password '{word}'{may_error}")]
+async fn with_a_wrong_token_create_user(
     context: &mut Context,
+    token_mode: TokenMode,
     username: String,
     password: String,
     may_error: params::MayError,
 ) {
-    may_error.check(users_update(&context.http_context, &username, &password).await);
+    context.randomize_auth_token_if_needed(token_mode);
+    may_error
+        .check(users_create(context.http_client(), context.auth_token_by_mode(token_mode), &username, &password).await);
 }
 
 #[apply(generic_step)]
-#[step(expr = "delete user: {word}{may_error}")]
-async fn delete_user(context: &mut Context, username: String, may_error: params::MayError) {
-    may_error.check(users_delete(&context.http_context, &username).await);
+#[step(expr = r"{token_mode}get user\({word}\) update password to '{word}'{may_error}")]
+async fn with_a_wrong_token_get_user_update_password(
+    context: &mut Context,
+    token_mode: TokenMode,
+    username: String,
+    password: String,
+    may_error: params::MayError,
+) {
+    context.randomize_auth_token_if_needed(token_mode);
+    may_error
+        .check(users_update(context.http_client(), context.auth_token_by_mode(token_mode), &username, &password).await);
+}
+
+#[apply(generic_step)]
+#[step(expr = "{token_mode}delete user: {word}{may_error}")]
+async fn with_a_wrong_token_delete_user(
+    context: &mut Context,
+    token_mode: TokenMode,
+    username: String,
+    may_error: params::MayError,
+) {
+    context.randomize_auth_token_if_needed(token_mode);
+    may_error.check(users_delete(context.http_client(), context.auth_token_by_mode(token_mode), &username).await);
 }
 
 #[apply(generic_step)]

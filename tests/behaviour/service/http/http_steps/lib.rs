@@ -28,7 +28,6 @@ use futures::{
 use hyper::{client::HttpConnector, http, Client, StatusCode};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use itertools::Itertools;
-use options::TransactionOptions;
 use server::{
     error::ServerOpenError,
     service::{
@@ -37,10 +36,7 @@ use server::{
     },
 };
 use test_utils::TempDir;
-use tokio::{
-    task::JoinHandle,
-    time::{sleep, Duration},
-};
+use tokio::{task::JoinHandle, time::Duration};
 
 use crate::{
     connection::start_typedb,
@@ -49,20 +45,24 @@ use crate::{
 
 macro_rules! in_background {
     ($context:ident, |$background:ident| $expr:expr) => {
-        let mut $background = crate::HttpContext { http_client: crate::create_http_client(), auth_token: None };
-        let response = crate::message::authenticate_default(&$background).await;
-        $background.auth_token = Some(response.token);
+        let http_client = crate::create_http_client();
+        let response = crate::message::authenticate_default(&http_client).await;
+        let $background = crate::HttpContext::new(http_client, Some(response.token));
         $expr
     };
 }
 pub(crate) use in_background;
-use server::service::http::message::transaction::TransactionOptionsPayload;
+use server::service::http::message::{query::QueryOptionsPayload, transaction::TransactionOptionsPayload};
+
+use crate::{params::TokenMode, util::random_uuid};
 
 mod connection;
 mod message;
 mod params;
 mod query;
 mod util;
+
+const TEST_TOKEN_EXPIRATION: Duration = Duration::from_secs(25); // NOTICE: Long tests can fail!
 
 #[derive(Debug, Default)]
 struct SingletonParser {
@@ -110,12 +110,28 @@ impl<I: AsRef<Path>> cucumber::Parser<I> for SingletonParser {
 pub struct HttpContext {
     pub http_client: Client<HttpConnector>,
     pub auth_token: Option<String>,
+    last_random_auth_token: Option<String>,
+}
+
+impl HttpContext {
+    pub fn new(http_client: Client<HttpConnector>, auth_token: Option<String>) -> Self {
+        Self { http_client, auth_token, last_random_auth_token: None }
+    }
+
+    pub fn http_client(&self) -> &Client<HttpConnector> {
+        &self.http_client
+    }
+
+    pub fn auth_token(&self) -> Option<&String> {
+        self.auth_token.as_ref()
+    }
 }
 
 #[derive(World)]
 pub struct Context {
     pub tls_root_ca: PathBuf,
     pub transaction_options: Option<TransactionOptionsPayload>,
+    pub query_options: Option<QueryOptionsPayload>,
     pub http_context: HttpContext,
     pub transaction_ids: VecDeque<String>,
     pub background_transaction_ids: VecDeque<String>,
@@ -193,7 +209,7 @@ impl Context {
         let starting_since = Instant::now();
         let http_client = create_http_client();
         loop {
-            let result = check_health(http_client.clone()).await;
+            let result = check_health(&http_client, None::<&str>).await;
             if result.is_ok() {
                 break;
             }
@@ -223,36 +239,71 @@ impl Context {
         self.cleanup_users().await;
         self.cleanup_answers().await;
         self.cleanup_concurrent_answers().await;
+        self.transaction_options = None;
+        self.query_options = None;
+    }
+
+    pub fn http_client(&self) -> &Client<HttpConnector> {
+        self.http_context.http_client()
+    }
+
+    pub fn auth_token(&self) -> Option<&String> {
+        self.http_context.auth_token()
+    }
+
+    pub fn randomize_auth_token_if_needed(&mut self, token_mode: TokenMode) {
+        match token_mode {
+            TokenMode::Saved => {}
+            TokenMode::Wrong => self.randomize_auth_token(),
+        }
+    }
+
+    pub fn randomize_auth_token(&mut self) {
+        self.http_context.last_random_auth_token = Some(random_uuid());
+    }
+
+    pub fn auth_token_by_mode(&self, token_mode: TokenMode) -> Option<&String> {
+        match token_mode {
+            TokenMode::Saved => self.http_context.auth_token(),
+            TokenMode::Wrong => self.http_context.last_random_auth_token.as_ref(),
+        }
     }
 
     pub async fn cleanup_databases(&mut self) {
         in_background!(context, |background| {
-            for database in databases(&background).await.unwrap().databases {
-                databases_delete(&background, &database.name).await.unwrap();
+            for database in databases(background.http_client(), background.auth_token()).await.unwrap().databases {
+                databases_delete(background.http_client(), background.auth_token(), &database.name).await.unwrap();
             }
         });
     }
 
     pub async fn cleanup_transactions(&mut self) {
         while let Some(transaction_id) = self.try_take_transaction() {
-            transactions_close(&self.http_context, &transaction_id).await.unwrap();
+            transactions_close(self.http_client(), self.auth_token(), &transaction_id).await.unwrap();
         }
     }
 
     pub async fn cleanup_background_transactions(&mut self) {
         while let Some(transaction_id) = self.try_take_background_transaction() {
-            transactions_close(&self.http_context, &transaction_id).await.unwrap();
+            transactions_close(self.http_client(), self.auth_token(), &transaction_id).await.unwrap();
         }
     }
 
     pub async fn cleanup_users(&mut self) {
         in_background!(context, |background| {
-            for user in users(&background).await.unwrap().users {
+            for user in users(background.http_client(), background.auth_token()).await.unwrap().users {
                 if user.username != Context::ADMIN_USERNAME {
-                    users_delete(&background, &user.username).await.unwrap();
+                    users_delete(background.http_client(), background.auth_token(), &user.username).await.unwrap();
                 }
             }
-            users_update(&background, Context::ADMIN_USERNAME, Context::ADMIN_PASSWORD).await.unwrap();
+            users_update(
+                background.http_client(),
+                background.auth_token(),
+                Context::ADMIN_USERNAME,
+                Context::ADMIN_PASSWORD,
+            )
+            .await
+            .unwrap();
         });
     }
 
@@ -269,12 +320,12 @@ impl Context {
         self.transaction_ids.get(0)
     }
 
-    pub fn transaction(&self) -> &String {
-        self.transaction_ids.get(0).unwrap()
+    pub fn transaction(&self) -> &str {
+        self.transaction_ids.get(0).map(|value| value.as_str()).unwrap_or("")
     }
 
     pub fn take_transaction(&mut self) -> String {
-        self.transaction_ids.pop_front().unwrap()
+        self.transaction_ids.pop_front().unwrap_or("".to_string())
     }
 
     pub fn try_take_transaction(&mut self) -> Option<String> {
@@ -353,6 +404,12 @@ impl Context {
             self.transaction_options = Some(TransactionOptionsPayload::default());
         }
     }
+
+    pub fn init_query_options_if_needed(&mut self) {
+        if self.query_options.is_none() {
+            self.query_options = Some(QueryOptionsPayload::default());
+        }
+    }
 }
 
 impl Default for Context {
@@ -364,7 +421,8 @@ impl Default for Context {
         Self {
             tls_root_ca,
             transaction_options: None,
-            http_context: HttpContext { http_client: create_http_client(), auth_token: None },
+            query_options: None,
+            http_context: HttpContext::new(create_http_client(), None),
             transaction_ids: VecDeque::new(),
             background_transaction_ids: VecDeque::new(),
             answer: None,

@@ -16,7 +16,11 @@ use macro_rules_attribute::apply;
 use params::{self, check_boolean};
 use serde::Deserialize;
 use serde_json::json;
-use server::{error::ServerOpenError, parameters::config::Config, server::Server};
+use server::{
+    error::ServerOpenError,
+    parameters::config::{AuthenticationConfig, Config},
+    server::Server,
+};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::{
     sync::OnceCell,
@@ -26,8 +30,8 @@ use tokio::{
 
 use crate::{
     generic_step,
-    message::{authenticate, authenticate_default, databases, users},
-    Context, HttpBehaviourTestError, HttpContext,
+    message::{authenticate, authenticate_default, check_health, databases, users},
+    Context, HttpBehaviourTestError, HttpContext, TEST_TOKEN_EXPIRATION,
 };
 
 mod database;
@@ -50,6 +54,7 @@ pub(crate) async fn start_typedb(
             .server_http_address(HTTP_ADDRESS)
             .data_directory(server_dir.as_ref())
             .development_mode(true)
+            .authentication(AuthenticationConfig { token_expiration: TEST_TOKEN_EXPIRATION })
             .build();
 
         let server_future = async {
@@ -93,9 +98,15 @@ fn change_port(address: &str, new_port: &str) -> String {
 pub async fn connection_ignore(_: &mut Context) {}
 
 #[apply(generic_step)]
+#[step(expr = "connection is healthy: {boolean}")]
+async fn connection_is_healthy(context: &mut Context, is_healthy: params::Boolean) {
+    check_boolean!(is_healthy, check_health(context.http_client(), context.auth_token()).await.is_ok());
+}
+
+#[apply(generic_step)]
 #[step("connection opens with default authentication")]
 pub async fn connection_opens_with_default_authentication(context: &mut Context) {
-    context.http_context.auth_token = Some(authenticate_default(&context.http_context).await.token);
+    context.http_context.auth_token = Some(authenticate_default(context.http_client()).await.token);
 }
 
 #[apply(generic_step)]
@@ -108,7 +119,7 @@ async fn connection_opens_with_authentication(
 ) {
     if let Either::Left(response) = may_error.check(
         authenticate(
-            &context.http_context,
+            context.http_client(),
             Context::default_versioned_endpoint().as_str(),
             username.as_ref(),
             password.as_ref(),
@@ -125,7 +136,7 @@ async fn connection_opens_with_a_wrong_host(context: &mut Context, may_error: pa
     // TODO: Support cluster
     may_error.check(
         authenticate(
-            &context.http_context,
+            context.http_client(),
             Context::versioned_endpoint(
                 Context::HTTP_PROTOCOL,
                 &change_host(Context::DEFAULT_ADDRESS, "surely-not-localhost"),
@@ -144,7 +155,7 @@ async fn connection_opens_with_a_wrong_host(context: &mut Context, may_error: pa
 async fn connection_opens_with_a_wrong_port(context: &mut Context, may_error: params::MayError) {
     may_error.check(
         authenticate(
-            &context.http_context,
+            context.http_client(),
             Context::versioned_endpoint(
                 Context::HTTP_PROTOCOL,
                 &change_port(Context::DEFAULT_ADDRESS, "0"),
@@ -161,17 +172,21 @@ async fn connection_opens_with_a_wrong_port(context: &mut Context, may_error: pa
 #[apply(generic_step)]
 #[step(expr = r"connection has {int} database(s)")]
 async fn connection_has_count_databases(context: &mut Context, count: usize) {
-    assert_eq!(databases(&context.http_context).await.expect("Expected databases").databases.len(), count);
+    assert_eq!(
+        databases(context.http_client(), context.auth_token()).await.expect("Expected databases").databases.len(),
+        count
+    );
 }
 
 #[apply(generic_step)]
 #[step(expr = r"connection has {int} user(s)")]
 async fn connection_has_count_users(context: &mut Context, count: usize) {
-    assert_eq!(users(&context.http_context).await.expect("Expected users").users.len(), count);
+    assert_eq!(users(context.http_client(), context.auth_token()).await.expect("Expected users").users.len(), count);
 }
 
 #[apply(generic_step)]
 #[step(expr = r"connection closes{may_error}")]
 async fn connection_closes(context: &mut Context, may_error: params::MayError) {
     context.cleanup_transactions().await;
+    context.http_context.auth_token = None;
 }

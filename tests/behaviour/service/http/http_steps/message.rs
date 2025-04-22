@@ -19,7 +19,7 @@ use server::service::http::message::{
             AttributeResponse, AttributeTypeResponse, EntityResponse, EntityTypeResponse, RelationResponse,
             RelationTypeResponse, RoleTypeResponse, ValueResponse,
         },
-        QueryAnswerResponse,
+        QueryAnswerResponse, QueryOptionsPayload,
     },
     transaction::{TransactionOptionsPayload, TransactionResponse},
     user::{UserResponse, UsersResponse},
@@ -29,7 +29,8 @@ use url::form_urlencoded;
 use crate::{Context, HttpBehaviourTestError, HttpContext};
 
 async fn send_request(
-    context: &HttpContext,
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
     method: Method,
     url: &str,
     body: Option<&str>,
@@ -37,8 +38,8 @@ async fn send_request(
     let uri: Uri = url.parse().expect("Invalid URI");
     let mut req = Request::builder().method(method).uri(uri);
 
-    if let Some(token) = context.auth_token.as_ref() {
-        req = req.header(AUTHORIZATION, format!("Bearer {}", token));
+    if let Some(token) = auth_token.as_ref() {
+        req = req.header(AUTHORIZATION, format!("Bearer {}", token.as_ref()));
     }
 
     let req = req
@@ -49,8 +50,7 @@ async fn send_request(
         })
         .map_err(|source| HttpBehaviourTestError::HttpError { source: Arc::new(source) })?;
 
-    let res = context
-        .http_client
+    let res = http_client
         .request(req)
         .await
         .map_err(|source| HttpBehaviourTestError::HyperError { source: Arc::new(source) })?;
@@ -69,13 +69,19 @@ async fn send_request(
     Ok(body_str)
 }
 
-pub async fn check_health(http_client: Client<HttpConnector>) -> Result<String, HttpBehaviourTestError> {
+pub async fn check_health(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+) -> Result<String, HttpBehaviourTestError> {
     let uri: Uri = format!("{}/health", Context::default_versioned_endpoint()).parse().expect("Invalid URI");
-    let req = Request::builder()
-        .method(Method::GET)
-        .uri(uri)
-        .body(Body::empty())
-        .map_err(|source| HttpBehaviourTestError::HttpError { source: Arc::new(source) })?;
+    let mut req = Request::builder().method(Method::GET).uri(uri);
+
+    if let Some(token) = auth_token {
+        req = req.header(AUTHORIZATION, format!("Bearer {}", token.as_ref()));
+    }
+    let req =
+        req.body(Body::empty()).map_err(|source| HttpBehaviourTestError::HttpError { source: Arc::new(source) })?;
+
     let res = http_client
         .request(req)
         .await
@@ -86,9 +92,9 @@ pub async fn check_health(http_client: Client<HttpConnector>) -> Result<String, 
     Ok(String::from_utf8_lossy(&body_bytes).to_string())
 }
 
-pub async fn authenticate_default(context: &HttpContext) -> TokenResponse {
+pub async fn authenticate_default(http_client: &Client<HttpConnector>) -> TokenResponse {
     authenticate(
-        context,
+        http_client,
         Context::default_versioned_endpoint().as_str(),
         Context::ADMIN_USERNAME,
         Context::ADMIN_PASSWORD,
@@ -98,7 +104,7 @@ pub async fn authenticate_default(context: &HttpContext) -> TokenResponse {
 }
 
 pub async fn authenticate(
-    context: &HttpContext,
+    http_client: &Client<HttpConnector>,
     endpoint: &str,
     username: &str,
     password: &str,
@@ -108,80 +114,117 @@ pub async fn authenticate(
         "username": username,
         "password": password,
     });
-    let response = send_request(context, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
+    let response =
+        send_request(http_client, None::<&str>, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
-pub async fn databases(context: &HttpContext) -> Result<DatabasesResponse, HttpBehaviourTestError> {
+pub async fn databases(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+) -> Result<DatabasesResponse, HttpBehaviourTestError> {
     let url = format!("{}/databases", Context::default_versioned_endpoint());
-    let response = send_request(context, Method::GET, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
 pub async fn databases_get(
-    context: &HttpContext,
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
     database_name: &str,
 ) -> Result<DatabaseResponse, HttpBehaviourTestError> {
     let url = format!("{}/databases/{}", Context::default_versioned_endpoint(), encode_path_variable(database_name));
-    let response = send_request(context, Method::GET, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
-pub async fn databases_create(context: &HttpContext, database_name: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn databases_create(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    database_name: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/databases/{}", Context::default_versioned_endpoint(), encode_path_variable(database_name));
-    let response = send_request(context, Method::POST, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::POST, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
-pub async fn databases_delete(context: &HttpContext, database_name: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn databases_delete(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    database_name: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/databases/{}", Context::default_versioned_endpoint(), encode_path_variable(database_name));
-    let response = send_request(context, Method::DELETE, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::DELETE, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
-pub async fn users(context: &HttpContext) -> Result<UsersResponse, HttpBehaviourTestError> {
+pub async fn users(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+) -> Result<UsersResponse, HttpBehaviourTestError> {
     let url = format!("{}/users", Context::default_versioned_endpoint());
-    let response = send_request(context, Method::GET, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
-pub async fn users_get(context: &HttpContext, username: &str) -> Result<UserResponse, HttpBehaviourTestError> {
+pub async fn users_get(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    username: &str,
+) -> Result<UserResponse, HttpBehaviourTestError> {
     let url = format!("{}/users/{}", Context::default_versioned_endpoint(), encode_path_variable(username));
-    let response = send_request(context, Method::GET, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
-pub async fn users_create(context: &HttpContext, username: &str, password: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn users_create(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    username: &str,
+    password: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/users/{}", Context::default_versioned_endpoint(), encode_path_variable(username));
     let json_body = json!({
         "password": password,
     });
-    let response = send_request(context, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
+    let response =
+        send_request(http_client, auth_token, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
-pub async fn users_update(context: &HttpContext, username: &str, password: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn users_update(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    username: &str,
+    password: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/users/{}", Context::default_versioned_endpoint(), encode_path_variable(username));
     let json_body = json!({
         "password": password,
     });
-    let response = send_request(context, Method::PUT, &url, Some(json_body.to_string().as_str())).await?;
+    let response =
+        send_request(http_client, auth_token, Method::PUT, &url, Some(json_body.to_string().as_str())).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
-pub async fn users_delete(context: &HttpContext, username: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn users_delete(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    username: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/users/{}", Context::default_versioned_endpoint(), encode_path_variable(username));
-    let response = send_request(context, Method::DELETE, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::DELETE, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
 pub async fn transactions_open(
-    context: &HttpContext,
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
     database_name: &str,
     transaction_type: &str,
     transaction_options: &Option<TransactionOptionsPayload>,
@@ -194,58 +237,87 @@ pub async fn transactions_open(
         json_map.insert("transactionOptions".to_string(), json!(transaction_options));
     }
 
-    let response = send_request(context, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
+    let response =
+        send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
-pub async fn transactions_close(context: &HttpContext, transaction_id: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn transactions_close(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    transaction_id: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/transactions/{}/close", Context::default_versioned_endpoint(), transaction_id);
-    let response = send_request(context, Method::POST, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::POST, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
-pub async fn transactions_commit(context: &HttpContext, transaction_id: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn transactions_commit(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    transaction_id: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/transactions/{}/commit", Context::default_versioned_endpoint(), transaction_id);
-    let response = send_request(context, Method::POST, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::POST, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
-pub async fn transactions_rollback(context: &HttpContext, transaction_id: &str) -> Result<(), HttpBehaviourTestError> {
+pub async fn transactions_rollback(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    transaction_id: &str,
+) -> Result<(), HttpBehaviourTestError> {
     let url = format!("{}/transactions/{}/rollback", Context::default_versioned_endpoint(), transaction_id);
-    let response = send_request(context, Method::POST, &url, None).await?;
+    let response = send_request(http_client, auth_token, Method::POST, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
 }
 
 pub async fn transactions_query(
-    context: &HttpContext,
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
     transaction_id: &str,
+    query_options: &Option<QueryOptionsPayload>,
     query: &str,
 ) -> Result<QueryAnswerResponse, HttpBehaviourTestError> {
     let url = format!("{}/transactions/{}/query", Context::default_versioned_endpoint(), transaction_id);
-    let json_body = json!({
-        "query": query,
-    });
-    let response = send_request(context, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
+    let mut json_map = serde_json::Map::new();
+    json_map.insert("query".to_string(), json!(query));
+    if let Some(query_options) = query_options {
+        json_map.insert("queryOptions".to_string(), json!(query_options));
+    }
+    let response =
+        send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 
 pub async fn query(
-    context: &HttpContext,
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
     database_name: &str,
     transaction_type: &str,
     query: &str,
+    transaction_options: &Option<TransactionOptionsPayload>,
+    query_options: &Option<QueryOptionsPayload>,
+    commit: bool,
 ) -> Result<QueryAnswerResponse, HttpBehaviourTestError> {
     let url = format!("{}/query", Context::default_versioned_endpoint());
-    let json_body = json!({
-        "databaseName": database_name,
-        "transactionType": transaction_type,
-        "query": query,
-    });
+    let mut json_map = serde_json::Map::new();
+    json_map.insert("databaseName".to_string(), json!(database_name));
+    json_map.insert("transactionType".to_string(), json!(transaction_type));
+    json_map.insert("query".to_string(), json!(query));
+    json_map.insert("commit".to_string(), json!(commit));
+    if let Some(transaction_options) = transaction_options {
+        json_map.insert("transactionOptions".to_string(), json!(transaction_options));
+    }
+    if let Some(query_options) = query_options {
+        json_map.insert("queryOptions".to_string(), json!(query_options));
+    }
     // TODO: Add other params?
-    let response = send_request(context, Method::POST, &url, Some(json_body.to_string().as_str())).await?;
+    let response =
+        send_request(http_client, auth_token, Method::POST, &url, Some(json!(json_map).to_string().as_str())).await?;
     Ok(serde_json::from_str(&response).expect("Expected a json body"))
 }
 

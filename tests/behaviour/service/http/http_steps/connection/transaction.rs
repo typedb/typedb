@@ -15,22 +15,34 @@ use params::{self, check_boolean};
 use crate::{
     generic_step,
     message::{transactions_close, transactions_commit, transactions_open, transactions_rollback},
+    params::TokenMode,
     util::iter_table,
     Context, HttpContext,
 };
 
 #[apply(generic_step)]
-#[step(expr = "connection open {word} transaction for database: {word}{may_error}")]
+#[step(expr = "{token_mode}connection open {word} transaction for database: {word}{may_error}")]
 pub async fn connection_open_transaction_for_database(
     context: &mut Context,
+    token_mode: TokenMode,
     transaction_type: String,
     database_name: String,
     may_error: params::MayError,
 ) {
+    context.randomize_auth_token_if_needed(token_mode);
     context.cleanup_transactions().await;
-    may_error.check(context.push_transaction(
-        transactions_open(&context.http_context, &database_name, &transaction_type, &context.transaction_options).await,
-    ));
+    may_error.check(
+        context.push_transaction(
+            transactions_open(
+                context.http_client(),
+                context.auth_token_by_mode(token_mode),
+                &database_name,
+                &transaction_type,
+                &context.transaction_options,
+            )
+            .await,
+        ),
+    );
 }
 
 #[apply(generic_step)]
@@ -40,7 +52,8 @@ async fn connection_open_transactions_for_database(context: &mut Context, databa
         context
             .push_transaction(
                 transactions_open(
-                    &context.http_context,
+                    context.http_client(),
+                    context.auth_token(),
                     &database_name,
                     &transaction_type,
                     &context.transaction_options,
@@ -55,7 +68,13 @@ async fn connection_open_transactions_for_database(context: &mut Context, databa
 #[step(expr = "connection open transaction(s) in parallel for database: {word}, of type:")]
 pub async fn connection_open_transactions_in_parallel(context: &mut Context, database_name: String, step: &Step) {
     let transactions: VecDeque<String> = join_all(iter_table(step).map(|transaction_type| {
-        transactions_open(&context.http_context, &database_name, transaction_type, &context.transaction_options)
+        transactions_open(
+            context.http_client(),
+            context.auth_token(),
+            &database_name,
+            transaction_type,
+            &context.transaction_options,
+        )
     }))
     .await
     .into_iter()
@@ -73,9 +92,18 @@ pub async fn in_background_connection_open_transaction_for_database(
     may_error: params::MayError,
 ) {
     in_background!(context, |background| {
-        may_error.check(context.push_background_transaction(
-            transactions_open(&background, &database_name, &transaction_type, &context.transaction_options).await,
-        ));
+        may_error.check(
+            context.push_background_transaction(
+                transactions_open(
+                    background.http_client(),
+                    background.auth_token(),
+                    &database_name,
+                    &transaction_type,
+                    &context.transaction_options,
+                )
+                .await,
+            ),
+        );
     });
 }
 
@@ -99,24 +127,31 @@ pub async fn transactions_have_type(_context: &mut Context) {
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction commits{may_error}")]
-pub async fn transaction_commits(context: &mut Context, may_error: params::MayError) {
+#[step(expr = "{token_mode}transaction commits{may_error}")]
+pub async fn transaction_commits(context: &mut Context, token_mode: TokenMode, may_error: params::MayError) {
+    context.randomize_auth_token_if_needed(token_mode);
     let transaction = context.take_transaction();
-    may_error.check(transactions_commit(&context.http_context, &transaction).await);
+    may_error
+        .check(transactions_commit(context.http_client(), context.auth_token_by_mode(token_mode), &transaction).await);
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction closes")]
-pub async fn transaction_closes(context: &mut Context) {
+#[step(expr = "{token_mode}transaction closes{may_error}")]
+pub async fn transaction_closes(context: &mut Context, token_mode: TokenMode, may_error: params::MayError) {
+    context.randomize_auth_token_if_needed(token_mode);
     let transaction = context.take_transaction();
-    transactions_close(&context.http_context, &transaction).await.expect("Expected transaction close")
+    may_error
+        .check(transactions_close(context.http_client(), context.auth_token_by_mode(token_mode), &transaction).await);
 }
 
 #[apply(generic_step)]
-#[step(expr = "transaction rollbacks{may_error}")]
-pub async fn transaction_rollbacks(context: &mut Context, may_error: params::MayError) {
+#[step(expr = "{token_mode}transaction rollbacks{may_error}")]
+pub async fn transaction_rollbacks(context: &mut Context, token_mode: TokenMode, may_error: params::MayError) {
+    context.randomize_auth_token_if_needed(token_mode);
     let transaction = context.transaction();
-    may_error.check(transactions_rollback(&context.http_context, &transaction).await);
+    may_error.check(
+        transactions_rollback(context.http_client(), context.auth_token_by_mode(token_mode), &transaction).await,
+    );
 }
 
 #[apply(generic_step)]
