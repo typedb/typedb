@@ -82,6 +82,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             CASTING_MOVIE_LABEL.name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let casting_movie_type = relates_movie.role();
@@ -93,6 +94,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             CASTING_ACTOR_LABEL.name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let casting_actor_type = relates_actor.role();
@@ -104,6 +106,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             CASTING_CHARACTER_LABEL.name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     relates_character
@@ -121,16 +124,32 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let id_type = type_manager.create_attribute_type(&mut snapshot, &ID_LABEL).unwrap();
     id_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
 
-    let _person_owns_age =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-    let _movie_owns_id =
-        movie_type.set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered).unwrap();
-    let _character_owns_id =
-        character_type.set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered).unwrap();
+    let _person_owns_age = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            age_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let _movie_owns_id = movie_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered, StorageCounters::DISABLED)
+        .unwrap();
+    let _character_owns_id = character_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered, StorageCounters::DISABLED)
+        .unwrap();
 
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_actor_type).unwrap();
-    movie_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_movie_type).unwrap();
-    character_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_character_type).unwrap();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_actor_type, StorageCounters::DISABLED)
+        .unwrap();
+    movie_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_movie_type, StorageCounters::DISABLED)
+        .unwrap();
+    character_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_character_type, StorageCounters::DISABLED)
+        .unwrap();
 
     /*
     insert

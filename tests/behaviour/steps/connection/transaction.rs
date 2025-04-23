@@ -118,7 +118,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             ));
         }
         ActiveTransaction::Write(tx) => {
-            if let Either::Right(error) = may_error.check(tx.commit()) {
+            let (profile, result) = tx.commit();
+            if let Either::Right(error) = may_error.check(result) {
                 match error {
                     DataCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
                         for error in errors {
@@ -135,7 +136,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             }
         }
         ActiveTransaction::Schema(tx) => {
-            if let Either::Right(error) = may_error.check(tx.commit()) {
+            let (profile, result) = tx.commit();
+            if let Either::Right(error) = may_error.check(result) {
                 match error {
                     SchemaCommitError::ConceptWriteErrors { write_errors: errors, .. } => {
                         for error in errors {

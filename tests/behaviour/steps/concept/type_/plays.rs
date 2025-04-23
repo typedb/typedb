@@ -10,7 +10,7 @@ use concept::type_::{annotation, constraint::Constraint, plays::PlaysAnnotation,
 use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use params;
+use resource::profile::StorageCounters;
 
 use super::thing_type::get_as_object_type;
 use crate::{
@@ -37,6 +37,7 @@ pub async fn set_plays(
             &tx.type_manager,
             &tx.thing_manager,
             role_type,
+            StorageCounters::DISABLED,
         );
         may_error.check_concept_write_without_read_errors(&res);
     });

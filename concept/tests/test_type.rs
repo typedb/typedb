@@ -36,7 +36,7 @@ use encoding::{
     },
     value::{decimal_value::Decimal, label::Label, timezone::TimeZone, value::Value, value_type::ValueType},
 };
-use resource::profile::CommitProfile;
+use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot, WritableSnapshot, WriteSnapshot},
@@ -104,6 +104,7 @@ fn entity_usage() {
                 &type_manager,
                 &thing_manager,
                 EntityTypeAnnotation::Abstract(AnnotationAbstract),
+                StorageCounters::DISABLED,
             )
             .unwrap();
 
@@ -129,7 +130,16 @@ fn entity_usage() {
         assert_eq!(supertypes.len(), 1);
 
         // --- child owns age ---
-        child_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+        child_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         let owns = child_type.get_owns_attribute(&snapshot, &type_manager, age_type).unwrap().unwrap();
         // TODO: test 'owns' structure directly
 
@@ -148,7 +158,16 @@ fn entity_usage() {
         // --- owns inheritance ---
         let height_label = Label::new_static("height");
         let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, height_type, Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                height_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
 
         match child_type.get_owns_attribute(&snapshot, &type_manager, height_type).unwrap() {
             None => panic!("child should inherit ownership of height"),
@@ -238,7 +257,14 @@ fn role_usage() {
         // --- friendship sub relation, relates friend ---
         let friendship_type = type_manager.create_relation_type(&mut snapshot, &friendship_label).unwrap();
         let friendship_friend_relates = friendship_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, friend_name, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                friend_name,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         friendship_friend_relates
             .role()
@@ -252,7 +278,9 @@ fn role_usage() {
 
         // --- person plays friendship:friend ---
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, role_type).unwrap();
+        person_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, role_type, StorageCounters::DISABLED)
+            .unwrap();
         let plays = person_type.get_plays_role(&snapshot, &type_manager, role_type).unwrap().unwrap();
         debug_assert_eq!(plays.player(), ObjectType::Entity(person_type));
         debug_assert_eq!(plays.role(), role_type);
@@ -366,21 +394,96 @@ fn annotations_with_range_arguments() {
         let person_label = Label::build("person", None);
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_name_type, Ordering::Unordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, balance_type, Ordering::Unordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, measurement_type, Ordering::Ordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                name_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_measurement_type, Ordering::Ordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_name_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, schedule_type, Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type, Ordering::Ordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, empty_type, Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                balance_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                measurement_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_measurement_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                schedule_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                valid_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
 
         let name_owns = person_type.get_owns_attribute(&snapshot, &type_manager, name_type).unwrap().unwrap();
         let empty_name_owns =
@@ -398,6 +501,7 @@ fn annotations_with_range_arguments() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::Integer(0)), Some(Value::Integer(18)))),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         name_owns
@@ -425,6 +529,7 @@ fn annotations_with_range_arguments() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Range(AnnotationRange::new(None, Some(Value::Decimal(Decimal::MAX)))),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         measurement_owns
@@ -452,6 +557,7 @@ fn annotations_with_range_arguments() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Range(AnnotationRange::new(Some(Value::DateTimeTZ(now)), None)),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         valid_owns
@@ -734,21 +840,96 @@ fn annotations_with_value_arguments() {
         let person_label = Label::build("person", None);
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
 
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Ordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_name_type, Ordering::Unordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, balance_type, Ordering::Unordered).unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, measurement_type, Ordering::Ordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                name_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         person_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, empty_measurement_type, Ordering::Ordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_name_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, schedule_type, Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, valid_type, Ordering::Ordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, empty_type, Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                balance_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                measurement_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_measurement_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                schedule_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                valid_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                empty_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
 
         let name_owns = person_type.get_owns_attribute(&snapshot, &type_manager, name_type).unwrap().unwrap();
         let empty_name_owns =
@@ -766,6 +947,7 @@ fn annotations_with_value_arguments() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Integer(0), Value::Integer(18)])),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         name_owns
@@ -793,6 +975,7 @@ fn annotations_with_value_arguments() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::Decimal(Decimal::MAX)])),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         measurement_owns
@@ -817,6 +1000,7 @@ fn annotations_with_value_arguments() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Values(AnnotationValues::new(vec![Value::DateTimeTZ(now)])),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         valid_owns

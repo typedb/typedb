@@ -100,6 +100,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             CASTING_MOVIE_LABEL.name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let casting_movie_type = relates_movie.role();
@@ -111,6 +112,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             CASTING_ACTOR_LABEL.name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let casting_actor_type = relates_actor.role();
@@ -122,6 +124,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             CASTING_CHARACTER_LABEL.name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     relates_character
@@ -143,10 +146,26 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-    let _person_owns_age =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-    let person_owns_gov_id =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, gov_id_type, Ordering::Unordered).unwrap();
+    let _person_owns_age = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            age_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    let person_owns_gov_id = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            gov_id_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_gov_id
         .set_annotation(
             &mut snapshot,
@@ -155,8 +174,16 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
         )
         .unwrap();
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+    let person_owns_name = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            name_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_name
         .set_annotation(
             &mut snapshot,
@@ -165,14 +192,22 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
         )
         .unwrap();
-    let _movie_owns_id =
-        movie_type.set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered).unwrap();
-    let _character_owns_id =
-        character_type.set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered).unwrap();
+    let _movie_owns_id = movie_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered, StorageCounters::DISABLED)
+        .unwrap();
+    let _character_owns_id = character_type
+        .set_owns(&mut snapshot, &type_manager, &thing_manager, id_type, Ordering::Unordered, StorageCounters::DISABLED)
+        .unwrap();
 
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_actor_type).unwrap();
-    movie_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_movie_type).unwrap();
-    character_type.set_plays(&mut snapshot, &type_manager, &thing_manager, casting_character_type).unwrap();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_actor_type, StorageCounters::DISABLED)
+        .unwrap();
+    movie_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_movie_type, StorageCounters::DISABLED)
+        .unwrap();
+    character_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, casting_character_type, StorageCounters::DISABLED)
+        .unwrap();
 
     /*
     insert
@@ -358,6 +393,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok(), "{:?}", finalise_result.unwrap_err());
+    #[allow(const_item_mutation, reason = "it's not expected to mutate the const")]
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
@@ -392,14 +428,17 @@ fn get_type_annotations(
     let previous_stage_variable_annotations = &BTreeMap::new();
     infer_types(
         snapshot,
-        &entry,
+        entry,
         &translation_context.variable_registry,
-        &type_manager,
+        type_manager,
         previous_stage_variable_annotations,
         &EmptyAnnotatedFunctionSignatures,
         false,
     )
     .unwrap()
+    .type_annotations_of(entry.conjunction())
+    .unwrap()
+    .clone()
 }
 
 fn execute_steps(

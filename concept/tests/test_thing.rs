@@ -98,6 +98,7 @@ fn attribute_create() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
@@ -108,6 +109,7 @@ fn attribute_create() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
 
@@ -173,6 +175,7 @@ fn has() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
@@ -183,12 +186,31 @@ fn has() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+        person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                name_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
         let age_1 = thing_manager.create_attribute(&mut snapshot, age_type, Value::Integer(age_value)).unwrap();
@@ -250,6 +272,7 @@ fn get_has_reverse_in_range() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         let name_type = type_manager.create_attribute_type(&mut snapshot, &name_label).unwrap();
@@ -260,12 +283,21 @@ fn get_has_reverse_in_range() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let person_owns_age =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+        let person_owns_age = person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         person_owns_age
             .set_annotation(
                 &mut snapshot,
@@ -274,8 +306,16 @@ fn get_has_reverse_in_range() {
                 OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None)),
             )
             .unwrap();
-        let person_owns_name =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+        let person_owns_name = person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                name_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         person_owns_name
             .set_annotation(
                 &mut snapshot,
@@ -286,8 +326,16 @@ fn get_has_reverse_in_range() {
             .unwrap();
 
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
-        let company_owns_age =
-            company_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+        let company_owns_age = company_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         company_owns_age
             .set_annotation(
                 &mut snapshot,
@@ -297,7 +345,14 @@ fn get_has_reverse_in_range() {
             )
             .unwrap();
         let company_owns_name = company_type
-            .set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered)
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                name_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         company_owns_name
             .set_annotation(
@@ -444,14 +499,30 @@ fn attribute_cleanup_on_concurrent_detach() {
         name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        let owns_age =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Ordered).unwrap();
+        let owns_age = person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                age_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         owns_age
             .set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Distinct(AnnotationDistinct))
             .unwrap();
 
-        let person_name =
-            person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Ordered).unwrap();
+        let person_name = person_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                name_type,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         person_name.set_ordering(&mut snapshot, &type_manager, &thing_manager, Ordering::Unordered).unwrap();
 
         let alice = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
@@ -583,7 +654,14 @@ fn role_player_distinct() {
 
         let employment_type = type_manager.create_relation_type(&mut snapshot, &employment_label).unwrap();
         employment_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, employee_role, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                employee_role,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         let employee_relates =
             employment_type.get_relates_role_name(&snapshot, &type_manager, employee_role).unwrap().unwrap();
@@ -606,7 +684,14 @@ fn role_player_distinct() {
         let employee_type = employee_relates.role();
 
         employment_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, employer_role, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                employer_role,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         let employer_relates =
             employment_type.get_relates_role_name(&snapshot, &type_manager, employer_role).unwrap().unwrap();
@@ -630,8 +715,12 @@ fn role_player_distinct() {
 
         let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
         let company_type = type_manager.create_entity_type(&mut snapshot, &company_label).unwrap();
-        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type).unwrap();
-        company_type.set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type).unwrap();
+        person_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, employee_type, StorageCounters::DISABLED)
+            .unwrap();
+        company_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, employer_type, StorageCounters::DISABLED)
+            .unwrap();
 
         let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
         let company_1 = thing_manager.create_entity(&mut snapshot, company_type).unwrap();
@@ -759,7 +848,14 @@ fn role_player_duplicates_unordered() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
         collection_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Unordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                entry_role_label,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         let entry_relates =
             collection_type.get_relates_role_name(&snapshot, &type_manager, entry_role_label).unwrap().unwrap();
@@ -773,7 +869,14 @@ fn role_player_duplicates_unordered() {
             .unwrap();
         let entry_type = entry_relates.role();
         collection_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Unordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                owner_role_label,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
 
         let owner_type =
@@ -781,8 +884,12 @@ fn role_player_duplicates_unordered() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
+        resource_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type, StorageCounters::DISABLED)
+            .unwrap();
+        group_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type, StorageCounters::DISABLED)
+            .unwrap();
 
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
@@ -948,7 +1055,14 @@ fn role_player_duplicates_ordered_default_card() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
         let entry_relates = collection_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                entry_role_label,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         entry_relates
             .set_annotation(
@@ -961,15 +1075,26 @@ fn role_player_duplicates_ordered_default_card() {
         let entry_type = entry_relates.role();
         // This relates card is default!
         collection_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                owner_role_label,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         let owner_type =
             collection_type.get_relates_role_name(&snapshot, &type_manager, owner_role_label).unwrap().unwrap().role();
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
+        resource_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type, StorageCounters::DISABLED)
+            .unwrap();
+        group_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type, StorageCounters::DISABLED)
+            .unwrap();
 
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
@@ -1107,7 +1232,14 @@ fn role_player_duplicates_ordered_small_card() {
         let (type_manager, thing_manager) = load_managers(storage.clone(), None);
         let collection_type = type_manager.create_relation_type(&mut snapshot, &collection_label).unwrap();
         let entry_relates = collection_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, entry_role_label, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                entry_role_label,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         entry_relates
             .set_annotation(
@@ -1119,7 +1251,14 @@ fn role_player_duplicates_ordered_small_card() {
             .unwrap();
         let entry_type = entry_relates.role();
         let owner_relates = collection_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, owner_role_label, Ordering::Ordered)
+            .create_relates(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                owner_role_label,
+                Ordering::Ordered,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
         owner_relates
             .set_annotation(
@@ -1134,8 +1273,12 @@ fn role_player_duplicates_ordered_small_card() {
 
         let resource_type = type_manager.create_entity_type(&mut snapshot, &resource_label).unwrap();
         let group_type = type_manager.create_entity_type(&mut snapshot, &group_label).unwrap();
-        resource_type.set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type).unwrap();
-        group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type).unwrap();
+        resource_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, entry_type, StorageCounters::DISABLED)
+            .unwrap();
+        group_type
+            .set_plays(&mut snapshot, &type_manager, &thing_manager, owner_type, StorageCounters::DISABLED)
+            .unwrap();
 
         let group_1 = thing_manager.create_entity(&mut snapshot, group_type).unwrap();
         let resource_1 = thing_manager.create_entity(&mut snapshot, resource_type).unwrap();
@@ -1303,6 +1446,7 @@ fn attribute_string_write_read_delete() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
 
@@ -1417,8 +1561,16 @@ fn attribute_string_write_read_delete_with_has() {
         let owner_type = type_manager.create_entity_type(&mut snapshot, &owner_label).unwrap();
         let attr_type = type_manager.create_attribute_type(&mut snapshot, &attr_label).unwrap();
         attr_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-        let owns =
-            owner_type.set_owns(&mut snapshot, &type_manager, &thing_manager, attr_type, Ordering::Unordered).unwrap();
+        let owns = owner_type
+            .set_owns(
+                &mut snapshot,
+                &type_manager,
+                &thing_manager,
+                attr_type,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
         owns.set_annotation(
             &mut snapshot,
             &type_manager,
@@ -1556,6 +1708,7 @@ fn attribute_struct_write_read() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         attr_type
@@ -1650,6 +1803,7 @@ fn read_attribute_struct_by_field() {
                 &type_manager,
                 &thing_manager,
                 AttributeTypeAnnotation::Independent(AnnotationIndependent),
+                StorageCounters::DISABLED,
             )
             .unwrap();
         let struct_def = type_manager.get_struct_definition(&snapshot, struct_key.clone()).unwrap();

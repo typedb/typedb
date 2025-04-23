@@ -628,7 +628,7 @@ pub mod tests {
             },
         };
         use encoding::value::{label::Label, value_type::ValueType};
-        use resource::profile::CommitProfile;
+        use resource::profile::{CommitProfile, StorageCounters};
         use storage::{
             durability_client::WALClient,
             snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -663,6 +663,7 @@ pub mod tests {
                 type_manager,
                 thing_manager,
                 AttributeTypeAnnotation::Abstract(AnnotationAbstract),
+                StorageCounters::DISABLED,
             )
             .unwrap();
             catname.set_supertype(&mut snapshot, type_manager, thing_manager, name).unwrap();
@@ -684,13 +685,39 @@ pub mod tests {
                     type_manager,
                     thing_manager,
                     EntityTypeAnnotation::Abstract(AnnotationAbstract),
+                    StorageCounters::DISABLED,
                 )
                 .unwrap();
 
             // Ownerships
-            animal.set_owns(&mut snapshot, type_manager, thing_manager, name, Ordering::Unordered).unwrap();
-            cat.set_owns(&mut snapshot, type_manager, thing_manager, catname, Ordering::Unordered).unwrap();
-            dog.set_owns(&mut snapshot, type_manager, thing_manager, dogname, Ordering::Unordered).unwrap();
+            animal
+                .set_owns(
+                    &mut snapshot,
+                    type_manager,
+                    thing_manager,
+                    name,
+                    Ordering::Unordered,
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
+            cat.set_owns(
+                &mut snapshot,
+                type_manager,
+                thing_manager,
+                catname,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
+            dog.set_owns(
+                &mut snapshot,
+                type_manager,
+                thing_manager,
+                dogname,
+                Ordering::Unordered,
+                StorageCounters::DISABLED,
+            )
+            .unwrap();
 
             snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 

@@ -56,7 +56,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
-    age_type.set_annotation(&mut snapshot, &type_manager, &thing_manager, ATTRIBUTE_INDEPENDENT).unwrap();
+    age_type
+        .set_annotation(&mut snapshot, &type_manager, &thing_manager, ATTRIBUTE_INDEPENDENT, StorageCounters::DISABLED)
+        .unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
