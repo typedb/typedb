@@ -64,6 +64,7 @@ use crate::service::{
         diagnostics::run_with_diagnostics_async,
         document::encode_document,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+        options::{query_options_from_proto, transaction_options_from_proto},
         response_builders::transaction::{
             query_initial_res_from_error, query_initial_res_from_query_res_ok,
             query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
@@ -436,23 +437,9 @@ impl TransactionService {
     ) -> Result<ControlFlow<(), ()>, Status> {
         let receive_time = Instant::now();
         self.network_latency_millis = Some(open_req.network_latency_millis);
-        let mut transaction_options = TransactionOptions::default();
-        if let Some(options) = open_req.options {
-            // transaction options
-            if let Some(parallel) = options.parallel {
-                transaction_options.parallel = parallel;
-            }
-            if let Some(timeout) = options.schema_lock_acquire_timeout_millis {
-                transaction_options.schema_lock_acquire_timeout_millis = timeout
-            }
-            if let Some(transaction_timeout_millis) = options.transaction_timeout_millis {
-                transaction_options.transaction_timeout_millis = transaction_timeout_millis
-            }
-
-            // service options
-            self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE));
-        }
-
+        let transaction_options = transaction_options_from_proto(open_req.options);
+        // self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE)); // TODO get from protocol?
+        self.prefetch_size = Some(DEFAULT_PREFETCH_SIZE);
         let transaction_timeout_millis = transaction_options.transaction_timeout_millis;
 
         let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
@@ -763,7 +750,7 @@ impl TransactionService {
         req_id: Uuid,
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
-        let query_options = QueryOptions::default_grpc();
+        let query_options = query_options_from_proto(query_req.options);
         let query = query_req.query;
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
