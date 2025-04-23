@@ -16,6 +16,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -93,9 +94,10 @@ impl OwnerAPI for ObjectType {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Owns, Box<ConceptWriteError>> {
         with_object_type!(self, |object| {
-            object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
+            object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering, storage_counters)
         })
     }
 
@@ -356,8 +358,11 @@ impl PlayerAPI for ObjectType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Plays, Box<ConceptWriteError>> {
-        with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, thing_manager, role_type) })
+        with_object_type!(self, |object| {
+            object.set_plays(snapshot, type_manager, thing_manager, role_type, storage_counters)
+        })
     }
 
     fn unset_plays(

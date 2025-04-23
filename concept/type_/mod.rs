@@ -18,7 +18,10 @@ use encoding::{
     value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::{
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    profile::StorageCounters,
+};
 use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -214,6 +217,7 @@ pub trait OwnerAPI: TypeAPI {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Owns, Box<ConceptWriteError>>;
 
     fn unset_owns(
@@ -409,6 +413,7 @@ pub trait PlayerAPI: TypeAPI {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Plays, Box<ConceptWriteError>>;
 
     fn unset_plays(

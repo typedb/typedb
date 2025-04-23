@@ -21,7 +21,7 @@ use encoding::{
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -239,10 +239,11 @@ impl EntityType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: EntityTypeAnnotation,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             EntityTypeAnnotation::Abstract(_) => {
-                type_manager.set_entity_type_annotation_abstract(snapshot, thing_manager, *self)?
+                type_manager.set_entity_type_annotation_abstract(snapshot, thing_manager, *self, storage_counters)?
             }
         };
         Ok(())
@@ -280,8 +281,16 @@ impl OwnerAPI for EntityType {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Owns, Box<ConceptWriteError>> {
-        type_manager.set_owns(snapshot, thing_manager, (*self).into_object_type(), attribute_type, ordering)?;
+        type_manager.set_owns(
+            snapshot,
+            thing_manager,
+            (*self).into_object_type(),
+            attribute_type,
+            ordering,
+            storage_counters,
+        )?;
         Ok(Owns::new(ObjectType::Entity(*self), attribute_type))
     }
 
@@ -400,8 +409,9 @@ impl PlayerAPI for EntityType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Plays, Box<ConceptWriteError>> {
-        type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
+        type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type, storage_counters)
     }
 
     fn unset_plays(

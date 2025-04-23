@@ -25,6 +25,7 @@ use encoding::{
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -348,22 +349,23 @@ impl AttributeType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: AttributeTypeAnnotation,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, *self)?
+                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, *self, storage_counters)?
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_annotation_independent(snapshot, thing_manager, *self)?
+                type_manager.set_annotation_independent(snapshot, thing_manager, *self, storage_counters)?
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.set_annotation_regex(snapshot, thing_manager, *self, regex)?
+                type_manager.set_annotation_regex(snapshot, thing_manager, *self, regex, storage_counters)?
             }
             AttributeTypeAnnotation::Range(range) => {
-                type_manager.set_annotation_range(snapshot, thing_manager, *self, range)?
+                type_manager.set_annotation_range(snapshot, thing_manager, *self, range, storage_counters)?
             }
             AttributeTypeAnnotation::Values(values) => {
-                type_manager.set_annotation_values(snapshot, thing_manager, *self, values)?
+                type_manager.set_annotation_values(snapshot, thing_manager, *self, values, storage_counters)?
             }
         };
         Ok(())
