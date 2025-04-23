@@ -181,7 +181,6 @@ fn query_structure_edge(
         constraint.source_span().map(|span| QueryStructureEdgeSpan { begin: span.begin_offset, end: span.end_offset });
     match constraint {
         Constraint::Links(links) => {
-            eprintln!("{constraint:?}");
             let role_type = query_structure_role_type_as_vertex(context, links.role_type())?;
             push_edge!(edges, context, span, links.relation(), links.player(), Links(role_type))
         }
