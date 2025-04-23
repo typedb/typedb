@@ -32,7 +32,6 @@ pub(crate) struct TypeListExecutor {
     checker: Checker<Type>,
 }
 
-pub(super) type TypeFilterFn = FilterFn<Type>;
 pub(super) type TypeFilterMapFn = FilterMapUnchangedFn<Type>;
 
 pub(super) type TypeTupleIterator<I> =

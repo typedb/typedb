@@ -72,7 +72,7 @@ impl AsWriteInstruction for PutAttribute {
         thing_manager: &ThingManager,
         parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-        storage_counters: StorageCounters,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<WriteError>> {
         let attribute_type = try_unwrap_as!(answer::Type::Attribute: get_type(row, &self.type_)).unwrap();
         let inserted = thing_manager
@@ -91,7 +91,7 @@ impl AsWriteInstruction for PutObject {
         thing_manager: &ThingManager,
         _parameters: &ParameterRegistry,
         row: &mut Row<'_>,
-        storage_counters: StorageCounters,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<WriteError>> {
         let inserted = match get_type(row, &self.type_) {
             Type::Entity(entity_type) => {

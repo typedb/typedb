@@ -159,9 +159,9 @@ impl PlaysExecutor {
 
             BinaryIterateMode::UnboundInverted => {
                 // is this ever relevant?
-                return Err(Box::new(ConceptReadError::UnimplementedFunctionality {
+                Err(Box::new(ConceptReadError::UnimplementedFunctionality {
                     functionality: error::UnimplementedFeature::IrrelevantUnboundInvertedMode(file!()),
-                }));
+                }))
             }
 
             BinaryIterateMode::BoundFrom => {
