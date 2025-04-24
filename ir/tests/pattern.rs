@@ -16,8 +16,8 @@ fn build_conjunction_constraints() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
     let query = "match $person isa person, has name $name;";
-    let parsed = typeql::parse_query(query).unwrap();
-    let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
@@ -35,8 +35,8 @@ fn build_conjunction_constraints() {
         $person-type label person;
         $name-type label name;
     ";
-    let parsed = typeql::parse_query(query).unwrap();
-    let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
@@ -56,8 +56,8 @@ fn build_conjunction_constraints() {
         $person-type label person;
         $name-type label name;
     ";
-    let parsed = typeql::parse_query(query).unwrap();
-    let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO
@@ -93,8 +93,8 @@ fn variable_category_mismatch() {
         $person isa $person-type;
         $person-type isa $person;
     ";
-    let parsed = typeql::parse_query(query).unwrap();
-    let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
+    let parsed = typeql::parse_query(query).unwrap().into_structure();
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
@@ -126,8 +126,8 @@ fn variable_category_narrowing() {
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
 
     let query = "match $person isa $person-type, has $name-type $name;";
-    let parsed = typeql::parse_query(query).unwrap(); // TODO
-    let typeql::Query::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
+    let parsed = typeql::parse_query(query).unwrap().into_structure(); // TODO
+    let typeql::query::QueryStructure::Pipeline(typeql::query::Pipeline { stages, .. }) = parsed else { unreachable!() };
     let Stage::Match(match_) = stages.first().unwrap() else { unreachable!() };
     eprintln!("{}\n", match_); // TODO
     eprintln!("{:#}\n", match_); // TODO

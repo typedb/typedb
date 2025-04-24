@@ -26,7 +26,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
     let mut contents = Vec::new();
     File::open(schema_tql).unwrap().read_to_end(&mut contents);
     let schema_str = String::from_utf8(contents).unwrap();
-    let schema_query = typeql::parse_query(schema_str.as_str()).unwrap().into_schema();
+    let schema_query = typeql::parse_query(schema_str.as_str()).unwrap().into_structure().into_schema();
 
     let tx = TransactionSchema::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionSchema {
@@ -68,7 +68,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
 
     File::open(data_tql).unwrap().read_to_end(&mut contents);
     let data_str = String::from_utf8(contents).unwrap();
-    let data_query = typeql::parse_query(data_str.as_str()).unwrap().into_pipeline();
+    let data_query = typeql::parse_query(data_str.as_str()).unwrap().into_structure().into_pipeline();
     let tx = TransactionWrite::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionWrite {
         snapshot,
@@ -127,7 +127,7 @@ fn setup() -> Arc<Database<WALClient>> {
 fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let tx = TransactionRead::open(database.clone(), TransactionOptions::default()).unwrap();
     let TransactionRead { snapshot, query_manager, type_manager, thing_manager, function_manager, .. } = &tx;
-    let query = typeql::parse_query(query_str).unwrap().into_pipeline();
+    let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
         .prepare_read_pipeline(
             snapshot.clone(),

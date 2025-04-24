@@ -354,7 +354,7 @@ pub mod tests {
     fn parse_value_via_typeql_expression(s: &str) -> Result<Value<'static>, Box<RepresentationError>> {
         let query = format!("match let $x = {}; select $x;", s);
         if let Stage::Match(match_) =
-            typeql::parse_query(query.as_str()).unwrap().into_pipeline().stages.first().unwrap()
+            typeql::parse_query(query.as_str()).unwrap().into_structure().into_pipeline().stages.first().unwrap()
         {
             let mut context = TranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();

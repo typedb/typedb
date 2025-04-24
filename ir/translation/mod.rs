@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use typeql::common::Span;
+use typeql::common::{Span};
 
 use crate::{
     pattern::variable_category::VariableCategory,

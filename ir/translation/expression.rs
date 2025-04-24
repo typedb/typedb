@@ -259,7 +259,7 @@ pub mod tests {
         value_parameters: &mut ParameterRegistry,
         query_str: &str,
     ) -> Result<Block, Box<RepresentationError>> {
-        let mut query = typeql::parse_query(query_str).unwrap().into_pipeline();
+        let mut query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
         let match_ = query.stages.remove(0).into_match();
         translate_match(context, value_parameters, &HashMapFunctionSignatureIndex::empty(), &match_)
             .and_then(|builder| builder.finish())

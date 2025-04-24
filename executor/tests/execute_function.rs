@@ -99,7 +99,7 @@ fn setup_common(schema: &str) -> Context {
     let query_manager = QueryManager::new(None);
 
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_schema();
+    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
         .unwrap();
@@ -116,7 +116,7 @@ fn run_read_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = Arc::new(context.storage.clone().open_snapshot_read());
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
     let pipeline = context
         .query_manager
         .prepare_read_pipeline(
@@ -151,7 +151,7 @@ fn run_write_query(
     query: &str,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, HashMap<String, VariablePosition>), Box<PipelineExecutionError>> {
     let snapshot = context.storage.clone().open_snapshot_write();
-    let query_as_pipeline = typeql::parse_query(query).unwrap().into_pipeline();
+    let query_as_pipeline = typeql::parse_query(query).unwrap().into_structure().into_pipeline();
     let pipeline = context
         .query_manager
         .prepare_write_pipeline(

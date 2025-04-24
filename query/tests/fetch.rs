@@ -32,7 +32,7 @@ fn define_schema(
       relation friendship relates friend @card(0..);
       entity person owns name @card(0..), owns age, plays friendship:friend @card(0..);
     "#;
-    let schema_query = typeql::parse_query(query_str).unwrap().into_schema();
+    let schema_query = typeql::parse_query(query_str).unwrap().into_structure().into_schema();
     query_manager
         .execute_schema(&mut snapshot, type_manager, thing_manager, function_manager, schema_query, query_str)
         .unwrap();
@@ -48,7 +48,7 @@ fn insert_data(
 ) {
     let snapshot = storage.clone().open_snapshot_write();
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
-    let query = typeql::parse_query(query_string).unwrap().into_pipeline();
+    let query = typeql::parse_query(query_string).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
         .prepare_write_pipeline(snapshot, type_manager, thing_manager, function_manager, &query, query_string)
         .unwrap();
@@ -118,7 +118,7 @@ fetch {
 };"#;
     let query = typeql::parse_query(query_str).unwrap();
 
-    let pipeline = query.into_pipeline();
+    let pipeline = query.into_structure().into_pipeline();
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
     let pipeline = QueryManager::new(Some(Arc::new(QueryCache::new())))
         .prepare_read_pipeline(

@@ -175,7 +175,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
-    let typeql_insert = typeql::parse_query(query_str).unwrap().into_pipeline().stages.pop().unwrap().into_insert();
+    let typeql_insert = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline().stages.pop().unwrap().into_insert();
     let block =
         ir::translation::writes::translate_insert(&mut translation_context, &mut value_parameters, &typeql_insert)
             .unwrap();
@@ -255,6 +255,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     let (block, block_annotations) = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)
             .unwrap()
+            .into_structure()
             .into_pipeline()
             .stages
             .pop()
@@ -285,7 +286,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     };
     let entry_annotations = block_annotations.type_annotations_of(block.conjunction()).unwrap();
 
-    let typeql_delete = typeql::parse_query(delete_str).unwrap().into_pipeline().stages.pop().unwrap().into_delete();
+    let typeql_delete = typeql::parse_query(delete_str).unwrap().into_structure().into_pipeline().stages.pop().unwrap().into_delete();
     let (block, deleted_concepts) =
         ir::translation::writes::translate_delete(&mut translation_context, &mut value_parameters, &typeql_delete)
             .unwrap();
