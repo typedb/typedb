@@ -6,14 +6,13 @@
 
 use itertools::Either;
 use macro_rules_attribute::apply;
-use serde::Deserialize;
+use params::check_boolean;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, Config},
     server::Server,
 };
 use test_utils::create_tmp_dir;
-use tokio::task::JoinHandle;
 
 use crate::{
     generic_step,

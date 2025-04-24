@@ -6,13 +6,14 @@
 
 use cucumber::gherkin::Step;
 use futures::future::{join_all, try_join_all};
+use hyper::{client::HttpConnector, Client};
 use macro_rules_attribute::apply;
 
 use crate::{
     generic_step, in_background,
     message::{databases, databases_create, databases_delete, databases_get},
     params::TokenMode,
-    util::{iter_table, random_uuid},
+    util::iter_table,
     Context, HttpContext,
 };
 
