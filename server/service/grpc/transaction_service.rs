@@ -35,7 +35,10 @@ use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
 use query::error::QueryError;
-use resource::{constants::server::DEFAULT_PREFETCH_SIZE, profile::StorageCounters};
+use resource::{
+    constants::server::DEFAULT_PREFETCH_SIZE,
+    profile::{EncodingProfile, QueryProfile, StorageCounters},
+};
 use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{
@@ -925,6 +928,7 @@ impl TransactionService {
             let timeout_at = self.timeout_at;
             let interrupt = self.query_interrupt_receiver.clone();
             tokio::spawn(async move {
+                let encoding_profile = EncodingProfile::new(tracing::enabled!(Level::TRACE));
                 match answer.answer {
                     Either::Left((output_descriptor, batch, query_structure)) => {
                         Self::submit_write_query_batch_answer(
@@ -938,6 +942,7 @@ impl TransactionService {
                             sender,
                             timeout_at,
                             interrupt,
+                            encoding_profile.storage_counters(),
                         )
                         .await
                     }
@@ -951,6 +956,7 @@ impl TransactionService {
                             sender,
                             timeout_at,
                             interrupt,
+                            encoding_profile.storage_counters(),
                         )
                         .await
                     }
@@ -970,6 +976,7 @@ impl TransactionService {
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
+        storage_counters: StorageCounters,
     ) {
         let mut batch_iterator = batch.into_iterator();
         Self::submit_response_async(&sender, StreamQueryResponse::init_ok_rows(&output_descriptor, Write)).await;
@@ -999,7 +1006,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
-                StorageCounters::DISABLED, // TODO
+                storage_counters.clone(),
             );
             match encoded_row {
                 Ok(encoded_row) => {
@@ -1027,6 +1034,7 @@ impl TransactionService {
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
+        storage_counters: StorageCounters,
     ) {
         Self::submit_response_async(&sender, StreamQueryResponse::init_ok_documents(Write)).await;
 
@@ -1054,7 +1062,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 &parameters,
-                StorageCounters::DISABLED, // TODO
+                storage_counters.clone(),
             );
             match encoded_document {
                 Ok(encoded_document) => {
@@ -1131,7 +1139,10 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         start_time: Instant,
     ) {
-        let query_profile = if pipeline.has_fetch() {
+        let query_profile: Arc<QueryProfile>;
+        let encoding_profile: EncodingProfile;
+
+        if pipeline.has_fetch() {
             let initial_response = StreamQueryResponse::init_ok_documents(Read);
             Self::submit_response_sync(sender, initial_response);
             let (iterator, context) =
@@ -1144,6 +1155,8 @@ impl TransactionService {
                         }),
                     );
                 });
+            query_profile = context.profile;
+            encoding_profile = EncodingProfile::new(query_profile.is_enabled());
 
             let parameters = context.parameters;
             for next in iterator {
@@ -1172,7 +1185,7 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     &parameters,
-                    StorageCounters::DISABLED, // TODO
+                    encoding_profile.storage_counters(),
                 );
                 match encoded_document {
                     Ok(encoded_document) => {
@@ -1187,7 +1200,6 @@ impl TransactionService {
                     }
                 }
             }
-            context.profile
         } else {
             let named_outputs = pipeline.rows_positions().unwrap();
             let descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
@@ -1205,6 +1217,8 @@ impl TransactionService {
                         }),
                     );
                 });
+            query_profile = context.profile;
+            encoding_profile = EncodingProfile::new(query_profile.is_enabled());
 
             while let Some(next) = iterator.next() {
                 if let Some(interrupt) = interrupt.check() {
@@ -1233,7 +1247,7 @@ impl TransactionService {
                     type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
-                    StorageCounters::DISABLED, // TODO
+                    encoding_profile.storage_counters(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => Self::submit_response_sync(sender, StreamQueryResponse::next_row(encoded_row)),
@@ -1246,15 +1260,16 @@ impl TransactionService {
                     }
                 }
             }
-            context.profile
-        };
+        }
+
         if query_profile.is_enabled() {
             let micros = Instant::now().duration_since(start_time).as_micros();
             event!(
                 Level::INFO,
-                "Read query done (including network request time) in {} micros.\n{}",
+                "Read query done (including network request time) in {} micros.\n{}\n{}",
                 micros,
-                query_profile
+                query_profile,
+                encoding_profile
             );
         }
         Self::submit_response_sync(sender, StreamQueryResponse::done_ok())

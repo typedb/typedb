@@ -489,6 +489,33 @@ struct CompileProfileData {
 }
 
 #[derive(Debug)]
+pub struct EncodingProfile {
+    storage_counters: StorageCounters,
+}
+
+impl EncodingProfile {
+    pub fn new(enabled: bool) -> Self {
+        if enabled {
+            Self { storage_counters: StorageCounters::new_enabled() }
+        } else {
+            Self { storage_counters: StorageCounters::DISABLED }
+        }
+    }
+
+    pub fn storage_counters(&self) -> StorageCounters {
+        self.storage_counters.clone()
+    }
+}
+
+impl Display for EncodingProfile {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "  Response")?;
+        writeln!(f, "    storage counters: {}", self.storage_counters())?;
+        Ok(())
+    }
+}
+
+#[derive(Debug)]
 pub struct StageProfile {
     description: String,
     step_profiles: RwLock<Vec<Arc<StepProfile>>>,
