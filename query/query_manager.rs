@@ -23,7 +23,7 @@ use ir::{
 };
 use resource::{
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
-    profile::QueryProfile,
+    profile::{QueryProfile, StorageCounters},
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
@@ -51,14 +51,35 @@ impl QueryManager {
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
-        match query {
+        let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let result = match query {
             SchemaQuery::Define(define) => {
-                define::execute(snapshot, type_manager, thing_manager, function_manager, define).map_err(|err| {
+                let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
+                let step_profile = profile.extend_or_get(0, || String::from("Define execution"));
+                define::execute(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    define,
+                    step_profile.storage_counters(),
+                )
+                .map_err(|err| {
                     Box::new(QueryError::Define { source_query: source_query.to_string(), typedb_source: err })
                 })
             }
             SchemaQuery::Redefine(redefine) => {
-                redefine::execute(snapshot, type_manager, thing_manager, function_manager, redefine).map_err(|err| {
+                let profile = query_profile.profile_stage(|| String::from("Redefine"), 0); // TODO executable id
+                let step_profile = profile.extend_or_get(0, || String::from("Redefine execution"));
+                redefine::execute(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    redefine,
+                    step_profile.storage_counters(),
+                )
+                .map_err(|err| {
                     Box::new(QueryError::Redefine { source_query: source_query.to_string(), typedb_source: err })
                 })
             }
@@ -67,7 +88,13 @@ impl QueryManager {
                     Box::new(QueryError::Undefine { source_query: source_query.to_string(), typedb_source: err })
                 })
             }
+        };
+
+        if query_profile.is_enabled() {
+            event!(Level::INFO, "Schema query done.\n{}", query_profile);
         }
+
+        result
     }
 
     pub fn prepare_read_pipeline<Snapshot: ReadableSnapshot + 'static>(

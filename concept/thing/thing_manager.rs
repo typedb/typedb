@@ -2340,13 +2340,14 @@ impl ThingManager {
             &mut modified_owns,
             &mut modified_plays,
             &mut modified_relates,
+            storage_counters.clone(),
         )?;
 
         for (relation_type, role_types) in modified_relates {
             let (min, max) = minmax_or!(
                 TypeAPI::chain_types(
                     relation_type,
-                    relation_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                    relation_type.get_subtypes_transitive(snapshot, self.type_manager(),)?.into_iter().cloned()
                 ),
                 unreachable!("Expected at least one object type")
             );
@@ -2365,7 +2366,7 @@ impl ThingManager {
             let (min, max) = minmax_or!(
                 TypeAPI::chain_types(
                     object_type,
-                    object_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                    object_type.get_subtypes_transitive(snapshot, self.type_manager(),)?.into_iter().cloned()
                 ),
                 unreachable!("Expected at least one object type")
             );
@@ -2384,7 +2385,7 @@ impl ThingManager {
             let (min, max) = minmax_or!(
                 TypeAPI::chain_types(
                     object_type,
-                    object_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                    object_type.get_subtypes_transitive(snapshot, self.type_manager(),)?.into_iter().cloned()
                 ),
                 unreachable!("Expected at least one object type")
             );
@@ -2408,6 +2409,7 @@ impl ThingManager {
         modified_owns: &mut HashMap<ObjectType, HashSet<AttributeType>>,
         modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
         modified_relates: &mut HashMap<RelationType, HashSet<RoleType>>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         // New / deleted capabilities
 
