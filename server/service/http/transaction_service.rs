@@ -144,7 +144,6 @@ pub(crate) struct TransactionService {
 
     timeout_at: Instant,
     schema_lock_acquire_timeout_millis: Option<u64>,
-    prefetch_size: Option<u64>,
 
     transaction: Option<Transaction>,
     query_queue: VecDeque<(TransactionResponder, QueryOptions, typeql::query::Pipeline, String)>,
@@ -232,7 +231,6 @@ impl TransactionService {
 
             timeout_at: init_transaction_timeout(None),
             schema_lock_acquire_timeout_millis: None,
-            prefetch_size: None,
 
             transaction: None,
             query_queue: VecDeque::with_capacity(20),
