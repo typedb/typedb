@@ -6,8 +6,8 @@
 
 use options::{QueryOptions, TransactionOptions};
 use resource::constants::server::{
-    DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS,
-    DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
+    DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
+    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
 use typedb_protocol::options::{Query as QueryOptionsProto, Transaction as TransactionOptionsProto};
 
@@ -33,5 +33,6 @@ pub(crate) fn query_options_from_proto(proto: Option<QueryOptionsProto>) -> Quer
     QueryOptions {
         include_instance_types: proto.include_instance_types.unwrap_or(DEFAULT_INCLUDE_INSTANCE_TYPES),
         answer_count_limit: DEFAULT_ANSWER_COUNT_LIMIT_GRPC,
+        prefetch_size: proto.prefetch_size.map(|value| value as usize).unwrap_or(DEFAULT_PREFETCH_SIZE),
     }
 }

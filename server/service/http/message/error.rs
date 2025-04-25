@@ -62,6 +62,7 @@ impl IntoResponse for HttpServiceError {
                 TransactionServiceError::ServiceFailedQueueCleanup { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::PipelineExecution { .. } => StatusCode::BAD_REQUEST,
                 TransactionServiceError::TransactionTimeout { .. } => StatusCode::REQUEST_TIMEOUT,
+                TransactionServiceError::InvalidPrefetchSize { .. } => StatusCode::BAD_REQUEST,
             },
             HttpServiceError::QueryClose { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::QueryCommit { .. } => StatusCode::BAD_REQUEST,

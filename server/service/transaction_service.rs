@@ -413,5 +413,6 @@ typedb_error! {
         ServiceFailedQueueCleanup(15, "The operation failed since the service is closing."),
         PipelineExecution(16, "Pipeline execution failed.", typedb_source: PipelineExecutionError),
         TransactionTimeout(17, "Operation failed: transaction timeout."),
+        InvalidPrefetchSize(18, "Invalid query option: prefetch size should be >= 1, got {value} instead.", value: usize),
     }
 }

@@ -96,7 +96,6 @@ pub(crate) struct TransactionService {
 
     timeout_at: Instant,
     schema_lock_acquire_timeout_millis: Option<u64>,
-    prefetch_size: Option<u64>,
     network_latency_millis: Option<u64>,
 
     is_open: bool,
@@ -212,7 +211,6 @@ impl TransactionService {
 
             timeout_at: init_transaction_timeout(None),
             schema_lock_acquire_timeout_millis: None,
-            prefetch_size: None,
             network_latency_millis: None,
 
             is_open: false,
@@ -438,8 +436,6 @@ impl TransactionService {
         let receive_time = Instant::now();
         self.network_latency_millis = Some(open_req.network_latency_millis);
         let transaction_options = transaction_options_from_proto(open_req.options);
-        // self.prefetch_size = options.prefetch_size.or(Some(DEFAULT_PREFETCH_SIZE)); // TODO get from protocol?
-        self.prefetch_size = Some(DEFAULT_PREFETCH_SIZE);
         let transaction_timeout_millis = transaction_options.transaction_timeout_millis;
 
         let transaction_type = typedb_protocol::transaction::Type::try_from(open_req.r#type)
@@ -751,6 +747,13 @@ impl TransactionService {
         query_req: typedb_protocol::query::Req,
     ) -> Result<ControlFlow<(), ()>, Status> {
         let query_options = query_options_from_proto(query_req.options);
+        if query_options.prefetch_size < 1 {
+            let response = ImmediateQueryResponse::non_fatal_err(TransactionServiceError::InvalidPrefetchSize {
+                value: query_options.prefetch_size,
+            });
+            return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
+        }
+
         let query = query_req.query;
         let parsed = match parse_query(&query) {
             Ok(parsed) => parsed,
@@ -847,13 +850,14 @@ impl TransactionService {
     }
 
     fn activate_write_transmitter(&mut self, req_id: Uuid, answer: WriteQueryAnswer) {
-        let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
+        let prefetch_size = answer.query_options.prefetch_size;
+        let (sender, receiver) = channel(prefetch_size);
         let answer_reader = self.write_query_answer_reader(answer, sender);
         let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
             req_id,
-            self.prefetch_size.unwrap() as usize,
+            prefetch_size,
             self.network_latency_millis.unwrap() as usize,
         );
         self.query_responders.insert(req_id, (answer_reader, stream_transmitter));
@@ -866,13 +870,14 @@ impl TransactionService {
         pipeline: typeql::query::Pipeline,
         source_query: String,
     ) {
-        let (sender, receiver) = channel(self.prefetch_size.unwrap() as usize);
+        let prefetch_size = query_options.prefetch_size;
+        let (sender, receiver) = channel(prefetch_size);
         let worker_handle = self.blocking_read_query_worker(sender, query_options, pipeline, source_query);
         let stream_transmitter = QueryStreamTransmitter::start_new(
             self.response_sender.clone(),
             receiver,
             req_id,
-            self.prefetch_size.unwrap() as usize,
+            prefetch_size,
             self.network_latency_millis.unwrap() as usize,
         );
         self.query_responders.insert(req_id, (worker_handle, stream_transmitter));

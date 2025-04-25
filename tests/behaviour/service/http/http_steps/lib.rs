@@ -227,7 +227,7 @@ impl Context {
     }
 
     fn is_ignore_tag(t: &String) -> bool {
-        t == "ignore" || t == "ignore-http"
+        t == "ignore" || t == "ignore-typedb-http"
     }
 
     pub async fn after_scenario(&mut self) {
