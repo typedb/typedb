@@ -17,6 +17,7 @@ use concept::{
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
+use resource::profile::StorageCounters;
 
 use crate::{
     generic_step,
@@ -33,6 +34,7 @@ pub(super) fn object_set_has_impl(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         attribute,
+        StorageCounters::DISABLED
     ))
 }
 
@@ -47,6 +49,7 @@ pub(super) fn object_set_has_ordered_impl(
         &tx.thing_manager,
         attribute_type,
         attributes,
+        StorageCounters::DISABLED
     ))
 }
 
@@ -59,6 +62,7 @@ fn object_unset_has_impl(
         Arc::get_mut(&mut tx.snapshot).unwrap(),
         &tx.thing_manager,
         key,
+        StorageCounters::DISABLED
     ))
 }
 
@@ -73,7 +77,12 @@ fn object_unset_has_ordered_impl(
             .get_attribute_type(tx.snapshot.as_ref(), &attribute_type_label.into_typedb())
             .unwrap()
             .unwrap();
-        object.unset_has_ordered(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, attribute_type)
+        object.unset_has_ordered(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.thing_manager,
+            attribute_type,
+            StorageCounters::DISABLED,
+        )
     })
 }
 
@@ -174,7 +183,7 @@ async fn object_get_has_list(
             .unwrap()
             .unwrap();
         object
-            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
+            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type, StorageCounters::DISABLED)
             .unwrap()
             .into_iter()
             .collect()
@@ -201,7 +210,7 @@ async fn object_get_has_list_is(
             .unwrap()
             .unwrap();
         object
-            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
+            .get_has_type_ordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type, StorageCounters::DISABLED)
             .unwrap()
             .into_iter()
             .collect_vec()
@@ -226,7 +235,8 @@ async fn object_get_has_is_empty(
     object_kind.assert(&object.type_());
     let actuals = with_read_tx!(context, |tx| {
         object
-            .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
+            .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
+            .unwrap()
             .map(|res| {
                 let (has, _count) = res.unwrap();
                 has.attribute()
@@ -251,7 +261,8 @@ async fn object_get_has(
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         object
-            .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager)
+            .get_has_unordered(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
+            .unwrap()
             .map(|res| {
                 let (has, _count) = res.unwrap();
                 let attribute = has.attribute();
@@ -282,7 +293,14 @@ async fn object_get_has_type(
             .unwrap()
             .unwrap();
         object
-            .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
+            .get_has_type_unordered(
+                tx.snapshot.as_ref(),
+                &tx.thing_manager,
+                attribute_type,
+                &..,
+                StorageCounters::DISABLED,
+            )
+            .unwrap()
             .map(|res| {
                 let (attribute, _count) = res.unwrap();
                 attribute
@@ -317,7 +335,14 @@ async fn object_get_has_with_annotations(
             .into_iter()
             .flat_map(|attribute_type| {
                 object
-                    .get_has_type_unordered(tx.snapshot.as_ref(), &tx.thing_manager, attribute_type)
+                    .get_has_type_unordered(
+                        tx.snapshot.as_ref(),
+                        &tx.thing_manager,
+                        attribute_type,
+                        &..,
+                        StorageCounters::DISABLED,
+                    )
+                    .unwrap()
                     .map(|res| {
                         let (attribute, _count) = res.unwrap();
                         attribute

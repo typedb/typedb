@@ -6,15 +6,12 @@
 
 use std::{collections::HashSet, slice};
 
-use cucumber::{gherkin::Step, given, then, when};
-use futures::TryFutureExt;
+use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
-use params;
-use tokio::time::sleep;
 
 use crate::{
-    assert_err, generic_step,
+    generic_step,
     message::{users, users_create, users_delete, users_get, users_update},
     params::TokenMode,
     util::{iter_table, random_uuid},

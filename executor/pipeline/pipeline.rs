@@ -15,6 +15,7 @@ use compiler::{
 use concept::thing::thing_manager::ThingManager;
 use error::typedb_error;
 use ir::pipeline::ParameterRegistry;
+use resource::profile::QueryProfile;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -125,9 +126,10 @@ impl<Snapshot: ReadableSnapshot + 'static> Pipeline<Snapshot, ReadPipelineStage<
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
         input: Option<MaybeOwnedRow<'_>>,
+        query_profile: Arc<QueryProfile>,
     ) -> Result<Self, Box<PipelineError>> {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(snapshot, thing_manager, parameters.clone());
+        let context = ExecutionContext::new_with_profile(snapshot, thing_manager, parameters.clone(), query_profile);
         let mut last_stage = ReadPipelineStage::Initial(Box::new(
             input
                 .map(|row| InitialStage::new_with(context.clone(), row))
@@ -205,9 +207,11 @@ impl<Snapshot: WritableSnapshot + 'static> Pipeline<Snapshot, WritePipelineStage
         executable_stages: Vec<ExecutableStage>,
         executable_fetch: Option<Arc<ExecutableFetch>>,
         parameters: Arc<ParameterRegistry>,
+        query_profile: Arc<QueryProfile>,
     ) -> Self {
         let output_variable_positions = executable_stages.last().unwrap().output_row_mapping();
-        let context = ExecutionContext::new(Arc::new(snapshot), thing_manager, parameters.clone());
+        let context =
+            ExecutionContext::new_with_profile(Arc::new(snapshot), thing_manager, parameters.clone(), query_profile);
         let mut last_stage = WritePipelineStage::Initial(Box::new(InitialStage::new_empty(context)));
         for executable_stage in executable_stages {
             match executable_stage {

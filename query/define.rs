@@ -27,6 +27,7 @@ use encoding::{
 use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     common::{error::TypeQLError, Span, Spanned},
@@ -81,9 +82,10 @@ pub(crate) fn execute(
     thing_manager: &ThingManager,
     function_manager: &FunctionManager,
     define: Define,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     process_struct_definitions(snapshot, type_manager, &define.definables)?;
-    process_type_definitions(snapshot, type_manager, thing_manager, &define.definables)?;
+    process_type_definitions(snapshot, type_manager, thing_manager, &define.definables, storage_counters)?;
     process_function_definitions(snapshot, function_manager, &define.definables)?;
     Ok(())
 }
@@ -105,28 +107,29 @@ fn process_type_definitions(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     definables: &[Definable],
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
     define_types(snapshot, type_manager, declarations.clone())?;
     declarations.clone().try_for_each(|declaration| define_alias(snapshot, type_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_value_type(snapshot, type_manager, thing_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_type_annotations(snapshot, type_manager, thing_manager, declaration))?;
+    declarations.clone().try_for_each(|declaration| {
+        define_value_type(snapshot, type_manager, thing_manager, declaration, storage_counters.clone())
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_type_annotations(snapshot, type_manager, thing_manager, declaration, storage_counters.clone())
+    })?;
     declarations.clone().try_for_each(|declaration| define_sub(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| {
-        define_relates_with_annotations(snapshot, type_manager, thing_manager, declaration)
+        define_relates_with_annotations(snapshot, type_manager, thing_manager, declaration, storage_counters.clone())
     })?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_relates_specialises(snapshot, type_manager, thing_manager, declaration))?;
-    declarations
-        .clone()
-        .try_for_each(|declaration| define_owns_with_annotations(snapshot, type_manager, thing_manager, declaration))?;
     declarations.clone().try_for_each(|declaration| {
-        define_plays_with_annotations(snapshot, type_manager, thing_manager, declaration)
+        define_relates_specialises(snapshot, type_manager, thing_manager, declaration, storage_counters.clone())
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_owns_with_annotations(snapshot, type_manager, thing_manager, declaration, storage_counters.clone())
+    })?;
+    declarations.clone().try_for_each(|declaration| {
+        define_plays_with_annotations(snapshot, type_manager, thing_manager, declaration, storage_counters.clone())
     })?;
     Ok(())
 }
@@ -294,6 +297,7 @@ fn define_type_annotations(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -312,12 +316,12 @@ fn define_type_annotations(
                     typeql_annotation,
                     type_declaration,
                 )? {
-                    entity.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        DefineError::SetAnnotation {
-                            typedb_source: source,
-                            type_: label.to_owned(),
-                            source_span: typeql_annotation.span(),
-                        }
+                    entity
+                        .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                        .map_err(|source| DefineError::SetAnnotation {
+                        typedb_source: source,
+                        type_: label.to_owned(),
+                        source_span: typeql_annotation.span(),
                     })?;
                 }
             }
@@ -331,13 +335,13 @@ fn define_type_annotations(
                     typeql_annotation,
                     type_declaration,
                 )? {
-                    relation.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        DefineError::SetAnnotation {
+                    relation
+                        .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                        .map_err(|source| DefineError::SetAnnotation {
                             typedb_source: source,
                             type_: label.to_owned(),
                             source_span: typeql_annotation.span(),
-                        }
-                    })?;
+                        })?;
                 }
             }
             TypeEnum::Attribute(attribute) => {
@@ -358,13 +362,13 @@ fn define_type_annotations(
                             },
                         });
                     }
-                    attribute.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        DefineError::SetAnnotation {
+                    attribute
+                        .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                        .map_err(|source| DefineError::SetAnnotation {
                             typedb_source: source,
                             type_: label.to_owned(),
                             source_span: typeql_annotation.span(),
-                        }
-                    })?;
+                        })?;
                 }
             }
             TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
@@ -472,6 +476,7 @@ fn define_value_type(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -527,6 +532,7 @@ fn define_value_type(
             &label,
             capability,
             type_declaration,
+            storage_counters.clone(),
         )?;
     }
     Ok(())
@@ -540,6 +546,7 @@ fn define_value_type_annotations(
     attribute_type_label: &Label,
     typeql_capability: &TypeQLCapability,
     typeql_type: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation = translate_annotation(typeql_annotation)
@@ -561,12 +568,12 @@ fn define_value_type_annotations(
                     },
                 });
             }
-            attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                DefineError::SetAnnotation {
-                    typedb_source: source,
-                    type_: attribute_type_label.clone(),
-                    source_span: typeql_annotation.span(),
-                }
+            attribute_type
+                .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                .map_err(|source| DefineError::SetAnnotation {
+                typedb_source: source,
+                type_: attribute_type_label.clone(),
+                source_span: typeql_annotation.span(),
             })?;
         }
     }
@@ -578,6 +585,7 @@ fn define_relates_with_annotations(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -604,7 +612,14 @@ fn define_relates_with_annotations(
         .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => relation_type
-                .create_relates(snapshot, type_manager, thing_manager, role_label.name.as_str(), ordering)
+                .create_relates(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    role_label.name.as_str(),
+                    ordering,
+                    storage_counters.clone(),
+                )
                 .map_err(|source| DefineError::CreateRelates {
                     key: Keyword::Relates,
                     source_span: relates.span(),
@@ -665,6 +680,7 @@ fn define_relates_specialises(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -682,7 +698,15 @@ fn define_relates_specialises(
         let relates = resolve_relates_declared(snapshot, type_manager, *relation_type, role_label.name.as_str())
             .map_err(|typedb_source| DefineError::SymbolResolution { typedb_source })?;
 
-        define_relates_specialise(snapshot, type_manager, thing_manager, &label, relates, typeql_relates)?;
+        define_relates_specialise(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &label,
+            relates,
+            typeql_relates,
+            storage_counters.clone(),
+        )?;
     }
     Ok(())
 }
@@ -694,6 +718,7 @@ fn define_relates_specialise(
     relation_label: &Label,
     relates: Relates,
     typeql_relates: &TypeQLRelates,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
         let checked_specialised = checked_identifier(&specialised_label.ident)?;
@@ -733,13 +758,13 @@ fn define_relates_specialise(
         }?;
 
         if need_define {
-            relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates).map_err(|source| {
-                DefineError::SetSpecialise {
+            relates
+                .set_specialise(snapshot, type_manager, thing_manager, specialised_relates, storage_counters)
+                .map_err(|source| DefineError::SetSpecialise {
                     type_: relation_label.clone(),
                     source_span: typeql_relates.span(),
                     typedb_source: source,
-                }
-            })?;
+                })?;
         }
     }
     Ok(())
@@ -750,6 +775,7 @@ fn define_owns_with_annotations(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -777,7 +803,7 @@ fn define_owns_with_annotations(
         .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let defined = match definition_status {
             DefinableStatus::DoesNotExist => object_type
-                .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
+                .set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering, storage_counters.clone())
                 .map_err(|source| DefineError::CreateOwns {
                     key: Keyword::Owns,
                     source_span: owns.span(),
@@ -838,6 +864,7 @@ fn define_plays_with_annotations(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), DefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -861,11 +888,13 @@ fn define_plays_with_annotations(
             get_plays_status(snapshot, type_manager, object_type, role_type, DefinableStatusMode::Declared)
                 .map_err(|source| DefineError::UnexpectedConceptRead { typedb_source: source })?;
         let defined = match definition_status {
-            DefinableStatus::DoesNotExist => {
-                object_type.set_plays(snapshot, type_manager, thing_manager, role_type).map_err(|source| {
-                    DefineError::CreatePlays { key: Keyword::Plays, source_span: plays.span(), typedb_source: source }
-                })?
-            }
+            DefinableStatus::DoesNotExist => object_type
+                .set_plays(snapshot, type_manager, thing_manager, role_type, storage_counters.clone())
+                .map_err(|source| DefineError::CreatePlays {
+                    key: Keyword::Plays,
+                    source_span: plays.span(),
+                    typedb_source: source,
+                })?,
             DefinableStatus::ExistsSame(Some(existing_plays)) => existing_plays,
             DefinableStatus::ExistsSame(None) => unreachable!("Existing plays concept expected"),
             DefinableStatus::ExistsDifferent(_) => unreachable!("Plays cannot differ"),

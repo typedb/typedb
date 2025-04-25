@@ -5,7 +5,7 @@
  */
 use std::sync::Arc;
 
-use axum::{Extension, RequestPartsExt};
+use axum::RequestPartsExt;
 use axum_extra::{
     headers::{authorization::Bearer, Authorization},
     TypedHeader,

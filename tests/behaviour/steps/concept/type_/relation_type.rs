@@ -13,6 +13,7 @@ use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
+use resource::profile::StorageCounters;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
@@ -38,6 +39,7 @@ pub async fn relation_type_create_role_unordered(
             &tx.thing_manager,
             role_label.into_typedb().name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
     });
     may_error.check_concept_write_without_read_errors(&res);
@@ -60,6 +62,7 @@ pub async fn relation_type_create_role_ordered(
             &tx.thing_manager,
             role_label.into_typedb().name().as_str(),
             Ordering::Ordered,
+            StorageCounters::DISABLED,
         )
     });
     may_error.check_concept_write_without_read_errors(&res);
@@ -99,6 +102,7 @@ pub async fn relation_role_set_specialise(
                     &tx.type_manager,
                     &tx.thing_manager,
                     specialised_relates,
+                    StorageCounters::DISABLED,
                 );
                 may_error.check_concept_write_without_read_errors(&res);
                 return;

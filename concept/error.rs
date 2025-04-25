@@ -77,5 +77,6 @@ typedb_error! {
         ValueTypeMismatchWithAttributeType(22, "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.", attribute_type: AttributeType, expected: Option<ValueType>, provided: ValueType),
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
+        InternalIncomparableTypes(25, "Incomparable types"),
     }
 }

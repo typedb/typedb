@@ -85,6 +85,7 @@ macro_rules! with_write_tx_deconstructed {
                 query_manager: $query_manager,
                 database: $database,
                 transaction_options: $transaction_options,
+                profile,
             }) => {
                 let (res, $snapshot) = $expr;
                 $context.set_transaction($crate::transaction_context::ActiveTransaction::Write(
@@ -96,6 +97,7 @@ macro_rules! with_write_tx_deconstructed {
                         query_manager: $query_manager,
                         database: $database,
                         transaction_options: $transaction_options,
+                        profile,
                     },
                 ));
                 res
@@ -108,6 +110,7 @@ macro_rules! with_write_tx_deconstructed {
                 query_manager: $query_manager,
                 database: $database,
                 transaction_options: $transaction_options,
+                profile,
             }) => {
                 let (res, $snapshot) = $expr;
                 $context.set_transaction($crate::transaction_context::ActiveTransaction::Schema(
@@ -119,6 +122,7 @@ macro_rules! with_write_tx_deconstructed {
                         query_manager: $query_manager,
                         database: $database,
                         transaction_options: $transaction_options,
+                        profile,
                     },
                 ));
                 res

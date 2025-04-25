@@ -4,9 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{str::FromStr, sync::Arc, time::Duration};
+use std::{sync::Arc, time::Duration};
 
-use axum::response::IntoResponse;
 use compiler::{query_structure::QueryStructure, VariablePosition};
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::transaction::{
@@ -25,23 +24,18 @@ use executor::{
     ExecutionInterrupt, InterruptType,
 };
 use function::function_manager::FunctionManager;
-use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use options::QueryOptions;
 use query::{error::QueryError, query_manager::QueryManager};
 use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
-use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::WALClient,
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
 use tokio::{task::spawn_blocking, time::Instant};
 use tracing::{event, Level};
-use typeql::{
-    query::{stage::Stage, SchemaQuery},
-    Query,
-};
+use typeql::query::{stage::Stage, SchemaQuery};
 use uuid::Uuid;
 
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
@@ -145,6 +139,7 @@ pub(crate) async fn execute_schema_query(
         query_manager,
         database,
         transaction_options,
+        profile,
     } = transaction;
     let mut snapshot = Arc::into_inner(snapshot).unwrap();
     let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) = spawn_blocking(move || {
@@ -161,7 +156,7 @@ pub(crate) async fn execute_schema_query(
     .await
     .expect("Expected schema query execution finishing");
 
-    let transaction = TransactionSchema::from(
+    let transaction = TransactionSchema::from_parts(
         snapshot,
         type_manager,
         thing_manager,
@@ -169,6 +164,7 @@ pub(crate) async fn execute_schema_query(
         query_manager,
         database,
         transaction_options,
+        profile,
     );
 
     (transaction, result)
@@ -189,6 +185,7 @@ pub(crate) fn execute_write_query_in_schema(
         query_manager,
         database,
         transaction_options,
+        profile,
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
@@ -203,7 +200,7 @@ pub(crate) fn execute_write_query_in_schema(
         interrupt,
     );
 
-    let transaction = Transaction::Schema(TransactionSchema::from(
+    let transaction = Transaction::Schema(TransactionSchema::from_parts(
         snapshot,
         type_manager,
         thing_manager,
@@ -211,6 +208,7 @@ pub(crate) fn execute_write_query_in_schema(
         query_manager,
         database,
         transaction_options,
+        profile,
     ));
 
     (transaction, result)
@@ -231,6 +229,7 @@ pub(crate) fn execute_write_query_in_write(
         query_manager,
         database,
         transaction_options,
+        profile,
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
@@ -245,7 +244,7 @@ pub(crate) fn execute_write_query_in_write(
         interrupt,
     );
 
-    let transaction = Transaction::Write(TransactionWrite::from(
+    let transaction = Transaction::Write(TransactionWrite::from_parts(
         Arc::new(snapshot),
         type_manager,
         thing_manager,
@@ -253,6 +252,7 @@ pub(crate) fn execute_write_query_in_write(
         query_manager,
         database,
         transaction_options,
+        profile,
     ));
 
     (transaction, result)
@@ -269,6 +269,7 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
     source_query: &str,
     interrupt: ExecutionInterrupt,
 ) -> (Snapshot, WriteQueryResult) {
+    let start_time = Instant::now();
     let result = query_manager.prepare_write_pipeline(
         snapshot,
         type_manager,
@@ -314,7 +315,13 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
             }
         }
         if query_profile.is_enabled() {
-            event!(Level::INFO, "Write query completed.\n{}", query_profile);
+            let micros = Instant::now().duration_since(start_time).as_micros();
+            event!(
+                Level::INFO,
+                "Write query done (excluding network request time) in {} micros.\n{}",
+                micros,
+                query_profile
+            );
         }
         (
             Arc::into_inner(snapshot).unwrap(),
@@ -350,8 +357,15 @@ pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
                 })),
             ),
         };
+
         if query_profile.is_enabled() {
-            event!(Level::INFO, "Write query completed.\n{}", query_profile);
+            let micros = Instant::now().duration_since(start_time).as_micros();
+            event!(
+                Level::INFO,
+                "Write query done (excluding network request time) in {} micros.\n{}",
+                micros,
+                query_profile
+            );
         }
         result
     }

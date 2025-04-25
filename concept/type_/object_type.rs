@@ -16,6 +16,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -93,9 +94,10 @@ impl OwnerAPI for ObjectType {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Owns, Box<ConceptWriteError>> {
         with_object_type!(self, |object| {
-            object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering)
+            object.set_owns(snapshot, type_manager, thing_manager, attribute_type, ordering, storage_counters)
         })
     }
 
@@ -225,6 +227,8 @@ impl OwnerAPI for ObjectType {
 impl ConceptAPI for ObjectType {}
 
 impl TypeAPI for ObjectType {
+    const MIN: Self = Self::Entity(EntityType::MIN);
+    const MAX: Self = Self::Relation(RelationType::MAX);
     fn new(vertex: TypeVertex) -> Self {
         Self::from_vertex(vertex).unwrap()
     }
@@ -309,6 +313,32 @@ impl TypeAPI for ObjectType {
                 .collect_vec()
         })))
     }
+
+    fn next_possible(&self) -> Option<Self> {
+        match self {
+            ObjectType::Entity(entity) => Some(
+                entity
+                    .next_possible()
+                    .map(|entity_type| Self::Entity(entity_type))
+                    .unwrap_or_else(|| Self::Relation(RelationType::MIN)),
+            ),
+            ObjectType::Relation(relation) => {
+                relation.next_possible().map(|relation_type| Self::Relation(relation_type))
+            }
+        }
+    }
+
+    fn previous_possible(&self) -> Option<Self> {
+        match self {
+            ObjectType::Entity(entity) => entity.previous_possible().map(|entity_type| Self::Entity(entity_type)),
+            ObjectType::Relation(relation) => Some(
+                relation
+                    .previous_possible()
+                    .map(|relation_type| Self::Relation(relation_type))
+                    .unwrap_or_else(|| Self::Entity(EntityType::MAX)),
+            ),
+        }
+    }
 }
 
 impl ThingTypeAPI for ObjectType {
@@ -328,8 +358,11 @@ impl PlayerAPI for ObjectType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Plays, Box<ConceptWriteError>> {
-        with_object_type!(self, |object| { object.set_plays(snapshot, type_manager, thing_manager, role_type) })
+        with_object_type!(self, |object| {
+            object.set_plays(snapshot, type_manager, thing_manager, role_type, storage_counters)
+        })
     }
 
     fn unset_plays(

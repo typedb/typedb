@@ -4,11 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{fmt, hash::Hash, iter::Peekable, sync::Arc};
+use std::{fmt, iter::Peekable, sync::Arc};
 
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -215,7 +216,10 @@ impl CollectorTrait for SortCollector {
     fn into_iterator(self, context: &ExecutionContext<impl ReadableSnapshot>) -> CollectedStageIterator {
         let Self { sort_on, collector } = self;
         let unsorted = collector.unwrap();
-        let sorted_indices = unsorted.indices_sorted_by(context, &sort_on).into_iter().peekable();
+        let profile = context.profile.profile_stage(|| String::from("Sort"), 0); // TODO executable id
+        let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
+        let sorted_indices =
+            unsorted.indices_sorted_by(context, &sort_on, step_profile.storage_counters()).into_iter().peekable();
         CollectedStageIterator::Sort(SortStageIterator { unsorted, sorted_indices })
     }
 }

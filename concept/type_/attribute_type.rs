@@ -14,7 +14,7 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
         },
         Typed,
@@ -25,6 +25,7 @@ use encoding::{
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -55,7 +56,12 @@ impl fmt::Debug for AttributeType {
     }
 }
 
-impl AttributeType {}
+impl AttributeType {
+    const fn new_const_(vertex: TypeVertex) -> Self {
+        // note: unchecked!
+        Self { vertex }
+    }
+}
 
 impl Hkt for AttributeType {
     type HktSelf<'a> = AttributeType;
@@ -97,6 +103,9 @@ impl primitive::prefix::Prefix for AttributeType {
 }
 
 impl TypeAPI for AttributeType {
+    const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexAttributeType.prefix_id(), TypeID::MIN));
+    const MAX: Self = Self::new_const_(TypeVertex::new(Prefix::VertexAttributeType.prefix_id(), TypeID::MAX));
+
     fn new(vertex: TypeVertex) -> AttributeType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -164,6 +173,14 @@ impl TypeAPI for AttributeType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<AttributeType>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_subtypes_transitive(snapshot, *self)
+    }
+
+    fn next_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
+    }
+
+    fn previous_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().decrement().map(|next_id| Self::build_from_type_id(next_id))
     }
 }
 
@@ -332,22 +349,23 @@ impl AttributeType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: AttributeTypeAnnotation,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             AttributeTypeAnnotation::Abstract(_) => {
-                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, *self)?
+                type_manager.set_attribute_type_annotation_abstract(snapshot, thing_manager, *self, storage_counters)?
             }
             AttributeTypeAnnotation::Independent(_) => {
-                type_manager.set_annotation_independent(snapshot, thing_manager, *self)?
+                type_manager.set_annotation_independent(snapshot, thing_manager, *self, storage_counters)?
             }
             AttributeTypeAnnotation::Regex(regex) => {
-                type_manager.set_annotation_regex(snapshot, thing_manager, *self, regex)?
+                type_manager.set_annotation_regex(snapshot, thing_manager, *self, regex, storage_counters)?
             }
             AttributeTypeAnnotation::Range(range) => {
-                type_manager.set_annotation_range(snapshot, thing_manager, *self, range)?
+                type_manager.set_annotation_range(snapshot, thing_manager, *self, range, storage_counters)?
             }
             AttributeTypeAnnotation::Values(values) => {
-                type_manager.set_annotation_values(snapshot, thing_manager, *self, values)?
+                type_manager.set_annotation_values(snapshot, thing_manager, *self, values, storage_counters)?
             }
         };
         Ok(())

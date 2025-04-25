@@ -16,6 +16,7 @@ use concept::{
 };
 use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};
 use error::unimplemented_feature;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 pub(crate) fn encode_thing_concept(
@@ -24,6 +25,7 @@ pub(crate) fn encode_thing_concept(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::Concept, Box<ConceptReadError>> {
     let encoded = match thing {
         Thing::Entity(entity) => typedb_protocol::concept::Concept::Entity(encode_entity(
@@ -44,6 +46,7 @@ pub(crate) fn encode_thing_concept(
             type_manager,
             thing_manager,
             include_instance_types,
+            storage_counters,
         )?),
     };
     Ok(typedb_protocol::Concept { concept: Some(encoded) })
@@ -87,10 +90,11 @@ pub(crate) fn encode_attribute(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     include_instance_types: bool,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::Attribute, Box<ConceptReadError>> {
     Ok(typedb_protocol::Attribute {
         iid: Vec::from(attribute.iid()),
-        value: Some(encode_value(attribute.get_value(snapshot, thing_manager)?)),
+        value: Some(encode_value(attribute.get_value(snapshot, thing_manager, storage_counters)?)),
         attribute_type: if include_instance_types {
             Some(encode_attribute_type(&attribute.type_(), snapshot, type_manager)?)
         } else {
@@ -219,7 +223,7 @@ pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
             nanos: duration.nanos,
         }),
         Value::String(string) => typedb_protocol::value::Value::String(string.to_string()),
-        Value::Struct(struct_) => {
+        Value::Struct(_struct) => {
             unimplemented_feature!(Structs)
         }
     };

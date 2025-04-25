@@ -6,6 +6,7 @@
 
 use std::collections::HashSet;
 
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -44,7 +45,6 @@ macro_rules! collect_errors {
 }
 
 pub(crate) use collect_errors;
-
 macro_rules! validate_capability_cardinality_constraint {
     ($func_name:ident, $capability_type:ident, $object_instance:ident, $get_cardinality_constraints_func:ident, $get_interface_counts_func:ident, $check_func:path) => {
         pub(crate) fn $func_name(
@@ -52,10 +52,11 @@ macro_rules! validate_capability_cardinality_constraint {
             thing_manager: &ThingManager,
             object: $object_instance,
             interface_types_to_check: HashSet<<$capability_type as Capability>::InterfaceType>,
+            storage_counters: StorageCounters,
         ) -> Result<(), Box<DataValidationError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
             let counts = object
-                .$get_interface_counts_func(snapshot, thing_manager)
+                .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
                 .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
 
             for interface_type in interface_types_to_check {
@@ -105,12 +106,14 @@ impl CommitTimeValidation {
         object: Object,
         modified_attribute_types: HashSet<AttributeType>,
         out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let cardinality_check = CommitTimeValidation::validate_owns_cardinality_constraint(
             snapshot,
             thing_manager,
             object,
             modified_attribute_types,
+            storage_counters,
         );
         collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
@@ -122,9 +125,15 @@ impl CommitTimeValidation {
         object: Object,
         modified_role_types: HashSet<RoleType>,
         out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_check =
-            Self::validate_plays_cardinality_constraint(snapshot, thing_manager, object, modified_role_types);
+        let cardinality_check = Self::validate_plays_cardinality_constraint(
+            snapshot,
+            thing_manager,
+            object,
+            modified_role_types,
+            storage_counters,
+        );
         collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
     }
@@ -135,9 +144,15 @@ impl CommitTimeValidation {
         relation: Relation,
         modified_role_types: HashSet<RoleType>,
         out_errors: &mut Vec<DataValidationError>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
-        let cardinality_check =
-            Self::validate_relates_cardinality_constraint(snapshot, thing_manager, relation, modified_role_types);
+        let cardinality_check = Self::validate_relates_cardinality_constraint(
+            snapshot,
+            thing_manager,
+            relation,
+            modified_role_types,
+            storage_counters,
+        );
         collect_errors!(out_errors, cardinality_check, |e: Box<_>| *e);
         Ok(())
     }

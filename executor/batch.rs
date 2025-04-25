@@ -9,7 +9,6 @@ use std::{
     borrow::Cow,
     cmp::Ordering,
     iter::{Map, Take, Zip},
-    sync::Arc,
     vec,
 };
 
@@ -18,7 +17,7 @@ use encoding::value::value::Value;
 use error::unimplemented_feature;
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
-use resource::constants::traversal::FIXED_BATCH_ROWS_MAX;
+use resource::{constants::traversal::FIXED_BATCH_ROWS_MAX, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -253,6 +252,7 @@ impl Batch {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot>,
         sort_by: &[(usize, bool)],
+        storage_counters: StorageCounters,
     ) -> Vec<usize> {
         let mut indices: Vec<usize> = (0..self.len()).collect();
         indices.sort_by(|x, y| {
@@ -261,8 +261,8 @@ impl Batch {
             let x_row = x_row_as_row.row();
             let y_row = y_row_as_row.row();
             for (idx, asc) in sort_by.iter() {
-                let ord = get_value(&x_row[*idx], context)
-                    .partial_cmp(&get_value(&y_row[*idx], context))
+                let ord = get_value(&x_row[*idx], context, storage_counters.clone())
+                    .partial_cmp(&get_value(&y_row[*idx], context, storage_counters.clone()))
                     .expect("Sort on variable with uncomparable values should have been caught at query-compile time");
                 match (asc, ord) {
                     (true, Ordering::Less) | (false, Ordering::Greater) => return Ordering::Less,
@@ -335,12 +335,13 @@ fn row_range(index: usize, width: u32) -> std::ops::Range<usize> {
 fn get_value<'a, T: ReadableSnapshot>(
     entry: &'a VariableValue<'a>,
     context: &'a ExecutionContext<T>,
+    storage_counters: StorageCounters,
 ) -> Option<Cow<'a, Value<'a>>> {
     let snapshot: &T = &context.snapshot;
     match entry {
         VariableValue::Value(value) => Some(Cow::Borrowed(value)),
         VariableValue::Thing(Thing::Attribute(attribute)) => {
-            Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager).unwrap()))
+            Some(Cow::Owned(attribute.get_value(snapshot, &context.thing_manager, storage_counters).unwrap()))
         }
         VariableValue::Empty => None,
         VariableValue::Type(_) | VariableValue::Thing(_) => {

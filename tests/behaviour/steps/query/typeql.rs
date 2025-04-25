@@ -9,7 +9,8 @@ use std::{collections::HashMap, iter, str::FromStr, sync::Arc};
 use answer::{variable_value::VariableValue, Thing};
 use compiler::VariablePosition;
 use concept::{
-    thing::{object::ObjectAPI, ThingAPI},
+    error::ConceptReadError,
+    thing::{attribute::Attribute, object::ObjectAPI, ThingAPI},
     type_::TypeAPI,
 };
 use cucumber::gherkin::Step;
@@ -27,6 +28,7 @@ use lending_iterator::LendingIterator;
 use macro_rules_attribute::apply;
 use params;
 use query::error::QueryError;
+use resource::profile::StorageCounters;
 use test_utils::assert_matches;
 
 use crate::{
@@ -371,21 +373,28 @@ fn does_key_match(var: &str, id: &str, var_value: &VariableValue<'_>, context: &
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {key_label} to have a value type")),
         );
-        let mut has_iter = match thing {
-            Thing::Entity(entity) => entity.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type),
-            Thing::Relation(relation) => relation.get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type),
+        let mut attr_iter: Box<dyn Iterator<Item = Result<(Attribute, u64), Box<ConceptReadError>>>> = match thing {
+            Thing::Entity(entity) => Box::new(
+                entity
+                    .get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type, &.., StorageCounters::DISABLED)
+                    .unwrap(),
+            ),
+            Thing::Relation(relation) => Box::new(
+                relation
+                    .get_has_type_unordered(&*tx.snapshot, &tx.thing_manager, key_type, &.., StorageCounters::DISABLED)
+                    .unwrap(),
+            ),
             Thing::Attribute(_) => return false,
         };
-        let (attr, count) = has_iter
-            .next()
+        let (attr, count) = Iterator::next(&mut attr_iter)
             .unwrap_or_else(|| panic!("no attributes of type {key_label} found for {var}: {thing}"))
             .unwrap();
         assert_eq!(count, 1, "expected exactly one {key_label} for {var}, found {count}");
-        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager);
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED);
         if actual.unwrap() != expected {
             return false;
         }
-        assert_matches!(has_iter.next(), None, "multiple keys found for {}", var);
+        assert_matches!(attr_iter.next(), None, "multiple keys found for {}", var);
     });
     true
 }
@@ -407,7 +416,7 @@ fn does_attribute_match(id: &str, var_value: &VariableValue<'_>, context: &Conte
                 .unwrap()
                 .unwrap_or_else(|| panic!("expected the key type {label} to have a value type")),
         );
-        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager).unwrap();
+        let actual = attr.get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED).unwrap();
         actual == expected
     })
 }

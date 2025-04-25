@@ -22,8 +22,7 @@ use concept::{
 };
 use encoding::graph::definition::definition_key_generator::DefinitionKeyGenerator;
 use executor::{
-    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile, row::MaybeOwnedRow,
-    ExecutionInterrupt,
+    match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow, ExecutionInterrupt,
 };
 use function::function_manager::FunctionManager;
 use ir::{
@@ -33,10 +32,11 @@ use ir::{
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
 use query::query_manager::QueryManager;
+use resource::profile::{CommitProfile, QueryProfile};
 use storage::{
     durability_client::WALClient,
     sequence_number::SequenceNumber,
-    snapshot::{CommittableSnapshot, ReadSnapshot, ReadableSnapshot},
+    snapshot::{CommittableSnapshot, ReadableSnapshot},
     MVCCStorage,
 };
 use test_utils::assert_matches;
@@ -65,7 +65,7 @@ fn setup(
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
         .unwrap();
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
     let query = typeql::parse_query(data).unwrap().into_pipeline();
@@ -84,7 +84,7 @@ fn setup(
     assert_matches!(iterator.next(), Some(Ok(_)));
     assert_matches!(iterator.next(), None);
     let snapshot = Arc::into_inner(snapshot).unwrap();
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let mut statistics = Statistics::new(SequenceNumber::new(0));
     statistics.may_synchronise(storage).unwrap();

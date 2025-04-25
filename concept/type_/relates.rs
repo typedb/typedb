@@ -12,6 +12,7 @@ use encoding::{
 };
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -82,8 +83,9 @@ impl Relates {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         specialised: Relates,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        type_manager.set_relates_specialise(snapshot, thing_manager, *self, specialised)
+        type_manager.set_relates_specialise(snapshot, thing_manager, *self, specialised, storage_counters)
     }
 
     pub fn unset_specialise(

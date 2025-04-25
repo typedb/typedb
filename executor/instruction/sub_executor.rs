@@ -15,11 +15,13 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::SubInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
+use lending_iterator::AsLendingIterator;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -44,7 +46,8 @@ impl fmt::Debug for SubExecutor {
     }
 }
 
-pub(super) type SubTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<SubFilterMapFn>>, SubToTupleFn>;
+pub(super) type SubTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<SubFilterMapFn>>, SubToTupleFn>>>;
 
 pub(super) type SubUnboundedSortedSub = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;
 pub(super) type SubBoundedSortedSuper = SubTupleIterator<vec::IntoIter<Result<(Type, Type), Box<ConceptReadError>>>>;
@@ -108,9 +111,10 @@ impl SubExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters);
         let filter_for_row: Box<SubFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -127,10 +131,11 @@ impl SubExecutor {
                     .iter()
                     .flat_map(|(sub, supers)| supers.iter().map(|sup| Ok((*sub, *sup))))
                     .collect_vec();
-                let as_tuples: SubUnboundedSortedSub =
-                    sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_sub_super);
+                let as_tuples: iter::Map<_, _> =
+                    sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_sub_super as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::SubUnbounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))
@@ -148,10 +153,10 @@ impl SubExecutor {
                 let supertypes = self.sub_to_supertypes.get(&subtype).unwrap_or(const { &Vec::new() });
                 let sub_with_super = supertypes.iter().map(|sup| Ok((subtype, *sup))).collect_vec(); // TODO cache this
 
-                let as_tuples: SubBoundedSortedSuper =
-                    sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_super_sub);
+                let as_tuples = sub_with_super.into_iter().filter_map(filter_for_row).map(sub_to_tuple_super_sub as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::SubBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))

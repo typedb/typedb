@@ -4,10 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-pub mod concepts;
-pub mod repositories;
-pub mod util;
-
 use std::sync::Arc;
 
 use database::{database_manager::DatabaseManager, Database};
@@ -15,6 +11,10 @@ use resource::internal_database_prefix;
 use storage::durability_client::WALClient;
 
 use crate::{repositories::SCHEMA, util::transaction_util::TransactionUtil};
+
+pub mod concepts;
+pub mod repositories;
+pub mod util;
 
 const SYSTEM_DB: &str = concat!(internal_database_prefix!(), "system");
 
@@ -42,6 +42,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
                         },
                     );
                 })
+                .1
                 .unwrap_or_else(|_| {
                     panic!(
                         "Unexpected error occurred when committing the schema transaction for {} database.",

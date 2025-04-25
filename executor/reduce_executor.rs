@@ -12,6 +12,7 @@ use compiler::{
     VariablePosition,
 };
 use encoding::value::value::Value;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -94,7 +95,12 @@ impl GroupedReducer {
 }
 
 trait ReducerAPI {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>);
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    );
 
     fn finalise(self) -> Option<VariableValue<'static>>;
 }
@@ -103,6 +109,7 @@ fn extract_value<Snapshot: ReadableSnapshot>(
     row: &MaybeOwnedRow<'_>,
     position: VariablePosition,
     context: &ExecutionContext<Snapshot>,
+    storage_counters: StorageCounters,
 ) -> Option<Value<'static>> {
     match row.get(position) {
         VariableValue::Empty => None,
@@ -110,7 +117,7 @@ fn extract_value<Snapshot: ReadableSnapshot>(
         VariableValue::Thing(Thing::Attribute(attribute)) => {
             // As long as these are trivial, it's safe to unwrap
             let snapshot: &Snapshot = &context.snapshot;
-            let value = attribute.get_value(snapshot, &context.thing_manager).unwrap();
+            let value = attribute.get_value(snapshot, &context.thing_manager, storage_counters).unwrap();
             Some(value.clone().into_owned())
         }
         _ => unreachable!(),
@@ -137,21 +144,24 @@ enum ReducerExecutor {
 
 impl ReducerExecutor {
     fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
+        let profile = context.profile.profile_stage(|| String::from("Reduce"), 0); // TODO executable id
+        let step_profile = profile.extend_or_get(0, || String::from("Reduce execution"));
+        let storage_counters = step_profile.storage_counters();
         match self {
-            ReducerExecutor::Count(reducer) => reducer.accept(row, context),
-            ReducerExecutor::CountVar(reducer) => reducer.accept(row, context),
-            ReducerExecutor::SumInteger(reducer) => reducer.accept(row, context),
-            ReducerExecutor::SumDouble(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MaxInteger(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MaxDouble(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MinInteger(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MinDouble(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MeanInteger(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MeanDouble(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MedianInteger(reducer) => reducer.accept(row, context),
-            ReducerExecutor::MedianDouble(reducer) => reducer.accept(row, context),
-            ReducerExecutor::StdInteger(reducer) => reducer.accept(row, context),
-            ReducerExecutor::StdDouble(reducer) => reducer.accept(row, context),
+            ReducerExecutor::Count(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::CountVar(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::SumInteger(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::SumDouble(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MaxInteger(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MaxDouble(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MinInteger(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MinDouble(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MeanInteger(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MeanDouble(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MedianInteger(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::MedianDouble(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::StdInteger(reducer) => reducer.accept(row, context, storage_counters),
+            ReducerExecutor::StdDouble(reducer) => reducer.accept(row, context, storage_counters),
         }
     }
 
@@ -208,7 +218,12 @@ impl CountExecutor {
 }
 
 impl ReducerAPI for CountExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, _: &ExecutionContext<Snapshot>) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        _: &ExecutionContext<Snapshot>,
+        _: StorageCounters,
+    ) {
         self.count += row.multiplicity();
     }
 
@@ -229,7 +244,12 @@ impl CountVarExecutor {
 }
 
 impl ReducerAPI for CountVarExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, _: &ExecutionContext<Snapshot>) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        _: &ExecutionContext<Snapshot>,
+        _: StorageCounters,
+    ) {
         if &VariableValue::Empty != row.get(self.target) {
             self.count += row.multiplicity();
         }
@@ -253,8 +273,13 @@ impl SumIntegerExecutor {
 }
 
 impl ReducerAPI for SumIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_integer() * row.multiplicity() as i64;
         }
     }
@@ -277,8 +302,13 @@ impl SumDoubleExecutor {
 }
 
 impl ReducerAPI for SumDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_double() * row.multiplicity() as f64;
         }
     }
@@ -301,8 +331,13 @@ impl MaxIntegerExecutor {
 }
 
 impl ReducerAPI for MaxIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context).map(|v| v.unwrap_integer()) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_integer()) {
             if let Some(current) = self.max.as_ref() {
                 if value > *current {
                     self.max = Some(value)
@@ -331,8 +366,13 @@ impl MaxDoubleExecutor {
 }
 
 impl ReducerAPI for MaxDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context).map(|v| v.unwrap_double()) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_double()) {
             if let Some(current) = self.max.as_ref() {
                 if value > *current {
                     self.max = Some(value)
@@ -361,8 +401,13 @@ impl MinIntegerExecutor {
 }
 
 impl ReducerAPI for MinIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context).map(|v| v.unwrap_integer()) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_integer()) {
             if let Some(current) = self.min.as_ref() {
                 if value < *current {
                     self.min = Some(value)
@@ -391,8 +436,13 @@ impl MinDoubleExecutor {
 }
 
 impl ReducerAPI for MinDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context).map(|v| v.unwrap_double()) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters).map(|v| v.unwrap_double()) {
             if let Some(current) = self.min.as_ref() {
                 if value < *current {
                     self.min = Some(value)
@@ -422,8 +472,13 @@ impl MeanIntegerExecutor {
 }
 
 impl ReducerAPI for MeanIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_integer() * row.multiplicity() as i64;
             self.count += row.multiplicity();
         }
@@ -452,8 +507,13 @@ impl MeanDoubleExecutor {
 }
 
 impl ReducerAPI for MeanDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.sum += value.unwrap_double() * row.multiplicity() as f64;
             self.count += row.multiplicity();
         }
@@ -481,8 +541,13 @@ impl MedianIntegerExecutor {
 }
 
 impl ReducerAPI for MedianIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.values.push(value.unwrap_integer())
         }
     }
@@ -516,8 +581,13 @@ impl MedianDoubleExecutor {
 }
 
 impl ReducerAPI for MedianDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             self.values.push(value.unwrap_double())
         }
     }
@@ -553,8 +623,13 @@ impl StdIntegerExecutor {
 }
 
 impl ReducerAPI for StdIntegerExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             let unwrapped = value.unwrap_integer();
             self.sum_squares += (unwrapped as i128 * unwrapped as i128) * row.multiplicity() as i128;
             self.sum += unwrapped * row.multiplicity() as i64;
@@ -591,8 +666,13 @@ impl StdDoubleExecutor {
 }
 
 impl ReducerAPI for StdDoubleExecutor {
-    fn accept<Snapshot: ReadableSnapshot>(&mut self, row: &MaybeOwnedRow<'_>, context: &ExecutionContext<Snapshot>) {
-        if let Some(value) = extract_value(row, self.target, context) {
+    fn accept<Snapshot: ReadableSnapshot>(
+        &mut self,
+        row: &MaybeOwnedRow<'_>,
+        context: &ExecutionContext<Snapshot>,
+        storage_counters: StorageCounters,
+    ) {
+        if let Some(value) = extract_value(row, self.target, context, storage_counters) {
             let unwrapped = value.unwrap_double();
             self.sum_squares += (unwrapped * unwrapped) * row.multiplicity() as f64;
             self.sum += unwrapped * row.multiplicity() as f64;

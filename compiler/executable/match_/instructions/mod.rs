@@ -380,7 +380,7 @@ impl<ID: IrID> ConstraintInstruction<ID> {
             Self::Links(inner) => inner.add_check(check),
             Self::LinksReverse(inner) => inner.add_check(check),
             Self::IndexedRelation(inner) => inner.add_check(check),
-        }
+        };
     }
 
     pub fn map<T: IrID>(self, mapping: &HashMap<ID, T>) -> ConstraintInstruction<T> {

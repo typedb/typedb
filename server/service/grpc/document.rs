@@ -12,7 +12,7 @@ use encoding::graph::type_::Kind;
 use executor::document::{ConceptDocument, DocumentLeaf, DocumentList, DocumentMap, DocumentNode};
 use ir::pipeline::ParameterRegistry;
 use itertools::Itertools;
-use resource::constants::server::DEFAULT_INCLUDE_INSTANCE_TYPES_FETCH;
+use resource::{constants::server::DEFAULT_INCLUDE_INSTANCE_TYPES_FETCH, profile::StorageCounters};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::grpc::concept::{
@@ -25,9 +25,10 @@ pub(crate) fn encode_document(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::ConceptDocument, Box<ConceptReadError>> {
     Ok(typedb_protocol::ConceptDocument {
-        root: Some(encode_node(document.root, snapshot, type_manager, thing_manager, parameters)?),
+        root: Some(encode_node(document.root, snapshot, type_manager, thing_manager, parameters, storage_counters)?),
     })
 }
 
@@ -37,6 +38,7 @@ fn encode_node(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::concept_document::Node, Box<ConceptReadError>> {
     match node {
         DocumentNode::List(list) => Ok(typedb_protocol::concept_document::Node {
@@ -46,6 +48,7 @@ fn encode_node(
                 type_manager,
                 thing_manager,
                 parameters,
+                storage_counters,
             )?)),
         }),
         DocumentNode::Map(map) => Ok(typedb_protocol::concept_document::Node {
@@ -55,6 +58,7 @@ fn encode_node(
                 type_manager,
                 thing_manager,
                 parameters,
+                storage_counters,
             )?)),
         }),
         DocumentNode::Leaf(leaf) => Ok(typedb_protocol::concept_document::Node {
@@ -63,6 +67,7 @@ fn encode_node(
                 snapshot,
                 type_manager,
                 thing_manager,
+                storage_counters,
             )?)),
         }),
     }
@@ -74,13 +79,15 @@ fn encode_map(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::concept_document::node::Map, Box<ConceptReadError>> {
     let encoded_map = match map {
         DocumentMap::UserKeys(map) => {
             let mut encoded_map = HashMap::with_capacity(map.len());
             for (key, value) in map.into_iter() {
                 let key_name = parameters.fetch_key(key).expect("Expected key in parameters to get its name");
-                let encoded_value = encode_node(value, snapshot, type_manager, thing_manager, parameters)?;
+                let encoded_value =
+                    encode_node(value, snapshot, type_manager, thing_manager, parameters, storage_counters.clone())?;
                 encoded_map.insert(key_name.to_owned(), encoded_value);
             }
             encoded_map
@@ -88,7 +95,8 @@ fn encode_map(
         DocumentMap::GeneratedKeys(map) => {
             let mut encoded_map = HashMap::with_capacity(map.len());
             for (key, value) in map.into_iter() {
-                let encoded_value = encode_node(value, snapshot, type_manager, thing_manager, parameters)?;
+                let encoded_value =
+                    encode_node(value, snapshot, type_manager, thing_manager, parameters, storage_counters.clone())?;
                 encoded_map.insert(key.scoped_name().as_str().to_owned(), encoded_value);
             }
             encoded_map
@@ -104,11 +112,12 @@ fn encode_list(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     parameters: &ParameterRegistry,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::concept_document::node::List, Box<ConceptReadError>> {
     let encoded_list = list
         .list
         .into_iter()
-        .map(|node| encode_node(node, snapshot, type_manager, thing_manager, parameters))
+        .map(|node| encode_node(node, snapshot, type_manager, thing_manager, parameters, storage_counters.clone()))
         .try_collect()?;
     Ok(typedb_protocol::concept_document::node::List { list: encoded_list })
 }
@@ -118,6 +127,7 @@ fn encode_leaf(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
+    storage_counters: StorageCounters,
 ) -> Result<typedb_protocol::concept_document::node::Leaf, Box<ConceptReadError>> {
     match leaf {
         DocumentLeaf::Empty => Ok(typedb_protocol::concept_document::node::Leaf {
@@ -168,6 +178,7 @@ fn encode_leaf(
                         type_manager,
                         thing_manager,
                         DEFAULT_INCLUDE_INSTANCE_TYPES_FETCH, // TODO: May it be affected by QueryOptions?
+                        storage_counters,
                     )?)
                 }
                 Concept::Value(value) => {

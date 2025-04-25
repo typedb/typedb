@@ -23,6 +23,7 @@ use crate::{
 pub fn load_commit_data_from(
     start: SequenceNumber,
     durability_client: &impl DurabilityClient,
+    limit: usize,
 ) -> Result<BTreeMap<SequenceNumber, RecoveryCommitStatus>, StorageRecoveryError> {
     use StorageRecoveryError::{DurabilityClientRead, DurabilityRecordDeserialize, DurabilityRecordsMissing};
 
@@ -71,6 +72,9 @@ pub fn load_commit_data_from(
             _not_storage_record => {
                 // skip, not storage record
             }
+        }
+        if recovered_commits.len() > limit {
+            return Ok(recovered_commits);
         }
     }
     Ok(recovered_commits)

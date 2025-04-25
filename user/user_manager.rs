@@ -58,8 +58,9 @@ impl UserManager {
                 }
             }
         }
-        let create_result = self.transaction_util.write_transaction(
-            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
+        let create_result = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
                 user_repository::create(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -69,8 +70,8 @@ impl UserManager {
                     user,
                     credential,
                 )
-            },
-        );
+            })
+            .1;
         match create_result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserCreateError::IllegalUsername {}),
@@ -84,8 +85,9 @@ impl UserManager {
         user: &Option<User>,
         credential: &Option<Credential>,
     ) -> Result<(), UserUpdateError> {
-        let update_result = self.transaction_util.write_transaction(
-            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+        let update_result = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -96,8 +98,8 @@ impl UserManager {
                     user,
                     credential,
                 )
-            },
-        );
+            })
+            .1;
         match update_result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserUpdateError::IllegalUsername {}),
@@ -122,8 +124,9 @@ impl UserManager {
                 }
             }
         }
-        let delete_result = self.transaction_util.write_transaction(
-            |snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
+        let delete_result = self
+            .transaction_util
+            .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::delete(
                     Arc::into_inner(snapshot).unwrap(),
                     &type_mgr,
@@ -132,8 +135,8 @@ impl UserManager {
                     &query_mgr,
                     username,
                 )
-            },
-        );
+            })
+            .1;
         match delete_result {
             Ok(Ok(())) => Ok(()),
             Ok(Err(_query_error)) => Err(UserDeleteError::IllegalUsername {}),

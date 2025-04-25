@@ -23,6 +23,7 @@ use ir::{
     translation::{match_::translate_match, TranslationContext},
 };
 use itertools::Itertools;
+use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadableSnapshot},
@@ -54,6 +55,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             DOG_OWNERSHIP_DOG.name.as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let relates_owner = dog_ownership_type
@@ -63,19 +65,31 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             DOG_OWNERSHIP_OWNER.name.as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, relates_owner.role()).unwrap();
-    dog_type.set_plays(&mut snapshot, &type_manager, &thing_manager, relates_dog.role()).unwrap();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, relates_owner.role(), StorageCounters::DISABLED)
+        .unwrap();
+    dog_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, relates_dog.role(), StorageCounters::DISABLED)
+        .unwrap();
 
     let start_time_type = type_manager.create_attribute_type(&mut snapshot, &START_TIME_LABEL).unwrap();
     dog_ownership_type
-        .set_owns(&mut snapshot, &type_manager, &thing_manager, start_time_type, Ordering::Unordered)
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            start_time_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
         .unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 #[test]

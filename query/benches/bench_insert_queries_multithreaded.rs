@@ -28,6 +28,7 @@ use executor::{pipeline::stage::StageIterator, ExecutionInterrupt};
 use function::function_manager::FunctionManager;
 use lending_iterator::LendingIterator;
 use query::{error::QueryError, query_cache::QueryCache, query_manager::QueryManager};
+use resource::profile::{CommitProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, WritableSnapshot},
@@ -60,6 +61,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             MEMBERSHIP_MEMBER_LABEL.get().unwrap().name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let membership_member_type = relates_member.role();
@@ -70,6 +72,7 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             &thing_manager,
             MEMBERSHIP_GROUP_LABEL.get().unwrap().name().as_str(),
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         )
         .unwrap();
     let membership_group_type = relates_group.role();
@@ -79,12 +82,34 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     let name_type = type_manager.create_attribute_type(&mut snapshot, NAME_LABEL.get().unwrap()).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-    person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
-    person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type).unwrap();
-    group_type.set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type).unwrap();
+    person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            age_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            name_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
+    person_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, membership_member_type, StorageCounters::DISABLED)
+        .unwrap();
+    group_type
+        .set_plays(&mut snapshot, &type_manager, &thing_manager, membership_group_type, StorageCounters::DISABLED)
+        .unwrap();
 
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn execute_insert<Snapshot: WritableSnapshot + 'static>(
@@ -166,7 +191,7 @@ fn multi_threaded_inserts() {
                     &format!("insert $p isa person, has age {age};"),
                 )
                 .unwrap();
-                snapshot.commit().unwrap();
+                snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
             }
         })
     });
@@ -187,7 +212,10 @@ fn multi_threaded_inserts() {
     {
         let snapshot = storage.clone().open_snapshot_read();
         let person_type = type_manager.get_entity_type(&snapshot, &Label::parse_from("person", None)).unwrap().unwrap();
-        assert_eq!(NUM_THREADS * INTERNAL_ITERS, thing_manager.get_entities_in(&snapshot, person_type).count());
+        assert_eq!(
+            NUM_THREADS * INTERNAL_ITERS,
+            Iterator::count(thing_manager.get_entities_in(&snapshot, person_type, StorageCounters::DISABLED))
+        );
         snapshot.close_resources();
     }
 }

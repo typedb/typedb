@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 use axum::response::{IntoResponse, Response};
-use itertools::Itertools;
 use options::QueryOptions;
 use resource::constants::server::{DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES};
 use serde::{Deserialize, Serialize};

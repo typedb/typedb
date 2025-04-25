@@ -10,7 +10,7 @@ use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
     graph::{
         type_::{
-            vertex::{PrefixedTypeVertexEncoding, TypeVertex, TypeVertexEncoding},
+            vertex::{PrefixedTypeVertexEncoding, TypeID, TypeVertex, TypeVertexEncoding},
             Kind,
         },
         Typed,
@@ -22,7 +22,7 @@ use encoding::{
 use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::{constants::snapshot::BUFFER_KEY_INLINE, profile::StorageCounters};
 use storage::{
     key_value::StorageKey,
     snapshot::{ReadableSnapshot, WritableSnapshot},
@@ -60,7 +60,11 @@ impl fmt::Debug for RelationType {
     }
 }
 
-impl RelationType {}
+impl RelationType {
+    const fn new_const_(vertex: TypeVertex) -> Self {
+        Self { vertex }
+    }
+}
 
 impl Hkt for RelationType {
     type HktSelf<'a> = RelationType;
@@ -92,6 +96,8 @@ impl PrefixedTypeVertexEncoding for RelationType {
 }
 
 impl TypeAPI for RelationType {
+    const MIN: Self = Self::new_const_(TypeVertex::new(Prefix::VertexRelationType.prefix_id(), TypeID::MIN));
+    const MAX: Self = Self::new_const_(TypeVertex::new(Prefix::VertexRelationType.prefix_id(), TypeID::MAX));
     fn new(vertex: TypeVertex) -> RelationType {
         Self::from_vertex(vertex).unwrap()
     }
@@ -159,6 +165,14 @@ impl TypeAPI for RelationType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, Vec<RelationType>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_subtypes_transitive(snapshot, *self)
+    }
+
+    fn next_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().increment().map(|next_id| Self::build_from_type_id(next_id))
+    }
+
+    fn previous_possible(&self) -> Option<Self> {
+        self.vertex.type_id_().decrement().map(|next_id| Self::build_from_type_id(next_id))
     }
 }
 
@@ -228,10 +242,11 @@ impl RelationType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         annotation: RelationTypeAnnotation,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         match annotation {
             RelationTypeAnnotation::Abstract(_) => {
-                type_manager.set_relation_type_annotation_abstract(snapshot, thing_manager, *self)?
+                type_manager.set_relation_type_annotation_abstract(snapshot, thing_manager, *self, storage_counters)?
             }
             RelationTypeAnnotation::Cascade(_) => {
                 type_manager.set_annotation_cascade(snapshot, thing_manager, *self)?
@@ -272,9 +287,11 @@ impl RelationType {
         thing_manager: &ThingManager,
         name: &str,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Relates, Box<ConceptWriteError>> {
         let label = Label::build_scoped(name, self.get_label(snapshot, type_manager).unwrap().name().as_str(), None);
-        let role_type = type_manager.create_role_type(snapshot, thing_manager, &label, *self, ordering)?;
+        let role_type =
+            type_manager.create_role_type(snapshot, thing_manager, &label, *self, ordering, storage_counters)?;
         Ok(Relates::new(*self, role_type))
     }
 
@@ -578,8 +595,16 @@ impl OwnerAPI for RelationType {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Owns, Box<ConceptWriteError>> {
-        type_manager.set_owns(snapshot, thing_manager, (*self).into_object_type(), attribute_type, ordering)?;
+        type_manager.set_owns(
+            snapshot,
+            thing_manager,
+            (*self).into_object_type(),
+            attribute_type,
+            ordering,
+            storage_counters,
+        )?;
         Ok(Owns::new(ObjectType::Relation(*self), attribute_type))
     }
 
@@ -707,8 +732,9 @@ impl PlayerAPI for RelationType {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Plays, Box<ConceptWriteError>> {
-        type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type)
+        type_manager.set_plays(snapshot, thing_manager, (*self).into_object_type(), role_type, storage_counters)
     }
 
     fn unset_plays(

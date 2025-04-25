@@ -21,6 +21,7 @@ rust_library(
         "//concept",
         "//encoding",
         "//ir",
+        "//resource",
         "//storage",
 
         "@typeql//rust:typeql",
@@ -37,6 +38,7 @@ rust_test(
     deps = [
         "//durability",
         "//util/test:test_utils",
+        "//resource",
     ]
 )
 

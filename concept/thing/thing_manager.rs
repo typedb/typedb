@@ -7,7 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
-    iter::once,
+    iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
 };
@@ -44,19 +44,22 @@ use encoding::{
         string_bytes::StringBytes,
         struct_bytes::StructBytes,
         value::Value,
-        value_struct::{StructIndexEntry, StructIndexEntryKey, StructValue},
+        value_struct::{StructIndexEntry, StructValue},
         value_type::{ValueType, ValueTypeCategory},
         ValueEncodable,
     },
     AsBytes, EncodingKeyspace, Keyable, Prefixed,
 };
 use iterator::minmax_or;
-use itertools::{Itertools, MinMaxResult};
-use lending_iterator::LendingIterator;
+use itertools::Itertools;
+use lending_iterator::Peekable;
 use primitive::either::Either;
-use resource::constants::{
-    encoding::StructFieldIDUInt,
-    snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+use resource::{
+    constants::{
+        encoding::StructFieldIDUInt,
+        snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    },
+    profile::StorageCounters,
 };
 use storage::{
     key_range::{KeyRange, RangeEnd, RangeStart},
@@ -68,13 +71,13 @@ use crate::{
     error::{ConceptReadError, ConceptWriteError},
     iterator::InstanceIterator,
     thing::{
-        attribute::{Attribute, AttributeIterator, AttributeOwnerIterator},
+        attribute::{Attribute, AttributeIterator},
         decode_attribute_ids, decode_role_players, encode_attribute_ids, encode_role_players,
         entity::Entity,
-        object::{HasAttributeIterator, HasIterator, HasReverseIterator, Object, ObjectAPI},
-        relation::{
-            IndexedRelationsIterator, LinksIterator, Relation, RelationRoleIterator, RolePlayer, RolePlayerIterator,
-        },
+        has::Has,
+        object::{HasIterator, HasReverseIterator, Object, ObjectAPI},
+        r#struct::StructIndexForAttributeTypeIterator,
+        relation::{IndexedRelationsIterator, LinksIterator, LinksReverseIterator, Relation, RolePlayer},
         statistics::Statistics,
         thing_manager::validation::{
             commit_time_validation::{collect_errors, CommitTimeValidation},
@@ -130,6 +133,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         thing_type: T::TypeAPI,
         keyspace: EncodingKeyspace,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<T> {
         if thing_type.is_abstract(snapshot, self.type_manager()).unwrap() {
             return InstanceIterator::empty();
@@ -138,8 +142,8 @@ impl ThingManager {
         let prefix = <T as ThingAPI>::prefix_for_type(thing_type);
         let storage_key_prefix =
             <T as ThingAPI>::Vertex::build_prefix_type(prefix, thing_type.vertex().type_id_(), keyspace);
-        let snapshot_iterator =
-            snapshot.iterate_range(&KeyRange::new_within(storage_key_prefix, prefix.fixed_width_keys()));
+        let snapshot_iterator = snapshot
+            .iterate_range(&KeyRange::new_within(storage_key_prefix, prefix.fixed_width_keys()), storage_counters);
         InstanceIterator::new(snapshot_iterator)
     }
 
@@ -147,60 +151,72 @@ impl ThingManager {
         &self,
         keyspace: EncodingKeyspace,
         snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<T> {
         let (prefix_start, prefix_end_exclusive) = T::PREFIX_RANGE_INCLUSIVE;
         let key_start = T::Vertex::build_prefix_prefix(prefix_start, keyspace);
         let key_end = T::Vertex::build_prefix_prefix(prefix_end_exclusive, keyspace);
-        let snapshot_iterator = snapshot.iterate_range(&KeyRange::new_variable_width(
-            RangeStart::Inclusive(key_start),
-            RangeEnd::EndPrefixInclusive(key_end),
-        ));
+        let snapshot_iterator = snapshot.iterate_range(
+            &KeyRange::new_variable_width(RangeStart::Inclusive(key_start), RangeEnd::EndPrefixInclusive(key_end)),
+            storage_counters,
+        );
         InstanceIterator::new(snapshot_iterator)
     }
 
-    pub fn get_entities(&self, snapshot: &impl ReadableSnapshot) -> InstanceIterator<Entity> {
-        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot)
+    pub fn get_entities(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
     }
 
-    pub fn get_relations(&self, snapshot: &impl ReadableSnapshot) -> InstanceIterator<Relation> {
-        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot)
+    pub fn get_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
     }
 
-    pub fn get_entities_in(&self, snapshot: &impl ReadableSnapshot, type_: EntityType) -> InstanceIterator<Entity> {
-        self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE)
+    pub fn get_entities_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: EntityType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     pub fn get_entities_in_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         entity_type_range: &impl RangeBounds<EntityType>,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<Entity> {
-        self.get_thing_in_range(
-            snapshot,
-            entity_type_range,
-            <Entity as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
-            <Entity as ThingAPI>::Vertex::KEYSPACE,
-        )
+        self.get_thing_in_range(snapshot, entity_type_range, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     pub fn get_relations_in(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: RelationType,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<Relation> {
-        self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE)
+        self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     pub fn get_relations_in_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type_range: &impl RangeBounds<RelationType>,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<Relation> {
         self.get_thing_in_range(
             snapshot,
             relation_type_range,
-            <Relation as ThingAPI>::PREFIX_RANGE_INCLUSIVE,
             <Relation as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
         )
     }
 
@@ -208,121 +224,72 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         object_type: ObjectType,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<Object> {
-        self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE)
+        self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     pub fn get_objects_in_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         object_type_range: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<Object> {
-        self.get_thing_in_range(
-            snapshot,
-            object_type_range,
-            Prefix::object_type_range_inclusive(),
-            <Object as ThingAPI>::Vertex::KEYSPACE,
-        )
+        self.get_thing_in_range(snapshot, object_type_range, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
     }
 
     fn get_thing_in_range<T: ThingAPI>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_range: &impl RangeBounds<T::TypeAPI>,
-        unbounded_prefix_range: (Prefix, Prefix),
         keyspace: EncodingKeyspace,
+        storage_counters: StorageCounters,
     ) -> InstanceIterator<T> {
-        let range_start = match type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*start_type),
-                start_type.vertex().type_id_(),
+        let start = match Self::start_type_bound_to_range_start_included_type(type_range.start_bound()) {
+            None => return InstanceIterator::empty(),
+            Some(start_type_included) => <T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(start_type_included),
+                start_type_included.vertex().type_id_(),
                 keyspace,
-            )),
-            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*start_type),
-                start_type.vertex().type_id_(),
-                keyspace,
-            )),
-            Bound::Unbounded => RangeStart::Inclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                unbounded_prefix_range.0,
-                TypeID::MIN,
-                keyspace,
-            )),
+            ),
         };
-        let range_end = match type_range.end_bound() {
-            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*end_type),
-                end_type.vertex().type_id_(),
+        let end = match Self::end_type_bound_to_range_end_included_type(type_range.end_bound()) {
+            None => return InstanceIterator::empty(),
+            Some(end_type_included) => <T as ThingAPI>::Vertex::build_prefix_type(
+                <T as ThingAPI>::prefix_for_type(end_type_included),
+                end_type_included.vertex().type_id_(),
                 keyspace,
-            )),
-            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                <T as ThingAPI>::prefix_for_type(*end_type),
-                end_type.vertex().type_id_(),
-                keyspace,
-            )),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(<T as ThingAPI>::Vertex::build_prefix_type(
-                unbounded_prefix_range.1,
-                TypeID::MAX,
-                keyspace,
-            )),
+            ),
         };
-        let key_range = KeyRange::new(range_start, range_end, <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING);
-        InstanceIterator::new(snapshot.iterate_range(&key_range))
-    }
-
-    pub(crate) fn get_relations_roles(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI,
-    ) -> RelationRoleIterator {
-        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
-        RelationRoleIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE)),
-        )
-    }
-
-    pub(crate) fn get_relations_player(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI,
-    ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
-        self.get_relations_roles(snapshot, player).map::<Result<Relation, _>, _>(|res| {
-            let (rel, _, _) = res?;
-            Ok(rel)
-        })
-    }
-
-    pub(crate) fn get_relations_player_role(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        player: impl ObjectAPI,
-        role_type: RoleType,
-    ) -> impl Iterator<Item = Result<(Relation, u64), Box<ConceptReadError>>> {
-        self.get_relations_roles(snapshot, player).filter_map::<Result<(Relation, u64), _>, _>(move |item| match item {
-            Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
-            Err(error) => Some(Err(error)),
-        })
+        let key_range = KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING,
+        );
+        InstanceIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
     pub fn get_attributes<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
+        storage_counters: StorageCounters,
     ) -> Result<impl Iterator<Item = Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
-        Ok(self.get_attributes_short(snapshot)?.chain(self.get_attributes_integer(snapshot)?))
+        Ok(self
+            .get_attributes_short(snapshot, storage_counters.clone())?
+            .chain(self.get_attributes_integer(snapshot, storage_counters)?))
     }
 
     pub fn get_attributes_short<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
+        storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(true), snapshot),
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(true), snapshot, storage_counters),
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -330,15 +297,14 @@ impl ThingManager {
     pub fn get_attributes_integer<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
+        storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
-            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(false), snapshot),
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            self.get_instances::<Attribute>(AttributeVertex::keyspace_for_is_short(false), snapshot, storage_counters),
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -347,6 +313,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
+        storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
         let attribute_value_type =
             attribute_type.get_value_type_without_source(snapshot, self.type_manager.as_ref())?;
@@ -357,17 +324,15 @@ impl ThingManager {
         let has_reverse_prefix =
             ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
-
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
             self.get_instances_in(
                 snapshot,
                 attribute_type,
                 AttributeVertex::keyspace_for_category(value_type.category()),
+                storage_counters,
             ),
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
     }
@@ -376,6 +341,7 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<Value<'static>, Box<ConceptReadError>> {
         match attribute.vertex().attribute_id() {
             AttributeID::Boolean(id) => Ok(Value::Boolean(id.read().as_bool())),
@@ -391,9 +357,11 @@ impl ThingManager {
                     String::from(id.get_inline_id_value().as_str())
                 } else {
                     snapshot
-                        .get_mapped(attribute.vertex().into_storage_key().as_reference(), |bytes| {
-                            String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str())
-                        })
+                        .get_mapped(
+                            attribute.vertex().into_storage_key().as_reference(),
+                            |bytes| String::from(StringBytes::new(Bytes::<1>::Reference(bytes)).as_str()),
+                            storage_counters,
+                        )
                         .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                         .ok_or(ConceptReadError::InternalMissingAttributeValue {})?
                 };
@@ -401,9 +369,11 @@ impl ThingManager {
             }
             AttributeID::Struct(_id) => {
                 let struct_value = snapshot
-                    .get_mapped(attribute.vertex().into_storage_key().as_reference(), |bytes| {
-                        StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct()
-                    })
+                    .get_mapped(
+                        attribute.vertex().into_storage_key().as_reference(),
+                        |bytes| StructBytes::new(Bytes::<1>::Reference(bytes)).as_struct(),
+                        storage_counters,
+                    )
                     .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                     .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
                 Ok(Value::Struct(Cow::Owned(struct_value)))
@@ -416,6 +386,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
         value: Value<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
         let value_type = value.value_type();
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
@@ -433,14 +404,14 @@ impl ThingManager {
             | ValueType::DateTimeTZ
             | ValueType::Duration => {
                 debug_assert!(AttributeID::is_inlineable(value.as_reference()));
-                match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
+                match self.get_attribute_with_value_inline(snapshot, attribute_type, value, storage_counters) {
                     Ok(Some(attribute)) => attribute,
                     fail => return fail,
                 }
             }
             ValueType::String => {
                 if AttributeID::is_inlineable(value.as_reference()) {
-                    match self.get_attribute_with_value_inline(snapshot, attribute_type, value) {
+                    match self.get_attribute_with_value_inline(snapshot, attribute_type, value, storage_counters) {
                         Ok(Some(attribute)) => attribute,
                         fail => return fail,
                     }
@@ -482,24 +453,66 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
-        range: &'a impl RangeBounds<Value<'a>>,
+        value_range: &'a impl RangeBounds<Value<'a>>,
+        storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
-        if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
-            return self.get_attributes_in(snapshot, attribute_type);
+        if matches!(value_range.start_bound(), Bound::Unbounded) && matches!(value_range.end_bound(), Bound::Unbounded)
+        {
+            return self.get_attributes_in(snapshot, attribute_type, storage_counters);
         }
         let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
         else {
             return Ok(AttributeIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range)? else {
+        let Some((value_lower_bound, value_upper_bound)) =
+            Self::get_value_range(attribute_value_type.category(), value_range)
+        else {
             return Ok(AttributeIterator::new_empty());
         };
+        let start_attribute_vertex_bound = self.get_attribute_vertex_prefix_lower_bound(
+            attribute_type.vertex().type_id_(),
+            attribute_value_type.category(),
+            value_lower_bound,
+        );
+        let end_attribute_vertex_bound = self.get_attribute_vertex_prefix_upper_bound(
+            attribute_type.vertex().type_id_(),
+            attribute_value_type.category(),
+            value_upper_bound,
+        );
 
-        let start_attribute_vertex_prefix_range = match value_lower_bound {
+        let has_reverse_start_prefix = start_attribute_vertex_bound.map(|start| {
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(attribute_value_type.category(), start.bytes())
+        });
+        let has_reverse_end_prefix = end_attribute_vertex_bound.map(|end| {
+            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
+                attribute_value_type.category(),
+                end.as_reference().bytes(),
+            )
+        });
+
+        let range = KeyRange::new_variable_width(start_attribute_vertex_bound, end_attribute_vertex_bound);
+        let attributes_iterator = InstanceIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
+        let has_reverse_range = KeyRange::new_variable_width(has_reverse_start_prefix, has_reverse_end_prefix);
+        let has_reverse_iterator =
+            HasReverseIterator::new(snapshot.iterate_range(&has_reverse_range, storage_counters));
+        Ok(AttributeIterator::new(
+            attributes_iterator,
+            has_reverse_iterator,
+            self.type_manager().get_independent_attribute_types(snapshot)?,
+        ))
+    }
+
+    fn get_attribute_vertex_prefix_lower_bound(
+        &self,
+        attribute_type_id: TypeID,
+        attribute_value_type_category: ValueTypeCategory,
+        value_lower_bound: Bound<Value<'_>>,
+    ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        match value_lower_bound {
             Bound::Included(lower_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     lower_value,
                     self.vertex_generator.hasher(),
                 );
@@ -511,7 +524,7 @@ impl ThingManager {
             }
             Bound::Excluded(lower_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     lower_value,
                     self.vertex_generator.hasher(),
                 );
@@ -524,17 +537,24 @@ impl ThingManager {
             Bound::Unbounded => RangeStart::Inclusive(
                 AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
-                    attribute_type.vertex().type_id_(),
-                    AttributeVertex::keyspace_for_category(attribute_value_type.category()),
+                    attribute_type_id,
+                    AttributeVertex::keyspace_for_category(attribute_value_type_category),
                 )
                 .resize_to(),
             ),
-        };
+        }
+    }
 
-        let end_attribute_vertex_prefix_range = match value_upper_bound {
+    fn get_attribute_vertex_prefix_upper_bound(
+        &self,
+        attribute_type_id: TypeID,
+        attribute_value_type_category: ValueTypeCategory,
+        value_upper_bound: Bound<Value<'_>>,
+    ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        match value_upper_bound {
             Bound::Included(upper_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     upper_value,
                     self.vertex_generator.hasher(),
                 );
@@ -546,7 +566,7 @@ impl ThingManager {
             }
             Bound::Excluded(upper_value) => {
                 let vertex_or_prefix = AttributeVertex::build_or_prefix_for_value(
-                    attribute_type.vertex().type_id_(),
+                    attribute_type_id,
                     upper_value,
                     self.vertex_generator.hasher(),
                 );
@@ -559,8 +579,8 @@ impl ThingManager {
             Bound::Unbounded => {
                 let prefix = AttributeVertex::build_prefix_type(
                     AttributeVertex::PREFIX,
-                    attribute_type.vertex().type_id_(),
-                    AttributeVertex::keyspace_for_category(attribute_value_type.category()),
+                    attribute_type_id,
+                    AttributeVertex::keyspace_for_category(attribute_value_type_category),
                 );
                 let keyspace = prefix.keyspace_id();
                 let mut array = prefix.into_bytes().into_array();
@@ -568,69 +588,7 @@ impl ThingManager {
                 let prefix_key = StorageKey::Array(StorageKeyArray::new_raw(keyspace, array));
                 RangeEnd::EndPrefixExclusive(prefix_key.resize_to())
             }
-        };
-
-        let has_reverse_start_prefix = ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-            attribute_value_type.category(),
-            start_attribute_vertex_prefix_range.get_value().as_reference().bytes(),
-        );
-        let has_reverse_end_prefix = end_attribute_vertex_prefix_range.map(|end| {
-            ThingEdgeHasReverse::prefix_from_attribute_vertex_prefix(
-                attribute_value_type.category(),
-                end.as_reference().bytes(),
-            )
-        });
-        let has_reverse_range =
-            KeyRange::new_variable_width(RangeStart::Inclusive(has_reverse_start_prefix), has_reverse_end_prefix);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&has_reverse_range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&has_reverse_range);
-
-        let range =
-            KeyRange::new_variable_width(start_attribute_vertex_prefix_range, end_attribute_vertex_prefix_range);
-        let snapshot_iterator = snapshot.iterate_range(&range);
-        let attributes_iterator = InstanceIterator::new(snapshot_iterator);
-        Ok(AttributeIterator::new(
-            attributes_iterator,
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
-            self.type_manager().get_independent_attribute_types(snapshot)?,
-        ))
-    }
-
-    fn get_value_range<'a>(
-        expected_value_type: &ValueType,
-        range: &'a impl RangeBounds<Value<'a>>,
-    ) -> Result<Option<(Bound<Value<'a>>, Bound<Value<'a>>)>, Box<ConceptReadError>> {
-        fn get_value_type(bound: Bound<&Value<'_>>) -> Option<ValueType> {
-            match bound {
-                Bound::Included(value) | Bound::Excluded(value) => Some(value.value_type()),
-                Bound::Unbounded => None,
-            }
         }
-        let start_value_type = get_value_type(range.start_bound());
-        let end_value_type = get_value_type(range.end_bound());
-        debug_assert!(start_value_type == end_value_type || start_value_type.is_none() || end_value_type.is_none());
-        let range_value_type = start_value_type.unwrap_or_else(|| end_value_type.unwrap());
-        if !range_value_type.is_approximately_castable_to(expected_value_type) {
-            return Ok(None);
-        }
-        let value_type = expected_value_type;
-
-        let start_value_lower_bound = range.start_bound().map(|value| {
-            if *value_type != range_value_type {
-                value.as_reference().approximate_cast_lower_bound(value_type).unwrap()
-            } else {
-                value.as_reference()
-            }
-        });
-        let end_value_upper_bound = range.end_bound().map(|value| {
-            if *value_type != range_value_type {
-                value.as_reference().approximate_cast_upper_bound(value_type).unwrap()
-            } else {
-                value.as_reference()
-            }
-        });
-        Ok(Some((start_value_lower_bound, end_value_upper_bound)))
     }
 
     fn get_attribute_with_value_inline(
@@ -638,6 +596,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
         value: Value<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
         debug_assert!(AttributeID::is_inlineable(value.as_reference()));
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
@@ -646,16 +605,65 @@ impl ThingManager {
         }
         let vertex = AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value));
         snapshot
-            .get_mapped(vertex.into_storage_key().as_reference(), |_| Attribute::new(vertex))
+            .get_mapped(vertex.into_storage_key().as_reference(), |_| Attribute::new(vertex), storage_counters)
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
 
-    pub(crate) fn has_attribute_with_value(
+    pub(crate) fn get_player_relations_roles(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(Relation, RoleType, u64), Box<ConceptReadError>>> + 'static {
+        let prefix = ThingEdgeLinks::prefix_reverse_from_player(player.vertex());
+        Iterator::map(
+            LinksReverseIterator::new(snapshot.iterate_range(
+                &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING_REVERSE),
+                storage_counters,
+            )),
+            |result| {
+                result.map(|(links, count)| {
+                    let (relation, role) = links.into_relation_role();
+                    (relation, role, count)
+                })
+            },
+        )
+    }
+
+    pub(crate) fn get_player_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<Relation, Box<ConceptReadError>>> {
+        self.get_player_relations_roles(snapshot, player, storage_counters).map::<Result<Relation, _>, _>(|res| {
+            let (rel, _, _) = res?;
+            Ok(rel)
+        })
+    }
+
+    pub(crate) fn get_player_relations_using_role(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        player: impl ObjectAPI,
+        role_type: RoleType,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(Relation, u64), Box<ConceptReadError>>> {
+        self.get_player_relations_roles(snapshot, player, storage_counters).filter_map::<Result<(Relation, u64), _>, _>(
+            move |item| match item {
+                Ok((rel, role, count)) => (role == role_type).then_some(Ok((rel, count))),
+                Err(error) => Some(Err(error)),
+            },
+        )
+    }
+
+    pub(crate) fn owner_has_attribute_with_value(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         value: Value<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let value_type = value.value_type();
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_read(
@@ -670,7 +678,7 @@ impl ThingManager {
             AttributeVertex::new(attribute_type.vertex().type_id_(), AttributeID::build_inline(value))
         } else {
             // non-inline attributes require an extra lookup before checking for the has edge existence
-            let attribute = self.get_attribute_with_value(snapshot, attribute_type, value)?;
+            let attribute = self.get_attribute_with_value(snapshot, attribute_type, value, storage_counters.clone())?;
             match attribute {
                 Some(attribute) => attribute.vertex(),
                 None => return Ok(false),
@@ -679,21 +687,22 @@ impl ThingManager {
 
         let has = ThingEdgeHas::new(owner.vertex(), vertex);
         let has_exists = snapshot
-            .get_mapped(has.into_storage_key().as_reference(), |_value| true)
+            .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
     }
 
-    pub(crate) fn has_attribute(
+    pub(crate) fn owner_has_attribute(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
         let has_exists = snapshot
-            .get_mapped(has.into_storage_key().as_reference(), |_value| true)
+            .get_mapped(has.into_storage_key().as_reference(), |_value| true, storage_counters)
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(has_exists)
@@ -703,37 +712,29 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         owner_type_range: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
     ) -> HasIterator {
-        let range_start = match owner_type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeHas::prefix_from_type(start_type.vertex())),
-            Bound::Excluded(start_type) => {
-                RangeStart::ExcludePrefix(ThingEdgeHas::prefix_from_type(start_type.vertex()))
-            }
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeHas::prefix_from_type_parts(
-                Prefix::min_object_type_prefix(),
-                TypeID::MIN,
-            )),
+        let start = match Self::start_type_bound_to_range_start_included_type(owner_type_range.start_bound()) {
+            None => return HasIterator::new_empty(),
+            Some(start_type_included) => ThingEdgeHas::prefix_from_type(start_type_included.vertex()),
         };
-        let range_end = match owner_type_range.end_bound() {
-            Bound::Included(end_type) => {
-                RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_type(end_type.vertex()))
-            }
-            Bound::Excluded(end_type) => {
-                RangeEnd::EndPrefixExclusive(ThingEdgeHas::prefix_from_type(end_type.vertex()))
-            }
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_type_parts(
-                Prefix::max_object_type_prefix(),
-                TypeID::MAX,
-            )),
+        let end = match Self::end_type_bound_to_range_end_included_type(owner_type_range.end_bound()) {
+            None => return HasIterator::new_empty(),
+            Some(end_type_included) => ThingEdgeHas::prefix_from_type(end_type_included.vertex()),
         };
-        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        HasIterator::new(snapshot.iterate_range(&key_range))
+        let key_range = KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            ThingEdgeHas::FIXED_WIDTH_ENCODING,
+        );
+        HasIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
     pub fn get_has_reverse(
         &self,
         snapshot: &impl ReadableSnapshot,
         attribute_type: AttributeType,
+        storage_counters: StorageCounters,
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         let Some(value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())? else {
             return Ok(HasReverseIterator::new_empty());
@@ -741,7 +742,7 @@ impl ThingManager {
         let prefix =
             ThingEdgeHasReverse::prefix_from_attribute_type(value_type.category(), attribute_type.vertex().type_id_());
         let range = KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        Ok(HasReverseIterator::new(snapshot.iterate_range(&range)))
+        Ok(HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters)))
     }
 
     /// Given an attribute type, and a range of values, return an iterator of Has where the owners satisfy this range (best effort)
@@ -756,16 +757,19 @@ impl ThingManager {
         attribute_type: AttributeType,
         range: &'a impl RangeBounds<Value<'a>>,
         owner_types_range_hint: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
     ) -> Result<HasReverseIterator, Box<ConceptReadError>> {
         if matches!(range.start_bound(), Bound::Unbounded) && matches!(range.end_bound(), Bound::Unbounded) {
-            return self.get_has_reverse(snapshot, attribute_type);
+            return self.get_has_reverse(snapshot, attribute_type, storage_counters);
         }
         let Some(attribute_value_type) = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?
         else {
             return Ok(HasReverseIterator::new_empty());
         };
 
-        let Some((value_lower_bound, value_upper_bound)) = Self::get_value_range(&attribute_value_type, range)? else {
+        let Some((value_lower_bound, value_upper_bound)) =
+            Self::get_value_range(attribute_value_type.category(), range)
+        else {
             return Ok(HasReverseIterator::new_empty());
         };
 
@@ -934,7 +938,7 @@ impl ThingManager {
             ),
         };
         let key_range = KeyRange::new(has_range_start, has_range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range)))
+        Ok(HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
     pub fn get_attributes_by_struct_field<Snapshot: ReadableSnapshot>(
@@ -943,6 +947,7 @@ impl ThingManager {
         attribute_type: AttributeType,
         path_to_field: Vec<StructFieldIDUInt>,
         value: Value<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<impl Iterator<Item = Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
         debug_assert!({
             let value_type =
@@ -950,89 +955,164 @@ impl ThingManager {
             value_type.category() == ValueTypeCategory::Struct
         });
 
-        let prefix = StructIndexEntry::build_prefix_typeid_path_value(
+        let index_attribute_iterator = Peekable::new(StructIndexForAttributeTypeIterator::new(
             snapshot,
             &self.vertex_generator,
+            attribute_type,
             &path_to_field,
-            &value,
-            &attribute_type.vertex(),
-        )
-        .map_err(|source| Box::new(ConceptReadError::SnapshotIterate { source }))?;
-        let index_attribute_iterator = snapshot
-            .iterate_range(&KeyRange::new_within(prefix, Prefix::IndexValueToStruct.fixed_width_keys()))
-            .map_static::<Result<Attribute, _>, _>(|result| {
-                result
-                    .map(|(key, _)| {
-                        Attribute::new(
-                            StructIndexEntry::new(StructIndexEntryKey::new(key.into_bytes()), None).attribute_vertex(),
-                        )
-                    })
-                    .map_err(|err| Box::new(ConceptReadError::SnapshotIterate { source: err }))
-            })
-            .into_iter();
-
+            value.as_reference(),
+        )?);
         let has_reverse_prefix = ThingEdgeHasReverse::prefix_from_attribute_type(
             ValueTypeCategory::Struct,
             attribute_type.vertex().type_id_(),
         );
         let range = KeyRange::new_within(has_reverse_prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        let has_reverse_iterator_buffer = snapshot.iterate_writes_range(&range);
-        let has_reverse_iterator_storage = snapshot.iterate_storage_range(&range);
-
+        let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters));
         let iter = AttributeIterator::new(
             index_attribute_iterator,
-            has_reverse_iterator_buffer,
-            has_reverse_iterator_storage,
+            has_reverse_iterator,
             self.type_manager.get_independent_attribute_types(snapshot)?,
         );
         Ok(iter)
     }
 
-    pub(crate) fn get_has_from_thing_unordered(
+    pub(crate) fn owner_get_has_unordered_all(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        owner: impl ObjectAPI,
+        storage_counters: StorageCounters,
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
+        let prefix = ThingEdgeHas::prefix_from_object(owner.vertex());
+        let key_range = KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
+    }
+
+    pub(crate) fn owner_get_has_unordered_in_value_type<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type_range_hint: &impl RangeBounds<AttributeType>,
-    ) -> HasIterator {
-        let range_start = match attribute_type_range_hint.start_bound() {
-            Bound::Included(attribute_type) => RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(
-                owner.vertex(),
-                attribute_type.vertex().type_id_(),
-            )),
-            Bound::Excluded(attribute_type) => RangeStart::ExcludePrefix(ThingEdgeHas::prefix_from_object_to_type(
-                owner.vertex(),
-                attribute_type.vertex().type_id_(),
-            )),
-            Bound::Unbounded => {
-                RangeStart::Inclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MIN))
-            }
-        };
-        let range_end =
-            match attribute_type_range_hint.end_bound() {
-                Bound::Included(attribute_type) => RangeEnd::EndPrefixInclusive(
-                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()),
-                ),
-                Bound::Excluded(attribute_type) => RangeEnd::EndPrefixExclusive(
-                    ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_()),
-                ),
-                Bound::Unbounded => {
-                    RangeEnd::EndPrefixInclusive(ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), TypeID::MAX))
-                }
+        value_type_categories: &[ValueTypeCategory],
+        value_range: &'a impl RangeBounds<Value<'a>>,
+        storage_counters: StorageCounters,
+    ) -> Result<HasIterator, Box<ConceptReadError>> {
+        let start_attribute_type =
+            match Self::start_type_bound_to_range_start_included_type(attribute_type_range_hint.start_bound()) {
+                None => return Ok(HasIterator::new_empty()),
+                Some(start_type_included) => start_type_included,
             };
-        let key_range = KeyRange::new(range_start, range_end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
-        HasIterator::new(snapshot.iterate_range(&key_range))
+        let start_value_bound = match Self::get_value_lower_bound_across_types(value_type_categories, value_range) {
+            None => return Ok(HasIterator::new_empty()),
+            Some(lower_bound) => lower_bound,
+        };
+        let start = self.get_has_from_thing_to_type_unordered_start_bound(
+            owner,
+            start_attribute_type.vertex().type_id_(),
+            start_value_bound,
+        );
+
+        let end_attribute_type =
+            match Self::end_type_bound_to_range_end_included_type(attribute_type_range_hint.end_bound()) {
+                None => return Ok(HasIterator::new_empty()),
+                Some(end_type_included) => end_type_included,
+            };
+        let end_value_bound = match Self::get_value_upper_bound_across_types(value_type_categories, value_range) {
+            None => return Ok(HasIterator::new_empty()),
+            Some(upper_bound) => upper_bound,
+        };
+        let end = self.get_has_from_thing_to_type_unordered_end_bound(
+            owner,
+            end_attribute_type.vertex().type_id_(),
+            end_value_bound,
+        );
+        let key_range = KeyRange::new(start, end, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        Ok(HasIterator::new(snapshot.iterate_range(&key_range, storage_counters)))
     }
 
-    pub(crate) fn get_has_from_thing_to_type_unordered(
+    pub(crate) fn get_has_from_thing_to_type_unordered<'a>(
         &self,
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
-    ) -> HasAttributeIterator {
-        let prefix = ThingEdgeHas::prefix_from_object_to_type(owner.vertex(), attribute_type.vertex().type_id_());
-        HasAttributeIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeHas::FIXED_WIDTH_ENCODING)),
-        )
+        value_range: &'a impl RangeBounds<Value<'a>>,
+        storage_counters: StorageCounters,
+    ) -> Result<
+        Map<
+            HasIterator,
+            fn(Result<(Has, u64), Box<ConceptReadError>>) -> Result<(Attribute, u64), Box<ConceptReadError>>,
+        >,
+        Box<ConceptReadError>,
+    > {
+        let attribute_value_type = match attribute_type.get_value_type_without_source(snapshot, self.type_manager())? {
+            None => {
+                return Ok(Iterator::map(
+                    HasIterator::new_empty(),
+                    |result: Result<(Has, u64), Box<ConceptReadError>>| {
+                        result.map(|(has, value)| (has.attribute(), value))
+                    },
+                ));
+            }
+            Some(value_type) => value_type,
+        };
+        let Some((value_lower_bound, value_upper_bound)) =
+            Self::get_value_range(attribute_value_type.category(), value_range)
+        else {
+            return Ok(Iterator::map(HasIterator::new_empty(), |result: Result<(Has, u64), Box<ConceptReadError>>| {
+                result.map(|(has, value)| (has.attribute(), value))
+            }));
+        };
+        let has_start_bound = self.get_has_from_thing_to_type_unordered_start_bound(
+            owner,
+            attribute_type.vertex().type_id_(),
+            value_lower_bound,
+        );
+        let has_end_bound = self.get_has_from_thing_to_type_unordered_end_bound(
+            owner,
+            attribute_type.vertex().type_id_(),
+            value_upper_bound,
+        );
+        let range = KeyRange::new(has_start_bound, has_end_bound, ThingEdgeHas::FIXED_WIDTH_ENCODING);
+        Ok(Iterator::map(
+            HasIterator::new(snapshot.iterate_range(&range, storage_counters)),
+            |result: Result<(Has, u64), Box<ConceptReadError>>| result.map(|(has, value)| (has.attribute(), value)),
+        ))
+    }
+
+    fn get_has_from_thing_to_type_unordered_start_bound(
+        &self,
+        owner: impl ObjectAPI,
+        attribute_type_id: TypeID,
+        value_lower_bound: Bound<Value<'_>>,
+    ) -> RangeStart<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        let attribute_vertex_lower_bound = self.get_attribute_vertex_prefix_lower_bound(
+            attribute_type_id,
+            // ### DUMMY - IRRELEVANT - keyspace determined by Has edge later ###
+            ValueTypeCategory::Boolean,
+            // ### DUMMY - IRRELEVANT ###
+            value_lower_bound,
+        );
+        attribute_vertex_lower_bound.map(|lower_bound| {
+            ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), lower_bound.bytes())
+                .resize_to()
+        })
+    }
+
+    fn get_has_from_thing_to_type_unordered_end_bound(
+        &self,
+        owner: impl ObjectAPI,
+        attribute_type_id: TypeID,
+        value_upper_bound: Bound<Value<'_>>,
+    ) -> RangeEnd<StorageKey<'static, BUFFER_KEY_INLINE>> {
+        let attribute_vertex_upper_bound = self.get_attribute_vertex_prefix_upper_bound(
+            attribute_type_id,
+            // ### DUMMY - IRRELEVANT - keyspace determined by Has edge later ###
+            ValueTypeCategory::Boolean,
+            // ### DUMMY - IRRELEVANT ###
+            value_upper_bound,
+        );
+        attribute_vertex_upper_bound.map(|end| {
+            ThingEdgeHas::prefix_from_object_to_type_with_attribute_prefix(owner.vertex(), end.bytes()).resize_to()
+        })
     }
 
     pub(crate) fn get_has_from_thing_to_type_ordered(
@@ -1040,6 +1120,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
+        storage_counters: StorageCounters,
     ) -> Result<Vec<Attribute>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_has_order(owner.vertex(), attribute_type.vertex());
         let attribute_value_type = attribute_type.get_value_type_without_source(snapshot, self.type_manager())?;
@@ -1048,20 +1129,33 @@ impl ThingManager {
             Some(value_type) => value_type,
         };
         let attributes = snapshot
-            .get_mapped(key.into_storage_key().as_reference(), |bytes| {
-                decode_attribute_ids(value_type.category(), bytes)
-                    .map(|id| Attribute::new(AttributeVertex::new(attribute_type.vertex().type_id_(), id)))
-                    .collect()
-            })
+            .get_mapped(
+                key.into_storage_key().as_reference(),
+                |bytes| {
+                    decode_attribute_ids(value_type.category(), bytes)
+                        .map(|id| Attribute::new(AttributeVertex::new(attribute_type.vertex().type_id_(), id)))
+                        .collect()
+                },
+                storage_counters,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(attributes)
     }
 
-    pub(crate) fn get_owners(&self, snapshot: &impl ReadableSnapshot, attribute: &Attribute) -> AttributeOwnerIterator {
+    pub(crate) fn get_owners(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        attribute: &Attribute,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute(attribute.vertex());
-        AttributeOwnerIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
+        Iterator::map(
+            HasReverseIterator::new(snapshot.iterate_range(
+                &KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING),
+                storage_counters,
+            )),
+            |result| result.map(|(has, count)| (has.owner(), count)),
         )
     }
 
@@ -1070,10 +1164,15 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute: &Attribute,
         owner_type: impl ObjectTypeAPI,
-    ) -> AttributeOwnerIterator {
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(Object, u64), Box<ConceptReadError>>> {
         let prefix = ThingEdgeHasReverse::prefix_from_attribute_to_type(attribute.vertex(), owner_type.vertex());
-        AttributeOwnerIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING)),
+        Iterator::map(
+            HasReverseIterator::new(snapshot.iterate_range(
+                &KeyRange::new_within(prefix, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING),
+                storage_counters,
+            )),
+            |result| result.map(|(has, count)| (has.owner(), count)),
         )
     }
 
@@ -1082,6 +1181,7 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         attribute: &Attribute,
         owner_type_range: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
     ) -> HasReverseIterator {
         let range_start = match owner_type_range.start_bound() {
             Bound::Included(owner_start) => RangeStart::Inclusive(ThingEdgeHasReverse::prefix_from_attribute_to_type(
@@ -1111,7 +1211,7 @@ impl ThingManager {
             )),
         };
         let key_range = KeyRange::new(range_start, range_end, ThingEdgeHasReverse::FIXED_WIDTH_ENCODING);
-        HasReverseIterator::new(snapshot.iterate_range(&key_range))
+        HasReverseIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
     pub(crate) fn has_owners(
@@ -1138,30 +1238,24 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type_range: &impl RangeBounds<RelationType>,
+        storage_counters: StorageCounters,
     ) -> LinksIterator {
-        let range_start = match relation_type_range.start_bound() {
-            Bound::Included(start_type) => {
-                RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()))
-            }
-            Bound::Excluded(start_type) => {
-                RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()))
-            }
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_type(TypeID::MIN)),
+        let start = match Self::start_type_bound_to_range_start_included_type(relation_type_range.start_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(start_type) => ThingEdgeLinks::prefix_from_relation_type(start_type.vertex().type_id_()),
         };
-        let range_end = match relation_type_range.end_bound() {
-            Bound::Included(end_type) => {
-                RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()))
-            }
-            Bound::Excluded(end_type) => {
-                RangeEnd::EndPrefixExclusive(ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()))
-            }
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_type(TypeID::MAX)),
+        let end = match Self::end_type_bound_to_range_end_included_type(relation_type_range.end_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(end_type) => ThingEdgeLinks::prefix_from_relation_type(end_type.vertex().type_id_()),
         };
-        LinksIterator::new(snapshot.iterate_range(&KeyRange::new(
-            range_start,
-            range_end,
-            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-        )))
+        LinksIterator::new(snapshot.iterate_range(
+            &KeyRange::new(
+                RangeStart::Inclusive(start),
+                RangeEnd::EndPrefixInclusive(end),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            ),
+            storage_counters,
+        ))
     }
 
     pub fn get_links_by_relation_and_player_type_range(
@@ -1169,37 +1263,24 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation,
         player_type_range: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
     ) -> LinksIterator {
-        let range_start = match player_type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_player_type(
-                relation.vertex(),
-                start_type.vertex(),
-            )),
-            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_from_relation_player_type(
-                relation.vertex(),
-                start_type.vertex(),
-            )),
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_from_relation_player_type_parts(
-                relation.vertex(),
-                Prefix::min_object_type_prefix(),
-                TypeID::MIN,
-            )),
+        let start = match Self::start_type_bound_to_range_start_included_type(player_type_range.start_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(start_type) => {
+                ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), start_type.vertex())
+            }
         };
-        let range_end = match player_type_range.end_bound() {
-            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(
-                ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), end_type.vertex()),
-            ),
-            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(
-                ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), end_type.vertex()),
-            ),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_from_relation_player_type_parts(
-                relation.vertex(),
-                Prefix::max_object_type_prefix(),
-                TypeID::MAX,
-            )),
+        let end = match Self::end_type_bound_to_range_end_included_type(player_type_range.end_bound()) {
+            None => return LinksIterator::new_empty(),
+            Some(end_type) => ThingEdgeLinks::prefix_from_relation_player_type(relation.vertex(), end_type.vertex()),
         };
-        let key_range = KeyRange::new(range_start, range_end, ThingEdgeLinks::FIXED_WIDTH_ENCODING);
-        LinksIterator::new(snapshot.iterate_range(&key_range))
+        let key_range = KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+        );
+        LinksIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
     pub fn get_links_by_relation_and_player(
@@ -1207,49 +1288,43 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation,
         player: impl ObjectAPI,
+        storage_counters: StorageCounters,
     ) -> LinksIterator {
         let prefix = ThingEdgeLinks::prefix_from_relation_player(relation.vertex(), player.vertex());
-        LinksIterator::new(snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)))
+        LinksIterator::new(
+            snapshot
+                .iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING), storage_counters),
+        )
     }
 
     pub fn get_links_reverse_by_player_type_range(
         &self,
         snapshot: &impl ReadableSnapshot,
         player_type_range: &impl RangeBounds<ObjectType>,
-    ) -> LinksIterator {
-        let range_start = match player_type_range.start_bound() {
-            Bound::Included(start_type) => RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
+        storage_counters: StorageCounters,
+    ) -> LinksReverseIterator {
+        let range_start = match Self::start_type_bound_to_range_start_included_type(player_type_range.start_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(start_type) => ThingEdgeLinks::prefix_reverse_from_player_type(
                 start_type.vertex().prefix(),
                 start_type.vertex().type_id_(),
-            )),
-            Bound::Excluded(start_type) => RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_reverse_from_player_type(
-                start_type.vertex().prefix(),
-                start_type.vertex().type_id_(),
-            )),
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
-                Prefix::min_object_type_prefix(),
-                TypeID::MIN,
-            )),
+            ),
         };
-        let range_end = match player_type_range.end_bound() {
-            Bound::Included(end_type) => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
+        let range_end = match Self::end_type_bound_to_range_end_included_type(player_type_range.end_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(end_type) => ThingEdgeLinks::prefix_reverse_from_player_type(
                 end_type.vertex().prefix(),
                 end_type.vertex().type_id_(),
-            )),
-            Bound::Excluded(end_type) => RangeEnd::EndPrefixExclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
-                end_type.vertex().prefix(),
-                end_type.vertex().type_id_(),
-            )),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_reverse_from_player_type(
-                Prefix::max_object_type_prefix(),
-                TypeID::MAX,
-            )),
+            ),
         };
-        LinksIterator::new(snapshot.iterate_range(&KeyRange::new(
-            range_start,
-            range_end,
-            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-        )))
+        LinksReverseIterator::new(snapshot.iterate_range(
+            &KeyRange::new(
+                RangeStart::Inclusive(range_start),
+                RangeEnd::EndPrefixInclusive(range_end),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            ),
+            storage_counters,
+        ))
     }
 
     pub fn get_links_reverse_by_player_and_relation_type_range(
@@ -1257,42 +1332,29 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         player: impl ObjectAPI,
         relation_type_range: &impl RangeBounds<RelationType>,
-    ) -> LinksIterator {
-        let range_start = match relation_type_range.start_bound() {
-            Bound::Included(type_start) => {
-                RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
-                    player.vertex(),
-                    type_start.vertex().type_id_(),
-                ))
-            }
-            Bound::Excluded(type_start) => {
-                RangeStart::ExcludePrefix(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
-                    player.vertex(),
-                    type_start.vertex().type_id_(),
-                ))
-            }
-            Bound::Unbounded => RangeStart::Inclusive(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
+        storage_counters: StorageCounters,
+    ) -> LinksReverseIterator {
+        let range_start = match Self::start_type_bound_to_range_start_included_type(relation_type_range.start_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(start_type) => ThingEdgeLinks::prefix_reverse_from_player_relation_type(
                 player.vertex(),
-                TypeID::MIN,
-            )),
-        };
-        let range_end = match relation_type_range.end_bound() {
-            Bound::Included(type_end) => RangeEnd::EndPrefixInclusive(
-                ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_end.vertex().type_id_()),
+                start_type.vertex().type_id_(),
             ),
-            Bound::Excluded(type_end) => RangeEnd::EndPrefixExclusive(
-                ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), type_end.vertex().type_id_()),
-            ),
-            Bound::Unbounded => RangeEnd::EndPrefixInclusive(ThingEdgeLinks::prefix_reverse_from_player_relation_type(
-                player.vertex(),
-                TypeID::MAX,
-            )),
         };
-        LinksIterator::new(snapshot.iterate_range(&KeyRange::new(
-            range_start,
-            range_end,
-            ThingEdgeLinks::FIXED_WIDTH_ENCODING,
-        )))
+        let range_end = match Self::end_type_bound_to_range_end_included_type(relation_type_range.end_bound()) {
+            None => return LinksReverseIterator::new_empty(),
+            Some(end_type) => {
+                ThingEdgeLinks::prefix_reverse_from_player_relation_type(player.vertex(), end_type.vertex().type_id_())
+            }
+        };
+        LinksReverseIterator::new(snapshot.iterate_range(
+            &KeyRange::new(
+                RangeStart::Inclusive(range_start),
+                RangeEnd::EndPrefixInclusive(range_end),
+                ThingEdgeLinks::FIXED_WIDTH_ENCODING,
+            ),
+            storage_counters,
+        ))
     }
 
     pub(crate) fn has_role_player(
@@ -1301,19 +1363,31 @@ impl ThingManager {
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+        let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         let links_exists = snapshot
-            .get_mapped(links.into_storage_key().as_reference(), |_| true)
+            .get_mapped(links.into_storage_key().as_reference(), |_| true, storage_counters)
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or(false);
         Ok(links_exists)
     }
 
-    pub(crate) fn get_role_players(&self, snapshot: &impl ReadableSnapshot, relation: Relation) -> RolePlayerIterator {
+    pub(crate) fn get_role_players(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation: Relation,
+        storage_counters: StorageCounters,
+    ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
         let prefix = ThingEdgeLinks::prefix_from_relation(relation.vertex());
-        RolePlayerIterator::new(
-            snapshot.iterate_range(&KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING)),
+        Iterator::map(
+            LinksIterator::new(
+                snapshot.iterate_range(
+                    &KeyRange::new_within(prefix, ThingEdgeLinks::FIXED_WIDTH_ENCODING),
+                    storage_counters,
+                ),
+            ),
+            |result| result.map(|(links, count)| (links.into_role_player(), count)),
         )
     }
 
@@ -1322,12 +1396,15 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Vec<Object>, Box<ConceptReadError>> {
         let key = build_object_vertex_property_links_order(relation.vertex(), role_type.into_vertex());
         let players = snapshot
-            .get_mapped(key.into_storage_key().as_reference(), |bytes| {
-                decode_role_players(bytes).map(Object::new).collect()
-            })
+            .get_mapped(
+                key.into_storage_key().as_reference(),
+                |bytes| decode_role_players(bytes).map(Object::new).collect(),
+                storage_counters,
+            )
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
             .unwrap_or_else(Vec::new);
         Ok(players)
@@ -1338,8 +1415,9 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         relation: Relation,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> impl Iterator<Item = Result<(RolePlayer, u64), Box<ConceptReadError>>> {
-        self.get_role_players(snapshot, relation).filter_map::<Result<(RolePlayer, u64), _>, _>(
+        self.get_role_players(snapshot, relation, storage_counters).filter_map::<Result<(RolePlayer, u64), _>, _>(
             move |item| match item {
                 Ok((role_player, count)) => (role_player.role_type() == role_type).then_some(Ok((role_player, count))),
                 Err(error) => Some(Err(error)),
@@ -1347,17 +1425,37 @@ impl ThingManager {
         )
     }
 
+    fn indexed_relation_prefix_in_relation_type(
+        relation_type: RelationType,
+        start_player_type: ObjectType,
+    ) -> StorageKey<'static, { ThingEdgeIndexedRelation::LENGTH_PREFIX_REL_TYPE_ID_START_TYPE }> {
+        ThingEdgeIndexedRelation::prefix_relation_type_start_type(
+            relation_type.vertex().type_id_(),
+            start_player_type.vertex(),
+        )
+    }
+
     pub fn get_indexed_relations_in(
         &self,
         snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
+        start_player_type_range: impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
-        let prefix = ThingEdgeIndexedRelation::prefix_relation_type(relation_type.vertex().type_id_());
-        self.iterate_indexed_relations(
-            snapshot,
-            &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
-            relation_type,
-        )
+        let start = match Self::start_type_bound_to_range_start_included_type(start_player_type_range.start_bound()) {
+            None => return Ok(IndexedRelationsIterator::new_empty()),
+            Some(start_player_type) => Self::indexed_relation_prefix_in_relation_type(relation_type, start_player_type),
+        };
+        let end = match Self::end_type_bound_to_range_end_included_type(start_player_type_range.end_bound()) {
+            None => return Ok(IndexedRelationsIterator::new_empty()),
+            Some(end_player_type) => Self::indexed_relation_prefix_in_relation_type(relation_type, end_player_type),
+        };
+        let range = &KeyRange::new(
+            RangeStart::Inclusive(start),
+            RangeEnd::EndPrefixInclusive(end),
+            ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING,
+        );
+        self.iterate_indexed_relations(snapshot, range, relation_type, storage_counters)
     }
 
     pub(crate) fn has_indexed_relation_player(
@@ -1368,6 +1466,7 @@ impl ThingManager {
         relation: Relation,
         start_role: RoleType,
         end_role: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         if !self.type_manager.relation_index_available(snapshot, relation.type_())? {
             Err(ConceptReadError::RelationIndexNotAvailable {
@@ -1382,31 +1481,34 @@ impl ThingManager {
             end_role.vertex().type_id_(),
         );
         snapshot
-            .get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference())
+            .get::<BUFFER_KEY_INLINE>(edge.into_storage_key().as_reference(), storage_counters)
             .map(|option| option.is_some())
             .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))
     }
 
-    pub(crate) fn get_indexed_relation_players(
+    pub(crate) fn get_indexed_relation_players_from(
         &self,
         snapshot: &impl ReadableSnapshot,
         start: impl ObjectAPI,
         relation_type: RelationType,
+        storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeIndexedRelation::prefix_start(relation_type.vertex().type_id_(), start.vertex());
         self.iterate_indexed_relations(
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
             relation_type,
+            storage_counters,
         )
     }
 
-    pub(crate) fn get_indexed_relations(
+    pub(crate) fn get_indexed_relations_between(
         &self,
         snapshot: &impl ReadableSnapshot,
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation_type: RelationType,
+        storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix =
             ThingEdgeIndexedRelation::prefix_start_end(relation_type.vertex().type_id_(), start.vertex(), end.vertex());
@@ -1414,6 +1516,7 @@ impl ThingManager {
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
             relation_type,
+            storage_counters,
         )
     }
 
@@ -1423,6 +1526,7 @@ impl ThingManager {
         start: impl ObjectAPI,
         end: impl ObjectAPI,
         relation: Relation,
+        storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix =
             ThingEdgeIndexedRelation::prefix_start_end_relation(start.vertex(), end.vertex(), relation.vertex());
@@ -1430,6 +1534,7 @@ impl ThingManager {
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
             relation.type_(),
+            storage_counters,
         )
     }
 
@@ -1440,6 +1545,7 @@ impl ThingManager {
         end: impl ObjectAPI,
         relation: Relation,
         start_role: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         let prefix = ThingEdgeIndexedRelation::prefix_start_end_relation_startrole(
             start.vertex(),
@@ -1451,6 +1557,7 @@ impl ThingManager {
             snapshot,
             &KeyRange::new_within(prefix, ThingEdgeIndexedRelation::FIXED_WIDTH_ENCODING),
             relation.type_(),
+            storage_counters,
         )
     }
 
@@ -1459,19 +1566,21 @@ impl ThingManager {
         snapshot: &impl ReadableSnapshot,
         range: &KeyRange<StorageKey<'_, INLINE_SIZE>>,
         relation_type: RelationType,
+        storage_counters: StorageCounters,
     ) -> Result<IndexedRelationsIterator, Box<ConceptReadError>> {
         if !self.type_manager().relation_index_available(snapshot, relation_type)? {
             Err(ConceptReadError::RelationIndexNotAvailable {
                 relation_label: relation_type.get_label(snapshot, self.type_manager())?.to_owned(),
             })?;
         }
-        Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range)))
+        Ok(IndexedRelationsIterator::new(snapshot.iterate_range(range, storage_counters)))
     }
 
     pub(crate) fn get_status(
         &self,
         snapshot: &impl ReadableSnapshot,
         key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
     ) -> ConceptStatus {
         snapshot
             .get_write(key.as_reference())
@@ -1482,7 +1591,7 @@ impl ThingManager {
             })
             .unwrap_or_else(|| {
                 debug_assert!(snapshot
-                    .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference())
+                    .get_last_existing::<BUFFER_VALUE_INLINE>(key.as_reference(), storage_counters)
                     .is_ok_and(|option| option.is_some()));
                 ConceptStatus::Persisted
             })
@@ -1492,9 +1601,10 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         instance: &impl ThingAPI,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
-            .contains(instance.vertex().into_storage_key().as_reference())
+            .contains(instance.vertex().into_storage_key().as_reference(), storage_counters)
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
     }
 
@@ -1502,10 +1612,121 @@ impl ThingManager {
         &self,
         snapshot: &impl ReadableSnapshot,
         type_: impl TypeAPI,
+        storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         snapshot
-            .contains(type_.vertex().into_storage_key().as_reference())
+            .contains(type_.vertex().into_storage_key().as_reference(), storage_counters)
             .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))
+    }
+
+    pub fn start_type_bound_to_range_start_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
+        let bound_inclusive = match start_bound {
+            Bound::Included(type_) => *type_,
+            Bound::Excluded(type_) => type_.previous_possible()?,
+            Bound::Unbounded => T::MIN,
+        };
+        Some(bound_inclusive)
+    }
+
+    fn end_type_bound_to_range_end_included_type<T: TypeAPI>(start_bound: Bound<&T>) -> Option<T> {
+        let bound_inclusive = match start_bound {
+            Bound::Included(type_) => *type_,
+            Bound::Excluded(type_) => type_.previous_possible()?,
+            Bound::Unbounded => T::MAX,
+        };
+        Some(bound_inclusive)
+    }
+
+    fn get_value_range<'a>(
+        expected_value_type_category: ValueTypeCategory,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<(Bound<Value<'a>>, Bound<Value<'a>>)> {
+        let lower_bound = Self::get_value_lower_bound(expected_value_type_category, range)?;
+        let upper_bound = Self::get_value_upper_bound(expected_value_type_category, range)?;
+        Some((lower_bound, upper_bound))
+    }
+
+    fn get_value_lower_bound_across_types<'a>(
+        ordered_possible_value_types: &[ValueTypeCategory],
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        debug_assert!(Self::value_types_in_order(ordered_possible_value_types));
+        ordered_possible_value_types
+            .iter()
+            .filter_map(|value_type_category| Self::get_value_lower_bound(*value_type_category, range))
+            .next()
+    }
+
+    fn value_types_in_order(value_types: &[ValueTypeCategory]) -> bool {
+        if value_types.is_empty() {
+            return true;
+        }
+        let mut current = &value_types[0];
+        for other in &value_types[1..] {
+            if current.to_bytes() > other.to_bytes() {
+                return false;
+            }
+            current = other;
+        }
+        true
+    }
+
+    fn get_value_upper_bound_across_types<'a>(
+        ordered_possible_value_types: &[ValueTypeCategory],
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        debug_assert!(Self::value_types_in_order(ordered_possible_value_types));
+        ordered_possible_value_types
+            .iter()
+            .rev()
+            .filter_map(|value_type_category| Self::get_value_upper_bound(*value_type_category, range))
+            .next()
+    }
+
+    fn get_value_lower_bound<'a>(
+        expected_value_type_category: ValueTypeCategory,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        let start_value_type = match range.start_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+            Bound::Unbounded => return Some(Bound::Unbounded),
+        };
+        if !start_value_type.is_approximately_castable_to(expected_value_type_category) {
+            return None;
+        }
+        Some(range.start_bound().map(|value| {
+            if expected_value_type_category != start_value_type.category() {
+                value
+                    .as_reference()
+                    .approximate_cast_lower_bound(expected_value_type_category)
+                    .expect("Failed to do a lower-bound conversion between value types.")
+            } else {
+                value.as_reference()
+            }
+        }))
+    }
+
+    fn get_value_upper_bound<'a>(
+        expected_value_type_category: ValueTypeCategory,
+        range: &'a impl RangeBounds<Value<'a>>,
+    ) -> Option<Bound<Value<'a>>> {
+        let end_value_type = match range.end_bound() {
+            Bound::Included(value) | Bound::Excluded(value) => value.value_type(),
+            Bound::Unbounded => return Some(Bound::Unbounded),
+        };
+        if !end_value_type.is_approximately_castable_to(expected_value_type_category) {
+            return None;
+        }
+        Some(range.end_bound().map(|value| {
+            if expected_value_type_category != end_value_type.category() {
+                value
+                    .as_reference()
+                    .approximate_cast_upper_bound(expected_value_type_category)
+                    .expect("Failed to do an upper-bound conversion between value types.")
+            } else {
+                value.as_reference()
+            }
+        }))
     }
 }
 
@@ -1518,19 +1739,27 @@ impl ThingManager {
         snapshot.unmodifiable_lock_add(attribute.vertex().into_storage_key().into_owned_array())
     }
 
-    pub fn finalise(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
-        self.validate(snapshot)?;
+    pub fn finalise(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Vec<ConceptWriteError>> {
+        self.validate(snapshot, storage_counters.clone())?;
 
-        self.cleanup_relations(snapshot).map_err(|err| vec![*err])?;
-        self.cleanup_attributes(snapshot).map_err(|err| vec![*err])?;
+        self.cleanup_relations(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
+        self.cleanup_attributes(snapshot, storage_counters.clone()).map_err(|err| vec![*err])?;
 
-        match self.create_commit_locks(snapshot) {
+        match self.create_commit_locks(snapshot, storage_counters) {
             Ok(_) => Ok(()),
             Err(error) => Err(vec![ConceptWriteError::ConceptRead { typedb_source: error }]),
         }
     }
 
-    fn create_commit_locks(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptReadError>> {
+    fn create_commit_locks(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptReadError>> {
         // TODO: Should not collect here (iterate_writes() already copies)
         for (key, _write) in snapshot.iterate_writes().collect_vec() {
             if ThingEdgeHas::is_has(&key) {
@@ -1539,10 +1768,10 @@ impl ThingManager {
                 let attribute = Attribute::new(has.to());
                 let attribute_type = attribute.type_();
 
-                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute)?;
+                self.add_exclusive_lock_for_unique_constraint(snapshot, &object, attribute, storage_counters.clone())?;
                 self.add_exclusive_lock_for_owns_cardinality_constraint(snapshot, &object, attribute_type)?;
             } else if ThingEdgeLinks::is_links(&key) {
-                let role_player = ThingEdgeLinks::new(Bytes::Reference(key.bytes()));
+                let role_player = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
                 let relation = Relation::new(role_player.relation());
                 let player = Object::new(role_player.player());
                 let role_type = RoleType::build_from_type_id(role_player.role_id());
@@ -1560,6 +1789,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: &Object,
         attribute: Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let unique_constraint_opt = owner.type_().get_owned_attribute_type_constraint_unique(
             snapshot,
@@ -1569,7 +1799,10 @@ impl ThingManager {
         if let Some(unique_constraint) = unique_constraint_opt {
             let attribute_key = attribute.vertex();
             let attribute_value = snapshot
-                .get_last_existing::<BUFFER_VALUE_INLINE>(attribute_key.into_storage_key().as_reference())
+                .get_last_existing::<BUFFER_VALUE_INLINE>(
+                    attribute_key.into_storage_key().as_reference(),
+                    storage_counters,
+                )
                 .map_err(|error| Box::new(ConceptReadError::SnapshotGet { source: error }))?
                 .ok_or(ConceptReadError::InternalMissingAttributeValue {})?;
 
@@ -1676,7 +1909,11 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_relations(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptWriteError>> {
+    fn cleanup_relations(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
         let mut any_deleted = true;
         while any_deleted {
             any_deleted = false;
@@ -1687,13 +1924,13 @@ impl ThingManager {
                 ))
                 .filter(|(_, write)| matches!(write, Write::Delete))
             {
-                let edge = ThingEdgeLinks::new(Bytes::Reference(key.byte_array().as_ref()));
+                let edge = ThingEdgeLinks::decode(Bytes::Reference(key.byte_array().as_ref()));
                 let relation = Relation::new(edge.from());
-                if relation.get_status(snapshot, self) == ConceptStatus::Deleted {
+                if relation.get_status(snapshot, self, storage_counters.clone()) == ConceptStatus::Deleted {
                     continue;
                 }
-                if !relation.has_players(snapshot, self) {
-                    relation.delete(snapshot, self)?;
+                if !relation.has_players(snapshot, self, storage_counters.clone()) {
+                    relation.delete(snapshot, self, storage_counters.clone())?;
                     any_deleted = true;
                 }
             }
@@ -1710,8 +1947,8 @@ impl ThingManager {
                 .filter_map(|(key, write)| (!matches!(write, Write::Delete)).then_some(key))
             {
                 let relation = Relation::new(ObjectVertex::decode(key.bytes()));
-                if !relation.has_players(snapshot, self) {
-                    relation.delete(snapshot, self)?;
+                if !relation.has_players(snapshot, self, storage_counters.clone()) {
+                    relation.delete(snapshot, self, storage_counters.clone())?;
                     any_deleted = true;
                 }
             }
@@ -1738,18 +1975,22 @@ impl ThingManager {
                     _ => None,
                 })
             {
-                if !self.type_exists(snapshot, relation_type)? {
+                if !self.type_exists(snapshot, relation_type, storage_counters.clone())? {
                     continue;
                 }
                 let subtypes = relation_type.get_subtypes_transitive(snapshot, self.type_manager())?;
                 once(&relation_type).chain(subtypes.into_iter()).try_for_each(|type_| {
                     let is_cascade = true; // TODO: Always consider cascade now, can be changed later.
                     if is_cascade {
-                        let mut relations: InstanceIterator<Relation> =
-                            self.get_instances_in(snapshot, *type_, <Relation as ThingAPI>::Vertex::KEYSPACE);
-                        while let Some(relation) = relations.next().transpose()? {
-                            if !relation.has_players(snapshot, self) {
-                                relation.delete(snapshot, self)?;
+                        let mut relations: InstanceIterator<Relation> = self.get_instances_in(
+                            snapshot,
+                            *type_,
+                            <Relation as ThingAPI>::Vertex::KEYSPACE,
+                            storage_counters.clone(),
+                        );
+                        while let Some(relation) = Iterator::next(&mut relations).transpose()? {
+                            if !relation.has_players(snapshot, self, storage_counters.clone()) {
+                                relation.delete(snapshot, self, storage_counters.clone())?;
                                 any_deleted = true;
                             }
                         }
@@ -1762,7 +2003,11 @@ impl ThingManager {
         Ok(())
     }
 
-    fn cleanup_attributes(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Box<ConceptWriteError>> {
+    fn cleanup_attributes(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Box<ConceptWriteError>> {
         for (key, _write) in snapshot
             .iterate_writes_range(&KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
             .filter(|(_, write)| matches!(write, Write::Delete))
@@ -1770,11 +2015,11 @@ impl ThingManager {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let attribute = Attribute::new(edge.to());
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
-            if attribute.get_status(snapshot, self) == ConceptStatus::Deleted {
+            if attribute.get_status(snapshot, self, storage_counters.clone()) == ConceptStatus::Deleted {
                 continue;
             }
-            if !is_independent && !attribute.has_owners(snapshot, self) {
-                attribute.delete(snapshot, self)?;
+            if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone()) {
+                attribute.delete(snapshot, self, storage_counters.clone())?;
             }
         }
 
@@ -1801,8 +2046,8 @@ impl ThingManager {
         {
             let attribute = Attribute::new(AttributeVertex::decode(key.bytes()));
             let is_independent = attribute.type_().is_independent(snapshot, self.type_manager())?;
-            if !is_independent && !attribute.has_owners(snapshot, self) {
-                self.unput_attribute(snapshot, &attribute)?;
+            if !is_independent && !attribute.has_owners(snapshot, self, storage_counters.clone()) {
+                self.unput_attribute(snapshot, &attribute, storage_counters.clone())?;
             }
         }
 
@@ -1824,7 +2069,7 @@ impl ThingManager {
                 _ => None,
             })
         {
-            if !self.type_exists(snapshot, attribute_type)? {
+            if !self.type_exists(snapshot, attribute_type, storage_counters.clone())? {
                 continue;
             }
             let subtypes = attribute_type.get_subtypes_transitive(snapshot, self.type_manager())?;
@@ -1836,10 +2081,11 @@ impl ThingManager {
                             snapshot,
                             *type_,
                             AttributeVertex::keyspace_for_category(value_type.category()),
+                            storage_counters.clone(),
                         );
-                        while let Some(attribute) = attributes.next().transpose()? {
-                            if !attribute.has_owners(snapshot, self) {
-                                attribute.delete(snapshot, self)?;
+                        while let Some(attribute) = Iterator::next(&mut attributes).transpose()? {
+                            if !attribute.has_owners(snapshot, self, storage_counters.clone()) {
+                                attribute.delete(snapshot, self, storage_counters.clone())?;
                             }
                         }
                     }
@@ -1851,7 +2097,11 @@ impl ThingManager {
         Ok(())
     }
 
-    fn validate(&self, snapshot: &mut impl WritableSnapshot) -> Result<(), Vec<ConceptWriteError>> {
+    fn validate(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> Result<(), Vec<ConceptWriteError>> {
         /*
         The cardinalities validation flow is the following:
         1. Collect instances affected by cardinalities changes (separately for 3 capabilities: owns, plays, relates)
@@ -1902,13 +2152,18 @@ impl ThingManager {
         );
         collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
-        res = self.collect_modified_has_objects(snapshot, &mut modified_objects_attribute_types);
+        res = self.collect_modified_has_objects(
+            snapshot,
+            &mut modified_objects_attribute_types,
+            storage_counters.clone(),
+        );
         collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         res = self.collect_modified_links_objects(
             snapshot,
             &mut modified_relations_role_types,
             &mut modified_objects_role_types,
+            storage_counters.clone(),
         );
         collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
@@ -1917,22 +2172,43 @@ impl ThingManager {
             &mut modified_objects_attribute_types,
             &mut modified_objects_role_types,
             &mut modified_relations_role_types,
+            storage_counters.clone(),
         );
         collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
 
         for (object, modified_owns) in modified_objects_attribute_types {
-            res = CommitTimeValidation::validate_object_has(snapshot, self, object, modified_owns, &mut errors);
+            res = CommitTimeValidation::validate_object_has(
+                snapshot,
+                self,
+                object,
+                modified_owns,
+                &mut errors,
+                storage_counters.clone(),
+            );
             collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         for (object, modified_plays) in modified_objects_role_types {
-            res = CommitTimeValidation::validate_object_links(snapshot, self, object, modified_plays, &mut errors);
+            res = CommitTimeValidation::validate_object_links(
+                snapshot,
+                self,
+                object,
+                modified_plays,
+                &mut errors,
+                storage_counters.clone(),
+            );
             collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
         for (relation, modified_relates) in modified_relations_role_types {
-            res =
-                CommitTimeValidation::validate_relation_links(snapshot, self, relation, modified_relates, &mut errors);
+            res = CommitTimeValidation::validate_relation_links(
+                snapshot,
+                self,
+                relation,
+                modified_relates,
+                &mut errors,
+                storage_counters.clone(),
+            );
             collect_errors!(errors, res, |typedb_source| DataValidationError::ConceptRead { typedb_source });
         }
 
@@ -2002,6 +2278,7 @@ impl ThingManager {
         &self,
         snapshot: &impl WritableSnapshot,
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         for (key, _) in snapshot
             .iterate_writes_range(&KeyRange::new_within(ThingEdgeHas::prefix(), ThingEdgeHas::FIXED_WIDTH_ENCODING))
@@ -2009,7 +2286,7 @@ impl ThingManager {
             let edge = ThingEdgeHas::decode(Bytes::Reference(key.byte_array()));
             let owner = Object::new(edge.from());
             let attribute = Attribute::new(edge.to());
-            if self.instance_exists(snapshot, &owner)? {
+            if self.instance_exists(snapshot, &owner, storage_counters.clone())? {
                 let updated_attribute_types = out_object_attribute_types.entry(owner).or_default();
                 updated_attribute_types.insert(attribute.type_());
             }
@@ -2023,21 +2300,22 @@ impl ThingManager {
         snapshot: &impl WritableSnapshot,
         out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
         out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         for (key, _) in snapshot
             .iterate_writes_range(&KeyRange::new_within(ThingEdgeLinks::prefix(), ThingEdgeLinks::FIXED_WIDTH_ENCODING))
         {
-            let edge = ThingEdgeLinks::new(Bytes::reference(key.bytes()));
+            let edge = ThingEdgeLinks::decode(Bytes::reference(key.bytes()));
             let relation = Relation::new(edge.relation());
             let player = Object::new(edge.player());
             let role_type = RoleType::build_from_type_id(edge.role_id());
 
-            if self.instance_exists(snapshot, &relation)? {
+            if self.instance_exists(snapshot, &relation, storage_counters.clone())? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.insert(role_type);
             }
 
-            if self.instance_exists(snapshot, &player)? {
+            if self.instance_exists(snapshot, &player, storage_counters.clone())? {
                 let updated_role_types = out_object_role_types.entry(player).or_default();
                 updated_role_types.insert(role_type);
             }
@@ -2052,6 +2330,7 @@ impl ThingManager {
         out_object_attribute_types: &mut HashMap<Object, HashSet<AttributeType>>,
         out_object_role_types: &mut HashMap<Object, HashSet<RoleType>>,
         out_relation_role_types: &mut HashMap<Relation, HashSet<RoleType>>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         let mut modified_owns = HashMap::new();
         let mut modified_plays = HashMap::new();
@@ -2061,18 +2340,23 @@ impl ThingManager {
             &mut modified_owns,
             &mut modified_plays,
             &mut modified_relates,
+            storage_counters.clone(),
         )?;
 
         for (relation_type, role_types) in modified_relates {
             let (min, max) = minmax_or!(
                 TypeAPI::chain_types(
                     relation_type,
-                    relation_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                    relation_type.get_subtypes_transitive(snapshot, self.type_manager(),)?.into_iter().cloned()
                 ),
                 unreachable!("Expected at least one object type")
             );
-            let mut it = self.get_relations_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
-            while let Some(relation) = it.next().transpose()? {
+            let mut it = self.get_relations_in_range(
+                snapshot,
+                &(Bound::Included(min), Bound::Included(max)),
+                storage_counters.clone(),
+            );
+            while let Some(relation) = Iterator::next(&mut it).transpose()? {
                 let updated_role_types = out_relation_role_types.entry(relation).or_default();
                 updated_role_types.extend(role_types.iter());
             }
@@ -2082,12 +2366,16 @@ impl ThingManager {
             let (min, max) = minmax_or!(
                 TypeAPI::chain_types(
                     object_type,
-                    object_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                    object_type.get_subtypes_transitive(snapshot, self.type_manager(),)?.into_iter().cloned()
                 ),
                 unreachable!("Expected at least one object type")
             );
-            let mut it = self.get_objects_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
-            while let Some(object) = it.next().transpose()? {
+            let mut it = self.get_objects_in_range(
+                snapshot,
+                &(Bound::Included(min), Bound::Included(max)),
+                storage_counters.clone(),
+            );
+            while let Some(object) = Iterator::next(&mut it).transpose()? {
                 let updated_role_types = out_object_role_types.entry(object).or_default();
                 updated_role_types.extend(role_types.iter());
             }
@@ -2097,12 +2385,16 @@ impl ThingManager {
             let (min, max) = minmax_or!(
                 TypeAPI::chain_types(
                     object_type,
-                    object_type.get_subtypes_transitive(snapshot, self.type_manager())?.into_iter().cloned()
+                    object_type.get_subtypes_transitive(snapshot, self.type_manager(),)?.into_iter().cloned()
                 ),
                 unreachable!("Expected at least one object type")
             );
-            let mut it = self.get_objects_in_range(snapshot, &(Bound::Included(min), Bound::Included(max)));
-            while let Some(object) = it.next().transpose()? {
+            let mut it = self.get_objects_in_range(
+                snapshot,
+                &(Bound::Included(min), Bound::Included(max)),
+                storage_counters.clone(),
+            );
+            while let Some(object) = Iterator::next(&mut it).transpose()? {
                 let updated_attribute_types = out_object_attribute_types.entry(object).or_default();
                 updated_attribute_types.extend(attribute_types.iter());
             }
@@ -2117,6 +2409,7 @@ impl ThingManager {
         modified_owns: &mut HashMap<ObjectType, HashSet<AttributeType>>,
         modified_plays: &mut HashMap<ObjectType, HashSet<RoleType>>,
         modified_relates: &mut HashMap<RelationType, HashSet<RoleType>>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptReadError>> {
         // New / deleted capabilities
 
@@ -2383,14 +2676,6 @@ impl ThingManager {
         OperationTimeValidation::validate_attribute_type_is_not_abstract(snapshot, self, attribute_type)
             .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
-        OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
-            snapshot,
-            self,
-            attribute_type,
-            value.value_type(),
-            value.as_reference(),
-        )?;
-
         OperationTimeValidation::validate_attribute_regex_constraints(
             snapshot,
             self,
@@ -2433,7 +2718,7 @@ impl ThingManager {
         )?;
 
         let vertex = match value
-            .cast(&attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap())
+            .cast(attribute_type.get_value_type_without_source(snapshot, self.type_manager())?.unwrap().category())
             .expect("value type compatibility should have been verified by this point")
         {
             Value::Boolean(bool) => {
@@ -2534,16 +2819,31 @@ impl ThingManager {
         Ok(())
     }
 
-    pub(crate) fn delete_entity(&self, snapshot: &mut impl WritableSnapshot, entity: Entity) {
-        self.delete_object(snapshot, entity.vertex().into_storage_key());
+    pub(crate) fn delete_entity(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        entity: Entity,
+        storage_counters: StorageCounters,
+    ) {
+        self.delete_object(snapshot, entity.vertex().into_storage_key(), storage_counters);
     }
 
-    pub(crate) fn delete_relation(&self, snapshot: &mut impl WritableSnapshot, relation: Relation) {
-        self.delete_object(snapshot, relation.vertex().into_storage_key());
+    pub(crate) fn delete_relation(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation: Relation,
+        storage_counters: StorageCounters,
+    ) {
+        self.delete_object(snapshot, relation.vertex().into_storage_key(), storage_counters);
     }
 
-    fn delete_object(&self, snapshot: &mut impl WritableSnapshot, key: StorageKey<'_, BUFFER_KEY_INLINE>) {
-        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()));
+    fn delete_object(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        key: StorageKey<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) {
+        let status = self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters);
         let key = key.into_owned_array();
         snapshot.unmodifiable_lock_remove(&key);
         match status {
@@ -2558,12 +2858,13 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute: Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let key = attribute.vertex().into_storage_key();
-        match self.get_status(snapshot, StorageKey::Reference(key.as_reference())) {
+        match self.get_status(snapshot, StorageKey::Reference(key.as_reference()), storage_counters.clone()) {
             ConceptStatus::Put => {
-                self.unput_attribute(snapshot, &attribute)?;
-                if self.instance_exists(snapshot, &attribute)? {
+                self.unput_attribute(snapshot, &attribute, storage_counters.clone())?;
+                if self.instance_exists(snapshot, &attribute, storage_counters)? {
                     snapshot.delete(key.into_owned_array());
                 }
             }
@@ -2578,9 +2879,10 @@ impl ThingManager {
         &self,
         snapshot: &mut impl WritableSnapshot,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let value = match attribute
-            .get_value(snapshot, self)
+            .get_value(snapshot, self, storage_counters)
             .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
             Value::String(string) => ByteArray::copy(string.as_bytes()),
@@ -2596,8 +2898,9 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        self.set_has_count(snapshot, owner, attribute, 1)
+        self.set_has_count(snapshot, owner, attribute, 1, storage_counters)
     }
 
     pub(crate) fn set_has_count(
@@ -2606,9 +2909,10 @@ impl ThingManager {
         owner: impl ObjectAPI,
         attribute: &Attribute,
         count: u64,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let attribute_type = attribute.type_();
-        let value = attribute.get_value(snapshot, self)?.into_owned();
+        let value = attribute.get_value(snapshot, self, storage_counters.clone())?.into_owned();
 
         OperationTimeValidation::validate_value_type_matches_attribute_type_for_write(
             snapshot,
@@ -2624,6 +2928,7 @@ impl ThingManager {
             owner,
             attribute.type_(),
             value.as_reference(),
+            storage_counters.clone(),
         )
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
@@ -2655,13 +2960,13 @@ impl ThingManager {
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         if count == 0 {
-            self.unset_has(snapshot, owner, attribute)
+            self.unset_has(snapshot, owner, attribute, storage_counters.clone())
         } else {
             let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex());
             let has_reverse = ThingEdgeHasReverse::new(attribute.vertex(), owner.vertex());
 
-            owner.set_required(snapshot, self)?;
-            attribute.set_required(snapshot, self)?;
+            owner.set_required(snapshot, self, storage_counters.clone())?;
+            attribute.set_required(snapshot, self, storage_counters.clone())?;
             snapshot.put_val(has.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(has_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             Ok(())
@@ -2673,8 +2978,9 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let owner_status = owner.get_status(snapshot, self);
+        let owner_status = owner.get_status(snapshot, self, storage_counters.clone());
         let has = ThingEdgeHas::new(owner.vertex(), attribute.vertex()).into_storage_key();
         let has_array = has.clone().into_owned_array();
         let has_reverse_array =
@@ -2688,7 +2994,7 @@ impl ThingManager {
 
         if owner_status != ConceptStatus::Inserted {
             if self
-                .has_attribute(snapshot, owner, attribute)
+                .owner_has_attribute(snapshot, owner, attribute, storage_counters)
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
             {
                 snapshot.delete(has_array);
@@ -2705,6 +3011,7 @@ impl ThingManager {
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         attributes: Vec<Attribute>,
+        _storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let attribute_value_type = attribute_type
             .get_value_type_without_source(snapshot, self.type_manager())?
@@ -2727,6 +3034,7 @@ impl ThingManager {
         snapshot: &mut impl WritableSnapshot,
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
+        _storage_counters: StorageCounters,
     ) {
         let order_property = build_object_vertex_property_has_order(owner.vertex(), attribute_type.vertex());
         snapshot.delete(order_property.into_storage_key().into_owned_array())
@@ -2738,19 +3046,27 @@ impl ThingManager {
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let count: u64 = 1;
         // must be idempotent, so no lock required -- cannot fail
 
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+        let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         let links_reverse =
-            ThingEdgeLinks::build_links_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
+            ThingEdgeLinks::new_reverse(player.clone().vertex(), relation.clone().vertex(), role_type.vertex());
         snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
         if self.type_manager.relation_index_available(snapshot, relation.type_())? {
-            self.relation_index_player_regenerate(snapshot, relation, Object::new(player.vertex()), role_type, 1)?;
+            self.relation_index_player_regenerate(
+                snapshot,
+                relation,
+                Object::new(player.vertex()),
+                role_type,
+                1,
+                storage_counters,
+            )?;
         }
         Ok(())
     }
@@ -2780,23 +3096,23 @@ impl ThingManager {
         player: impl ObjectAPI,
         role_type: RoleType,
         count: u64,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         if count == 0 {
-            self.unset_links(snapshot, relation, player, role_type)
+            self.unset_links(snapshot, relation, player, role_type, storage_counters)
         } else {
-            let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
-            let links_reverse =
-                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+            let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
+            let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
 
-            relation.set_required(snapshot, self)?;
-            player.set_required(snapshot, self)?;
+            relation.set_required(snapshot, self, storage_counters.clone())?;
+            player.set_required(snapshot, self, storage_counters.clone())?;
 
             snapshot.put_val(links.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
             snapshot.put_val(links_reverse.into_storage_key().into_owned_array(), ByteArray::copy(&encode_u64(count)));
 
             if self.type_manager.relation_index_available(snapshot, relation.type_())? {
                 let player = Object::new(player.vertex());
-                self.relation_index_player_regenerate(snapshot, relation, player, role_type, count)?
+                self.relation_index_player_regenerate(snapshot, relation, player, role_type, count, storage_counters)?
             }
             Ok(())
         }
@@ -2809,15 +3125,14 @@ impl ThingManager {
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let relation_status = relation.get_status(&*snapshot, self);
-        let links =
-            ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex()).into_storage_key();
+        let relation_status = relation.get_status(&*snapshot, self, storage_counters.clone());
+        let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex()).into_storage_key();
         let links_array = links.clone().into_owned_array();
-        let links_reverse_array =
-            ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex())
-                .into_storage_key()
-                .into_owned_array();
+        let links_reverse_array = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex())
+            .into_storage_key()
+            .into_owned_array();
 
         let snapshot_value_opt = Self::get_snapshot_put_value(snapshot, links.as_reference());
         if let Some(snapshot_value) = snapshot_value_opt {
@@ -2827,7 +3142,7 @@ impl ThingManager {
 
         if relation_status != ConceptStatus::Inserted {
             if self
-                .has_role_player(snapshot, relation, player, role_type)
+                .has_role_player(snapshot, relation, player, role_type, storage_counters.clone())
                 .map_err(|typedb_source| ConceptWriteError::ConceptRead { typedb_source })?
             {
                 snapshot.delete(links_array);
@@ -2840,7 +3155,7 @@ impl ThingManager {
             .relation_index_available(snapshot, relation.type_())
             .map_err(|error| ConceptWriteError::ConceptRead { typedb_source: error })?
         {
-            self.relation_index_player_links_unset(snapshot, relation, player, role_type)?;
+            self.relation_index_player_links_unset(snapshot, relation, player, role_type, storage_counters)?;
         }
         Ok(())
     }
@@ -2853,23 +3168,31 @@ impl ThingManager {
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+        let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         let count = snapshot
-            .get_mapped(links.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
+            .get_mapped(
+                links.into_storage_key().as_reference(),
+                |arr| decode_u64(arr.try_into().unwrap()),
+                storage_counters.clone(),
+            )
             .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
-            let links_reverse =
-                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+            let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             let reverse_count = snapshot
-                .get_mapped(links_reverse.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
+                .get_mapped(
+                    links_reverse.into_storage_key().as_reference(),
+                    |arr| decode_u64(arr.try_into().unwrap()),
+                    storage_counters.clone(),
+                )
                 .unwrap();
             debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
 
-        self.set_links_count(snapshot, relation, player, role_type, count.unwrap_or(0) + 1)
+        self.set_links_count(snapshot, relation, player, role_type, count.unwrap_or(0) + 1, storage_counters)
     }
 
     /// Remove a player from a relation that supports duplicates
@@ -2881,18 +3204,26 @@ impl ThingManager {
         player: impl ObjectAPI,
         role_type: RoleType,
         decrement_count: u64,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
-        let links = ThingEdgeLinks::build_links(relation.vertex(), player.vertex(), role_type.vertex());
+        let links = ThingEdgeLinks::new(relation.vertex(), player.vertex(), role_type.vertex());
         let count = snapshot
-            .get_mapped(links.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
+            .get_mapped(
+                links.into_storage_key().as_reference(),
+                |arr| decode_u64(arr.try_into().unwrap()),
+                storage_counters.clone(),
+            )
             .map_err(|snapshot_err| Box::new(ConceptReadError::SnapshotGet { source: snapshot_err }))?;
 
         #[cfg(debug_assertions)]
         {
-            let links_reverse =
-                ThingEdgeLinks::build_links_reverse(player.vertex(), relation.vertex(), role_type.vertex());
+            let links_reverse = ThingEdgeLinks::new_reverse(player.vertex(), relation.vertex(), role_type.vertex());
             let reverse_count = snapshot
-                .get_mapped(links_reverse.into_storage_key().as_reference(), |arr| decode_u64(arr.try_into().unwrap()))
+                .get_mapped(
+                    links_reverse.into_storage_key().as_reference(),
+                    |arr| decode_u64(arr.try_into().unwrap()),
+                    storage_counters.clone(),
+                )
                 .unwrap();
             debug_assert_eq!(&count, &reverse_count, "canonical and reverse links edge count mismatch!");
         }
@@ -2909,7 +3240,7 @@ impl ThingManager {
         .map_err(|typedb_source| ConceptWriteError::DataValidation { typedb_source })?;
 
         debug_assert!(*count.as_ref().unwrap() >= decrement_count);
-        self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count)
+        self.set_links_count(snapshot, relation, player, role_type, count.unwrap() - decrement_count, storage_counters)
     }
 
     // TODO:
@@ -2923,9 +3254,10 @@ impl ThingManager {
         relation: Relation,
         player: impl ObjectAPI,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         let players = relation
-            .get_players(snapshot, self)
+            .get_players(snapshot, self, storage_counters.clone())
             .map_ok(|(roleplayer, _count)| (roleplayer.player(), roleplayer.role_type()));
         for rp in players {
             let (rp_player, rp_role_type) = rp?;
@@ -2959,7 +3291,7 @@ impl ThingManager {
             }
 
             let is_persisted = snapshot
-                .get_mapped(index.as_reference(), |_| true)
+                .get_mapped(index.as_reference(), |_| true, storage_counters.clone())
                 .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?
                 .unwrap_or(false);
 
@@ -2984,10 +3316,11 @@ impl ThingManager {
         player: Object,
         role_type: RoleType,
         count_for_player: u64,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<ConceptWriteError>> {
         debug_assert_ne!(count_for_player, 0);
         let players = relation
-            .get_players(snapshot, self)
+            .get_players(snapshot, self, storage_counters)
             .map_ok(|(roleplayer, count)| (roleplayer.player(), roleplayer.role_type(), count));
         for rp in players {
             let (rp_player, rp_role_type, rp_count) = rp?;

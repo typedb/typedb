@@ -858,6 +858,7 @@ dependencies = [
  "error",
  "ir",
  "itertools 0.10.5",
+ "resource",
  "storage",
  "test_utils",
  "test_utils_concept",
@@ -3580,6 +3581,9 @@ dependencies = [
 [[package]]
 name = "resource"
 version = "0.0.0"
+dependencies = [
+ "itertools 0.10.5",
+]
 
 [[package]]
 name = "rgb"

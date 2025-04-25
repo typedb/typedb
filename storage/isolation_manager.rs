@@ -694,10 +694,6 @@ impl CommitRecord {
         &self.operations
     }
 
-    pub(crate) fn operations_mut(&mut self) -> &mut OperationsBuffer {
-        &mut self.operations
-    }
-
     pub fn into_operations(self) -> OperationsBuffer {
         self.operations
     }
@@ -816,15 +812,6 @@ impl StatusRecord {
 
     pub(crate) fn commit_record_sequence_number(&self) -> SequenceNumber {
         self.commit_record_sequence_number
-    }
-
-    fn deserialise_from(record_type: DurabilityRecordType, reader: impl Read)
-    where
-        Self: Sized,
-    {
-        assert_eq!(Self::RECORD_TYPE, record_type);
-        // TODO: handle error with a better message
-        bincode::deserialize_from(reader).unwrap_or_log()
     }
 }
 

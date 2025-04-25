@@ -13,6 +13,7 @@ use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
+use resource::profile::StorageCounters;
 
 use super::thing_type::get_as_object_type;
 use crate::{
@@ -43,6 +44,7 @@ pub async fn set_owns_unordered(
             &tx.thing_manager,
             attr_type,
             Ordering::Unordered,
+            StorageCounters::DISABLED,
         );
         may_error.check_concept_write_without_read_errors(&res);
     });
@@ -70,6 +72,7 @@ pub async fn set_owns_ordered(
             &tx.thing_manager,
             attr_type,
             Ordering::Ordered,
+            StorageCounters::DISABLED,
         );
         may_error.check_concept_write_without_read_errors(&res);
     });

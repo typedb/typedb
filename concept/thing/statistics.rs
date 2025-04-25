@@ -26,7 +26,10 @@ use encoding::graph::{
     Typed,
 };
 use error::typedb_error;
-use resource::constants::{database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT, snapshot::BUFFER_KEY_INLINE};
+use resource::{
+    constants::{database::STATISTICS_DURABLE_WRITE_CHANGE_PERCENT, snapshot::BUFFER_KEY_INLINE},
+    profile::StorageCounters,
+};
 use serde::{Deserialize, Serialize};
 use storage::{
     durability_client::{DurabilityClient, DurabilityClientError, DurabilityRecord, UnsequencedDurabilityRecord},
@@ -128,7 +131,6 @@ impl Statistics {
             return Ok(());
         }
 
-        let start_seq_nr = self.sequence_number;
         let start = Instant::now();
 
         // make it a little more likely that we capture concurrent commits
@@ -137,31 +139,39 @@ impl Statistics {
         );
 
         let mut data_commits = BTreeMap::new();
-        for (seq, status) in load_commit_data_from(load_start, storage.durability())
+        for (seq, status) in load_commit_data_from(load_start, storage.durability(), usize::MAX)
             .map_err(|err| ReloadCommitData { typedb_source: err })?
         {
-            if let RecoveryCommitStatus::Validated(record) = status {
-                let commit_type = record.commit_type();
-                let writes = CommittedWrites {
-                    open_sequence_number: record.open_sequence_number(),
-                    operations: record.into_operations(),
-                };
-                match commit_type {
-                    CommitType::Data => _ = data_commits.insert(seq, writes),
-                    CommitType::Schema => {
-                        if self.sequence_number < seq {
-                            // If last write was at Seq[11] and this schema commit is at Seq[12],
-                            // no changes need to be applied or persisted.
-                            if self.last_durable_write_sequence_number.next() < seq {
-                                self.update_writes(&data_commits, storage).map_err(|err| DataRead { source: err })?;
-                                self.durably_write(storage.durability())?;
+            match status {
+                RecoveryCommitStatus::Pending(_) => {
+                    // there's a gap/incomplete data in the log that means we can't apply beyond this sequence number
+                    break;
+                }
+                RecoveryCommitStatus::Validated(record) => {
+                    let commit_type = record.commit_type();
+                    let writes = CommittedWrites {
+                        open_sequence_number: record.open_sequence_number(),
+                        operations: record.into_operations(),
+                    };
+                    match commit_type {
+                        CommitType::Data => _ = data_commits.insert(seq, writes),
+                        CommitType::Schema => {
+                            if self.sequence_number < seq {
+                                // If last write was at Seq[11] and this schema commit is at Seq[12],
+                                // no changes need to be applied or persisted.
+                                if self.last_durable_write_sequence_number.next() < seq {
+                                    self.update_writes(&data_commits, storage)
+                                        .map_err(|err| DataRead { source: err })?;
+                                    self.durably_write(storage.durability())?;
+                                }
+                                self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
+                                    .map_err(|err| DataRead { source: err })?;
                             }
-                            self.update_writes(&BTreeMap::from([(seq, writes)]), storage)
-                                .map_err(|err| DataRead { source: err })?;
+                            data_commits.clear();
                         }
-                        data_commits.clear();
                     }
                 }
+                RecoveryCommitStatus::Rejected => {}
             }
         }
 
@@ -180,7 +190,7 @@ impl Statistics {
             "Statistics sync finished in {} ms. Storage watermark was initially: {}. Current statistics sequence is from: {}",
             millis,
             storage_watermark,
-            start_seq_nr
+            self.sequence_number
         );
         Ok(())
     }
@@ -233,7 +243,7 @@ impl Statistics {
                 self.update_has(Object::new(edge.from()).type_(), Attribute::new(edge.to()).type_(), delta);
                 total_delta += delta;
             } else if ThingEdgeLinks::is_links(&key) {
-                let edge = ThingEdgeLinks::new(Bytes::Reference(key.bytes()));
+                let edge = ThingEdgeLinks::decode(Bytes::Reference(key.bytes()));
                 let role_type = RoleType::build_from_type_id(edge.role_id());
                 self.update_role_player(
                     Object::new(edge.to()).type_(),
@@ -532,7 +542,15 @@ fn write_to_delta<D>(
                     Write::Delete => Ok(1),
                 }
             } else if open_sequence_number.next() < first_commit_sequence_number {
-                if storage.get::<0>(&IteratorPool::new(), write_key, commit_sequence_number.previous())?.is_some() {
+                if storage
+                    .get::<0>(
+                        &IteratorPool::new(),
+                        write_key,
+                        commit_sequence_number.previous(),
+                        StorageCounters::DISABLED,
+                    )?
+                    .is_some()
+                {
                     // exists in storage before PUT is committed
                     Ok(0)
                 } else {
@@ -648,15 +666,6 @@ enum SerialisableType {
 }
 
 impl SerialisableType {
-    pub(crate) fn id(&self) -> TypeIDUInt {
-        match *self {
-            SerialisableType::Entity(id) => id,
-            SerialisableType::Relation(id) => id,
-            SerialisableType::Attribute(id) => id,
-            SerialisableType::Role(id) => id,
-        }
-    }
-
     pub(crate) fn into_entity_type(self) -> EntityType {
         match self {
             Self::Entity(id) => EntityType::build_from_type_id(TypeID::new(id)),

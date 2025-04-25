@@ -19,6 +19,7 @@ use function::function_manager::FunctionManager;
 use itertools::Either;
 use lending_iterator::LendingIterator;
 use query::{query_cache::QueryCache, query_manager::QueryManager};
+use resource::profile::CommitProfile;
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils::TempDir;
 use test_utils_concept::{load_managers, setup_concept_storage};
@@ -102,7 +103,7 @@ fn setup_common(schema: &str) -> Context {
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
         .unwrap();
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let query_manager = QueryManager::new(Some(Arc::new(QueryCache::new())));
     // reload to obtain latest vertex generators and statistics entries
@@ -168,7 +169,7 @@ fn run_write_query(
     let result: Result<Vec<MaybeOwnedRow<'static>>, Box<PipelineExecutionError>> =
         iterator.map_static(|row| row.map(|row| row.into_owned()).map_err(|err| err.clone())).collect();
     let snapshot = Arc::into_inner(snapshot).unwrap();
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     result.map(move |rows| (rows, rows_positions))
 }
 

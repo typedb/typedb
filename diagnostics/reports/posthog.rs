@@ -9,7 +9,7 @@ use std::{
     ops::{Add, AddAssign},
 };
 
-use serde::{ser::SerializeStruct, Serialize, Serializer};
+use serde::Serialize;
 use serde_json::{json, Map, Value};
 
 use crate::{

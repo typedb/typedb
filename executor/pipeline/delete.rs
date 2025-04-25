@@ -9,6 +9,7 @@ use std::sync::Arc;
 use compiler::executable::delete::{executable::DeleteExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use resource::profile::StageProfile;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -16,7 +17,6 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
-    profile::StageProfile,
     row::Row,
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
@@ -96,11 +96,14 @@ pub fn execute_delete(
     let mut index = 0;
     for instruction in &executable.connection_instructions {
         let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let counters = step_profile.storage_counters();
         let measurement = step_profile.start_measurement();
         match instruction {
-            ConnectionInstruction::Has(has) => has.execute(snapshot, thing_manager, parameters, input_output_row)?,
+            ConnectionInstruction::Has(has) => {
+                has.execute(snapshot, thing_manager, parameters, input_output_row, counters)?
+            }
             ConnectionInstruction::Links(role_player) => {
-                role_player.execute(snapshot, thing_manager, parameters, input_output_row)?
+                role_player.execute(snapshot, thing_manager, parameters, input_output_row, counters)?
             }
         }
         measurement.end(&step_profile, 1, 1);
@@ -109,8 +112,9 @@ pub fn execute_delete(
 
     for instruction in &executable.concept_instructions {
         let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
+        let counters = step_profile.storage_counters();
         let measurement = step_profile.start_measurement();
-        instruction.execute(snapshot, thing_manager, parameters, input_output_row)?;
+        instruction.execute(snapshot, thing_manager, parameters, input_output_row, counters)?;
         measurement.end(&step_profile, 1, 1);
         index += 1;
     }

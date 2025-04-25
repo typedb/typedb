@@ -21,7 +21,10 @@ use ir::{
     pipeline::function_signature::{FunctionID, HashMapFunctionSignatureIndex},
     translation::pipeline::{translate_pipeline, TranslatedPipeline},
 };
-use resource::perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES};
+use resource::{
+    perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
+    profile::{QueryProfile, StorageCounters},
+};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
@@ -48,14 +51,35 @@ impl QueryManager {
         source_query: &str,
     ) -> Result<(), Box<QueryError>> {
         event!(Level::TRACE, "Running schema query:\n{}", query);
-        match query {
+        let query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let result = match query {
             SchemaQuery::Define(define) => {
-                define::execute(snapshot, type_manager, thing_manager, function_manager, define).map_err(|err| {
+                let profile = query_profile.profile_stage(|| String::from("Define"), 0); // TODO executable id
+                let step_profile = profile.extend_or_get(0, || String::from("Define execution"));
+                define::execute(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    define,
+                    step_profile.storage_counters(),
+                )
+                .map_err(|err| {
                     Box::new(QueryError::Define { source_query: source_query.to_string(), typedb_source: err })
                 })
             }
             SchemaQuery::Redefine(redefine) => {
-                redefine::execute(snapshot, type_manager, thing_manager, function_manager, redefine).map_err(|err| {
+                let profile = query_profile.profile_stage(|| String::from("Redefine"), 0); // TODO executable id
+                let step_profile = profile.extend_or_get(0, || String::from("Redefine execution"));
+                redefine::execute(
+                    snapshot,
+                    type_manager,
+                    thing_manager,
+                    function_manager,
+                    redefine,
+                    step_profile.storage_counters(),
+                )
+                .map_err(|err| {
                     Box::new(QueryError::Redefine { source_query: source_query.to_string(), typedb_source: err })
                 })
             }
@@ -64,7 +88,13 @@ impl QueryManager {
                     Box::new(QueryError::Undefine { source_query: source_query.to_string(), typedb_source: err })
                 })
             }
+        };
+
+        if query_profile.is_enabled() {
+            event!(Level::INFO, "Schema query done.\n{}", query_profile);
         }
+
+        result
     }
 
     pub fn prepare_read_pipeline<Snapshot: ReadableSnapshot + 'static>(
@@ -77,6 +107,9 @@ impl QueryManager {
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
         event!(Level::TRACE, "Running read query:\n{}", query);
+        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let compile_profile = query_profile.compilation_profile();
+        compile_profile.start();
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
@@ -85,18 +118,10 @@ impl QueryManager {
             mut variable_registry,
             value_parameters: parameters,
         } = self.translate_pipeline(snapshot.as_ref(), function_manager, query, source_query)?;
+        compile_profile.translation_finished();
         let arced_preamble = Arc::new(translated_preamble);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
-        match validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
-            Ok(_) => {}
-            Err(typedb_source) => {
-                return Err(Box::new(QueryError::FunctionDefinition {
-                    source_query: source_query.to_string(),
-                    typedb_source,
-                }))
-            }
-        } // TODO: ^It's not really a retrieval error is it?
 
         let executable_pipeline = match self
             .cache
@@ -108,6 +133,17 @@ impl QueryManager {
                 executable_pipeline
             }
             None => {
+                match validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
+                    Ok(_) => {}
+                    Err(typedb_source) => {
+                        return Err(Box::new(QueryError::FunctionDefinition {
+                            source_query: source_query.to_string(),
+                            typedb_source,
+                        }))
+                    }
+                }
+                compile_profile.validation_finished();
+
                 // 2: Annotate
                 let annotated_schema_functions =
                     function_manager.get_annotated_functions(snapshot.as_ref(), type_manager).map_err(|err| {
@@ -125,6 +161,7 @@ impl QueryManager {
                     (*arced_fetch).clone(),
                 )
                 .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
+                compile_profile.annotation_finished();
 
                 apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline).map_err(|err| {
                     QueryError::Transformation { source_query: source_query.to_string(), typedb_source: err }
@@ -149,6 +186,7 @@ impl QueryManager {
                 if let Some(cache) = self.cache.as_ref() {
                     cache.insert(arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
                 }
+                compile_profile.compilation_finished();
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
@@ -168,6 +206,7 @@ impl QueryManager {
             executable_fetch,
             Arc::new(parameters),
             None,
+            Arc::new(query_profile),
         )
         .map_err(|typedb_source| {
             Box::new(QueryError::Pipeline { source_query: source_query.to_string(), typedb_source })
@@ -184,6 +223,9 @@ impl QueryManager {
         source_query: &str,
     ) -> Result<Pipeline<Snapshot, WritePipelineStage<Snapshot>>, (Snapshot, Box<QueryError>)> {
         event!(Level::TRACE, "Running write query:\n{}", query);
+        let mut query_profile = QueryProfile::new(tracing::enabled!(Level::TRACE));
+        let compile_profile = query_profile.compilation_profile();
+        compile_profile.start();
         // 1: Translate
         let TranslatedPipeline {
             translated_preamble,
@@ -195,21 +237,22 @@ impl QueryManager {
             Ok(translated) => translated,
             Err(err) => return Err((snapshot, err)),
         };
-        let arced_premable = Arc::new(translated_preamble);
+        compile_profile.translation_finished();
+        let arced_preamble = Arc::new(translated_preamble);
         let arced_stages = Arc::new(translated_stages);
         let arced_fetch = Arc::new(translated_fetch);
 
         let executable_pipeline = match self
             .cache
             .as_ref()
-            .and_then(|cache| cache.get(arced_premable.clone(), arced_stages.clone(), arced_fetch.clone()))
+            .and_then(|cache| cache.get(arced_preamble.clone(), arced_stages.clone(), arced_fetch.clone()))
         {
             Some(executable_pipeline) => {
                 QUERY_CACHE_HITS.increment();
                 executable_pipeline
             }
             None => {
-                match validate_no_cycles(&arced_premable.iter().enumerate().collect()) {
+                match validate_no_cycles(&arced_preamble.iter().enumerate().collect()) {
                     Ok(_) => {}
                     Err(typedb_source) => {
                         return Err((
@@ -220,7 +263,8 @@ impl QueryManager {
                             }),
                         ))
                     }
-                } // TODO: ^It's not really a retrieval error is it?
+                }
+                compile_profile.validation_finished();
 
                 // 2: Annotate
                 let annotated_schema_functions = match function_manager.get_annotated_functions(&snapshot, type_manager)
@@ -237,13 +281,13 @@ impl QueryManager {
                     }
                 };
 
-                let mut annotated_pipeline = annotate_preamble_and_pipeline(
+                let annotated_pipeline = annotate_preamble_and_pipeline(
                     &snapshot,
                     type_manager,
                     annotated_schema_functions.clone(),
                     &mut variable_registry,
                     &value_parameters,
-                    (*arced_premable).clone(),
+                    (*arced_preamble).clone(),
                     (*arced_stages).clone(),
                     (*arced_fetch).clone(),
                 );
@@ -260,6 +304,7 @@ impl QueryManager {
                         ))
                     }
                 };
+                compile_profile.annotation_finished();
 
                 match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
                     Ok(_) => {}
@@ -299,8 +344,9 @@ impl QueryManager {
                     }
                 };
                 if let Some(cache) = self.cache.as_ref() {
-                    cache.insert(arced_premable, arced_stages, arced_fetch, executable_pipeline.clone())
+                    cache.insert(arced_preamble, arced_stages, arced_fetch, executable_pipeline.clone())
                 }
+                compile_profile.compilation_finished();
                 QUERY_CACHE_MISSES.increment();
                 executable_pipeline
             }
@@ -319,6 +365,7 @@ impl QueryManager {
             executable_stages,
             executable_fetch,
             Arc::new(value_parameters),
+            Arc::new(query_profile),
         ))
     }
 

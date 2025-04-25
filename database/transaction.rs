@@ -18,10 +18,12 @@ use error::typedb_error;
 use function::{function_cache::FunctionCache, function_manager::FunctionManager, FunctionError};
 use options::TransactionOptions;
 use query::query_manager::QueryManager;
+use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
     snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
 };
+use tracing::Level;
 
 use crate::Database;
 
@@ -34,6 +36,7 @@ pub struct TransactionRead<D> {
     pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     transaction_options: TransactionOptions,
+    pub profile: TransactionProfile,
 }
 
 impl<D: DurabilityClient> TransactionRead<D> {
@@ -72,6 +75,7 @@ impl<D: DurabilityClient> TransactionRead<D> {
             query_manager,
             database,
             transaction_options,
+            profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
         })
     }
 
@@ -95,6 +99,7 @@ pub struct TransactionWrite<D> {
     pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
+    pub profile: TransactionProfile,
 }
 
 impl<D: DurabilityClient> TransactionWrite<D> {
@@ -128,10 +133,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
             query_manager,
             database,
             transaction_options,
+            profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
         })
     }
 
-    pub fn from(
+    pub fn from_parts(
         snapshot: Arc<WriteSnapshot<D>>,
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
@@ -139,28 +145,48 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         query_manager: Arc<QueryManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
+        profile: TransactionProfile,
     ) -> Self {
-        Self { snapshot, type_manager, thing_manager, function_manager, query_manager, database, transaction_options }
+        Self {
+            snapshot,
+            type_manager,
+            thing_manager,
+            function_manager,
+            query_manager,
+            database,
+            transaction_options,
+            profile,
+        }
     }
 
-    pub fn commit(self) -> Result<(), DataCommitError> {
-        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
-        let result = self.try_commit();
+    pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
+        self.profile.commit_profile().start();
+        let database = self.database.clone();
+        let (mut profile, result) = self.try_commit();
         database.release_write_transaction();
-        result
+        profile.commit_profile().end();
+        (profile, result)
     }
 
-    pub fn try_commit(self) -> Result<(), DataCommitError> {
-        let mut snapshot = Arc::into_inner(self.snapshot).ok_or_else(|| DataCommitError::SnapshotInUse {})?;
-        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+    pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
+        let mut profile = self.profile;
+        let commit_profile = profile.commit_profile();
+        let mut snapshot = match Arc::into_inner(self.snapshot) {
+            None => return (profile, Err(DataCommitError::SnapshotInUse {})),
+            Some(snapshot) => snapshot,
+        };
+        if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
             let error = errs.into_iter().next().unwrap();
-            DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }
-        })?;
+            return (profile, Err(DataCommitError::ConceptWriteErrorsFirst { typedb_source: Box::new(error) }));
+        };
+        commit_profile.things_finalised();
         drop(self.type_manager);
-        snapshot.commit().map_err(|err| DataCommitError::SnapshotError { typedb_source: err })?;
-        Ok(())
+        match snapshot.commit(commit_profile) {
+            Ok(_) => (profile, Ok(())),
+            Err(err) => (profile, Err(DataCommitError::SnapshotError { typedb_source: err })),
+        }
     }
 
     pub fn rollback(&mut self) {
@@ -196,6 +222,7 @@ pub struct TransactionSchema<D> {
     pub query_manager: Arc<QueryManager>,
     pub database: Arc<Database<D>>,
     pub transaction_options: TransactionOptions,
+    pub profile: TransactionProfile,
 }
 
 impl<D: DurabilityClient> TransactionSchema<D> {
@@ -227,10 +254,11 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             query_manager,
             database,
             transaction_options,
+            profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
         })
     }
 
-    pub fn from(
+    pub fn from_parts(
         snapshot: SchemaSnapshot<D>,
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
@@ -238,6 +266,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         query_manager: Arc<QueryManager>,
         database: Arc<Database<D>>,
         transaction_options: TransactionOptions,
+        profile: TransactionProfile,
     ) -> Self {
         Self {
             snapshot: Arc::new(snapshot),
@@ -247,38 +276,52 @@ impl<D: DurabilityClient> TransactionSchema<D> {
             query_manager,
             database,
             transaction_options,
+            profile,
         }
     }
 
-    pub fn commit(self) -> Result<(), SchemaCommitError> {
+    pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
+        self.profile.commit_profile().start();
         let database = self.database.clone(); // TODO: can we get away without cloning the database before?
-        let result = self.try_commit();
+        let (mut profile, result) = self.try_commit(); // TODO include
         database.release_schema_transaction();
-        result
+        profile.commit_profile().end();
+        (profile, result)
     }
 
-    fn try_commit(self) -> Result<(), SchemaCommitError> {
+    fn try_commit(self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         use SchemaCommitError::{
             ConceptWriteErrorsFirst, FunctionError, SnapshotError, StatisticsError, TypeCacheUpdateError,
         };
+        let mut profile = self.profile;
+        let commit_profile = profile.commit_profile();
         let mut snapshot = Arc::into_inner(self.snapshot).expect("Failed to unwrap Arc<Snapshot>");
-        self.type_manager.validate(&snapshot).map_err(|errs| {
+        if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
-            ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
-        })?;
+            return (
+                profile,
+                Err(ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }),
+            );
+        };
+        commit_profile.types_validated();
 
-        self.thing_manager.finalise(&mut snapshot).map_err(|errs| {
+        if let Err(errs) = self.thing_manager.finalise(&mut snapshot, commit_profile.storage_counters()) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
-            ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }
-        })?;
+            return (
+                profile,
+                Err(ConceptWriteErrorsFirst { typedb_source: Box::new(errs.into_iter().next().unwrap()) }),
+            );
+        };
+        commit_profile.things_finalised();
         drop(self.thing_manager);
 
         let function_manager = Arc::into_inner(self.function_manager).expect("Failed to unwrap Arc<FunctionManager>");
-        function_manager
-            .finalise(&snapshot, &self.type_manager)
-            .map_err(|typedb_source| FunctionError { typedb_source })?;
+        if let Err(typedb_source) = function_manager.finalise(&snapshot, &self.type_manager) {
+            return (profile, Err(FunctionError { typedb_source }));
+        }
+        commit_profile.functions_finalised();
 
         let type_manager = Arc::into_inner(self.type_manager).expect("Failed to unwrap Arc<TypeManager>");
         drop(type_manager);
@@ -291,43 +334,53 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let mut thing_statistics = (*schema.thing_statistics).clone();
 
         // 1. synchronise statistics
-        thing_statistics
-            .may_synchronise(&self.database.storage)
-            .map_err(|typedb_source| StatisticsError { typedb_source })?;
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
+            return (profile, Err(StatisticsError { typedb_source }));
+        }
         // 2. flush statistics to WAL, guaranteeing a version of statistics is in WAL before schema can change
-        thing_statistics
-            .durably_write(self.database.storage.durability())
-            .map_err(|typedb_source| StatisticsError { typedb_source })?;
+        if let Err(typedb_source) = thing_statistics.durably_write(self.database.storage.durability()) {
+            return (profile, Err(StatisticsError { typedb_source }));
+        }
+        commit_profile.schema_update_statistics_durably_written();
 
-        let sequence_number = snapshot.commit().map_err(|typedb_source| SnapshotError { typedb_source })?;
+        let sequence_number = match snapshot.commit(commit_profile) {
+            Ok(sequence_number) => sequence_number,
+            Err(typedb_source) => return (profile, Err(SnapshotError { typedb_source })),
+        };
 
         // `None` means empty commit
         if let Some(sequence_number) = sequence_number {
+            let type_cache = match TypeCache::new(self.database.storage.clone(), sequence_number) {
+                Ok(type_cache) => type_cache,
+                Err(typedb_source) => return (profile, Err(TypeCacheUpdateError { typedb_source })),
+            };
             // replace Schema cache
-            schema.type_cache = Arc::new(
-                TypeCache::new(self.database.storage.clone(), sequence_number)
-                    .map_err(|typedb_source| TypeCacheUpdateError { typedb_source })?,
-            );
+            schema.type_cache = Arc::new(type_cache);
             let type_manager = TypeManager::new(
                 self.database.definition_key_generator.clone(),
                 self.database.type_vertex_generator.clone(),
                 Some(schema.type_cache.clone()),
             );
-            schema.function_cache = Arc::new(
-                FunctionCache::new(self.database.storage.clone(), &type_manager, sequence_number)
-                    .map_err(|typedb_source| SchemaCommitError::FunctionError { typedb_source })?,
-            )
+            let function_cache = match FunctionCache::new(self.database.storage.clone(), &type_manager, sequence_number)
+            {
+                Ok(function_cache) => function_cache,
+                Err(typedb_source) => return (profile, Err(SchemaCommitError::FunctionError { typedb_source })),
+            };
+            schema.function_cache = Arc::new(function_cache);
+            commit_profile.schema_update_caches_updated();
         }
 
         // replace statistics
-        thing_statistics
-            .may_synchronise(&self.database.storage)
-            .map_err(|typedb_source| StatisticsError { typedb_source })?;
+        if let Err(typedb_source) = thing_statistics.may_synchronise(&self.database.storage) {
+            return (profile, Err(StatisticsError { typedb_source }));
+        }
+        commit_profile.schema_update_statistics_keys_updated();
+
         schema.thing_statistics = Arc::new(thing_statistics);
         self.database.query_cache.force_reset(&schema.thing_statistics);
 
         *schema_commit_guard = schema;
-        Ok(())
+        (profile, Ok(()))
     }
 
     pub fn rollback(&mut self) {

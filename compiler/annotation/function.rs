@@ -217,7 +217,7 @@ pub(crate) fn annotate_anonymous_function(
     annotated_function_signatures: &dyn AnnotatedFunctionSignatures,
     caller_type_annotations: &BTreeMap<Variable, Arc<BTreeSet<Type>>>,
     caller_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
-    source_span: Option<Span>,
+    _source_span: Option<Span>,
 ) -> Result<AnnotatedFunction, Box<FunctionAnnotationError>> {
     let Function { arguments, argument_labels, .. } = function;
     debug_assert!(argument_labels.is_none());

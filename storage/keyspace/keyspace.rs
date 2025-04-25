@@ -13,7 +13,7 @@ use std::{
 
 use bytes::{util::MB, Bytes};
 use itertools::Itertools;
-use resource::constants::storage::ROCKSDB_CACHE_SIZE_MB;
+use resource::{constants::storage::ROCKSDB_CACHE_SIZE_MB, profile::StorageCounters};
 use rocksdb::{checkpoint::Checkpoint, IteratorMode, Options, ReadOptions, WriteBatch, WriteOptions, DB};
 use serde::{Deserialize, Serialize};
 
@@ -253,13 +253,13 @@ impl Keyspace {
         iterator.item().map(|(k, v)| mapper(k, v))
     }
 
-    // TODO: we should benchmark using iterator pools, which would require changing prefix/range on read options
     pub(crate) fn iterate_range<const PREFIX_INLINE_SIZE: usize>(
         &self,
         iterpool: &IteratorPool,
         range: &KeyRange<Bytes<'_, PREFIX_INLINE_SIZE>>,
+        storage_counters: StorageCounters,
     ) -> iterator::KeyspaceRangeIterator {
-        iterator::KeyspaceRangeIterator::new(self, iterpool, range)
+        iterator::KeyspaceRangeIterator::new(self, iterpool, range, storage_counters)
     }
 
     pub(crate) fn write(&self, write_batch: WriteBatch) -> Result<(), KeyspaceError> {

@@ -58,10 +58,6 @@ impl OperationsBuffer {
         self.write_buffers.iter()
     }
 
-    pub(crate) fn write_buffers_mut(&mut self) -> impl Iterator<Item = &mut WriteBuffer> {
-        self.write_buffers.iter_mut()
-    }
-
     pub(crate) fn lock_add(&mut self, key: ByteArray<BUFFER_KEY_INLINE>, lock_type: LockType) {
         self.locks.insert(key, lock_type);
     }

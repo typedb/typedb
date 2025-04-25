@@ -9,7 +9,10 @@ use std::{path::Path, sync::Arc};
 use bytes::byte_array::ByteArray;
 use durability::wal::WAL;
 use lending_iterator::LendingIterator;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::{
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    profile::{CommitProfile, StorageCounters},
+};
 use storage::{
     durability_client::{DurabilityClient, WALClient},
     isolation_manager::IsolationConflict,
@@ -44,7 +47,7 @@ fn setup_storage(path: &Path) -> Arc<MVCCStorage<WALClient>> {
     let mut snapshot = storage.clone().open_snapshot_write();
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1)), ByteArray::copy(&VALUE_1));
     snapshot.put_val(StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2)), ByteArray::copy(&VALUE_2));
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     storage
 }
@@ -61,20 +64,22 @@ fn commits_isolated() {
     let key_3 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_3));
     let value_3 = ByteArray::copy(&VALUE_3);
     snapshot_1.put_val(key_3.clone(), value_3.clone());
-    snapshot_1.commit().unwrap();
+    snapshot_1.commit(&mut CommitProfile::DISABLED).unwrap();
 
-    let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_2.get(StorageKeyReference::from(&key_3)).unwrap();
+    let get: Option<ByteArray<BUFFER_KEY_INLINE>> =
+        snapshot_2.get(StorageKeyReference::from(&key_3), StorageCounters::DISABLED).unwrap();
     assert!(get.is_none());
     let prefix: StorageKey<'_, BUFFER_KEY_INLINE> =
         StorageKey::Array(StorageKeyArray::new(Keyspace, ByteArray::copy(&[0x0_u8])));
     let range = KeyRange::new_within(prefix, false);
-    let retrieved_count = snapshot_2.iterate_range(&range).count();
+    let retrieved_count = snapshot_2.iterate_range(&range, StorageCounters::DISABLED).count();
     assert_eq!(retrieved_count, 2);
 
     let snapshot_3 = storage.open_snapshot_read();
-    let get: Option<ByteArray<BUFFER_KEY_INLINE>> = snapshot_3.get(StorageKeyReference::from(&key_3)).unwrap();
+    let get: Option<ByteArray<BUFFER_KEY_INLINE>> =
+        snapshot_3.get(StorageKeyReference::from(&key_3), StorageCounters::DISABLED).unwrap();
     assert!(matches!(get, Some(_value_3)));
-    let retrieved_count = snapshot_3.iterate_range(&range).count();
+    let retrieved_count = snapshot_3.iterate_range(&range, StorageCounters::DISABLED).count();
     assert_eq!(retrieved_count, 3);
 }
 
@@ -94,14 +99,14 @@ fn g0_update_conflicts_fail() {
 
     let key_1 = StorageKey::Reference(StorageKeyReference::new(Keyspace, &KEY_1));
 
-    snapshot_1.get_required(key_1.clone()).unwrap();
+    snapshot_1.get_required(key_1.clone(), StorageCounters::DISABLED).unwrap();
 
     snapshot_2.delete(key_1.clone().into_owned_array());
 
-    let result_1 = snapshot_1.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
     assert!(result_1.is_ok());
 
-    let result_2 = snapshot_2.commit();
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
     assert!(
         matches!(result_2, Err(SnapshotError::Commit { typedb_source: StorageCommitError::Isolation { .. }, .. }, ..)),
         "{:?}",
@@ -132,14 +137,26 @@ fn g0_dirty_writes() {
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_11));
     snapshot_2.put_val(key_1.to_owned(), ByteArray::copy(&value_12));
     snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(&value_22));
-    let result_2 = snapshot_2.commit();
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
 
     // Check state
     match result_2 {
         Ok(_) => {
             let reader_after_2 = storage.clone().open_snapshot_read();
-            assert_eq!(*reader_after_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap(), *value_12);
-            assert_eq!(*reader_after_2.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap(), *value_22);
+            assert_eq!(
+                *reader_after_2
+                    .get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED)
+                    .unwrap()
+                    .unwrap(),
+                *value_12
+            );
+            assert_eq!(
+                *reader_after_2
+                    .get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED)
+                    .unwrap()
+                    .unwrap(),
+                *value_22
+            );
             reader_after_2.close_resources();
         }
         Err(_) => panic!(),
@@ -147,12 +164,18 @@ fn g0_dirty_writes() {
 
     // Continue
     snapshot_1.put_val(key_2.to_owned(), ByteArray::copy(&value_21));
-    let result_1 = snapshot_1.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
 
     if result_1.is_ok() {
         let reader_after_1 = storage.clone().open_snapshot_read();
-        assert_eq!(*reader_after_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap(), *value_11);
-        assert_eq!(*reader_after_1.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap(), *value_21);
+        assert_eq!(
+            *reader_after_1.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap().unwrap(),
+            *value_11
+        );
+        assert_eq!(
+            *reader_after_1.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED).unwrap().unwrap(),
+            *value_21
+        );
         // reader_after_1.close();
     }
 }
@@ -170,13 +193,13 @@ fn g1a_aborted_writes() {
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let snapshot_2 = storage.clone().open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_1));
-    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
+    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     snapshot_1.close_resources();
     assert_eq!(*value_1_0, *read_2.unwrap().unwrap());
 }
@@ -195,15 +218,15 @@ fn g1b_intermediate_read() {
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let snapshot_2 = storage.open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_1i));
-    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
+    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_1f));
-    let result_1 = snapshot_1.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
     assert!(result_1.is_ok());
     assert_eq!(*value_1_0, *read_2.unwrap().unwrap()); // No direct problem - We read the initial value.
 }
@@ -225,15 +248,15 @@ fn g1c_circular_info_flow() {
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(&value_2_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.open_snapshot_write();
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_1));
-    let read_1_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
+    let read_1_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(&value_2_2));
-    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2));
+    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
 
     assert_eq!(*value_1_0, *read_1_2.unwrap().unwrap());
     assert_eq!(*value_2_0, *read_2_1.unwrap().unwrap());
@@ -252,24 +275,25 @@ fn p4_g_cursor_lost_update() {
 
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.clone().open_snapshot_write();
-    let read_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
-    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
+    let read_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap().unwrap();
+    let read_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap().unwrap();
     let to_write_1 = ByteArray::inline([read_1[0] + 1], 1);
     let to_write_2 = ByteArray::inline([read_2[0] + 1], 1);
 
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&to_write_1));
     snapshot_2.put_val(key_1.to_owned(), ByteArray::copy(&to_write_2));
-    let result_1 = snapshot_1.commit();
-    let result_2 = snapshot_2.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
 
     if result_1.is_ok() && result_2.is_ok() {
         let snapshot_verify = storage.open_snapshot_read();
-        let read_verify = snapshot_verify.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap();
+        let read_verify =
+            snapshot_verify.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap().unwrap();
         fails_without_serializability!(2 == read_verify[0]); // This does fail
     }
 }
@@ -292,22 +316,22 @@ fn g_single_read_skew() {
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(&value_2_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.open_snapshot_write();
 
-    let read_1_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1));
+    let read_1_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     snapshot_2.put_val(key_1.to_owned(), ByteArray::copy(&value_1_2));
     snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(&value_2_2));
-    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2));
+    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
 
     assert_eq!(*value_1_0, *read_1_1.unwrap().unwrap());
     assert_eq!(*value_2_0, *read_2_1.unwrap().unwrap());
 
-    let result_1 = snapshot_1.commit();
-    let result_2 = snapshot_2.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
     assert!(result_1.is_ok() && result_2.is_ok()); // No reason it shouldn't succeed
 }
 
@@ -327,28 +351,29 @@ fn g2_item_write_skew_disjoint_read() {
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_0));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(&value_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.clone().open_snapshot_write();
 
-    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2));
+    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
     if read_2_1.unwrap().unwrap()[0] == 0 {
         snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1));
     }
-    let read_1_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1));
+    let read_1_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     if read_1_2.unwrap().unwrap()[0] == 0 {
         snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(&value_1));
     }
 
-    let result_1 = snapshot_1.commit();
-    let result_2 = snapshot_2.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
 
     assert!(result_1.is_ok() && result_2.is_ok());
     let reader_after = storage.open_snapshot_read();
-    let sum = reader_after.get::<128>(StorageKeyReference::from(&key_1)).unwrap().unwrap()[0]
-        + reader_after.get::<128>(StorageKeyReference::from(&key_2)).unwrap().unwrap()[0];
+    let sum = reader_after.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap().unwrap()
+        [0]
+        + reader_after.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED).unwrap().unwrap()[0];
     fails_without_serializability!(sum <= 1);
 }
 
@@ -373,14 +398,14 @@ fn g2_predicate_anti_dependency_cycles() {
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.open_snapshot_write();
 
-    let it_1 = snapshot_1.iterate_range(&prefix);
+    let it_1 = snapshot_1.iterate_range(&prefix, StorageCounters::DISABLED);
     let mut sum_1 = 0;
     for v in it_1.collect_cloned_vec(|_, v| ByteArray::<BUFFER_VALUE_INLINE>::from(v)).unwrap().iter() {
         sum_1 += v[0] as i64;
     }
     assert!(sum_1 == 1);
 
-    let it_2 = snapshot_2.iterate_range(&prefix);
+    let it_2 = snapshot_2.iterate_range(&prefix, StorageCounters::DISABLED);
     let mut sum_2 = 0;
     for v in it_2.collect_cloned_vec(|_, v| ByteArray::<BUFFER_VALUE_INLINE>::from(v)).unwrap().iter() {
         sum_2 += v[0] as i64;
@@ -389,8 +414,8 @@ fn g2_predicate_anti_dependency_cycles() {
 
     snapshot_1.put_val(key_3.to_owned(), ByteArray::copy(&value_31));
     snapshot_2.put_val(key_4.to_owned(), ByteArray::copy(&value_42));
-    let result_1 = snapshot_1.commit();
-    let result_2 = snapshot_2.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
 
     // These two rw anti-dependency edges are enough for the transactions not be serialisable.
     // Both the assert sum_x == 1 cannot be true in any serialisation.
@@ -419,35 +444,35 @@ fn g2_antidependency_cycles_fekete() {
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(&value_2_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
     let mut snapshot_2 = storage.clone().open_snapshot_write();
 
-    let read_1_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1));
-    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2));
+    let read_1_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
+    let read_2_1 = snapshot_1.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
     assert_eq!(*value_1_0, *read_1_1.unwrap().unwrap());
     assert_eq!(*value_2_0, *read_2_1.unwrap().unwrap());
 
-    let read_2_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_2));
+    let read_2_2 = snapshot_2.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
     let to_write_22 = ByteArray::inline([read_2_2.unwrap().unwrap()[0] + 5], 1);
     snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(&to_write_22));
-    let result_2 = snapshot_2.commit();
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
     assert!(result_2.is_ok());
 
     let snapshot_3 = storage.open_snapshot_write();
 
-    let read_1_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_1));
-    let read_2_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_2));
+    let read_1_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
+    let read_2_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
     assert_eq!(*value_1_0, *read_1_3.unwrap().unwrap());
     assert_eq!(*to_write_22, *read_2_3.unwrap().unwrap());
 
-    let result_3 = snapshot_3.commit();
+    let result_3 = snapshot_3.commit(&mut CommitProfile::DISABLED);
     assert!(result_3.is_ok());
 
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_3));
-    let result_1 = snapshot_1.commit();
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
     fails_without_serializability!(result_1.is_err()); // Error if it's allowed to commit
 }
 
@@ -472,7 +497,7 @@ fn otv() {
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(&value_2_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
 
     let mut snapshot_1 = storage.clone().open_snapshot_write();
@@ -482,11 +507,11 @@ fn otv() {
     snapshot_1.put_val(key_1.to_owned(), ByteArray::copy(&value_1_1));
     snapshot_2.put_val(key_1.to_owned(), ByteArray::copy(&value_1_2));
     snapshot_1.put_val(key_2.to_owned(), ByteArray::copy(&value_2_1));
-    let read_1_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_1));
-    let result_1 = snapshot_1.commit();
+    let read_1_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
+    let result_1 = snapshot_1.commit(&mut CommitProfile::DISABLED);
     snapshot_2.put_val(key_2.to_owned(), ByteArray::copy(&value_2_2));
-    let read_2_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_2));
-    let result_2 = snapshot_2.commit();
+    let read_2_3 = snapshot_3.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
+    let result_2 = snapshot_2.commit(&mut CommitProfile::DISABLED);
     assert!(result_1.is_ok() && result_2.is_ok());
     assert_eq!(*value_1_0, *read_1_3.unwrap().unwrap());
     assert_eq!(*value_2_0, *read_2_3.unwrap().unwrap());
@@ -503,7 +528,7 @@ fn imp_setup(path: &Path) -> Arc<MVCCStorage<WALClient>> {
     let mut snapshot_setup = storage.clone().open_snapshot_write();
     snapshot_setup.put_val(key_1.to_owned(), ByteArray::copy(&value_1_0));
     snapshot_setup.put_val(key_2.to_owned(), ByteArray::copy(&value_2_0));
-    let result_snapshot = snapshot_setup.commit();
+    let result_snapshot = snapshot_setup.commit(&mut CommitProfile::DISABLED);
     assert!(result_snapshot.is_ok());
     storage
 }
@@ -515,19 +540,19 @@ where
     let key_1 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_1));
     let key_2 = StorageKeyArray::new(Keyspace, ByteArray::copy(&KEY_2));
 
-    let read_1_1 = snapshot_update.get::<128>(StorageKeyReference::from(&key_1));
+    let read_1_1 = snapshot_update.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     let to_write_11 = ByteArray::inline([read_1_1.unwrap().unwrap()[0] + 10], 1);
     snapshot_update.put_val(key_1.to_owned(), ByteArray::copy(&to_write_11));
 
-    let read_2_1 = snapshot_update.get::<128>(StorageKeyReference::from(&key_2));
+    let read_2_1 = snapshot_update.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
     let to_write_21 = ByteArray::inline([read_2_1.unwrap().unwrap()[0] + 10], 1);
     snapshot_update.put_val(key_2.to_owned(), ByteArray::copy(&to_write_21));
 
-    let read_1_2 = snapshot_delete.get::<128>(StorageKeyReference::from(&key_1));
+    let read_1_2 = snapshot_delete.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED);
     if read_1_2.unwrap().unwrap()[0] == 20 {
         snapshot_delete.delete(key_1.to_owned());
     }
-    let read_2_2 = snapshot_delete.get::<128>(StorageKeyReference::from(&key_2));
+    let read_2_2 = snapshot_delete.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED);
     if read_2_2.unwrap().unwrap()[0] == 20 {
         snapshot_delete.delete(key_2.to_owned());
     }
@@ -543,8 +568,8 @@ where
     let value_30 = ByteArray::inline([30], 1);
 
     let reader_after = storage.open_snapshot_read();
-    let read_1_after = reader_after.get::<128>(StorageKeyReference::from(&key_1)).unwrap();
-    let read_2_after = reader_after.get::<128>(StorageKeyReference::from(&key_2)).unwrap();
+    let read_1_after = reader_after.get::<128>(StorageKeyReference::from(&key_1), StorageCounters::DISABLED).unwrap();
+    let read_2_after = reader_after.get::<128>(StorageKeyReference::from(&key_2), StorageCounters::DISABLED).unwrap();
 
     let delete_went_first_1 = match read_1_after {
         Some(x) => {
@@ -575,8 +600,8 @@ fn imp_commit_delete_first() {
     let mut snapshot_update = storage.clone().open_snapshot_write();
     let mut snapshot_delete = storage.clone().open_snapshot_write();
     imp_ops(&mut snapshot_update, &mut snapshot_delete);
-    let result_delete = snapshot_delete.commit();
-    let result_update = snapshot_update.commit();
+    let result_delete = snapshot_delete.commit(&mut CommitProfile::DISABLED);
+    let result_update = snapshot_update.commit(&mut CommitProfile::DISABLED);
 
     if !(result_update.is_ok() && result_delete.is_ok()) {
         panic!("The execution has changed. If we failed the second commit, this would be a success condition!")
@@ -591,8 +616,8 @@ fn imp_commit_update_first() {
     let mut snapshot_update = storage.clone().open_snapshot_write();
     let mut snapshot_delete = storage.clone().open_snapshot_write();
     imp_ops(&mut snapshot_update, &mut snapshot_delete);
-    let result_update = snapshot_update.commit();
-    let result_delete = snapshot_delete.commit();
+    let result_update = snapshot_update.commit(&mut CommitProfile::DISABLED);
+    let result_delete = snapshot_delete.commit(&mut CommitProfile::DISABLED);
 
     if !(result_update.is_ok() && result_delete.is_ok()) {
         panic!("The execution has changed. If we failed the second commit, this would be a success condition!")
@@ -611,31 +636,31 @@ fn isolation_manager_reads_evicted_from_disk() {
 
     let mut snapshot0 = storage.clone().open_snapshot_write();
     snapshot0.put_val(key_1.clone().into_owned_array(), value_1.clone());
-    snapshot0.commit().unwrap();
+    snapshot0.commit(&mut CommitProfile::DISABLED).unwrap();
     let watermark_after_0 = storage.snapshot_watermark();
 
     let mut snapshot1 = storage.clone().open_snapshot_write();
     snapshot1.delete(key_1.clone().into_owned_array());
-    snapshot1.commit().unwrap();
+    snapshot1.commit(&mut CommitProfile::DISABLED).unwrap();
 
     for _i in 0..resource::constants::storage::TIMELINE_WINDOW_SIZE {
         let mut snapshot_i = storage.clone().open_snapshot_write();
         snapshot_i.put_val(key_2.clone().into_owned_array(), value_1.clone());
-        snapshot_i.commit().unwrap();
+        snapshot_i.commit(&mut CommitProfile::DISABLED).unwrap();
     }
 
     {
         let mut snapshot_passes = storage.clone().open_snapshot_write_at(watermark_after_0);
         snapshot_passes.put_val(key_2.clone().into_owned_array(), value_1.clone());
-        let snapshot_passes_result = snapshot_passes.commit();
+        let snapshot_passes_result = snapshot_passes.commit(&mut CommitProfile::DISABLED);
 
         assert!(snapshot_passes_result.is_ok());
     }
     {
         let mut snapshot_conflicts = storage.open_snapshot_write_at(watermark_after_0);
-        snapshot_conflicts.get_required(key_1.clone()).unwrap();
+        snapshot_conflicts.get_required(key_1.clone(), StorageCounters::DISABLED).unwrap();
         snapshot_conflicts.put_val(key_2.clone().into_owned_array(), value_1.clone());
-        let snapshot_conflicts_result = snapshot_conflicts.commit();
+        let snapshot_conflicts_result = snapshot_conflicts.commit(&mut CommitProfile::DISABLED);
 
         assert!(
             matches!(
@@ -663,7 +688,7 @@ fn isolation_manager_correctly_recovers_from_disk() {
         let storage = create_storage::<TestKeyspaceSet>(&storage_path).unwrap();
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put_val(key_1.clone().into_owned_array(), value_1.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
         storage.clone().snapshot_watermark()
     };
 

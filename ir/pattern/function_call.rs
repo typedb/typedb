@@ -37,7 +37,7 @@ impl<ID: IrID> FunctionCall<ID> {
     }
 
     pub fn map<T: Clone + Ord>(self, mapping: &HashMap<ID, T>) -> FunctionCall<T> {
-        FunctionCall::new(self.function_id.clone(), self.arguments.iter().map(|(var)| var.map(mapping)).collect())
+        FunctionCall::new(self.function_id.clone(), self.arguments.iter().map(|var| var.map(mapping)).collect())
     }
 }
 

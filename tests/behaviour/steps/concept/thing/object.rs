@@ -14,6 +14,7 @@ use concept::{
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
+use resource::profile::StorageCounters;
 use test_utils::assert_matches;
 
 use crate::{
@@ -102,7 +103,9 @@ async fn object_create_instance_with_key_var(
 async fn delete_object(context: &mut Context, object_kind: params::ObjectKind, var: params::Var) {
     let object = context.objects[&var.name].as_ref().unwrap().object;
     object_kind.assert(&object.type_());
-    with_write_tx!(context, |tx| { object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap() })
+    with_write_tx!(context, |tx| {
+        object.delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED).unwrap()
+    })
 }
 
 #[apply(generic_step)]
@@ -114,15 +117,23 @@ async fn delete_objects_of_type(context: &mut Context, object_kind: params::Obje
         object_kind.assert(&object_type);
         match object_type {
             ObjectType::Entity(entity_type) => {
-                let mut entity_iterator = tx.thing_manager.get_entities_in(tx.snapshot.as_ref(), entity_type);
+                let entity_iterator =
+                    tx.thing_manager.get_entities_in(tx.snapshot.as_ref(), entity_type, StorageCounters::DISABLED);
                 for entity in entity_iterator {
-                    entity.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
+                    entity
+                        .unwrap()
+                        .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                        .unwrap();
                 }
             }
             ObjectType::Relation(relation_type) => {
-                let mut relation_iterator = tx.thing_manager.get_relations_in(tx.snapshot.as_ref(), relation_type);
+                let relation_iterator =
+                    tx.thing_manager.get_relations_in(tx.snapshot.as_ref(), relation_type, StorageCounters::DISABLED);
                 for relation in relation_iterator {
-                    relation.unwrap().delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager).unwrap();
+                    relation
+                        .unwrap()
+                        .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                        .unwrap();
                 }
             }
         }
@@ -141,7 +152,10 @@ async fn object_is_deleted(
     object_kind.assert(&object.type_());
     let object_type = object.type_();
     let objects: Vec<Object> = with_read_tx!(context, |tx| {
-        tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).map(|result| result.unwrap()).collect()
+        tx.thing_manager
+            .get_objects_in(tx.snapshot.as_ref(), object_type, StorageCounters::DISABLED)
+            .map(|result| result.unwrap())
+            .collect()
     });
     check_boolean!(is_deleted, !objects.contains(object));
 }
@@ -181,7 +195,8 @@ async fn object_get_instance_with_value(
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &object_type_label.into_typedb()).unwrap().unwrap();
         object_kind.assert(&object_type);
-        let mut owners = key.get_owners_by_type(tx.snapshot.as_ref(), &tx.thing_manager, object_type);
+        let mut owners =
+            key.get_owners_by_type(tx.snapshot.as_ref(), &tx.thing_manager, object_type, StorageCounters::DISABLED);
         let owner = owners.next().transpose().unwrap().map(|(owner, count)| {
             assert_eq!(count, 1, "found {count} keys owned by the same object, expected 1");
             owner
@@ -204,7 +219,12 @@ async fn object_instances_is_empty(
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         object_kind.assert(&object_type);
-        is_empty_or_not.check(tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).next().is_none());
+        is_empty_or_not.check(
+            tx.thing_manager
+                .get_objects_in(tx.snapshot.as_ref(), object_type, StorageCounters::DISABLED)
+                .next()
+                .is_none(),
+        );
     });
 }
 
@@ -222,8 +242,11 @@ async fn object_instances_contain(
     with_read_tx!(context, |tx| {
         let object_type =
             tx.type_manager.get_object_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let actuals: Vec<Object> =
-            tx.thing_manager.get_objects_in(tx.snapshot.as_ref(), object_type).map(|result| result.unwrap()).collect();
+        let actuals: Vec<Object> = tx
+            .thing_manager
+            .get_objects_in(tx.snapshot.as_ref(), object_type, StorageCounters::DISABLED)
+            .map(|result| result.unwrap())
+            .collect();
         containment.check(std::slice::from_ref(object), &actuals);
     });
 }
@@ -241,7 +264,7 @@ async fn attribute_owners_contains(
     let attribute = context.attributes[&attribute_var.name].as_ref().unwrap();
     let actuals = with_read_tx!(context, |tx| {
         attribute
-            .get_owners(tx.snapshot.as_ref(), &tx.thing_manager)
+            .get_owners(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
             .map(|res| {
                 let (attribute, _count) = res.unwrap();
                 attribute

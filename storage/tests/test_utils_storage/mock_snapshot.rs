@@ -7,6 +7,7 @@
 use std::iter::empty;
 
 use bytes::byte_array::ByteArray;
+use resource::profile::StorageCounters;
 use storage::{
     key_range::KeyRange,
     key_value::{StorageKey, StorageKeyArray, StorageKeyReference},
@@ -36,6 +37,7 @@ impl ReadableSnapshot for MockSnapshot {
     fn get<const INLINE_BYTES: usize>(
         &self,
         _: StorageKeyReference<'_>,
+        _storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         Err(SnapshotGetError::MockError {})
     }
@@ -43,11 +45,16 @@ impl ReadableSnapshot for MockSnapshot {
     fn get_last_existing<const INLINE_BYTES: usize>(
         &self,
         _: StorageKeyReference<'_>,
+        _storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, SnapshotGetError> {
         Err(SnapshotGetError::MockError {})
     }
 
-    fn iterate_range<const PS: usize>(&self, _: &KeyRange<StorageKey<'_, PS>>) -> SnapshotRangeIterator {
+    fn iterate_range<const PS: usize>(
+        &self,
+        _: &KeyRange<StorageKey<'_, PS>>,
+        _: StorageCounters,
+    ) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
     }
 
@@ -75,6 +82,7 @@ impl ReadableSnapshot for MockSnapshot {
     fn iterate_storage_range<'this, const PS: usize>(
         &'this self,
         _: &KeyRange<StorageKey<'this, PS>>,
+        _: StorageCounters,
     ) -> SnapshotRangeIterator {
         SnapshotRangeIterator::new_empty()
     }

@@ -14,6 +14,7 @@ use compiler::{
 };
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::{LendingIterator, Peekable};
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -63,7 +64,8 @@ where
         let profile = context.profile.profile_stage(|| String::from("Sort"), executable.executable_id);
         let step_profile = profile.extend_or_get(0, || String::from("Sort execution"));
         let measurement = step_profile.start_measurement();
-        let sorted_iterator = SortStageIterator::from_unsorted(batch, &executable, &context);
+        let sorted_iterator =
+            SortStageIterator::from_unsorted(batch, &executable, &context, step_profile.storage_counters());
         measurement.end(&step_profile, 1, batch_len as u64);
         Ok((sorted_iterator, context))
     }
@@ -80,6 +82,7 @@ impl SortStageIterator {
         unsorted: Batch,
         sort_executable: &SortExecutable,
         context: &ExecutionContext<impl ReadableSnapshot>,
+        storage_counters: StorageCounters,
     ) -> Self {
         let sort_by: Vec<(usize, bool)> = sort_executable
             .sort_on
@@ -89,7 +92,7 @@ impl SortStageIterator {
                 SortVariable::Descending(v) => (sort_executable.output_row_mapping.get(v).unwrap().as_usize(), false),
             })
             .collect();
-        let sorted_indices = unsorted.indices_sorted_by(context, &sort_by);
+        let sorted_indices = unsorted.indices_sorted_by(context, &sort_by, storage_counters);
         Self { unsorted, sorted_indices, next_index_index: 0 }
     }
 }

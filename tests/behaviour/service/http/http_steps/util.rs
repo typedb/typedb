@@ -5,7 +5,6 @@
  */
 
 use std::{
-    borrow::Cow,
     collections::{HashMap, HashSet},
     env,
     time::Duration,
@@ -13,7 +12,7 @@ use std::{
 
 use cucumber::gherkin::Step;
 use macro_rules_attribute::apply;
-use serde_json::{Number, Value as JSON};
+use serde_json::Value as JSON;
 use uuid::Uuid;
 
 use crate::{generic_step, Context, TEST_TOKEN_EXPIRATION};

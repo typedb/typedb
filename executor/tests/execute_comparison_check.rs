@@ -29,8 +29,8 @@ use compiler::{
 use concept::type_::{annotation::AnnotationIndependent, attribute_type::AttributeTypeAnnotation};
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::{Comparator, IsaKind},
@@ -38,6 +38,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
+use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{durability_client::WALClient, snapshot::CommittableSnapshot, MVCCStorage};
 use test_utils_concept::{load_managers, setup_concept_storage};
 use test_utils_encoding::create_core_storage;
@@ -55,7 +56,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     let age_type = type_manager.create_attribute_type(&mut snapshot, &AGE_LABEL).unwrap();
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
-    age_type.set_annotation(&mut snapshot, &type_manager, &thing_manager, ATTRIBUTE_INDEPENDENT).unwrap();
+    age_type
+        .set_annotation(&mut snapshot, &type_manager, &thing_manager, ATTRIBUTE_INDEPENDENT, StorageCounters::DISABLED)
+        .unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
 
@@ -66,9 +69,9 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         thing_manager.create_attribute(&mut snapshot, name_type, Value::String(Cow::Borrowed(name))).unwrap()
     });
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(

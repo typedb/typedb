@@ -14,6 +14,7 @@ use cucumber::gherkin::Step;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean};
+use resource::profile::StorageCounters;
 
 use crate::{
     concept::type_::BehaviourConceptTestExecutionError,
@@ -40,8 +41,13 @@ async fn relation_add_player_for_role(
             .unwrap()
         {
             let role_type = relates.role();
-            let res =
-                relation.add_player(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player);
+            let res = relation.add_player(
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
+                &tx.thing_manager,
+                role_type,
+                player,
+                StorageCounters::DISABLED,
+            );
             may_error.check_concept_write_without_read_errors(&res);
             return;
         }
@@ -68,7 +74,13 @@ async fn relation_set_players_for_role(
             .unwrap()
             .unwrap()
             .role();
-        relation.set_players_ordered(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, players)
+        relation.set_players_ordered(
+            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            &tx.thing_manager,
+            role_type,
+            players,
+            StorageCounters::DISABLED,
+        )
     });
     may_error.check_concept_write_without_read_errors(&res);
 }
@@ -97,6 +109,7 @@ async fn relation_remove_player_for_role(
             &tx.thing_manager,
             role_type,
             player,
+            StorageCounters::DISABLED,
         );
         may_error.check_concept_write_without_read_errors(&res);
     });
@@ -121,7 +134,14 @@ async fn relation_remove_count_players_for_role(
             .unwrap()
             .role();
         relation
-            .remove_player_many(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, role_type, player, count)
+            .remove_player_many(
+                Arc::get_mut(&mut tx.snapshot).unwrap(),
+                &tx.thing_manager,
+                role_type,
+                player,
+                count,
+                StorageCounters::DISABLED,
+            )
             .unwrap();
     });
 }
@@ -142,7 +162,9 @@ async fn relation_get_players_ordered(
             role_label.into_typedb().name().as_str(),
         );
         let role_type = relates.unwrap().unwrap().role();
-        let players = relation.get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type).unwrap();
+        let players = relation
+            .get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type, StorageCounters::DISABLED)
+            .unwrap();
         players.into_iter().collect()
     });
     context.object_lists.insert(players_var.name, players);
@@ -165,7 +187,9 @@ async fn relation_get_players_ordered_is(
             role_label.into_typedb().name().as_str(),
         );
         let role_type = relates.unwrap().unwrap().role();
-        let players = relation.get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type).unwrap();
+        let players = relation
+            .get_players_ordered(tx.snapshot.as_ref(), &tx.thing_manager, role_type, StorageCounters::DISABLED)
+            .unwrap();
         players.into_iter().collect_vec()
     });
     let players =
@@ -197,7 +221,7 @@ async fn relation_get_players_contains(
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let players = with_read_tx!(context, |tx| {
         relation
-            .get_players(tx.snapshot.as_ref(), &tx.thing_manager)
+            .get_players(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
             .map(|result| (result.unwrap().0.player()))
             .collect_vec()
     });
@@ -216,7 +240,7 @@ async fn relation_get_players_contains_table(
     let relation = context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object.unwrap_relation();
     let players = with_read_tx!(context, |tx| {
         let mut vec = Vec::new();
-        for res in relation.get_players(tx.snapshot.as_ref(), &tx.thing_manager) {
+        for res in relation.get_players(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED) {
             let (rp, _count) = res.unwrap();
             vec.push((
                 rp.role_type().get_label(tx.snapshot.as_ref(), &tx.type_manager).unwrap().name().as_str().to_owned(),
@@ -257,7 +281,7 @@ async fn relation_get_players_for_role_empty(
             .unwrap()
             .role();
         relation
-            .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
+            .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type, StorageCounters::DISABLED)
             .map(|res| res.unwrap())
             .collect_vec()
     });
@@ -283,7 +307,7 @@ async fn relation_get_players_for_role_contains(
             .unwrap()
             .role();
         relation
-            .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
+            .get_players_role_type(tx.snapshot.as_ref(), &tx.thing_manager, role_type, StorageCounters::DISABLED)
             .map(|res| res.unwrap())
             .collect_vec()
     });
@@ -303,7 +327,10 @@ async fn object_get_relations_contain(
     let player = &context.objects.get(&player_var.name).unwrap().as_ref().unwrap().object;
     object_kind.assert(&player.type_());
     let relations = with_read_tx!(context, |tx| {
-        player.get_relations(tx.snapshot.as_ref(), &tx.thing_manager).map(|rel| rel.unwrap()).collect_vec()
+        player
+            .get_relations(tx.snapshot.as_ref(), &tx.thing_manager, StorageCounters::DISABLED)
+            .map(|rel| rel.unwrap())
+            .collect_vec()
     });
     let Object::Relation(relation) = &context.objects.get(&relation_var.name).unwrap().as_ref().unwrap().object else {
         panic!()
@@ -338,7 +365,7 @@ async fn object_get_relations_of_type_with_role_contain(
             .unwrap()
             .role();
         player
-            .get_relations_by_role(tx.snapshot.as_ref(), &tx.thing_manager, role_type)
+            .get_relations_by_role(tx.snapshot.as_ref(), &tx.thing_manager, role_type, StorageCounters::DISABLED)
             .map(|res| res.unwrap().0)
             .collect_vec()
     });

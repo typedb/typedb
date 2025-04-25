@@ -18,11 +18,13 @@ use concept::{
     type_::{relation_type::RelationType, role_type::RoleType, type_manager::TypeManager},
 };
 use itertools::Itertools;
+use lending_iterator::AsLendingIterator;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, RelatesToTupleFn, TuplePositions},
         type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -47,7 +49,8 @@ impl fmt::Debug for RelatesExecutor {
     }
 }
 
-pub(super) type RelatesTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<RelatesFilterMapFn>>, RelatesToTupleFn>;
+pub(super) type RelatesTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<RelatesFilterMapFn>>, RelatesToTupleFn>>>;
 
 pub(super) type RelatesUnboundedSortedRelation = RelatesTupleIterator<
     iter::Map<
@@ -122,9 +125,10 @@ impl RelatesExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters);
         let filter_for_row: Box<RelatesFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -145,8 +149,8 @@ impl RelatesExecutor {
                     .map(|relation| self.get_relates_for_relation(snapshot, type_manager, *relation))
                     .try_collect()?;
                 let iterator = relates.into_iter().flatten().map(Ok as _);
-                let as_tuples: RelatesUnboundedSortedRelation =
-                    iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(relates_to_tuple_relation_role as _);
+                let as_tuples: RelatesUnboundedSortedRelation = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::RelatesUnbounded(SortedTupleIterator::new(
                     as_tuples,
                     self.tuple_positions.clone(),
@@ -169,10 +173,10 @@ impl RelatesExecutor {
 
                 let iterator =
                     relates.iter().cloned().sorted_by_key(|(relation, role)| (*role, *relation)).map(Ok as _);
-                let as_tuples: RelatesBoundedSortedRole =
-                    iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _);
+                let as_tuples = iterator.filter_map(filter_for_row).map(relates_to_tuple_role_relation as _);
+                let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
                 Ok(TupleIterator::RelatesBounded(SortedTupleIterator::new(
-                    as_tuples,
+                    lending_tuples,
                     self.tuple_positions.clone(),
                     &self.variable_modes,
                 )))

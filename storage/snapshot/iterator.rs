@@ -41,7 +41,7 @@ impl SnapshotRangeIterator {
 
     pub fn peek(&mut self) -> Option<Result<(StorageKeyReference<'_>, &[u8]), Arc<SnapshotIteratorError>>> {
         if self.ready_item_source.is_none() {
-            self.advance_and_find_next_state();
+            self.find_next_state();
         }
 
         match self.ready_item_source? {
@@ -56,9 +56,12 @@ impl SnapshotRangeIterator {
     pub fn seek(&mut self, key: StorageKeyReference<'_>) {
         if let Some(Ok((peek, _))) = self.peek() {
             if peek < key {
+                self.ready_item_source = None;
                 if let Some(iter) = self.buffered_iterator.as_mut() {
+                    // buffered iterators check that the seek is in ascending order internally
                     iter.seek(key.bytes())
                 }
+                // storage iterators check that the seek is in ascending order internally
                 self.storage_iterator.as_mut().unwrap().seek(key.bytes());
                 self.find_next_state();
             }
@@ -114,25 +117,6 @@ impl SnapshotRangeIterator {
                 }
             }
         }
-    }
-
-    fn advance_and_find_next_state(&mut self) {
-        match self.ready_item_source {
-            Some(ReadyItemSource::Storage) => {
-                self.storage_iterator.as_mut().unwrap().next();
-            }
-            Some(ReadyItemSource::Buffered) => {
-                assert!(self.buffered_iterator.is_some());
-                self.buffered_iterator.as_mut().map(|iter| iter.next());
-            }
-            Some(ReadyItemSource::Both) => {
-                assert!(self.buffered_iterator.is_some());
-                self.buffered_iterator.as_mut().map(|iter| iter.next());
-                self.storage_iterator.as_mut().unwrap().next();
-            }
-            None => (),
-        }
-        self.find_next_state();
     }
 
     fn get_buffered_peek(buffered_iterator: &mut BufferRangeIterator) -> (StorageKeyReference<'_>, &[u8]) {

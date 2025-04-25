@@ -24,7 +24,11 @@ use iterator::MVCCReadError;
 use keyspace::KeyspaceDeleteError;
 use lending_iterator::LendingIterator;
 use logger::{error, result::ResultExt};
-use resource::constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS};
+use resource::{
+    constants::{snapshot::BUFFER_VALUE_INLINE, storage::WATERMARK_WAIT_INTERVAL_MICROSECONDS},
+    profile::{CommitProfile, StorageCounters},
+};
+use tracing::trace;
 
 use crate::{
     durability_client::{DurabilityClient, DurabilityClientError},
@@ -130,11 +134,13 @@ impl<Durability> MVCCStorage<Durability> {
                 fs::create_dir_all(&storage_dir)
                     .map_err(|err| StorageDirectoryRecreate { name: name.to_owned(), source: Arc::new(err) })?;
                 let keyspaces = Self::create_keyspaces::<KS>(name, &storage_dir)?;
-                let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client)
+                trace!("No checkpoint found, loading from WAL");
+                let commits = load_commit_data_from(SequenceNumber::MIN.next(), &durability_client, usize::MAX)
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
                 let next_sequence_number = commits.keys().max().cloned().unwrap_or(SequenceNumber::MIN).next();
                 apply_recovered(commits, &durability_client, &keyspaces)
                     .map_err(|err| RecoverFromDurability { name: name.to_owned(), typedb_source: err })?;
+                trace!("Finished applying commits from WAL.");
                 (keyspaces, next_sequence_number)
             }
             Some(checkpoint) => checkpoint
@@ -213,56 +219,76 @@ impl<Durability> MVCCStorage<Durability> {
     fn snapshot_commit(
         &self,
         snapshot: impl CommittableSnapshot<Durability>,
+        commit_profile: &mut CommitProfile,
     ) -> Result<SequenceNumber, StorageCommitError>
     where
         Durability: DurabilityClient,
     {
         use StorageCommitError::{Durability, Internal, Keyspace, MVCCRead};
 
-        self.set_initial_put_status(&snapshot).map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
+        self.set_initial_put_status(&snapshot, commit_profile.storage_counters())
+            .map_err(|error| MVCCRead { name: self.name.clone(), source: error })?;
+        commit_profile.snapshot_put_statuses_checked();
+
         let commit_record = snapshot.into_commit_record();
+        commit_profile.snapshot_commit_record_created();
 
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)
             .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+        commit_profile.snapshot_durable_write_data_submitted();
 
         let sync_notifier = self.durability_client.request_sync();
         let validate_result =
             self.isolation_manager.validate_commit(commit_sequence_number, commit_record, &self.durability_client);
+        commit_profile.snapshot_isolation_validated();
 
         match validate_result {
             Ok(ValidatedCommit::Write(write_batches)) => {
                 sync_notifier.recv().unwrap(); // Ensure WAL is persisted before inserting to the KV store
                                                // Write to the k-v store
+                commit_profile.snapshot_durable_write_data_confirmed();
+
                 self.keyspaces
                     .write(write_batches)
                     .map_err(|error| Keyspace { name: self.name.clone(), source: Arc::new(error) })?;
+                commit_profile.snapshot_storage_written();
 
                 // Inform the isolation manager and increment the watermark
                 self.isolation_manager
                     .applied(commit_sequence_number)
                     .map_err(|error| Internal { name: self.name.clone(), source: Arc::new(error) })?;
+                commit_profile.snapshot_isolation_manager_notified();
 
                 Self::persist_commit_status(true, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+                commit_profile.snapshot_durable_write_commit_status_submitted();
 
                 Ok(commit_sequence_number)
             }
             Ok(ValidatedCommit::Conflict(conflict)) => {
                 sync_notifier.recv().unwrap();
+                commit_profile.snapshot_durable_write_data_confirmed();
+
                 Self::persist_commit_status(false, commit_sequence_number, &self.durability_client)
                     .map_err(|error| Durability { name: self.name.clone(), typedb_source: error })?;
+                commit_profile.snapshot_durable_write_commit_status_submitted();
                 Err(StorageCommitError::Isolation { name: self.name.clone(), conflict })
             }
             Err(error) => {
                 sync_notifier.recv().unwrap();
+                commit_profile.snapshot_durable_write_data_confirmed();
                 Err(Durability { name: self.name.clone(), typedb_source: error })
             }
         }
     }
 
-    fn set_initial_put_status(&self, snapshot: &impl CommittableSnapshot<Durability>) -> Result<(), MVCCReadError>
+    fn set_initial_put_status(
+        &self,
+        snapshot: &impl CommittableSnapshot<Durability>,
+        storage_counters: StorageCounters,
+    ) -> Result<(), MVCCReadError>
     where
         Durability: DurabilityClient,
     {
@@ -276,12 +302,22 @@ impl<Durability> MVCCStorage<Durability> {
                 let wrapped = StorageKeyReference::new_raw(buffer.keyspace_id, key);
                 if known_to_exist {
                     debug_assert!(self
-                        .get::<0>(snapshot.iterator_pool(), wrapped, snapshot.open_sequence_number())
+                        .get::<0>(
+                            snapshot.iterator_pool(),
+                            wrapped,
+                            snapshot.open_sequence_number(),
+                            storage_counters.clone()
+                        )
                         .is_ok_and(|opt| opt.is_some()));
                     reinsert.store(false, Ordering::Release);
                 } else {
                     let existing_stored = self
-                        .get::<BUFFER_VALUE_INLINE>(snapshot.iterator_pool(), wrapped, snapshot.open_sequence_number())?
+                        .get::<BUFFER_VALUE_INLINE>(
+                            snapshot.iterator_pool(),
+                            wrapped,
+                            snapshot.open_sequence_number(),
+                            storage_counters.clone(),
+                        )?
                         .is_some_and(|reference| &reference == value);
                     reinsert.store(!existing_stored, Ordering::Release);
                 }
@@ -341,8 +377,15 @@ impl<Durability> MVCCStorage<Durability> {
         iterator_pool: &IteratorPool,
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
     ) -> Result<Option<ByteArray<INLINE_BYTES>>, MVCCReadError> {
-        self.get_mapped(iterator_pool, key, open_sequence_number, |byte_ref| ByteArray::from(byte_ref))
+        self.get_mapped(
+            iterator_pool,
+            key,
+            open_sequence_number,
+            |byte_ref| ByteArray::from(byte_ref),
+            storage_counters,
+        )
     }
 
     pub fn get_mapped<'a, 'pool, Mapper, V>(
@@ -351,6 +394,7 @@ impl<Durability> MVCCStorage<Durability> {
         key: impl Into<StorageKeyReference<'a>>,
         open_sequence_number: SequenceNumber,
         mapper: Mapper,
+        storage_counters: StorageCounters,
     ) -> Result<Option<V>, MVCCReadError>
     where
         Mapper: Fn(&[u8]) -> V,
@@ -360,6 +404,7 @@ impl<Durability> MVCCStorage<Durability> {
             iterator_pool,
             &KeyRange::new_within(StorageKey::<0>::Reference(key), false),
             open_sequence_number,
+            storage_counters,
         );
         loop {
             match iterator.next().transpose()? {
@@ -375,8 +420,9 @@ impl<Durability> MVCCStorage<Durability> {
         iterpool: &IteratorPool,
         range: &KeyRange<StorageKey<'this, PS>>,
         open_sequence_number: SequenceNumber,
+        storage_counters: StorageCounters,
     ) -> MVCCRangeIterator {
-        MVCCRangeIterator::new(self, iterpool, range, open_sequence_number)
+        MVCCRangeIterator::new(self, iterpool, range, open_sequence_number, storage_counters)
     }
 
     pub fn snapshot_watermark(&self) -> SequenceNumber {
@@ -430,10 +476,13 @@ impl<Durability> MVCCStorage<Durability> {
         &'this self,
         iterator_pool: &IteratorPool,
         range: KeyRange<StorageKey<'this, PREFIX_INLINE>>,
+        storage_counters: StorageCounters,
     ) -> KeyspaceRangeIterator {
-        self.keyspaces
-            .get(range.start().get_value().keyspace_id())
-            .iterate_range(iterator_pool, &range.map(|k| k.as_bytes(), |fixed| fixed))
+        self.keyspaces.get(range.start().get_value().keyspace_id()).iterate_range(
+            iterator_pool,
+            &range.map(|k| k.as_bytes(), |fixed| fixed),
+            storage_counters,
+        )
     }
 
     pub fn reset(&mut self) -> Result<(), StorageResetError>
@@ -607,6 +656,7 @@ impl StorageOperation {
 mod tests {
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
+    use resource::profile::StorageCounters;
     use test_utils::{create_tmp_dir, init_logging};
 
     use crate::{
@@ -679,6 +729,9 @@ mod tests {
         let storage =
             MVCCStorage::<WALClient>::load::<TestKeyspaceSet>("storage", &storage_path, durability_client, &None)
                 .unwrap();
-        assert_eq!(storage.get::<0>(&IteratorPool::new(), &key_2, seq).unwrap().unwrap(), ByteArray::empty());
+        assert_eq!(
+            storage.get::<0>(&IteratorPool::new(), &key_2, seq, StorageCounters::DISABLED).unwrap().unwrap(),
+            ByteArray::empty()
+        );
     }
 }

@@ -14,11 +14,13 @@ use concept::{
 };
 use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
 use ir::pattern::constraint::Iid;
+use lending_iterator::AsLendingIterator;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
         Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -42,7 +44,8 @@ impl fmt::Debug for IidExecutor {
 
 pub(crate) type IidToTupleFn = fn(Result<VariableValue<'static>, Box<ConceptReadError>>) -> TupleResult<'static>;
 
-pub(super) type IidTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<IidFilterMapFn>>, IidToTupleFn>;
+pub(super) type IidTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<IidFilterMapFn>>, IidToTupleFn>>>;
 
 pub(super) type IidFilterFn = FilterFn<VariableValue<'static>>;
 pub(super) type IidFilterMapFn = FilterMapUnchangedFn<VariableValue<'static>>;
@@ -85,9 +88,10 @@ impl IidExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IidFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
@@ -106,21 +110,25 @@ impl IidExecutor {
         let instance = if let Some(object) = ObjectVertex::try_from_bytes(bytes) {
             let object = Object::new(object);
             thing_manager
-                .instance_exists(snapshot, &object)
+                .instance_exists(snapshot, &object, storage_counters.clone())
                 .map(move |exists| exists.then_some(VariableValue::Thing(object.into())))
         } else if let Some(attribute) = AttributeVertex::try_from_bytes(bytes) {
             let attribute = Attribute::new(attribute);
             thing_manager
-                .instance_exists(snapshot, &attribute)
+                .instance_exists(snapshot, &attribute, storage_counters.clone())
                 .map(move |exists| exists.then_some(VariableValue::Thing(attribute.clone().into())))
         } else {
             Ok(None)
         };
 
         let iterator = instance.transpose();
-        let as_tuples =
-            iterator.into_iter().filter_map(filter_for_row).map::<TupleResult<'_>, IidToTupleFn>(iid_to_tuple);
-        Ok(TupleIterator::Iid(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+        let as_tuples = iterator.into_iter().filter_map(filter_for_row).map(iid_to_tuple as _);
+        let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
+        Ok(TupleIterator::Iid(SortedTupleIterator::new(
+            lending_tuples,
+            self.tuple_positions.clone(),
+            &self.variable_modes,
+        )))
     }
 }
 

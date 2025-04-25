@@ -15,6 +15,7 @@ pub mod transaction_util {
     use function::function_manager::FunctionManager;
     use options::TransactionOptions;
     use query::query_manager::QueryManager;
+    use resource::profile::TransactionProfile;
     use storage::{
         durability_client::WALClient,
         snapshot::{SchemaSnapshot, WriteSnapshot},
@@ -33,7 +34,7 @@ pub mod transaction_util {
         pub fn schema_transaction<T>(
             &self,
             fn_: impl Fn(&mut SchemaSnapshot<WALClient>, &TypeManager, &ThingManager, &FunctionManager, &QueryManager) -> T,
-        ) -> Result<T, SchemaCommitError> {
+        ) -> (TransactionProfile, Result<T, SchemaCommitError>) {
             let TransactionSchema {
                 snapshot,
                 type_manager,
@@ -42,10 +43,11 @@ pub mod transaction_util {
                 query_manager,
                 database,
                 transaction_options,
+                profile,
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
             let mut snapshot: SchemaSnapshot<WALClient> = Arc::into_inner(snapshot).unwrap();
             let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
-            let tx = TransactionSchema::from(
+            let tx = TransactionSchema::from_parts(
                 snapshot,
                 type_manager,
                 thing_manager,
@@ -53,8 +55,10 @@ pub mod transaction_util {
                 query_manager,
                 database,
                 transaction_options,
+                profile,
             );
-            tx.commit().map(|_| result)
+            let (profile, commit_result) = tx.commit();
+            (profile, commit_result.map(|_| result))
         }
 
         pub fn read_transaction<T>(&self, fn_: impl Fn(TransactionRead<WALClient>) -> T) -> T {
@@ -74,7 +78,7 @@ pub mod transaction_util {
                 Arc<Database<WALClient>>,
                 TransactionOptions,
             ) -> (T, Arc<WriteSnapshot<WALClient>>),
-        ) -> Result<T, DataCommitError> {
+        ) -> (TransactionProfile, Result<T, DataCommitError>) {
             let TransactionWrite {
                 snapshot,
                 type_manager,
@@ -83,6 +87,7 @@ pub mod transaction_util {
                 query_manager,
                 database,
                 transaction_options,
+                profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
             let (rows, snapshot) = fn_(
                 snapshot,
@@ -93,7 +98,7 @@ pub mod transaction_util {
                 database.clone(),
                 transaction_options,
             );
-            let tx = TransactionWrite::from(
+            let tx = TransactionWrite::from_parts(
                 snapshot,
                 type_manager,
                 thing_manager,
@@ -101,8 +106,10 @@ pub mod transaction_util {
                 query_manager,
                 database,
                 TransactionOptions::default(),
+                profile,
             );
-            tx.commit().map(|()| rows)
+            let (profile, commit_result) = tx.commit();
+            (profile, commit_result.map(|_| rows))
         }
     }
 }
@@ -201,6 +208,7 @@ pub mod answer_util {
     use database::transaction::TransactionRead;
     use executor::batch::Batch;
     use lending_iterator::LendingIterator;
+    use resource::profile::StorageCounters;
     use storage::durability_client::WALClient;
 
     pub fn collect_answer(
@@ -223,7 +231,11 @@ pub mod answer_util {
         let var_ = row.get(var).unwrap();
         let attr = var_.as_thing().as_attribute();
         let attr_ref = attr;
-        let val = attr_ref.get_value(&*tx.snapshot, &tx.thing_manager).unwrap().unwrap_string().to_string();
+        let val = attr_ref
+            .get_value(&*tx.snapshot, &tx.thing_manager, StorageCounters::DISABLED)
+            .unwrap()
+            .unwrap_string()
+            .to_string();
         val
     }
 }

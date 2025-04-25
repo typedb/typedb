@@ -9,6 +9,7 @@ use std::collections::{BTreeMap, Bound, HashMap, HashSet};
 use bytes::util::HexBytesFormatter;
 use encoding::value::{value::Value, value_type::ValueType};
 use iterator::minmax_or;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
@@ -413,6 +414,7 @@ impl OperationTimeValidation {
         owner: impl ObjectAPI,
         attribute_type: AttributeType,
         value: Value<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if let Some(constraint) = owner
             .type_()
@@ -442,13 +444,14 @@ impl OperationTimeValidation {
 
             for attribute_type in attribute_and_subtypes {
                 if let Some(attribute) = thing_manager
-                    .get_attribute_with_value(snapshot, attribute_type, value.clone())
+                    .get_attribute_with_value(snapshot, attribute_type, value.clone(), storage_counters.clone())
                     .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?
                 {
                     let mut has_iterator = thing_manager.get_has_reverse_by_attribute_and_owner_type_range(
                         snapshot,
                         &attribute,
                         &owner_type_range,
+                        storage_counters.clone(),
                     );
 
                     while let Some((has, _)) = has_iterator
@@ -484,7 +487,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<ConceptWriteError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
+            Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
             Some(type_value_type) => Err(Box::new(ConceptWriteError::DataValidation {
                 typedb_source: Box::new(DataValidationError::ValueTypeMismatchWithAttributeType {
                     attribute_type: attribute_type
@@ -517,7 +520,7 @@ impl OperationTimeValidation {
     ) -> Result<(), Box<ConceptReadError>> {
         let type_value_type = attribute_type.get_value_type_without_source(snapshot, thing_manager.type_manager())?;
         match type_value_type {
-            Some(type_value_type) if value_type.is_trivially_castable_to(&type_value_type) => Ok(()),
+            Some(type_value_type) if value_type.is_trivially_castable_to(type_value_type.category()) => Ok(()),
             _ => Err(Box::new(ConceptReadError::ValueTypeMismatchWithAttributeType {
                 attribute_type,
                 expected: type_value_type,
@@ -530,9 +533,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, &owner)
+            .instance_exists(snapshot, &owner, storage_counters)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -548,9 +552,10 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
         attribute: &Attribute,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, attribute)
+            .instance_exists(snapshot, attribute, storage_counters)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -570,9 +575,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation: Relation,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, &relation)
+            .instance_exists(snapshot, &relation, storage_counters)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -588,9 +594,10 @@ impl OperationTimeValidation {
         thing_manager: &ThingManager,
         relation: Relation,
         player: impl ObjectAPI,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, &player)
+            .instance_exists(snapshot, &player, storage_counters)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -606,9 +613,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         owner: impl ObjectAPI,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, &owner)
+            .instance_exists(snapshot, &owner, storage_counters)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())
@@ -623,9 +631,10 @@ impl OperationTimeValidation {
         snapshot: &impl ReadableSnapshot,
         thing_manager: &ThingManager,
         relation: Relation,
+        storage_counters: StorageCounters,
     ) -> Result<(), Box<DataValidationError>> {
         if thing_manager
-            .instance_exists(snapshot, &relation)
+            .instance_exists(snapshot, &relation, storage_counters)
             .map_err(|typedb_source| Box::new(DataValidationError::ConceptRead { typedb_source }))?
         {
             Ok(())

@@ -25,6 +25,7 @@ use encoding::{
 use error::typedb_error;
 use function::{function::SchemaFunction, function_manager::FunctionManager, FunctionError};
 use ir::{translation::tokens::translate_annotation, LiteralParseError};
+use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
     common::{error::TypeQLError, Span, Spanned},
@@ -81,9 +82,11 @@ pub(crate) fn execute(
     thing_manager: &ThingManager,
     function_manager: &FunctionManager,
     redefine: Redefine,
+    storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     let redefined_structs = process_struct_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
-    let redefined_types = process_type_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables)?;
+    let redefined_types =
+        process_type_redefinitions(snapshot, type_manager, thing_manager, &redefine.definables, storage_counters)?;
     let redefined_functions = process_function_redefinitions(snapshot, function_manager, &redefine.definables)?;
     if !redefined_structs && !redefined_types && !redefined_functions {
         Err(RedefineError::NothingRedefined {})
@@ -110,6 +113,7 @@ fn process_type_redefinitions(
     type_manager: &TypeManager,
     thing_manager: &ThingManager,
     definables: &[Definable],
+    storage_counters: StorageCounters,
 ) -> Result<bool, RedefineError> {
     let mut anything_redefined = false;
     let declarations = filter_variants!(Definable::TypeDeclaration : definables);
@@ -117,16 +121,37 @@ fn process_type_redefinitions(
         .clone()
         .try_for_each(|declaration| redefine_alias(snapshot, type_manager, &mut anything_redefined, declaration))?;
     declarations.clone().try_for_each(|declaration| {
-        redefine_value_type(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+        redefine_value_type(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &mut anything_redefined,
+            declaration,
+            storage_counters.clone(),
+        )
     })?;
     declarations.clone().try_for_each(|declaration| {
-        redefine_type_annotations(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+        redefine_type_annotations(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &mut anything_redefined,
+            declaration,
+            storage_counters.clone(),
+        )
     })?;
     declarations.clone().try_for_each(|declaration| {
         redefine_sub(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
     })?;
     declarations.clone().try_for_each(|declaration| {
-        redefine_relates(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
+        redefine_relates(
+            snapshot,
+            type_manager,
+            thing_manager,
+            &mut anything_redefined,
+            declaration,
+            storage_counters.clone(),
+        )
     })?;
     declarations.clone().try_for_each(|declaration| {
         redefine_owns(snapshot, type_manager, thing_manager, &mut anything_redefined, declaration)
@@ -209,6 +234,7 @@ fn redefine_type_annotations(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -228,13 +254,13 @@ fn redefine_type_annotations(
                     type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
-                    entity.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        RedefineError::SetTypeAnnotation {
-                            type_: label.to_owned(),
-                            annotation,
-                            source_span: type_declaration.span(),
-                            typedb_source: source,
-                        }
+                    entity
+                        .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                        .map_err(|source| RedefineError::SetTypeAnnotation {
+                        type_: label.to_owned(),
+                        annotation,
+                        source_span: type_declaration.span(),
+                        typedb_source: source,
                     })?;
                 }
             }
@@ -249,14 +275,14 @@ fn redefine_type_annotations(
                     type_declaration,
                 )? {
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
-                    relation.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        RedefineError::SetTypeAnnotation {
+                    relation
+                        .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                        .map_err(|source| RedefineError::SetTypeAnnotation {
                             type_: label.to_owned(),
                             annotation,
                             source_span: type_declaration.span(),
                             typedb_source: source,
-                        }
-                    })?;
+                        })?;
                 }
             }
             TypeEnum::Attribute(attribute) => {
@@ -280,14 +306,14 @@ fn redefine_type_annotations(
                         });
                     }
                     error_if_anything_redefined_else_set_true(anything_redefined)?;
-                    attribute.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                        RedefineError::SetTypeAnnotation {
+                    attribute
+                        .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                        .map_err(|source| RedefineError::SetTypeAnnotation {
                             type_: label.to_owned(),
                             annotation,
                             source_span: type_declaration.span(),
                             typedb_source: source,
-                        }
-                    })?;
+                        })?;
                 }
             }
             TypeEnum::RoleType(_) => unreachable!("Role annotations are syntactically on relates"),
@@ -297,9 +323,9 @@ fn redefine_type_annotations(
 }
 
 fn redefine_alias(
-    snapshot: &mut impl WritableSnapshot,
-    type_manager: &TypeManager,
-    anything_redefined: &mut bool,
+    _snapshot: &mut impl WritableSnapshot,
+    _type_manager: &TypeManager,
+    _anything_redefined: &mut bool,
     type_declaration: &Type,
 ) -> Result<(), RedefineError> {
     for capability in &type_declaration.capabilities {
@@ -313,7 +339,7 @@ fn redefine_alias(
     Ok(())
 }
 
-fn redefine_alias_annotations(typeql_capability: &Capability) -> Result<(), RedefineError> {
+fn redefine_alias_annotations(_typeql_capability: &Capability) -> Result<(), RedefineError> {
     Err(RedefineError::Unimplemented { description: "Alias redefinition is not yet implemented.".to_string() })
     // verify_empty_annotations_for_capability!(typeql_capability, AnnotationError::UnsupportedAnnotationForAlias)
 }
@@ -385,6 +411,7 @@ fn redefine_value_type(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -442,6 +469,7 @@ fn redefine_value_type(
             &label,
             capability,
             type_declaration,
+            storage_counters.clone(),
         )?;
     }
     Ok(())
@@ -456,6 +484,7 @@ fn redefine_value_type_annotations(
     attribute_type_label: &Label,
     typeql_capability: &Capability,
     typeql_type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     for typeql_annotation in &typeql_capability.annotations {
         let annotation = translate_annotation(typeql_annotation)
@@ -480,12 +509,12 @@ fn redefine_value_type_annotations(
             }
 
             error_if_anything_redefined_else_set_true(anything_redefined)?;
-            attribute_type.set_annotation(snapshot, type_manager, thing_manager, converted).map_err(|source| {
-                RedefineError::SetCapabilityAnnotation {
-                    source_span: typeql_capability.span(),
-                    annotation,
-                    typedb_source: source,
-                }
+            attribute_type
+                .set_annotation(snapshot, type_manager, thing_manager, converted, storage_counters.clone())
+                .map_err(|source| RedefineError::SetCapabilityAnnotation {
+                source_span: typeql_capability.span(),
+                annotation,
+                typedb_source: source,
             })?;
         }
     }
@@ -498,6 +527,7 @@ fn redefine_relates(
     thing_manager: &ThingManager,
     anything_redefined: &mut bool,
     type_declaration: &Type,
+    storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     let label = Label::parse_from(checked_identifier(&type_declaration.label.ident)?, type_declaration.label.span());
     let type_ = resolve_typeql_type(snapshot, type_manager, &label)
@@ -565,6 +595,7 @@ fn redefine_relates(
             &label,
             relates,
             typeql_relates,
+            storage_counters.clone(),
         )?;
     }
     Ok(())
@@ -612,6 +643,7 @@ fn redefine_relates_specialise(
     relation_label: &Label,
     relates: Relates,
     typeql_relates: &TypeQLRelates,
+    storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
     if let Some(specialised_label) = &typeql_relates.specialised {
         let specialised_relates =
@@ -665,15 +697,15 @@ fn redefine_relates_specialise(
         };
 
         error_if_anything_redefined_else_set_true(anything_redefined)?;
-        relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates).map_err(|source| {
-            RedefineError::SetRelatesSpecialise {
+        relates.set_specialise(snapshot, type_manager, thing_manager, specialised_relates, storage_counters).map_err(
+            |source| RedefineError::SetRelatesSpecialise {
                 type_: relation_label.clone(),
                 relates_key: Keyword::Relates,
                 as_key: Keyword::As,
                 source_span: typeql_relates.span(),
                 typedb_source: source,
-            }
-        })?;
+            },
+        )?;
     }
     Ok(())
 }

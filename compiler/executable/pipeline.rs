@@ -16,7 +16,6 @@ use ir::{
     pattern::{conjunction::Conjunction, nested_pattern::NestedPattern, Vertex},
     pipeline::{function_signature::FunctionID, reduce::AssignedReduction, VariableRegistry},
 };
-use itertools::Itertools;
 
 use crate::{
     annotation::{
@@ -379,7 +378,7 @@ fn compile_stage(
             }
             Ok(ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))))
         }
-        AnnotatedStage::Distinct(distinct) => {
+        AnnotatedStage::Distinct(_distinct) => {
             Ok(ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(input_variables.clone()))))
         }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {

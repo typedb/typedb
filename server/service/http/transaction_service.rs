@@ -5,96 +5,54 @@
  */
 
 use std::{
-    collections::{HashMap, VecDeque},
-    fmt,
-    fmt::{Debug, Error, Formatter},
+    collections::VecDeque,
+    fmt::{self, Debug},
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
     },
-    sync::{Arc, Mutex},
-    time::Duration,
+    sync::Arc,
 };
 
-use axum::{
-    response::{IntoResponse, Response},
-    Json,
-};
-use compiler::{query_structure::QueryStructure, VariablePosition};
-use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
-use concurrency::TokioIntervalRunner;
+use compiler::query_structure::QueryStructure;
+use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
-    transaction::{
-        DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
-    },
+    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::{
     diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
+    metrics::{ClientEndpoint, LoadKind},
 };
-use error::{typedb_error, TypeDBError};
 use executor::{
     batch::Batch,
     document::ConceptDocument,
-    pipeline::{
-        pipeline::Pipeline,
-        stage::{ExecutionContext, ReadPipelineStage, StageIterator},
-        PipelineExecutionError,
-    },
+    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
     ExecutionInterrupt, InterruptType,
 };
-use function::function_manager::FunctionManager;
-use futures::channel;
 use http::StatusCode;
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::{
-    diagnostics::REPORT_INTERVAL,
-    server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
-};
-use serde_json::json;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot, WritableSnapshot},
-};
+use query::error::QueryError;
+use resource::profile::StorageCounters;
+use storage::snapshot::ReadableSnapshot;
 use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{channel, Receiver, Sender},
-        oneshot, watch,
-    },
+    sync::{broadcast, mpsc::Receiver, oneshot, watch},
     task::{spawn_blocking, JoinHandle},
-    time::{timeout, Instant},
+    time::Instant,
 };
-use tokio_stream::StreamExt;
-use tonic::{Status, Streaming};
 use tracing::{event, Level};
-use typeql::{
-    parse_query,
-    query::{stage::Stage, SchemaQuery},
-    Query,
-};
-use uuid::Uuid;
+use typeql::{parse_query, query::SchemaQuery, Query};
 
+use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
-    http::{
-        error::HttpServiceError,
-        message::query::{
-            document::encode_document,
-            encode_query_documents_answer, encode_query_ok_answer, encode_query_rows_answer,
-            query_structure::{encode_query_structure, QueryStructureResponse},
-            row::encode_row,
-        },
-    },
+    http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
     transaction_service::{
-        execute_schema_query, execute_write_query_in, execute_write_query_in_schema, execute_write_query_in_write,
-        init_transaction_timeout, is_write_pipeline, prepare_read_query_in, with_readable_transaction,
-        StreamQueryOutputDescriptor, Transaction, TransactionServiceError, WriteQueryAnswer, WriteQueryBatchAnswer,
-        WriteQueryDocumentsAnswer, WriteQueryResult, TRANSACTION_REQUEST_BUFFER_SIZE,
+        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, init_transaction_timeout,
+        is_write_pipeline, prepare_read_query_in, with_readable_transaction, StreamQueryOutputDescriptor, Transaction,
+        TransactionServiceError, WriteQueryAnswer, WriteQueryResult,
     },
     QueryType, TransactionType,
 };
@@ -479,7 +437,7 @@ impl TransactionService {
                     LoadKind::WriteTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit(),
+                    transaction.commit().1,
                     responder,
                     |typedb_source| { TransactionServiceError::DataCommitFailed { typedb_source } }
                 );
@@ -495,7 +453,7 @@ impl TransactionService {
                     LoadKind::SchemaTransactions,
                 );
                 unwrap_or_execute_else_respond_error_and_return_break!(
-                    transaction.commit(),
+                    transaction.commit().1,
                     responder,
                     |typedb_source| { TransactionServiceError::SchemaCommitFailed { typedb_source } }
                 );
@@ -674,9 +632,15 @@ impl TransactionService {
                 }
                 return Continue(());
             } else {
-                self.blocking_read_query_worker(responder, query_options, query_pipeline, source_query)
-                    .await
-                    .expect("Expected read query completion");
+                self.blocking_read_query_worker(
+                    responder,
+                    query_options,
+                    query_pipeline,
+                    source_query,
+                    StorageCounters::DISABLED,
+                )
+                .await
+                .expect("Expected read query completion");
             }
         }
         Continue(())
@@ -726,9 +690,15 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        self.blocking_read_query_worker(responder, query_options, pipeline, query)
-                            .await
-                            .expect("Expected read query completion");
+                        self.blocking_read_query_worker(
+                            responder,
+                            query_options,
+                            pipeline,
+                            query,
+                            StorageCounters::DISABLED,
+                        )
+                        .await
+                        .expect("Expected read query completion");
                         // running read queries have no response on the main loop and will respond asynchronously
                         Continue(())
                     }
@@ -817,6 +787,7 @@ impl TransactionService {
                             responder,
                             timeout_at,
                             interrupt,
+                            StorageCounters::DISABLED,
                         )
                         .await
                     }
@@ -831,6 +802,7 @@ impl TransactionService {
                             responder,
                             timeout_at,
                             interrupt,
+                            StorageCounters::DISABLED,
                         )
                         .await
                     }
@@ -876,6 +848,7 @@ impl TransactionService {
         responder: TransactionResponder,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
+        storage_counters: StorageCounters,
     ) -> ControlFlow<(), ()> {
         let mut result = vec![];
         let mut batch_iterator = batch.into_iterator();
@@ -911,6 +884,7 @@ impl TransactionService {
                 &type_manager,
                 &thing_manager,
                 query_options.include_instance_types,
+                storage_counters.clone(),
             );
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
@@ -943,6 +917,7 @@ impl TransactionService {
         responder: TransactionResponder,
         timeout_at: Instant,
         mut interrupt: ExecutionInterrupt,
+        storage_counters: StorageCounters,
     ) -> ControlFlow<(), ()> {
         let mut result = Vec::with_capacity(documents.len());
         let mut warning = None;
@@ -957,8 +932,14 @@ impl TransactionService {
                 }
             }
 
-            let encoded_document =
-                encode_document(document, snapshot.as_ref(), &type_manager, &thing_manager, &parameters);
+            let encoded_document = encode_document(
+                document,
+                snapshot.as_ref(),
+                &type_manager,
+                &thing_manager,
+                &parameters,
+                storage_counters.clone(),
+            );
             match encoded_document {
                 Ok(encoded_document) => result.push(encoded_document),
                 Err(typedb_source) => {
@@ -983,6 +964,7 @@ impl TransactionService {
         query_options: QueryOptions,
         pipeline: typeql::query::Pipeline,
         source_query: String,
+        storage_counters: StorageCounters,
     ) -> JoinHandle<ControlFlow<(), ()>> {
         debug_assert!(self.query_queue.is_empty() && self.running_write_query.is_none() && self.transaction.is_some());
         let timeout_at = self.timeout_at;
@@ -1017,6 +999,7 @@ impl TransactionService {
                     snapshot,
                     &type_manager,
                     thing_manager,
+                    storage_counters,
                 )
             })
         })
@@ -1032,6 +1015,7 @@ impl TransactionService {
         snapshot: Arc<Snapshot>,
         type_manager: &TypeManager,
         thing_manager: Arc<ThingManager>,
+        storage_counters: StorageCounters,
     ) -> ControlFlow<(), ()> {
         let query_profile = if pipeline.has_fetch() {
             let (iterator, context) = unwrap_or_execute_else_respond_error_and_return_break!(
@@ -1066,8 +1050,14 @@ impl TransactionService {
                         TransactionServiceError::PipelineExecution { typedb_source: *typedb_source }
                     });
 
-                let encoded_document =
-                    encode_document(document, snapshot.as_ref(), type_manager, &thing_manager, &parameters);
+                let encoded_document = encode_document(
+                    document,
+                    snapshot.as_ref(),
+                    type_manager,
+                    &thing_manager,
+                    &parameters,
+                    storage_counters.clone(),
+                );
                 match encoded_document {
                     Ok(encoded_document) => result.push(encoded_document),
                     Err(typedb_source) => {
@@ -1136,9 +1126,10 @@ impl TransactionService {
                     row,
                     &descriptor,
                     snapshot.as_ref(),
-                    &type_manager,
+                    type_manager,
                     &thing_manager,
                     query_options.include_instance_types,
+                    storage_counters.clone(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),

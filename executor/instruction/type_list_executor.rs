@@ -10,11 +10,13 @@ use answer::{variable_value::VariableValue, Type};
 use compiler::{executable::match_::instructions::type_::TypeListInstruction, ExecutorVariable};
 use concept::error::ConceptReadError;
 use itertools::Itertools;
+use lending_iterator::AsLendingIterator;
+use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{
     instruction::{
-        iterator::{SortedTupleIterator, TupleIterator},
+        iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
         Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
@@ -30,10 +32,10 @@ pub(crate) struct TypeListExecutor {
     checker: Checker<Type>,
 }
 
-pub(super) type TypeFilterFn = FilterFn<Type>;
 pub(super) type TypeFilterMapFn = FilterMapUnchangedFn<Type>;
 
-pub(super) type TypeTupleIterator<I> = iter::Map<iter::FilterMap<I, Box<TypeFilterMapFn>>, TypeToTupleFn>;
+pub(super) type TypeTupleIterator<I> =
+    NaiiveSeekable<AsLendingIterator<iter::Map<iter::FilterMap<I, Box<TypeFilterMapFn>>, TypeToTupleFn>>>;
 
 pub(crate) type TypeIterator =
     TypeTupleIterator<iter::Map<vec::IntoIter<Type>, fn(Type) -> Result<Type, Box<ConceptReadError>>>>;
@@ -65,15 +67,21 @@ impl TypeListExecutor {
         &self,
         context: &ExecutionContext<impl ReadableSnapshot + 'static>,
         row: MaybeOwnedRow<'_>,
+        storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_for_row(context, &row);
+        let check = self.checker.filter_for_row(context, &row, storage_counters);
         let filter_for_row: Box<TypeFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,
         });
         let iterator = self.types.clone().into_iter().map(Ok as _);
-        let as_tuples: TypeIterator = iterator.filter_map(filter_for_row).map(type_to_tuple);
-        Ok(TupleIterator::Type(SortedTupleIterator::new(as_tuples, self.tuple_positions.clone(), &self.variable_modes)))
+        let as_tuples = iterator.filter_map(filter_for_row).map(type_to_tuple as _);
+        let lending_tuples = NaiiveSeekable::new(AsLendingIterator::new(as_tuples));
+        Ok(TupleIterator::Type(SortedTupleIterator::new(
+            lending_tuples,
+            self.tuple_positions.clone(),
+            &self.variable_modes,
+        )))
     }
 }
 

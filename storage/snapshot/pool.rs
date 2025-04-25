@@ -29,10 +29,6 @@ impl<T> Clone for SinglePool<T> {
 }
 
 impl<T: Poolable> SinglePool<T> {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
     pub fn get_or_create(&self, create_fn: impl FnOnce() -> T) -> PoolRecycleGuard<T> {
         let mut unlocked = self.pool.lock().unwrap();
         if let Some(item) = unlocked.pop() {

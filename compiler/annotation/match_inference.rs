@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{BTreeMap, BTreeSet, HashMap},
-    io::Read,
     ops::{Deref, DerefMut},
     sync::Arc,
 };
@@ -16,8 +15,7 @@ use answer::{variable::Variable, Type as TypeAnnotation};
 use concept::type_::type_manager::TypeManager;
 use ir::{
     pattern::{
-        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern,
-        variable_category::VariableCategory, Scope, ScopeId, Vertex,
+        conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, Scope, ScopeId, Vertex,
     },
     pipeline::{
         block::{Block, BlockContext},

@@ -35,8 +35,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::IsaKind,
@@ -44,6 +44,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
+use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot},
@@ -70,12 +71,28 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
 
     const CARDINALITY_ANY: OwnsAnnotation = OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, None));
 
-    let person_owns_age =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+    let person_owns_age = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            age_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_age.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+    let person_owns_name = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            name_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_name.set_annotation(&mut snapshot, &type_manager, &thing_manager, CARDINALITY_ANY).unwrap();
 
     let person_1 = thing_manager.create_entity(&mut snapshot, person_type).unwrap();
@@ -98,22 +115,22 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, name_type, Value::String(Cow::Owned("Candice".to_string())))
         .unwrap();
 
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_2).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_3).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_1).unwrap();
-    person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_2).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_1, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_2, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &age_3, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_1, StorageCounters::DISABLED).unwrap();
+    person_1.set_has_unordered(&mut snapshot, &thing_manager, &name_2, StorageCounters::DISABLED).unwrap();
 
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_5).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_4).unwrap();
-    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_1).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_5, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_4, StorageCounters::DISABLED).unwrap();
+    person_2.set_has_unordered(&mut snapshot, &thing_manager, &age_1, StorageCounters::DISABLED).unwrap();
 
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_4).unwrap();
-    person_3.set_has_unordered(&mut snapshot, &thing_manager, &name_3).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &age_4, StorageCounters::DISABLED).unwrap();
+    person_3.set_has_unordered(&mut snapshot, &thing_manager, &name_3, StorageCounters::DISABLED).unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(

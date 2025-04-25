@@ -25,6 +25,7 @@ pub(crate) use filter_variants;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
 pub enum ExecutorVariable {
+    // TODO: rename VariablePosition to ExecutorVariablePosition
     RowPosition(VariablePosition),
     Internal(Variable),
 }

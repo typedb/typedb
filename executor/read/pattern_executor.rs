@@ -312,8 +312,14 @@ impl PatternExecutor {
                     suspensions: function_suspensions,
                     parameters,
                 } = pattern_state_mutex_guard.deref_mut();
+                let context_with_function_parameters = ExecutionContext::new_with_profile(
+                    context.snapshot.clone(),
+                    context.thing_manager.clone(),
+                    parameters.clone(),
+                    context.profile.clone(),
+                );
                 let batch_opt = pattern_executor.batch_continue(
-                    &context.clone_with_replaced_parameters(parameters.clone()),
+                    &context_with_function_parameters,
                     interrupt,
                     tabled_functions,
                     function_suspensions,

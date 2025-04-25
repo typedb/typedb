@@ -78,11 +78,12 @@ impl WAL {
         if !wal_dir.exists() {
             Err(WALError::LoadErrorDirectoryMissing { directory: wal_dir.clone() })?
         }
-
         let files = Files::open(wal_dir.clone()).map_err(|err| WALError::LoadError { source: Arc::new(err) })?;
 
         let files = Arc::new(RwLock::new(files));
-        let next = RecordIterator::new(files.read().unwrap(), DurabilitySequenceNumber::MIN)
+        let start_seq_nr =
+            files.read().unwrap().files.iter().map(|f| f.start).max().unwrap_or(DurabilitySequenceNumber::MIN);
+        let next = RecordIterator::new(files.read().unwrap(), start_seq_nr)
             .map_err(|err| WALError::LoadError { source: Arc::new(err) })?
             .last()
             .map(|rr| rr.unwrap().sequence_number.next())

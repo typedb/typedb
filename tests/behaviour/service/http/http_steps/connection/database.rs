@@ -4,24 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashSet;
-
-use cucumber::{gherkin::Step, given, then, when};
-use futures::{
-    future::{join_all, try_join_all},
-    stream, StreamExt, TryFutureExt,
-};
+use cucumber::gherkin::Step;
+use futures::future::{join_all, try_join_all};
 use hyper::{client::HttpConnector, Client};
-use itertools::Itertools;
 use macro_rules_attribute::apply;
-use params;
-use tokio::time::sleep;
 
 use crate::{
     generic_step, in_background,
     message::{databases, databases_create, databases_delete, databases_get},
     params::TokenMode,
-    util::{iter_table, random_uuid},
+    util::iter_table,
     Context, HttpContext,
 };
 
@@ -40,7 +32,7 @@ async fn delete_database(
     name: &str,
     may_error: params::MayError,
 ) {
-    may_error.do_not_expect_error_message().check(databases_delete(http_client, auth_token, &name).await);
+    may_error.do_not_expect_error_message().check(databases_delete(http_client, auth_token, name).await);
 }
 
 async fn has_database(context: &HttpContext, name: &str) -> bool {
@@ -49,8 +41,7 @@ async fn has_database(context: &HttpContext, name: &str) -> bool {
         .unwrap()
         .databases
         .iter()
-        .find(|database| database.name == name)
-        .is_some()
+        .any(|database| database.name == name)
 }
 
 #[apply(generic_step)]
@@ -94,7 +85,7 @@ async fn connection_create_databases_in_parallel(context: &mut Context, step: &S
 #[apply(generic_step)]
 #[step(expr = "in background, connection create database: {word}{may_error}")]
 pub async fn in_background_connection_create_database(
-    context: &mut Context,
+    _context: &mut Context,
     name: String,
     may_error: params::MayError,
 ) {
@@ -126,7 +117,7 @@ async fn connection_delete_databases(context: &mut Context, step: &Step) {
 #[apply(generic_step)]
 #[step(expr = "connection delete databases in parallel:")]
 async fn connection_delete_databases_in_parallel(context: &mut Context, step: &Step) {
-    try_join_all(iter_table(step).map(|name| databases_delete(context.http_client(), context.auth_token(), &name)))
+    try_join_all(iter_table(step).map(|name| databases_delete(context.http_client(), context.auth_token(), name)))
         .await
         .unwrap();
 }
@@ -134,7 +125,7 @@ async fn connection_delete_databases_in_parallel(context: &mut Context, step: &S
 #[apply(generic_step)]
 #[step(expr = "in background, connection delete database: {word}{may_error}")]
 pub async fn in_background_connection_delete_database(
-    context: &mut Context,
+    _context: &mut Context,
     name: String,
     may_error: params::MayError,
 ) {

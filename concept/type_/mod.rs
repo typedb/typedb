@@ -18,7 +18,10 @@ use encoding::{
     value::label::Label,
 };
 use primitive::maybe_owns::MaybeOwns;
-use resource::constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE};
+use resource::{
+    constants::snapshot::{BUFFER_KEY_INLINE, BUFFER_VALUE_INLINE},
+    profile::StorageCounters,
+};
 use serde::{Deserialize, Serialize};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
@@ -52,6 +55,9 @@ pub mod sub;
 pub mod type_manager;
 
 pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
+    const MIN: Self;
+    const MAX: Self;
+
     fn new(vertex: TypeVertex) -> Self;
 
     fn read_from(b: Bytes<'_, BUFFER_KEY_INLINE>) -> Self {
@@ -172,6 +178,10 @@ pub trait TypeAPI: ConceptAPI + TypeVertexEncoding + Copy + Sized + Hash + Eq {
     fn chain_types<C: IntoIterator<Item = Self>>(first: Self, others: C) -> impl Iterator<Item = Self> {
         iter::once(first).chain(others)
     }
+
+    fn next_possible(&self) -> Option<Self>;
+
+    fn previous_possible(&self) -> Option<Self>;
 }
 
 pub trait KindAPI: TypeAPI {
@@ -207,6 +217,7 @@ pub trait OwnerAPI: TypeAPI {
         thing_manager: &ThingManager,
         attribute_type: AttributeType,
         ordering: Ordering,
+        storage_counters: StorageCounters,
     ) -> Result<Owns, Box<ConceptWriteError>>;
 
     fn unset_owns(
@@ -402,6 +413,7 @@ pub trait PlayerAPI: TypeAPI {
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
         role_type: RoleType,
+        storage_counters: StorageCounters,
     ) -> Result<Plays, Box<ConceptWriteError>>;
 
     fn unset_plays(

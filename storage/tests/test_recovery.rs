@@ -7,7 +7,10 @@
 use std::fs;
 
 use durability::wal::WAL;
-use resource::constants::snapshot::BUFFER_KEY_INLINE;
+use resource::{
+    constants::snapshot::BUFFER_KEY_INLINE,
+    profile::{CommitProfile, StorageCounters},
+};
 use storage::{
     durability_client::WALClient,
     key_value::{StorageKeyArray, StorageKeyReference},
@@ -32,7 +35,7 @@ fn wal_and_checkpoint_ok() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
         (checkpoint_storage(&storage), storage.snapshot_watermark())
     };
@@ -43,7 +46,10 @@ fn wal_and_checkpoint_ok() {
                 .unwrap();
         assert_eq!(watermark, storage.snapshot_watermark());
         let snapshot = storage.open_snapshot_read();
-        assert!(snapshot.get_mapped(StorageKeyReference::from(&key_hello), |_| true).unwrap().is_some());
+        assert!(snapshot
+            .get_mapped(StorageKeyReference::from(&key_hello), |_| true, StorageCounters::DISABLED)
+            .unwrap()
+            .is_some());
     };
 }
 
@@ -74,7 +80,7 @@ fn wal_and_no_checkpoint_ok() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
         storage.snapshot_watermark()
     };
@@ -83,7 +89,10 @@ fn wal_and_no_checkpoint_ok() {
         let storage = load_storage::<TestKeyspaceSet>(&storage_path, WAL::load(&storage_path).unwrap(), None).unwrap();
         assert_eq!(watermark, storage.snapshot_watermark());
         let snapshot = storage.open_snapshot_read();
-        assert!(snapshot.get_mapped(StorageKeyReference::from(&key_hello), |_| true).unwrap().is_some());
+        assert!(snapshot
+            .get_mapped(StorageKeyReference::from(&key_hello), |_| true, StorageCounters::DISABLED)
+            .unwrap()
+            .is_some());
     }
 }
 
@@ -102,7 +111,7 @@ fn no_wal_and_checkpoint_illegal() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
         (checkpoint_storage(&storage), storage.path().parent().unwrap().to_owned())
     };
@@ -131,7 +140,7 @@ fn no_wal_and_no_checkpoint_and_keyspaces_illegal() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     };
 
     // delete wal
@@ -158,7 +167,7 @@ fn no_wal_and_no_checkpoint_and_no_keyspaces_illegal() {
         let mut snapshot = storage.clone().open_snapshot_write();
         snapshot.put(key_hello.clone());
         snapshot.put(key_world.clone());
-        snapshot.commit().unwrap();
+        snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
     };
 
     // delete wal

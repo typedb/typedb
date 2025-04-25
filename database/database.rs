@@ -316,12 +316,14 @@ impl Database<WALClient> {
             std::path::absolute(path)
         );
 
+        event!(Level::TRACE, "Loading database '{}' WAL.", &name);
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
 
         let mut wal_client = WALClient::new(wal);
         wal_client.register_record_type::<Statistics>();
 
+        event!(Level::TRACE, "Loading last database '{}' checkpoint", &name);
         let checkpoint = Checkpoint::open_latest(path)
             .map_err(|err| CheckpointLoad { name: name.to_string(), typedb_source: err })?;
         let storage = Arc::new(
@@ -338,7 +340,9 @@ impl Database<WALClient> {
             .find_last_unsequenced_type::<Statistics>()
             .map_err(|err| DurabilityClientRead { typedb_source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
+        event!(Level::TRACE, "Synchronising database '{}' statistics", &name);
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
+        event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
 
         let type_cache = Arc::new(
@@ -391,7 +395,7 @@ impl Database<WALClient> {
         if checkpoint_sequence_number < wal_last_sequence_number {
             database.checkpoint().map_err(|err| CheckpointCreate { name: name.to_string(), source: err })?;
         }
-
+        event!(Level::TRACE, "Finished loading database '{}'", &name);
         Ok(database)
     }
 

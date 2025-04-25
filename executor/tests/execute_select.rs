@@ -32,8 +32,8 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, profile::QueryProfile,
-    row::MaybeOwnedRow, ExecutionInterrupt,
+    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    ExecutionInterrupt,
 };
 use ir::{
     pattern::constraint::IsaKind,
@@ -41,6 +41,7 @@ use ir::{
     translation::TranslationContext,
 };
 use lending_iterator::LendingIterator;
+use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
 use storage::{
     durability_client::WALClient,
     snapshot::{CommittableSnapshot, ReadSnapshot},
@@ -65,8 +66,16 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
     age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
     let name_type = type_manager.create_attribute_type(&mut snapshot, &NAME_LABEL).unwrap();
     name_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-    let person_owns_age =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
+    let person_owns_age = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            age_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_age
         .set_annotation(
             &mut snapshot,
@@ -75,8 +84,16 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
             OwnsAnnotation::Cardinality(AnnotationCardinality::new(0, Some(10))),
         )
         .unwrap();
-    let person_owns_name =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, name_type, Ordering::Unordered).unwrap();
+    let person_owns_name = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            name_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_name
         .set_annotation(
             &mut snapshot,
@@ -87,8 +104,16 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .unwrap();
     let email_type = type_manager.create_attribute_type(&mut snapshot, &EMAIL_LABEL).unwrap();
     email_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::String).unwrap();
-    let person_owns_email =
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, email_type, Ordering::Unordered).unwrap();
+    let person_owns_email = person_type
+        .set_owns(
+            &mut snapshot,
+            &type_manager,
+            &thing_manager,
+            email_type,
+            Ordering::Unordered,
+            StorageCounters::DISABLED,
+        )
+        .unwrap();
     person_owns_email
         .set_annotation(
             &mut snapshot,
@@ -125,24 +150,24 @@ fn setup_database(storage: &mut Arc<MVCCStorage<WALClient>>) {
         .create_attribute(&mut snapshot, email_type, Value::String(Cow::Owned("xyz@email.com".to_string())))
         .unwrap();
 
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_1).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_2).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_3).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_1).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_2).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_1).unwrap();
-    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_2).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_1, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_2, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_age_3, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_1, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_name_2, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_1, StorageCounters::DISABLED).unwrap();
+    _person_1.set_has_unordered(&mut snapshot, &thing_manager, &_email_2, StorageCounters::DISABLED).unwrap();
 
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_5).unwrap();
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_4).unwrap();
-    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_1).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_5, StorageCounters::DISABLED).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_4, StorageCounters::DISABLED).unwrap();
+    _person_2.set_has_unordered(&mut snapshot, &thing_manager, &_age_1, StorageCounters::DISABLED).unwrap();
 
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_age_4).unwrap();
-    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_name_3).unwrap();
+    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_age_4, StorageCounters::DISABLED).unwrap();
+    _person_3.set_has_unordered(&mut snapshot, &thing_manager, &_name_3, StorageCounters::DISABLED).unwrap();
 
-    let finalise_result = thing_manager.finalise(&mut snapshot);
+    let finalise_result = thing_manager.finalise(&mut snapshot, StorageCounters::DISABLED);
     assert!(finalise_result.is_ok());
-    snapshot.commit().unwrap();
+    snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 }
 
 fn position_mapping<const N: usize, const M: usize>(

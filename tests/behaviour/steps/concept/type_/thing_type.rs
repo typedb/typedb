@@ -15,6 +15,7 @@ use encoding::{graph::type_::Kind, value::value_type::ValueType};
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params;
+use resource::profile::StorageCounters;
 
 use crate::{
     generic_step,
@@ -240,6 +241,7 @@ pub async fn type_set_annotation(
                 &tx.type_manager,
                 &tx.thing_manager,
                 annotation.into_typedb(value_type).try_into().unwrap(),
+                StorageCounters::DISABLED,
             );
             may_error.check_concept_write_without_read_errors(&res);
         });

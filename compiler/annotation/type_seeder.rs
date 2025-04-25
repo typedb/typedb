@@ -1683,6 +1683,7 @@ pub mod tests {
         pipeline::{block::Block, ParameterRegistry},
         translation::TranslationContext,
     };
+    use resource::profile::{CommitProfile, StorageCounters};
     use storage::snapshot::CommittableSnapshot;
 
     use crate::annotation::{
@@ -1782,7 +1783,16 @@ pub mod tests {
             let type_owner = type_manager.create_entity_type(&mut snapshot, &label_owner).unwrap();
             let type_age = type_manager.create_attribute_type(&mut snapshot, &Label::build("age", None)).unwrap();
             type_age.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
-            type_owner.set_owns(&mut snapshot, &type_manager, &thing_manager, type_age, Ordering::Unordered).unwrap();
+            type_owner
+                .set_owns(
+                    &mut snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    type_age,
+                    Ordering::Unordered,
+                    StorageCounters::DISABLED,
+                )
+                .unwrap();
             type_owner
                 .set_owns(
                     &mut snapshot,
@@ -1790,6 +1800,7 @@ pub mod tests {
                     &thing_manager,
                     type_catname.as_attribute_type(),
                     Ordering::Unordered,
+                    StorageCounters::DISABLED,
                 )
                 .unwrap();
             type_owner
@@ -1799,9 +1810,10 @@ pub mod tests {
                     &thing_manager,
                     type_dogname.as_attribute_type(),
                     Ordering::Unordered,
+                    StorageCounters::DISABLED,
                 )
                 .unwrap();
-            snapshot.commit().unwrap();
+            snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
             (TypeAnnotation::Entity(type_owner), TypeAnnotation::Attribute(type_age))
         };
 

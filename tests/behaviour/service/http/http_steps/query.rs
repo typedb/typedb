@@ -4,17 +4,17 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::VecDeque, ops::Index, str::FromStr};
+use std::str::FromStr;
 
-use cucumber::{gherkin::Step, given, then, when};
-use futures::{future::join_all, StreamExt, TryStreamExt};
+use cucumber::gherkin::Step;
+use futures::future::join_all;
 use itertools::Itertools;
 use macro_rules_attribute::apply;
 use params::{self, check_boolean, ContainsOrDoesnt};
-use server::service::{http::message::query::QueryAnswerResponse, AnswerType, QueryType};
+use server::service::{http::message::query::QueryAnswerResponse, AnswerType};
 
 use crate::{
-    assert_err, generic_step,
+    generic_step,
     message::{query, transactions_query, ConceptResponse},
     params::{ConceptKind, IsByVarIndex, IsOrNot, QueryAnswerType, TokenMode, Var, WithCommit},
     util::{iter_table, list_contains_json, parse_json},

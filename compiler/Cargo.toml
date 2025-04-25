@@ -46,6 +46,11 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.resource]
+		path = "../resource"
+		features = []
+		default-features = false
+
 	[dependencies.concept]
 		path = "../concept"
 		features = []

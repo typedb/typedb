@@ -94,6 +94,7 @@ mod typedb_database {
 
     use bytes::byte_array::ByteArray;
     use durability::wal::WAL;
+    use resource::profile::CommitProfile;
     use storage::{
         durability_client::WALClient,
         key_value::StorageKeyArray,
@@ -143,7 +144,7 @@ mod typedb_database {
         }
 
         fn commit(self) -> Result<(), Self::CommitError> {
-            self.snapshot.commit()?;
+            self.snapshot.commit(&mut CommitProfile::DISABLED)?;
             Ok(())
         }
     }

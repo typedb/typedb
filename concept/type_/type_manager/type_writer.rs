@@ -20,6 +20,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     AsBytes, Keyable,
 };
+use resource::profile::StorageCounters;
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -72,7 +73,9 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     }
 
     pub(crate) fn storage_unput_vertex(snapshot: &mut Snapshot, type_: impl TypeAPI) {
-        debug_assert!(snapshot.contains(type_.vertex().into_storage_key().as_reference()).unwrap_or(false));
+        debug_assert!(snapshot
+            .contains(type_.vertex().into_storage_key().as_reference(), StorageCounters::DISABLED)
+            .unwrap_or(false));
         snapshot.unput(type_.vertex().into_storage_key().into_owned_array());
     }
 
@@ -82,8 +85,8 @@ impl<Snapshot: WritableSnapshot> TypeWriter<Snapshot> {
     {
         let canonical_key = capability.to_canonical_type_edge().into_storage_key();
         let reverse_key = capability.to_reverse_type_edge().into_storage_key();
-        debug_assert!(snapshot.contains(canonical_key.as_reference()).unwrap_or(false));
-        debug_assert!(snapshot.contains(reverse_key.as_reference()).unwrap_or(false));
+        debug_assert!(snapshot.contains(canonical_key.as_reference(), StorageCounters::DISABLED).unwrap_or(false));
+        debug_assert!(snapshot.contains(reverse_key.as_reference(), StorageCounters::DISABLED).unwrap_or(false));
         snapshot.unput(canonical_key.into_owned_array());
         snapshot.unput(reverse_key.into_owned_array());
     }

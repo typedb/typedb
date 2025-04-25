@@ -16,8 +16,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
-use lending_iterator::LendingIterator;
-use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
+use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::StageProfile};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
@@ -26,7 +25,6 @@ use crate::{
         stage::{ExecutionContext, StageAPI},
         PipelineExecutionError, StageIterator, WrittenRowsIterator,
     },
-    profile::StageProfile,
     row::{MaybeOwnedRow, Row},
     write::{write_instruction::AsWriteInstruction, WriteError},
     ExecutionInterrupt,
@@ -157,10 +155,10 @@ pub(crate) fn execute_insert(
         let measurement = step_profile.start_measurement();
         match instruction {
             ConceptInstruction::PutAttribute(isa_attr) => {
-                isa_attr.execute(snapshot, thing_manager, parameters, row)?;
+                isa_attr.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
             ConceptInstruction::PutObject(isa_object) => {
-                isa_object.execute(snapshot, thing_manager, parameters, row)?;
+                isa_object.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         }
         measurement.end(&step_profile, 1, 1);
@@ -171,10 +169,10 @@ pub(crate) fn execute_insert(
         let measurement = step_profile.start_measurement();
         match instruction {
             ConnectionInstruction::Has(has) => {
-                has.execute(snapshot, thing_manager, parameters, row)?;
+                has.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
             ConnectionInstruction::Links(role_player) => {
-                role_player.execute(snapshot, thing_manager, parameters, row)?;
+                role_player.execute(snapshot, thing_manager, parameters, row, step_profile.storage_counters())?;
             }
         };
         measurement.end(&step_profile, 1, 1);
