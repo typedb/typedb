@@ -26,7 +26,7 @@ build:
         sudo apt update
         sudo apt install -y libclang-dev
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel build //...
+        bazel build --noremote_accept_cached //... 
         bazel run @typedb_dependencies//tool/checkstyle:test-coverage
         bazel test $(bazel query 'kind(checkstyle_test, //...)') --test_output=streamed
 
