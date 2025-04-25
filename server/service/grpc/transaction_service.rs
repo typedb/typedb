@@ -35,10 +35,13 @@ use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
 use query::{error::QueryError, query_manager::QueryManager};
-use resource::constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS};
+use resource::{
+    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
+    profile::{EncodingProfile, QueryProfile, StorageCounters},
+};
 use storage::{
     durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot}
+    snapshot::{ReadSnapshot, ReadableSnapshot},
 };
 use tokio::{
     sync::{
