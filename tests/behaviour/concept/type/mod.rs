@@ -7,6 +7,6 @@
 mod attribute_type;
 mod entity_type;
 mod owns;
+mod owns_annotations;
 mod plays;
 mod relation_type;
-mod owns_annotations;

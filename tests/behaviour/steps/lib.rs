@@ -12,9 +12,8 @@ use std::{
     error::Error,
     fmt, iter, mem,
     path::Path,
-    sync::{Arc, Mutex},
+    sync::{Arc, Mutex, Once},
 };
-use std::sync::Once;
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::error::QueryError;
@@ -118,7 +117,7 @@ pub struct Context {
 static CONTEXT_INIT: Once = Once::new();
 impl Context {
     pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
-        CONTEXT_INIT.call_once(||logger::initialise_logging_global());
+        CONTEXT_INIT.call_once(|| logger::initialise_logging_global());
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()
