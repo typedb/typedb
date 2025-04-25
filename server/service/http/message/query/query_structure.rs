@@ -83,12 +83,20 @@ pub enum QueryStructureEdgeTypeResponse {
     Argument(String),
 }
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct QueryStructureEdgeSpan {
+    begin: usize,
+    end: usize,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureEdgeResponse {
     r#type: QueryStructureEdgeTypeResponse,
     from: QueryStructureVertexResponse,
     to: QueryStructureVertexResponse,
+    span: Option<QueryStructureEdgeSpan>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -141,15 +149,25 @@ fn encode_query_structure_branch(
 }
 
 macro_rules! push_edge {
-    ($edges:ident, $query_structure:expr, $from:expr, $to:expr, $variant:ident) => {{
+    ($edges:ident, $query_structure:expr, $span:expr, $from:expr, $to:expr, $variant:ident) => {{
         let from = query_structure_vertex($query_structure, $from)?;
         let to = query_structure_vertex($query_structure, $to)?;
-        $edges.push(QueryStructureEdgeResponse { r#type: QueryStructureEdgeTypeResponse::$variant, from, to });
+        $edges.push(QueryStructureEdgeResponse {
+            r#type: QueryStructureEdgeTypeResponse::$variant,
+            from,
+            to,
+            span: $span,
+        });
     }};
-    ($edges:ident, $query_structure:expr, $from:expr, $to:expr, $variant:ident($param:expr)) => {{
+    ($edges:ident, $query_structure:expr, $span:expr, $from:expr, $to:expr, $variant:ident($param:expr)) => {{
         let from = query_structure_vertex($query_structure, $from)?;
         let to = query_structure_vertex($query_structure, $to)?;
-        $edges.push(QueryStructureEdgeResponse { r#type: QueryStructureEdgeTypeResponse::$variant($param), from, to });
+        $edges.push(QueryStructureEdgeResponse {
+            r#type: QueryStructureEdgeTypeResponse::$variant($param),
+            from,
+            to,
+            span: $span,
+        });
     }};
 }
 
@@ -159,31 +177,39 @@ fn query_structure_edge(
     edges: &mut Vec<QueryStructureEdgeResponse>,
     index: usize,
 ) -> Result<(), Box<ConceptReadError>> {
+    let span =
+        constraint.source_span().map(|span| QueryStructureEdgeSpan { begin: span.begin_offset, end: span.end_offset });
     match constraint {
         Constraint::Links(links) => {
             let role_type = query_structure_role_type_as_vertex(context, links.role_type())?;
-            push_edge!(edges, context, links.relation(), links.player(), Links(role_type))
+            push_edge!(edges, context, span, links.relation(), links.player(), Links(role_type))
         }
-        Constraint::Has(has) => push_edge!(edges, context, has.owner(), has.attribute(), Has),
+        Constraint::Has(has) => push_edge!(edges, context, span, has.owner(), has.attribute(), Has),
         Constraint::Isa(isa) => match isa.isa_kind() {
-            IsaKind::Exact => push_edge!(edges, context, isa.thing(), isa.type_(), IsaExact),
-            IsaKind::Subtype => push_edge!(edges, context, isa.thing(), isa.type_(), Isa),
+            IsaKind::Exact => push_edge!(edges, context, span, isa.thing(), isa.type_(), IsaExact),
+            IsaKind::Subtype => push_edge!(edges, context, span, isa.thing(), isa.type_(), Isa),
         },
         Constraint::Sub(sub) => match sub.sub_kind() {
-            SubKind::Exact => push_edge!(edges, context, sub.subtype(), sub.supertype(), SubExact),
-            SubKind::Subtype => push_edge!(edges, context, sub.subtype(), sub.supertype(), Sub),
+            SubKind::Exact => push_edge!(edges, context, span, sub.subtype(), sub.supertype(), SubExact),
+            SubKind::Subtype => push_edge!(edges, context, span, sub.subtype(), sub.supertype(), Sub),
         },
-        Constraint::Owns(owns) => push_edge!(edges, context, owns.owner(), owns.attribute(), Owns),
+        Constraint::Owns(owns) => push_edge!(edges, context, span, owns.owner(), owns.attribute(), Owns),
         Constraint::Relates(relates) => {
-            push_edge!(edges, context, relates.relation(), relates.role_type(), Relates)
+            push_edge!(edges, context, span, relates.relation(), relates.role_type(), Relates)
         }
-        Constraint::Plays(plays) => push_edge!(edges, context, plays.player(), plays.role_type(), Plays),
+        Constraint::Plays(plays) => push_edge!(edges, context, span, plays.player(), plays.role_type(), Plays),
 
         Constraint::IndexedRelation(indexed) => {
             let role_type_1 = query_structure_role_type_as_vertex(context, indexed.role_type_1())?;
             let role_type_2 = query_structure_role_type_as_vertex(context, indexed.role_type_2())?;
-            push_edge!(edges, context, indexed.relation(), indexed.player_1(), Links(role_type_1));
-            push_edge!(edges, context, indexed.relation(), indexed.player_2(), Links(role_type_2));
+            let span_1 = indexed
+                .source_span_1()
+                .map(|span| QueryStructureEdgeSpan { begin: span.begin_offset, end: span.end_offset });
+            let span_2 = indexed
+                .source_span_2()
+                .map(|span| QueryStructureEdgeSpan { begin: span.begin_offset, end: span.end_offset });
+            push_edge!(edges, context, span_1, indexed.relation(), indexed.player_1(), Links(role_type_1));
+            push_edge!(edges, context, span_2, indexed.relation(), indexed.player_2(), Links(role_type_2));
         }
         Constraint::ExpressionBinding(expr) => {
             let repr =
@@ -193,14 +219,24 @@ fn query_structure_edge(
                 let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let assigned_name = context.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = QueryStructureEdgeTypeResponse::Assigned(assigned_name);
-                edges.push(QueryStructureEdgeResponse { r#type: edge_type, from: expr_vertex.clone(), to: assigned });
+                edges.push(QueryStructureEdgeResponse {
+                    r#type: edge_type,
+                    from: expr_vertex.clone(),
+                    to: assigned,
+                    span,
+                });
                 Ok::<_, Box<ConceptReadError>>(())
             })?;
             expr.required_ids().try_for_each(|variable| {
                 let argument = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let arg_name = context.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = QueryStructureEdgeTypeResponse::Argument(arg_name);
-                edges.push(QueryStructureEdgeResponse { r#type: edge_type, from: argument, to: expr_vertex.clone() });
+                edges.push(QueryStructureEdgeResponse {
+                    r#type: edge_type,
+                    from: argument,
+                    to: expr_vertex.clone(),
+                    span,
+                });
                 Ok::<_, Box<ConceptReadError>>(())
             })?;
         }
@@ -212,14 +248,24 @@ fn query_structure_edge(
                 let assigned = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let assigned_name = context.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = QueryStructureEdgeTypeResponse::Assigned(assigned_name);
-                edges.push(QueryStructureEdgeResponse { r#type: edge_type, from: func_vertex.clone(), to: assigned });
+                edges.push(QueryStructureEdgeResponse {
+                    r#type: edge_type,
+                    from: func_vertex.clone(),
+                    to: assigned,
+                    span,
+                });
                 Ok::<_, Box<ConceptReadError>>(())
             })?;
             function_call.required_ids().try_for_each(|variable| {
                 let argument = query_structure_vertex(context, &Vertex::Variable(variable))?;
                 let arg_name = context.get_variable_name(&variable).unwrap_or_else(|| variable.to_string());
                 let edge_type = QueryStructureEdgeTypeResponse::Argument(arg_name);
-                edges.push(QueryStructureEdgeResponse { r#type: edge_type, from: argument, to: func_vertex.clone() });
+                edges.push(QueryStructureEdgeResponse {
+                    r#type: edge_type,
+                    from: argument,
+                    to: func_vertex.clone(),
+                    span,
+                });
                 Ok::<_, Box<ConceptReadError>>(())
             })?;
         }

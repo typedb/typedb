@@ -524,7 +524,11 @@ pub(super) fn add_typeql_relation(
                     }
                 };
                 let player = register_typeql_var(constraints, player_var)?;
-                let links = constraints.add_links(relation, player, type_, type_ref.span())?;
+                let span = match (type_ref.span(), player_var.span()) {
+                    (Some(s1), Some(s2)) => Some(Span { begin_offset: s1.begin_offset, end_offset: s2.end_offset }),
+                    _ => None,
+                };
+                let links = constraints.add_links(relation, player, type_, span)?;
                 links_constraints.push(links.clone());
             }
             typeql::statement::thing::RolePlayer::Untyped(var) => {
