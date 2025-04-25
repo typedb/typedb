@@ -5,7 +5,9 @@
  */
 use axum::response::{IntoResponse, Response};
 use options::QueryOptions;
-use resource::constants::server::{DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES};
+use resource::constants::server::{
+    DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES, DEFAULT_PREFETCH_SIZE,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::service::{
@@ -27,7 +29,7 @@ pub mod row;
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct QueryOptionsPayload {
     pub include_instance_types: Option<bool>,
-    pub answer_count_limit: Option<usize>,
+    pub answer_count_limit: Option<u64>,
 }
 
 impl Default for QueryOptionsPayload {
@@ -42,8 +44,9 @@ impl Into<QueryOptions> for QueryOptionsPayload {
             include_instance_types: self.include_instance_types.unwrap_or(DEFAULT_INCLUDE_INSTANCE_TYPES),
             answer_count_limit: self
                 .answer_count_limit
-                .map(|option| Some(option))
+                .map(|option| Some(option as usize))
                 .unwrap_or(DEFAULT_ANSWER_COUNT_LIMIT_HTTP),
+            prefetch_size: DEFAULT_PREFETCH_SIZE as usize,
         }
     }
 }

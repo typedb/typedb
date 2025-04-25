@@ -10,6 +10,7 @@ mod diagnostics;
 mod document;
 pub(crate) mod encryption;
 mod error;
+mod options;
 mod request_parser;
 mod response_builders;
 mod row;

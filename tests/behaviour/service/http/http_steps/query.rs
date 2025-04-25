@@ -271,7 +271,7 @@ pub async fn set_query_option_include_instance_types(context: &mut Context, valu
 
 #[apply(generic_step)]
 #[step(expr = "set query option answer_count_limit to: {int}")]
-pub async fn set_query_option_answer_count_limit(context: &mut Context, value: usize) {
+pub async fn set_query_option_answer_count_limit(context: &mut Context, value: u64) {
     context.init_query_options_if_needed();
     context.query_options.as_mut().unwrap().answer_count_limit = Some(value);
 }

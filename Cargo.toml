@@ -195,6 +195,10 @@ features = {}
 	name = "test_http_transaction"
 
 [[test]]
+	path = "tests/behaviour/service/http/http.rs"
+	name = "test_http"
+
+[[test]]
 	path = "tests/behaviour/service/http/user.rs"
 	name = "test_http_user"
 

@@ -6,7 +6,8 @@
 
 use resource::constants::server::{
     DEFAULT_ANSWER_COUNT_LIMIT_GRPC, DEFAULT_ANSWER_COUNT_LIMIT_HTTP, DEFAULT_INCLUDE_INSTANCE_TYPES,
-    DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
+    DEFAULT_PREFETCH_SIZE, DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL,
+    DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
 
 #[derive(Debug)]
@@ -30,6 +31,7 @@ impl Default for TransactionOptions {
 pub struct QueryOptions {
     pub include_instance_types: bool,
     pub answer_count_limit: Option<usize>,
+    pub prefetch_size: usize,
 }
 
 impl QueryOptions {
@@ -37,6 +39,7 @@ impl QueryOptions {
         Self {
             include_instance_types: DEFAULT_INCLUDE_INSTANCE_TYPES,
             answer_count_limit: DEFAULT_ANSWER_COUNT_LIMIT_GRPC,
+            prefetch_size: DEFAULT_PREFETCH_SIZE,
         }
     }
 
@@ -44,6 +47,7 @@ impl QueryOptions {
         Self {
             include_instance_types: DEFAULT_INCLUDE_INSTANCE_TYPES,
             answer_count_limit: DEFAULT_ANSWER_COUNT_LIMIT_HTTP,
+            prefetch_size: DEFAULT_PREFETCH_SIZE,
         }
     }
 }
