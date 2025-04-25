@@ -19,5 +19,5 @@ async fn test_definable_redefine() {
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/typedb_behaviour/query/language/redefine.feature";
 
-    assert!(Context::test(path, false).await);
+    assert!(Context::test(path, true).await);
 }
