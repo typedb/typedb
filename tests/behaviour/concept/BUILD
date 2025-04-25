@@ -3,10 +3,39 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
+load("@rules_rust//rust:defs.bzl", "rust_test")
+
+rust_test(
+    name = "test_concept",
+    srcs = glob(["lib.rs", "migration/*.rs", "thing/*.rs", "type/*.rs"]),
+    timeout = "long",
+    deps = [
+        "//tests/behaviour/steps:steps",
+        "@crates//:tokio",
+    ],
+    data = [
+        "@typedb_behaviour//concept/migration:data-validation.feature",
+        "@typedb_behaviour//concept/migration:migration.feature",
+
+        "@typedb_behaviour//concept/thing:attribute.feature",
+        "@typedb_behaviour//concept/thing:entity.feature",
+        "@typedb_behaviour//concept/thing:has.feature",
+        "@typedb_behaviour//concept/thing:links.feature",
+        "@typedb_behaviour//concept/thing:relation.feature",
+
+        "@typedb_behaviour//concept/type:attributetype.feature",
+        "@typedb_behaviour//concept/type:entitytype.feature",
+        "@typedb_behaviour//concept/type:relationtype.feature",
+        "@typedb_behaviour//concept/type:plays.feature",
+        "@typedb_behaviour//concept/type:owns.feature",
+        "@typedb_behaviour//concept/type:owns-annotations.feature",
+    ],
+    crate_features = ["bazel"],
+)
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob(["*, */*.rs"]),
     exclude = glob([
         "Cargo.*",
     ]),

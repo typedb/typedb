@@ -14,6 +14,7 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
+use std::sync::Once;
 
 use ::concept::thing::{attribute::Attribute, object::Object};
 use ::query::error::QueryError;
@@ -114,9 +115,10 @@ pub struct Context {
     attribute_lists: HashMap<String, Vec<Attribute>>,
 }
 
+static CONTEXT_INIT: Once = Once::new();
 impl Context {
     pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
-        logger::initialise_logging_global();
+        CONTEXT_INIT.call_once(||logger::initialise_logging_global());
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()

@@ -104,57 +104,42 @@ build:
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/connection/... --test_output=streamed
+        bazel test //tests/behaviour/connection:test_connection --test_output=streamed  --test_arg="--test-threads=1"
 
     test-behaviour-concept:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/concept/... --test_output=errors
+        bazel test //tests/behaviour/concept:test_concept --test_output=errors --test_arg="--test-threads=1"
 
     test-behaviour-query-read:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/language:test_match --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_fetch --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_reduce --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_expressions --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_modifiers --test_output=streamed
+        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_read"
 
     test-behaviour-query-write:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/language:test_insert --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_delete --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_update --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_put --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_pipelines --test_output=streamed
+        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_write"
 
     test-behaviour-query-definable:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/language:test_define --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_redefine --test_output=streamed
-        bazel test //tests/behaviour/query/language:test_undefine --test_output=streamed
+        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="test_definable"
 
     test-behaviour-functions:
       image: typedb-ubuntu-22.04
       dependencies: [build]
       command: |
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-        bazel test //tests/behaviour/query/functions:test_definition --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_signature --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_structure --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_usage --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_basic --test_output=streamed
-        bazel test //tests/behaviour/query/functions:test_recursion --test_output=streamed
+        bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
 
 # TODO: Uncomment before releasing
 #    test-behaviour-service:

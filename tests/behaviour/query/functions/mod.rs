@@ -4,5 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod migration;
-mod data_validation;
+mod basic;
+mod definition;
+mod recursion;
+mod signature;
+mod structure;
+mod usage;
