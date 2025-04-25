@@ -50,8 +50,8 @@ insert
         $c2 isa node, has name "c2";
         $c3 isa node, has name "c3";
 
-        (start: $c1, end: $c2) isa edge;
-        (start: $c2, end: $c3) isa edge;
+        (start: $c1, end_: $c2) isa edge;
+        (start: $c2, end_: $c3) isa edge;
 
         # Tree
         $t1 isa node, has name "t1";
@@ -62,9 +62,9 @@ insert
         $t6 isa node, has name "t6";
         $t7 isa node, has name "t7";
 
-        (start: $t1, end: $t2) isa edge; (start: $t1, end: $t3) isa edge;
-        (start: $t2, end: $t4) isa edge; (start: $t2, end: $t5) isa edge;
-        (start: $t3, end: $t6) isa edge; (start: $t3, end: $t7) isa edge;
+        (start: $t1, end_: $t2) isa edge; (start: $t1, end_: $t3) isa edge;
+        (start: $t2, end_: $t4) isa edge; (start: $t2, end_: $t5) isa edge;
+        (start: $t3, end_: $t6) isa edge; (start: $t3, end_: $t7) isa edge;
 
         # Figure of 8? or of an ant.
         #    (e1)->-.  .-(e3)->-.  .->-(e5)->-.
@@ -81,13 +81,13 @@ insert
         $e8 isa node, has name "e8";
         $e9 isa node, has name "e9";
 
-        (start: $e1, end: $e2) isa edge; (start: $e2, end: $e3) isa edge;
-        (start: $e3, end: $e4) isa edge; (start: $e4, end: $e5) isa edge;
+        (start: $e1, end_: $e2) isa edge; (start: $e2, end_: $e3) isa edge;
+        (start: $e3, end_: $e4) isa edge; (start: $e4, end_: $e5) isa edge;
 
-        (start: $e5, end: $e6) isa edge; (start: $e6, end: $e7) isa edge;
+        (start: $e5, end_: $e6) isa edge; (start: $e6, end_: $e7) isa edge;
 
-        (start: $e7, end: $e4) isa edge; (start: $e4, end: $e8) isa edge;
-        (start: $e8, end: $e2) isa edge; (start: $e2, end: $e9) isa edge;
+        (start: $e7, end_: $e4) isa edge; (start: $e4, end_: $e8) isa edge;
+        (start: $e8, end_: $e2) isa edge; (start: $e2, end_: $e9) isa edge;
 "#;
 
 fn setup_common(schema: &str) -> Context {
@@ -343,8 +343,8 @@ fn quadratic_reachability_in_tree() {
         .spawn(|| {
             let custom_schema = r#"define
             attribute name value string;
-            entity node, owns name @card(0..), plays edge:start, plays edge:end;
-            relation edge, relates start, relates end;
+            entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+            relation edge, relates start, relates end_;
         "#;
             let context = setup_common(custom_schema);
 
@@ -355,8 +355,8 @@ fn quadratic_reachability_in_tree() {
                 fun reachable($start: node) -> { node }:
                 match
                     $end isa node;
-                    { edge (start: $start, end: $middle); let $end in reachable($middle); } or
-                    { edge (start: $start, end: $end); };
+                    { edge (start: $start, end_: $middle); let $end in reachable($middle); } or
+                    { edge (start: $start, end_: $end); };
                 return { $end };
 
                 match
@@ -411,8 +411,8 @@ fn quadratic_reachability_in_tree() {
 fn linear_reachability_in_tree() {
     let custom_schema = r#"define
         attribute name value string;
-        entity node, owns name @card(0..), plays edge:start, plays edge:end;
-        relation edge, relates start, relates end;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+        relation edge, relates start, relates end_;
     "#;
     let context = setup_common(custom_schema);
     let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
@@ -424,8 +424,8 @@ fn linear_reachability_in_tree() {
             fun reachable($start: node) -> { node }:
             match
                 $end isa node;
-                { let $middle in reachable($start); edge (start: $middle, end: $end); } or
-                { edge (start: $start, end: $end); };
+                { let $middle in reachable($start); edge (start: $middle, end_: $end); } or
+                { edge (start: $start, end_: $end); };
             return { $end };
 
             match
@@ -512,8 +512,8 @@ fn fibonacci() {
 fn test_retries_at_negation() {
     let custom_schema = r#"define
         attribute name value string;
-        entity node, owns name @card(0..), plays edge:start, plays edge:end;
-        relation edge, relates start, relates end;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+        relation edge, relates start, relates end_;
     "#;
     let context = setup_common(custom_schema);
     let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
@@ -525,8 +525,8 @@ fn test_retries_at_negation() {
             fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
-                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
+                { let $middle in reachable($start); edge (start: $middle, end_: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end_: $direct); $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             match
@@ -570,8 +570,8 @@ fn test_retries_at_negation() {
 fn test_retries_at_collection() {
     let custom_schema = r#"define
         attribute name value string;
-        entity node, owns name @card(0..), plays edge:start, plays edge:end;
-        relation edge, relates start, relates end;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+        relation edge, relates start, relates end_;
     "#;
     let context = setup_common(custom_schema);
     let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
@@ -583,8 +583,8 @@ fn test_retries_at_collection() {
             fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
-                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
+                { let $middle in reachable($start); edge (start: $middle, end_: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end_: $direct); $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             match
@@ -615,8 +615,8 @@ fn reduce_depends_on_cyclic_function() {
     let custom_schema = r#"define
         attribute name value string;
         attribute weight value integer;
-        entity node, owns name @card(0..), plays edge:start, plays edge:end, owns weight;
-        relation edge, relates start, relates end;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_, owns weight;
+        relation edge, relates start, relates end_;
     "#;
     let context = setup_common(custom_schema);
     let data = r#"
@@ -626,8 +626,8 @@ fn reduce_depends_on_cyclic_function() {
         $c2 isa node, has name "c2", has weight 34;
         $c3 isa node, has name "c3", has weight 56;
 
-        (start: $c1, end: $c2) isa edge;
-        (start: $c2, end: $c3) isa edge;
+        (start: $c1, end_: $c2) isa edge;
+        (start: $c2, end_: $c3) isa edge;
 
     "#;
     let (rows, _positions) = run_write_query(&context, data).unwrap();
@@ -639,8 +639,8 @@ fn reduce_depends_on_cyclic_function() {
             fun reachable($start: node) -> { node }:
             match
                 $return-me has name $name;
-                { let $middle in reachable($start); edge (start: $middle, end: $indirect); $indirect has name $name; } or
-                { edge (start: $start, end: $direct); $direct has name $name; }; # Do we have is yet?
+                { let $middle in reachable($start); edge (start: $middle, end_: $indirect); $indirect has name $name; } or
+                { edge (start: $start, end_: $direct); $direct has name $name; }; # Do we have is yet?
             return { $return-me };
 
             with
@@ -669,8 +669,8 @@ fn write_pipelines() {
     let context = setup_common(
         r#"
         define
-            relation edge relates begin, relates end;
-            entity node, plays edge:begin, plays edge:end, owns id @key;
+            relation edge relates begin, relates end_;
+            entity node, plays edge:begin, plays edge:end_, owns id @key;
             attribute id, value integer;
             attribute number @independent, value integer;
     "#,
@@ -683,11 +683,11 @@ fn write_pipelines() {
             $begin isa node;
             let $hops = $hops_inner;
             {
-                $edge isa edge, links (begin: $begin, end: $to);
+                $edge isa edge, links (begin: $begin, end_: $to);
                 let $hops_inner = hops_starting_at($to) + 1;
             }
             or {
-                not { $no-edge isa edge, links (begin: $begin, end: $anywhere); };
+                not { $no-edge isa edge, links (begin: $begin, end_: $anywhere); };
                 let $hops_inner = 0;
             };
         return { $hops };
@@ -698,7 +698,7 @@ fn write_pipelines() {
             let $hops1 = hops_starting_at($x);
         insert
              $y isa node, has id == $hops1;
-             $edge isa edge, links (begin: $x, end: $y);
+             $edge isa edge, links (begin: $x, end_: $y);
         match
              let $hops2 = hops_starting_at($x);
          select $hops1, $hops2;
