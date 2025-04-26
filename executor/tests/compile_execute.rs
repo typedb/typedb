@@ -61,14 +61,14 @@ fn setup(
     let query_manager = QueryManager::new(None);
     let function_manager = FunctionManager::new(Arc::new(DefinitionKeyGenerator::new()), None);
     let mut snapshot = storage.clone().open_snapshot_schema();
-    let define = typeql::parse_query(schema).unwrap().into_schema();
+    let define = typeql::parse_query(schema).unwrap().into_structure().into_schema();
     query_manager
         .execute_schema(&mut snapshot, &type_manager, &thing_manager, &function_manager, define, schema)
         .unwrap();
     snapshot.commit(&mut CommitProfile::DISABLED).unwrap();
 
     let snapshot = storage.clone().open_snapshot_write();
-    let query = typeql::parse_query(data).unwrap().into_pipeline();
+    let query = typeql::parse_query(data).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
         .prepare_write_pipeline(
             snapshot,
@@ -111,7 +111,7 @@ fn test_has_planning_traversal() {
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match $person isa person, has name $name, has age $age;";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -201,7 +201,7 @@ fn test_expression_planning_traversal() {
         $person_2 isa person, has age == $age_2;
         let $age_2 = $age_1 + 2;
     ";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -301,7 +301,7 @@ fn test_links_planning_traversal() {
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match $person isa person, has name $name; $membership isa membership, links ($person);";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -397,7 +397,7 @@ fn test_links_intersection() {
     $p isa purchase, links (order: $order, buyer: $buyer);
     $order has status $status;
     $order has timestamp $timestamp;";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -484,7 +484,7 @@ fn test_negation_planning_traversal() {
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match $person isa person; not { $person has name $name; };";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -592,7 +592,7 @@ fn test_forall_planning_traversal() {
             not { (item: $element, set: $sup) isa set-membership; };
         };
     ";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -687,7 +687,7 @@ fn test_named_var_select() {
     let statistics = setup(&storage, type_manager, thing_manager, schema, data);
 
     let query = "match $person has name $_, has age $_;";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -781,7 +781,7 @@ fn test_disjunction_planning_traversal() {
         $person isa person;
         { $person has name $n; } or { $person has age $a; };
     ";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -879,7 +879,7 @@ fn test_disjunction_planning_nested_negations() {
             not { $person has name $_; };
         };
     ";
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
@@ -1045,7 +1045,7 @@ fn compile_query(
     query: &str,
 ) -> MatchExecutable {
     // IR
-    let match_ = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
     let mut translation_context = TranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();

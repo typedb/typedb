@@ -660,8 +660,8 @@ impl TransactionService {
                 return Continue(());
             }
         };
-        match parsed {
-            Query::Schema(schema_query) => {
+        match parsed.into_structure() {
+            typeql::query::QueryStructure::Schema(schema_query) => {
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 match self.handle_query_schema(schema_query, query).await {
                     Ok(response) => {
@@ -671,7 +671,7 @@ impl TransactionService {
                     Err(err) => respond_error_and_return_break!(responder, err),
                 }
             }
-            Query::Pipeline(pipeline) => {
+            typeql::query::QueryStructure::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
                 if is_write_pipeline(&pipeline) {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {

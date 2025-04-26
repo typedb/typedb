@@ -103,7 +103,7 @@ fn test_relation_index_transformation_single() {
     assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
 
     let query = "match $r links ($role_x: $x, $role_y: $y);";
-    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
@@ -152,7 +152,7 @@ fn test_relation_index_transformation_dual() {
     assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
 
     let query = "match $r links ($x, $y); $q links ($a, $b);";
-    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
@@ -215,7 +215,7 @@ fn test_relation_index_transformation_not_applied_ternary() {
     assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
 
     let query = "match $r links ($x, $y, $z);";
-    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =
@@ -255,7 +255,7 @@ fn test_relation_index_transformation_not_applied_ternary() {
 //     assert!(type_manager.relation_index_available(&snapshot, dog_ownership).unwrap());
 //
 //     let query = "match $r links ($x, $y), has start-time $a; $a == 10;";
-//     let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+//     let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
 //     let mut context = TranslationContext::new();
 //     let mut parameters = ParameterRegistry::new();
 //     let translated = translate_match(
@@ -360,7 +360,7 @@ fn translate_and_annotate(
     type_manager: &TypeManager,
     query: &str,
 ) -> (Conjunction, BlockAnnotations) {
-    let parsed = typeql::parse_query(query).unwrap().into_pipeline().stages.remove(0).into_match();
+    let parsed = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let mut context = TranslationContext::new();
     let mut parameters = ParameterRegistry::new();
     let translated =

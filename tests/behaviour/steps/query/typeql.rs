@@ -75,7 +75,7 @@ fn execute_read_query(
             &tx.type_manager,
             tx.thing_manager.clone(),
             &tx.function_manager,
-            &query.into_pipeline(),
+            &query.into_structure().into_pipeline(),
             source_query,
         )?;
         if pipeline.has_fetch() {
@@ -137,7 +137,7 @@ fn execute_write_query(
             &type_manager,
             thing_manager.clone(),
             &function_manager,
-            &query.into_pipeline(),
+            &query.into_structure().into_pipeline(),
             source_query,
         );
 
@@ -207,7 +207,7 @@ async fn typeql_schema_query(context: &mut Context, may_error: params::TypeQLMay
     if let Either::Right(_) = may_error.check_parsing(parse_result.as_ref()) {
         return;
     }
-    let typeql_schema = parse_result.unwrap().into_schema();
+    let typeql_schema = parse_result.unwrap().into_structure().into_schema();
 
     if !matches!(context.active_transaction.as_ref().unwrap(), Schema(_)) {
         may_error.check_logic::<(), BehaviourTestExecutionError>(Err(

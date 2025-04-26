@@ -68,8 +68,8 @@
 
 	[dependencies.typeql]
 		features = []
+		rev = "7cbb621200f10f2cb741b57e82494ff9659813c6"
 		git = "https://github.com/typedb/typeql"
-		tag = "3.2.0-rc0"
 		default-features = false
 
 	[dependencies.hyper]
@@ -94,7 +94,7 @@
 
 	[dependencies.typedb-protocol]
 		features = []
-		rev = "580dc015979cc9e538ee2319bd2167ffc1e508f0"
+		rev = "77d166fb93155feb16a9e99d81969888984e8db1"
 		git = "https://github.com/typedb/typedb-protocol"
 		default-features = false
 

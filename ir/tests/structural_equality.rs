@@ -156,7 +156,7 @@ fetch {
     let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
         &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
-        &typeql::parse_query(pipeline).unwrap().into_pipeline(),
+        &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
     )
     .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
@@ -194,7 +194,7 @@ fetch {
     } = translate_pipeline(
         &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
-        &typeql::parse_query(structurally_equivalent_pipeline).unwrap().into_pipeline(),
+        &typeql::parse_query(structurally_equivalent_pipeline).unwrap().into_structure().into_pipeline(),
     )
     .unwrap();
 
@@ -234,7 +234,7 @@ fetch {
     let TranslatedPipeline { translated_preamble, translated_stages, translated_fetch, .. } = translate_pipeline(
         &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
-        &typeql::parse_query(pipeline).unwrap().into_pipeline(),
+        &typeql::parse_query(pipeline).unwrap().into_structure().into_pipeline(),
     )
     .unwrap();
     assert!(translated_preamble.equals(&translated_preamble));
@@ -270,7 +270,7 @@ fetch {
     } = translate_pipeline(
         &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
-        &typeql::parse_query(different).unwrap().into_pipeline(),
+        &typeql::parse_query(different).unwrap().into_structure().into_pipeline(),
     )
     .unwrap();
 
@@ -289,7 +289,7 @@ fn test_anonymous_non_equivalence() {
     let TranslatedPipeline { translated_stages, .. } = translate_pipeline(
         &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
-        &typeql::parse_query(query).unwrap().into_pipeline(),
+        &typeql::parse_query(query).unwrap().into_structure().into_pipeline(),
     )
     .unwrap();
     assert!(translated_stages.equals(&translated_stages));
@@ -298,7 +298,7 @@ fn test_anonymous_non_equivalence() {
     let TranslatedPipeline { translated_stages: different_translated_stages, .. } = translate_pipeline(
         &MockSnapshot::new(),
         &HashMapFunctionSignatureIndex::empty(),
-        &typeql::parse_query(non_equivalent_query).unwrap().into_pipeline(),
+        &typeql::parse_query(non_equivalent_query).unwrap().into_structure().into_pipeline(),
     )
     .unwrap();
     assert!(different_translated_stages.equals(&different_translated_stages));

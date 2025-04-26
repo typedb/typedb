@@ -35,6 +35,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
                         .unwrap_or_else(|_| {
                             panic!("Unexpected error occurred when parsing the schema for the {} database.", SYSTEM_DB)
                         })
+                        .into_structure()
                         .into_schema();
                     query_mgr.execute_schema(snapshot, type_mgr, thing_mgr, fn_mgr, query, SCHEMA).unwrap_or_else(
                         |_| {

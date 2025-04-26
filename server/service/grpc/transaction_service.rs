@@ -34,12 +34,15 @@ use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
 use options::{QueryOptions, TransactionOptions};
-use query::error::QueryError;
+use query::{error::QueryError, query_manager::QueryManager};
 use resource::{
-    constants::server::DEFAULT_PREFETCH_SIZE,
+    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
     profile::{EncodingProfile, QueryProfile, StorageCounters},
 };
-use storage::snapshot::ReadableSnapshot;
+use storage::{
+    durability_client::WALClient,
+    snapshot::{ReadSnapshot, ReadableSnapshot},
+};
 use tokio::{
     sync::{
         broadcast,
@@ -764,13 +767,13 @@ impl TransactionService {
                 return Ok(Self::respond_query_response(&self.response_sender, req_id, response).await);
             }
         };
-        match parsed {
-            Query::Schema(schema_query) => {
+        match parsed.into_structure() {
+            typeql::query::QueryStructure::Schema(schema_query) => {
                 // schema queries are handled immediately so there is a query response or a fatal Status
                 let response = self.handle_query_schema(schema_query, query).await?;
                 Ok(Self::respond_query_response(&self.response_sender, req_id, response).await)
             }
-            Query::Pipeline(pipeline) => {
+            typeql::query::QueryStructure::Pipeline(pipeline) => {
                 #[allow(clippy::collapsible_else_if)]
                 if is_write_pipeline(&pipeline) {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {

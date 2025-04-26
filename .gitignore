@@ -60,3 +60,6 @@ __pycache__
 
 # AI tools
 .aider*
+.clinerules
+.qodo
+memory-bank
