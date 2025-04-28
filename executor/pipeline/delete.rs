@@ -9,6 +9,7 @@ use std::sync::Arc;
 use compiler::executable::delete::{executable::DeleteExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use resource::constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS;
 use resource::profile::StageProfile;
 use storage::snapshot::WritableSnapshot;
 
@@ -59,10 +60,10 @@ where
 
         // once the previous iterator is complete, this must be the exclusive owner of Arc's, so unwrap:
         let snapshot_mut = Arc::get_mut(&mut context.snapshot).unwrap();
+        // First delete connections
         for index in 0..batch.len() {
-            // TODO: parallelise -- though this requires our snapshots support parallel writes!
             let mut row = batch.get_row_mut(index);
-            if let Err(typedb_source) = execute_delete(
+            if let Err(typedb_source) = execute_delete_connections(
                 &self.executable,
                 snapshot_mut,
                 &context.thing_manager,
@@ -73,7 +74,28 @@ where
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
 
-            if index % 100 == 0 {
+            if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
+                if let Some(interrupt) = interrupt.check() {
+                    return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
+                }
+            }
+        }
+
+        // Then delete concepts
+        for index in 0..batch.len() {
+            let mut row = batch.get_row_mut(index);
+            if let Err(typedb_source) = execute_delete_concepts(
+                &self.executable,
+                snapshot_mut,
+                &context.thing_manager,
+                &context.parameters,
+                &mut row,
+                &profile,
+            ) {
+                return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
+            }
+
+            if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
                     return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }
@@ -84,7 +106,7 @@ where
     }
 }
 
-pub fn execute_delete(
+pub fn execute_delete_connections(
     executable: &DeleteExecutable,
     snapshot: &mut impl WritableSnapshot,
     thing_manager: &ThingManager,
@@ -109,7 +131,19 @@ pub fn execute_delete(
         measurement.end(&step_profile, 1, 1);
         index += 1;
     }
+    Ok(())
+}
 
+pub fn execute_delete_concepts(
+    executable: &DeleteExecutable,
+    snapshot: &mut impl WritableSnapshot,
+    thing_manager: &ThingManager,
+    parameters: &ParameterRegistry,
+    input_output_row: &mut Row<'_>,
+    stage_profile: &StageProfile,
+) -> Result<(), Box<WriteError>> {
+    // Row multiplicity doesn't matter. You can't delete the same thing twice
+    let mut index = 0;
     for instruction in &executable.concept_instructions {
         let step_profile = stage_profile.extend_or_get(index, || format!("{}", instruction));
         let counters = step_profile.storage_counters();
@@ -118,6 +152,5 @@ pub fn execute_delete(
         measurement.end(&step_profile, 1, 1);
         index += 1;
     }
-
     Ok(())
 }
