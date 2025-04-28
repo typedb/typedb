@@ -91,12 +91,20 @@ impl Label {
         self.name.as_reference()
     }
 
+    pub fn name_ref(&self) -> &StringBytes<LABEL_NAME_STRING_INLINE> {
+        &self.name
+    }
+
     pub fn scope(&self) -> Option<StringBytes<LABEL_SCOPE_STRING_INLINE>> {
         self.scope.as_ref().map(|string_bytes| string_bytes.as_reference())
     }
 
     pub fn scoped_name(&self) -> StringBytes<LABEL_SCOPED_NAME_STRING_INLINE> {
         self.scoped_name.as_reference()
+    }
+
+    pub fn scoped_name_ref(&self) -> &StringBytes<LABEL_SCOPED_NAME_STRING_INLINE> {
+        &self.scoped_name
     }
 
     pub fn source_span(&self) -> Option<Span> {

@@ -16,7 +16,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    value::label::Label,
+    value::{label::Label, string_bytes::StringBytes},
     Prefixed,
 };
 use itertools::Itertools;
@@ -194,6 +194,18 @@ impl KindAPI for RelationType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RelationType>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_constraints(snapshot, self)
+    }
+
+    fn capabilities_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        self.relates_syntax(f, snapshot, type_manager)?;
+        self.owns_syntax(f, snapshot, type_manager)?;
+        self.plays_syntax(f, snapshot, type_manager)?;
+        Ok(())
     }
 }
 
@@ -568,6 +580,51 @@ impl RelationType {
         } else {
             Ok(None)
         }
+    }
+
+    fn relates_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        let mut declared_relates = HashSet::new();
+        let mut super_roles = HashSet::new();
+        for relates in self.get_relates_declared(snapshot, type_manager)?.iter() {
+            declared_relates.insert(relates.clone());
+            if let Some(role_supertype) = relates.role().get_supertype(snapshot, type_manager)? {
+                super_roles.insert(role_supertype);
+            }
+        }
+        for relates in declared_relates.into_iter().sorted_by_key(|relates| {
+            relates
+                .role()
+                .get_label(snapshot, type_manager)
+                .map(|label| (*label).clone())
+                .unwrap_or(Label::new_static(""))
+        }) {
+            let role = relates.role();
+            if !super_roles.contains(&role) {
+                let label = role.get_label(snapshot, type_manager)?;
+                let order = role.get_ordering(snapshot, type_manager)?;
+                write!(f, ",\n  {} {}{}", typeql::token::Keyword::Relates, label.name().as_str(), order)
+                    .map_err(|err| Box::new(err.into()))?;
+                if let Some(role_supertype) = role.get_supertype(snapshot, type_manager)? {
+                    let supertype_label = role_supertype.get_label(snapshot, type_manager)?;
+                    write!(f, " {} {}{}", typeql::token::Keyword::As, supertype_label.name.as_str(), order)
+                        .map_err(|err| Box::new(err.into()))?;
+                }
+                for annotation in relates
+                    .get_annotations_declared(snapshot, type_manager)?
+                    .iter()
+                    .map(|annotation| Annotation::from(annotation.clone()))
+                    .sorted_by_key(|annotation| annotation.category())
+                {
+                    write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+                }
+            }
+        }
+        Ok(())
     }
 }
 

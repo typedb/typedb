@@ -1,5 +1,3 @@
-## Release notes: product changes
-
-## Motivation
+## Product change and motivation
 
 ## Implementation

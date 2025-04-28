@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
+    fmt::Write,
     sync::Arc,
 };
 
@@ -20,6 +21,7 @@ use encoding::{
     },
     value::{label::Label, value_type::ValueType},
 };
+use itertools::Itertools;
 use primitive::maybe_owns::MaybeOwns;
 use resource::{
     constants::{concept::RELATION_INDEX_THRESHOLD, encoding::StructFieldIDUInt},
@@ -54,7 +56,7 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::type_reader::TypeReader,
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
+        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
     },
 };
 
@@ -394,6 +396,18 @@ impl TypeManager {
             Ok(cache.get_struct_definition_key(name))
         } else {
             TypeReader::get_struct_definition_key(snapshot, name)
+        }
+    }
+
+    pub fn get_struct_definitions(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+    ) -> Result<HashMap<DefinitionKey, StructDefinition>, Box<ConceptReadError>> {
+        if let Some(cache) = &self.type_cache {
+            // TODO: the cache read should not clone the map & contents, and return a MaybeOwns
+            Ok(cache.get_struct_definitions())
+        } else {
+            TypeReader::get_struct_definitions_all(snapshot)
         }
     }
 
@@ -1133,6 +1147,25 @@ impl TypeManager {
             }
             Ok(Arc::new(independent))
         }
+    }
+
+    pub fn get_types_syntax(&self, snapshot: &impl ReadableSnapshot) -> Result<String, Box<ConceptReadError>> {
+        let mut syntax = String::new();
+        for attribute_type in self.get_attribute_types(snapshot)?.iter() {
+            attribute_type.format_syntax(&mut syntax, snapshot, self)?;
+        }
+        for entity_type in self.get_entity_types(snapshot)?.iter() {
+            entity_type.format_syntax(&mut syntax, snapshot, self)?;
+        }
+        for relation_type in self.get_relation_types(snapshot)?.iter() {
+            relation_type.format_syntax(&mut syntax, snapshot, self)?;
+        }
+        for (_struct_key, struct_definition) in
+            self.get_struct_definitions(snapshot)?.into_iter().sorted_by_key(|(_, definition)| definition.name.clone())
+        {
+            struct_definition.format_syntax(&mut syntax, snapshot, self)?;
+        }
+        Ok(syntax)
     }
 }
 

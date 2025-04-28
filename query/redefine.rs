@@ -22,9 +22,9 @@ use encoding::{
     graph::type_::Kind,
     value::{label::Label, value_type::ValueType},
 };
-use error::typedb_error;
+use error::{typedb_error, unimplemented_feature};
 use function::{function::SchemaFunction, function_manager::FunctionManager, FunctionError};
-use ir::{translation::tokens::translate_annotation, LiteralParseError};
+use ir::{pipeline::VariableRegistry, translation::tokens::translate_annotation, LiteralParseError};
 use resource::profile::StorageCounters;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
@@ -36,7 +36,7 @@ use typeql::{
         Struct, Type,
     },
     token::Keyword,
-    Definable,
+    Definable, TypeRef, TypeRefAny,
 };
 
 use crate::{
@@ -50,6 +50,7 @@ use crate::{
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
         DefinableStatusMode,
     },
+    define::DefineError,
 };
 
 macro_rules! verify_no_annotations_for_capability {
@@ -182,7 +183,7 @@ fn redefine_struct_fields(
     struct_definable: &Struct,
 ) -> Result<(), RedefineError> {
     let name = checked_identifier(&struct_definable.ident)?;
-    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name)
+    let struct_key = resolve_struct_definition_key(snapshot, type_manager, name, struct_definable.ident.span())
         .map_err(|source| RedefineError::DefinitionResolution { typedb_source: source })?;
 
     for field in &struct_definable.fields {
@@ -645,9 +646,29 @@ fn redefine_relates_specialise(
     typeql_relates: &TypeQLRelates,
     storage_counters: StorageCounters,
 ) -> Result<(), RedefineError> {
-    if let Some(specialised_label) = &typeql_relates.specialised {
+    if let Some(specialised) = &typeql_relates.specialised {
+        let checked_specialised = match specialised {
+            TypeRefAny::Type(type_) => match type_ {
+                TypeRef::Label(label) => checked_identifier(&label.ident)?,
+                TypeRef::Scoped(scoped) => {
+                    return Err(RedefineError::UnexpectedSpecialiseScopedLabel {
+                        label: format!("{}", scoped),
+                        source_span: scoped.span(),
+                    })
+                }
+                TypeRef::Variable(variable) => {
+                    return Err(RedefineError::UnexpectedSpecialiseVariable {
+                        variable: variable.name().unwrap_or(VariableRegistry::UNNAMED_VARIABLE_DISPLAY_NAME).to_owned(),
+                        source_span: variable.span(),
+                    })
+                }
+            },
+            TypeRefAny::List(list) => {
+                unimplemented_feature!(Lists)
+            }
+        };
         let specialised_relates =
-            resolve_relates(snapshot, type_manager, relates.relation(), checked_identifier(&specialised_label.ident)?)
+            resolve_relates(snapshot, type_manager, relates.relation(), checked_specialised, specialised.span())
                 .map_err(|typedb_source| RedefineError::DefinitionResolution { typedb_source })?;
 
         let definition_status = get_sub_status(snapshot, type_manager, relates.role(), specialised_relates.role())
@@ -1169,8 +1190,20 @@ typedb_error! {
             specialising_role_name: String,
             source_span: Option<Span>,
         ),
-        AttributeTypeValueTypeNotDefined(
+        UnexpectedSpecialiseVariable (
             21,
+            "Unexpected specialisation variable '{variable}'.",
+            variable: String,
+            source_span: Option<Span>,
+        ),
+        UnexpectedSpecialiseScopedLabel (
+            22,
+            "Specialisation label '{label}' has an unexpected scope - please remove the relation scoping.",
+            label: String,
+            source_span: Option<Span>,
+        ),
+        AttributeTypeValueTypeNotDefined(
+            23,
             "Redefining '{key}' to '{value_type}' for type '{type_}' failed since there is no previously defined '{type_} {key}' to replace. Try define instead?",
             type_: Label,
             key: Keyword,
@@ -1178,40 +1211,40 @@ typedb_error! {
             source_span: Option<Span>,
         ),
         TypeAnnotationNotDefined(
-            22,
+            24,
             "Redefining annotation '{annotation}' for type '{type_}' failed since there is no previously defined annotation of this category to replace. Try define instead?",
             type_: Label,
             annotation: Annotation,
             source_span: Option<Span>,
         ),
         TypeAnnotationRemainsSame(
-            23,
+            25,
             "Redefining annotation '{annotation}' for type '{type_}' failed since '{type_} {annotation}' is already defined.",
             type_: Label,
             annotation: Annotation,
             source_span: Option<Span>,
         ),
         CapabilityAnnotationNotDefined(
-            24,
+            26,
             "Redefining annotation '{annotation}' for a capability failed since there is no previously defined annotation of this category to replace. Try define instead?",
             annotation: Annotation,
             source_span: Option<Span>,
         ),
         CapabilityAnnotationRemainsSame(
-            25,
+            27,
             "Redefining annotation '{annotation}' for a capability failed since is already defined identically.",
             annotation: Annotation,
             source_span: Option<Span>,
         ),
         ParameterFreeAnnotationCannotBeRedefined(
-            26,
+            28,
             "For type '{type_}', annotation '{annotation}' can never be redefined as it carries no parameters. Redefine can only replace existing schema elements.",
             type_: Label,
             annotation: Annotation,
             source_span: Option<Span>,
         ),
         SetValueType(
-            27,
+            29,
             "Redefining '{type_}' to have value type '{value_type}' failed.",
             type_: Label,
             value_type: ValueType,
@@ -1219,7 +1252,7 @@ typedb_error! {
             typedb_source: Box<ConceptWriteError>
         ),
         SetRelatesOrdering(
-            28,
+            30,
             "Redefining '{type_}' to have an updated '{key}' ordering failed.",
             type_: Label,
             key: Keyword,
@@ -1227,7 +1260,7 @@ typedb_error! {
             typedb_source: Box<ConceptWriteError>
         ),
         SetOwnsOrdering(
-            29,
+            31,
             "Redefining '{type_}' to have an updated '{key}' ordering failed.",
             type_: Label,
             key: Keyword,
@@ -1235,7 +1268,7 @@ typedb_error! {
             typedb_source: Box<ConceptWriteError>
         ),
         IllegalTypeAnnotation(
-            30,
+            32,
             "Redefining '{type_}' to have annotation '{annotation}' failed as this is an illegal annotation.",
             type_: Label,
             annotation: Annotation,
@@ -1243,14 +1276,14 @@ typedb_error! {
             typedb_source: AnnotationError
         ),
         IllegalCapabilityAnnotation(
-            31,
+            33,
             "Redefining to have annotation '{annotation}' failed.",
             annotation: Annotation,
             source_span: Option<Span>,
             typedb_source: AnnotationError
         ),
         SetTypeAnnotation(
-            32,
+            34,
             "Redefining '{type_}' to have annotation '{annotation}' failed.",
             type_: Label,
             annotation: Annotation,
@@ -1258,14 +1291,14 @@ typedb_error! {
             typedb_source: Box<ConceptWriteError>
         ),
         SetCapabilityAnnotation(
-            33,
+            35,
             "Redefining '{annotation}' failed.",
             annotation: Annotation,
             source_span: Option<Span>,
             typedb_source: Box<ConceptWriteError>
         ),
         SetRelatesSpecialise(
-            34,
+            36,
             "For relation type '{type_}', redefining '{relates_key} {as_key}' failed.",
             type_: Label,
             relates_key: Keyword,
@@ -1274,7 +1307,7 @@ typedb_error! {
             typedb_source: Box<ConceptWriteError>
         ),
         CapabilityKindMismatch(
-            35,
+            37,
             "Redefine failed because the left type '{left}' is of kind '{left_kind}' isn't the same kind as the right type '{right}' which has kind '{right_kind}'.",
             left: Label,
             right: Label,
@@ -1283,14 +1316,14 @@ typedb_error! {
             source_span: Option<Span>,
         ),
         FunctionRedefinition(
-            36,
+            38,
             "Redefining the function '{name}' failed",
             name: String,
             source_span: Option<Span>,
             typedb_source: Box<FunctionError>
         ),
         IllegalKeywordAsIdentifier(
-            37,
+            39,
             "The reserved keyword '{identifier}' cannot be used as an identifier.",
             identifier: typeql::Identifier,
             source_span: Option<Span>,

@@ -7,6 +7,7 @@
 use std::{
     collections::{HashMap, HashSet},
     fmt,
+    fmt::Write,
     sync::Arc,
 };
 
@@ -23,6 +24,7 @@ use encoding::{
     value::{label::Label, value_type::ValueType},
     Prefixed,
 };
+use itertools::Itertools;
 use lending_iterator::higher_order::Hkt;
 use primitive::maybe_owns::MaybeOwns;
 use resource::profile::StorageCounters;
@@ -40,7 +42,7 @@ use crate::{
         object_type::ObjectType,
         owns::Owns,
         type_manager::TypeManager,
-        KindAPI, ThingTypeAPI, TypeAPI,
+        KindAPI, ThingTypeAPI, TypeAPI, TypeQLSyntax,
     },
     ConceptAPI,
 };
@@ -202,6 +204,44 @@ impl KindAPI for AttributeType {
         type_manager: &'m TypeManager,
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<AttributeType>>>, Box<ConceptReadError>> {
         type_manager.get_attribute_type_constraints(snapshot, self)
+    }
+    fn capabilities_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        if let Some(value_type) = self.get_value_type_declared(snapshot, type_manager)? {
+            write!(f, ",\n {} ", typeql::token::Keyword::Value).map_err(|err| Box::new(err.into()))?;
+            TypeQLSyntax::format_syntax(&value_type, f, snapshot, type_manager)?;
+            for annotation in self
+                .get_value_type_annotations_declared(snapshot, type_manager)?
+                .iter()
+                .map(|annotation| Annotation::from(annotation.clone()))
+                .sorted_by_key(|annotation| annotation.category())
+            {
+                write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+            }
+        }
+        Ok(())
+    }
+
+    fn type_annotations_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
+        for annotation in self
+            .get_annotations_declared(snapshot, type_manager)?
+            .iter()
+            .filter(|annotation| !annotation.is_value_type_annotation())
+            .map(|annotation| Annotation::from(annotation.clone()))
+            .sorted_by_key(|annotation| annotation.category())
+        {
+            write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
+        }
+        Ok(())
     }
 }
 

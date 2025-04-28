@@ -3,15 +3,21 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::{error::Error, sync::Arc};
 
 use cucumber::gherkin::Step;
-use database::transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite};
+use database::{
+    transaction::{DataCommitError, SchemaCommitError, TransactionRead, TransactionSchema, TransactionWrite},
+    Database,
+};
+use error::TypeDBError;
 use futures::future::join_all;
 use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
 use server::server::Server;
+use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
 use crate::{connection::BehaviourConnectionTestExecutionError, generic_step, util, ActiveTransaction, Context};
@@ -136,6 +142,8 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
             }
         }
         ActiveTransaction::Schema(tx) => {
+            let types_syntax = tx.type_manager.get_types_syntax(tx.snapshot.as_ref()).unwrap();
+            let schema = format!("define\n{}", types_syntax);
             let (profile, result) = tx.commit();
             if let Either::Right(error) = may_error.check(result) {
                 match error {
@@ -154,9 +162,69 @@ pub async fn transaction_commits(context: &mut Context, may_error: params::MayEr
                         panic!("Unexpected schema commit error: {:?}", error);
                     }
                 }
+            } else {
+                // after each successful schema trasaction, we re-test the schema export/import
+                test_schema_export(context, &types_syntax);
             }
         }
     }
+}
+
+fn test_schema_export(context: &mut Context, types_syntax: &str) {
+    // export, re-import, and export schema and verify that's equal!
+    let guard = context.server.as_ref().unwrap().lock().unwrap();
+    let database_manager = guard.database_manager();
+    if !types_syntax.trim().is_empty() {
+        const REIMPORT_DB: &str = "schema_reimport_from_test_tmp";
+        database_manager.create_database(REIMPORT_DB).unwrap();
+        let reimport = database_manager.database(REIMPORT_DB).unwrap();
+        match execute_schema_transaction(reimport.clone(), types_syntax) {
+            Ok(_) => {
+                let re_exported_syntax = get_types_syntax(reimport.clone());
+                assert_eq!(re_exported_syntax, types_syntax);
+                drop(reimport);
+                let result = database_manager.delete_database(REIMPORT_DB);
+                result.unwrap();
+            }
+            Err(err) => {
+                drop(reimport);
+                let result = database_manager.delete_database(REIMPORT_DB);
+                drop(guard); // release the lock to avoid lock poisoning, which would crash
+                result.unwrap();
+                assert!(false, "Failed to execute schema re-import: {}", err);
+            }
+        }
+    }
+}
+
+fn execute_schema_transaction(
+    reimport: Arc<Database<WALClient>>,
+    types_syntax: &str,
+) -> Result<(), Box<dyn TypeDBError>> {
+    let mut transaction = TransactionSchema::open(reimport, TransactionOptions::default())
+        .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+    let schema_define = format!("define\n{}", types_syntax);
+    transaction
+        .query_manager
+        .execute_schema(
+            Arc::get_mut(&mut transaction.snapshot).ok_or("Failed to get mutable reference").unwrap(),
+            &transaction.type_manager,
+            &transaction.thing_manager,
+            &transaction.function_manager,
+            typeql::parse_query(&schema_define)
+                .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?
+                .into_structure()
+                .into_schema(),
+            &schema_define,
+        )
+        .map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+    transaction.commit().1.map_err(|err| Box::new(err) as Box<dyn TypeDBError>)?;
+    Ok(())
+}
+
+fn get_types_syntax(database: Arc<Database<WALClient>>) -> String {
+    let transaction = TransactionRead::open(database, TransactionOptions::default()).unwrap();
+    transaction.type_manager.get_types_syntax(transaction.snapshot()).unwrap()
 }
 
 #[apply(generic_step)]

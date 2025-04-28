@@ -16,8 +16,10 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
-use resource::{constants::traversal::BATCH_DEFAULT_CAPACITY, profile::StageProfile};
-use resource::constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS;
+use resource::{
+    constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS},
+    profile::StageProfile,
+};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{

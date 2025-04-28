@@ -279,7 +279,7 @@ typedb_error! {
     pub LiteralParseError(component = "Literal parse", prefix = "LIT") {
         FragmentParseError(
             1,
-            "Failed to parse literal fragment into primitive: {fragment}.",
+            "Failed to parse literal fragment into primitive: '{fragment}'.",
             fragment: String,
             source_span: Option<Span>,
         ),

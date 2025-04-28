@@ -9,7 +9,6 @@ rust_test(
     name = "test_concept",
     crate_root = "main.rs",
     srcs = glob(["main.rs", "migration/*.rs", "thing/*.rs", "type/*.rs"]),
-    timeout = "long",
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
@@ -32,6 +31,7 @@ rust_test(
         "@typedb_behaviour//concept/type:owns-annotations.feature",
     ],
     crate_features = ["bazel"],
+    size = "enormous",
 )
 
 checkstyle_test(

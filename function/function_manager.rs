@@ -6,13 +6,14 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    fmt::Write,
     iter::zip,
     sync::Arc,
 };
 
 use bytes::{byte_array::ByteArray, Bytes};
 use compiler::annotation::function::{annotate_stored_functions, AnnotatedSchemaFunctions};
-use concept::type_::type_manager::TypeManager;
+use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::{
     graph::{
         definition::{
@@ -222,6 +223,14 @@ impl FunctionManager {
         } else {
             Ok(MaybeOwns::Owned(FunctionReader::get_function(snapshot, definition_key, name)?))
         }
+    }
+
+    pub fn get_functions_syntax(&self, snapshot: &impl ReadableSnapshot) -> Result<String, FunctionReadError> {
+        let mut syntax = String::new();
+        for function in FunctionReader::get_functions_all(snapshot)? {
+            write!(&mut syntax, "\n{}", function.parsed.unparsed).map_err(|err| err.into())?;
+        }
+        Ok(syntax)
     }
 }
 

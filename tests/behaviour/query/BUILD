@@ -40,7 +40,8 @@ rust_test(
 
     ],
     crate_features = ["bazel"],
-    env = {"RUST_MIN_STACK" : "40960000"} # for recursion.feature
+    env = {"RUST_MIN_STACK" : "40960000"}, # for recursion.feature
+    size = "enormous",
 )
 
 checkstyle_test(

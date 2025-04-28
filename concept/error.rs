@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::sync::Arc;
+use std::{fmt, sync::Arc};
 
 use encoding::{
     error::EncodingError,
@@ -78,5 +78,12 @@ typedb_error! {
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
         InternalIncomparableTypes(25, "Incomparable types"),
+        FormatError(26, "Formatting error", source: fmt::Error),
+    }
+}
+
+impl Into<ConceptReadError> for fmt::Error {
+    fn into(self) -> ConceptReadError {
+        ConceptReadError::FormatError { source: self }
     }
 }
