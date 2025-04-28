@@ -4,6 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod migration;
 mod data_validation;
-mod function;
+mod migration;

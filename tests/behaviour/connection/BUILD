@@ -6,26 +6,18 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_test(
-    name = "test_database",
-    srcs = ["database.rs"],
+    name = "test_connection",
+    crate_root = "main.rs",
+    srcs = glob(["*.rs"]),
     deps = [
         "//tests/behaviour/steps:steps",
 
         "@crates//:tokio",
     ],
-    data = ["@typedb_behaviour//connection:database.feature"],
-    crate_features = ["bazel"],
-)
-
-rust_test(
-    name = "test_transaction",
-    srcs = ["transaction.rs"],
-    deps = [
-        "//tests/behaviour/steps:steps",
-
-        "@crates//:tokio",
+    data = [
+        "@typedb_behaviour//connection:database.feature",
+        "@typedb_behaviour//connection:transaction.feature"
     ],
-    data = ["@typedb_behaviour//connection:transaction.feature"],
     crate_features = ["bazel"],
 )
 

@@ -4,9 +4,5 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-mod attribute_type;
-mod entity_type;
-mod owns;
-mod owns_annotations;
-mod plays;
-mod relation_type;
+mod functions;
+mod language;

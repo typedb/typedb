@@ -9,7 +9,7 @@
 use steps::Context;
 
 #[tokio::test]
-async fn test() {
+async fn test_read_reduce() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.
@@ -19,5 +19,5 @@ async fn test() {
     #[cfg(not(feature = "bazel"))]
     let path = "bazel-typedb/external/typedb_behaviour/query/language/reduce.feature";
 
-    assert!(Context::test(path, false).await);
+    assert!(Context::test(path, true).await);
 }

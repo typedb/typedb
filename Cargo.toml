@@ -123,64 +123,12 @@ features = {}
 	name = "bench_iam"
 
 [[test]]
-	path = "tests/behaviour/connection/database.rs"
-	name = "test_database"
+	path = "tests/behaviour/connection/main.rs"
+	name = "test_connection"
 
 [[test]]
-	path = "tests/behaviour/connection/transaction.rs"
-	name = "test_transaction"
-
-[[test]]
-	path = "tests/behaviour/concept/thing/links.rs"
-	name = "test_links"
-
-[[test]]
-	path = "tests/behaviour/concept/thing/has.rs"
-	name = "test_has"
-
-[[test]]
-	path = "tests/behaviour/concept/thing/attribute.rs"
-	name = "test_attribute"
-
-[[test]]
-	path = "tests/behaviour/concept/thing/entity.rs"
-	name = "test_entity"
-
-[[test]]
-	path = "tests/behaviour/concept/thing/relation.rs"
-	name = "test_relation"
-
-[[test]]
-	path = "tests/behaviour/concept/type/plays.rs"
-	name = "test_plays"
-
-[[test]]
-	path = "tests/behaviour/concept/type/entity_type.rs"
-	name = "test_entitytype"
-
-[[test]]
-	path = "tests/behaviour/concept/type/relation_type.rs"
-	name = "test_relationtype"
-
-[[test]]
-	path = "tests/behaviour/concept/type/owns_annotations.rs"
-	name = "test_owns_annotations"
-
-[[test]]
-	path = "tests/behaviour/concept/type/owns.rs"
-	name = "test_owns"
-
-[[test]]
-	path = "tests/behaviour/concept/type/attribute_type.rs"
-	name = "test_attributetype"
-
-[[test]]
-	path = "tests/behaviour/concept/migration/data_validation.rs"
-	name = "test_data_validation"
-
-[[test]]
-	path = "tests/behaviour/concept/migration/migration.rs"
-	name = "test_migration"
+	path = "tests/behaviour/concept/main.rs"
+	name = "test_concept"
 
 [[test]]
 	path = "tests/behaviour/service/http/driver.rs"
@@ -207,84 +155,8 @@ features = {}
 	name = "test_http_debug"
 
 [[test]]
-	path = "tests/behaviour/query/language/fetch.rs"
-	name = "test_fetch"
-
-[[test]]
-	path = "tests/behaviour/query/language/put.rs"
-	name = "test_put"
-
-[[test]]
-	path = "tests/behaviour/query/language/expressions.rs"
-	name = "test_expressions"
-
-[[test]]
-	path = "tests/behaviour/query/language/match.rs"
-	name = "test_match"
-
-[[test]]
-	path = "tests/behaviour/query/language/pipelines.rs"
-	name = "test_pipelines"
-
-[[test]]
-	path = "tests/behaviour/query/language/delete.rs"
-	name = "test_delete"
-
-[[test]]
-	path = "tests/behaviour/query/language/redefine.rs"
-	name = "test_redefine"
-
-[[test]]
-	path = "tests/behaviour/query/language/insert.rs"
-	name = "test_insert"
-
-[[test]]
-	path = "tests/behaviour/query/language/negation.rs"
-	name = "test_negation"
-
-[[test]]
-	path = "tests/behaviour/query/language/modifiers.rs"
-	name = "test_modifiers"
-
-[[test]]
-	path = "tests/behaviour/query/language/undefine.rs"
-	name = "test_undefine"
-
-[[test]]
-	path = "tests/behaviour/query/language/reduce.rs"
-	name = "test_reduce"
-
-[[test]]
-	path = "tests/behaviour/query/language/define.rs"
-	name = "test_define"
-
-[[test]]
-	path = "tests/behaviour/query/language/update.rs"
-	name = "test_update"
-
-[[test]]
-	path = "tests/behaviour/query/functions/definition.rs"
-	name = "test_definition"
-
-[[test]]
-	path = "tests/behaviour/query/functions/recursion.rs"
-	name = "test_recursion"
-
-[[test]]
-	path = "tests/behaviour/query/functions/basic.rs"
-	name = "test_basic"
-
-[[test]]
-	path = "tests/behaviour/query/functions/structure.rs"
-	name = "test_structure"
-
-[[test]]
-	path = "tests/behaviour/query/functions/signature.rs"
-	name = "test_signature"
-
-[[test]]
-	path = "tests/behaviour/query/functions/usage.rs"
-	name = "test_usage"
+	path = "tests/behaviour/query/main.rs"
+	name = "test_query"
 
 [[test]]
 	path = "tests/behaviour/debug/debug.rs"
