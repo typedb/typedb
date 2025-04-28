@@ -345,10 +345,10 @@ fn add_typeql_plays(
 fn add_typeql_as(
     constraints: &mut ConstraintsBuilder<'_, '_>,
     registered_specialising: Vertex<Variable>,
-    specialised: &TypeRef,
+    specialised: &TypeRefAny,
 ) -> Result<(), Box<RepresentationError>> {
     let kind = SubKind::Subtype; // will read from the IR when "as!" is introduced
-    let registered_specialised = register_typeql_role_type(constraints, specialised)?;
+    let registered_specialised = register_typeql_role_type_any(constraints, specialised)?;
     constraints.add_sub(kind, registered_specialising, registered_specialised, specialised.span())?;
     Ok(())
 }

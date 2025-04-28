@@ -16,7 +16,6 @@ use typeql::{
     common::Span,
     schema::definable::function::{ReturnStatement, Signature},
 };
-use concept::error::ConceptReadError;
 
 use crate::{
     pattern::{

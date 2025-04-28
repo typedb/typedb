@@ -16,7 +16,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    value::label::Label,
+    value::{label::Label, string_bytes::StringBytes},
     Prefixed,
 };
 use itertools::Itertools;
@@ -48,7 +48,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::TypeQLSyntax;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Ord, PartialOrd)]
 pub struct RelationType {
@@ -196,19 +195,22 @@ impl KindAPI for RelationType {
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<RelationType>>>, Box<ConceptReadError>> {
         type_manager.get_relation_type_constraints(snapshot, self)
     }
-}
 
-impl ThingTypeAPI for RelationType {
-    type InstanceType = Relation;
-}
-
-impl TypeQLSyntax for RelationType {
-    fn capabilities_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+    fn capabilities_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
         self.relates_syntax(f, snapshot, type_manager)?;
         self.owns_syntax(f, snapshot, type_manager)?;
         self.plays_syntax(f, snapshot, type_manager)?;
         Ok(())
     }
+}
+
+impl ThingTypeAPI for RelationType {
+    type InstanceType = Relation;
 }
 
 impl ObjectTypeAPI for RelationType {
@@ -580,7 +582,12 @@ impl RelationType {
         }
     }
 
-    fn relates_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+    fn relates_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
         let mut declared_relates = HashSet::new();
         let mut super_roles = HashSet::new();
         for relates in self.get_relates_declared(snapshot, type_manager)?.iter() {
@@ -589,17 +596,30 @@ impl RelationType {
                 super_roles.insert(role_supertype);
             }
         }
-        for relates in declared_relates.into_iter() {
+        for relates in declared_relates.into_iter().sorted_by_key(|relates| {
+            relates
+                .role()
+                .get_label(snapshot, type_manager)
+                .map(|label| (*label).clone())
+                .unwrap_or(Label::new_static(""))
+        }) {
             let role = relates.role();
             if !super_roles.contains(&role) {
                 let label = role.get_label(snapshot, type_manager)?;
-                write!(f, ",\n  {} {}", typeql::token::Keyword::Relates, label.name().as_str()).map_err(|err| Box::new(err.into()))?;
+                let order = role.get_ordering(snapshot, type_manager)?;
+                write!(f, ",\n  {} {}{}", typeql::token::Keyword::Relates, label.name().as_str(), order)
+                    .map_err(|err| Box::new(err.into()))?;
                 if let Some(role_supertype) = role.get_supertype(snapshot, type_manager)? {
                     let supertype_label = role_supertype.get_label(snapshot, type_manager)?;
-                    write!(f, " {} {}", typeql::token::Keyword::As, supertype_label.name.as_str()).map_err(|err| Box::new(err.into()))?;
+                    write!(f, " {} {}{}", typeql::token::Keyword::As, supertype_label.name.as_str(), order)
+                        .map_err(|err| Box::new(err.into()))?;
                 }
-                for annotation in relates.get_annotations_declared(snapshot, type_manager)?.iter() {
-                    let annotation: Annotation = annotation.clone().into();
+                for annotation in relates
+                    .get_annotations_declared(snapshot, type_manager)?
+                    .iter()
+                    .map(|annotation| Annotation::from(annotation.clone()))
+                    .sorted_by_key(|annotation| annotation.category())
+                {
                     write!(f, " {}", annotation).map_err(|err| Box::new(err.into()))?;
                 }
             }

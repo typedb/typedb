@@ -29,6 +29,7 @@ use macro_rules_attribute::apply;
 use params;
 use query::error::QueryError;
 use resource::profile::StorageCounters;
+use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
 use crate::{

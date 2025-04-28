@@ -22,13 +22,11 @@ use encoding::{
 use error::typedb_error;
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use typeql::{
-    common::{error::TypeQLError, Spanned},
+    common::{error::TypeQLError, Span, Spanned},
     schema::definable::struct_::Field,
     type_::{BuiltinValueType, NamedType, NamedTypeAny, NamedTypeOptional},
     TypeRef, TypeRefAny,
 };
-use typeql::common::Span;
-use compiler::executable::insert::TypeSource;
 
 macro_rules! filter_variants {
     ($variant:path : $iterable:expr) => {
@@ -82,9 +80,10 @@ pub(crate) fn get_struct_field_value_type_optionality(
             let value_type = resolve_value_type(snapshot, type_manager, named)?;
             Ok((value_type, optional))
         }
-        NamedTypeAny::List(_) => {
-            Err(Box::new(SymbolResolutionError::StructFieldIllegalList { declaration: field.clone(), source_span: field.span() }))
-        }
+        NamedTypeAny::List(_) => Err(Box::new(SymbolResolutionError::StructFieldIllegalList {
+            declaration: field.clone(),
+            source_span: field.span(),
+        })),
     }
 }
 
@@ -95,8 +94,14 @@ pub(crate) fn resolve_typeql_type(
 ) -> Result<Type, Box<SymbolResolutionError>> {
     match try_resolve_typeql_type(snapshot, type_manager, label) {
         Ok(Some(type_)) => Ok(type_),
-        Ok(None) => Err(Box::new(SymbolResolutionError::TypeNotFound { label: label.clone(), source_span: label.source_span() })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Ok(None) => Err(Box::new(SymbolResolutionError::TypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 
@@ -133,7 +138,10 @@ pub(crate) fn resolve_value_type(
                     name: label.ident.as_str_unchecked().to_owned(),
                     source_span: field_name.span(),
                 })),
-                Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: field_name.span() })),
+                Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+                    typedb_source: source,
+                    source_span: field_name.span(),
+                })),
             }
         }
         NamedType::BuiltinValueType(BuiltinValueType { token, .. }) => {
@@ -151,7 +159,9 @@ pub(crate) fn resolve_struct_definition_key(
     match try_resolve_struct_definition_key(snapshot, type_manager, name) {
         Ok(Some(key)) => Ok(key),
         Ok(None) => Err(Box::new(SymbolResolutionError::StructNotFound { name: name.to_owned(), source_span })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -170,8 +180,14 @@ pub(crate) fn resolve_object_type(
 ) -> Result<ObjectType, Box<SymbolResolutionError>> {
     match try_resolve_object_type(snapshot, type_manager, label) {
         Ok(Some(object_type)) => Ok(object_type),
-        Ok(None) => Err(Box::new(SymbolResolutionError::ObjectTypeNotFound { label: label.clone(), source_span: label.source_span() })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Ok(None) => Err(Box::new(SymbolResolutionError::ObjectTypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 
@@ -190,8 +206,14 @@ pub(crate) fn resolve_entity_type(
 ) -> Result<EntityType, Box<SymbolResolutionError>> {
     match try_resolve_entity_type(snapshot, type_manager, label) {
         Ok(Some(entity_type)) => Ok(entity_type),
-        Ok(None) => Err(Box::new(SymbolResolutionError::EntityTypeNotFound { label: label.clone(), source_span: label.source_span() })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Ok(None) => Err(Box::new(SymbolResolutionError::EntityTypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 
@@ -210,8 +232,14 @@ pub(crate) fn resolve_relation_type(
 ) -> Result<RelationType, Box<SymbolResolutionError>> {
     match try_resolve_relation_type(snapshot, type_manager, label) {
         Ok(Some(relation_type)) => Ok(relation_type),
-        Ok(None) => Err(Box::new(SymbolResolutionError::RelationTypeNotFound { label: label.clone(), source_span: label.source_span() })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Ok(None) => Err(Box::new(SymbolResolutionError::RelationTypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 
@@ -230,8 +258,14 @@ pub(crate) fn resolve_attribute_type(
 ) -> Result<AttributeType, Box<SymbolResolutionError>> {
     match try_resolve_attribute_type(snapshot, type_manager, label) {
         Ok(Some(attribute_type)) => Ok(attribute_type),
-        Ok(None) => Err(Box::new(SymbolResolutionError::AttributeTypeNotFound { label: label.clone(), source_span: label.source_span() })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Ok(None) => Err(Box::new(SymbolResolutionError::AttributeTypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 
@@ -250,8 +284,14 @@ pub(crate) fn resolve_role_type(
 ) -> Result<RoleType, Box<SymbolResolutionError>> {
     match try_resolve_role_type(snapshot, type_manager, label) {
         Ok(Some(role_type)) => Ok(role_type),
-        Ok(None) => Err(Box::new(SymbolResolutionError::RoleTypeNotFound { label: label.clone(), source_span: label.source_span() })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Ok(None) => Err(Box::new(SymbolResolutionError::RoleTypeNotFound {
+            label: label.clone(),
+            source_span: label.source_span(),
+        })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 
@@ -275,9 +315,11 @@ pub(crate) fn resolve_relates_declared(
         Ok(None) => Err(Box::new(SymbolResolutionError::RelatesNotFound {
             label: relation_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             role_name: role_name.to_string(),
-            source_span
+            source_span,
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -302,9 +344,11 @@ pub(crate) fn resolve_relates(
         Ok(None) => Err(Box::new(SymbolResolutionError::RelatesNotFound {
             label: relation_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             role_name: role_name.to_string(),
-            source_span
+            source_span,
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -329,9 +373,11 @@ pub(crate) fn resolve_owns_declared(
         Ok(None) => Err(Box::new(SymbolResolutionError::OwnsNotFound {
             owner_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             attribute_label: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
-            source_span
+            source_span,
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -358,7 +404,9 @@ pub(crate) fn resolve_owns(
             attribute_label: attribute_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             source_span,
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span, })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -385,7 +433,9 @@ pub(crate) fn resolve_plays_declared(
             role_label: role_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             source_span,
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span, })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -412,7 +462,9 @@ pub(crate) fn resolve_plays(
             role_label: role_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             source_span,
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span })),
+        Err(source) => {
+            Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span }))
+        }
     }
 }
 
@@ -436,9 +488,12 @@ pub(crate) fn resolve_plays_role_label(
         Ok(None) => Err(Box::new(SymbolResolutionError::PlaysNotFound {
             player_label: object_type.get_label(snapshot, type_manager).unwrap().to_owned(),
             role_label: label.clone(),
-            source_span: label.source_span()
+            source_span: label.source_span(),
         })),
-        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead { typedb_source: source, source_span: label.source_span() })),
+        Err(source) => Err(Box::new(SymbolResolutionError::UnexpectedConceptRead {
+            typedb_source: source,
+            source_span: label.source_span(),
+        })),
     }
 }
 

@@ -25,8 +25,6 @@ use concept::{
         Capability, KindAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI,
     },
 };
-use concept::type_::annotation::AnnotationCardinality;
-use concept::type_::relates::RelatesAnnotation;
 use durability::DurabilitySequenceNumber;
 use encoding::{
     graph::{
@@ -75,116 +73,6 @@ fn type_manager_at_snapshot(
     let type_vertex_generator = Arc::new(TypeVertexGenerator::new());
     let cache = Arc::new(TypeCache::new(storage.clone(), snapshot.open_sequence_number()).unwrap());
     Arc::new(TypeManager::new(definition_key_generator.clone(), type_vertex_generator.clone(), Some(cache)))
-}
-
-#[test]
-fn test_syntax_tmp() {
-    let (_tmp_dir, mut storage) = create_core_storage();
-    setup_concept_storage(&mut storage);
-
-    let mut snapshot: WriteSnapshot<_> = storage.clone().open_snapshot_write();
-    {
-        // Without cache, uncommitted
-        let type_manager = type_manager_no_cache();
-        let thing_manager = thing_manager(type_manager.clone());
-
-        // --- age sub attribute ---
-        let age_label = Label::build("age", None);
-        let age_type = type_manager.create_attribute_type(&mut snapshot, &age_label).unwrap();
-        age_type.set_value_type(&mut snapshot, &type_manager, &thing_manager, ValueType::Integer).unwrap();
-
-        assert!(age_type.get_annotations_declared(&snapshot, &type_manager).unwrap().is_empty());
-        assert_eq!(*age_type.get_label(&snapshot, &type_manager).unwrap(), age_label);
-        assert_eq!(age_type.get_value_type_without_source(&snapshot, &type_manager).unwrap(), Some(ValueType::Integer));
-
-        // --- person sub entity @abstract ---
-        let person_label = Label::build("person", None);
-        let person_type = type_manager.create_entity_type(&mut snapshot, &person_label).unwrap();
-        person_type
-            .set_annotation(
-                &mut snapshot,
-                &type_manager,
-                &thing_manager,
-                EntityTypeAnnotation::Abstract(AnnotationAbstract),
-            )
-            .unwrap();
-
-        assert!(person_type
-            .get_annotations_declared(&snapshot, &type_manager)
-            .unwrap()
-            .contains(&EntityTypeAnnotation::Abstract(AnnotationAbstract)));
-        assert_eq!(*person_type.get_label(&snapshot, &type_manager).unwrap(), person_label);
-
-        let supertype = person_type.get_supertype(&snapshot, &type_manager).unwrap();
-        assert_eq!(supertype, None);
-
-        // --- child sub person ---
-        let child_label = Label::build("child", None);
-        let child_type = type_manager.create_entity_type(&mut snapshot, &child_label).unwrap();
-        child_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, person_type).unwrap();
-
-        assert_eq!(*child_type.get_label(&snapshot, &type_manager).unwrap(), child_label);
-
-        let supertype = child_type.get_supertype(&snapshot, &type_manager).unwrap().unwrap();
-        assert_eq!(supertype, person_type);
-        let supertypes = child_type.get_supertypes_transitive(&snapshot, &type_manager).unwrap();
-        assert_eq!(supertypes.len(), 1);
-
-        // --- child owns age ---
-        child_type.set_owns(&mut snapshot, &type_manager, &thing_manager, age_type, Ordering::Unordered).unwrap();
-        let owns = child_type.get_owns_attribute(&snapshot, &type_manager, age_type).unwrap().unwrap();
-        owns.set_annotation(&mut snapshot, &type_manager, &thing_manager, OwnsAnnotation::Range(AnnotationRange::new(Some(Value::Integer(0)), Some(Value::Integer(100))))).unwrap();
-
-        let all_owns = child_type.get_owns_declared(&snapshot, &type_manager).unwrap();
-        assert_eq!(all_owns.len(), 1);
-        assert!(all_owns.contains(&owns));
-        assert_eq!(child_type.get_owns_attribute(&snapshot, &type_manager, age_type).unwrap(), Some(owns));
-        assert!(child_type.has_owns_attribute(&snapshot, &type_manager, age_type).unwrap());
-
-        // --- adult sub person ---
-        let adult_type = type_manager.create_entity_type(&mut snapshot, &Label::build("adult", None)).unwrap();
-        adult_type.set_supertype(&mut snapshot, &type_manager, &thing_manager, person_type).unwrap();
-        assert_eq!(person_type.get_subtypes(&snapshot, &type_manager).unwrap().len(), 2);
-        assert_eq!(person_type.get_subtypes_transitive(&snapshot, &type_manager).unwrap().len(), 2);
-
-        // --- owns inheritance ---
-        let height_label = Label::new_static("height");
-        let height_type = type_manager.create_attribute_type(&mut snapshot, &height_label).unwrap();
-        person_type.set_owns(&mut snapshot, &type_manager, &thing_manager, height_type, Ordering::Unordered).unwrap();
-
-        let friendship_type = type_manager.create_relation_type(&mut snapshot, &Label::build("friendship", None)).unwrap();
-        let friend_relates = friendship_type
-            .create_relates(&mut snapshot, &type_manager, &thing_manager, &"friend", Ordering::Unordered)
-            .unwrap();
-        let friend_role = friend_relates.role();
-        person_type.set_plays(&mut snapshot, &type_manager, &thing_manager, friend_role).unwrap();
-        friend_relates
-            .set_annotation(
-                &mut snapshot,
-                &type_manager,
-                &thing_manager,
-                RelatesAnnotation::Cardinality(AnnotationCardinality::new(1, Some(4))),
-            )
-            .unwrap();
-
-        match child_type.get_owns_attribute(&snapshot, &type_manager, height_type).unwrap() {
-            None => panic!("child should inherit ownership of height"),
-            Some(child_owns_height) => {
-                assert_eq!(height_type, child_owns_height.attribute());
-                assert_eq!(ObjectType::Entity(person_type), child_owns_height.owner());
-            }
-        }
-    }
-    snapshot.commit().unwrap();
-
-
-    let mut snapshot: ReadSnapshot<_> = storage.clone().open_snapshot_read();
-    {
-        let type_manager = type_manager_no_cache();
-        let syntax = type_manager.get_types_syntax(&snapshot).unwrap();
-        println!("define\n{}", syntax);
-    }
-    panic!("failed");
 }
 
 #[test]

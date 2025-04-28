@@ -247,16 +247,24 @@ impl fmt::Display for Decimal {
         if self.fractional == 0 {
             write!(f, "{}.0dec", self.integer_part())?;
         } else {
+            let (is_negative, int, frac) = if self.integer_part() < 0 {
+                let frac = FRACTIONAL_PART_DENOMINATOR - self.fractional_part();
+                (true, (self.integer_part() + 1).abs(), frac)
+            } else {
+                (false, self.integer_part(), self.fractional_part())
+            };
+
             // count number of tailing 0's that don't have to be represented
             let mut tail_0s = 0;
-            let mut fractional = self.fractional;
+            let mut fractional = frac;
             while fractional % 10 == 0 {
                 tail_0s += 1;
                 fractional /= 10;
             }
+            let sign = if is_negative { "-" } else { "" };
 
             let fractional_width = FRACTIONAL_PART_DENOMINATOR_LOG10 - tail_0s;
-            write!(f, "{}.{:0width$}dec", self.integer_part(), fractional, width = fractional_width as usize)?;
+            write!(f, "{}{}.{:0width$}dec", sign, int, fractional, width = fractional_width as usize)?;
         }
         Ok(())
     }

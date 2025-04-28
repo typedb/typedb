@@ -458,7 +458,13 @@ impl fmt::Display for Value<'_> {
         match self {
             Value::Boolean(bool) => write!(f, "{bool}"),
             Value::Integer(integer) => write!(f, "{integer}"),
-            Value::Double(double) => write!(f, "{double}"),
+            Value::Double(double) => {
+                if double.fract() == 0.0 {
+                    write!(f, "{double}.0")
+                } else {
+                    write!(f, "{double}")
+                }
+            }
             Value::Decimal(decimal) => write!(f, "{decimal}"),
             Value::Date(date) => write!(f, "{date}"),
             Value::DateTime(datetime) => write!(f, "{}", datetime.format("%FT%T%.9f")),
@@ -467,7 +473,10 @@ impl fmt::Display for Value<'_> {
                 TimeZone::Fixed(_) => write!(f, "{}", datetime_tz.format("%FT%T%.9f%:z")),
             },
             Value::Duration(duration) => write!(f, "{duration}"),
-            Value::String(string) => write!(f, "\"{string}\""),
+            Value::String(string) => {
+                let escaped = string.replace("\"", "\\\"");
+                write!(f, "\"{escaped}\"")
+            }
             // TODO: this string will not have field names, only field IDs!
             Value::Struct(struct_) => write!(f, "{struct_}"),
         }

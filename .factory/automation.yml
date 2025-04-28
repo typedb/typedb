@@ -141,6 +141,13 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //tests/behaviour/query:test_query --test_output=streamed --test_arg="--test-threads=1" --test_arg="functions::"
 
+    test-assembly:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/assembly:test_assembly
+
 # TODO: Uncomment before releasing
 #    test-behaviour-service:
 #      image: typedb-ubuntu-22.04
@@ -153,17 +160,17 @@ release:
   filter:
     owner: typedb
     branch: [master, "3.0"]
-#  validation:
-#    validate-dependencies:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        bazel test //:release-validate-deps --test_output=streamed
+  validation:
+    validate-dependencies:
+      image: typedb-ubuntu-22.04
+      command: |
+        bazel test //:release-validate-deps --test_output=streamed
 
-#    validate-release-notes:
-#      image: typedb-ubuntu-22.04
-#      command: |
-#        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
-#        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
+    validate-release-notes:
+      image: typedb-ubuntu-22.04
+      command: |
+        export NOTES_VALIDATE_TOKEN=$REPO_GITHUB_TOKEN
+        bazel run @typedb_dependencies//tool/release/notes:validate --test_output=streamed -- $FACTORY_OWNER $FACTORY_REPO RELEASE_NOTES_LATEST.md
 
   deployment:
     trigger-release-circleci:

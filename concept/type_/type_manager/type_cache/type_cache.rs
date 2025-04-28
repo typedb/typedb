@@ -53,6 +53,7 @@ pub struct TypeCache {
     plays: HashMap<Plays, PlaysCache>,
     relates: HashMap<Relates, RelatesCache>,
 
+    // TODO: why isn't this a Map?
     struct_definitions: Box<[Option<StructDefinitionCache>]>,
 
     entity_types_index_label: HashMap<Arc<Label>, EntityType>,
@@ -474,6 +475,14 @@ impl TypeCache {
 
     pub(crate) fn get_owns_ordering(&self, owns: Owns) -> Ordering {
         self.owns.get(&owns).unwrap().ordering
+    }
+
+    pub(crate) fn get_struct_definitions(&self) -> HashMap<DefinitionKey, StructDefinition> {
+        self.struct_definitions
+            .iter()
+            .filter(|def| def.is_some())
+            .map(|def| (def.as_ref().unwrap().definition_key.clone(), def.as_ref().unwrap().definition.clone()))
+            .collect()
     }
 
     pub(crate) fn get_struct_definition_key(&self, label: &str) -> Option<DefinitionKey> {

@@ -263,7 +263,8 @@ impl AnnotationRegex {
 
 impl fmt::Display for AnnotationRegex {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let escaped = regex::escape(self.regex());
+        // we only have to re-escape the escaped quotations
+        let escaped = self.regex().replace("\"", "\\\"");
         write!(f, "@regex(\"{}\")", escaped)
     }
 }
@@ -563,7 +564,7 @@ impl Annotation {
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum AnnotationCategory {
     Abstract,
     Distinct,

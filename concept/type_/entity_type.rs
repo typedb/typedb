@@ -4,8 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashSet, fmt, sync::Arc};
-use std::fmt::Formatter;
+use std::{collections::HashSet, fmt, fmt::Formatter, sync::Arc};
 
 use encoding::{
     error::{EncodingError, EncodingError::UnexpectedPrefix},
@@ -45,7 +44,6 @@ use crate::{
     },
     ConceptAPI,
 };
-use crate::type_::TypeQLSyntax;
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct EntityType {
@@ -200,18 +198,21 @@ impl KindAPI for EntityType {
     ) -> Result<MaybeOwns<'m, HashSet<TypeConstraint<EntityType>>>, Box<ConceptReadError>> {
         type_manager.get_entity_type_constraints(snapshot, self)
     }
-}
 
-impl ThingTypeAPI for EntityType {
-    type InstanceType = Entity;
-}
-
-impl TypeQLSyntax for EntityType {
-    fn capabilities_syntax(&self, f: &mut impl std::fmt::Write, snapshot: &impl ReadableSnapshot, type_manager: &TypeManager) -> Result<(), Box<ConceptReadError>> {
+    fn capabilities_syntax(
+        &self,
+        f: &mut impl std::fmt::Write,
+        snapshot: &impl ReadableSnapshot,
+        type_manager: &TypeManager,
+    ) -> Result<(), Box<ConceptReadError>> {
         self.owns_syntax(f, snapshot, type_manager)?;
         self.plays_syntax(f, snapshot, type_manager)?;
         Ok(())
     }
+}
+
+impl ThingTypeAPI for EntityType {
+    type InstanceType = Entity;
 }
 
 impl EntityType {

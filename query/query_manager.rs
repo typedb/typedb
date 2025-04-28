@@ -23,7 +23,7 @@ use ir::{
 };
 use resource::{
     perf_counters::{QUERY_CACHE_HITS, QUERY_CACHE_MISSES},
-    profile::{QueryProfile, StorageCounters},
+    profile::QueryProfile,
 };
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};

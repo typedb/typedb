@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::process::{Child, Command, Output};
+use std::{
+    process::{Child, Command, Output},
+    thread,
+    time::Duration,
+};
 
 fn build_cmd(cmd_str: &str) -> Command {
     let mut cmd = Command::new("sh");
@@ -46,6 +50,7 @@ fn test_assembly() {
         panic!("{:?}", extract_output);
     }
     let server_process = build_cmd("typedb-extracted/typedb server").spawn().expect("Failed to spawn server process");
+    thread::sleep(Duration::from_secs(10));
     let console_process_output = run_test_against_server();
     let server_process_output = kill_process(server_process);
 
@@ -58,7 +63,7 @@ fn test_assembly() {
 }
 
 fn run_test_against_server() -> Output {
-    build_cmd("typedb-extracted/typedb console --script=tests/assembly/script.tql --username=admin --password=password --address=localhost:1729 --tls-disabled")
+    build_cmd("typedb-extracted/typedb console --username=admin --password=password --address=localhost:1729 --tls-disabled --script=tests/assembly/script.tql")
         .output()
         .expect("Failed to run console script")
 }

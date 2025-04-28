@@ -94,10 +94,13 @@ impl FromTypeQLLiteral for i64 {
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
-        let unsigned: i64 = parse_primitive(literal.integral.as_str(), source_span)?;
+        // we parse into an i128 because +i64::MAX cannot contain the last value of i64::MIN when the sign  is ignored:
+        // example: -9223372036854775808 is parsed as i64::parse(9223372036854775808), then the sign is computed
+        // which fails since the max positive value is 9223372036854775807
+        let unsigned: i128 = parse_primitive(literal.integral.as_str(), source_span)?;
         Ok(match literal.sign.unwrap_or(Sign::Plus) {
-            Sign::Plus => unsigned,
-            Sign::Minus => -unsigned,
+            Sign::Plus => unsigned as i64,
+            Sign::Minus => -unsigned as i64,
         })
     }
 }
@@ -130,6 +133,7 @@ impl FromTypeQLLiteral for f64 {
         literal: &Self::TypeQLLiteral,
         source_span: Option<Span>,
     ) -> Result<Self, LiteralParseError> {
+        // TODO: this has the same issue that is fixed for u64 being parsed by u128: f64 can't use f64::MIN (off by "one")
         let unsigned = parse_primitive::<f64>(literal.double.as_str(), source_span)?;
         match &literal.sign.unwrap_or(Sign::Plus) {
             Sign::Plus => Ok(unsigned),
