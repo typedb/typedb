@@ -10,8 +10,3 @@ use steps::Context;
 async fn test_a() {
     assert!(Context::test("tests/behaviour/debug/debug.feature", true).await);
 }
-
-#[tokio::test]
-async fn test_z() {
-    assert!(Context::test("tests/behaviour/debug/debug.feature", true).await);
-}
