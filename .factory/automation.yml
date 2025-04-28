@@ -159,7 +159,7 @@ build:
 release:
   filter:
     owner: typedb
-    branch: [master, "3.0"]
+    branch: [master]
   validation:
     validate-dependencies:
       image: typedb-ubuntu-22.04
