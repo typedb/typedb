@@ -7,6 +7,6 @@
 use steps::Context;
 
 #[tokio::test]
-async fn test_a() {
+async fn test() {
     assert!(Context::test("tests/behaviour/debug/debug.feature", true).await);
 }
