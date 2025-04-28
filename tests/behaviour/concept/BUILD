@@ -7,7 +7,8 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
     name = "test_concept",
-    srcs = glob(["lib.rs", "migration/*.rs", "thing/*.rs", "type/*.rs"]),
+    crate_root = "main.rs",
+    srcs = glob(["main.rs", "migration/*.rs", "thing/*.rs", "type/*.rs"]),
     timeout = "long",
     deps = [
         "//tests/behaviour/steps:steps",

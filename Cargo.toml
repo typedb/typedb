@@ -123,11 +123,11 @@ features = {}
 	name = "bench_iam"
 
 [[test]]
-	path = "tests/behaviour/connection/lib.rs"
+	path = "tests/behaviour/connection/main.rs"
 	name = "test_connection"
 
 [[test]]
-	path = "tests/behaviour/concept/lib.rs"
+	path = "tests/behaviour/concept/main.rs"
 	name = "test_concept"
 
 [[test]]
@@ -155,7 +155,7 @@ features = {}
 	name = "test_http_debug"
 
 [[test]]
-	path = "tests/behaviour/query/lib.rs"
+	path = "tests/behaviour/query/main.rs"
 	name = "test_query"
 
 [[test]]

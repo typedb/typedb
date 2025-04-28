@@ -7,6 +7,7 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 
 rust_test(
     name = "test_connection",
+    crate_root = "main.rs",
     srcs = glob(["*.rs"]),
     deps = [
         "//tests/behaviour/steps:steps",

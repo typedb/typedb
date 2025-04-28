@@ -7,7 +7,7 @@
 use steps::Context;
 
 #[tokio::test]
-async fn test() {
+async fn test_migration() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.

@@ -7,7 +7,8 @@ load("@rules_rust//rust:defs.bzl", "rust_test")
 
 rust_test(
     name = "test_query",
-    srcs = glob(["lib.rs", "language/*.rs", "functions/*.rs"]),
+    crate_root = "main.rs",
+    srcs = glob(["main.rs", "language/*.rs", "functions/*.rs"]),
     deps = [
         "//tests/behaviour/steps:steps",
         "@crates//:tokio",
