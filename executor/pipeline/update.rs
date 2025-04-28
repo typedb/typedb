@@ -15,6 +15,7 @@ use compiler::{
 };
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
+use resource::constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS;
 use resource::profile::StageProfile;
 use storage::snapshot::WritableSnapshot;
 
@@ -95,7 +96,7 @@ where
                 return Err((Box::new(PipelineExecutionError::WriteError { typedb_source }), context));
             }
 
-            if index % 100 == 0 {
+            if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
                 if let Some(interrupt) = interrupt.check() {
                     return Err((Box::new(PipelineExecutionError::Interrupted { interrupt }), context));
                 }

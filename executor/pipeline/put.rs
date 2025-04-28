@@ -10,7 +10,7 @@ use compiler::{
     executable::{function::ExecutableFunctionRegistry, insert::VariableSource, put::PutExecutable},
     VariablePosition,
 };
-use resource::constants::traversal::BATCH_DEFAULT_CAPACITY;
+use resource::constants::traversal::{BATCH_DEFAULT_CAPACITY, CHECK_INTERRUPT_FREQUENCY_ROWS};
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 
 use crate::{
@@ -164,7 +164,7 @@ fn perform_inserts<Snapshot: WritableSnapshot>(
             )
             .map_err(|typedb_source| Box::new(PipelineExecutionError::WriteError { typedb_source }))?;
         }
-        if index % 100 == 0 {
+        if index % CHECK_INTERRUPT_FREQUENCY_ROWS == 0 {
             if let Some(interrupt) = interrupt.check() {
                 return Err(Box::new(PipelineExecutionError::Interrupted { interrupt }));
             }
