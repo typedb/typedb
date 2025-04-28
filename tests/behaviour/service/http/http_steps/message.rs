@@ -26,7 +26,7 @@ use server::service::http::message::{
 };
 use url::form_urlencoded;
 
-use crate::{Context, HttpBehaviourTestError, HttpContext};
+use crate::{Context, HttpBehaviourTestError};
 
 async fn send_request(
     http_client: &Client<HttpConnector>,

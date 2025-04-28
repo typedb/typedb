@@ -32,6 +32,7 @@ rust_test(
         "@typedb_behaviour//concept/type:owns-annotations.feature",
     ],
     crate_features = ["bazel"],
+    size = "enormous",
 )
 
 checkstyle_test(

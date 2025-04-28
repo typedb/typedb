@@ -6,8 +6,6 @@
 
 #![allow(unexpected_cfgs, reason = "features defined in Bazel targets aren't currently communicated to Cargo")]
 
-use steps::Context;
-
 mod define;
 mod delete;
 mod expressions;

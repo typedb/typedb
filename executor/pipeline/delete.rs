@@ -9,8 +9,7 @@ use std::sync::Arc;
 use compiler::executable::delete::{executable::DeleteExecutable, instructions::ConnectionInstruction};
 use concept::thing::thing_manager::ThingManager;
 use ir::pipeline::ParameterRegistry;
-use resource::constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS;
-use resource::profile::StageProfile;
+use resource::{constants::traversal::CHECK_INTERRUPT_FREQUENCY_ROWS, profile::StageProfile};
 use storage::snapshot::WritableSnapshot;
 
 use crate::{
