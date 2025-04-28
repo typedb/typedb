@@ -68,8 +68,8 @@ features = {}
 
 	[dev-dependencies.typeql]
 		features = []
-		rev = "1a4a7b4d97e03ea94f6783f60253d535e8290e92"
 		git = "https://github.com/typedb/typeql"
+		tag = "3.2.0-rc2"
 		default-features = false
 
 	[dev-dependencies.lending_iterator]
