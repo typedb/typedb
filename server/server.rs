@@ -6,6 +6,7 @@
 
 use std::{
     fs,
+    fs::File,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
@@ -129,9 +130,10 @@ impl Server {
             shutdown_receiver.clone(),
         );
 
-        let http_server_address = match server_config.http_address.clone() {
-            Some(http_address) => Some(Self::resolve_address(http_address).await),
-            None => None,
+        let http_server_address = if server_config.http_enabled {
+            Some(Self::resolve_address(config.server.http_address.clone()).await)
+        } else {
+            None
         };
         let http_service = http_server_address.map(|http_address| {
             http::typedb_service::TypeDBService::new(

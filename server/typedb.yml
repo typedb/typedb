@@ -1,0 +1,23 @@
+is_development_mode: false
+server:
+    address: 0.0.0.0:1729
+    http_enabled: true
+    http_address: 0.0.0.0:8000
+
+    authentication:
+        token_expiration_seconds: 5000
+
+    encryption:
+        enabled: false
+        # cert: =
+        # cert_key: =
+        # root_ca: =
+
+storage:
+    data: "server/data"
+
+diagnostics:
+    is_reporting_error_enabled: true
+    is_reporting_metric_enabled: true
+    is_monitoring_enabled: true
+    monitoring_port: 4104

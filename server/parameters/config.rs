@@ -5,6 +5,8 @@
  */
 
 use std::{
+    fs::File,
+    io::Read,
     path::{Path, PathBuf},
     str::FromStr,
     time::Duration,
@@ -13,8 +15,12 @@ use std::{
 use resource::constants::server::{
     DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT,
 };
+use serde::Deserialize;
+use serde_with::{serde_as, DurationSeconds};
 
-#[derive(Debug)]
+use crate::parameters::ConfigError;
+
+#[derive(Debug, Deserialize)]
 pub struct Config {
     pub server: ServerConfig,
     pub(crate) storage: StorageConfig,
@@ -30,6 +36,31 @@ impl Config {
 
     pub fn new(server_address: impl Into<String>) -> ConfigBuilder {
         ConfigBuilder::default().server_address(server_address)
+    }
+
+    pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
+        let mut config = String::new();
+        // Could fail
+        File::open(path.clone())
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?
+            .read_to_string(&mut config)
+            .unwrap();
+        serde_yaml::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
+    }
+
+    pub(crate) fn validate(&self) -> Result<(), ConfigError> {
+        let encryption = &self.server.encryption;
+        if encryption.enabled && encryption.cert.is_none() {
+            return Err(ConfigError::ValidationError {
+                message: "Server encryption was enabled, but certificate was not configured.",
+            });
+        }
+        if encryption.enabled && encryption.cert_key.is_none() {
+            return Err(ConfigError::ValidationError {
+                message: "Server encryption was enabled, but certificate key was not configured.",
+            });
+        }
+        Ok(())
     }
 }
 
@@ -84,7 +115,8 @@ impl ConfigBuilder {
         Config {
             server: ServerConfig {
                 address: self.server_address.unwrap_or_else(|| DEFAULT_ADDRESS.to_string()),
-                http_address: self.server_http_address,
+                http_address: self.server_http_address.clone().unwrap_or("".to_owned()),
+                http_enabled: self.server_http_address.is_some(),
                 authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
                 encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
             },
@@ -95,16 +127,20 @@ impl ConfigBuilder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct ServerConfig {
     pub(crate) address: String,
-    pub(crate) http_address: Option<String>,
+    pub(crate) http_enabled: bool,
+    pub(crate) http_address: String,
     pub(crate) authentication: AuthenticationConfig,
     pub(crate) encryption: EncryptionConfig,
 }
 
-#[derive(Debug)]
+#[serde_as]
+#[derive(Debug, Deserialize)]
 pub struct AuthenticationConfig {
+    #[serde_as(as = "DurationSeconds")]
+    #[serde(rename = "token_expiration_seconds")]
     pub token_expiration: Duration,
 }
 
@@ -114,7 +150,7 @@ impl Default for AuthenticationConfig {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct EncryptionConfig {
     pub enabled: bool,
     pub cert: Option<PathBuf>,
@@ -134,7 +170,7 @@ impl Default for EncryptionConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub(crate) struct StorageConfig {
     pub(crate) data: PathBuf,
 }
@@ -150,7 +186,7 @@ impl StorageConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct DiagnosticsConfig {
     pub is_reporting_error_enabled: bool,
     pub is_reporting_metric_enabled: bool,
@@ -172,5 +208,76 @@ impl DiagnosticsConfig {
 impl Default for DiagnosticsConfig {
     fn default() -> Self {
         Self::enabled()
+    }
+}
+
+#[cfg(test)]
+pub mod tests {
+    use clap::Parser;
+
+    use crate::parameters::{cli::CLIArgs, config::Config, ConfigError};
+
+    const CONFIG_YAML_PATH: &str = "./typedb.yml";
+
+    fn load_and_parse(toml: &str, args: Vec<&str>) -> Result<Config, ConfigError> {
+        let mut args_with_binary_infront = Vec::with_capacity(args.len() + 1);
+        args_with_binary_infront.push("dummy");
+        args_with_binary_infront.extend(args);
+        let mut config = Config::from_file(toml.into())?;
+        let cli_args: CLIArgs = CLIArgs::parse_from(args_with_binary_infront);
+        cli_args.override_config(&mut config)?;
+        Ok(config)
+    }
+
+    #[test]
+    fn server_toml_parser_properly() {
+        assert!(load_and_parse(CONFIG_YAML_PATH, vec![]).is_ok());
+    }
+
+    #[test]
+    fn fields_can_be_overridden() {
+        let set_to = "10.9.8.7:1234";
+        let result = load_and_parse(CONFIG_YAML_PATH, vec!["--server.address", set_to]).unwrap();
+        assert_eq!(result.server.address.as_str(), set_to);
+    }
+
+    #[test]
+    fn enabling_encryption_without_setting_cert_and_key_is_flagged() {
+        {
+            // Check pre-conditions
+            let config = load_and_parse("./typedb.yml", vec![]).unwrap();
+            assert!(
+                config.server.encryption.enabled == false
+                    && config.server.encryption.cert_key.is_none()
+                    && config.server.encryption.cert.is_none()
+            ); // Test is bad if this fails
+        }
+
+        {
+            let args = vec!["--server.encryption.enabled", "true"];
+            assert!(matches!(load_and_parse(CONFIG_YAML_PATH, args), Err(ConfigError::ValidationError { .. })));
+        }
+
+        {
+            let args = vec![
+                "--server.encryption.enabled",
+                "true",
+                "--server.encryption.cert-key",
+                "somekey",
+                "--server.encryption.cert",
+                "somecert.pem",
+            ];
+            assert!(load_and_parse(CONFIG_YAML_PATH, args).is_ok());
+        }
+
+        {
+            let args = vec!["--server.encryption.enabled", "true", "--server.encryption.cert", "somecert.pem"];
+            assert!(matches!(load_and_parse(CONFIG_YAML_PATH, args), Err(ConfigError::ValidationError { .. })));
+        }
+
+        {
+            let args = vec!["--server.encryption.enabled", "true", "--server.encryption.cert-key", "somekey"];
+            assert!(matches!(load_and_parse(CONFIG_YAML_PATH, args), Err(ConfigError::ValidationError { .. })));
+        }
     }
 }

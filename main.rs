@@ -9,7 +9,7 @@
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{ASCII_LOGO, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
+use resource::constants::server::{ASCII_LOGO, DEFAULT_CONFIG_PATH, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
 use server::{
     parameters::{cli::CLIArgs, config::Config},
     server::Server,
@@ -17,9 +17,12 @@ use server::{
 use tokio::runtime::Runtime;
 
 fn main() {
-    let config = CLIArgs::parse().to_config();
     initialise_abort_on_panic();
     initialise_logging_global();
+    let cli_args: CLIArgs = CLIArgs::parse();
+    let config_file = cli_args.config_file_override.as_ref().map(|x| x.as_str()).unwrap_or(DEFAULT_CONFIG_PATH);
+    let mut config = Config::from_file(config_file.into()).unwrap();
+    cli_args.override_config(&mut config).unwrap();
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
         let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
