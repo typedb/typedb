@@ -522,8 +522,12 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::WriteTransactions,
                 );
-                transaction.commit().1.map_err(|err| {
-                    TransactionServiceError::DataCommitFailed { typedb_source: err }.into_error_message().into_status()
+                let (profile, commit_result) = transaction.commit();
+                if profile.is_enabled() {
+                    event!(Level::INFO, "commit done.\n{}", profile);
+                }
+                commit_result.map_err(|typedb_source| {
+                    TransactionServiceError::DataCommitFailed { typedb_source }.into_error_message().into_status()
                 })
             })
             .await
@@ -534,7 +538,11 @@ impl TransactionService {
                     transaction.database.name(),
                     LoadKind::SchemaTransactions,
                 );
-                transaction.commit().1.map_err(|typedb_source| {
+                let (profile, commit_result) = transaction.commit();
+                if profile.is_enabled() {
+                    event!(Level::INFO, "commit done.\n{}", profile);
+                }
+                commit_result.map_err(|typedb_source| {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
                 })
             }

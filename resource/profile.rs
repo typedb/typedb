@@ -57,6 +57,7 @@ impl Display for CommitProfile {
             None => writeln!(f, "  Commit[enabled=false]"),
             Some(data) => {
                 writeln!(f, "  Commit[enabled=true, total timed micros={}]", data.total.as_nanos() as f64 / 1000.0)?;
+                writeln!(f, "    commit size: {}", data.commit_size)?;
                 writeln!(f, "    storage counters: {}", self.storage_counters())?;
                 writeln!(f, "    types validation micros: {}", data.types_validation.as_nanos() as f64 / 1000.0)?;
                 writeln!(f, "    things finalise micros: {}", data.things_finalise.as_nanos() as f64 / 1000.0)?;
@@ -134,6 +135,12 @@ impl CommitProfile {
     pub fn start(&mut self) {
         if let Some(data) = &mut self.data {
             data.stage_start = Instant::now();
+        }
+    }
+
+    pub fn commit_size(&mut self, size: usize) {
+        if let Some(data) = &mut self.data {
+            data.commit_size = size;
         }
     }
 
@@ -282,6 +289,7 @@ impl CommitProfile {
 #[derive(Debug)]
 struct CommitProfileData {
     counters: StorageCounters,
+    commit_size: usize,
     stage_start: Instant,
     types_validation: Duration,
     things_finalise: Duration,
@@ -305,6 +313,7 @@ impl CommitProfileData {
         Self {
             counters: StorageCounters::new_enabled(),
             stage_start: Instant::now(), // DUMMY
+            commit_size: 0,
             types_validation: Duration::ZERO,
             things_finalise: Duration::ZERO,
             functions_finalise: Duration::ZERO,
