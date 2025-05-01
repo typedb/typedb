@@ -12,7 +12,9 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, MONITORING_DEFAULT_PORT};
+use resource::constants::server::{
+    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, MONITORING_DEFAULT_PORT,
+};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -25,7 +27,7 @@ pub struct Config {
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
-    #[serde(default="Config::is_development_mode_default")]
+    #[serde(default = "Config::is_development_mode_default")]
     pub is_development_mode: bool,
 }
 
