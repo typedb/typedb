@@ -63,8 +63,8 @@ pub struct CLIArgs {
     #[arg(long = "storage.data", value_name = "DIR")]
     pub storage_data: Option<String>,
 
-    // Path to the log directory
-    #[arg(long = "logging.directory")]
+    /// Path to the log directory
+    #[arg(long = "logging.logdir")]
     pub logging_logdir: Option<String>,
 
     /// Enable usage metrics reporting

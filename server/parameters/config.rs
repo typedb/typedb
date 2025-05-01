@@ -43,12 +43,11 @@ impl Config {
 
     pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
         let mut config = String::new();
-        // Could fail
         let resolved_path = Self::resolve_path_from_executable(&path);
         File::open(resolved_path.clone())
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: path.clone() })?
             .read_to_string(&mut config)
-            .unwrap();
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
         serde_yaml2::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
     }
 
