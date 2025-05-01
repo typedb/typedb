@@ -78,6 +78,7 @@ rust_library(
         "@crates//:rustls-pemfile",
         "@crates//:serde",
         "@crates//:serde_json",
+        "@crates//:serde_with",
         "@crates//:tokio",
         "@crates//:tokio-rustls",
         "@crates//:tokio-stream",
