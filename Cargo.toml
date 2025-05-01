@@ -166,6 +166,8 @@ features = {}
 	path = "main.rs"
 	name = "typedb_server_bin"
 
+[[data]]
+
 
 [workspace]
 	resolver = "2"

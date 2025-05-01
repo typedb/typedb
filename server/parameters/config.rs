@@ -44,7 +44,8 @@ impl Config {
     pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
         let mut config = String::new();
         // Could fail
-        File::open(path.clone())
+        let resolved_path = Self::resolve_path_from_executable(&path);
+        File::open(resolved_path.clone())
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?
             .read_to_string(&mut config)
             .unwrap();
@@ -64,9 +65,17 @@ impl Config {
             });
         }
         // finalise:
-        self.storage.data = resolve_path_from_executable(&self.storage.data);
-        self.logging.directory = resolve_path_from_executable(&self.logging.directory);
+        self.storage.data = Self::resolve_path_from_executable(&self.storage.data);
+        self.logging.directory = Self::resolve_path_from_executable(&self.logging.directory);
         Ok(())
+    }
+
+    fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
+        let typedb_dir_or_current = std::env::current_exe()
+            .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
+            .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
+        // if path is absolute, join will just return path
+        typedb_dir_or_current.join(path)
     }
 
     fn is_development_mode_default() -> bool {
@@ -221,27 +230,23 @@ pub struct LoggingConfig {
     pub directory: PathBuf,
 }
 
-fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
-    let typedb_dir_or_current = std::env::current_exe()
-        .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
-        .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
-    // if path is absolute, join will just return path
-    typedb_dir_or_current.join(path)
-}
-
 #[cfg(test)]
 pub mod tests {
+    use std::path::PathBuf;
+
     use clap::Parser;
 
     use crate::parameters::{cli::CLIArgs, config::Config, ConfigError};
 
-    const CONFIG_YAML_PATH: &str = "./typedb.yml";
+    fn config_path() -> PathBuf {
+        std::env::current_dir().unwrap().join("typedb.yml")
+    }
 
-    fn load_and_parse(toml: &str, args: Vec<&str>) -> Result<Config, ConfigError> {
+    fn load_and_parse(yaml: PathBuf, args: Vec<&str>) -> Result<Config, ConfigError> {
         let mut args_with_binary_infront = Vec::with_capacity(args.len() + 1);
         args_with_binary_infront.push("dummy");
         args_with_binary_infront.extend(args);
-        let mut config = Config::from_file(toml.into())?;
+        let mut config = Config::from_file(yaml)?;
         let cli_args: CLIArgs = CLIArgs::parse_from(args_with_binary_infront);
         cli_args.override_config(&mut config)?;
         Ok(config)
@@ -249,13 +254,13 @@ pub mod tests {
 
     #[test]
     fn server_toml_parser_properly() {
-        assert!(load_and_parse(CONFIG_YAML_PATH, vec![]).is_ok());
+        assert!(load_and_parse(config_path(), vec![]).is_ok());
     }
 
     #[test]
     fn fields_can_be_overridden() {
         let set_to = "10.9.8.7:1234";
-        let result = load_and_parse(CONFIG_YAML_PATH, vec!["--server.address", set_to]).unwrap();
+        let result = load_and_parse(config_path(), vec!["--server.address", set_to]).unwrap();
         assert_eq!(result.server.address.as_str(), set_to);
     }
 
@@ -263,7 +268,7 @@ pub mod tests {
     fn enabling_encryption_without_setting_cert_and_key_is_flagged() {
         {
             // Check pre-conditions
-            let config = load_and_parse("./typedb.yml", vec![]).unwrap();
+            let config = load_and_parse(config_path(), vec![]).unwrap();
             assert!(
                 config.server.encryption.enabled == false
                     && config.server.encryption.cert_key.is_none()
@@ -273,7 +278,7 @@ pub mod tests {
 
         {
             let args = vec!["--server.encryption.enabled", "true"];
-            assert!(matches!(load_and_parse(CONFIG_YAML_PATH, args), Err(ConfigError::ValidationError { .. })));
+            assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
 
         {
@@ -285,17 +290,17 @@ pub mod tests {
                 "--server.encryption.cert",
                 "somecert.pem",
             ];
-            assert!(load_and_parse(CONFIG_YAML_PATH, args).is_ok());
+            assert!(load_and_parse(config_path(), args).is_ok());
         }
 
         {
             let args = vec!["--server.encryption.enabled", "true", "--server.encryption.cert", "somecert.pem"];
-            assert!(matches!(load_and_parse(CONFIG_YAML_PATH, args), Err(ConfigError::ValidationError { .. })));
+            assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
 
         {
             let args = vec!["--server.encryption.enabled", "true", "--server.encryption.cert-key", "somekey"];
-            assert!(matches!(load_and_parse(CONFIG_YAML_PATH, args), Err(ConfigError::ValidationError { .. })));
+            assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
     }
 }
