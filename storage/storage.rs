@@ -233,6 +233,8 @@ impl<Durability> MVCCStorage<Durability> {
         let commit_record = snapshot.into_commit_record();
         commit_profile.snapshot_commit_record_created();
 
+        commit_profile.commit_size(commit_record.operations().len());
+
         let commit_sequence_number = self
             .durability_client
             .sequenced_write(&commit_record)

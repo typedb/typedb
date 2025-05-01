@@ -88,6 +88,10 @@ impl OperationsBuffer {
             buffer.clear();
         }
     }
+
+    pub(crate) fn len(&self) -> usize {
+        self.write_buffers().map(|w| w.writes().len()).sum()
+    }
 }
 
 impl<'a> IntoIterator for &'a OperationsBuffer {
