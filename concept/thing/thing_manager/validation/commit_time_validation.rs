@@ -55,9 +55,12 @@ macro_rules! validate_capability_cardinality_constraint {
             storage_counters: StorageCounters,
         ) -> Result<(), Box<DataValidationError>> {
             let mut cardinality_constraints: HashSet<CapabilityConstraint<$capability_type>> = HashSet::new();
-            let counts = object
-                .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
-                .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))?;
+
+            let counts = std::cell::LazyCell::new(|| {
+                object
+                    .$get_interface_counts_func(snapshot, thing_manager, storage_counters)
+                    .map_err(|source| Box::new(DataValidationError::ConceptRead { typedb_source: source }))
+            });
 
             for interface_type in interface_types_to_check {
                 for constraint in object
@@ -81,6 +84,7 @@ macro_rules! validate_capability_cardinality_constraint {
                     continue;
                 }
 
+                let Ok(counts) = &*counts else { return Err(counts.clone().unwrap_err()) };
                 let source_interface_type = constraint.source().interface();
                 let sub_interface_types = source_interface_type
                     .get_subtypes_transitive(snapshot, thing_manager.type_manager())
