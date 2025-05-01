@@ -138,11 +138,6 @@
 		version = "1.3.1"
 		default-features = false
 
-	[dependencies.serde_yaml]
-		features = []
-		version = "0.9.34+deprecated"
-		default-features = false
-
 	[dependencies.tonic]
 		features = ["channel", "codegen", "default", "prost", "router", "server", "tls", "tls-native-roots", "tls-roots", "transport"]
 		version = "0.12.3"
@@ -151,6 +146,11 @@
 	[dependencies.lending_iterator]
 		path = "../common/lending_iterator"
 		features = []
+		default-features = false
+
+	[dependencies.yaml-rust2]
+		features = ["default", "encoding"]
+		version = "0.10.1"
 		default-features = false
 
 	[dependencies.concept]
@@ -201,6 +201,11 @@
 	[dependencies.compiler]
 		path = "../compiler"
 		features = []
+		default-features = false
+
+	[dependencies.serde_yaml2]
+		features = []
+		version = "0.1.2"
 		default-features = false
 
 	[dependencies.tokio]

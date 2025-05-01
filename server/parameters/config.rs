@@ -49,7 +49,7 @@ impl Config {
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?
             .read_to_string(&mut config)
             .unwrap();
-        serde_yaml::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
+        serde_yaml2::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
     }
 
     pub(crate) fn validate_and_finalise(&mut self) -> Result<(), ConfigError> {
@@ -239,7 +239,11 @@ pub mod tests {
     use crate::parameters::{cli::CLIArgs, config::Config, ConfigError};
 
     fn config_path() -> PathBuf {
-        std::env::current_dir().unwrap().join("typedb.yml")
+        #[cfg(feature = "bazel")]
+        return std::env::current_dir().unwrap().join("server/typedb.yml");
+
+        #[cfg(not(feature = "bazel"))]
+        return std::env::current_dir().unwrap().join("typedb.yml");
     }
 
     fn load_and_parse(yaml: PathBuf, args: Vec<&str>) -> Result<Config, ConfigError> {

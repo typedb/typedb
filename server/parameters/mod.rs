@@ -12,7 +12,6 @@ pub mod config;
 #[derive(Debug)]
 pub enum ConfigError {
     ErrorReadingConfigFile { source: std::io::Error, path: PathBuf },
-
-    ErrorParsingYaml { source: serde_yaml::Error },
+    ErrorParsingYaml { source: serde::de::value::Error },
     ValidationError { message: &'static str },
 }

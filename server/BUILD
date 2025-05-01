@@ -4,7 +4,7 @@
 
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
-load("@rules_rust//rust:defs.bzl", "rust_library")
+load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
 package(default_visibility = ["//visibility:public",])
 
 string_flag(
@@ -79,7 +79,7 @@ rust_library(
         "@crates//:serde",
         "@crates//:serde_json",
         "@crates//:serde_with",
-        "@crates//:serde_yaml",
+        "@crates//:serde_yaml2",
         "@crates//:tokio",
         "@crates//:tokio-rustls",
         "@crates//:tokio-stream",
@@ -90,6 +90,7 @@ rust_library(
         "@crates//:tracing",
         "@crates//:uuid",
         "@crates//:pwhash",
+        "@crates//:yaml-rust2",
         "@crates//:xxhash-rust",
     ],
     crate_features = select({
@@ -99,6 +100,14 @@ rust_library(
     tags = [
         "declared-features=published",
     ]
+)
+
+rust_test(
+    name = "test_crate_server",
+    crate = ":server",
+    deps = [],
+    data = [":typedb.yml"],
+    crate_features = ["bazel"],
 )
 
 checkstyle_test(
