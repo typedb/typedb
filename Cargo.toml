@@ -166,9 +166,6 @@ features = {}
 	path = "main.rs"
 	name = "typedb_server_bin"
 
-[[data]]
-
-
 [workspace]
 	resolver = "2"
 	members = ["database/tools", "database", "answer", "util/test", "util/project", "durability/tests/crash/streamer", "durability/tests/crash/recoverer", "durability/tests/common", "durability", "ir", "tests/behaviour/steps", "tests/behaviour/steps/params", "tests/behaviour/service/http/http_steps", "encoding/tests", "encoding", "server", "user", "function", "storage/tests", "storage", "system", "common/options", "common/structural_equality", "common/logger", "common/bytes", "common/lending_iterator", "common/primitive", "common/concurrency", "common/iterator", "common/error", "concept/tests", "concept", "diagnostics", "executor", "resource", "query", "compiler"]
