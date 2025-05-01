@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use hyper::body::HttpBody;
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
@@ -21,7 +22,7 @@ use crate::service::http::message::query::concept::{encode_thing_concept, encode
 #[serde(rename_all = "camelCase")]
 struct EncodedRow<'a> {
     data: HashMap<&'a str, serde_json::Value>,
-    provenance_bit_array: [u8; 8],
+    involved_branches: Vec<u8>,
 }
 
 pub fn encode_row<'a>(
@@ -47,7 +48,8 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    Ok(json!(EncodedRow { data: encoded_row, provenance_bit_array: row.provenance().0.to_le_bytes() }))
+    let involved_branches = row.provenance().branch_ids().map(|b| b.0 as u8).collect();
+    Ok(json!(EncodedRow { data: encoded_row, involved_branches }))
 }
 
 pub fn encode_row_entry(
