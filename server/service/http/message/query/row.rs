@@ -13,6 +13,7 @@ use executor::row::MaybeOwnedRow;
 use resource::profile::StorageCounters;
 use serde::Serialize;
 use serde_json::json;
+use executor::Provenance;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{encode_thing_concept, encode_type_concept, encode_value};
@@ -21,7 +22,7 @@ use crate::service::http::message::query::concept::{encode_thing_concept, encode
 #[serde(rename_all = "camelCase")]
 struct EncodedRow<'a> {
     data: HashMap<&'a str, serde_json::Value>,
-    provenance_bit_array: [u8; 8],
+    branch_provenance: Vec<u8>,
 }
 
 pub fn encode_row<'a>(
@@ -47,7 +48,8 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    Ok(json!(EncodedRow { data: encoded_row, provenance_bit_array: row.provenance().0.to_le_bytes() }))
+    let branch_provenance = encode_provenance(row.provenance());
+    Ok(json!(EncodedRow { data: encoded_row, branch_provenance }))
 }
 
 pub fn encode_row_entry(
@@ -92,4 +94,15 @@ pub fn encode_row_entry(
             Ok(json!(encoded))
         }
     }
+}
+
+fn encode_provenance(provenance: Provenance) -> Vec<u8> {
+    let mut encoded = Vec::with_capacity(64);
+    encoded.push(0);
+    for i in 1..64 {
+        if 0 != (provenance & ( 1 << i)) {
+            encoded.push(i)
+        }
+    }
+    encoded
 }
