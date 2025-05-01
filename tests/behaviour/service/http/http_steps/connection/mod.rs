@@ -3,6 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::collections::HashMap;
 
 use itertools::Either;
 use macro_rules_attribute::apply;
@@ -16,7 +17,7 @@ use test_utils::create_tmp_dir;
 
 use crate::{
     generic_step,
-    message::{authenticate, authenticate_default, check_health, databases, users},
+    message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
     Context, TEST_TOKEN_EXPIRATION,
 };
 
@@ -175,4 +176,25 @@ async fn connection_has_count_users(context: &mut Context, count: usize) {
 async fn connection_closes(context: &mut Context, may_error: params::MayError) {
     context.cleanup_transactions().await;
     context.http_context.auth_token = None;
+}
+
+#[apply(generic_step)]
+#[step(expr = r"get endpoint\({word}\) contains field: {word}")]
+async fn get_endpoint_contains_field(context: &mut Context, endpoint: String, field: String) {
+    let url = format!("{}{endpoint}", Context::default_non_versioned_endpoint());
+    let response = send_get_request(&context.http_context.http_client, context.auth_token(), &url, None)
+        .await
+        .expect("Expected GET response");
+    let json_map: HashMap<String, String> = serde_json::from_str(&response).expect("Expected a json body");
+    assert!(json_map.contains_key(&field));
+}
+
+#[apply(generic_step)]
+#[step(expr = r"get endpoint\({word}\) redirects to: {word}")]
+async fn get_endpoint_redirects_to(context: &mut Context, endpoint: String, redirect_endpoint: String) {
+    let url = format!("{}{endpoint}", Context::default_non_versioned_endpoint());
+    let response = send_get_request(&context.http_context.http_client, context.auth_token(), &url, None)
+        .await
+        .expect("Expected GET response");
+    assert_eq!(response, redirect_endpoint);
 }

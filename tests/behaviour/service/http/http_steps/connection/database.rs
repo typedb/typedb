@@ -11,11 +11,12 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step, in_background,
-    message::{databases, databases_create, databases_delete, databases_get},
+    message::{databases, databases_create, databases_delete, databases_get, databases_schema},
     params::TokenMode,
     util::iter_table,
     Context, HttpContext,
 };
+use crate::message::databases_type_schema;
 
 async fn create_database(
     http_client: &Client<HttpConnector>,
@@ -185,4 +186,32 @@ async fn connection_does_not_have_databases(context: &mut Context, step: &Step) 
             "Connection doesn't contain at least one of the databases.",
         );
     }
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection get database\({word}\) has schema:")]
+async fn connection_get_database_has_schema(
+    context: &mut Context,
+    name: String,
+    step: &Step,
+) {
+    let expected_schema = step.docstring.as_ref().unwrap().trim().to_string();
+    let schema = databases_schema(context.http_client(), context.auth_token(), &name)
+        .await
+        .expect("Expected successful schema retrieval").trim().to_string();
+    assert_eq!(expected_schema, schema);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection get database\({word}\) has type schema:")]
+async fn connection_get_database_has_type_schema(
+    context: &mut Context,
+    name: String,
+    step: &Step,
+) {
+    let expected_type_schema = step.docstring.as_ref().unwrap().trim().to_string();
+    let type_schema = databases_type_schema(context.http_client(), context.auth_token(), &name)
+        .await
+        .expect("Expected successful schema retrieval").trim().to_string();
+    assert_eq!(expected_type_schema, type_schema);
 }

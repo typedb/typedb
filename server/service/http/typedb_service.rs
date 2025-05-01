@@ -8,12 +8,12 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
 use axum::{
     extract::State,
-    response::IntoResponse,
+    response::{IntoResponse, Redirect},
     routing::{delete, get, post, put},
     Router,
 };
 use concurrency::TokioIntervalRunner;
-use database::database_manager::DatabaseManager;
+use database::{database_manager::DatabaseManager, transaction::TransactionRead};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
@@ -26,6 +26,7 @@ use tokio::{
     },
     time::timeout,
 };
+use tonic::Response;
 use tower_http::cors::CorsLayer;
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 use uuid::Uuid;
@@ -38,19 +39,20 @@ use crate::{
             error::HttpServiceError,
             message::{
                 authentication::{encode_token, SigninPayload},
-                body::JsonBody,
+                body::{JsonBody, PlainTextBody},
                 database::{encode_database, encode_databases, DatabasePath},
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
-                version::ProtocolVersion,
+                version::{encode_server_version, ProtocolVersion, ServerVersionResponse, PROTOCOL_VERSION_LATEST},
             },
             transaction_service::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
             },
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        QueryType,
+        typedb_service::{get_database_schema, get_database_type_schema},
+        QueryType, ServiceError,
     },
 };
 
@@ -67,6 +69,8 @@ struct TransactionInfo {
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDBService {
     address: SocketAddr,
+    distribution: &'static str,
+    version: &'static str,
     database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
@@ -83,6 +87,8 @@ impl TypeDBService {
 
     pub(crate) fn new(
         address: SocketAddr,
+        distribution: &'static str,
+        version: &'static str,
         database_manager: Arc<DatabaseManager>,
         user_manager: Arc<UserManager>,
         credential_verifier: Arc<CredentialVerifier>,
@@ -107,6 +113,8 @@ impl TypeDBService {
 
         Self {
             address,
+            distribution,
+            version,
             database_manager,
             user_manager,
             credential_verifier,
@@ -218,8 +226,11 @@ impl TypeDBService {
 
     pub(crate) fn create_unprotected_router<T>(service: Arc<TypeDBService>) -> Router<T> {
         Router::new()
+            .route("/", get(Self::redirect_to_latest_version))
+            .route("/:version", get(Self::redirect_to_version))
             .route("/health", get(Self::health))
             .route("/:version/health", get(Self::health))
+            .route("/:version/version", get(Self::version))
             .route("/:version/signin", post(Self::signin))
             .with_state(service)
     }
@@ -230,6 +241,21 @@ impl TypeDBService {
 
     async fn health() -> impl IntoResponse {
         StatusCode::NO_CONTENT
+    }
+
+    async fn version(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
+        Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
+            service.distribution.to_string(),
+            service.version.to_string(),
+        )))
+    }
+
+    async fn redirect_to_version(version: ProtocolVersion) -> impl IntoResponse {
+        Redirect::temporary(&format!("/{}/version", version))
+    }
+
+    async fn redirect_to_latest_version() -> impl IntoResponse {
+        Self::redirect_to_version(PROTOCOL_VERSION_LATEST).await
     }
 
     async fn signin(
@@ -319,13 +345,12 @@ impl TypeDBService {
             &service.diagnostics_manager,
             Some(&database_path.database_name),
             ActionKind::DatabaseSchema,
-            || {
-                // service
-                //     .database_manager
-                //     .xxxxxx(&database_path.database_name)
-                //     .map_err(|typedb_source| HttpServiceError::DatabaseDelete { typedb_source })
-                // Ok::<_, HttpServiceError>(PlainTextBody("".to_string())) // TODO: Return this when implemented
-                Ok::<_, HttpServiceError>(StatusCode::NOT_IMPLEMENTED)
+            || match service.database_manager.database(&database_path.database_name) {
+                None => Err(HttpServiceError::NotFound {}),
+                Some(database) => Ok(PlainTextBody(
+                    get_database_schema(database)
+                        .map_err(|typedb_source| HttpServiceError::Service { typedb_source })?,
+                )),
             },
         )
     }
@@ -339,13 +364,12 @@ impl TypeDBService {
             &service.diagnostics_manager,
             Some(&database_path.database_name),
             ActionKind::DatabaseTypeSchema,
-            || {
-                // service
-                //     .database_manager
-                //     .xxxxxx(&database_path.database_name)
-                //     .map_err(|typedb_source| HttpServiceError::DatabaseDelete { typedb_source })
-                // Ok::<_, HttpServiceError>(PlainTextBody("".to_string())) // TODO: Return this when implemented
-                Ok::<_, HttpServiceError>(StatusCode::NOT_IMPLEMENTED)
+            || match service.database_manager.database(&database_path.database_name) {
+                None => Err(HttpServiceError::NotFound {}),
+                Some(database) => Ok(PlainTextBody(
+                    get_database_type_schema(database)
+                        .map_err(|typedb_source| HttpServiceError::Service { typedb_source })?,
+                )),
             },
         )
     }

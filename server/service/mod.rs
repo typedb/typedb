@@ -11,6 +11,7 @@ use serde::{Deserialize, Serialize};
 pub(crate) mod grpc;
 pub mod http;
 mod transaction_service;
+mod typedb_service;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Copy, PartialOrd, PartialEq, Eq, Hash)]
 #[serde(rename_all = "camelCase")]

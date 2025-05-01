@@ -56,17 +56,32 @@ async fn send_request(
         .map_err(|source| HttpBehaviourTestError::HyperError { source: Arc::new(source) })?;
 
     let status = res.status();
-    let body_bytes = hyper::body::to_bytes(res.into_body())
-        .await
-        .map_err(|source| HttpBehaviourTestError::HyperError { source: Arc::new(source) })?;
 
-    let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+    if status.is_success() {
+        let body_bytes = hyper::body::to_bytes(res.into_body())
+            .await
+            .map_err(|source| HttpBehaviourTestError::HyperError { source: Arc::new(source) })?;
+        Ok(String::from_utf8_lossy(&body_bytes).to_string())
+    } else if status.is_redirection() {
+        let (header, _) = res.into_parts();
+        Ok(header.headers.get("location").expect("Expected redirection location").to_str().unwrap().to_string())
+    } else {
+        let body_bytes = hyper::body::to_bytes(res.into_body())
+            .await
+            .map_err(|source| HttpBehaviourTestError::HyperError { source: Arc::new(source) })?;
 
-    if !status.is_success() {
-        return Err(HttpBehaviourTestError::StatusError { code: status, message: body_str });
+        let body_str = String::from_utf8_lossy(&body_bytes).to_string();
+        Err(HttpBehaviourTestError::StatusError { code: status, message: body_str })
     }
+}
 
-    Ok(body_str)
+pub async fn send_get_request(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    url: &str,
+    body: Option<&str>,
+) -> Result<String, HttpBehaviourTestError> {
+    send_request(http_client, auth_token, Method::GET, url, body).await
 }
 
 pub async fn check_health(
@@ -158,6 +173,28 @@ pub async fn databases_delete(
     let response = send_request(http_client, auth_token, Method::DELETE, &url, None).await?;
     assert!(response.is_empty(), "Expected empty response, got {response} instead");
     Ok(())
+}
+
+pub async fn databases_schema(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    database_name: &str,
+) -> Result<String, HttpBehaviourTestError> {
+    let url =
+        format!("{}/databases/{}/schema", Context::default_versioned_endpoint(), encode_path_variable(database_name));
+    let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
+    Ok(response)
+}
+
+pub async fn databases_type_schema(
+    http_client: &Client<HttpConnector>,
+    auth_token: Option<impl AsRef<str>>,
+    database_name: &str,
+) -> Result<String, HttpBehaviourTestError> {
+    let url =
+        format!("{}/databases/{}/type-schema", Context::default_versioned_endpoint(), encode_path_variable(database_name));
+    let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
+    Ok(response)
 }
 
 pub async fn users(
