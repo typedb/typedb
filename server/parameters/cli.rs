@@ -63,6 +63,10 @@ pub struct CLIArgs {
     #[arg(long = "storage.data", value_name = "DIR")]
     pub storage_data: Option<String>,
 
+    // Path to the log directory
+    #[arg(long = "logging.logdir")]
+    pub logging_logdir: Option<String>,
+
     /// Enable usage metrics reporting
     #[arg(long = "diagnostics.reporting.metrics")]
     pub diagnostics_reporting_metrics: Option<bool>, // used to be `statistics` in 2.x
@@ -108,6 +112,7 @@ impl CLIArgs {
             server_encryption_cert_key,
             server_encryption_root_ca,
             storage_data,
+            logging_logdir,
             diagnostics_reporting_metrics,
             diagnostics_reporting_errors,
             diagnostics_monitoring_enabled,
@@ -128,12 +133,14 @@ impl CLIArgs {
 
             config.storage.data => storage_data.map(|path| path.into());
 
+            config.logging.logdir => logging_logdir.map(|path| path.into());
+
             config.diagnostics.is_reporting_error_enabled => diagnostics_reporting_errors;
             config.diagnostics.is_reporting_metric_enabled => diagnostics_reporting_metrics;
             config.diagnostics.is_monitoring_enabled => diagnostics_monitoring_enabled;
             config.diagnostics.monitoring_port => diagnostics_monitoring_port;
             config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
         }
-        config.validate()
+        config.validate_and_finalise()
     }
 }

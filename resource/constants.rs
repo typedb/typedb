@@ -68,6 +68,7 @@ pub mod server {
     pub const DEFAULT_USER_NAME: &str = "admin";
     pub const DEFAULT_USER_PASSWORD: &str = "password";
     pub const DEFAULT_DATA_DIR: &str = "data";
+    pub const DEFAULT_LOG_DIR: &str = "log";
 
     pub const SYSTEM_FILE_PREFIX: &str = "_";
 

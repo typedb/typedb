@@ -18,11 +18,11 @@ use tokio::runtime::Runtime;
 
 fn main() {
     initialise_abort_on_panic();
-    initialise_logging_global();
     let cli_args: CLIArgs = CLIArgs::parse();
     let config_file = cli_args.config_file_override.as_ref().map(|x| x.as_str()).unwrap_or(DEFAULT_CONFIG_PATH);
     let mut config = Config::from_file(config_file.into()).unwrap();
     cli_args.override_config(&mut config).unwrap();
+    initialise_logging_global(&config.logging.logdir);
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
         let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();

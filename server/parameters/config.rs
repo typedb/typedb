@@ -12,9 +12,7 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{
-    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT,
-};
+use resource::constants::server::{DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
@@ -25,6 +23,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub(crate) storage: StorageConfig,
     pub diagnostics: DiagnosticsConfig,
+    pub logging: LoggingConfig,
     pub is_development_mode: bool,
 }
 
@@ -48,7 +47,7 @@ impl Config {
         serde_yaml::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
     }
 
-    pub(crate) fn validate(&self) -> Result<(), ConfigError> {
+    pub(crate) fn validate_and_finalise(&mut self) -> Result<(), ConfigError> {
         let encryption = &self.server.encryption;
         if encryption.enabled && encryption.cert.is_none() {
             return Err(ConfigError::ValidationError {
@@ -60,6 +59,9 @@ impl Config {
                 message: "Server encryption was enabled, but certificate key was not configured.",
             });
         }
+        // finalise:
+        self.storage.data = resolve_path_from_executable(&self.storage.data);
+        self.logging.logdir = resolve_path_from_executable(&self.logging.logdir);
         Ok(())
     }
 }
@@ -72,6 +74,7 @@ pub struct ConfigBuilder {
     encryption: Option<EncryptionConfig>,
     diagnostics: Option<DiagnosticsConfig>,
     data_directory: Option<PathBuf>,
+    log_directory: Option<PathBuf>,
     is_development_mode: Option<bool>,
 }
 
@@ -111,8 +114,10 @@ impl ConfigBuilder {
         self
     }
 
-    pub fn build(self) -> Config {
-        Config {
+    pub fn build(self) -> Result<Config, ConfigError> {
+        let data_directory = self.data_directory.unwrap_or(DEFAULT_DATA_DIR.into()).into();
+        let log_directory = self.log_directory.unwrap_or(DEFAULT_LOG_DIR.into());
+        let mut config = Config {
             server: ServerConfig {
                 address: self.server_address.unwrap_or_else(|| DEFAULT_ADDRESS.to_string()),
                 http_address: self.server_http_address.clone().unwrap_or("".to_owned()),
@@ -120,10 +125,13 @@ impl ConfigBuilder {
                 authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
                 encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
             },
-            storage: StorageConfig { data: self.data_directory.unwrap_or_else(StorageConfig::default_directory) },
+            storage: StorageConfig { data: data_directory },
             diagnostics: DiagnosticsConfig::default(),
+            logging: LoggingConfig { logdir: log_directory },
             is_development_mode: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
-        }
+        };
+        config.validate_and_finalise()?;
+        Ok(config)
     }
 }
 
@@ -175,17 +183,6 @@ pub(crate) struct StorageConfig {
     pub(crate) data: PathBuf,
 }
 
-impl StorageConfig {
-    fn default_directory() -> PathBuf {
-        let typedb_dir_or_current = std::env::current_exe()
-            .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
-            .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
-        typedb_dir_or_current.join(
-            PathBuf::from_str(DEFAULT_DATA_DIR).expect("Expected default data directory to exist: {DEFAULT_DATA_DIR}"),
-        )
-    }
-}
-
 #[derive(Debug, Deserialize)]
 pub struct DiagnosticsConfig {
     pub is_reporting_error_enabled: bool,
@@ -209,6 +206,19 @@ impl Default for DiagnosticsConfig {
     fn default() -> Self {
         Self::enabled()
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct LoggingConfig {
+    pub logdir: PathBuf,
+}
+
+fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
+    let typedb_dir_or_current = std::env::current_exe()
+        .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
+        .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
+    // if path is absolute, join will just return path
+    typedb_dir_or_current.join(path)
 }
 
 #[cfg(test)]

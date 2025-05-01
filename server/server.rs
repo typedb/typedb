@@ -206,6 +206,7 @@ impl Server {
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        debug_assert!(storage_directory.is_absolute());
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)
         } else if !storage_directory.is_dir() {

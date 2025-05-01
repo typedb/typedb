@@ -14,7 +14,10 @@ server:
         # root_ca: =
 
 storage:
-    data: "server/data"
+    data: "data"
+
+logging:
+    logdir: "logs"
 
 diagnostics:
     is_reporting_error_enabled: true
