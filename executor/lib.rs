@@ -119,8 +119,10 @@ impl Provenance {
         }
     }
 
-    pub(crate) fn branch_ids(&self) -> impl Iterator<Item = BranchID> {
+    pub fn branch_ids(&self) -> impl Iterator<Item = BranchID> {
         let provenance = self.0;
-        (0..64).filter(move |id| 0 != provenance & (1 << id)).map(|id| BranchID(id))
+        (0..64).filter(move |id| {
+            *id == 0 || 0 != provenance & (1 << id)
+        }).map(|id| BranchID(id))
     }
 }

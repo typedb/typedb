@@ -5,6 +5,7 @@
  */
 
 use std::collections::HashMap;
+use hyper::body::HttpBody;
 
 use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
@@ -13,7 +14,6 @@ use executor::row::MaybeOwnedRow;
 use resource::profile::StorageCounters;
 use serde::Serialize;
 use serde_json::json;
-use executor::Provenance;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{encode_thing_concept, encode_type_concept, encode_value};
@@ -22,7 +22,7 @@ use crate::service::http::message::query::concept::{encode_thing_concept, encode
 #[serde(rename_all = "camelCase")]
 struct EncodedRow<'a> {
     data: HashMap<&'a str, serde_json::Value>,
-    branch_provenance: Vec<u8>,
+    involved_branches: Vec<u8>,
 }
 
 pub fn encode_row<'a>(
@@ -48,8 +48,8 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    let branch_provenance = encode_provenance(row.provenance());
-    Ok(json!(EncodedRow { data: encoded_row, branch_provenance }))
+    let involved_branches = row.provenance().branch_ids().map(|b| b.0 as u8).collect();
+    Ok(json!(EncodedRow { data: encoded_row, involved_branches }))
 }
 
 pub fn encode_row_entry(
@@ -94,15 +94,4 @@ pub fn encode_row_entry(
             Ok(json!(encoded))
         }
     }
-}
-
-fn encode_provenance(provenance: Provenance) -> Vec<u8> {
-    let mut encoded = Vec::with_capacity(64);
-    encoded.push(0);
-    for i in 1..64 {
-        if 0 != (provenance & ( 1 << i)) {
-            encoded.push(i)
-        }
-    }
-    encoded
 }
