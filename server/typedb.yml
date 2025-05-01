@@ -1,4 +1,3 @@
-is_development_mode: false
 server:
     address: 0.0.0.0:1729
     http_enabled: true
@@ -17,10 +16,4 @@ storage:
     data: "data"
 
 logging:
-    logdir: "logs"
-
-diagnostics:
-    is_reporting_error_enabled: true
-    is_reporting_metric_enabled: true
-    is_monitoring_enabled: true
-    monitoring_port: 4104
+    directory: "logs"

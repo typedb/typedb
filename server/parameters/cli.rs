@@ -64,7 +64,7 @@ pub struct CLIArgs {
     pub storage_data: Option<String>,
 
     // Path to the log directory
-    #[arg(long = "logging.logdir")]
+    #[arg(long = "logging.directory")]
     pub logging_logdir: Option<String>,
 
     /// Enable usage metrics reporting
@@ -133,7 +133,7 @@ impl CLIArgs {
 
             config.storage.data => storage_data.map(|path| path.into());
 
-            config.logging.logdir => logging_logdir.map(|path| path.into());
+            config.logging.directory => logging_logdir.map(|path| path.into());
 
             config.diagnostics.is_reporting_error_enabled => diagnostics_reporting_errors;
             config.diagnostics.is_reporting_metric_enabled => diagnostics_reporting_metrics;

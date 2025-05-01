@@ -22,8 +22,10 @@ use crate::parameters::ConfigError;
 pub struct Config {
     pub server: ServerConfig,
     pub(crate) storage: StorageConfig,
+    #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
+    #[serde(default="Config::is_development_mode_default")]
     pub is_development_mode: bool,
 }
 
@@ -61,8 +63,12 @@ impl Config {
         }
         // finalise:
         self.storage.data = resolve_path_from_executable(&self.storage.data);
-        self.logging.logdir = resolve_path_from_executable(&self.logging.logdir);
+        self.logging.directory = resolve_path_from_executable(&self.logging.directory);
         Ok(())
+    }
+
+    fn is_development_mode_default() -> bool {
+        false
     }
 }
 
@@ -127,7 +133,7 @@ impl ConfigBuilder {
             },
             storage: StorageConfig { data: data_directory },
             diagnostics: DiagnosticsConfig::default(),
-            logging: LoggingConfig { logdir: log_directory },
+            logging: LoggingConfig { directory: log_directory },
             is_development_mode: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
         };
         config.validate_and_finalise()?;
@@ -210,7 +216,7 @@ impl Default for DiagnosticsConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct LoggingConfig {
-    pub logdir: PathBuf,
+    pub directory: PathBuf,
 }
 
 fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
