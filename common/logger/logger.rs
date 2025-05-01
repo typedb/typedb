@@ -10,6 +10,7 @@ use std::{fs, io::stdout, path::PathBuf};
 
 use tracing::{self, dispatcher::DefaultGuard, metadata::LevelFilter, Level};
 pub use tracing::{debug, error, info, trace};
+use tracing_appender::rolling::{RollingFileAppender, Rotation};
 use tracing_subscriber::{
     fmt::{writer::Tee, SubscriberBuilder},
     EnvFilter,
@@ -31,11 +32,8 @@ pub fn initialise_logging_global(logdir: &PathBuf) {
         // .add_directive("tonic=trace".parse().unwrap());
     ;
 
-    // Create a file appender
-    let logfile_path = logdir.join("typedb.log");
-    fs::create_dir_all(logdir).expect("Failed to create log dir");
-    let file_appender =
-        fs::OpenOptions::new().create(true).append(true).open(logfile_path).expect("Failed to create log file");
+    fs::create_dir_all(logdir.clone()).expect("Failed to create log dir");
+    let file_appender = RollingFileAppender::new(Rotation::HOURLY, logdir, "typedb.log");
     let subscriber = SubscriberBuilder::default()
         .with_max_level(Level::TRACE)
         .with_env_filter(filter)
