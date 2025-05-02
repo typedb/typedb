@@ -20,10 +20,8 @@ fn main() {
     initialise_abort_on_panic();
     let cli_args: CLIArgs = CLIArgs::parse();
     let config_file = cli_args.config_file_override.as_ref().map(|x| x.as_str()).unwrap_or(DEFAULT_CONFIG_PATH);
-    let mut config = Config::from_file(config_file.into())
-        .expect("Error reading from config file");
-    cli_args.override_config(&mut config)
-        .expect("Error validating config file overridden with cli args");
+    let mut config = Config::from_file(config_file.into()).expect("Error reading from config file");
+    cli_args.override_config(&mut config).expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {

@@ -28,7 +28,7 @@ pub mod server {
     pub const DISTRIBUTION: &str = "TypeDB CE";
     pub const VERSION: &str = include_str!("../VERSION");
     pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
-    pub const DEFAULT_CONFIG_PATH: &str = "typedb.yml";
+    pub const DEFAULT_CONFIG_PATH: &str = "config.yml";
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
 

@@ -48,19 +48,19 @@ pub struct CLIArgs {
     pub server_encryption_enabled: Option<bool>,
 
     /// Encryption certificate in PEM format. Must be supplied if encryption is enabled
-    #[arg(long = "server.encryption.cert", value_name = "FILE")]
-    pub server_encryption_cert: Option<String>,
+    #[arg(long = "server.encryption.certificate", value_name = "FILE")]
+    pub server_encryption_certificate: Option<String>,
 
     /// Encryption certificate key. Must be supplied if encryption is enabled
-    #[arg(long = "server.encryption.cert-key", value_name = "FILE")]
+    #[arg(long = "server.encryption.certificate-key", value_name = "FILE")]
     pub server_encryption_cert_key: Option<String>,
 
     /// Encryption CA in PEM format.
-    #[arg(long = "server.encryption.root-ca", value_name = "FILE")]
-    pub server_encryption_root_ca: Option<String>,
+    #[arg(long = "server.encryption.ca-certificate", value_name = "FILE")]
+    pub server_encryption_ca_certificate: Option<String>,
 
     /// Path to the data directory
-    #[arg(long = "storage.data", value_name = "DIR")]
+    #[arg(long = "storage.data-directory", value_name = "DIR")]
     pub storage_data: Option<String>,
 
     /// Path to the log directory
@@ -108,9 +108,9 @@ impl CLIArgs {
             server_http_address,
             server_authentication_token_ttl_seconds,
             server_encryption_enabled,
-            server_encryption_cert,
+            server_encryption_certificate,
             server_encryption_cert_key,
-            server_encryption_root_ca,
+            server_encryption_ca_certificate,
             storage_data,
             logging_logdir,
             diagnostics_reporting_metrics,
@@ -127,11 +127,11 @@ impl CLIArgs {
             config.server.http_address => server_http_address;
 
             config.server.encryption.enabled => server_encryption_enabled;
-            config.server.encryption.cert => server_encryption_cert.map(|cert| Some(cert.into()));
-            config.server.encryption.cert_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
-            config.server.encryption.root_ca => server_encryption_root_ca.map(|cert| Some(cert.into()));
+            config.server.encryption.certificate => server_encryption_certificate.map(|cert| Some(cert.into()));
+            config.server.encryption.certificate_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
+            config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
 
-            config.storage.data => storage_data.map(|path| path.into());
+            config.storage.data_directory => storage_data.map(|path| path.into());
 
             config.logging.directory => logging_logdir.map(|path| path.into());
 

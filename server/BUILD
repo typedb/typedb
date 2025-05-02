@@ -106,7 +106,7 @@ rust_test(
     name = "test_crate_server",
     crate = ":server",
     deps = [],
-    data = [":typedb.yml"],
+    data = [":config.yml"],
     crate_features = ["bazel"],
 )
 

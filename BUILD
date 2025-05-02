@@ -71,10 +71,10 @@ alias(
 # The directory structure for distribution
 pkg_files(
     name = "package-layout-server",
-    srcs = ["//:typedb_server_bin", "//binary:typedb", "//server:typedb.yml"],
+    srcs = ["//:typedb_server_bin", "//binary:typedb", "//server:config.yml"],
     renames = {
         "//:typedb_server_bin" : "server/typedb_server_bin",
-        "//server:typedb.yml" : "server/typedb.yml",
+        "//server:config.yml" : "server/config.yml",
     },
     attributes = binary_permissions,
 )

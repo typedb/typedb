@@ -21,13 +21,14 @@ use serde_with::{serde_as, DurationSeconds};
 use crate::parameters::ConfigError;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub server: ServerConfig,
     pub(crate) storage: StorageConfig,
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
-    #[serde(default = "Config::is_development_mode_default")]
+    #[serde(rename = "development-mode.enabled", default = "Config::is_development_mode_default")]
     pub is_development_mode: bool,
 }
 
@@ -53,18 +54,18 @@ impl Config {
 
     pub(crate) fn validate_and_finalise(&mut self) -> Result<(), ConfigError> {
         let encryption = &self.server.encryption;
-        if encryption.enabled && encryption.cert.is_none() {
+        if encryption.enabled && encryption.certificate.is_none() {
             return Err(ConfigError::ValidationError {
                 message: "Server encryption was enabled, but certificate was not configured.",
             });
         }
-        if encryption.enabled && encryption.cert_key.is_none() {
+        if encryption.enabled && encryption.certificate_key.is_none() {
             return Err(ConfigError::ValidationError {
                 message: "Server encryption was enabled, but certificate key was not configured.",
             });
         }
         // finalise:
-        self.storage.data = Self::resolve_path_from_executable(&self.storage.data);
+        self.storage.data_directory = Self::resolve_path_from_executable(&self.storage.data_directory);
         self.logging.directory = Self::resolve_path_from_executable(&self.logging.directory);
         Ok(())
     }
@@ -141,7 +142,7 @@ impl ConfigBuilder {
                 authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
                 encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
             },
-            storage: StorageConfig { data: data_directory },
+            storage: StorageConfig { data_directory: data_directory },
             diagnostics: DiagnosticsConfig::default(),
             logging: LoggingConfig { directory: log_directory },
             is_development_mode: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
@@ -152,6 +153,7 @@ impl ConfigBuilder {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
     pub(crate) address: String,
     pub(crate) http_enabled: bool,
@@ -162,9 +164,10 @@ pub struct ServerConfig {
 
 #[serde_as]
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct AuthenticationConfig {
     #[serde_as(as = "DurationSeconds")]
-    #[serde(rename = "token_expiration_seconds")]
+    #[serde(rename = "token-expiration-seconds")]
     pub token_expiration: Duration,
 }
 
@@ -177,14 +180,14 @@ impl Default for AuthenticationConfig {
 #[derive(Debug, Clone, Deserialize)]
 pub struct EncryptionConfig {
     pub enabled: bool,
-    pub cert: Option<PathBuf>,
-    pub cert_key: Option<PathBuf>,
-    pub root_ca: Option<PathBuf>,
+    pub certificate: Option<PathBuf>,
+    pub certificate_key: Option<PathBuf>,
+    pub ca_certificate: Option<PathBuf>,
 }
 
 impl EncryptionConfig {
     pub fn disabled() -> Self {
-        Self { enabled: false, cert: None, cert_key: None, root_ca: None }
+        Self { enabled: false, certificate: None, certificate_key: None, ca_certificate: None }
     }
 }
 
@@ -195,11 +198,13 @@ impl Default for EncryptionConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub(crate) struct StorageConfig {
-    pub(crate) data: PathBuf,
+    pub(crate) data_directory: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct DiagnosticsConfig {
     pub is_reporting_error_enabled: bool,
     pub is_reporting_metric_enabled: bool,
@@ -225,6 +230,7 @@ impl Default for DiagnosticsConfig {
 }
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 pub struct LoggingConfig {
     pub directory: PathBuf,
 }
@@ -239,10 +245,10 @@ pub mod tests {
 
     fn config_path() -> PathBuf {
         #[cfg(feature = "bazel")]
-        return std::env::current_dir().unwrap().join("server/typedb.yml");
+        return std::env::current_dir().unwrap().join("server/config.yml");
 
         #[cfg(not(feature = "bazel"))]
-        return std::env::current_dir().unwrap().join("typedb.yml");
+        return std::env::current_dir().unwrap().join("config.yml");
     }
 
     fn load_and_parse(yaml: PathBuf, args: Vec<&str>) -> Result<Config, ConfigError> {
@@ -274,8 +280,8 @@ pub mod tests {
             let config = load_and_parse(config_path(), vec![]).unwrap();
             assert!(
                 config.server.encryption.enabled == false
-                    && config.server.encryption.cert_key.is_none()
-                    && config.server.encryption.cert.is_none()
+                    && config.server.encryption.certificate_key.is_none()
+                    && config.server.encryption.certificate.is_none()
             ); // Test is bad if this fails
         }
 
