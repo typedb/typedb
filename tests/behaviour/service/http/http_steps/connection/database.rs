@@ -212,14 +212,10 @@ async fn connection_get_database_has_schema(context: &mut Context, name: String,
         databases_schema(context.http_client(), context.auth_token(), &temp_database_name)
             .await
             .expect("Expected successful schema retrieval")
-            .trim()
-            .to_string()
     };
     let schema = databases_schema(context.http_client(), context.auth_token(), &name)
         .await
-        .expect("Expected successful schema retrieval")
-        .trim()
-        .to_string();
+        .expect("Expected successful schema retrieval");
     assert_eq!(expected_schema_retrieved, schema);
 }
 
@@ -234,13 +230,9 @@ async fn connection_get_database_has_type_schema(context: &mut Context, name: St
         databases_type_schema(context.http_client(), context.auth_token(), &temp_database_name)
             .await
             .expect("Expected successful type schema retrieval")
-            .trim()
-            .to_string()
     };
     let type_schema = databases_type_schema(context.http_client(), context.auth_token(), &name)
         .await
-        .expect("Expected successful type schema retrieval")
-        .trim()
-        .to_string();
+        .expect("Expected successful type schema retrieval");
     assert_eq!(expected_type_schema_retrieved, type_schema);
 }
