@@ -11,9 +11,12 @@ use macro_rules_attribute::apply;
 
 use crate::{
     generic_step, in_background,
-    message::{databases, databases_create, databases_delete, databases_get},
+    message::{
+        databases, databases_create, databases_delete, databases_get, databases_schema, databases_type_schema, query,
+        transactions_query,
+    },
     params::TokenMode,
-    util::iter_table,
+    util::{iter_table, random_uuid},
     Context, HttpContext,
 };
 
@@ -185,4 +188,51 @@ async fn connection_does_not_have_databases(context: &mut Context, step: &Step) 
             "Connection doesn't contain at least one of the databases.",
         );
     }
+}
+
+async fn create_temporary_database_with_schema(context: &mut Context, schema_query: String) -> String {
+    let name = format!("temp-{}", random_uuid());
+
+    create_database(context.http_client(), context.auth_token(), name.clone(), params::MayError::False).await;
+    query(context.http_client(), context.auth_token(), &name, "schema", &schema_query, &None, &None, true)
+        .await
+        .expect("Expected successful query with commit");
+
+    name
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection get database\({word}\) has schema:")]
+async fn connection_get_database_has_schema(context: &mut Context, name: String, step: &Step) {
+    let expected_schema = step.docstring.as_ref().unwrap().trim().to_string();
+    let expected_schema_retrieved = if expected_schema.is_empty() {
+        String::new()
+    } else {
+        let temp_database_name = create_temporary_database_with_schema(context, expected_schema).await;
+        databases_schema(context.http_client(), context.auth_token(), &temp_database_name)
+            .await
+            .expect("Expected successful schema retrieval")
+    };
+    let schema = databases_schema(context.http_client(), context.auth_token(), &name)
+        .await
+        .expect("Expected successful schema retrieval");
+    assert_eq!(expected_schema_retrieved, schema);
+}
+
+#[apply(generic_step)]
+#[step(expr = r"connection get database\({word}\) has type schema:")]
+async fn connection_get_database_has_type_schema(context: &mut Context, name: String, step: &Step) {
+    let expected_type_schema = step.docstring.as_ref().unwrap().trim().to_string();
+    let expected_type_schema_retrieved = if expected_type_schema.is_empty() {
+        String::new()
+    } else {
+        let temp_database_name = create_temporary_database_with_schema(context, expected_type_schema).await;
+        databases_type_schema(context.http_client(), context.auth_token(), &temp_database_name)
+            .await
+            .expect("Expected successful type schema retrieval")
+    };
+    let type_schema = databases_type_schema(context.http_client(), context.auth_token(), &name)
+        .await
+        .expect("Expected successful type schema retrieval");
+    assert_eq!(expected_type_schema_retrieved, type_schema);
 }

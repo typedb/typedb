@@ -26,6 +26,7 @@ use futures::{
 use hyper::{client::HttpConnector, http, Client, StatusCode};
 use hyper_rustls::{HttpsConnector, HttpsConnectorBuilder};
 use itertools::Itertools;
+use serde_json::Value;
 use server::{
     error::ServerOpenError,
     service::{
@@ -222,8 +223,16 @@ impl Context {
         Self::versioned_endpoint(Self::HTTP_PROTOCOL, Self::DEFAULT_ADDRESS, Self::DEFAULT_API_VERSION)
     }
 
+    pub fn default_non_versioned_endpoint() -> String {
+        Self::non_versioned_endpoint(Self::HTTP_PROTOCOL, Self::DEFAULT_ADDRESS)
+    }
+
     pub fn versioned_endpoint(protocol: &str, address: &str, api_version: &str) -> String {
         format!("{}://{}/{}", protocol, address, api_version)
+    }
+
+    pub fn non_versioned_endpoint(protocol: &str, address: &str) -> String {
+        format!("{}://{}", protocol, address)
     }
 
     fn is_ignore_tag(t: &String) -> bool {
@@ -382,7 +391,10 @@ impl Context {
     }
 
     pub fn get_answer_row_index(&mut self, index: usize) -> &serde_json::Value {
-        self.answer.as_ref().unwrap().answers.as_ref().unwrap().get(index).unwrap()
+        match self.answer.as_ref().unwrap().answers.as_ref().unwrap().get(index).unwrap() {
+            Value::Object(object) => object.get("data").expect("Expected to have 'data' key"),
+            value => panic!("Expected object from answers, got: {value:?}"),
+        }
     }
 
     pub fn get_concurrent_answers_index(&mut self) -> usize {

@@ -53,6 +53,7 @@ use crate::{
             ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
+        typedb_service::{get_database_schema, get_database_type_schema},
         ServiceError,
     },
 };
@@ -259,25 +260,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             None => Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }
                 .into_error_message()
                 .into_status()),
-            Some(database) => {
-                let transaction = TransactionRead::open(database, TransactionOptions::default()).map_err(|err| {
-                    ServiceError::FailedToOpenPrerequisiteTransaction {}.into_error_message().into_status()
-                })?;
-                let types_syntax =
-                    transaction.type_manager.get_types_syntax(transaction.snapshot()).map_err(|err| {
-                        ServiceError::ConceptReadError { typedb_source: err }.into_error_message().into_status()
-                    })?;
-                let functions_syntax =
-                    transaction.function_manager.get_functions_syntax(transaction.snapshot()).map_err(|err| {
-                        ServiceError::FunctionReadError { typedb_source: err }.into_error_message().into_status()
-                    })?;
-                if !types_syntax.is_empty() || !functions_syntax.is_empty() {
-                    let define = format!("{}\n{} {}", typeql::token::Clause::Define, types_syntax, functions_syntax);
-                    Ok(Response::new(database_schema_res(define)))
-                } else {
-                    Ok(Response::new(database_schema_res(String::new())))
-                }
-            }
+            Some(database) => Ok(Response::new(database_schema_res(
+                get_database_schema(database)
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())?,
+            ))),
         })
     }
 
@@ -291,22 +277,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 None => Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }
                     .into_error_message()
                     .into_status()),
-                Some(database) => {
-                    let transaction =
-                        TransactionRead::open(database, TransactionOptions::default()).map_err(|err| {
-                            ServiceError::FailedToOpenPrerequisiteTransaction {}.into_error_message().into_status()
-                        })?;
-                    let types_syntax =
-                        transaction.type_manager.get_types_syntax(transaction.snapshot()).map_err(|err| {
-                            ServiceError::ConceptReadError { typedb_source: err }.into_error_message().into_status()
-                        })?;
-                    if !types_syntax.is_empty() {
-                        let define = format!("{}\n{}", typeql::token::Clause::Define, types_syntax);
-                        Ok(Response::new(database_type_schema_res(define)))
-                    } else {
-                        Ok(Response::new(database_type_schema_res(String::new())))
-                    }
-                }
+                Some(database) => Ok(Response::new(database_type_schema_res(
+                    get_database_type_schema(database)
+                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?,
+                ))),
             }
         })
     }

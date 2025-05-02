@@ -4,7 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, str::FromStr};
+use std::{
+    collections::HashMap,
+    fmt::{Display, Formatter},
+    str::FromStr,
+};
 
 use axum::{
     async_trait,
@@ -13,13 +17,27 @@ use axum::{
     RequestPartsExt,
 };
 use http::request::Parts;
+use serde::{Deserialize, Serialize};
 
 use crate::service::http::error::HttpServiceError;
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ServerVersionResponse {
+    distribution: String,
+    version: String,
+}
+
+pub(crate) fn encode_server_version(distribution: String, version: String) -> ServerVersionResponse {
+    ServerVersionResponse { distribution, version }
+}
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Hash, PartialOrd)]
 pub(crate) enum ProtocolVersion {
     V1,
 }
+
+pub(crate) const PROTOCOL_VERSION_LATEST: ProtocolVersion = ProtocolVersion::V1;
 
 impl ProtocolVersion {
     const VERSION_PARAM: &'static str = "version";
@@ -48,6 +66,14 @@ impl FromStr for ProtocolVersion {
         match version {
             "v1" => Ok(ProtocolVersion::V1),
             _ => Err(HttpServiceError::UnknownVersion { version: version.to_string() }),
+        }
+    }
+}
+
+impl Display for ProtocolVersion {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ProtocolVersion::V1 => write!(f, "v1"),
         }
     }
 }

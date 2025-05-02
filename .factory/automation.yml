@@ -148,13 +148,12 @@ build:
         bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
         bazel test //tests/assembly:test_assembly
 
-# TODO: Uncomment before releasing
-#    test-behaviour-service:
-#      image: typedb-ubuntu-22.04
-#      dependencies: [build]
-#      command: |
-#        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
-#        bazel test //tests/behaviour/service/... --test_output=streamed --jobs=1
+    test-behaviour-service:
+      image: typedb-ubuntu-22.04
+      dependencies: [build]
+      command: |
+        bazel run @typedb_dependencies//tool/bazelinstall:remote_cache_setup.sh
+        bazel test //tests/behaviour/service/... --test_output=streamed --jobs=1
 
 release:
   filter:

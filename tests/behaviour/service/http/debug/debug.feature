@@ -3,6 +3,3 @@
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 Feature: Debugging Space
-
-  # Paste any scenarios below for debugging.
-  # Do not commit any changes to this file.

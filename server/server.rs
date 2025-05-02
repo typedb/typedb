@@ -136,6 +136,8 @@ impl Server {
         let http_service = http_server_address.map(|http_address| {
             http::typedb_service::TypeDBService::new(
                 http_address,
+                distribution,
+                version,
                 database_manager.clone(),
                 user_manager.clone(),
                 credential_verifier.clone(),
