@@ -33,6 +33,7 @@ def typedb_protocol():
     )
 
 def typedb_behaviour():
+    # TODO: Return typedb
     git_repository(
         name = "typedb_behaviour",
         remote = "https://github.com/farost/typedb-behaviour",
