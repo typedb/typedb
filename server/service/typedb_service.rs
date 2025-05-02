@@ -25,7 +25,9 @@ pub(crate) fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>
     Ok(schema)
 }
 
-pub(crate) fn get_database_type_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, ServiceError> {
+pub(crate) fn get_database_type_schema<D: DurabilityClient>(
+    database: Arc<Database<D>>,
+) -> Result<String, ServiceError> {
     let transaction = TransactionRead::open(database, TransactionOptions::default())
         .map_err(|err| ServiceError::FailedToOpenPrerequisiteTransaction {})?;
     let types_syntax = get_types_syntax(&transaction)?;

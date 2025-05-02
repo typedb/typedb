@@ -191,8 +191,11 @@ pub async fn databases_type_schema(
     auth_token: Option<impl AsRef<str>>,
     database_name: &str,
 ) -> Result<String, HttpBehaviourTestError> {
-    let url =
-        format!("{}/databases/{}/type-schema", Context::default_versioned_endpoint(), encode_path_variable(database_name));
+    let url = format!(
+        "{}/databases/{}/type-schema",
+        Context::default_versioned_endpoint(),
+        encode_path_variable(database_name)
+    );
     let response = send_request(http_client, auth_token, Method::GET, &url, None).await?;
     Ok(response)
 }

@@ -260,7 +260,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             None => Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }
                 .into_error_message()
                 .into_status()),
-            Some(database) => Ok(Response::new(database_schema_res(get_database_schema(database).map_err(|typedb_source| typedb_source.into_error_message().into_status())?))),
+            Some(database) => Ok(Response::new(database_schema_res(
+                get_database_schema(database)
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())?,
+            ))),
         })
     }
 
@@ -274,7 +277,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 None => Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }
                     .into_error_message()
                     .into_status()),
-                Some(database) => Ok(Response::new(database_type_schema_res(get_database_type_schema(database).map_err(|typedb_source| typedb_source.into_error_message().into_status())?))),
+                Some(database) => Ok(Response::new(database_type_schema_res(
+                    get_database_type_schema(database)
+                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?,
+                ))),
             }
         })
     }
