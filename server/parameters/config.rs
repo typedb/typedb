@@ -204,11 +204,14 @@ pub(crate) struct StorageConfig {
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(rename_all = "kebab-case")]
 pub struct DiagnosticsConfig {
+    #[serde(rename="reporting.errors")]
     pub is_reporting_error_enabled: bool,
+    #[serde(rename="reporting.metrics")]
     pub is_reporting_metric_enabled: bool,
+    #[serde(rename="monitoring.enabled")]
     pub is_monitoring_enabled: bool,
+    #[serde(rename="monitoring.port")]
     pub monitoring_port: u16,
 }
 
