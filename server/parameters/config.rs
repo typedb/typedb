@@ -294,21 +294,21 @@ pub mod tests {
             let args = vec![
                 "--server.encryption.enabled",
                 "true",
-                "--server.encryption.cert-key",
+                "--server.encryption.certificate-key",
                 "somekey",
-                "--server.encryption.cert",
+                "--server.encryption.certificate",
                 "somecert.pem",
             ];
             assert!(load_and_parse(config_path(), args).is_ok());
         }
 
         {
-            let args = vec!["--server.encryption.enabled", "true", "--server.encryption.cert", "somecert.pem"];
+            let args = vec!["--server.encryption.enabled", "true", "--server.encryption.certificate", "somecert.pem"];
             assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
 
         {
-            let args = vec!["--server.encryption.enabled", "true", "--server.encryption.cert-key", "somekey"];
+            let args = vec!["--server.encryption.enabled", "true", "--server.encryption.certificate-key", "somekey"];
             assert!(matches!(load_and_parse(config_path(), args), Err(ConfigError::ValidationError { .. })));
         }
     }
