@@ -69,7 +69,7 @@ features = {}
 	[dev-dependencies.typeql]
 		features = []
 		git = "https://github.com/typedb/typeql"
-		tag = "3.2.0-rc2"
+		tag = "3.2.0"
 		default-features = false
 
 	[dev-dependencies.lending_iterator]
