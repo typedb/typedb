@@ -13,3 +13,4 @@ pub mod error;
 pub mod parameters;
 pub mod server;
 pub mod service;
+mod util;

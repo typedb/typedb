@@ -8,7 +8,7 @@ use std::{path::PathBuf, str::FromStr, time::Duration};
 
 use clap::{ArgAction, Parser};
 use resource::constants::server::{
-    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS, DEFAULT_HTTP_ADDRESS, MONITORING_DEFAULT_PORT, VERSION,
+    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS, DEFAULT_HTTP_ADDRESS, MONITORING_DEFAULT_PORT, SERVER_INFO,
 };
 
 use crate::parameters::config::{AuthenticationConfig, Config, DiagnosticsConfig, EncryptionConfig};
@@ -16,7 +16,7 @@ use crate::parameters::config::{AuthenticationConfig, Config, DiagnosticsConfig,
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
-#[clap(version = VERSION)]
+#[clap(version = SERVER_INFO.version)]
 pub struct CLIArgs {
     /// Server host and port (e.g., 0.0.0.0:1729)
     #[arg(long = "server.address", default_value_t = DEFAULT_ADDRESS.to_string())]

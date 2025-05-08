@@ -9,7 +9,7 @@
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{ASCII_LOGO, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
+use resource::constants::server::{SENTRY_REPORTING_URI, SERVER_INFO};
 use server::{
     parameters::{cli::CLIArgs, config::Config},
     server::Server,
@@ -22,7 +22,7 @@ fn main() {
     initialise_logging_global();
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
-        let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
+        let server = Server::new(SERVER_INFO, config, None).await.unwrap();
         match server.serve().await {
             Ok(_) => println!("Exited."),
             Err(err) => println!("Exited with error: {:?}", err),
@@ -43,7 +43,7 @@ fn initialise_abort_on_panic() {
 fn may_initialise_error_reporting(config: &Config) {
     if config.diagnostics.is_reporting_error_enabled && !config.is_development_mode {
         let opts =
-            (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() });
+            (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(SERVER_INFO.version.into()), ..Default::default() });
         let _ = sentry::init(opts);
     }
 }

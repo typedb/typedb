@@ -10,6 +10,7 @@ use serde::{Deserialize, Serialize};
 
 pub(crate) mod grpc;
 pub mod http;
+mod state;
 mod transaction_service;
 mod typedb_service;
 

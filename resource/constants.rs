@@ -24,10 +24,12 @@ pub mod server {
     use std::time::Duration;
 
     use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR};
+    use crate::server_info::ServerInfo;
 
-    pub const DISTRIBUTION: &str = "TypeDB CE";
-    pub const VERSION: &str = include_str!("../VERSION");
-    pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
+    const DISTRIBUTION: &str = "TypeDB CE";
+    const VERSION: &str = include_str!("../VERSION");
+    const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
+    pub const SERVER_INFO: ServerInfo = ServerInfo::new(ASCII_LOGO, DISTRIBUTION, VERSION);
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
 

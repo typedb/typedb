@@ -6,7 +6,7 @@
 
 use std::{cmp::Ordering, collections::HashMap};
 
-use error::TypeDBError;
+use error::{typedb_error, TypeDBError};
 use tonic::{Code, Status};
 use tonic_types::{ErrorDetails, StatusExt};
 
@@ -109,5 +109,14 @@ impl IntoGrpcStatus for typedb_protocol::Error {
         let mut details = ErrorDetails::with_error_info(self.error_code, self.domain, HashMap::new());
         details.set_debug_info(self.stack_trace, "");
         Status::with_error_details(Code::InvalidArgument, "Request generated error", details)
+    }
+}
+
+typedb_error! {
+    pub ServiceError(component = "Server", prefix = "SRV") {
+        Unimplemented(1, "Not implemented: {description}", description: String),
+        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
+        DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
+        UserDoesNotExist(4, "User does not exist"),
     }
 }

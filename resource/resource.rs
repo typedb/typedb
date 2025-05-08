@@ -6,4 +6,5 @@
 
 pub mod constants;
 pub mod perf_counters;
+pub mod server_info;
 pub mod profile;

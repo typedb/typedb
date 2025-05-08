@@ -14,7 +14,7 @@ use resource::constants::server::{
     DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, MONITORING_DEFAULT_PORT,
 };
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Config {
     pub server: ServerConfig,
     pub(crate) storage: StorageConfig,
@@ -95,7 +95,7 @@ impl ConfigBuilder {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct ServerConfig {
     pub(crate) address: String,
     pub(crate) http_address: Option<String>,
@@ -103,7 +103,7 @@ pub struct ServerConfig {
     pub(crate) encryption: EncryptionConfig,
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct AuthenticationConfig {
     pub token_expiration: Duration,
 }
@@ -134,7 +134,7 @@ impl Default for EncryptionConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub(crate) struct StorageConfig {
     pub(crate) data: PathBuf,
 }
@@ -150,7 +150,7 @@ impl StorageConfig {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct DiagnosticsConfig {
     pub is_reporting_error_enabled: bool,
     pub is_reporting_metric_enabled: bool,
