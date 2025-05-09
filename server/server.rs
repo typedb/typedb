@@ -88,18 +88,28 @@ impl Server {
             grpc_service,
         );
 
-        let (http_server, http_address) = if let Some(mut http_service) = self.http_service {
+        let http_server_address = match self.config.server.http_address.clone() {
+            Some(http_address) => Some(resolve_address(http_address).await),
+            None => None,
+        };
+        let http_service = http_server_address.map(|http_address| {
+            http::typedb_service::TypeDBService::new(
+                http_address,
+                self.server_state.clone(),
+                self.shutdown_sig_receiver.clone(),
+            )
+        });
+
+        let (http_server, http_address) = if let Some(mut http_service) = http_service {
             let http_address = *http_service.address();
             if grpc_address == http_address {
                 return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
             }
             let server = Self::serve_http(
                 http_address,
-                self.credential_verifier,
-                self.token_manager,
-                self.diagnostics_manager,
                 &self.config.server.encryption,
-                self.shutdown_receiver,
+                self.server_state.clone(),
+                self.shutdown_sig_receiver,
                 http_service,
             );
             (Some(server), Some(http_address))
@@ -151,8 +161,8 @@ impl Server {
 
     async fn serve_http(
         address: SocketAddr,
-        server_state: Arc<ServerState>,
         encryption_config: &EncryptionConfig,
+        server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
         service: http::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {

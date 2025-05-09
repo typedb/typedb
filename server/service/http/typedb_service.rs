@@ -55,6 +55,7 @@ use crate::{
         QueryType, ServiceError,
     },
 };
+use crate::service::state::ServerState;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -87,13 +88,7 @@ impl TypeDBService {
 
     pub(crate) fn new(
         address: SocketAddr,
-        distribution: &'static str,
-        version: &'static str,
-        database_manager: Arc<DatabaseManager>,
-        user_manager: Arc<UserManager>,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<ServerState>,
         shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
@@ -111,19 +106,7 @@ impl TypeDBService {
             false,
         ));
 
-        Self {
-            address,
-            distribution,
-            version,
-            database_manager,
-            user_manager,
-            credential_verifier,
-            token_manager,
-            diagnostics_manager,
-            transaction_services: transaction_request_senders,
-            shutdown_receiver,
-            _transaction_cleanup_job: transaction_cleanup_job,
-        }
+        todo!()
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
