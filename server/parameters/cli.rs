@@ -120,7 +120,7 @@ impl CLIArgs {
             development_mode_enabled,
         } = self;
         override_config! {
-            config.is_development_mode => development_mode_enabled;
+            config.development_mode.enabled => development_mode_enabled;
 
             config.server.address => server_address;
             config.server.http_enabled => server_http_enabled;

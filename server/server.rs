@@ -28,7 +28,7 @@ use user::{initialise_default_user, user_manager::UserManager};
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager},
     error::ServerOpenError,
-    parameters::config::{Config, DiagnosticsConfig, EncryptionConfig},
+    parameters::config::{Config, DevelopmentMode, DiagnosticsConfig, EncryptionConfig},
     service::{grpc, http},
 };
 
@@ -100,7 +100,7 @@ impl Server {
                 version,
                 diagnostics_config,
                 storage_directory.clone(),
-                config.is_development_mode,
+                &config.development_mode,
             )
             .await,
         );
@@ -231,7 +231,7 @@ impl Server {
         version: &str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
-        is_development_mode: bool,
+        is_development_mode: &DevelopmentMode,
     ) -> DiagnosticsManager {
         let diagnostics = Diagnostics::new(
             deployment_id,
@@ -245,7 +245,7 @@ impl Server {
             diagnostics,
             config.monitoring.port,
             config.monitoring.enabled,
-            is_development_mode,
+            is_development_mode.enabled,
         );
         diagnostics_manager.may_start_monitoring().await;
         diagnostics_manager.may_start_reporting().await;
@@ -267,7 +267,7 @@ impl Server {
     }
 
     pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        Self::print_hello(ASCII_LOGO, self.distribution, self.version, self.config.is_development_mode);
+        Self::print_hello(ASCII_LOGO, self.distribution, self.version, self.config.development_mode.enabled);
 
         Self::install_default_encryption_provider()?;
 

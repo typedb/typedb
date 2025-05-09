@@ -29,3 +29,6 @@ diagnostics:
     reporting:
         metrics: true
         errors: true
+
+development-mode:
+    enabled: false

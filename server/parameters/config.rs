@@ -28,8 +28,8 @@ pub struct Config {
     #[serde(default)]
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
-    #[serde(rename = "development-mode.enabled", default = "Config::is_development_mode_default")]
-    pub is_development_mode: bool,
+    #[serde(rename = "development-mode.enabled", default)]
+    pub development_mode: DevelopmentMode,
 }
 
 impl Config {
@@ -80,75 +80,6 @@ impl Config {
 
     fn is_development_mode_default() -> bool {
         false
-    }
-}
-
-#[derive(Debug, Default)]
-pub struct ConfigBuilder {
-    server_address: Option<String>,
-    server_http_address: Option<String>,
-    authentication: Option<AuthenticationConfig>,
-    encryption: Option<EncryptionConfig>,
-    diagnostics: Option<DiagnosticsConfig>,
-    data_directory: Option<PathBuf>,
-    log_directory: Option<PathBuf>,
-    is_development_mode: Option<bool>,
-}
-
-impl ConfigBuilder {
-    fn server_address(mut self, address: impl Into<String>) -> Self {
-        self.server_address = Some(address.into());
-        self
-    }
-
-    pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
-        self.server_http_address = Some(address.into());
-        self
-    }
-
-    pub fn authentication(mut self, config: AuthenticationConfig) -> Self {
-        self.authentication = Some(config);
-        self
-    }
-
-    pub fn encryption(mut self, config: EncryptionConfig) -> Self {
-        self.encryption = Some(config);
-        self
-    }
-
-    pub fn diagnostics(mut self, config: DiagnosticsConfig) -> Self {
-        self.diagnostics = Some(config);
-        self
-    }
-
-    pub fn data_directory(mut self, path: impl AsRef<Path>) -> Self {
-        self.data_directory = Some(path.as_ref().to_path_buf());
-        self
-    }
-
-    pub fn development_mode(mut self, is_enabled: bool) -> Self {
-        self.is_development_mode = Some(is_enabled);
-        self
-    }
-
-    pub fn build(self) -> Result<Config, ConfigError> {
-        let data_directory = self.data_directory.unwrap_or(DEFAULT_DATA_DIR.into()).into();
-        let log_directory = self.log_directory.unwrap_or(DEFAULT_LOG_DIR.into());
-        let mut config = Config {
-            server: ServerConfig {
-                address: self.server_address.unwrap_or_else(|| DEFAULT_ADDRESS.to_string()),
-                http_address: self.server_http_address.clone().unwrap_or("".to_owned()),
-                http_enabled: self.server_http_address.is_some(),
-                authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
-                encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
-            },
-            storage: StorageConfig { data_directory: data_directory },
-            diagnostics: DiagnosticsConfig::default(),
-            logging: LoggingConfig { directory: log_directory },
-            is_development_mode: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
-        };
-        config.validate_and_finalise()?;
-        Ok(config)
     }
 }
 
@@ -212,14 +143,8 @@ pub struct DiagnosticsConfig {
 impl DiagnosticsConfig {
     pub fn enabled() -> Self {
         Self {
-            reporting: Reporting {
-                report_errors: true,
-                report_metrics: true,
-            },
-            monitoring: Monitoring {
-                enabled: true,
-                port: MONITORING_DEFAULT_PORT,
-            }
+            reporting: Reporting { report_errors: true, report_metrics: true },
+            monitoring: Monitoring { enabled: true, port: MONITORING_DEFAULT_PORT },
         }
     }
 }
@@ -232,9 +157,9 @@ impl Default for DiagnosticsConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct Reporting {
-    #[serde(rename="errors")]
+    #[serde(rename = "errors")]
     pub report_errors: bool,
-    #[serde(rename="metrics")]
+    #[serde(rename = "metrics")]
     pub report_metrics: bool,
 }
 
@@ -248,6 +173,91 @@ pub struct Monitoring {
 #[serde(rename_all = "kebab-case")]
 pub struct LoggingConfig {
     pub directory: PathBuf,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct DevelopmentMode {
+    pub enabled: bool,
+}
+
+impl Default for DevelopmentMode {
+    fn default() -> Self {
+        Self { enabled: false }
+    }
+}
+
+// Only used in tests
+#[derive(Debug, Default)]
+pub struct ConfigBuilder {
+    server_address: Option<String>,
+    server_http_address: Option<String>,
+    authentication: Option<AuthenticationConfig>,
+    encryption: Option<EncryptionConfig>,
+    diagnostics: Option<DiagnosticsConfig>,
+    data_directory: Option<PathBuf>,
+    log_directory: Option<PathBuf>,
+    is_development_mode: Option<bool>,
+}
+
+impl ConfigBuilder {
+    fn server_address(mut self, address: impl Into<String>) -> Self {
+        self.server_address = Some(address.into());
+        self
+    }
+
+    pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
+        self.server_http_address = Some(address.into());
+        self
+    }
+
+    pub fn authentication(mut self, config: AuthenticationConfig) -> Self {
+        self.authentication = Some(config);
+        self
+    }
+
+    pub fn encryption(mut self, config: EncryptionConfig) -> Self {
+        self.encryption = Some(config);
+        self
+    }
+
+    pub fn diagnostics(mut self, config: DiagnosticsConfig) -> Self {
+        self.diagnostics = Some(config);
+        self
+    }
+
+    pub fn data_directory(mut self, path: impl AsRef<Path>) -> Self {
+        self.data_directory = Some(path.as_ref().to_path_buf());
+        self
+    }
+
+    pub fn development_mode(mut self, is_enabled: bool) -> Self {
+        self.is_development_mode = Some(is_enabled);
+        self
+    }
+
+    pub fn build(self) -> Result<Config, ConfigError> {
+        let data_directory = self.data_directory.unwrap_or(DEFAULT_DATA_DIR.into()).into();
+        let log_directory = self.log_directory.unwrap_or(DEFAULT_LOG_DIR.into());
+        let development_mode = DevelopmentMode {
+            enabled: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
+        };
+        let mut config = Config {
+            server: ServerConfig {
+                address: self.server_address.unwrap_or_else(|| DEFAULT_ADDRESS.to_string()),
+                http_address: self.server_http_address.clone().unwrap_or("".to_owned()),
+                http_enabled: self.server_http_address.is_some(),
+                authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
+                encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
+            },
+            storage: StorageConfig { data_directory: data_directory },
+            diagnostics: DiagnosticsConfig::default(),
+            logging: LoggingConfig { directory: log_directory },
+            development_mode,
+        };
+        config.validate_and_finalise()?;
+        Ok(config)
+    }
 }
 
 #[cfg(test)]
