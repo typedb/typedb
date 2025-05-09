@@ -61,30 +61,12 @@ use crate::service::state::ServerState;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
-    address: SocketAddr,
-    database_manager: Arc<DatabaseManager>,
-    user_manager: Arc<UserManager>,
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
-    shutdown_receiver: tokio::sync::watch::Receiver<()>,
+    server_state: Arc<ServerState>
 }
 
 impl TypeDBService {
-    pub(crate) fn new(
-        address: SocketAddr,
-        server_state: Arc<ServerState>,
-        shutdown_receiver: tokio::sync::watch::Receiver<()>,
-    ) -> Self {
-        todo!()
-    }
-
-    pub(crate) fn database_manager(&self) -> &DatabaseManager {
-        &self.database_manager
-    }
-
-    pub(crate) fn address(&self) -> &SocketAddr {
-        &self.address
+    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
+        Self { server_state }
     }
 
     fn generate_connection_id(&self) -> ConnectionID {
@@ -95,15 +77,7 @@ impl TypeDBService {
         &self,
         request: typedb_protocol::authentication::token::create::Req,
     ) -> Result<String, AuthenticationError> {
-        let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
-            request.credentials
-        else {
-            return Err(AuthenticationError::InvalidCredential {});
-        };
-
-        self.credential_verifier.verify_password(&password_credentials.username, &password_credentials.password)?;
-
-        Ok(self.token_manager.new_token(password_credentials.username).await)
+        todo!()
     }
 
     async fn get_request_accessor<T>(&self, request: &Request<T>) -> Result<String, Status> {
@@ -120,52 +94,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        run_with_diagnostics_async(
-            self.diagnostics_manager.clone(),
-            None::<&str>,
-            ActionKind::ConnectionOpen,
-            || async {
-                let receive_time = Instant::now();
-                let message = request.into_inner();
-                if message.version != typedb_protocol::Version::Version as i32 {
-                    let err = ProtocolError::IncompatibleProtocolVersion {
-                        server_protocol_version: typedb_protocol::Version::Version as i32,
-                        driver_protocol_version: message.version,
-                        driver_lang: message.driver_lang.clone(),
-                        driver_version: message.driver_version.clone(),
-                    };
-                    event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
-                    Err(err.into_status())
-                } else {
-                    let Some(authentication) = message.authentication else {
-                        return Err(ProtocolError::MissingField {
-                            name: "authentication",
-                            description: "Connection message must contain authentication information.",
-                        }
-                        .into_status());
-                    };
-                    let token = self
-                        .process_token_create(authentication)
-                        .await
-                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
-
-                    event!(
-                        Level::TRACE,
-                        "Successful connection_open from '{}' version '{}'",
-                        &message.driver_lang,
-                        &message.driver_version
-                    );
-
-                    Ok(Response::new(connection_open_res(
-                        self.generate_connection_id(),
-                        receive_time,
-                        database_all_res(&self.address, self.database_manager.database_names()),
-                        token_create_res(token),
-                    )))
-                }
-            },
-        )
-        .await
+        self.server_state.open_connection(request).await
     }
 
     // Update AUTHENTICATION_FREE_METHODS if this method is renamed

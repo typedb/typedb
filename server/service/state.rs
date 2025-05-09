@@ -218,34 +218,52 @@ impl ServerState {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::ConnectionOpen, || {
-            let receive_time = Instant::now();
-            let message = request.into_inner();
-            if message.version != typedb_protocol::Version::Version as i32 {
-                let err = ProtocolError::IncompatibleProtocolVersion {
-                    server_protocol_version: typedb_protocol::Version::Version as i32,
-                    driver_protocol_version: message.version,
-                    driver_lang: message.driver_lang.clone(),
-                    driver_version: message.driver_version.clone(),
-                };
-                event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
-                return Err(err.into_status());
-            } else {
-                event!(
-                    Level::TRACE,
-                    "Successful connection_open from '{}' version '{}'",
-                    &message.driver_lang,
-                    &message.driver_version
-                );
+        crate::service::grpc::diagnostics::run_with_diagnostics_async(
+            self.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::ConnectionOpen,
+            || async {
+                let receive_time = Instant::now();
+                let message = request.into_inner();
+                if message.version != typedb_protocol::Version::Version as i32 {
+                    let err = crate::service::grpc::error::ProtocolError::IncompatibleProtocolVersion {
+                        server_protocol_version: typedb_protocol::Version::Version as i32,
+                        driver_protocol_version: message.version,
+                        driver_lang: message.driver_lang.clone(),
+                        driver_version: message.driver_version.clone(),
+                    };
+                    event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
+                    Err(err.into_status())
+                } else {
+                    let Some(authentication) = message.authentication else {
+                        return Err(crate::service::grpc::error::ProtocolError::MissingField {
+                            name: "authentication",
+                            description: "Connection message must contain authentication information.",
+                        }
+                            .into_status());
+                    };
+                    let token = self
+                        .process_token_create(authentication)
+                        .await
+                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
 
-                // generate a connection ID per 'connection_open' to be able to trace different connections by the same user
-                Ok(Response::new(connection_open_res(
-                    self.generate_connection_id(),
-                    receive_time,
-                    database_all_res(&self.address, self.database_manager.database_names()),
-                )))
-            }
-        })
+                    event!(
+                        Level::TRACE,
+                        "Successful connection_open from '{}' version '{}'",
+                        &message.driver_lang,
+                        &message.driver_version
+                    );
+
+                    Ok(Response::new(crate::service::grpc::response_builders::connection::connection_open_res(
+                        self.generate_connection_id(),
+                        receive_time,
+                        crate::service::grpc::response_builders::database_manager::database_all_res(&self.address, self.database_manager.database_names()),
+                        crate::service::grpc::response_builders::authentication::token_create_res(token),
+                    )))
+                }
+            },
+        )
+            .await
     }
 
     pub async fn list_servers(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
