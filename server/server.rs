@@ -17,7 +17,8 @@ use std::{
     net::SocketAddr,
     sync::Arc,
 };
-use typedb_protocol::type_db_server::TypeDbServer;
+use axum_server::tls_rustls::RustlsConfig;
+use crate::service::{grpc, http};
 
 #[derive(Debug)]
 pub struct Server {
@@ -119,9 +120,7 @@ impl Server {
 
     async fn serve_grpc(
         address: SocketAddr,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<ServerState>,
         encryption_config: &EncryptionConfig,
         mut shutdown_receiver: Receiver<()>,
         service: grpc::typedb_service::TypeDBService,
@@ -149,15 +148,13 @@ impl Server {
 
     async fn serve_http(
         address: SocketAddr,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<ServerState>,
         encryption_config: &EncryptionConfig,
         mut shutdown_receiver: Receiver<()>,
         service: http::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
         let authenticator =
-            http::authenticator::Authenticator::new(credential_verifier, token_manager, diagnostics_manager);
+            http::authenticator::Authenticator::new(server_state);
 
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
@@ -203,7 +200,7 @@ impl Server {
         println!(".\nReady!");
     }
 
-    fn spawn_shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
+    fn spawn_shutdown_handler(shutdown_signal_sender: Sender<()>) {
         tokio::spawn(async move {
             Self::wait_for_ctrl_c_signal().await;
             println!("\nReceived CTRL-C. Initiating shutdown...");

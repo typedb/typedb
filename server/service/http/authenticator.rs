@@ -15,6 +15,7 @@ use crate::{
     authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
     service::http::error::HttpServiceError,
 };
+use crate::service::state::ServerState;
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
@@ -25,11 +26,9 @@ pub struct Authenticator {
 
 impl Authenticator {
     pub(crate) fn new(
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<ServerState>
     ) -> Self {
-        Self { credential_verifier, token_manager, diagnostics_manager }
+        todo!()
     }
 }
 

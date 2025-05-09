@@ -18,32 +18,24 @@ use crate::{
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
     },
 };
+use crate::service::state::ServerState;
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: Arc<ServerState>
 }
 
 impl Authenticator {
     pub(crate) fn new(
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<ServerState>
     ) -> Self {
-        Self { credential_verifier, token_manager, diagnostics_manager }
+        Self { server_state }
     }
 }
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
-            authenticate(self.token_manager.clone(), request)
-                .await
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        })
-        .await
+        self.server_state.authenticate(request)
     }
 }
 

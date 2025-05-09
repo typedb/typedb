@@ -47,6 +47,7 @@ use crate::{
         ConnectionID,
     },
 };
+use crate::authentication::authenticate;
 use crate::util::resolve_address;
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
@@ -470,40 +471,14 @@ impl ServerState {
         Ok(Response::new(Box::pin(stream)))
     }
 
-    pub fn authenticate(&self, http: http::Request<BoxBody>) -> Result<http::Request<BoxBody>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::Authenticate, || {
-            let (parts, body) = http.into_parts();
-
-            let metadata = MetadataMap::from_headers(parts.headers.clone());
-            let username_metadata = metadata.get(AUTHENTICATOR_USERNAME_FIELD).and_then(|u| u.to_str().ok());
-            let password_metadata = metadata.get(AUTHENTICATOR_PASSWORD_FIELD).and_then(|u| u.to_str().ok());
-
-            let username = username_metadata.ok_or(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))?;
-            let password = password_metadata.ok_or(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))?;
-
-            match self.authenticator_cache.get_user(username) {
-                Some(p) => {
-                    if p == password {
-                        Ok(http::Request::from_parts(parts, body))
-                    } else {
-                        Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
-                    }
-                }
-                None => {
-                    let Ok(Some((_, Credential::PasswordType { password_hash }))) = self.user_manager.get(username)
-                    else {
-                        return Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL));
-                    };
-
-                    if password_hash.matches(password) {
-                        self.authenticator_cache.cache_user(username, password);
-                        Ok(http::Request::from_parts(parts, body))
-                    } else {
-                        Err(Status::unauthenticated(ERROR_INVALID_CREDENTIAL))
-                    }
-                }
-            }
-        })
+    pub async fn authenticate(&self, request: http::Request<BoxBody>) -> Result<http::Request<BoxBody>, Status> {
+        todo!()
+        // crate::service::grpc::diagnostics::run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
+        //     authenticate(self.token_manager.clone(), request)
+        //         .await
+        //         .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+        // })
+        //     .await
     }
 
     fn extract_username_field(metadata: &MetadataMap) -> String {
