@@ -57,6 +57,7 @@ use crate::{
         ServiceError,
     },
 };
+use crate::service::state::ServerState;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -72,22 +73,10 @@ pub(crate) struct TypeDBService {
 impl TypeDBService {
     pub(crate) fn new(
         address: SocketAddr,
-        database_manager: Arc<DatabaseManager>,
-        user_manager: Arc<UserManager>,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
+        server_state: Arc<ServerState>,
         shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Self {
-        Self {
-            address,
-            database_manager,
-            user_manager,
-            credential_verifier,
-            token_manager,
-            diagnostics_manager,
-            shutdown_receiver,
-        }
+        todo!()
     }
 
     pub(crate) fn database_manager(&self) -> &DatabaseManager {

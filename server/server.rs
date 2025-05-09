@@ -20,6 +20,7 @@ use std::{
 use axum_server::Handle;
 use axum_server::tls_rustls::RustlsConfig;
 use crate::service::{grpc, http};
+use crate::util::resolve_address;
 
 #[derive(Debug)]
 pub struct Server {
@@ -73,16 +74,17 @@ impl Server {
         Self::print_hello(self.server_info, self.config.is_development_mode);
         Self::install_default_encryption_provider()?;
 
+        let grpc_address = resolve_address(self.config.server.address).await;
         let grpc_service = grpc::typedb_service::TypeDBService::new(
-            todo!(),
-            self.server_state,
-            shutdown_sig_receiver.clone(),
+            grpc_address.clone(),
+            self.server_state.clone(),
+            self.shutdown_sig_receiver.clone(),
         );
         let grpc_server = Self::serve_grpc(
-            todo!(),
+            grpc_address,
             &self.config.server.encryption,
             self.server_state,
-            self.shutdown_receiver.clone(),
+            self.shutdown_sig_receiver.clone(),
             grpc_service,
         );
 
@@ -121,8 +123,8 @@ impl Server {
 
     async fn serve_grpc(
         address: SocketAddr,
-        server_state: Arc<ServerState>,
         encryption_config: &EncryptionConfig,
+        server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
         service: grpc::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
@@ -154,8 +156,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
         service: http::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
-        let authenticator =
-            http::authenticator::Authenticator::new(server_state);
+        let authenticator = http::authenticator::Authenticator::new(server_state);
 
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
