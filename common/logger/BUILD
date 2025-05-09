@@ -15,6 +15,7 @@ rust_library(
     ]),
     deps = [
         "@crates//:tracing",
+        "@crates//:tracing-appender",
         "@crates//:tracing-subscriber",
     ]
 )

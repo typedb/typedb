@@ -72,6 +72,7 @@ build:
         bazel test //function:test_crate_function --test_output=streamed
         bazel test //ir:test_crate_ir --test_output=streamed
         bazel test //query:test_crate_query --test_output=streamed
+        bazel test //server:test_crate_server --test_output=streamed
         bazel test //storage:test_crate_storage --test_output=streamed
 
     test-integration:

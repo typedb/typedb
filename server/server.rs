@@ -6,6 +6,7 @@
 
 use std::{
     fs,
+    fs::File,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
@@ -27,7 +28,7 @@ use user::{initialise_default_user, user_manager::UserManager};
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager},
     error::ServerOpenError,
-    parameters::config::{Config, DiagnosticsConfig, EncryptionConfig},
+    parameters::config::{Config, DevelopmentMode, DiagnosticsConfig, EncryptionConfig},
     service::{grpc, http},
 };
 
@@ -81,7 +82,7 @@ impl Server {
         shutdown_sender: tokio::sync::watch::Sender<()>,
         shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let storage_directory = &config.storage.data;
+        let storage_directory = &config.storage.data_directory;
         let server_config = &config.server;
         let diagnostics_config = &config.diagnostics;
 
@@ -99,7 +100,7 @@ impl Server {
                 version,
                 diagnostics_config,
                 storage_directory.clone(),
-                config.is_development_mode,
+                &config.development_mode,
             )
             .await,
         );
@@ -129,9 +130,10 @@ impl Server {
             shutdown_receiver.clone(),
         );
 
-        let http_server_address = match server_config.http_address.clone() {
-            Some(http_address) => Some(Self::resolve_address(http_address).await),
-            None => None,
+        let http_server_address = if server_config.http_enabled {
+            Some(Self::resolve_address(config.server.http_address.clone()).await)
+        } else {
+            None
         };
         let http_service = http_server_address.map(|http_address| {
             http::typedb_service::TypeDBService::new(
@@ -204,6 +206,7 @@ impl Server {
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        debug_assert!(storage_directory.is_absolute());
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)
         } else if !storage_directory.is_dir() {
@@ -228,7 +231,7 @@ impl Server {
         version: &str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
-        is_development_mode: bool,
+        is_development_mode: &DevelopmentMode,
     ) -> DiagnosticsManager {
         let diagnostics = Diagnostics::new(
             deployment_id,
@@ -236,13 +239,13 @@ impl Server {
             distribution.to_owned(),
             version.to_owned(),
             storage_directory,
-            config.is_reporting_metric_enabled,
+            config.reporting.report_metrics,
         );
         let diagnostics_manager = DiagnosticsManager::new(
             diagnostics,
-            config.monitoring_port,
-            config.is_monitoring_enabled,
-            is_development_mode,
+            config.monitoring.port,
+            config.monitoring.enabled,
+            is_development_mode.enabled,
         );
         diagnostics_manager.may_start_monitoring().await;
         diagnostics_manager.may_start_reporting().await;
@@ -264,7 +267,7 @@ impl Server {
     }
 
     pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        Self::print_hello(ASCII_LOGO, self.distribution, self.version, self.config.is_development_mode);
+        Self::print_hello(ASCII_LOGO, self.distribution, self.version, self.config.development_mode.enabled);
 
         Self::install_default_encryption_provider()?;
 

@@ -33,7 +33,8 @@ pub async fn typedb_starts(context: &mut Context) {
     TYPEDB
         .get_or_init(|| async {
             let server_dir = create_tmp_dir();
-            let config = Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build();
+            let config =
+                Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build().unwrap();
             let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })

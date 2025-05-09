@@ -11,7 +11,7 @@ use std::{
     collections::HashMap,
     error::Error,
     fmt, iter, mem,
-    path::Path,
+    path::{Path, PathBuf},
     sync::{Arc, Mutex, Once},
 };
 
@@ -117,7 +117,10 @@ pub struct Context {
 static CONTEXT_INIT: Once = Once::new();
 impl Context {
     pub async fn test<I: AsRef<Path>>(glob: I, clean_databases_after: bool) -> bool {
-        CONTEXT_INIT.call_once(|| logger::initialise_logging_global());
+        CONTEXT_INIT.call_once(|| {
+            let relative_log_dir: PathBuf = "typedb-logs".into();
+            logger::initialise_logging_global(&std::env::current_dir().unwrap().join(relative_log_dir));
+        });
         !Self::cucumber::<I>()
             .with_parser(SingletonParser::default())
             .repeat_failed()

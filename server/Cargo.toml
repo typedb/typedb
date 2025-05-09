@@ -66,6 +66,11 @@
 		features = []
 		default-features = false
 
+	[dependencies.serde_with]
+		features = ["alloc", "default", "macros", "std"]
+		version = "3.12.0"
+		default-features = false
+
 	[dependencies.typeql]
 		features = []
 		git = "https://github.com/typedb/typeql"
@@ -143,6 +148,11 @@
 		features = []
 		default-features = false
 
+	[dependencies.yaml-rust2]
+		features = ["default", "encoding"]
+		version = "0.10.1"
+		default-features = false
+
 	[dependencies.concept]
 		path = "../concept"
 		features = []
@@ -193,6 +203,11 @@
 		features = []
 		default-features = false
 
+	[dependencies.serde_yaml2]
+		features = []
+		version = "0.1.2"
+		default-features = false
+
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
 		version = "1.44.2"
@@ -240,7 +255,7 @@
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.36"
+		version = "4.5.37"
 		default-features = false
 
 	[dependencies.bytes]
@@ -255,7 +270,7 @@
 
 	[dependencies.chrono]
 		features = ["alloc", "android-tzdata", "clock", "default", "iana-time-zone", "js-sys", "now", "oldtime", "serde", "std", "wasm-bindgen", "wasmbind", "winapi", "windows-link"]
-		version = "0.4.40"
+		version = "0.4.41"
 		default-features = false
 
 	[dependencies.user]
