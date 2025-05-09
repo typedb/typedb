@@ -239,12 +239,12 @@ impl Server {
             distribution.to_owned(),
             version.to_owned(),
             storage_directory,
-            config.is_reporting_metric_enabled,
+            config.reporting.report_metrics,
         );
         let diagnostics_manager = DiagnosticsManager::new(
             diagnostics,
-            config.monitoring_port,
-            config.is_monitoring_enabled,
+            config.monitoring.port,
+            config.monitoring.enabled,
             is_development_mode,
         );
         diagnostics_manager.may_start_monitoring().await;

@@ -23,7 +23,9 @@ logging:
     directory: "logs"
 
 diagnostics:
-    monitoring.enabled: true
-    monitoring.port: 4104
-    reporting.metrics: true
-    reporting.errors: true
+    monitoring:
+        enabled: true
+        port: 4104
+    reporting:
+        metrics: true
+        errors: true

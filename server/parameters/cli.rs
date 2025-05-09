@@ -135,10 +135,10 @@ impl CLIArgs {
 
             config.logging.directory => logging_logdir.map(|path| path.into());
 
-            config.diagnostics.is_reporting_error_enabled => diagnostics_reporting_errors;
-            config.diagnostics.is_reporting_metric_enabled => diagnostics_reporting_metrics;
-            config.diagnostics.is_monitoring_enabled => diagnostics_monitoring_enabled;
-            config.diagnostics.monitoring_port => diagnostics_monitoring_port;
+            config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
+            config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
+            config.diagnostics.monitoring.enabled => diagnostics_monitoring_enabled;
+            config.diagnostics.monitoring.port => diagnostics_monitoring_port;
             config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
         }
         config.validate_and_finalise()

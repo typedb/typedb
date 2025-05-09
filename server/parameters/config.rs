@@ -205,23 +205,21 @@ pub(crate) struct StorageConfig {
 
 #[derive(Debug, Deserialize)]
 pub struct DiagnosticsConfig {
-    #[serde(rename="reporting.errors")]
-    pub is_reporting_error_enabled: bool,
-    #[serde(rename="reporting.metrics")]
-    pub is_reporting_metric_enabled: bool,
-    #[serde(rename="monitoring.enabled")]
-    pub is_monitoring_enabled: bool,
-    #[serde(rename="monitoring.port")]
-    pub monitoring_port: u16,
+    pub reporting: Reporting,
+    pub monitoring: Monitoring,
 }
 
 impl DiagnosticsConfig {
     pub fn enabled() -> Self {
         Self {
-            is_reporting_error_enabled: true,
-            is_reporting_metric_enabled: true,
-            is_monitoring_enabled: true,
-            monitoring_port: MONITORING_DEFAULT_PORT,
+            reporting: Reporting {
+                report_errors: true,
+                report_metrics: true,
+            },
+            monitoring: Monitoring {
+                enabled: true,
+                port: MONITORING_DEFAULT_PORT,
+            }
         }
     }
 }
@@ -230,6 +228,20 @@ impl Default for DiagnosticsConfig {
     fn default() -> Self {
         Self::enabled()
     }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Reporting {
+    #[serde(rename="errors")]
+    pub report_errors: bool,
+    #[serde(rename="metrics")]
+    pub report_metrics: bool,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Monitoring {
+    pub enabled: bool,
+    pub port: u16,
 }
 
 #[derive(Debug, Deserialize)]

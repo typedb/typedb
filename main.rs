@@ -44,7 +44,7 @@ fn initialise_abort_on_panic() {
 }
 
 fn may_initialise_error_reporting(config: &Config) {
-    if config.diagnostics.is_reporting_error_enabled && !config.is_development_mode {
+    if config.diagnostics.reporting.report_errors && !config.is_development_mode {
         let opts =
             (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() });
         let _ = sentry::init(opts);
