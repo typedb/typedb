@@ -133,7 +133,7 @@ impl Server {
                 .map_err(|source| ServerOpenError::GrpcTlsFailedConfiguration { source: Arc::new(source) })?;
         }
         let authenticator =
-            grpc::authenticator::Authenticator::new(credential_verifier, token_manager, diagnostics_manager);
+            grpc::authenticator::Authenticator::new(server_state);
 
         grpc_server
             .layer(&authenticator)
@@ -143,7 +143,7 @@ impl Server {
                 shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
             })
             .await
-            .map_err(|source| ServerOpenError::GrpcServe { address, source: Arc::new(source) })
+            .map_err(|err| ServerOpenError::GrpcServe { address, source: Arc::new(err) })
     }
 
     async fn serve_http(
