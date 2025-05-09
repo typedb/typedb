@@ -82,7 +82,7 @@ impl Server {
         shutdown_sender: tokio::sync::watch::Sender<()>,
         shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let storage_directory = &config.storage.data_directory;
+        let storage_directory = &config.storage.database_directory;
         let server_config = &config.server;
         let diagnostics_config = &config.diagnostics;
 

@@ -17,7 +17,7 @@ server:
         ca-certificate:
 
 storage:
-    data-directory: "data"
+    database-directory: "data"
 
 logging:
     directory: "logs"

@@ -131,7 +131,7 @@ impl CLIArgs {
             config.server.encryption.certificate_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
             config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
 
-            config.storage.data_directory => storage_data.map(|path| path.into());
+            config.storage.database_directory => storage_data.map(|path| path.into());
 
             config.logging.directory => logging_logdir.map(|path| path.into());
 

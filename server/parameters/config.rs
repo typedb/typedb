@@ -65,7 +65,7 @@ impl Config {
             });
         }
         // finalise:
-        self.storage.data_directory = Self::resolve_path_from_executable(&self.storage.data_directory);
+        self.storage.database_directory = Self::resolve_path_from_executable(&self.storage.database_directory);
         self.logging.directory = Self::resolve_path_from_executable(&self.logging.directory);
         Ok(())
     }
@@ -131,7 +131,7 @@ impl Default for EncryptionConfig {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct StorageConfig {
-    pub(crate) data_directory: PathBuf,
+    pub(crate) database_directory: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
@@ -250,7 +250,7 @@ impl ConfigBuilder {
                 authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
                 encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
             },
-            storage: StorageConfig { data_directory: data_directory },
+            storage: StorageConfig { database_directory: data_directory },
             diagnostics: DiagnosticsConfig::default(),
             logging: LoggingConfig { directory: log_directory },
             development_mode,
