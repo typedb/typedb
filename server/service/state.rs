@@ -214,6 +214,13 @@ impl ServerState {
         diagnostics_manager.submit_database_metrics(metrics);
     }
 
+    pub async fn authentication_token_create(
+        &self,
+        request: Request<typedb_protocol::authentication::token::create::Req>,
+    ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
+        todo!()
+    }
+
     pub async fn open_connection(
         &self,
         request: Request<typedb_protocol::connection::open::Req>,

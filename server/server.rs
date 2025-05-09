@@ -76,9 +76,7 @@ impl Server {
 
         let grpc_address = resolve_address(self.config.server.address).await;
         let grpc_service = grpc::typedb_service::TypeDBService::new(
-            grpc_address.clone(),
-            self.server_state.clone(),
-            self.shutdown_sig_receiver.clone(),
+            self.server_state.clone()
         );
         let grpc_server = Self::serve_grpc(
             grpc_address,
