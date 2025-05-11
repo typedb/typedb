@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::service::state::ServerState;
+use crate::service::grpc::state::ServerState;
 use tokio::sync::watch::{channel, Sender, Receiver};
 use crate::{
     error::ServerOpenError,
@@ -44,7 +44,7 @@ impl Server {
             deployment_id,
             shutdown_sig_sender,
             shutdown_sig_receiver
-        )
+        ).await
     }
 
     pub async fn new_with_external_shutdown(
@@ -81,19 +81,18 @@ impl Server {
         let grpc_server = Self::serve_grpc(
             grpc_address,
             &self.config.server.encryption,
-            self.server_state,
+            self.server_state.clone(),
             self.shutdown_sig_receiver.clone(),
             grpc_service,
         );
 
         let http_server_address = match self.config.server.http_address.clone() {
-            Some(http_address) => Some(resolve_address(http_address).await),
+            Some(http_address) => None, // Some(resolve_address(http_address).await),
             None => None,
         };
         let http_service = http_server_address.map(|http_address| {
             http::typedb_service::TypeDBService::new(
                 http_address,
-                self.server_state.clone(),
                 self.shutdown_sig_receiver.clone(),
             )
         });
@@ -164,7 +163,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
         service: http::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
-        let authenticator = http::authenticator::Authenticator::new(server_state);
+        let authenticator = http::authenticator::Authenticator::new();
 
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);

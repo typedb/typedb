@@ -18,7 +18,7 @@ use crate::{
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
     },
 };
-use crate::service::state::ServerState;
+use crate::service::grpc::state::ServerState;
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
@@ -35,7 +35,7 @@ impl Authenticator {
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
-        self.server_state.authenticate(request)
+        self.server_state.authenticate(request).await
     }
 }
 

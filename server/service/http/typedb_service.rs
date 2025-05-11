@@ -55,7 +55,6 @@ use crate::{
         QueryType, ServiceError,
     },
 };
-use crate::service::state::ServerState;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -88,7 +87,6 @@ impl TypeDBService {
 
     pub(crate) fn new(
         address: SocketAddr,
-        server_state: Arc<ServerState>,
         shutdown_receiver: tokio::sync::watch::Receiver<()>,
     ) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
@@ -253,7 +251,7 @@ impl TypeDBService {
                 .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })?;
             Ok(JsonBody(encode_token(service.token_manager.new_token(payload.username).await)))
         })
-        .await
+            .await
     }
 
     async fn databases(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
@@ -435,7 +433,7 @@ impl TypeDBService {
                 Ok(())
             },
         )
-        .await
+            .await
     }
 
     async fn users_delete(
@@ -461,7 +459,7 @@ impl TypeDBService {
                 Ok(())
             },
         )
-        .await
+            .await
     }
 
     async fn transaction_open(
@@ -481,7 +479,7 @@ impl TypeDBService {
                 Ok(JsonBody(encode_transaction(uuid)))
             },
         )
-        .await
+            .await
     }
 
     async fn transactions_commit(
@@ -505,7 +503,7 @@ impl TypeDBService {
                 Self::transaction_request(&transaction, TransactionRequest::Commit, true).await
             },
         )
-        .await
+            .await
     }
 
     async fn transactions_close(
@@ -531,7 +529,7 @@ impl TypeDBService {
                 Self::transaction_request(&transaction, TransactionRequest::Close, false).await
             },
         )
-        .await
+            .await
     }
 
     async fn transactions_rollback(
@@ -555,7 +553,7 @@ impl TypeDBService {
                 Self::transaction_request(&transaction, TransactionRequest::Rollback, true).await
             },
         )
-        .await
+            .await
     }
 
     async fn transactions_query(
@@ -582,10 +580,10 @@ impl TypeDBService {
                     Self::build_query_request(payload.query_options, payload.query),
                     true,
                 )
-                .await
+                    .await
             },
         )
-        .await
+            .await
     }
 
     async fn query(
@@ -607,7 +605,7 @@ impl TypeDBService {
                     Self::build_query_request(payload.query_options, payload.query),
                     true,
                 )
-                .await?;
+                    .await?;
                 let query_response = Self::try_get_query_response(transaction_response)?;
 
                 let commit = match query_response.query_type() {
@@ -621,7 +619,7 @@ impl TypeDBService {
                     true => Self::transaction_request(&transaction_info, TransactionRequest::Commit, true),
                     false => Self::transaction_request(&transaction_info, TransactionRequest::Close, true),
                 }
-                .await?;
+                    .await?;
                 if let TransactionServiceResponse::Err(typedb_source) = close_response {
                     return match commit {
                         true => Err(HttpServiceError::QueryCommit { typedb_source }),
@@ -632,6 +630,6 @@ impl TypeDBService {
                 Ok(TransactionServiceResponse::Query(query_response))
             },
         )
-        .await
+            .await
     }
 }

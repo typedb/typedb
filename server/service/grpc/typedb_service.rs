@@ -93,14 +93,14 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     }
 
     async fn servers_all(&self, request: Request<Req>) -> Result<Response<Res>, Status> {
-        self.server_state.servers_all(request)
+        self.server_state.servers_all(request).await
     }
 
     async fn databases_all(
         &self,
         request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
-        self.server_state.databases_all(request)
+        self.server_state.databases_all(request).await
     }
 
     async fn databases_get(

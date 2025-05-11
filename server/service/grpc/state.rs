@@ -47,7 +47,7 @@ use crate::{
         ConnectionID,
     },
 };
-use crate::authentication::authenticate;
+use crate::authentication::{authenticate, Accessor, AuthenticationError};
 use crate::authentication::credential_verifier::CredentialVerifier;
 use crate::authentication::token_manager::TokenManager;
 use crate::service::grpc::diagnostics::run_with_diagnostics_async;
@@ -65,7 +65,7 @@ pub struct ServerState {
     deployment_id: String,
     pub address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
-    user_manager: UserManager,
+    user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
     token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
@@ -94,8 +94,14 @@ impl ServerState {
             .map_err(|err| ServerOpenError::DatabaseOpen { typedb_source: err })?;
         let system_database = initialise_system_database(&database_manager);
 
-        let user_manager = UserManager::new(system_database);
+        let user_manager = Arc::new(UserManager::new(system_database));
         initialise_default_user(&user_manager);
+
+        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
+        let token_manager = Arc::new(
+            TokenManager::new(config.server.authentication.token_expiration)
+                .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,
+        );
 
         let diagnostics_manager = Arc::new(
             Self::initialise_diagnostics(
@@ -115,8 +121,8 @@ impl ServerState {
             address,
             database_manager: database_manager.clone(),
             user_manager,
-            credential_verifier: todo!(),
-            token_manager: todo!(),
+            credential_verifier,
+            token_manager,
             diagnostics_manager: diagnostics_manager.clone(),
             database_diagnostics_updater: IntervalRunner::new(
                 move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
@@ -222,6 +228,15 @@ impl ServerState {
         diagnostics_manager.submit_database_metrics(metrics);
     }
 
+    pub async fn authenticate(&self, request: http::Request<BoxBody>) -> Result<http::Request<BoxBody>, Status> {
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
+            authenticate(self.token_manager.clone(), request)
+                .await
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+        })
+            .await
+    }
+
     pub async fn authentication_token_create(
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
@@ -318,6 +333,7 @@ impl ServerState {
             }
         })
     }
+
     pub async fn databases_contains(
         &self,
         request: Request<typedb_protocol::database_manager::contains::Req>,
@@ -518,5 +534,26 @@ impl ServerState {
 
     pub fn database_manager(&self) -> &DatabaseManager {
         todo!()
+    }
+
+    async fn process_token_create(
+        &self,
+        request: typedb_protocol::authentication::token::create::Req,
+    ) -> Result<String, AuthenticationError> {
+        let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
+            request.credentials
+        else {
+            return Err(AuthenticationError::InvalidCredential {});
+        };
+
+        self.credential_verifier.verify_password(&password_credentials.username, &password_credentials.password)?;
+
+        Ok(self.token_manager.new_token(password_credentials.username).await)
+    }
+
+    async fn get_request_accessor<T>(&self, request: &Request<T>) -> Result<String, Status> {
+        let Accessor(accessor) = Accessor::from_extensions(request.extensions())
+            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+        Ok(accessor)
     }
 }
