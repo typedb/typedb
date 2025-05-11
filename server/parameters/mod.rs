@@ -4,5 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::path::PathBuf;
+
 pub mod cli;
 pub mod config;
+
+#[derive(Debug)]
+pub enum ConfigError {
+    ErrorReadingConfigFile { source: std::io::Error, path: PathBuf },
+    ErrorParsingYaml { source: serde::de::value::Error },
+    ValidationError { message: &'static str },
+}

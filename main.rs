@@ -9,7 +9,7 @@
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{ASCII_LOGO, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
+use resource::constants::server::{ASCII_LOGO, DEFAULT_CONFIG_PATH, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
 use server::{
     parameters::{cli::CLIArgs, config::Config},
     server::Server,
@@ -17,9 +17,12 @@ use server::{
 use tokio::runtime::Runtime;
 
 fn main() {
-    let config = CLIArgs::parse().to_config();
     initialise_abort_on_panic();
-    initialise_logging_global();
+    let cli_args: CLIArgs = CLIArgs::parse();
+    let config_file = cli_args.config_file_override.as_ref().map(|x| x.as_str()).unwrap_or(DEFAULT_CONFIG_PATH);
+    let mut config = Config::from_file(config_file.into()).expect("Error reading from config file");
+    cli_args.override_config(&mut config).expect("Error validating config file overridden with cli args");
+    initialise_logging_global(&config.logging.directory);
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
         let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
@@ -41,7 +44,7 @@ fn initialise_abort_on_panic() {
 }
 
 fn may_initialise_error_reporting(config: &Config) {
-    if config.diagnostics.is_reporting_error_enabled && !config.is_development_mode {
+    if config.diagnostics.reporting.report_errors && !config.development_mode.enabled {
         let opts =
             (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(VERSION.into()), ..Default::default() });
         let _ = sentry::init(opts);
