@@ -14,7 +14,7 @@ mod options;
 mod request_parser;
 mod response_builders;
 mod row;
+mod state;
 pub(crate) mod transaction_service;
 pub(crate) mod typedb_service;
-
 pub(crate) type ConnectionID = uuid::Bytes;

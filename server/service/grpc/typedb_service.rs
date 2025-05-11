@@ -57,7 +57,7 @@ use crate::{
         ServiceError,
     },
 };
-use crate::service::state::ServerState;
+use crate::service::grpc::state::ServerState;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
@@ -81,7 +81,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        self.server_state.open_connection(request).await
+        self.server_state.connection_open(request).await
     }
 
     // Update AUTHENTICATION_FREE_METHODS if this method is renamed
@@ -93,98 +93,98 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
     }
 
     async fn servers_all(&self, request: Request<Req>) -> Result<Response<Res>, Status> {
-        self.server_state.list_servers(request)
+        self.server_state.servers_all(request)
     }
 
     async fn databases_all(
         &self,
         request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
-        self.server_state.list_databases(request)
+        self.server_state.databases_all(request)
     }
 
     async fn databases_get(
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
-        self.server_state.get_database(request).await
+        self.server_state.databases_get(request).await
     }
 
     async fn databases_contains(
         &self,
         request: Request<typedb_protocol::database_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
-        self.server_state.database_exists(request).await
+        self.server_state.databases_contains(request).await
     }
 
     async fn databases_create(
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
-        self.server_state.create_database(request).await
+        self.server_state.databases_create(request).await
     }
 
     async fn database_schema(
         &self,
         request: Request<typedb_protocol::database::schema::Req>,
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
-        self.server_state.get_database_schema(request).await
+        self.server_state.database_schema(request).await
     }
 
     async fn database_type_schema(
         &self,
         request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
-        self.server_state.list_database_schema_types(request).await
+        self.server_state.database_type_schema(request).await
     }
 
     async fn database_delete(
         &self,
         request: Request<typedb_protocol::database::delete::Req>,
     ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
-        self.server_state.delete_database(request).await
+        self.server_state.database_delete(request).await
     }
 
     async fn users_get(
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        self.server_state.get_user(request).await
+        self.server_state.users_get(request).await
     }
 
     async fn users_all(
         &self,
         request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        self.server_state.list_users(request).await
+        self.server_state.users_all(request).await
     }
 
     async fn users_contains(
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        self.server_state.user_exists(request).await
+        self.server_state.users_contains(request).await
     }
 
     async fn users_create(
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        self.server_state.create_users(request).await
+        self.server_state.users_create(request).await
     }
 
     async fn users_update(
         &self,
         request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        self.server_state.update_user(request).await
+        self.server_state.users_update(request).await
     }
 
     async fn users_delete(
         &self,
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        self.server_state.delete_user(request).await
+        self.server_state.users_delete(request).await
     }
 
     type transactionStream = Pin<Box<ReceiverStream<Result<Server, Status>>>>;
@@ -193,6 +193,6 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<Streaming<Client>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
-        self.server_state.open_transaction(request).await
+        self.server_state.transaction(request).await
     }
 }

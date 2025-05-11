@@ -19,9 +19,8 @@ use concurrency::IntervalRunner;
 use database::database_manager::DatabaseManager;
 use user::user_manager::UserManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use diagnostics::diagnostics_manager::run_with_diagnostics;
 use diagnostics::metrics::ActionKind;
-use resource::constants::server::{AUTHENTICATOR_PASSWORD_FIELD, AUTHENTICATOR_USERNAME_FIELD, DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
+use resource::constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
 use resource::server_info::ServerInfo;
 use system::concepts::Credential;
 use system::initialise_system_database;
@@ -30,11 +29,12 @@ use user::permission_manager::PermissionManager;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
-    service::authenticator_cache::AuthenticatorCache,
-    service::{
-        error::{IntoGRPCStatus, IntoProtocolErrorMessage, ProtocolError, ServiceError},
+    service::grpc::{
+        diagnostics::run_with_diagnostics,
+        error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError, ServiceError},
         request_parser::{users_create_req, users_update_req},
         response_builders::{
+            authentication::token_create_res,
             connection::connection_open_res,
             database::database_delete_res,
             database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
@@ -48,6 +48,12 @@ use crate::{
     },
 };
 use crate::authentication::authenticate;
+use crate::authentication::credential_verifier::CredentialVerifier;
+use crate::authentication::token_manager::TokenManager;
+use crate::service::grpc::diagnostics::run_with_diagnostics_async;
+use crate::service::grpc::response_builders::database_manager::{database_schema_res, database_type_schema_res};
+use crate::service::transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE;
+use crate::service::typedb_service::{get_database_schema, get_database_type_schema};
 use crate::util::resolve_address;
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
@@ -60,7 +66,8 @@ pub struct ServerState {
     pub address: SocketAddr,
     database_manager: Arc<DatabaseManager>,
     user_manager: UserManager,
-    authenticator_cache: Arc<AuthenticatorCache>,
+    credential_verifier: Arc<CredentialVerifier>,
+    token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
     database_diagnostics_updater: IntervalRunner,
     shutdown_receiver: Receiver<()>,
@@ -97,7 +104,7 @@ impl ServerState {
                 &server_info,
                 diagnostics_config,
                 storage_directory.clone(),
-                config.server.is_development_mode,
+                config.is_development_mode,
             ).await
         );
 
@@ -108,7 +115,8 @@ impl ServerState {
             address,
             database_manager: database_manager.clone(),
             user_manager,
-            authenticator_cache: Arc::new(AuthenticatorCache::new()),
+            credential_verifier: todo!(),
+            token_manager: todo!(),
             diagnostics_manager: diagnostics_manager.clone(),
             database_diagnostics_updater: IntervalRunner::new(
                 move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
@@ -218,14 +226,21 @@ impl ServerState {
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
     ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        todo!()
+        let message = request.into_inner();
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
+            self.process_token_create(message)
+                .await
+                .map(|result| Response::new(token_create_res(result)))
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+        })
+            .await
     }
 
-    pub async fn open_connection(
+    pub async fn connection_open(
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        crate::service::grpc::diagnostics::run_with_diagnostics_async(
+        run_with_diagnostics_async(
             self.diagnostics_manager.clone(),
             None::<&str>,
             ActionKind::ConnectionOpen,
@@ -233,7 +248,7 @@ impl ServerState {
                 let receive_time = Instant::now();
                 let message = request.into_inner();
                 if message.version != typedb_protocol::Version::Version as i32 {
-                    let err = crate::service::grpc::error::ProtocolError::IncompatibleProtocolVersion {
+                    let err = ProtocolError::IncompatibleProtocolVersion {
                         server_protocol_version: typedb_protocol::Version::Version as i32,
                         driver_protocol_version: message.version,
                         driver_lang: message.driver_lang.clone(),
@@ -243,7 +258,7 @@ impl ServerState {
                     Err(err.into_status())
                 } else {
                     let Some(authentication) = message.authentication else {
-                        return Err(crate::service::grpc::error::ProtocolError::MissingField {
+                        return Err(ProtocolError::MissingField {
                             name: "authentication",
                             description: "Connection message must contain authentication information.",
                         }
@@ -261,11 +276,11 @@ impl ServerState {
                         &message.driver_version
                     );
 
-                    Ok(Response::new(crate::service::grpc::response_builders::connection::connection_open_res(
+                    Ok(Response::new(connection_open_res(
                         self.generate_connection_id(),
                         receive_time,
-                        crate::service::grpc::response_builders::database_manager::database_all_res(&self.address, self.database_manager.database_names()),
-                        crate::service::grpc::response_builders::authentication::token_create_res(token),
+                        database_all_res(&self.address, self.database_manager.database_names()),
+                        token_create_res(token),
                     )))
                 }
             },
@@ -273,13 +288,13 @@ impl ServerState {
             .await
     }
 
-    pub async fn list_servers(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
+    pub async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
         run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::ServersAll, || {
             Ok(Response::new(servers_all_res(&self.address)))
         })
     }
 
-    pub async fn list_databases(
+    pub async fn databases_all(
         &self,
         _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
@@ -288,7 +303,7 @@ impl ServerState {
         })
     }
 
-    pub async fn get_database(
+    pub async fn databases_get(
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
@@ -303,8 +318,7 @@ impl ServerState {
             }
         })
     }
-
-    pub async fn database_exists(
+    pub async fn databases_contains(
         &self,
         request: Request<typedb_protocol::database_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
@@ -314,7 +328,7 @@ impl ServerState {
         })
     }
 
-    pub async fn create_database(
+    pub async fn databases_create(
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
@@ -327,31 +341,44 @@ impl ServerState {
         })
     }
 
-    pub async fn get_database_schema(
+    pub async fn database_schema(
         &self,
         request: Request<typedb_protocol::database::schema::Req>,
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
         let message = request.into_inner();
-        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseSchema, || {
-            Err(ServiceError::Unimplemented { description: "Database schema retrieval.".to_string() }
+        run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseSchema, || match self
+            .database_manager
+            .database(&message.name)
+        {
+            None => Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }
                 .into_error_message()
-                .into_status())
+                .into_status()),
+            Some(database) => Ok(Response::new(database_schema_res(
+                get_database_schema(database)
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())?,
+            ))),
         })
     }
 
-    pub async fn list_database_schema_types(
+    pub async fn database_type_schema(
         &self,
         request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
         let message = request.into_inner();
         run_with_diagnostics(&self.diagnostics_manager, Some(&message.name), ActionKind::DatabaseTypeSchema, || {
-            Err(ServiceError::Unimplemented { description: "Database schema (types only) retrieval.".to_string() }
-                .into_error_message()
-                .into_status())
+            match self.database_manager.database(&message.name) {
+                None => Err(ServiceError::DatabaseDoesNotExist { name: message.name.clone() }
+                    .into_error_message()
+                    .into_status()),
+                Some(database) => Ok(Response::new(database_type_schema_res(
+                    get_database_type_schema(database)
+                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?,
+                ))),
+            }
         })
     }
 
-    pub async fn delete_database(
+    pub async fn database_delete(
         &self,
         request: Request<typedb_protocol::database::delete::Req>,
     ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
@@ -364,12 +391,12 @@ impl ServerState {
         })
     }
 
-    pub async fn get_user(
+    pub async fn users_get(
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersGet, || {
-            let accessor = Self::extract_username_field(request.metadata());
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersGet, || async {
+            let accessor = self.get_request_accessor(&request).await?;
             let get_req = request.into_inner();
             if !PermissionManager::exec_user_get_permitted(accessor.as_str(), get_req.name.as_str()) {
                 return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
@@ -382,23 +409,25 @@ impl ServerState {
                 Err(user_get_error) => Err(user_get_error.into_error_message().into_status()),
             }
         })
+            .await
     }
 
-    pub async fn list_users(
+    pub async fn users_all(
         &self,
         request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
-            let accessor = Self::extract_username_field(request.metadata());
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersAll, || async {
+            let accessor = self.get_request_accessor(&request).await?;
             if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
                 return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
             }
             let users = self.user_manager.all();
             Ok(Response::new(users_all_res(users)))
         })
+            .await
     }
 
-    pub async fn user_exists(
+    pub async fn users_contains(
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
@@ -411,12 +440,12 @@ impl ServerState {
         })
     }
 
-    pub async fn create_users(
+    pub async fn users_create(
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersCreate, || {
-            let accessor = Self::extract_username_field(request.metadata());
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersCreate, || async {
+            let accessor = self.get_request_accessor(&request).await?;
             if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
                 return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
             }
@@ -425,65 +454,56 @@ impl ServerState {
                 .map(|_| Response::new(user_create_res()))
                 .map_err(|err| err.into_error_message().into_status())
         })
+            .await
     }
 
-    pub async fn update_user(
+    pub async fn users_update(
         &self,
         request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersUpdate, || {
-            let accessor = Self::extract_username_field(request.metadata());
-            match users_update_req(request) {
-                Ok((username, user_update, credential_update)) => {
-                    let username = username.as_str();
-                    if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
-                        return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
-                    }
-                    match self.user_manager.update(username, &user_update, &credential_update) {
-                        Ok(()) => {
-                            self.authenticator_cache.invalidate_user(username);
-                            Ok(Response::new(user_update_res()))
-                        }
-                        Err(user_update_err) => Err(user_update_err.into_error_message().into_status()),
-                    }
-                }
-                Err(user_update_err) => Err(user_update_err.into_error_message().into_status()),
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersUpdate, || async {
+            let accessor = self.get_request_accessor(&request).await?;
+            let (username, user_update, credential_update) =
+                users_update_req(request).map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+            let username = username.as_str();
+            if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
+                return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
             }
+            self.user_manager
+                .update(username, &user_update, &credential_update)
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+            self.token_manager.invalidate_user(username).await;
+            Ok(Response::new(user_update_res()))
         })
+            .await
     }
 
-    pub async fn delete_user(
+    pub async fn users_delete(
         &self,
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        run_with_diagnostics(&self.diagnostics_manager, None::<&str>, ActionKind::UsersDelete, || {
-            let accessor = Self::extract_username_field(request.metadata());
+        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersDelete, || async {
+            let accessor = self.get_request_accessor(&request).await?;
             let delete_req = request.into_inner();
             let username = delete_req.name.as_str();
             if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), username) {
                 return Err(ServiceError::OperationNotPermitted {}.into_error_message().into_status());
             }
-            let result = self.user_manager.delete(username);
-            match result {
-                Ok(_) => {
-                    self.authenticator_cache.invalidate_user(username);
-                    Ok(Response::new(users_delete_res()))
-                }
-                Err(e) => Err(e.into_error_message().into_status()),
-            }
+            self.user_manager
+                .delete(username)
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+            self.token_manager.invalidate_user(username).await;
+            Ok(Response::new(users_delete_res()))
         })
+            .await
     }
 
-    pub fn database_manager(&self) -> &DatabaseManager {
-        todo!()
-    }
-
-    pub async fn open_transaction(
+    pub async fn transaction(
         &self,
         request: Request<Streaming<Client>>,
     ) -> Result<Response<Pin<Box<ReceiverStream<Result<Server, Status>>>>>, Status> {
         let request_stream = request.into_inner();
-        let (response_sender, response_receiver) = channel(10);
+        let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
         let mut service = TransactionService::new(
             request_stream,
             response_sender,
@@ -496,23 +516,7 @@ impl ServerState {
         Ok(Response::new(Box::pin(stream)))
     }
 
-    pub async fn authenticate(&self, request: http::Request<BoxBody>) -> Result<http::Request<BoxBody>, Status> {
+    pub fn database_manager(&self) -> &DatabaseManager {
         todo!()
-        // crate::service::grpc::diagnostics::run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
-        //     authenticate(self.token_manager.clone(), request)
-        //         .await
-        //         .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        // })
-        //     .await
     }
-
-    fn extract_username_field(metadata: &MetadataMap) -> String {
-        metadata
-            .get(AUTHENTICATOR_USERNAME_FIELD)
-            .map(|u| u.to_str())
-            .expect(format!("Unable to find expected field in the metadata: {}", AUTHENTICATOR_USERNAME_FIELD).as_str())
-            .expect(format!("Unable to parse value from the {} field", AUTHENTICATOR_USERNAME_FIELD).as_str())
-            .to_string()
-    }
-
 }
