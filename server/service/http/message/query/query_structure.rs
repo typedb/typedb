@@ -198,6 +198,18 @@ fn query_structure_edge(
             push_edge!(edges, context, span, relates.relation(), relates.role_type(), Relates)
         }
         Constraint::Plays(plays) => push_edge!(edges, context, span, plays.player(), plays.role_type(), Plays),
+        Constraint::IndexedRelation(indexed) => {
+            let role_type_1 = query_structure_role_type_as_vertex(context, indexed.role_type_1())?;
+            let role_type_2 = query_structure_role_type_as_vertex(context, indexed.role_type_2())?;
+            let span_1 = indexed
+                .source_span_1()
+                .map(|span| QueryStructureEdgeSpan { begin: span.begin_offset, end: span.end_offset });
+            let span_2 = indexed
+                .source_span_2()
+                .map(|span| QueryStructureEdgeSpan { begin: span.begin_offset, end: span.end_offset });
+            push_edge!(edges, context, span_1, indexed.relation(), indexed.player_1(), Links(role_type_1));
+            push_edge!(edges, context, span_2, indexed.relation(), indexed.player_2(), Links(role_type_2));
+        }
         Constraint::ExpressionBinding(expr) => {
             let repr =
                 context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
@@ -265,9 +277,6 @@ fn query_structure_edge(
         | Constraint::Value(_)
         | Constraint::Is(_)
         | Constraint::Iid(_) => {}
-        Constraint::IndexedRelation(indexed) => {
-            unreachable!("This is unreachable since we extract query-structure before we apply transformations");
-        }
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
