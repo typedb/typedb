@@ -28,6 +28,7 @@ use resource::{
 use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use tracing::{event, Level};
 use typeql::query::SchemaQuery;
+use compiler::query_structure::extract_query_structure_from;
 
 use crate::{define, error::QueryError, query_cache::QueryCache, redefine, undefine};
 
@@ -162,6 +163,8 @@ impl QueryManager {
                 )
                 .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
                 compile_profile.annotation_finished();
+                let query_structure = extract_query_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
+                    .map(|query_structure| Arc::new(query_structure));
 
                 apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline).map_err(|err| {
                     QueryError::Transformation { source_query: source_query.to_string(), typedb_source: err }
@@ -177,7 +180,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
-                    source_query,
+                    query_structure,
                 )
                 .map_err(|err| QueryError::ExecutableCompilation {
                     source_query: source_query.to_string(),
@@ -306,6 +309,9 @@ impl QueryManager {
                 };
                 compile_profile.annotation_finished();
 
+                let query_structure = extract_query_structure_from(&variable_registry, &annotated_pipeline.annotated_stages, source_query)
+                    .map(|query_structure| Arc::new(query_structure));
+
                 match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
                     Ok(_) => {}
                     Err(err) => {
@@ -330,7 +336,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
-                    source_query,
+                    query_structure,
                 ) {
                     Ok(executable) => executable,
                     Err(err) => {

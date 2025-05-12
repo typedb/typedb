@@ -198,7 +198,6 @@ fn query_structure_edge(
             push_edge!(edges, context, span, relates.relation(), relates.role_type(), Relates)
         }
         Constraint::Plays(plays) => push_edge!(edges, context, span, plays.player(), plays.role_type(), Plays),
-
         Constraint::IndexedRelation(indexed) => {
             let role_type_1 = query_structure_role_type_as_vertex(context, indexed.role_type_1())?;
             let role_type_2 = query_structure_role_type_as_vertex(context, indexed.role_type_2())?;

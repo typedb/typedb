@@ -37,7 +37,7 @@ use crate::{
         update::executable::UpdateExecutable,
         ExecutableCompilationError,
     },
-    query_structure::{extract_query_structure_from, ParametrisedQueryStructure},
+    query_structure::ParametrisedQueryStructure,
     VariablePosition,
 };
 
@@ -114,7 +114,7 @@ pub fn compile_pipeline_and_functions(
     annotated_stages: Vec<AnnotatedStage>,
     annotated_fetch: Option<AnnotatedFetch>,
     input_variables: &HashSet<Variable>,
-    source_query: &str,
+    query_structure: Option<Arc<ParametrisedQueryStructure>>,
 ) -> Result<ExecutablePipeline, ExecutableCompilationError> {
     // TODO: we could cache compiled schema functions so we dont have to re-compile with every query here
     let referenced_functions = find_referenced_functions(
@@ -155,8 +155,6 @@ pub fn compile_pipeline_and_functions(
         input_variables,
     )?;
     debug_assert!(!executable_stages.is_empty());
-    let query_structure = extract_query_structure_from(variable_registry, annotated_stages, source_query)
-        .map(|query_structure| Arc::new(query_structure));
     Ok(ExecutablePipeline {
         query_structure,
         executable_functions: schema_and_preamble_functions,
