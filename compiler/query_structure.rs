@@ -45,9 +45,9 @@ pub struct QueryStructure {
     pub parameters: Arc<ParameterRegistry>,
 }
 
-pub(crate) fn extract_query_structure_from(
+pub fn extract_query_structure_from(
     variable_registry: &VariableRegistry,
-    annotated_stages: Vec<AnnotatedStage>,
+    annotated_stages: &[AnnotatedStage],
     source_query: &str,
 ) -> Option<ParametrisedQueryStructure> {
     if variable_registry.highest_branch_id_allocated() > 63 {
