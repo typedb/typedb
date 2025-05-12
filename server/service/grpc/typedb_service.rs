@@ -7,7 +7,7 @@
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
 use axum::response::IntoResponse;
-use database::{database_manager::DatabaseManager, transaction::TransactionRead};
+use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
 use error::typedb_error;
 use http::StatusCode;
@@ -25,7 +25,7 @@ use typedb_protocol::{
 };
 use user::{permission_manager::PermissionManager, user_manager::UserManager};
 use uuid::Uuid;
-
+use storage::durability_client::WALClient;
 use crate::{
     authentication::{
         credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
@@ -92,99 +92,191 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         self.server_state.authentication_token_create(request).await
     }
 
-    async fn servers_all(&self, request: Request<Req>) -> Result<Response<Res>, Status> {
-        self.server_state.servers_all(request).await
+    async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::ServersAll, || {
+            Ok(Response::new(servers_all_res(self.server_state.servers_all())))
+        })
     }
 
     async fn databases_all(
         &self,
-        request: Request<typedb_protocol::database_manager::all::Req>,
+        _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
-        self.server_state.databases_all(request).await
+        run_with_diagnostics(
+            &self.server_state.diagnostics_manager,
+            None::<&str>,
+            ActionKind::DatabasesAll,
+            || {
+                Ok(Response::new(database_all_res(&self.server_state.address, self.server_state.databases_all())))
+            }
+        )
     }
 
     async fn databases_get(
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
-        self.server_state.databases_get(request).await
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::DatabasesGet, || {
+            let name = request.into_inner().name;
+            match self.server_state.databases_get(name.clone()) {
+                Ok(db_opt) => {
+                    match db_opt {
+                        Some(db) => Ok(
+                            Response::new(database_get_res(&self.server_state.address, db.name().to_string()))
+                        ),
+                        None => Err(
+                            ServiceError::DatabaseDoesNotExist { name }.into_error_message().into_status()
+                        )
+                    }
+                }
+                Err(err) => Err(err.into_error_message().into_status())
+            }
+        })
     }
 
     async fn databases_contains(
         &self,
         request: Request<typedb_protocol::database_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::contains::Res>, Status> {
-        self.server_state.databases_contains(request).await
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabasesContains, || {
+            Ok(Response::new(database_contains_res(self.server_state.databases_contains(name))))
+        })
     }
 
     async fn databases_create(
         &self,
         request: Request<typedb_protocol::database_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::create::Res>, Status> {
-        self.server_state.databases_create(request).await
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabasesCreate, || {
+            self.server_state
+                .databases_create(name.clone())
+                .map(|_| Response::new(database_create_res(name, &self.server_state.address)))
+                .map_err(|err| err.into_error_message().into_status())
+        })
     }
 
     async fn database_schema(
         &self,
         request: Request<typedb_protocol::database::schema::Req>,
     ) -> Result<Response<typedb_protocol::database::schema::Res>, Status> {
-        self.server_state.database_schema(request).await
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabaseSchema, || {
+            match self.server_state.database_schema(name) {
+                Ok(schema) => Ok(Response::new(database_schema_res(schema))),
+                Err(err) => Err(err.into_error_message().into_status())
+            }
+        })
     }
 
     async fn database_type_schema(
         &self,
         request: Request<typedb_protocol::database::type_schema::Req>,
     ) -> Result<Response<typedb_protocol::database::type_schema::Res>, Status> {
-        self.server_state.database_type_schema(request).await
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabaseTypeSchema, || {
+            match self.server_state.database_type_schema(name) {
+                Ok(schema) => Ok(Response::new(database_type_schema_res(schema))),
+                Err(err) => Err(err.into_error_message().into_status())
+            }
+        })
     }
 
     async fn database_delete(
         &self,
         request: Request<typedb_protocol::database::delete::Req>,
     ) -> Result<Response<typedb_protocol::database::delete::Res>, Status> {
-        self.server_state.database_delete(request).await
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabaseDelete, || {
+            self.server_state.database_delete(name)
+                .map(|_| Response::new(database_delete_res()))
+                .map_err(|err| err.into_error_message().into_status())
+        })
     }
 
     async fn users_get(
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        self.server_state.users_get(request).await
+        let accessor = Accessor::from_extensions(&request.extensions());
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::UsersGet, || {
+                let accessor = accessor.map_err(|err| err.into_error_message().into_status())?;
+            self.server_state.users_get(name, accessor)
+                .map(|user| Ok(Response::new(users_get_res(user))))
+                .map_err(|err| err.into_error_message().into_status())?
+        })
     }
 
     async fn users_all(
         &self,
         request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        self.server_state.users_all(request).await
+        let accessor = Accessor::from_extensions(&request.extensions());
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
+            let accessor = accessor.map_err(|err| err.into_error_message().into_status())?;
+            self.server_state.users_all(accessor)
+                .map(|users| Ok(Response::new(users_all_res(users))))
+                .map_err(|err| err.into_error_message().into_status())?
+        })
     }
 
     async fn users_contains(
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        self.server_state.users_contains(request).await
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
+            self.server_state.users_contains(name.as_str())
+                .map(|contains| Response::new(users_contains_res(contains)))
+                .map_err(|err| err.into_error_message().into_status())
+        })
     }
 
     async fn users_create(
         &self,
         request: Request<typedb_protocol::user_manager::create::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::create::Res>, Status> {
-        self.server_state.users_create(request).await
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersCreate, || {
+            let accessor = Accessor::from_extensions(&request.extensions())
+                .map_err(|err| err.into_error_message().into_status())?;
+            let (user, credential) = users_create_req(request)
+                .map_err(|err| err.into_error_message().into_status())?;
+            self.server_state.users_create(&user, &credential, accessor)
+                .map(|_| Response::new(user_create_res()))
+                .map_err(|err| err.into_error_message().into_status())
+        })
     }
 
     async fn users_update(
         &self,
         request: Request<typedb_protocol::user::update::Req>,
     ) -> Result<Response<typedb_protocol::user::update::Res>, Status> {
-        self.server_state.users_update(request).await
+        run_with_diagnostics_async(self.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersCreate, || async {
+            let accessor = Accessor::from_extensions(&request.extensions())
+                .map_err(|err| err.into_error_message().into_status())?;
+            let (username, user_update, credential_update) =
+                users_update_req(request).map_err(|err| err.into_error_message().into_status())?;
+            let username = username.as_str();
+            self.server_state.users_update(username, user_update, credential_update, accessor).await
+                .map(|_| Response::new(user_update_res()))
+                .map_err(|err| err.into_error_message().into_status())
+        }).await
     }
 
     async fn users_delete(
         &self,
         request: Request<typedb_protocol::user::delete::Req>,
     ) -> Result<Response<typedb_protocol::user::delete::Res>, Status> {
-        self.server_state.users_delete(request).await
+        run_with_diagnostics_async(self.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::UsersDelete, || async {
+            let accessor = Accessor::from_extensions(&request.extensions())
+                .map_err(|err| err.into_error_message().into_status())?;
+            let name = request.into_inner().name;
+            self.server_state.users_delete(name.as_str(), accessor).await
+                .map(|_| Response::new(users_delete_res()))
+                .map_err(|err| err.into_error_message().into_status())
+        }).await
     }
 
     type transactionStream = Pin<Box<ReceiverStream<Result<Server, Status>>>>;
@@ -193,6 +285,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<Streaming<Client>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
-        self.server_state.transaction(request).await
+        let request_stream = request.into_inner();
+        let stream = self.server_state.transaction(request_stream).await;
+        Ok(Response::new(Box::pin(stream)))
     }
 }
