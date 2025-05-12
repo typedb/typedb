@@ -57,7 +57,11 @@ impl Disjunction {
     }
 
     pub fn optimise_away_unsatisfiable_branches(&mut self, unsatisfiable: Vec<ScopeId>) {
-        self.conjunctions.retain(|v| !unsatisfiable.contains(&v.scope_id()))
+        let unsatisfiable_branch_ids = self.conjunctions.iter().zip(self.branch_ids.iter())
+            .filter_map(|(conj, branch_id)| unsatisfiable.contains(&conj.scope_id()).then_some(*branch_id))
+            .collect::<Vec<_>>();
+        self.branch_ids.retain(|branch_id| !unsatisfiable_branch_ids.contains(branch_id));
+        self.conjunctions.retain(|conj| !unsatisfiable.contains(&conj.scope_id()))
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
