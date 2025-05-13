@@ -5,6 +5,11 @@ REM file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 REM install dependencies needed for build
 git apply .circleci\windows\git.patch
+if %errorlevel% neq 0 (
+    echo "Failed to apply patch. Regenerate it with 'git diff'. Exiting...";
+    exit /b %errorlevel%
+)
+
 choco install .circleci\windows\dependencies.config --yes --no-progress
 
 REM permanently set variables for Bazel build
