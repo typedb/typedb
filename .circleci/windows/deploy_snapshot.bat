@@ -11,6 +11,10 @@ REM build file
 cargo build --profile=release
 copy target\release\typedb_server_bin.exe  .\
 git apply .circleci\windows\git.patch
+if %errorlevel% neq 0 (
+    echo "Failed to apply patch. Regenerate it with 'git diff'. Exiting...";
+    exit /b %errorlevel%
+)
 
 SET DEPLOY_ARTIFACT_USERNAME=%REPO_TYPEDB_USERNAME%
 SET DEPLOY_ARTIFACT_PASSWORD=%REPO_TYPEDB_PASSWORD%
