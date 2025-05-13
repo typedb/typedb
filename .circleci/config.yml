@@ -432,7 +432,7 @@ workflows:
       - test-deploy-snapshot-windows-x86_64:
           filters:
             branches:
-              only: [ master, fix-windows-patch-202505 ]
+              only: [ master ]
 
       - deploy-docker-snapshot-x86_64:
           filters:
