@@ -73,13 +73,11 @@ pub enum QueryStructureConstraint {
     Has {
         owner: QueryStructureVertexResponse,
         attribute: QueryStructureVertexResponse,
-        exactness: QueryStructureConstraintExactness,
     },
     Links {
         relation: QueryStructureVertexResponse,
         player: QueryStructureVertexResponse,
         role: QueryStructureVertexResponse,
-        exactness: QueryStructureConstraintExactness,
     },
 
     Sub(QueryConstraintSubBase),
@@ -88,17 +86,14 @@ pub enum QueryStructureConstraint {
     Owns {
         owner: QueryStructureVertexResponse,
         attribute: QueryStructureVertexResponse,
-        exactness: QueryStructureConstraintExactness,
     },
     Relates {
         relation: QueryStructureVertexResponse,
         role: QueryStructureVertexResponse,
-        exactness: QueryStructureConstraintExactness,
     },
     Plays {
         player: QueryStructureVertexResponse,
         role: QueryStructureVertexResponse,
-        exactness: QueryStructureConstraintExactness,
     },
 
     FunctionCall {
@@ -125,13 +120,6 @@ struct QueryConstraintIsaBase {
 struct QueryConstraintSubBase {
     subtype: QueryStructureVertexResponse,
     supertype: QueryStructureVertexResponse,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum QueryStructureConstraintExactness {
-    Exact,
-    Subtypes,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -222,7 +210,6 @@ fn query_structure_constraint(
                     relation: query_structure_vertex(context, links.relation())?,
                     player: query_structure_vertex(context, links.player())?,
                     role: query_structure_role_type_as_vertex(context, links.role_type())?,
-                    exactness: QueryStructureConstraintExactness::Subtypes,
                 },
             });
         }
@@ -232,7 +219,6 @@ fn query_structure_constraint(
                 constraint: QueryStructureConstraint::Has {
                     owner: query_structure_vertex(context, has.owner())?,
                     attribute: query_structure_vertex(context, has.attribute())?,
-                    exactness: QueryStructureConstraintExactness::Subtypes,
                 },
             });
         }
@@ -268,7 +254,6 @@ fn query_structure_constraint(
             constraint: QueryStructureConstraint::Owns {
                 owner: query_structure_vertex(context, owns.owner())?,
                 attribute: query_structure_vertex(context, owns.attribute())?,
-                exactness: QueryStructureConstraintExactness::Subtypes,
             },
         }),
         Constraint::Relates(relates) => {
@@ -277,7 +262,6 @@ fn query_structure_constraint(
                 constraint: QueryStructureConstraint::Relates {
                     relation: query_structure_vertex(context, relates.relation())?,
                     role: query_structure_vertex(context, relates.role_type())?,
-                    exactness: QueryStructureConstraintExactness::Subtypes,
                 },
             });
         }
@@ -287,7 +271,6 @@ fn query_structure_constraint(
                 constraint: QueryStructureConstraint::Plays {
                     player: query_structure_vertex(context, plays.player())?,
                     role: query_structure_vertex(context, plays.role_type())?,
-                    exactness: QueryStructureConstraintExactness::Subtypes,
                 },
             });
         }
@@ -304,7 +287,6 @@ fn query_structure_constraint(
                     relation: query_structure_vertex(context, indexed.relation())?,
                     player: query_structure_vertex(context, indexed.player_1())?,
                     role: query_structure_role_type_as_vertex(context, indexed.role_type_1())?,
-                    exactness: QueryStructureConstraintExactness::Subtypes,
                 },
             });
             constraints.push(QueryStructureConstraintResponse {
@@ -313,7 +295,6 @@ fn query_structure_constraint(
                     relation: query_structure_vertex(context, indexed.relation())?,
                     player: query_structure_vertex(context, indexed.player_2())?,
                     role: query_structure_role_type_as_vertex(context, indexed.role_type_2())?,
-                    exactness: QueryStructureConstraintExactness::Subtypes,
                 },
             });
         }
