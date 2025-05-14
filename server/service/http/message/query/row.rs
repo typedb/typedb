@@ -22,7 +22,7 @@ use crate::service::http::message::query::concept::{encode_thing_concept, encode
 #[serde(rename_all = "camelCase")]
 struct EncodedRow<'a> {
     data: HashMap<&'a str, serde_json::Value>,
-    involved_branches: Vec<u8>,
+    involved_blocks: Vec<u8>,
 }
 
 pub fn encode_row<'a>(
@@ -48,8 +48,8 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    let involved_branches = row.provenance().branch_ids().map(|b| b.0 as u8).collect();
-    Ok(json!(EncodedRow { data: encoded_row, involved_branches }))
+    let involved_blocks = row.provenance().branch_ids().map(|b| b.0 as u8).collect();
+    Ok(json!(EncodedRow { data: encoded_row, involved_blocks }))
 }
 
 pub fn encode_row_entry(
