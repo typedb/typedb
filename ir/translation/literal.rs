@@ -217,9 +217,15 @@ impl FromTypeQLLiteral for TimeZone {
                     .map_err(|_| LiteralParseError::InvalidTimezoneNamed { name: name.clone(), source_span })?,
             )),
             typeql::value::TimeZone::ISO(value) => {
-                Ok(TimeZone::Fixed(FixedOffset::from_str(value).map_err(|_| {
-                    LiteralParseError::InvalidTimezoneFixedOffset { offset: value.clone(), source_span }
-                })?))
+                if value.ends_with("z") || value.ends_with("Z") {
+                    // TODO: is this correct?
+                    Ok(TimeZone::Fixed(FixedOffset::east_opt(0).unwrap()))
+                } else {
+                    // Note: this parser doesn't recognise "z" ending!
+                    Ok(TimeZone::Fixed(FixedOffset::from_str(value).map_err(|_| {
+                        LiteralParseError::InvalidTimezoneFixedOffset { offset: value.clone(), source_span }
+                    })?))
+                }
             }
         }
     }
