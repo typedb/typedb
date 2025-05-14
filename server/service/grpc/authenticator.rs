@@ -35,7 +35,11 @@ impl Authenticator {
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
-        self.server_state.authenticate(request).await
+        run_with_diagnostics_async(self.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
+            authenticate(self.server_state.clone(), request)
+                .await
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+        }).await
     }
 }
 

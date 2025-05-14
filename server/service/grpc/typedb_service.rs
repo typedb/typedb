@@ -81,7 +81,56 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::connection::open::Req>,
     ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        self.server_state.connection_open(request).await
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::ConnectionOpen,
+            || async {
+                let receive_time = Instant::now();
+                let message = request.into_inner();
+                if message.version != typedb_protocol::Version::Version as i32 {
+                    let err = ProtocolError::IncompatibleProtocolVersion {
+                        server_protocol_version: typedb_protocol::Version::Version as i32,
+                        driver_protocol_version: message.version,
+                        driver_lang: message.driver_lang.clone(),
+                        driver_version: message.driver_version.clone(),
+                    };
+                    event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
+                    Err(err.into_status())
+                } else {
+                    let Some(authentication) = message.authentication else {
+                        return Err(ProtocolError::MissingField {
+                            name: "authentication",
+                            description: "Connection message must contain authentication information.",
+                        }
+                            .into_status());
+                    };
+                    let request = authentication;
+                    let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
+                        request.credentials
+                    else {
+                        return Err(AuthenticationError::InvalidCredential {})
+                            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+                    };
+
+                    let token = self.server_state.token_create(password_credentials.username, password_credentials.password).await
+                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+                    event!(
+                        Level::TRACE,
+                        "Successful connection_open from '{}' version '{}'",
+                        &message.driver_lang,
+                        &message.driver_version
+                    );
+
+                    Ok(Response::new(connection_open_res(
+                        self.server_state.generate_connection_id(),
+                        receive_time,
+                        database_all_res(&self.server_state.address, self.server_state.databases_all()),
+                        token_create_res(token),
+                    )))
+                }
+            },
+        ).await
     }
 
     // Update AUTHENTICATION_FREE_METHODS if this method is renamed
@@ -89,7 +138,18 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
     ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        self.server_state.authentication_token_create(request).await
+        let message = request.into_inner();
+        let request = message;
+        let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
+            request.credentials
+        else {
+            return Err(AuthenticationError::InvalidCredential {})
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status());
+        };
+
+        self.server_state.token_create(password_credentials.username, password_credentials.password).await
+            .map(|result| Response::new(token_create_res(result)))
+            .map_err(|typedb_source| typedb_source.into_error_message().into_status())
     }
 
     async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {

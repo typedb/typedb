@@ -189,7 +189,7 @@ impl ServerState {
         (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
     }
 
-    fn generate_connection_id(&self) -> ConnectionID {
+    pub fn generate_connection_id(&self) -> ConnectionID {
         Uuid::new_v4().into_bytes()
     }
 
@@ -232,81 +232,6 @@ impl ServerState {
             .map(|database| database.get_metrics())
             .collect();
         diagnostics_manager.submit_database_metrics(metrics);
-    }
-
-    pub async fn authenticate(&self, request: http::Request<BoxBody>) -> Result<http::Request<BoxBody>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
-            authenticate(self.token_manager.clone(), request)
-                .await
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        })
-            .await
-    }
-
-    pub async fn authentication_token_create(
-        &self,
-        request: Request<typedb_protocol::authentication::token::create::Req>,
-    ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        let message = request.into_inner();
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
-            self.process_token_create(message)
-                .await
-                .map(|result| Response::new(token_create_res(result)))
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        })
-            .await
-    }
-
-    pub async fn connection_open(
-        &self,
-        request: Request<typedb_protocol::connection::open::Req>,
-    ) -> Result<Response<typedb_protocol::connection::open::Res>, Status> {
-        run_with_diagnostics_async(
-            self.diagnostics_manager.clone(),
-            None::<&str>,
-            ActionKind::ConnectionOpen,
-            || async {
-                let receive_time = Instant::now();
-                let message = request.into_inner();
-                if message.version != typedb_protocol::Version::Version as i32 {
-                    let err = ProtocolError::IncompatibleProtocolVersion {
-                        server_protocol_version: typedb_protocol::Version::Version as i32,
-                        driver_protocol_version: message.version,
-                        driver_lang: message.driver_lang.clone(),
-                        driver_version: message.driver_version.clone(),
-                    };
-                    event!(Level::TRACE, "Rejected connection_open: {:?}", &err);
-                    Err(err.into_status())
-                } else {
-                    let Some(authentication) = message.authentication else {
-                        return Err(ProtocolError::MissingField {
-                            name: "authentication",
-                            description: "Connection message must contain authentication information.",
-                        }
-                            .into_status());
-                    };
-                    let token = self
-                        .process_token_create(authentication)
-                        .await
-                        .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
-
-                    event!(
-                        Level::TRACE,
-                        "Successful connection_open from '{}' version '{}'",
-                        &message.driver_lang,
-                        &message.driver_version
-                    );
-
-                    Ok(Response::new(connection_open_res(
-                        self.generate_connection_id(),
-                        receive_time,
-                        database_all_res(&self.address, self.database_manager.database_names()),
-                        token_create_res(token),
-                    )))
-                }
-            },
-        )
-            .await
     }
 
     pub fn servers_all(&self) -> &SocketAddr {
@@ -432,6 +357,23 @@ impl ServerState {
         Ok(())
     }
 
+    pub fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError> {
+        self.credential_verifier.verify_password(username, password)
+    }
+
+    pub async fn token_create(&self, username: String, password: String) -> Result<String, AuthenticationError> {
+        self.user_verify_password(&username, &password)?;
+        Ok(self.token_manager.new_token(username).await)
+    }
+
+    pub async fn token_invalidate(&self, username: &str) {
+        self.token_manager.invalidate_user(username).await
+    }
+
+    pub async fn token_get_owner(&self, token: &str) -> Option<String> {
+        self.token_manager.get_valid_token_owner(token).await
+    }
+
     pub async fn transaction(
         &self,
         request_stream: Streaming<Client>,
@@ -451,21 +393,6 @@ impl ServerState {
 
     pub fn database_manager(&self) -> &DatabaseManager {
         todo!()
-    }
-
-    async fn process_token_create(
-        &self,
-        request: typedb_protocol::authentication::token::create::Req,
-    ) -> Result<String, AuthenticationError> {
-        let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
-            request.credentials
-        else {
-            return Err(AuthenticationError::InvalidCredential {});
-        };
-
-        self.credential_verifier.verify_password(&password_credentials.username, &password_credentials.password)?;
-
-        Ok(self.token_manager.new_token(password_credentials.username).await)
     }
 
     async fn get_request_accessor<T>(&self, request: &Request<T>) -> Result<String, Status> {

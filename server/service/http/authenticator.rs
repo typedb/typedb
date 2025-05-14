@@ -15,9 +15,11 @@ use crate::{
     authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
     service::http::error::HttpServiceError,
 };
+use crate::service::grpc::state::ServerState;
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
+    server_state: Arc<ServerState>,
     credential_verifier: Arc<CredentialVerifier>,
     token_manager: Arc<TokenManager>,
     diagnostics_manager: Arc<DiagnosticsManager>,
@@ -31,7 +33,7 @@ impl Authenticator {
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<Body>) -> Result<Request<Body>, impl IntoResponse> {
-        authenticate(self.token_manager.clone(), request)
+        authenticate(self.server_state.clone(), request)
             .await
             .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
     }
