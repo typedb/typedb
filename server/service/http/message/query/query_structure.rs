@@ -8,7 +8,7 @@ use std::{collections::HashMap, marker::PhantomData, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::QueryStructure;
+use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure, QueryStructureStage};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
@@ -68,6 +68,7 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
     blocks: Vec<QueryStructureBlockResponse>,
+    pipeline: Vec<QueryStructureStage>,
     variables: HashMap<QueryVariableId, QueryVariableInfo>,
     outputs: Vec<QueryVariableId>,
 }
@@ -205,18 +206,16 @@ pub(crate) fn encode_query_structure(
     query_structure: &QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
     let mut variables = HashMap::new();
-    let blocks = query_structure
-        .parametrised_structure
-        .branches
+    let ParametrisedQueryStructure { stages, blocks, .. } = &*query_structure.parametrised_structure;
+    let blocks = blocks
         .iter()
-        .filter_map(|branch_opt| {
-            branch_opt.as_ref().map(|branch| {
-                encode_query_structure_block(snapshot, type_manager, &query_structure, &mut variables, branch)
-            })
+        .map(|block| {
+            encode_query_structure_block(snapshot, type_manager, &query_structure, &mut variables, block.constraints.as_slice())
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let output_variables = query_structure.available_variables.iter().map(|v| v.into()).collect();
-    Ok(QueryStructureResponse { blocks, variables: variables, outputs: output_variables })
+    let outputs = query_structure.available_variables.iter().map(|v| v.into()).collect();
+
+    Ok(QueryStructureResponse { blocks, outputs, variables, pipeline: stages.clone()})
 }
 
 fn encode_query_structure_block(

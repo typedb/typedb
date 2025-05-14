@@ -17,12 +17,53 @@ use ir::{
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
+use serde::{Deserialize, Serialize};
 
-use crate::{annotation::pipeline::AnnotatedStage, VariablePosition};
+use crate::annotation::{
+    pipeline::AnnotatedStage,
+    type_annotations::{BlockAnnotations, TypeAnnotations},
+};
+use crate::VariablePosition;
+
+#[derive(Debug, Clone)]
+pub struct QueryStructureBlock {
+    pub constraints: Vec<Constraint<Variable>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QueryStructureBlockID(pub u16);
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryStructureConjunction {
+    conjunction: Vec<QueryStructureConjunct>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum QueryStructureConjunct {
+    Block(QueryStructureBlockID),
+    Or { branches: Vec<QueryStructureConjunction> },
+    Not(QueryStructureConjunction),
+    Try(QueryStructureConjunction),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum QueryStructureStage {
+    Match(QueryStructureConjunction),
+    Insert { block: QueryStructureBlockID },
+    Put { block: QueryStructureBlockID },
+    Update { block: QueryStructureBlockID },
+    // Select { variables: Vec<Variable> },
+    // TODO...
+}
+
 
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
-    pub branches: [Option<Vec<Constraint<Variable>>>; 64],
+    pub stages: Vec<QueryStructureStage>,
+    pub blocks: Vec<QueryStructureBlock>,
     pub resolved_labels: HashMap<Label, answer::Type>,
     pub calls_syntax: HashMap<Constraint<Variable>, String>,
 }
@@ -39,6 +80,155 @@ impl ParametrisedQueryStructure {
         available_variables.sort();
         QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
+
+    pub fn always_taken_blocks(&self) -> Vec<QueryStructureBlockID> {
+        self.stages
+            .iter()
+            .filter_map(|stage| match stage {
+                QueryStructureStage::Match(QueryStructureConjunction { conjunction }) => match conjunction.first() {
+                    Some(QueryStructureConjunct::Block(block)) => Some(block),
+                    Some(_) | None => {
+                        debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructureConjunct::Block { .. })));
+                        None
+                    }
+                },
+                QueryStructureStage::Insert { block }
+                | QueryStructureStage::Put { block }
+                | QueryStructureStage::Update { block } => Some(block),
+            })
+            .cloned()
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct ParametrisedQueryStructureBuilder<'a> {
+    inner: ParametrisedQueryStructure,
+    source_query: &'a str,
+}
+
+impl<'a> ParametrisedQueryStructureBuilder<'a> {
+    fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
+        // Pre-allocate for the optional branches. They come first
+        let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
+        Self {
+            source_query,
+            inner: ParametrisedQueryStructure {
+                stages: Vec::new(),
+                blocks,
+                resolved_labels: HashMap::new(),
+                calls_syntax: HashMap::new(),
+            },
+        }
+    }
+
+    pub fn add_stage(&mut self, stage: &AnnotatedStage) {
+        match stage {
+            AnnotatedStage::Match { block, block_annotations, .. } => {
+                let conjunction = self.add_block(None, block.conjunction(), &block_annotations);
+                self.inner.stages.push(QueryStructureStage::Match(conjunction));
+            }
+            AnnotatedStage::Insert { block, annotations, .. } => {
+                debug_assert!(block.conjunction().nested_patterns().is_empty());
+                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                self.inner.stages.push(QueryStructureStage::Insert { block });
+            }
+            AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
+                debug_assert!(block.conjunction().nested_patterns().is_empty());
+                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                self.inner.stages.push(QueryStructureStage::Put { block });
+            }
+            AnnotatedStage::Update { block, annotations, .. } => {
+                debug_assert!(block.conjunction().nested_patterns().is_empty());
+                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                self.inner.stages.push(QueryStructureStage::Update { block });
+            }
+            AnnotatedStage::Delete { .. }
+            | AnnotatedStage::Select(_)
+            | AnnotatedStage::Sort(_)
+            | AnnotatedStage::Offset(_)
+            | AnnotatedStage::Limit(_)
+            | AnnotatedStage::Require(_)
+            | AnnotatedStage::Distinct(_)
+            | AnnotatedStage::Reduce(_, _) => {}
+        }
+    }
+
+    fn add_block(
+        &mut self,
+        existing_branch_id: Option<BranchID>,
+        conjunction: &Conjunction,
+        block_annotations: &BlockAnnotations,
+    ) -> QueryStructureConjunction {
+        let mut conjuncts = Vec::new();
+        let block_id = self.add_block_impl(
+            existing_branch_id,
+            conjunction.constraints(),
+            block_annotations.type_annotations_of(conjunction).unwrap(),
+        );
+        conjuncts.push(QueryStructureConjunct::Block(block_id));
+        conjunction.nested_patterns().iter().for_each(|nested| match nested {
+            NestedPattern::Disjunction(disjunction) => {
+                let branches = disjunction
+                    .branch_ids()
+                    .iter()
+                    .zip(disjunction.conjunctions().iter())
+                    .map(|(id, branch)| self.add_block(Some(*id), branch, block_annotations))
+                    .collect::<Vec<_>>();
+                conjuncts.push(QueryStructureConjunct::Or { branches });
+            }
+            NestedPattern::Negation(negation) => {
+                let inner = self.add_block(None, negation.conjunction(), block_annotations);
+                conjuncts.push(QueryStructureConjunct::Not(inner));
+            }
+            NestedPattern::Optional(_) => {
+                unimplemented_feature!(Optionals);
+            }
+        });
+        QueryStructureConjunction { conjunction: conjuncts }
+    }
+
+    fn add_block_impl(
+        &mut self,
+        existing_branch_id: Option<BranchID>,
+        constraints: &[Constraint<Variable>],
+        annotations: &TypeAnnotations,
+    ) -> QueryStructureBlockID {
+        self.extend_labels_from(annotations);
+        self.extend_function_calls_syntax_from(constraints);
+        let branch_id = if let Some(BranchID(id)) = existing_branch_id {
+            debug_assert!((id as usize) < self.inner.blocks.len());
+            self.inner.blocks[id as usize] = QueryStructureBlock { constraints: Vec::from(constraints) };
+            QueryStructureBlockID(id)
+        } else {
+            self.inner.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
+            QueryStructureBlockID(self.inner.blocks.len() as u16 - 1)
+        };
+        branch_id
+    }
+
+    fn extend_function_calls_syntax_from(&mut self, constraints: &[Constraint<Variable>]) {
+        constraints
+            .iter()
+            .filter(|constraint| {
+                matches!(constraint, Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_))
+            })
+            .for_each(|constraint| {
+                if let Some(span) = constraint.source_span() {
+                    let syntax = self.source_query[span.begin_offset..span.end_offset].to_owned();
+                    self.inner.calls_syntax.insert(constraint.clone(), syntax);
+                }
+            });
+    }
+
+    fn extend_labels_from(&mut self, type_annotations: &TypeAnnotations) {
+        self.inner.resolved_labels.extend(type_annotations.vertex_annotations().iter().filter_map(
+            |(vertex, type_)| match (vertex.as_label(), type_.iter().exactly_one()) {
+                (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
+                _ => None,
+            },
+        ));
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -54,101 +244,12 @@ pub fn extract_query_structure_from(
     annotated_stages: &[AnnotatedStage],
     source_query: &str,
 ) -> Option<ParametrisedQueryStructure> {
-    if variable_registry.highest_branch_id_allocated() > 63 {
+    let branch_ids_allocated = variable_registry.branch_ids_allocated();
+    if branch_ids_allocated < 64 {
+        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
+        annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
+        Some(builder.inner)
+    } else {
         return None;
     }
-    let mut branches: [Option<_>; 64] = [(); 64].map(|_| None);
-    let mut resolved_labels = HashMap::new();
-    let mut function_calls_syntax = HashMap::new();
-    annotated_stages.into_iter().for_each(|stage| {
-        match stage {
-            AnnotatedStage::Match { block, block_annotations, .. } => {
-                extract_query_structure_from_branch(&mut branches, BranchID(0), block.conjunction());
-                let block_label_annotations = block_annotations
-                    .type_annotations()
-                    .values()
-                    .flat_map(|annotations| annotations.vertex_annotations().iter());
-                extend_labels_from(&mut resolved_labels, block_label_annotations);
-                extend_function_calls_syntax_from(block.conjunction(), &mut function_calls_syntax, source_query);
-            }
-            AnnotatedStage::Insert { block, annotations, .. }
-            | AnnotatedStage::Put { block, insert_annotations: annotations, .. }
-            | AnnotatedStage::Update { block, annotations, .. } => {
-                // May change with try-insert
-                debug_assert!(block.conjunction().nested_patterns().is_empty());
-                extract_query_structure_from_branch(&mut branches, BranchID(0), block.conjunction());
-                extend_labels_from(&mut resolved_labels, annotations.vertex_annotations().iter());
-            }
-            AnnotatedStage::Delete { .. }
-            | AnnotatedStage::Select(_)
-            | AnnotatedStage::Sort(_)
-            | AnnotatedStage::Offset(_)
-            | AnnotatedStage::Limit(_)
-            | AnnotatedStage::Require(_)
-            | AnnotatedStage::Distinct(_)
-            | AnnotatedStage::Reduce(_, _) => {}
-        }
-    });
-    Some(ParametrisedQueryStructure { branches, resolved_labels, calls_syntax: function_calls_syntax })
-}
-
-fn extract_query_structure_from_branch(
-    branches: &mut [Option<Vec<Constraint<Variable>>>; 64],
-    branch_id: BranchID,
-    conjunction: &Conjunction,
-) {
-    if branches[branch_id.0 as usize].is_none() {
-        branches[branch_id.0 as usize] = Some(Vec::new());
-    }
-    branches[branch_id.0 as usize].as_mut().unwrap().extend_from_slice(conjunction.constraints());
-    conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Disjunction(disjunction) => {
-            disjunction.branch_ids().iter().zip(disjunction.conjunctions().iter()).for_each(|(id, branch)| {
-                extract_query_structure_from_branch(branches, *id, branch);
-            })
-        }
-        NestedPattern::Negation(_) => {}
-        NestedPattern::Optional(_) => {
-            unimplemented_feature!(Optionals);
-        }
-    })
-}
-
-fn extend_labels_from<'a>(
-    resolved_labels: &mut HashMap<Label, Type>,
-    vertex_annotations: impl Iterator<Item = (&'a Vertex<Variable>, &'a Arc<BTreeSet<answer::Type>>)>,
-) {
-    resolved_labels.extend(vertex_annotations.filter_map(|(vertex, type_)| {
-        match (vertex.as_label(), type_.iter().exactly_one()) {
-            (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
-            _ => None,
-        }
-    }));
-}
-
-fn extend_function_calls_syntax_from(
-    conjunction: &Conjunction,
-    function_calls_syntax: &mut HashMap<Constraint<Variable>, String>,
-    source_query: &str,
-) {
-    conjunction.constraints().iter().for_each(|constraint| {
-        if matches!(constraint, Constraint::ExpressionBinding(_) | Constraint::FunctionCallBinding(_)) {
-            if let Some(span) = constraint.source_span() {
-                function_calls_syntax
-                    .insert(constraint.clone(), source_query[span.begin_offset..span.end_offset].to_owned());
-            }
-        }
-    });
-    conjunction.nested_patterns().iter().for_each(|nested| match nested {
-        NestedPattern::Disjunction(disj) => disj
-            .conjunctions()
-            .iter()
-            .for_each(|conj| extend_function_calls_syntax_from(conj, function_calls_syntax, source_query)),
-        NestedPattern::Negation(inner) => {
-            extend_function_calls_syntax_from(inner.conjunction(), function_calls_syntax, source_query)
-        }
-        NestedPattern::Optional(inner) => {
-            extend_function_calls_syntax_from(inner.conjunction(), function_calls_syntax, source_query)
-        }
-    })
 }

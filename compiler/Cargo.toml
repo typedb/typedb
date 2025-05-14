@@ -35,8 +35,9 @@ features = {}
 		default-features = false
 
 [dependencies]
+serde = { version = "1.0.219", features = ["derive"] }
 
-	[dependencies.tracing]
+[dependencies.tracing]
 		features = ["attributes", "default", "log", "std", "tracing-attributes"]
 		version = "0.1.41"
 		default-features = false
