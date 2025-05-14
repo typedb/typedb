@@ -124,7 +124,7 @@ impl VariableRegistry {
 
     pub(crate) fn new() -> VariableRegistry {
         Self {
-            branch_id_allocator: 1, // 0 is reserved for the path through the query that's always taken
+            branch_id_allocator: 0,
             variable_names: HashMap::new(),
             variable_id_allocator: 0,
             variable_categories: HashMap::new(),
@@ -133,8 +133,8 @@ impl VariableRegistry {
         }
     }
 
-    pub fn highest_branch_id_allocated(&self) -> u16 {
-        self.branch_id_allocator - 1
+    pub fn branch_ids_allocated(&self) -> u16 {
+        self.branch_id_allocator
     }
 
     pub(crate) fn next_branch_id(&mut self) -> BranchID {

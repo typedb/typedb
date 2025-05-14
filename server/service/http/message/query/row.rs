@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable_value::VariableValue;
-use compiler::VariablePosition;
+use compiler::{query_structure::QueryStructureBlockID, VariablePosition};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::row::MaybeOwnedRow;
 use hyper::body::HttpBody;
@@ -22,7 +22,7 @@ use crate::service::http::message::query::concept::{encode_thing_concept, encode
 #[serde(rename_all = "camelCase")]
 struct EncodedRow<'a> {
     data: HashMap<&'a str, serde_json::Value>,
-    involved_blocks: Vec<u8>,
+    involved_blocks: Vec<u16>,
 }
 
 pub fn encode_row<'a>(
@@ -33,6 +33,7 @@ pub fn encode_row<'a>(
     thing_manager: &ThingManager,
     include_instance_types: bool,
     storage_counters: StorageCounters,
+    always_taken_blocks: Option<&Vec<QueryStructureBlockID>>,
 ) -> Result<serde_json::Value, Box<ConceptReadError>> {
     // TODO: multiplicity?
     let mut encoded_row = HashMap::with_capacity(columns.len());
@@ -48,7 +49,12 @@ pub fn encode_row<'a>(
         )?;
         encoded_row.insert(variable.as_str(), row_entry);
     }
-    let involved_blocks = row.provenance().branch_ids().map(|b| b.0 as u8).collect();
+    let involved_blocks = row
+        .provenance()
+        .branch_ids()
+        .map(|b| b.0)
+        .chain(always_taken_blocks.unwrap_or(&vec![]).iter().map(|b| b.0))
+        .collect();
     Ok(json!(EncodedRow { data: encoded_row, involved_blocks }))
 }
 

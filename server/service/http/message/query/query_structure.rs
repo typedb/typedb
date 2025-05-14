@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::query_structure::QueryStructure;
+use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure, QueryStructureStage};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
@@ -56,6 +56,13 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
     blocks: Vec<QueryStructureBlockResponse>,
+    structure: QueryStructureStructureResponse,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct QueryStructureStructureResponse {
+    stages: Vec<QueryStructureStage>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -161,17 +168,14 @@ pub(crate) fn encode_query_structure(
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
-    let blocks = query_structure
-        .parametrised_structure
-        .branches
+    let ParametrisedQueryStructure { stages, blocks, .. } = &*query_structure.parametrised_structure;
+    let blocks = blocks
         .iter()
-        .filter_map(|branch_opt| {
-            branch_opt
-                .as_ref()
-                .map(|branch| encode_query_structure_block(snapshot, type_manager, &query_structure, branch))
+        .map(|block| {
+            encode_query_structure_block(snapshot, type_manager, &query_structure, block.constraints.as_slice())
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(QueryStructureResponse { blocks })
+    Ok(QueryStructureResponse { blocks, structure: QueryStructureStructureResponse { stages: stages.clone() } })
 }
 
 fn encode_query_structure_block(
