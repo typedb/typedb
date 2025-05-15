@@ -25,37 +25,26 @@ use crate::annotation::{
 };
 
 #[derive(Debug, Clone)]
-pub struct QueryStructureBlock {
-    pub constraints: Vec<Constraint<Variable>>,
+pub struct QueryStructure {
+    pub parametrised_structure: Arc<ParametrisedQueryStructure>,
+    pub variable_names: HashMap<Variable, String>,
+    pub available_variables: HashSet<Variable>,
+    pub parameters: Arc<ParameterRegistry>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct QueryStructureBlockID(pub u16);
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureConjunction {
-    conjunction: Vec<QueryStructureConjunct>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase", tag = "tag")]
-pub enum QueryStructureConjunct {
-    Block { index: QueryStructureBlockID },
-    Or { branches: Vec<QueryStructureConjunction> },
-    Not(QueryStructureConjunction),
-    Try(QueryStructureConjunction),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub enum QueryStructureStage {
-    Match(QueryStructureConjunction),
-    Insert { block: QueryStructureBlockID },
-    Put { block: QueryStructureBlockID },
-    Update { block: QueryStructureBlockID },
-    // Select { variables: Vec<Variable> },
-    // TODO...
+pub fn extract_query_structure_from(
+    variable_registry: &VariableRegistry,
+    annotated_stages: &[AnnotatedStage],
+    source_query: &str,
+) -> Option<ParametrisedQueryStructure> {
+    let branch_ids_allocated = variable_registry.branch_ids_allocated();
+    if branch_ids_allocated < 64 {
+        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
+        annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
+        Some(builder.inner)
+    } else {
+        return None;
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -95,6 +84,40 @@ impl ParametrisedQueryStructure {
             .collect()
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum QueryStructureStage {
+    Match(QueryStructureConjunction),
+    Insert { block: QueryStructureBlockID },
+    Put { block: QueryStructureBlockID },
+    Update { block: QueryStructureBlockID },
+    // Select { variables: Vec<Variable> },
+    // TODO...
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryStructureConjunction {
+    conjunction: Vec<QueryStructureConjunct>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", tag = "tag")]
+pub enum QueryStructureConjunct {
+    Block { index: QueryStructureBlockID },
+    Or { branches: Vec<QueryStructureConjunction> },
+    Not(QueryStructureConjunction),
+    Try(QueryStructureConjunction),
+}
+
+#[derive(Debug, Clone)]
+pub struct QueryStructureBlock {
+    pub constraints: Vec<Constraint<Variable>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct QueryStructureBlockID(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructureBuilder<'a> {
@@ -223,28 +246,5 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 _ => None,
             },
         ));
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct QueryStructure {
-    pub parametrised_structure: Arc<ParametrisedQueryStructure>,
-    pub variable_names: HashMap<Variable, String>,
-    pub available_variables: HashSet<Variable>,
-    pub parameters: Arc<ParameterRegistry>,
-}
-
-pub fn extract_query_structure_from(
-    variable_registry: &VariableRegistry,
-    annotated_stages: &[AnnotatedStage],
-    source_query: &str,
-) -> Option<ParametrisedQueryStructure> {
-    let branch_ids_allocated = variable_registry.branch_ids_allocated();
-    if branch_ids_allocated < 64 {
-        let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
-        annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
-        Some(builder.inner)
-    } else {
-        return None;
     }
 }
