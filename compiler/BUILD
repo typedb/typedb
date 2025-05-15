@@ -29,6 +29,7 @@ rust_library(
         "@crates//:itertools",
         "@crates//:tracing",
         "@crates//:chrono",
+        "@crates//:serde"
     ],
 )
 
