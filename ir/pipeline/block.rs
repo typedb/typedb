@@ -101,8 +101,13 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
-        let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
+        let Self {
+            conjunction,
+            context:
+                BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. },
+        } = self;
         validate_conjunction(&conjunction, variable_registry, &block_context)?;
+        visible_variables.retain(|name, var| block_context.is_variable_available(conjunction.scope_id(), *var));
         Ok(Block { conjunction, block_context })
     }
 
