@@ -70,7 +70,7 @@ impl Config {
         Ok(())
     }
 
-    fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
+    pub fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
         let typedb_dir_or_current = std::env::current_exe()
             .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
             .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
