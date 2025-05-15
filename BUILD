@@ -27,6 +27,13 @@ exports_files(
     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
 )
 
+genrule(
+    name = "config_at_root",
+    outs = ["config.yml"],
+    srcs = ["//server:config.yml"],
+    cmd = "cp $(location //server:config.yml) $(location config.yml)",
+)
+
 rust_binary(
     name = "typedb_server_bin",
     srcs = [
@@ -42,6 +49,7 @@ rust_binary(
         "@crates//:sentry",
         "@crates//:tokio",
     ],
+    data = ["//:config_at_root"]
 )
 
 # Assembly
