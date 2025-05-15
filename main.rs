@@ -7,6 +7,8 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
+use std::path::PathBuf;
+
 use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{ASCII_LOGO, DEFAULT_CONFIG_PATH, DISTRIBUTION, SENTRY_REPORTING_URI, VERSION};
@@ -19,7 +21,10 @@ use tokio::runtime::Runtime;
 fn main() {
     initialise_abort_on_panic();
     let cli_args: CLIArgs = CLIArgs::parse();
-    let config_file = cli_args.config_file_override.as_ref().map(|x| x.as_str()).unwrap_or(DEFAULT_CONFIG_PATH);
+    let config_file = match cli_args.config_file_override.as_ref() {
+        None => Config::resolve_path_from_executable(&PathBuf::from(DEFAULT_CONFIG_PATH)),
+        Some(path) => CLIArgs::resolve_path_from_pwd(&path.into()),
+    };
     let mut config = Config::from_file(config_file.into()).expect("Error reading from config file");
     cli_args.override_config(&mut config).expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
