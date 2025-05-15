@@ -238,7 +238,7 @@ typedb_error! {
         ),
         UnboundRequiredVariable(
             44,
-            "{variable} is required to be bound to a value before it's used.",
+            "The variable '{variable}' is required to be bound to a value before it's used.",
             variable: String,
             source_span: Option<Span>,
             _rest: Vec<Option<Span>>,

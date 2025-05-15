@@ -42,6 +42,9 @@ pub fn translate_reduce(
             .map(|typeql_var| verify_variable_available!(context, typeql_var => ReduceVariableNotAvailable))
             .collect::<Result<Vec<_>, _>>()?,
     };
+    context
+        .visible_variables
+        .retain(|name, var| group.contains(var) || reductions.iter().any(|reduction| &reduction.assigned == var));
     Ok(Reduce::new(reductions, group, typeql_reduce.span()))
 }
 
