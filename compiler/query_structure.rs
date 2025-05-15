@@ -9,11 +9,11 @@ use std::{
     sync::Arc,
 };
 
-use answer::{variable::Variable, Type};
+use answer::variable::Variable;
 use encoding::value::label::Label;
 use error::unimplemented_feature;
 use ir::{
-    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID, Vertex},
+    pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID},
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;

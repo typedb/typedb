@@ -243,9 +243,8 @@ fn encode_structure_constraint(
     constraints: &mut Vec<StructureConstraintWithSpan>,
     index: usize,
 ) -> Result<(), Box<ConceptReadError>> {
-    let span = constraint
-        .source_span()
-        .map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
+    let span =
+        constraint.source_span().map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
     match constraint {
         Constraint::Links(links) => {
             constraints.push(StructureConstraintWithSpan {
@@ -467,9 +466,7 @@ fn encode_role_type_as_vertex(
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
         // At present rolename could resolve to multiple types - Manually encode.
-        Ok(StructureVertex::Label {
-            r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }),
-        })
+        Ok(StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }) })
     } else {
         encode_structure_vertex(context, role_type)
     }
