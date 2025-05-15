@@ -46,7 +46,7 @@ impl Config {
         let mut config = String::new();
         let resolved_path = Self::resolve_path_from_executable(&path);
         File::open(resolved_path.clone())
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: path.clone() })?
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
             .read_to_string(&mut config)
             .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
         serde_yaml2::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
