@@ -40,9 +40,9 @@ pub struct QueryStructureConjunction {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
+#[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureConjunct {
-    Block(QueryStructureBlockID),
+    Block { index: QueryStructureBlockID },
     Or { branches: Vec<QueryStructureConjunction> },
     Not(QueryStructureConjunction),
     Try(QueryStructureConjunction),
@@ -86,7 +86,7 @@ impl ParametrisedQueryStructure {
             .iter()
             .filter_map(|stage| match stage {
                 QueryStructureStage::Match(QueryStructureConjunction { conjunction }) => match conjunction.first() {
-                    Some(QueryStructureConjunct::Block(block)) => Some(block),
+                    Some(QueryStructureConjunct::Block { index }) => Some(index),
                     Some(_) | None => {
                         debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructureConjunct::Block { .. })));
                         None
@@ -166,7 +166,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             conjunction.constraints(),
             block_annotations.type_annotations_of(conjunction).unwrap(),
         );
-        conjuncts.push(QueryStructureConjunct::Block(block_id));
+        conjuncts.push(QueryStructureConjunct::Block { index: block_id });
         conjunction.nested_patterns().iter().for_each(|nested| match nested {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
