@@ -131,9 +131,9 @@ impl CLIArgs {
             config.server.encryption.certificate_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
             config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
 
-            config.storage.data_directory => storage_data.map(|path| path.into());
+            config.storage.data_directory => storage_data.map(|p| Self::resolve_path_from_pwd(&p.into()));
 
-            config.logging.directory => logging_logdir.map(|path| path.into());
+            config.logging.directory => logging_logdir.map(|p| Self::resolve_path_from_pwd(&p.into()));
 
             config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
             config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
@@ -142,5 +142,9 @@ impl CLIArgs {
             config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
         }
         config.validate_and_finalise()
+    }
+
+    pub fn resolve_path_from_pwd(path: &PathBuf) -> PathBuf {
+        std::env::current_dir().expect("Could not read working directory").join(path)
     }
 }

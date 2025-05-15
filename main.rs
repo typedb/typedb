@@ -23,7 +23,7 @@ fn main() {
     let cli_args: CLIArgs = CLIArgs::parse();
     let config_file = match cli_args.config_file_override.as_ref() {
         None => Config::resolve_path_from_executable(&PathBuf::from(DEFAULT_CONFIG_PATH)),
-        Some(path) => std::env::current_dir().expect("Could not read working directory").join(path),
+        Some(path) => CLIArgs::resolve_path_from_pwd(&path.into()),
     };
     let mut config = Config::from_file(config_file.into()).expect("Error reading from config file");
     cli_args.override_config(&mut config).expect("Error validating config file overridden with cli args");
