@@ -102,6 +102,7 @@ fn insert_row_schema_to_mapping(
         .iter()
         .enumerate()
         .filter_map(|(i, opt)| opt.map(|(v, _)| (i, v)))
+        .filter(|(i,v)| !v.is_anonymous())
         .map(|(i, v)| (v, VariablePosition::new(i as u32)))
         .collect()
 }
