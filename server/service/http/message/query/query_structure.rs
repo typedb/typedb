@@ -168,26 +168,26 @@ pub(crate) fn encode_query_structure(
         .filter_map(|branch_opt| {
             branch_opt
                 .as_ref()
-                .map(|branch| encode_query_structure_branch(snapshot, type_manager, &query_structure, branch))
+                .map(|branch| encode_query_structure_block(snapshot, type_manager, &query_structure, branch))
         })
         .collect::<Result<Vec<_>, _>>()?;
     Ok(QueryStructureResponse { blocks })
 }
 
-fn encode_query_structure_branch(
+fn encode_query_structure_block(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
-    branch: &[Constraint<Variable>],
+    block: &[Constraint<Variable>],
 ) -> Result<QueryStructureBlockResponse, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
-    let role_names = branch
+    let role_names = block
         .iter()
         .filter_map(|constraint| constraint.as_role_name())
         .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
         .collect();
     let context = QueryStructureContext { query_structure, snapshot, type_manager, role_names };
-    branch.iter().enumerate().try_for_each(|(index, constraint)| {
+    block.iter().enumerate().try_for_each(|(index, constraint)| {
         query_structure_constraint(&context, constraint, &mut constraints, index)
     })?;
     Ok(QueryStructureBlockResponse { constraints })
