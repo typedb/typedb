@@ -47,6 +47,8 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::DatabaseCreate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::DatabaseDelete { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::DatabaseSchema { .. } => { StatusCode::BAD_REQUEST }
+            HttpServiceError::DatabaseTypeSchema { .. } => { StatusCode::BAD_REQUEST }
             HttpServiceError::UserCreate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserUpdate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserDelete { .. } => StatusCode::BAD_REQUEST,

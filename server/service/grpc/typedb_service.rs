@@ -179,17 +179,12 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::DatabasesGet, || {
             let name = request.into_inner().name;
             match self.server_state.databases_get(name.clone()) {
-                Ok(db_opt) => {
-                    match db_opt {
-                        Some(db) => Ok(
-                            Response::new(database_get_res(&self.server_state.address, db.name().to_string()))
-                        ),
-                        None => Err(
-                            ServiceError::DatabaseDoesNotExist { name }.into_error_message().into_status()
-                        )
-                    }
-                }
-                Err(err) => Err(err.into_error_message().into_status())
+                Some(db) => Ok(
+                    Response::new(database_get_res(&self.server_state.address, db.name().to_string()))
+                ),
+                None => Err(
+                    ServiceError::DatabaseDoesNotExist { name }.into_error_message().into_status()
+                )
             }
         })
     }

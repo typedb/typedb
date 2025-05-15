@@ -245,8 +245,8 @@ impl ServerState {
     pub fn databases_get(
         &self,
         name: String
-    ) -> Result<Option<Arc<Database<WALClient>>>, ServiceError> {
-        Ok(self.database_manager.database(name.as_str()))
+    ) -> Option<Arc<Database<WALClient>>> {
+        self.database_manager.database(name.as_str())
     }
 
     pub fn databases_contains(&self, name: String) -> bool {
