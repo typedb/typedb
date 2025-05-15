@@ -6,7 +6,7 @@
 
 use std::{borrow::Cow, str::FromStr};
 
-use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{FixedOffset, NaiveDate, NaiveDateTime, NaiveTime, Offset, Utc};
 use chrono_tz::Tz;
 use concept::type_::annotation::AnnotationRegex;
 use encoding::value::{
@@ -217,11 +217,10 @@ impl FromTypeQLLiteral for TimeZone {
                     .map_err(|_| LiteralParseError::InvalidTimezoneNamed { name: name.clone(), source_span })?,
             )),
             typeql::value::TimeZone::ISO(value) => {
-                if value.ends_with("z") || value.ends_with("Z") {
-                    // TODO: is this correct?
-                    Ok(TimeZone::Fixed(FixedOffset::east_opt(0).unwrap()))
+                if value.ends_with("Z") {
+                    Ok(TimeZone::Fixed(Utc.fix()))
                 } else {
-                    // Note: this parser doesn't recognise "z" ending!
+                    // Note: this parser doesn't recognise "Z" ending!
                     Ok(TimeZone::Fixed(FixedOffset::from_str(value).map_err(|_| {
                         LiteralParseError::InvalidTimezoneFixedOffset { offset: value.clone(), source_span }
                     })?))
