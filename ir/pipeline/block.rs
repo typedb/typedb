@@ -151,7 +151,7 @@ fn validate_conjunction(
         }
     }
 
-    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find_or_first(|is| {
+    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find(|is| {
         let lhs_category = variable_registry.get_variable_category(is.lhs().as_variable().unwrap()).unwrap();
         let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
         lhs_category.narrowest(rhs_category).is_none()
