@@ -140,12 +140,16 @@ pub struct QueryStructureConstraintResponse {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureVertexResponse {
-    Variable { variable: String },
-    Label { r#type: serde_json::Value },
+    Variable {
+        id: u16,
+        name: String,
+        #[serde(rename = "inAnswer")]
+        in_answer: bool,
+    },
+    Label {
+        r#type: serde_json::Value,
+    },
     Value(ValueResponse),
-    Expression { repr: String },
-    FunctionCall { repr: String },
-    UnavailableVariable { variable: String },
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -351,14 +355,11 @@ fn query_structure_vertex(
     vertex: &Vertex<Variable>,
 ) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
     let vertex = match vertex {
-        Vertex::Variable(variable) => {
-            let name = context.get_variable_name(variable).unwrap_or_else(|| variable.to_string());
-            if context.query_structure.available_variables.contains(variable) {
-                QueryStructureVertexResponse::Variable { variable: name }
-            } else {
-                QueryStructureVertexResponse::UnavailableVariable { variable: name }
-            }
-        }
+        Vertex::Variable(variable) => QueryStructureVertexResponse::Variable {
+            id: variable.id(),
+            name: context.get_variable_name(variable).unwrap_or_else(|| variable.to_string()),
+            in_answer: context.query_structure.available_variables.contains(variable),
+        },
         Vertex::Label(label) => {
             let type_ = context.get_type(label).unwrap();
             QueryStructureVertexResponse::Label {

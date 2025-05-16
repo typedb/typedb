@@ -78,7 +78,6 @@ pub struct QueryAnswerResponse {
     pub warning: Option<String>,
 }
 
-
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryInfoResponse {
@@ -98,12 +97,7 @@ pub(crate) fn encode_query_rows_answer(
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     let query_info = QueryInfoResponse { r#type: query_type, structure: query_structure };
-    QueryAnswerResponse {
-        answer_type: AnswerType::ConceptRows,
-        answers: Some(rows),
-        query: query_info,
-        warning,
-    }
+    QueryAnswerResponse { answer_type: AnswerType::ConceptRows, answers: Some(rows), query: query_info, warning }
 }
 
 pub(crate) fn encode_query_documents_answer(

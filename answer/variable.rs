@@ -19,6 +19,10 @@ impl Variable {
         Self { id: VariableId { id }, anonymous: false }
     }
 
+    pub fn id(&self) -> u16 {
+        self.id.id
+    }
+
     pub fn new_anonymous(id: u16) -> Self {
         Self { id: VariableId { id }, anonymous: true }
     }
