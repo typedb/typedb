@@ -81,8 +81,8 @@ pub struct QueryAnswerResponse {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryInfoResponse {
-    r#type: QueryType,
-    structure: Option<QueryStructureResponse>,
+    pub r#type: QueryType,
+    pub structure: Option<QueryStructureResponse>,
 }
 
 pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerResponse {

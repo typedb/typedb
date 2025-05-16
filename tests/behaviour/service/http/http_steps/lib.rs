@@ -383,7 +383,7 @@ impl Context {
     }
 
     pub fn get_answer_query_type(&self) -> Option<QueryType> {
-        self.answer.as_ref().map(|answer| answer.query_type)
+        self.answer.as_ref().map(|answer| answer.query.r#type)
     }
 
     pub fn get_answer_type(&self) -> Option<AnswerType> {
