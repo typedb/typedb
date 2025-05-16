@@ -127,7 +127,7 @@ impl TypeDBService {
             payload.transaction_options.map(|options| options.into()).unwrap_or_else(|| TransactionOptions::default());
         let transaction_timeout_millis = options.transaction_timeout_millis;
         let mut transaction_service = TransactionService::new(
-            service.database_manager.clone(),
+            service.server_state.database_manager.clone(),
             service.diagnostics_manager.clone(),
             request_stream,
             service.shutdown_receiver.clone(),
@@ -244,12 +244,10 @@ impl TypeDBService {
         JsonBody(payload): JsonBody<SigninPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(service.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
-            service.server_state
-                .user_verify_password(&payload.username, &payload.password)
-                .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })?;
-            Ok(JsonBody(encode_token(service.token_manager.new_token(payload.username).await)))
-        })
-            .await
+            service.server_state.token_create(payload.username, payload.password).await
+                .map(|token| JsonBody(encode_token(token)))
+                .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
+        }).await
     }
 
     async fn databases(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
