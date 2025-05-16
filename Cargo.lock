@@ -871,6 +871,7 @@ dependencies = [
  "ir",
  "itertools 0.10.5",
  "resource",
+ "serde",
  "storage",
  "test_utils",
  "test_utils_concept",

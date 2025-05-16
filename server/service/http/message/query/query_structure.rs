@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
-use compiler::query_structure::QueryStructure;
+use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure, QueryStructureStage};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
@@ -55,91 +55,98 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
-    blocks: Vec<QueryStructureBlockResponse>,
+    blocks: Vec<StructureBlock>,
+    structure: Structure,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryStructureBlockResponse {
-    constraints: Vec<QueryStructureConstraintResponse>,
+struct Structure {
+    stages: Vec<QueryStructureStage>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct StructureBlock {
+    constraints: Vec<StructureConstraintWithSpan>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub enum QueryStructureConstraint {
-    Isa(QueryConstraintIsaBase),
+enum StructureConstraint {
+    Isa(StructureConstraintIsaBase),
     #[serde(rename = "isa!")]
-    IsaExact(QueryConstraintIsaBase),
+    IsaExact(StructureConstraintIsaBase),
     Has {
-        owner: QueryStructureVertexResponse,
-        attribute: QueryStructureVertexResponse,
+        owner: StructureVertex,
+        attribute: StructureVertex,
     },
     Links {
-        relation: QueryStructureVertexResponse,
-        player: QueryStructureVertexResponse,
-        role: QueryStructureVertexResponse,
+        relation: StructureVertex,
+        player: StructureVertex,
+        role: StructureVertex,
     },
 
-    Sub(QueryConstraintSubBase),
+    Sub(StructureConstraintSubBase),
     #[serde(rename = "sub!")]
-    SubExact(QueryConstraintSubBase),
+    SubExact(StructureConstraintSubBase),
     Owns {
-        owner: QueryStructureVertexResponse,
-        attribute: QueryStructureVertexResponse,
+        owner: StructureVertex,
+        attribute: StructureVertex,
     },
     Relates {
-        relation: QueryStructureVertexResponse,
-        role: QueryStructureVertexResponse,
+        relation: StructureVertex,
+        role: StructureVertex,
     },
     Plays {
-        player: QueryStructureVertexResponse,
-        role: QueryStructureVertexResponse,
+        player: StructureVertex,
+        role: StructureVertex,
     },
 
     FunctionCall {
         name: String,
-        assigned: Vec<QueryStructureVertexResponse>,
-        arguments: Vec<QueryStructureVertexResponse>,
+        assigned: Vec<StructureVertex>,
+        arguments: Vec<StructureVertex>,
     },
     Expression {
         text: String,
-        assigned: Vec<QueryStructureVertexResponse>,
-        arguments: Vec<QueryStructureVertexResponse>,
+        assigned: Vec<StructureVertex>,
+        arguments: Vec<StructureVertex>,
     },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct QueryConstraintIsaBase {
-    instance: QueryStructureVertexResponse,
-    r#type: QueryStructureVertexResponse,
+struct StructureConstraintIsaBase {
+    instance: StructureVertex,
+    r#type: StructureVertex,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct QueryConstraintSubBase {
-    subtype: QueryStructureVertexResponse,
-    supertype: QueryStructureVertexResponse,
+struct StructureConstraintSubBase {
+    subtype: StructureVertex,
+    supertype: StructureVertex,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct QueryStructureConstraintSpan {
+struct StructureConstraintSpan {
     begin: usize,
     end: usize,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryStructureConstraintResponse {
-    text_span: Option<QueryStructureConstraintSpan>,
+struct StructureConstraintWithSpan {
+    text_span: Option<StructureConstraintSpan>,
     #[serde(flatten)]
-    constraint: QueryStructureConstraint,
+    constraint: StructureConstraint,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub enum QueryStructureVertexResponse {
+enum StructureVertex {
     Variable { variable: String },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
@@ -148,38 +155,25 @@ pub enum QueryStructureVertexResponse {
     UnavailableVariable { variable: String },
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureRolePlayerResponse {
-    player: QueryStructureVertexResponse,
-    role: QueryStructureVertexResponse,
-    span: Option<QueryStructureConstraintSpan>,
-}
-
 pub(crate) fn encode_query_structure(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
-    let blocks = query_structure
-        .parametrised_structure
-        .branches
+    let ParametrisedQueryStructure { stages, blocks, .. } = &*query_structure.parametrised_structure;
+    let blocks = blocks
         .iter()
-        .filter_map(|branch_opt| {
-            branch_opt
-                .as_ref()
-                .map(|branch| encode_query_structure_block(snapshot, type_manager, &query_structure, branch))
-        })
+        .map(|block| encode_structure_block(snapshot, type_manager, &query_structure, block.constraints.as_slice()))
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(QueryStructureResponse { blocks })
+    Ok(QueryStructureResponse { blocks, structure: Structure { stages: stages.clone() } })
 }
 
-fn encode_query_structure_block(
+fn encode_structure_block(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
     block: &[Constraint<Variable>],
-) -> Result<QueryStructureBlockResponse, Box<ConceptReadError>> {
+) -> Result<StructureBlock, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
     let role_names = block
         .iter()
@@ -188,113 +182,112 @@ fn encode_query_structure_block(
         .collect();
     let context = QueryStructureContext { query_structure, snapshot, type_manager, role_names };
     block.iter().enumerate().try_for_each(|(index, constraint)| {
-        query_structure_constraint(&context, constraint, &mut constraints, index)
+        encode_structure_constraint(&context, constraint, &mut constraints, index)
     })?;
-    Ok(QueryStructureBlockResponse { constraints })
+    Ok(StructureBlock { constraints })
 }
 
-fn query_structure_constraint(
+fn encode_structure_constraint(
     context: &QueryStructureContext<'_, impl ReadableSnapshot>,
     constraint: &Constraint<Variable>,
-    constraints: &mut Vec<QueryStructureConstraintResponse>,
+    constraints: &mut Vec<StructureConstraintWithSpan>,
     index: usize,
 ) -> Result<(), Box<ConceptReadError>> {
-    let span = constraint
-        .source_span()
-        .map(|span| QueryStructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
+    let span =
+        constraint.source_span().map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
     match constraint {
         Constraint::Links(links) => {
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
-                constraint: QueryStructureConstraint::Links {
-                    relation: query_structure_vertex(context, links.relation())?,
-                    player: query_structure_vertex(context, links.player())?,
-                    role: query_structure_role_type_as_vertex(context, links.role_type())?,
+                constraint: StructureConstraint::Links {
+                    relation: encode_structure_vertex(context, links.relation())?,
+                    player: encode_structure_vertex(context, links.player())?,
+                    role: encode_role_type_as_vertex(context, links.role_type())?,
                 },
             });
         }
         Constraint::Has(has) => {
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
-                constraint: QueryStructureConstraint::Has {
-                    owner: query_structure_vertex(context, has.owner())?,
-                    attribute: query_structure_vertex(context, has.attribute())?,
+                constraint: StructureConstraint::Has {
+                    owner: encode_structure_vertex(context, has.owner())?,
+                    attribute: encode_structure_vertex(context, has.attribute())?,
                 },
             });
         }
 
         Constraint::Isa(isa) => {
-            let constraint = QueryConstraintIsaBase {
-                instance: query_structure_vertex(context, isa.thing())?,
-                r#type: query_structure_vertex(context, isa.type_())?,
+            let constraint = StructureConstraintIsaBase {
+                instance: encode_structure_vertex(context, isa.thing())?,
+                r#type: encode_structure_vertex(context, isa.type_())?,
             };
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
                 constraint: match isa.isa_kind() {
-                    IsaKind::Exact => QueryStructureConstraint::IsaExact(constraint),
-                    IsaKind::Subtype => QueryStructureConstraint::Isa(constraint),
+                    IsaKind::Exact => StructureConstraint::IsaExact(constraint),
+                    IsaKind::Subtype => StructureConstraint::Isa(constraint),
                 },
             })
         }
         Constraint::Sub(sub) => {
-            let constraint = QueryConstraintSubBase {
-                subtype: query_structure_vertex(context, sub.subtype())?,
-                supertype: query_structure_vertex(context, sub.supertype())?,
+            let constraint = StructureConstraintSubBase {
+                subtype: encode_structure_vertex(context, sub.subtype())?,
+                supertype: encode_structure_vertex(context, sub.supertype())?,
             };
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
                 constraint: match sub.sub_kind() {
-                    SubKind::Exact => QueryStructureConstraint::SubExact(constraint),
-                    SubKind::Subtype => QueryStructureConstraint::Sub(constraint),
+                    SubKind::Exact => StructureConstraint::SubExact(constraint),
+                    SubKind::Subtype => StructureConstraint::Sub(constraint),
                 },
             })
         }
-        Constraint::Owns(owns) => constraints.push(QueryStructureConstraintResponse {
+        Constraint::Owns(owns) => constraints.push(StructureConstraintWithSpan {
             text_span: span,
-            constraint: QueryStructureConstraint::Owns {
-                owner: query_structure_vertex(context, owns.owner())?,
-                attribute: query_structure_vertex(context, owns.attribute())?,
+            constraint: StructureConstraint::Owns {
+                owner: encode_structure_vertex(context, owns.owner())?,
+                attribute: encode_structure_vertex(context, owns.attribute())?,
             },
         }),
         Constraint::Relates(relates) => {
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
-                constraint: QueryStructureConstraint::Relates {
-                    relation: query_structure_vertex(context, relates.relation())?,
-                    role: query_structure_vertex(context, relates.role_type())?,
+                constraint: StructureConstraint::Relates {
+                    relation: encode_structure_vertex(context, relates.relation())?,
+                    role: encode_structure_vertex(context, relates.role_type())?,
                 },
             });
         }
         Constraint::Plays(plays) => {
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
-                constraint: QueryStructureConstraint::Plays {
-                    player: query_structure_vertex(context, plays.player())?,
-                    role: query_structure_vertex(context, plays.role_type())?,
+                constraint: StructureConstraint::Plays {
+                    player: encode_structure_vertex(context, plays.player())?,
+                    role: encode_structure_vertex(context, plays.role_type())?,
                 },
             });
         }
         Constraint::IndexedRelation(indexed) => {
             let span_1 = indexed
                 .source_span_1()
-                .map(|span| QueryStructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
+                .map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
             let span_2 = indexed
                 .source_span_2()
-                .map(|span| QueryStructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
-            constraints.push(QueryStructureConstraintResponse {
+                .map(|span| StructureConstraintSpan { begin: span.begin_offset, end: span.end_offset });
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span_1,
-                constraint: QueryStructureConstraint::Links {
-                    relation: query_structure_vertex(context, indexed.relation())?,
-                    player: query_structure_vertex(context, indexed.player_1())?,
-                    role: query_structure_role_type_as_vertex(context, indexed.role_type_1())?,
+                constraint: StructureConstraint::Links {
+                    relation: encode_structure_vertex(context, indexed.relation())?,
+                    player: encode_structure_vertex(context, indexed.player_1())?,
+                    role: encode_role_type_as_vertex(context, indexed.role_type_1())?,
                 },
             });
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span_2,
-                constraint: QueryStructureConstraint::Links {
-                    relation: query_structure_vertex(context, indexed.relation())?,
-                    player: query_structure_vertex(context, indexed.player_2())?,
-                    role: query_structure_role_type_as_vertex(context, indexed.role_type_2())?,
+                constraint: StructureConstraint::Links {
+                    relation: encode_structure_vertex(context, indexed.relation())?,
+                    player: encode_structure_vertex(context, indexed.player_2())?,
+                    role: encode_role_type_as_vertex(context, indexed.role_type_2())?,
                 },
             });
         }
@@ -303,15 +296,15 @@ fn query_structure_constraint(
                 context.get_call_syntax(constraint).map_or_else(|| format!("Expression#{index}"), |text| text.clone());
             let assigned = expr
                 .ids_assigned()
-                .map(|variable| query_structure_vertex(context, &Vertex::Variable(variable)))
+                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             let arguments = expr
                 .required_ids()
-                .map(|variable| query_structure_vertex(context, &Vertex::Variable(variable)))
+                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
-                constraint: QueryStructureConstraint::Expression { text, assigned, arguments },
+                constraint: StructureConstraint::Expression { text, assigned, arguments },
             });
         }
         Constraint::FunctionCallBinding(function_call) => {
@@ -319,16 +312,16 @@ fn query_structure_constraint(
                 context.get_call_syntax(constraint).map_or_else(|| format!("Function#{index}"), |text| text.clone());
             let assigned = function_call
                 .ids_assigned()
-                .map(|variable| query_structure_vertex(context, &Vertex::Variable(variable)))
+                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             let arguments = function_call
                 .function_call()
                 .argument_ids()
-                .map(|variable| query_structure_vertex(context, &Vertex::Variable(variable)))
+                .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
-            constraints.push(QueryStructureConstraintResponse {
+            constraints.push(StructureConstraintWithSpan {
                 text_span: span,
-                constraint: QueryStructureConstraint::FunctionCall { name: text, assigned, arguments },
+                constraint: StructureConstraint::FunctionCall { name: text, assigned, arguments },
             });
         }
         | Constraint::Comparison(_) => {}
@@ -346,43 +339,41 @@ fn query_structure_constraint(
     Ok(())
 }
 
-fn query_structure_vertex(
+fn encode_structure_vertex(
     context: &QueryStructureContext<'_, impl ReadableSnapshot>,
     vertex: &Vertex<Variable>,
-) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
+) -> Result<StructureVertex, Box<ConceptReadError>> {
     let vertex = match vertex {
         Vertex::Variable(variable) => {
             let name = context.get_variable_name(variable).unwrap_or_else(|| variable.to_string());
             if context.query_structure.available_variables.contains(variable) {
-                QueryStructureVertexResponse::Variable { variable: name }
+                StructureVertex::Variable { variable: name }
             } else {
-                QueryStructureVertexResponse::UnavailableVariable { variable: name }
+                StructureVertex::UnavailableVariable { variable: name }
             }
         }
         Vertex::Label(label) => {
             let type_ = context.get_type(label).unwrap();
-            QueryStructureVertexResponse::Label {
+            StructureVertex::Label {
                 r#type: serde_json::json!(encode_type_concept(&type_, context.snapshot, context.type_manager)?),
             }
         }
         Vertex::Parameter(param) => {
             let value = context.get_parameter_value(param).unwrap();
-            QueryStructureVertexResponse::Value(encode_value(value))
+            StructureVertex::Value(encode_value(value))
         }
     };
     Ok(vertex)
 }
 
-fn query_structure_role_type_as_vertex(
+fn encode_role_type_as_vertex(
     context: &QueryStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
-) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
+) -> Result<StructureVertex, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
         // At present rolename could resolve to multiple types - Manually encode.
-        Ok(QueryStructureVertexResponse::Label {
-            r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }),
-        })
+        Ok(StructureVertex::Label { r#type: serde_json::json!(RoleTypeResponse { label: label.to_owned() }) })
     } else {
-        query_structure_vertex(context, role_type)
+        encode_structure_vertex(context, role_type)
     }
 }
