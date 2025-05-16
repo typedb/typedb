@@ -18,7 +18,8 @@ use ir::{
 };
 use itertools::Itertools;
 
-use crate::annotation::pipeline::AnnotatedStage;
+use crate::{annotation::pipeline::AnnotatedStage, VariablePosition};
+
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
@@ -31,8 +32,9 @@ impl ParametrisedQueryStructure {
         self: Arc<Self>,
         parameters: Arc<ParameterRegistry>,
         variable_names: HashMap<Variable, String>,
-        available_variables: HashSet<Variable>,
+        output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> QueryStructure {
+        let available_variables = output_variable_positions.keys().filter(|v| !v.is_anonymous()).copied().collect();
         QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
 }

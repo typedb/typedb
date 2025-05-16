@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
+use bytes::util::HexBytesFormatter;
 use compiler::query_structure::QueryStructure;
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -16,7 +17,6 @@ use ir::pattern::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use bytes::util::HexBytesFormatter;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -113,16 +113,16 @@ pub enum QueryStructureConstraint {
     },
     Is {
         lhs: QueryStructureVertexResponse,
-        rhs: QueryStructureVertexResponse
+        rhs: QueryStructureVertexResponse,
     },
     Iid {
         variable: QueryStructureVertexResponse,
-        iid: String
+        iid: String,
     },
     Comparison {
         lhs: QueryStructureVertexResponse,
         rhs: QueryStructureVertexResponse,
-        comparator: String
+        comparator: String,
     },
 }
 
@@ -364,21 +364,17 @@ fn query_structure_constraint(
                 },
             });
         }
-        Constraint::Comparison(comparison) => {
-            constraints.push(QueryStructureConstraintResponse {
-                text_span: span,
-                constraint: QueryStructureConstraint::Comparison {
-                    lhs: query_structure_vertex(context, comparison.lhs())?,
-                    rhs: query_structure_vertex(context, comparison.lhs())?,
-                    comparator: comparison.comparator().name().to_owned(),
-                }
-            })
-        }
+        Constraint::Comparison(comparison) => constraints.push(QueryStructureConstraintResponse {
+            text_span: span,
+            constraint: QueryStructureConstraint::Comparison {
+                lhs: query_structure_vertex(context, comparison.lhs())?,
+                rhs: query_structure_vertex(context, comparison.lhs())?,
+                comparator: comparison.comparator().name().to_owned(),
+            },
+        }),
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
         // Constraints that probably don't need to be handled
-        Constraint::Kind(_)
-        | Constraint::Label(_)
-        | Constraint::Value(_) => {}
+        Constraint::Kind(_) | Constraint::Label(_) | Constraint::Value(_) => {}
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
