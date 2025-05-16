@@ -152,14 +152,6 @@ pub enum QueryStructureVertexResponse {
     Value(ValueResponse),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureRolePlayerResponse {
-    player: QueryStructureVertexResponse,
-    role: QueryStructureVertexResponse,
-    span: Option<QueryStructureConstraintSpan>,
-}
-
 pub(crate) fn encode_query_structure(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
