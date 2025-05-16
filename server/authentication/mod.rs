@@ -14,7 +14,6 @@ use error::typedb_error;
 use http::Extensions;
 use tonic::metadata::MetadataMap;
 
-use crate::authentication::token_manager::TokenManager;
 use crate::service::grpc::state::ServerState;
 
 pub(crate) mod credential_verifier;

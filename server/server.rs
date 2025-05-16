@@ -5,11 +5,14 @@
  */
 
 use crate::service::grpc::state::ServerState;
-use tokio::sync::watch::{channel, Sender, Receiver};
+use crate::service::{grpc, http};
+use crate::util::resolve_address;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
 };
+use axum_server::tls_rustls::RustlsConfig;
+use axum_server::Handle;
 use database::database_manager::DatabaseManager;
 use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
 use resource::server_info::ServerInfo;
@@ -17,10 +20,7 @@ use std::{
     net::SocketAddr,
     sync::Arc,
 };
-use axum_server::Handle;
-use axum_server::tls_rustls::RustlsConfig;
-use crate::service::{grpc, http};
-use crate::util::resolve_address;
+use tokio::sync::watch::{channel, Receiver, Sender};
 
 #[derive(Debug)]
 pub struct Server {

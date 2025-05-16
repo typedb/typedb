@@ -13,7 +13,7 @@ use axum::{
     Router,
 };
 use concurrency::TokioIntervalRunner;
-use database::{database_manager::DatabaseManager, transaction::TransactionRead};
+use database::database_manager::DatabaseManager;
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
@@ -26,11 +26,11 @@ use tokio::{
     },
     time::timeout,
 };
-use tonic::Response;
 use tower_http::cors::CorsLayer;
-use user::{permission_manager::PermissionManager, user_manager::UserManager};
+use user::user_manager::UserManager;
 use uuid::Uuid;
 
+use crate::service::grpc::state::ServerState;
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     service::{
@@ -44,18 +44,17 @@ use crate::{
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
-                version::{encode_server_version, ProtocolVersion, ServerVersionResponse, PROTOCOL_VERSION_LATEST},
+                version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
             },
             transaction_service::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
             },
         },
-        transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        typedb_service::{get_database_schema, get_database_type_schema},
-        QueryType, ServiceError,
+        transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE
+        ,
+        QueryType,
     },
 };
-use crate::service::grpc::state::ServerState;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 

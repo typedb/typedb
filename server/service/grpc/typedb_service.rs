@@ -6,26 +6,7 @@
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
-use axum::response::IntoResponse;
-use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
-use error::typedb_error;
-use http::StatusCode;
-use options::TransactionOptions;
-use resource::constants::server::DEFAULT_USER_NAME;
-use system::concepts::{Credential, PasswordHash, User};
-use tokio::sync::mpsc::channel;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status, Streaming};
-use tracing::{event, Level};
-use typedb_protocol::{
-    self,
-    server_manager::all::{Req, Res},
-    transaction::{Client, Server},
-};
-use user::{permission_manager::PermissionManager, user_manager::UserManager};
-use uuid::Uuid;
-use storage::durability_client::WALClient;
+use crate::service::grpc::state::ServerState;
 use crate::{
     authentication::{
         credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
@@ -57,7 +38,26 @@ use crate::{
         ServiceError,
     },
 };
-use crate::service::grpc::state::ServerState;
+use axum::response::IntoResponse;
+use database::{database_manager::DatabaseManager, transaction::TransactionRead, Database};
+use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
+use error::typedb_error;
+use http::StatusCode;
+use options::TransactionOptions;
+use resource::constants::server::DEFAULT_USER_NAME;
+use storage::durability_client::WALClient;
+use system::concepts::{Credential, PasswordHash, User};
+use tokio::sync::mpsc::channel;
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::{Request, Response, Status, Streaming};
+use tracing::{event, Level};
+use typedb_protocol::{
+    self,
+    server_manager::all::{Req, Res},
+    transaction::{Client, Server},
+};
+use user::{permission_manager::PermissionManager, user_manager::UserManager};
+use uuid::Uuid;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {

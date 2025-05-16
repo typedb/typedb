@@ -1,66 +1,45 @@
-use std::fs;
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::pin::Pin;
-use std::sync::Arc;
-use std::time::Instant;
-use http::Extensions;
-use rand::prelude::SliceRandom;
-use tokio::sync::mpsc::channel;
-use tokio::sync::watch::Receiver;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status, Streaming};
-use tonic::body::BoxBody;
-use tonic::metadata::MetadataMap;
-use tracing::{event, Level};
-use typedb_protocol::server_manager::all::{Req, Res};
-use typedb_protocol::transaction::{Client, Server};
-use uuid::Uuid;
-use concurrency::IntervalRunner;
-use database::{Database, DatabaseDeleteError};
-use database::database::DatabaseCreateError;
-use database::database_manager::DatabaseManager;
-use user::user_manager::UserManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use diagnostics::metrics::ActionKind;
-use error::typedb_error;
-use resource::constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
-use resource::server_info::ServerInfo;
-use storage::durability_client::WALClient;
-use system::concepts::{Credential, User};
-use system::initialise_system_database;
-use user::errors::UserGetError;
-use user::initialise_default_user;
-use user::permission_manager::PermissionManager;
+use crate::authentication::credential_verifier::CredentialVerifier;
+use crate::authentication::token_manager::TokenManager;
+use crate::authentication::{Accessor, AuthenticationError};
+use crate::service::transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE;
+use crate::service::typedb_service::{get_database_schema, get_database_type_schema};
+use crate::util::resolve_address;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
     service::grpc::{
-        diagnostics::run_with_diagnostics,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError, ServiceError},
-        request_parser::{users_create_req, users_update_req},
-        response_builders::{
-            authentication::token_create_res,
-            connection::connection_open_res,
-            database::database_delete_res,
-            database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
-            server_manager::servers_all_res,
-            user_manager::{
-                user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res, users_get_res,
-            },
-        },
+        error::{IntoGrpcStatus, IntoProtocolErrorMessage}
+
+        ,
         transaction_service::TransactionService,
         ConnectionID,
     },
 };
-use crate::authentication::{authenticate, Accessor, AuthenticationError};
-use crate::authentication::credential_verifier::CredentialVerifier;
-use crate::authentication::token_manager::TokenManager;
-use crate::service::grpc::diagnostics::run_with_diagnostics_async;
-use crate::service::grpc::response_builders::database_manager::{database_schema_res, database_type_schema_res};
-use crate::service::transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE;
-use crate::service::typedb_service::{get_database_schema, get_database_type_schema};
-use crate::util::resolve_address;
+use concurrency::IntervalRunner;
+use database::database::DatabaseCreateError;
+use database::database_manager::DatabaseManager;
+use database::{Database, DatabaseDeleteError};
+use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
+use rand::prelude::SliceRandom;
+use resource::constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
+use resource::server_info::ServerInfo;
+use std::fs;
+use std::net::SocketAddr;
+use std::path::{Path, PathBuf};
+use std::sync::Arc;
+use storage::durability_client::WALClient;
+use system::concepts::{Credential, User};
+use system::initialise_system_database;
+use tokio::sync::mpsc::channel;
+use tokio::sync::watch::Receiver;
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::{Request, Status, Streaming};
+use typedb_protocol::transaction::{Client, Server};
+use user::errors::UserGetError;
+use user::initialise_default_user;
+use user::permission_manager::PermissionManager;
+use user::user_manager::UserManager;
+use uuid::Uuid;
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
 

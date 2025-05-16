@@ -5,20 +5,20 @@
  */
 use std::sync::Arc;
 
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
+use diagnostics::metrics::ActionKind;
 use futures::future::BoxFuture;
 use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
+use crate::service::grpc::state::ServerState;
 use crate::{
-    authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
+    authentication::authenticate,
     service::grpc::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
     },
 };
-use crate::service::grpc::state::ServerState;
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {

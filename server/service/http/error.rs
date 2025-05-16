@@ -6,7 +6,6 @@
 
 use database::{database::DatabaseCreateError, DatabaseDeleteError};
 use error::{typedb_error, TypeDBError};
-use user::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
 
 use crate::{
     authentication::AuthenticationError,

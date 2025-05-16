@@ -6,7 +6,7 @@
 
 use axum::response::{IntoResponse, Response};
 use http::StatusCode;
-use options::{QueryOptions, TransactionOptions};
+use options::TransactionOptions;
 use resource::constants::server::{
     DEFAULT_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS, DEFAULT_TRANSACTION_PARALLEL, DEFAULT_TRANSACTION_TIMEOUT_MILLIS,
 };
