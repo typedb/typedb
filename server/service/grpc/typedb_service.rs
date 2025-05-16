@@ -6,7 +6,7 @@
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
-use crate::service::grpc::state::ServerState;
+use crate::service::state::ServerState;
 use crate::{
     authentication::{
         credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
@@ -123,7 +123,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     );
 
                     Ok(Response::new(connection_open_res(
-                        self.server_state.generate_connection_id(),
+                        generate_connection_id(),
                         receive_time,
                         database_all_res(&self.server_state.address, self.server_state.databases_all()),
                         token_create_res(token),
@@ -354,4 +354,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
         Ok(Response::new(Box::pin(stream)))
     }
+}
+
+fn generate_connection_id() -> ConnectionID {
+    Uuid::new_v4().into_bytes()
 }

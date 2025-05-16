@@ -30,7 +30,7 @@ use tower_http::cors::CorsLayer;
 use user::user_manager::UserManager;
 use uuid::Uuid;
 
-use crate::service::grpc::state::ServerState;
+use crate::service::state::ServerState;
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
     service::{

@@ -11,6 +11,7 @@ use user::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateErr
 
 pub(crate) mod grpc;
 pub mod http;
+pub(crate) mod state;
 mod transaction_service;
 mod typedb_service;
 

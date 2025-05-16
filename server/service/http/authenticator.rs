@@ -11,7 +11,7 @@ use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
-use crate::service::grpc::state::ServerState;
+use crate::service::state::ServerState;
 use crate::{
     authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
     service::http::error::HttpServiceError,

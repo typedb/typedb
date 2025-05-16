@@ -1,19 +1,11 @@
 use crate::authentication::credential_verifier::CredentialVerifier;
 use crate::authentication::token_manager::TokenManager;
 use crate::authentication::{Accessor, AuthenticationError};
-use crate::service::transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE;
 use crate::service::typedb_service::{get_database_schema, get_database_type_schema};
 use crate::util::resolve_address;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
-    service::grpc::{
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage}
-
-        ,
-        transaction_service::TransactionService,
-        ConnectionID,
-    },
 };
 use concurrency::IntervalRunner;
 use database::database::DatabaseCreateError;
@@ -30,16 +22,11 @@ use std::sync::Arc;
 use storage::durability_client::WALClient;
 use system::concepts::{Credential, User};
 use system::initialise_system_database;
-use tokio::sync::mpsc::channel;
 use tokio::sync::watch::Receiver;
-use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Status, Streaming};
-use typedb_protocol::transaction::{Client, Server};
 use user::errors::UserGetError;
 use user::initialise_default_user;
 use user::permission_manager::PermissionManager;
 use user::user_manager::UserManager;
-use uuid::Uuid;
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
 
@@ -166,10 +153,6 @@ impl ServerState {
     fn generate_server_id() -> String {
         let mut rng = rand::thread_rng();
         (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
-    }
-
-    pub fn generate_connection_id(&self) -> ConnectionID {
-        Uuid::new_v4().into_bytes()
     }
 
     async fn initialise_diagnostics(
@@ -355,11 +338,5 @@ impl ServerState {
 
     pub fn database_manager(&self) -> &DatabaseManager {
         todo!()
-    }
-
-    async fn get_request_accessor<T>(&self, request: &Request<T>) -> Result<String, Status> {
-        let Accessor(accessor) = Accessor::from_extensions(request.extensions())
-            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
-        Ok(accessor)
     }
 }

@@ -11,7 +11,7 @@ use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
-use crate::service::grpc::state::ServerState;
+use crate::service::state::ServerState;
 use crate::{
     authentication::authenticate,
     service::grpc::{
