@@ -16,6 +16,7 @@ use ir::pattern::{
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
+use bytes::util::HexBytesFormatter;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -33,6 +34,10 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
         debug_assert!(matches!(param, ParameterID::Value(_, _)));
         self.query_structure.parameters.value(*param).cloned()
+    }
+
+    pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
+        self.query_structure.parameters.iid(*param).map(|iid| iid.as_ref())
     }
 
     pub fn get_variable_name(&self, variable: &Variable) -> Option<String> {
@@ -105,6 +110,19 @@ pub enum QueryStructureConstraint {
         text: String,
         assigned: Vec<QueryStructureVertexResponse>,
         arguments: Vec<QueryStructureVertexResponse>,
+    },
+    Is {
+        lhs: QueryStructureVertexResponse,
+        rhs: QueryStructureVertexResponse
+    },
+    Iid {
+        variable: QueryStructureVertexResponse,
+        iid: String
+    },
+    Comparison {
+        lhs: QueryStructureVertexResponse,
+        rhs: QueryStructureVertexResponse,
+        comparator: String
     },
 }
 
@@ -327,15 +345,40 @@ fn query_structure_constraint(
                 constraint: QueryStructureConstraint::FunctionCall { name: text, assigned, arguments },
             });
         }
-        | Constraint::Comparison(_) => {}
+        Constraint::Is(is) => {
+            constraints.push(QueryStructureConstraintResponse {
+                text_span: span,
+                constraint: QueryStructureConstraint::Is {
+                    lhs: query_structure_vertex(context, is.lhs())?,
+                    rhs: query_structure_vertex(context, is.rhs())?,
+                },
+            });
+        }
+        Constraint::Iid(iid) => {
+            let iid_bytes = context.get_parameter_iid(iid.iid().as_parameter().as_ref().unwrap()).unwrap();
+            constraints.push(QueryStructureConstraintResponse {
+                text_span: span,
+                constraint: QueryStructureConstraint::Iid {
+                    variable: query_structure_vertex(context, iid.var())?,
+                    iid: HexBytesFormatter::borrowed(iid_bytes).format_iid(),
+                },
+            });
+        }
+        Constraint::Comparison(comparison) => {
+            constraints.push(QueryStructureConstraintResponse {
+                text_span: span,
+                constraint: QueryStructureConstraint::Comparison {
+                    lhs: query_structure_vertex(context, comparison.lhs())?,
+                    rhs: query_structure_vertex(context, comparison.lhs())?,
+                    comparator: comparison.comparator().name().to_owned(),
+                }
+            })
+        }
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
-
         // Constraints that probably don't need to be handled
-        | Constraint::Kind(_)
+        Constraint::Kind(_)
         | Constraint::Label(_)
-        | Constraint::Value(_)
-        | Constraint::Is(_)
-        | Constraint::Iid(_) => {}
+        | Constraint::Value(_) => {}
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
