@@ -70,8 +70,8 @@ impl Server {
             })
     }
 
-    pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        Self::print_hello(self.server_info, self.config.is_development_mode);
+    pub async fn serve(self) -> Result<(), ServerOpenError> {
+        Self::print_hello(self.server_info.clone(), self.config.is_development_mode);
         Self::install_default_encryption_provider()?;
 
         let grpc_address = resolve_address(self.config.server.address).await;
@@ -87,13 +87,14 @@ impl Server {
         );
 
         let http_server_address = match self.config.server.http_address.clone() {
-            Some(http_address) => None, // Some(resolve_address(http_address).await),
+            Some(http_address) => Some(resolve_address(http_address).await),
             None => None,
         };
         let http_service = http_server_address.map(|http_address| {
             http::typedb_service::TypeDBService::new(
+                self.server_info,
                 http_address,
-                self.shutdown_sig_receiver.clone(),
+                self.server_state.clone(),
             )
         });
 
@@ -163,7 +164,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
         service: http::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
-        let authenticator = http::authenticator::Authenticator::new();
+        let authenticator = http::authenticator::Authenticator::new(server_state);
 
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);

@@ -20,14 +20,11 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct Authenticator {
     server_state: Arc<ServerState>,
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
 }
 
 impl Authenticator {
-    pub(crate) fn new() -> Self {
-        todo!()
+    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
+        Self { server_state }
     }
 }
 

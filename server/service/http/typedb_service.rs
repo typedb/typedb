@@ -29,7 +29,7 @@ use tokio::{
 use tower_http::cors::CorsLayer;
 use user::user_manager::UserManager;
 use uuid::Uuid;
-
+use resource::server_info::ServerInfo;
 use crate::service::state::ServerState;
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
@@ -68,17 +68,10 @@ struct TransactionInfo {
 
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDBService {
-    server_state: Arc<ServerState>,
+    server_info: ServerInfo,
     address: SocketAddr,
-    distribution: &'static str,
-    version: &'static str,
-    database_manager: Arc<DatabaseManager>,
-    user_manager: Arc<UserManager>,
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: Arc<ServerState>,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
-    shutdown_receiver: tokio::sync::watch::Receiver<()>,
     _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
 
@@ -86,10 +79,7 @@ impl TypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(
-        address: SocketAddr,
-        shutdown_receiver: tokio::sync::watch::Receiver<()>,
-    ) -> Self {
+    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<ServerState>) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
 
         let controlled_transactions = transaction_request_senders.clone();
@@ -105,7 +95,13 @@ impl TypeDBService {
             false,
         ));
 
-        todo!()
+        Self {
+            server_info,
+            address,
+            server_state,
+            transaction_services: transaction_request_senders,
+            _transaction_cleanup_job: transaction_cleanup_job
+        }
     }
 
     async fn cleanup_closed_transactions(transactions: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>) {
@@ -128,9 +124,9 @@ impl TypeDBService {
         let transaction_timeout_millis = options.transaction_timeout_millis;
         let mut transaction_service = TransactionService::new(
             service.server_state.database_manager.clone(),
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             request_stream,
-            service.shutdown_receiver.clone(),
+            service.server_state.shutdown_receiver.clone(),
         );
 
         let database_name = payload.database_name;
@@ -225,8 +221,8 @@ impl TypeDBService {
 
     async fn version(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
         Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
-            service.distribution.to_string(),
-            service.version.to_string(),
+            service.server_info.distribution.to_string(),
+            service.server_info.version.to_string(),
         )))
     }
 
@@ -443,7 +439,7 @@ impl TypeDBService {
         JsonBody(payload): JsonBody<TransactionOpenPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(payload.database_name.clone()),
             ActionKind::TransactionOpen,
             || async {
@@ -467,7 +463,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionCommit,
             || async {
@@ -493,7 +489,7 @@ impl TypeDBService {
         };
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionClose,
             || async {
@@ -517,7 +513,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionRollback,
             || async {
@@ -542,7 +538,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionQuery,
             || async {
@@ -567,7 +563,7 @@ impl TypeDBService {
         JsonBody(payload): JsonBody<QueryPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(payload.transaction_open_payload.database_name.clone()),
             ActionKind::OneshotQuery,
             || async {
