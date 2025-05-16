@@ -150,7 +150,11 @@ fn validate_conjunction(
             }));
         }
     }
+    validate_is_variables_have_same_category(conjunction, variable_registry)?;
+    Ok(())
+}
 
+fn validate_is_variables_have_same_category(conjunction: &Conjunction, variable_registry: &VariableRegistry) -> Result<(), Box<RepresentationError>> {
     let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find(|is| {
         let lhs_category = variable_registry.get_variable_category(is.lhs().as_variable().unwrap()).unwrap();
         let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
@@ -163,15 +167,16 @@ fn validate_conjunction(
         let rhs_category = variable_registry.get_variable_category(rhs).unwrap();
         let lhs_variable = variable_registry.get_variable_name(lhs).map_or("_", |s| s.as_str()).to_owned();
         let rhs_variable = variable_registry.get_variable_name(rhs).map_or("_", |s| s.as_str()).to_owned();
-        return Err(Box::new(RepresentationError::VariableCategoryMismatchInIs {
+        Err(Box::new(RepresentationError::VariableCategoryMismatchInIs {
             lhs_variable,
             rhs_variable,
             lhs_category,
             rhs_category,
             source_span: is.source_span(),
-        }));
+        }))
+    } else {
+        Ok(())
     }
-    Ok(())
 }
 
 #[derive(Debug, Clone, Default, Eq, PartialEq)]
