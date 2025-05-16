@@ -341,7 +341,17 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<Streaming<Client>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
         let request_stream = request.into_inner();
-        let stream = self.server_state.transaction(request_stream).await;
+        let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
+        let mut service = TransactionService::new(
+            request_stream,
+            response_sender,
+            self.server_state.database_manager.clone(),
+            self.server_state.diagnostics_manager.clone(),
+            self.server_state.shutdown_receiver.clone(),
+        );
+        tokio::spawn(async move { service.listen().await });
+        let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);
+
         Ok(Response::new(Box::pin(stream)))
     }
 }

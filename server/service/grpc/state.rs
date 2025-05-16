@@ -49,13 +49,13 @@ pub struct ServerState {
     id: String,
     deployment_id: String,
     pub address: SocketAddr,
-    database_manager: Arc<DatabaseManager>,
+    pub database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
     token_manager: Arc<TokenManager>,
     pub diagnostics_manager: Arc<DiagnosticsManager>,
     database_diagnostics_updater: IntervalRunner,
-    shutdown_receiver: Receiver<()>,
+    pub shutdown_receiver: Receiver<()>,
 }
 
 impl ServerState {
@@ -351,23 +351,6 @@ impl ServerState {
 
     pub async fn token_get_owner(&self, token: &str) -> Option<String> {
         self.token_manager.get_valid_token_owner(token).await
-    }
-
-    pub async fn transaction(
-        &self,
-        request_stream: Streaming<Client>,
-    ) -> ReceiverStream<Result<Server, Status>> {
-        let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
-        let mut service = TransactionService::new(
-            request_stream,
-            response_sender,
-            self.database_manager.clone(),
-            self.diagnostics_manager.clone(),
-            self.shutdown_receiver.clone(),
-        );
-        tokio::spawn(async move { service.listen().await });
-        let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);
-        stream
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
