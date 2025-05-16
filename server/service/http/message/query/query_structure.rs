@@ -7,6 +7,7 @@
 use std::collections::HashMap;
 
 use answer::variable::Variable;
+use bytes::util::HexBytesFormatter;
 use compiler::query_structure::QueryStructure;
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
@@ -14,8 +15,7 @@ use ir::pattern::{
     constraint::{Constraint, IsaKind, SubKind},
     ParameterID, Vertex,
 };
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -27,12 +27,17 @@ struct QueryStructureContext<'a, Snapshot: ReadableSnapshot> {
     snapshot: &'a Snapshot,
     type_manager: &'a TypeManager,
     role_names: HashMap<Variable, String>,
+    variables: &'a mut HashMap<QueryVariableId, QueryVariableInfo>,
 }
 
 impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     pub fn get_parameter_value(&self, param: &ParameterID) -> Option<Value<'static>> {
         debug_assert!(matches!(param, ParameterID::Value(_, _)));
         self.query_structure.parameters.value(*param).cloned()
+    }
+
+    pub fn get_parameter_iid(&self, param: &ParameterID) -> Option<&[u8]> {
+        self.query_structure.parameters.iid(*param).map(|iid| iid.as_ref())
     }
 
     pub fn get_variable_name(&self, variable: &Variable) -> Option<String> {
@@ -50,12 +55,30 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     fn get_role_type(&self, variable: &Variable) -> Option<&str> {
         self.role_names.get(variable).map(|name| name.as_str())
     }
+
+    fn record_variable(&mut self, variable: &Variable) {
+        let id = variable.into();
+        if !self.variables.contains_key(&id) {
+            self.variables.insert(id, QueryVariableInfo { name: self.get_variable_name(&variable) });
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
     blocks: Vec<QueryStructureBlockResponse>,
+    variable_info: HashMap<QueryVariableId, QueryVariableInfo>,
+    output_variables: Vec<QueryVariableId>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq)]
+struct QueryVariableId(#[serde(serialize_with = "serialize_as_string")] u16);
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryVariableInfo {
+    name: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -106,6 +129,19 @@ pub enum QueryStructureConstraint {
         assigned: Vec<QueryStructureVertexResponse>,
         arguments: Vec<QueryStructureVertexResponse>,
     },
+    Is {
+        lhs: QueryStructureVertexResponse,
+        rhs: QueryStructureVertexResponse,
+    },
+    Iid {
+        variable: QueryStructureVertexResponse,
+        iid: String,
+    },
+    Comparison {
+        lhs: QueryStructureVertexResponse,
+        rhs: QueryStructureVertexResponse,
+        comparator: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -140,20 +176,11 @@ pub struct QueryStructureConstraintResponse {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureVertexResponse {
-    Variable { variable: String },
-    Label { r#type: serde_json::Value },
+    Variable { id: QueryVariableId, },
+    Label {
+        r#type: serde_json::Value,
+    },
     Value(ValueResponse),
-    Expression { repr: String },
-    FunctionCall { repr: String },
-    UnavailableVariable { variable: String },
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-#[serde(rename_all = "camelCase")]
-pub struct QueryStructureRolePlayerResponse {
-    player: QueryStructureVertexResponse,
-    role: QueryStructureVertexResponse,
-    span: Option<QueryStructureConstraintSpan>,
 }
 
 pub(crate) fn encode_query_structure(
@@ -161,23 +188,26 @@ pub(crate) fn encode_query_structure(
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
 ) -> Result<QueryStructureResponse, Box<ConceptReadError>> {
+    let mut variables = HashMap::new();
     let blocks = query_structure
         .parametrised_structure
         .branches
         .iter()
         .filter_map(|branch_opt| {
-            branch_opt
-                .as_ref()
-                .map(|branch| encode_query_structure_block(snapshot, type_manager, &query_structure, branch))
+            branch_opt.as_ref().map(|branch| {
+                encode_query_structure_block(snapshot, type_manager, &query_structure, &mut variables, branch)
+            })
         })
         .collect::<Result<Vec<_>, _>>()?;
-    Ok(QueryStructureResponse { blocks })
+    let output_variables = query_structure.available_variables.iter().map(|v| v.into()).collect();
+    Ok(QueryStructureResponse { blocks, variable_info: variables, output_variables })
 }
 
 fn encode_query_structure_block(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
+    variables: &mut HashMap<QueryVariableId, QueryVariableInfo>,
     block: &[Constraint<Variable>],
 ) -> Result<QueryStructureBlockResponse, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
@@ -186,15 +216,15 @@ fn encode_query_structure_block(
         .filter_map(|constraint| constraint.as_role_name())
         .map(|rolename| (rolename.type_().as_variable().unwrap(), rolename.name().to_owned()))
         .collect();
-    let context = QueryStructureContext { query_structure, snapshot, type_manager, role_names };
+    let mut context = QueryStructureContext { query_structure, snapshot, type_manager, role_names, variables };
     block.iter().enumerate().try_for_each(|(index, constraint)| {
-        query_structure_constraint(&context, constraint, &mut constraints, index)
+        query_structure_constraint(&mut context, constraint, &mut constraints, index)
     })?;
     Ok(QueryStructureBlockResponse { constraints })
 }
 
 fn query_structure_constraint(
-    context: &QueryStructureContext<'_, impl ReadableSnapshot>,
+    context: &mut QueryStructureContext<'_, impl ReadableSnapshot>,
     constraint: &Constraint<Variable>,
     constraints: &mut Vec<QueryStructureConstraintResponse>,
     index: usize,
@@ -331,15 +361,37 @@ fn query_structure_constraint(
                 constraint: QueryStructureConstraint::FunctionCall { name: text, assigned, arguments },
             });
         }
-        | Constraint::Comparison(_) => {}
+        Constraint::Is(is) => {
+            constraints.push(QueryStructureConstraintResponse {
+                text_span: span,
+                constraint: QueryStructureConstraint::Is {
+                    lhs: query_structure_vertex(context, is.lhs())?,
+                    rhs: query_structure_vertex(context, is.rhs())?,
+                },
+            });
+        }
+        Constraint::Iid(iid) => {
+            let iid_bytes = context.get_parameter_iid(iid.iid().as_parameter().as_ref().unwrap()).unwrap();
+            let iid_hex = HexBytesFormatter::borrowed(iid_bytes).format_iid();
+            constraints.push(QueryStructureConstraintResponse {
+                text_span: span,
+                constraint: QueryStructureConstraint::Iid {
+                    variable: query_structure_vertex(context, iid.var())?,
+                    iid: iid_hex,
+                },
+            });
+        }
+        Constraint::Comparison(comparison) => constraints.push(QueryStructureConstraintResponse {
+            text_span: span,
+            constraint: QueryStructureConstraint::Comparison {
+                lhs: query_structure_vertex(context, comparison.lhs())?,
+                rhs: query_structure_vertex(context, comparison.lhs())?,
+                comparator: comparison.comparator().name().to_owned(),
+            },
+        }),
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
-
         // Constraints that probably don't need to be handled
-        | Constraint::Kind(_)
-        | Constraint::Label(_)
-        | Constraint::Value(_)
-        | Constraint::Is(_)
-        | Constraint::Iid(_) => {}
+        Constraint::Kind(_) | Constraint::Label(_) | Constraint::Value(_) => {}
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
@@ -347,17 +399,13 @@ fn query_structure_constraint(
 }
 
 fn query_structure_vertex(
-    context: &QueryStructureContext<'_, impl ReadableSnapshot>,
+    context: &mut QueryStructureContext<'_, impl ReadableSnapshot>,
     vertex: &Vertex<Variable>,
 ) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
     let vertex = match vertex {
         Vertex::Variable(variable) => {
-            let name = context.get_variable_name(variable).unwrap_or_else(|| variable.to_string());
-            if context.query_structure.available_variables.contains(variable) {
-                QueryStructureVertexResponse::Variable { variable: name }
-            } else {
-                QueryStructureVertexResponse::UnavailableVariable { variable: name }
-            }
+            context.record_variable(variable);
+            QueryStructureVertexResponse::Variable { id: variable.into() }
         }
         Vertex::Label(label) => {
             let type_ = context.get_type(label).unwrap();
@@ -374,7 +422,7 @@ fn query_structure_vertex(
 }
 
 fn query_structure_role_type_as_vertex(
-    context: &QueryStructureContext<'_, impl ReadableSnapshot>,
+    context: &mut QueryStructureContext<'_, impl ReadableSnapshot>,
     role_type: &Vertex<Variable>,
 ) -> Result<QueryStructureVertexResponse, Box<ConceptReadError>> {
     if let Some(label) = context.get_role_type(&role_type.as_variable().unwrap()) {
@@ -385,4 +433,14 @@ fn query_structure_role_type_as_vertex(
     } else {
         query_structure_vertex(context, role_type)
     }
+}
+
+impl From<&Variable> for QueryVariableId {
+    fn from(value: &Variable) -> Self {
+        Self(value.id().as_u16())
+    }
+}
+
+fn serialize_as_string<S: Serializer, T: ToString>(value: &T, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.serialize_str(&value.to_string())
 }
