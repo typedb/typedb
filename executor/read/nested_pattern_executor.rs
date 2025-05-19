@@ -115,6 +115,8 @@ impl InlinedCallExecutor {
                             .enumerate()
                             .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?))),
                     );
+                    // Fix provenance:
+                    output_row.set_provenance(input.provenance());
                 });
             }
         }
