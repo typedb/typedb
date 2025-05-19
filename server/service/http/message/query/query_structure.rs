@@ -68,8 +68,8 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureResponse {
     blocks: Vec<QueryStructureBlockResponse>,
-    variable_info: HashMap<QueryVariableId, QueryVariableInfo>,
-    output_variables: Vec<QueryVariableId>,
+    variables: HashMap<QueryVariableId, QueryVariableInfo>,
+    outputs: Vec<QueryVariableId>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq)]
@@ -200,7 +200,7 @@ pub(crate) fn encode_query_structure(
         })
         .collect::<Result<Vec<_>, _>>()?;
     let output_variables = query_structure.available_variables.iter().map(|v| v.into()).collect();
-    Ok(QueryStructureResponse { blocks, variable_info: variables, output_variables })
+    Ok(QueryStructureResponse { blocks, variables: variables, outputs: output_variables })
 }
 
 fn encode_query_structure_block(
