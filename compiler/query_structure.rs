@@ -5,7 +5,7 @@
  */
 
 use std::{
-    collections::{BTreeSet, HashMap},
+    collections::HashMap,
     sync::Arc,
 };
 
@@ -19,11 +19,13 @@ use ir::{
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
 
-use crate::annotation::{
-    pipeline::AnnotatedStage,
-    type_annotations::{BlockAnnotations, TypeAnnotations},
+use crate::{
+    annotation::{
+        pipeline::AnnotatedStage,
+        type_annotations::{BlockAnnotations, TypeAnnotations},
+    },
+    VariablePosition,
 };
-use crate::VariablePosition;
 
 #[derive(Debug, Clone)]
 pub struct QueryStructure {

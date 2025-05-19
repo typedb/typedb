@@ -66,7 +66,7 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryStructureResponse {
+pub(crate) struct QueryStructureResponse {
     blocks: Vec<StructureBlock>,
     pipeline: Vec<QueryStructureStage>,
     variables: HashMap<QueryVariableId, QueryVariableInfo>,
@@ -82,7 +82,7 @@ struct QueryVariableId(
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub struct QueryVariableInfo {
+struct QueryVariableInfo {
     name: Option<String>,
 }
 
@@ -210,11 +210,17 @@ pub(crate) fn encode_query_structure(
     let blocks = blocks
         .iter()
         .map(|block| {
-            encode_structure_block(snapshot, type_manager, &query_structure, &mut variables, block.constraints.as_slice())
+            encode_structure_block(
+                snapshot,
+                type_manager,
+                &query_structure,
+                &mut variables,
+                block.constraints.as_slice(),
+            )
         })
         .collect::<Result<Vec<_>, _>>()?;
     let outputs = query_structure.available_variables.iter().map(|v| v.into()).collect();
-    Ok(QueryStructureResponse { blocks, outputs, variables, pipeline: stages.clone()})
+    Ok(QueryStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
 }
 
 fn encode_structure_block(
