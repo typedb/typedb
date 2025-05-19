@@ -19,6 +19,10 @@ impl Variable {
         Self { id: VariableId { id }, anonymous: false }
     }
 
+    pub fn id(&self) -> VariableId {
+        self.id
+    }
+
     pub fn new_anonymous(id: u16) -> Self {
         Self { id: VariableId { id }, anonymous: true }
     }
@@ -53,9 +57,15 @@ impl fmt::Debug for Variable {
 }
 
 #[derive(Debug, Copy, Clone, Hash, Eq, PartialEq, Ord, PartialOrd)]
-pub(crate) struct VariableId {
+pub struct VariableId {
     // TODO: retain line/character from original query at which point this Variable was declared
     id: u16,
+}
+
+impl VariableId {
+    pub fn as_u16(&self) -> u16 {
+        self.id
+    }
 }
 
 impl fmt::Display for VariableId {
