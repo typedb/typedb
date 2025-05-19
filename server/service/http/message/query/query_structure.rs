@@ -16,6 +16,7 @@ use ir::pattern::{
     ParameterID, Vertex,
 };
 use serde::{Deserialize, Serialize, Serializer};
+use encoding::graph::type_::Kind;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -146,6 +147,14 @@ pub enum QueryStructureConstraint {
         rhs: QueryStructureVertexResponse,
         comparator: String,
     },
+    Kind {
+        kind: String,
+        r#type: QueryStructureVertexResponse,
+    },
+    Label {
+        r#type: QueryStructureVertexResponse,
+        label: String,
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -391,9 +400,25 @@ fn query_structure_constraint(
                 comparator: comparison.comparator().name().to_owned(),
             },
         }),
-        Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
+        Constraint::Kind(kind) => {
+            constraints.push(QueryStructureConstraintResponse {
+                text_span: span,
+                constraint: QueryStructureConstraint::Kind {
+                    kind: kind.kind().to_string(),
+                    r#type: query_structure_vertex(context, kind.type_())?,
+                }
+            })
+        },
+        Constraint::Label(label) => constraints.push(QueryStructureConstraintResponse {
+            text_span: span,
+            constraint: QueryStructureConstraint::Label {
+                r#type: query_structure_vertex(context, label.type_())?,
+                label: label.type_label().as_label().expect("Expected constant label in label constraint").scoped_name().as_str().to_owned(),
+            }
+        }),
         // Constraints that probably don't need to be handled
-        Constraint::Kind(_) | Constraint::Label(_) | Constraint::Value(_) => {}
+        Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
+        Constraint::Value(_) => {}    // Seems unused.
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
