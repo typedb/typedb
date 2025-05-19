@@ -75,40 +75,27 @@ impl Server {
         Self::install_default_encryption_provider()?;
 
         let grpc_address = resolve_address(self.config.server.address).await;
-        let grpc_service = grpc::typedb_service::TypeDBService::new(
-            self.server_state.clone()
-        );
         let grpc_server = Self::serve_grpc(
             grpc_address,
             &self.config.server.encryption,
             self.server_state.clone(),
-            self.shutdown_sig_receiver.clone(),
-            grpc_service,
+            self.shutdown_sig_receiver.clone()
         );
 
         let http_server_address = match self.config.server.http_address.clone() {
             Some(http_address) => Some(resolve_address(http_address).await),
             None => None,
         };
-        let http_service = http_server_address.map(|http_address| {
-            http::typedb_service::TypeDBService::new(
-                self.server_info,
-                http_address,
-                self.server_state.clone(),
-            )
-        });
-
-        let (http_server, http_address) = if let Some(mut http_service) = http_service {
-            let http_address = *http_service.address();
+        let (http_server, http_address) = if let Some(http_address) = http_server_address {
             if grpc_address == http_address {
                 return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
             }
             let server = Self::serve_http(
+                self.server_info,
                 http_address,
                 &self.config.server.encryption,
                 self.server_state.clone(),
-                self.shutdown_sig_receiver,
-                http_service,
+                self.shutdown_sig_receiver
             );
             (Some(server), Some(http_address))
         } else {
@@ -134,8 +121,9 @@ impl Server {
         encryption_config: &EncryptionConfig,
         server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
-        service: grpc::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
+        let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
+        let service = grpc::typedb_service::TypeDBService::new(server_state.clone());
         let mut grpc_server =
             tonic::transport::Server::builder().http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE));
         if let Some(tls_config) = grpc::encryption::prepare_tls_config(encryption_config)? {
@@ -143,9 +131,6 @@ impl Server {
                 .tls_config(tls_config)
                 .map_err(|source| ServerOpenError::GrpcTlsFailedConfiguration { source: Arc::new(source) })?;
         }
-        let authenticator =
-            grpc::authenticator::Authenticator::new(server_state);
-
         grpc_server
             .layer(&authenticator)
             .add_service(typedb_protocol::type_db_server::TypeDbServer::new(service))
@@ -158,14 +143,15 @@ impl Server {
     }
 
     async fn serve_http(
+        server_info: ServerInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
         server_state: Arc<ServerState>,
         mut shutdown_receiver: Receiver<()>,
-        service: http::typedb_service::TypeDBService,
     ) -> Result<(), ServerOpenError> {
-        let authenticator = http::authenticator::Authenticator::new(server_state);
-
+        let authenticator = http::authenticator::Authenticator::new(server_state.clone());
+        let service =
+            http::typedb_service::TypeDBService::new(server_info, address, server_state.clone());
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::TypeDBService::create_protected_router(http_service.clone())
