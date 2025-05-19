@@ -89,7 +89,13 @@ pub(crate) fn encode_query_rows_answer(
     query_structure: Option<QueryStructureResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
-    QueryAnswerResponse { answer_type: AnswerType::ConceptRows, query_type, answers: Some(rows), query: query_structure, warning }
+    QueryAnswerResponse {
+        answer_type: AnswerType::ConceptRows,
+        query_type,
+        answers: Some(rows),
+        query: query_structure,
+        warning,
+    }
 }
 
 pub(crate) fn encode_query_documents_answer(

@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::collections::HashMap;
+use std::{collections::HashMap, marker::PhantomData, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
@@ -73,7 +73,11 @@ pub struct QueryStructureResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq)]
-struct QueryVariableId(#[serde(serialize_with = "serialize_as_string")] u16);
+struct QueryVariableId(
+    #[serde(serialize_with = "serialize_using_to_string")]
+    #[serde(deserialize_with = "deserialize_using_from_string")]
+    u16,
+);
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -176,10 +180,8 @@ pub struct QueryStructureConstraintResponse {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 pub enum QueryStructureVertexResponse {
-    Variable { id: QueryVariableId, },
-    Label {
-        r#type: serde_json::Value,
-    },
+    Variable { id: QueryVariableId },
+    Label { r#type: serde_json::Value },
     Value(ValueResponse),
 }
 
@@ -441,6 +443,35 @@ impl From<&Variable> for QueryVariableId {
     }
 }
 
-fn serialize_as_string<S: Serializer, T: ToString>(value: &T, serializer: S) -> Result<S::Ok, S::Error> {
+fn serialize_using_to_string<S: Serializer, T: ToString>(value: &T, serializer: S) -> Result<S::Ok, S::Error> {
     serializer.serialize_str(&value.to_string())
+}
+
+fn deserialize_using_from_string<'de, D: serde::de::Deserializer<'de>, T: FromStr>(
+    deserializer: D,
+) -> Result<T, D::Error> {
+    // define a visitor that deserializes
+    // `ActualData` encoded as json within a string
+    struct Visitor<T> {
+        phantom: PhantomData<T>,
+    };
+
+    impl<'de, T1: FromStr> serde::de::Visitor<'de> for Visitor<T1> {
+        type Value = T1;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "A string that can be converted to {} via FromStr", std::any::type_name::<Self::Value>())
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+        where
+            E: serde::de::Error,
+        {
+            Self::Value::from_str(v).map_err(|_err| {
+                E::custom(format!("Could not deserialize {} from {}", std::any::type_name::<Self::Value>(), v))
+            })
+        }
+    }
+
+    deserializer.deserialize_any(Visitor { phantom: PhantomData })
 }

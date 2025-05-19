@@ -34,7 +34,8 @@ impl ParametrisedQueryStructure {
         variable_names: HashMap<Variable, String>,
         output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> QueryStructure {
-        let mut available_variables = output_variable_positions.keys().filter(|v| !v.is_anonymous()).copied().collect::<Vec<_>>();
+        let mut available_variables =
+            output_variable_positions.keys().filter(|v| !v.is_anonymous()).copied().collect::<Vec<_>>();
         available_variables.sort();
         QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
