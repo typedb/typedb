@@ -16,7 +16,6 @@ use ir::pattern::{
     ParameterID, Vertex,
 };
 use serde::{Deserialize, Serialize, Serializer};
-use encoding::graph::type_::Kind;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::service::http::message::query::concept::{
@@ -139,7 +138,7 @@ pub enum QueryStructureConstraint {
         rhs: QueryStructureVertexResponse,
     },
     Iid {
-        variable: QueryStructureVertexResponse,
+        concept: QueryStructureVertexResponse,
         iid: String,
     },
     Comparison {
@@ -154,7 +153,7 @@ pub enum QueryStructureConstraint {
     Label {
         r#type: QueryStructureVertexResponse,
         label: String,
-    }
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -387,7 +386,7 @@ fn query_structure_constraint(
             constraints.push(QueryStructureConstraintResponse {
                 text_span: span,
                 constraint: QueryStructureConstraint::Iid {
-                    variable: query_structure_vertex(context, iid.var())?,
+                    concept: query_structure_vertex(context, iid.var())?,
                     iid: iid_hex,
                 },
             });
@@ -400,21 +399,25 @@ fn query_structure_constraint(
                 comparator: comparison.comparator().name().to_owned(),
             },
         }),
-        Constraint::Kind(kind) => {
-            constraints.push(QueryStructureConstraintResponse {
-                text_span: span,
-                constraint: QueryStructureConstraint::Kind {
-                    kind: kind.kind().to_string(),
-                    r#type: query_structure_vertex(context, kind.type_())?,
-                }
-            })
-        },
+        Constraint::Kind(kind) => constraints.push(QueryStructureConstraintResponse {
+            text_span: span,
+            constraint: QueryStructureConstraint::Kind {
+                kind: kind.kind().to_string(),
+                r#type: query_structure_vertex(context, kind.type_())?,
+            },
+        }),
         Constraint::Label(label) => constraints.push(QueryStructureConstraintResponse {
             text_span: span,
             constraint: QueryStructureConstraint::Label {
                 r#type: query_structure_vertex(context, label.type_())?,
-                label: label.type_label().as_label().expect("Expected constant label in label constraint").scoped_name().as_str().to_owned(),
-            }
+                label: label
+                    .type_label()
+                    .as_label()
+                    .expect("Expected constant label in label constraint")
+                    .scoped_name()
+                    .as_str()
+                    .to_owned(),
+            },
         }),
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
