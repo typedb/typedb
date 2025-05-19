@@ -155,7 +155,9 @@ pub enum QueryStructureConstraint {
         label: String,
     },
     Value {
+        #[serde(rename = "attributeType")]
         attribute_type: QueryStructureVertexResponse,
+        #[serde(rename = "valueType")]
         value_type: String,
     },
 }
