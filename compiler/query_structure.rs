@@ -4,10 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    collections::HashMap,
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
+use std::marker::PhantomData;
+use std::str::FromStr;
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
@@ -17,7 +16,9 @@ use ir::{
     pipeline::{ParameterRegistry, VariableRegistry},
 };
 use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
+use ir::pipeline::modifier::SortVariable;
+use ir::pipeline::reduce::{AssignedReduction, Reducer};
 
 use crate::{
     annotation::{
@@ -31,7 +32,7 @@ use crate::{
 pub struct QueryStructure {
     pub parametrised_structure: Arc<ParametrisedQueryStructure>,
     pub variable_names: HashMap<Variable, String>,
-    pub available_variables: Vec<Variable>,
+    pub available_variables: Vec<StructureVariableId>,
     pub parameters: Arc<ParameterRegistry>,
 }
 
@@ -65,8 +66,10 @@ impl ParametrisedQueryStructure {
         variable_names: HashMap<Variable, String>,
         output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> QueryStructure {
-        let mut available_variables =
-            output_variable_positions.keys().filter(|v| !v.is_anonymous()).copied().collect::<Vec<_>>();
+        let mut available_variables = output_variable_positions.keys()
+            .filter(|v| !v.is_anonymous())
+            .map(|v| StructureVariableId::from(v))
+            .collect::<Vec<_>>();
         available_variables.sort();
         QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
@@ -85,6 +88,15 @@ impl ParametrisedQueryStructure {
                 QueryStructureStage::Insert { block }
                 | QueryStructureStage::Put { block }
                 | QueryStructureStage::Update { block } => Some(block),
+
+                QueryStructureStage::Select { .. }
+                | QueryStructureStage::Delete { .. } // Deleted edges are deleted.
+                | QueryStructureStage::Sort { .. }
+                | QueryStructureStage::Offset { .. }
+                | QueryStructureStage::Limit { .. }
+                | QueryStructureStage::Require { .. }
+                | QueryStructureStage::Distinct
+                | QueryStructureStage::Reduce { .. } => None,
             })
             .cloned()
             .collect()
@@ -96,10 +108,19 @@ impl ParametrisedQueryStructure {
 pub enum QueryStructureStage {
     Match(QueryStructureConjunction),
     Insert { block: QueryStructureBlockID },
+    Delete { block: QueryStructureBlockID, deleted_variables: Vec<StructureVariableId> },
     Put { block: QueryStructureBlockID },
     Update { block: QueryStructureBlockID },
-    // Select { variables: Vec<Variable> },
+
+    Select { variables: Vec<StructureVariableId> },
+    Sort { variables: Vec<StructureSortVariable> },
+    Offset { offset: u64 },
+    Limit { limit: u64 },
+
     // TODO...
+    Require { variables: Vec<StructureVariableId> },
+    Distinct,
+    Reduce { reducers: Vec<StructureReducer>, groupby: Vec<StructureVariableId> },
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -167,14 +188,40 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
                 self.inner.stages.push(QueryStructureStage::Update { block });
             }
-            AnnotatedStage::Delete { .. }
-            | AnnotatedStage::Select(_)
-            | AnnotatedStage::Sort(_)
-            | AnnotatedStage::Offset(_)
-            | AnnotatedStage::Limit(_)
-            | AnnotatedStage::Require(_)
-            | AnnotatedStage::Distinct(_)
-            | AnnotatedStage::Reduce(_, _) => {}
+            AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
+                debug_assert!(block.conjunction().nested_patterns().is_empty());
+                let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
+                self.inner.stages.push(QueryStructureStage::Delete {
+                    block,
+                    deleted_variables: vec_from(deleted_variables.iter())
+                });
+            }
+            AnnotatedStage::Select(select) => {
+                self.inner.stages.push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) })
+            }
+             AnnotatedStage::Sort(sort) => {
+                 self.inner.stages.push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) })
+             }
+            AnnotatedStage::Offset(offset) => {
+                self.inner.stages.push(QueryStructureStage::Offset { offset: offset.offset() })
+            }
+            AnnotatedStage::Limit(limit) => {
+                self.inner.stages.push(QueryStructureStage::Limit { limit: limit.limit() })
+            }
+            AnnotatedStage::Require(require) => {
+                self.inner.stages.push(QueryStructureStage::Require {
+                    variables: vec_from(require.variables.iter())
+                })
+            }
+            AnnotatedStage::Distinct(_) => {
+                self.inner.stages.push(QueryStructureStage::Distinct)
+            }
+            AnnotatedStage::Reduce(reduce, _) => {
+                self.inner.stages.push(QueryStructureStage::Reduce {
+                    reducers: vec_from(reduce.assigned_reductions.iter()),
+                    groupby: vec_from(reduce.groupby.iter())
+                })
+            }
         }
     }
 
@@ -253,4 +300,106 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             },
         ));
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, Ord, PartialOrd)]
+pub struct StructureVariableId(
+    #[serde(serialize_with = "serialize_using_to_string")]
+    #[serde(deserialize_with = "deserialize_using_from_string")]
+    u16,
+);
+
+impl From<&Variable> for StructureVariableId {
+    fn from(value: &Variable) -> Self {
+        Self(value.id().as_u16())
+    }
+}
+
+impl From<Variable> for StructureVariableId {
+    fn from(value: Variable) -> Self {
+        (&value).into()
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureSortVariable {
+    variable: StructureVariableId,
+    ascending: bool,
+}
+
+impl From<&SortVariable> for StructureSortVariable {
+    fn from(value: &SortVariable) -> Self {
+        let ascending = match value {
+            SortVariable::Ascending(_) => true,
+            SortVariable::Descending(_) => false,
+        };
+        Self { variable: value.variable().into(), ascending }
+    }
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct StructureReducer {
+    assigned: StructureVariableId,
+    reducer: String,
+    arguments: Vec<StructureVariableId>
+}
+
+impl From<&AssignedReduction> for StructureReducer {
+    fn from(value: &AssignedReduction) -> Self {
+        let arguments = match value.reduction {
+            Reducer::Count => vec![],
+            Reducer::CountVar(var)
+            | Reducer::Sum(var)
+            | Reducer::Max(var)
+            | Reducer::Mean(var)
+            | Reducer::Median(var)
+            | Reducer::Min(var)
+            | Reducer::Std(var) => vec![var.into()],
+        };
+        StructureReducer {
+            assigned: value.assigned.into(),
+            reducer: value.reduction.name(),
+            arguments
+        }
+    }
+}
+
+// utils
+fn vec_from<'a, T: 'a, U: for<'b> From<&'b T>>(from: impl Iterator<Item=&'a T>) -> Vec<U> {
+    from.into_iter().map(|v| v.into()).collect()
+}
+
+fn serialize_using_to_string<S: Serializer, T: ToString>(value: &T, serializer: S) -> Result<S::Ok, S::Error> {
+    serializer.serialize_str(&value.to_string())
+}
+
+fn deserialize_using_from_string<'de, D: serde::de::Deserializer<'de>, T: FromStr>(
+    deserializer: D,
+) -> Result<T, D::Error> {
+    // define a visitor that deserializes
+    // `ActualData` encoded as json within a string
+    struct Visitor<T> {
+        phantom: PhantomData<T>,
+    };
+
+    impl<'de, T1: FromStr> serde::de::Visitor<'de> for Visitor<T1> {
+        type Value = T1;
+
+        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(f, "A string that can be converted to {} via FromStr", std::any::type_name::<Self::Value>())
+        }
+
+        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
+            where
+                E: serde::de::Error,
+        {
+            Self::Value::from_str(v).map_err(|_err| {
+                E::custom(format!("Could not deserialize {} from {}", std::any::type_name::<Self::Value>(), v))
+            })
+        }
+    }
+
+    deserializer.deserialize_any(Visitor { phantom: PhantomData })
 }

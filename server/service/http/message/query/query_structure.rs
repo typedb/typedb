@@ -8,7 +8,7 @@ use std::{collections::HashMap, marker::PhantomData, str::FromStr};
 
 use answer::variable::Variable;
 use bytes::util::HexBytesFormatter;
-use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure, QueryStructureStage};
+use compiler::query_structure::{ParametrisedQueryStructure, QueryStructure, QueryStructureStage, StructureVariableId};
 use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
 use encoding::value::{label::Label, value::Value};
 use ir::pattern::{
@@ -27,7 +27,7 @@ struct QueryStructureContext<'a, Snapshot: ReadableSnapshot> {
     snapshot: &'a Snapshot,
     type_manager: &'a TypeManager,
     role_names: HashMap<Variable, String>,
-    variables: &'a mut HashMap<QueryVariableId, QueryVariableInfo>,
+    variables: &'a mut HashMap<StructureVariableId, StructureVariableInfo>,
 }
 
 impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
@@ -59,7 +59,7 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     fn record_variable(&mut self, variable: &Variable) {
         let id = variable.into();
         if !self.variables.contains_key(&id) {
-            self.variables.insert(id, QueryVariableInfo { name: self.get_variable_name(&variable) });
+            self.variables.insert(id, StructureVariableInfo { name: self.get_variable_name(&variable) });
         }
     }
 }
@@ -69,20 +69,13 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
 pub(crate) struct QueryStructureResponse {
     blocks: Vec<StructureBlock>,
     pipeline: Vec<QueryStructureStage>,
-    variables: HashMap<QueryVariableId, QueryVariableInfo>,
-    outputs: Vec<QueryVariableId>,
+    variables: HashMap<StructureVariableId, StructureVariableInfo>,
+    outputs: Vec<StructureVariableId>,
 }
-
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq)]
-struct QueryVariableId(
-    #[serde(serialize_with = "serialize_using_to_string")]
-    #[serde(deserialize_with = "deserialize_using_from_string")]
-    u16,
-);
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
-struct QueryVariableInfo {
+pub struct StructureVariableInfo {
     name: Option<String>,
 }
 
@@ -157,7 +150,7 @@ enum StructureConstraint {
     },
     Value {
         #[serde(rename = "attributeType")]
-        attribute_type: QueryStructureVertexResponse,
+        attribute_type: StructureVertex,
         #[serde(rename = "valueType")]
         value_type: String,
     },
@@ -195,7 +188,7 @@ struct StructureConstraintWithSpan {
 #[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "camelCase", tag = "tag")]
 enum StructureVertex {
-    Variable { id: QueryVariableId },
+    Variable { id: StructureVariableId },
     Label { r#type: serde_json::Value },
     Value(ValueResponse),
 }
@@ -219,7 +212,7 @@ pub(crate) fn encode_query_structure(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let outputs = query_structure.available_variables.iter().map(|v| v.into()).collect();
+    let outputs = query_structure.available_variables.clone();
     Ok(QueryStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
 }
 
@@ -227,7 +220,7 @@ fn encode_structure_block(
     snapshot: &impl ReadableSnapshot,
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
-    variables: &mut HashMap<QueryVariableId, QueryVariableInfo>,
+    variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
     block: &[Constraint<Variable>],
 ) -> Result<StructureBlock, Box<ConceptReadError>> {
     let mut constraints = Vec::new();
@@ -428,10 +421,10 @@ fn encode_structure_constraint(
                     .to_owned(),
             },
         }),
-        Constraint::Value(value) => constraints.push(QueryStructureConstraintResponse {
+        Constraint::Value(value) => constraints.push(StructureConstraintWithSpan {
             text_span: span,
-            constraint: QueryStructureConstraint::Value {
-                attribute_type: query_structure_vertex(context, value.attribute_type())?,
+            constraint: StructureConstraint::Value {
+                attribute_type: encode_structure_vertex(context, value.attribute_type())?,
                 value_type: value.value_type().to_string(),
             },
         }),
@@ -476,43 +469,4 @@ fn encode_role_type_as_vertex(
     } else {
         encode_structure_vertex(context, role_type)
     }
-}
-
-impl From<&Variable> for QueryVariableId {
-    fn from(value: &Variable) -> Self {
-        Self(value.id().as_u16())
-    }
-}
-
-fn serialize_using_to_string<S: Serializer, T: ToString>(value: &T, serializer: S) -> Result<S::Ok, S::Error> {
-    serializer.serialize_str(&value.to_string())
-}
-
-fn deserialize_using_from_string<'de, D: serde::de::Deserializer<'de>, T: FromStr>(
-    deserializer: D,
-) -> Result<T, D::Error> {
-    // define a visitor that deserializes
-    // `ActualData` encoded as json within a string
-    struct Visitor<T> {
-        phantom: PhantomData<T>,
-    }
-
-    impl<'de, T1: FromStr> serde::de::Visitor<'de> for Visitor<T1> {
-        type Value = T1;
-
-        fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            write!(f, "A string that can be converted to {} via FromStr", std::any::type_name::<Self::Value>())
-        }
-
-        fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-        where
-            E: serde::de::Error,
-        {
-            Self::Value::from_str(v).map_err(|_err| {
-                E::custom(format!("Could not deserialize {} from {}", std::any::type_name::<Self::Value>(), v))
-            })
-        }
-    }
-
-    deserializer.deserialize_any(Visitor { phantom: PhantomData })
 }
