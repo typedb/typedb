@@ -82,11 +82,11 @@ pub struct QueryAnswerResponse {
 #[serde(rename_all = "camelCase")]
 pub struct QueryInfoResponse {
     pub r#type: QueryType,
-    pub structure: Option<QueryStructureResponse>,
+    pub query: Option<QueryStructureResponse>,
 }
 
 pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerResponse {
-    let query_info = QueryInfoResponse { r#type: query_type, structure: None };
+    let query_info = QueryInfoResponse { r#type: query_type, query: None };
     QueryAnswerResponse { answer_type: AnswerType::Ok, answers: None, query: query_info, warning: None }
 }
 
@@ -96,7 +96,7 @@ pub(crate) fn encode_query_rows_answer(
     query_structure: Option<QueryStructureResponse>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
-    let query_info = QueryInfoResponse { r#type: query_type, structure: query_structure };
+    let query_info = QueryInfoResponse { r#type: query_type, query: query_structure };
     QueryAnswerResponse { answer_type: AnswerType::ConceptRows, answers: Some(rows), query: query_info, warning }
 }
 
@@ -105,7 +105,7 @@ pub(crate) fn encode_query_documents_answer(
     documents: Vec<serde_json::Value>,
     warning: Option<String>,
 ) -> QueryAnswerResponse {
-    let query_info = QueryInfoResponse { r#type: query_type, structure: None };
+    let query_info = QueryInfoResponse { r#type: query_type, query: None };
     QueryAnswerResponse {
         answer_type: AnswerType::ConceptDocuments,
         answers: Some(documents),
