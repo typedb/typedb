@@ -4,21 +4,21 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, sync::Arc};
-use std::marker::PhantomData;
-use std::str::FromStr;
+use std::{collections::HashMap, marker::PhantomData, str::FromStr, sync::Arc};
 
 use answer::variable::Variable;
 use encoding::value::label::Label;
 use error::unimplemented_feature;
 use ir::{
     pattern::{conjunction::Conjunction, constraint::Constraint, nested_pattern::NestedPattern, BranchID},
-    pipeline::{ParameterRegistry, VariableRegistry},
+    pipeline::{
+        modifier::SortVariable,
+        reduce::{AssignedReduction, Reducer},
+        ParameterRegistry, VariableRegistry,
+    },
 };
 use itertools::Itertools;
 use serde::{Deserialize, Serialize, Serializer};
-use ir::pipeline::modifier::SortVariable;
-use ir::pipeline::reduce::{AssignedReduction, Reducer};
 
 use crate::{
     annotation::{
@@ -66,7 +66,8 @@ impl ParametrisedQueryStructure {
         variable_names: &HashMap<Variable, String>,
         output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> QueryStructure {
-        let mut available_variables = output_variable_positions.keys()
+        let mut available_variables = output_variable_positions
+            .keys()
             .filter(|v| !v.is_anonymous())
             .map(|v| StructureVariableId::from(v))
             .collect::<Vec<_>>();
@@ -192,37 +193,28 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
-                self.inner.stages.push(QueryStructureStage::Delete {
-                    block,
-                    deleted_variables: vec_from(deleted_variables.iter())
-                });
+                self.inner
+                    .stages
+                    .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
             }
             AnnotatedStage::Select(select) => {
                 self.inner.stages.push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) })
             }
-             AnnotatedStage::Sort(sort) => {
-                 self.inner.stages.push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) })
-             }
+            AnnotatedStage::Sort(sort) => {
+                self.inner.stages.push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) })
+            }
             AnnotatedStage::Offset(offset) => {
                 self.inner.stages.push(QueryStructureStage::Offset { offset: offset.offset() })
             }
-            AnnotatedStage::Limit(limit) => {
-                self.inner.stages.push(QueryStructureStage::Limit { limit: limit.limit() })
-            }
+            AnnotatedStage::Limit(limit) => self.inner.stages.push(QueryStructureStage::Limit { limit: limit.limit() }),
             AnnotatedStage::Require(require) => {
-                self.inner.stages.push(QueryStructureStage::Require {
-                    variables: vec_from(require.variables.iter())
-                })
+                self.inner.stages.push(QueryStructureStage::Require { variables: vec_from(require.variables.iter()) })
             }
-            AnnotatedStage::Distinct(_) => {
-                self.inner.stages.push(QueryStructureStage::Distinct)
-            }
-            AnnotatedStage::Reduce(reduce, _) => {
-                self.inner.stages.push(QueryStructureStage::Reduce {
-                    reducers: vec_from(reduce.assigned_reductions.iter()),
-                    groupby: vec_from(reduce.groupby.iter())
-                })
-            }
+            AnnotatedStage::Distinct(_) => self.inner.stages.push(QueryStructureStage::Distinct),
+            AnnotatedStage::Reduce(reduce, _) => self.inner.stages.push(QueryStructureStage::Reduce {
+                reducers: vec_from(reduce.assigned_reductions.iter()),
+                groupby: vec_from(reduce.groupby.iter()),
+            }),
         }
     }
 
@@ -344,7 +336,7 @@ impl From<&SortVariable> for StructureSortVariable {
 pub struct StructureReducer {
     pub assigned: StructureVariableId,
     pub reducer: String,
-    pub arguments: Vec<StructureVariableId>
+    pub arguments: Vec<StructureVariableId>,
 }
 
 impl From<&AssignedReduction> for StructureReducer {
@@ -359,16 +351,12 @@ impl From<&AssignedReduction> for StructureReducer {
             | Reducer::Min(var)
             | Reducer::Std(var) => vec![var.into()],
         };
-        StructureReducer {
-            assigned: value.assigned.into(),
-            reducer: value.reduction.name(),
-            arguments
-        }
+        StructureReducer { assigned: value.assigned.into(), reducer: value.reduction.name(), arguments }
     }
 }
 
 // utils
-fn vec_from<'a, T: 'a, U: for<'b> From<&'b T>>(from: impl Iterator<Item=&'a T>) -> Vec<U> {
+fn vec_from<'a, T: 'a, U: for<'b> From<&'b T>>(from: impl Iterator<Item = &'a T>) -> Vec<U> {
     from.into_iter().map(|v| v.into()).collect()
 }
 
@@ -393,8 +381,8 @@ fn deserialize_using_from_string<'de, D: serde::de::Deserializer<'de>, T: FromSt
         }
 
         fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
-            where
-                E: serde::de::Error,
+        where
+            E: serde::de::Error,
         {
             Self::Value::from_str(v).map_err(|_err| {
                 E::custom(format!("Could not deserialize {} from {}", std::any::type_name::<Self::Value>(), v))

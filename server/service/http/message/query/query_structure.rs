@@ -63,7 +63,7 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     fn record_variable(&mut self, variable: StructureVariableId) {
         if !self.variables.contains_key(&variable) {
             let info = StructureVariableInfo { name: self.get_variable_name(&variable) };
-            self.variables.insert(variable,info);
+            self.variables.insert(variable, info);
         }
     }
 }
@@ -227,16 +227,20 @@ fn record_reducer_variables(
     type_manager: &TypeManager,
     query_structure: &QueryStructure,
     variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
-){
-    let mut context = QueryStructureContext { query_structure, snapshot, type_manager, role_names: HashMap::new(), variables };
-    query_structure.parametrised_structure.stages.iter().filter_map(|stage| {
-        match stage {
+) {
+    let mut context =
+        QueryStructureContext { query_structure, snapshot, type_manager, role_names: HashMap::new(), variables };
+    query_structure
+        .parametrised_structure
+        .stages
+        .iter()
+        .filter_map(|stage| match stage {
             QueryStructureStage::Reduce { reducers, .. } => Some(reducers),
-            _=> None
-        }
-    }).for_each(|reducers| {
-        reducers.iter().for_each(|reducer| context.record_variable(reducer.assigned));
-    });
+            _ => None,
+        })
+        .for_each(|reducers| {
+            reducers.iter().for_each(|reducer| context.record_variable(reducer.assigned));
+        });
 }
 
 fn encode_structure_block(
@@ -466,7 +470,7 @@ fn encode_structure_vertex(
     let vertex = match vertex {
         Vertex::Variable(variable) => {
             context.record_variable(variable.into());
-            StructureVertex::Variable { id:  variable.into() }
+            StructureVertex::Variable { id: variable.into() }
         }
         Vertex::Label(label) => {
             let type_ = context.get_type(label).unwrap();
