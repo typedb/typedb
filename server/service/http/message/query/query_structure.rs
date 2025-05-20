@@ -40,7 +40,11 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
         self.query_structure.parameters.iid(*param).map(|iid| iid.as_ref())
     }
 
-    pub fn get_variable_name(&self, variable: &Variable) -> Option<String> {
+    pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
+        self.get_structure_variable_name(variable)
+    }
+
+    pub fn get_structure_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
         self.query_structure.variable_names.get(&variable).cloned()
     }
 
@@ -56,10 +60,10 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
         self.role_names.get(variable).map(|name| name.as_str())
     }
 
-    fn record_variable(&mut self, variable: &Variable) {
-        let id = variable.into();
-        if !self.variables.contains_key(&id) {
-            self.variables.insert(id, StructureVariableInfo { name: self.get_variable_name(&variable) });
+    fn record_variable(&mut self, variable: StructureVariableId) {
+        if !self.variables.contains_key(&variable) {
+            let info = StructureVariableInfo { name: self.get_variable_name(&variable) };
+            self.variables.insert(variable,info);
         }
     }
 }
@@ -212,8 +216,27 @@ pub(crate) fn encode_query_structure(
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
+    // Ensure reduced variables are added to variables
+    record_reducer_variables(snapshot, type_manager, query_structure, &mut variables);
     let outputs = query_structure.available_variables.clone();
     Ok(QueryStructureResponse { blocks, outputs, variables, pipeline: stages.clone() })
+}
+
+fn record_reducer_variables(
+    snapshot: &impl ReadableSnapshot,
+    type_manager: &TypeManager,
+    query_structure: &QueryStructure,
+    variables: &mut HashMap<StructureVariableId, StructureVariableInfo>,
+){
+    let mut context = QueryStructureContext { query_structure, snapshot, type_manager, role_names: HashMap::new(), variables };
+    query_structure.parametrised_structure.stages.iter().filter_map(|stage| {
+        match stage {
+            QueryStructureStage::Reduce { reducers, .. } => Some(reducers),
+            _=> None
+        }
+    }).for_each(|reducers| {
+        reducers.iter().for_each(|reducer| context.record_variable(reducer.assigned));
+    });
 }
 
 fn encode_structure_block(
@@ -442,8 +465,8 @@ fn encode_structure_vertex(
 ) -> Result<StructureVertex, Box<ConceptReadError>> {
     let vertex = match vertex {
         Vertex::Variable(variable) => {
-            context.record_variable(variable);
-            StructureVertex::Variable { id: variable.into() }
+            context.record_variable(variable.into());
+            StructureVertex::Variable { id:  variable.into() }
         }
         Vertex::Label(label) => {
             let type_ = context.get_type(label).unwrap();

@@ -31,7 +31,7 @@ use crate::{
 #[derive(Debug, Clone)]
 pub struct QueryStructure {
     pub parametrised_structure: Arc<ParametrisedQueryStructure>,
-    pub variable_names: HashMap<Variable, String>,
+    pub variable_names: HashMap<StructureVariableId, String>,
     pub available_variables: Vec<StructureVariableId>,
     pub parameters: Arc<ParameterRegistry>,
 }
@@ -63,7 +63,7 @@ impl ParametrisedQueryStructure {
     pub fn with_parameters(
         self: Arc<Self>,
         parameters: Arc<ParameterRegistry>,
-        variable_names: HashMap<Variable, String>,
+        variable_names: &HashMap<Variable, String>,
         output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> QueryStructure {
         let mut available_variables = output_variable_positions.keys()
@@ -71,6 +71,7 @@ impl ParametrisedQueryStructure {
             .map(|v| StructureVariableId::from(v))
             .collect::<Vec<_>>();
         available_variables.sort();
+        let variable_names = variable_names.iter().map(|(var, name)| (var.into(), name.clone())).collect();
         QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
 
@@ -302,7 +303,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, Hash, PartialEq, Ord, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, Hash, PartialEq, Ord, PartialOrd)]
 pub struct StructureVariableId(
     #[serde(serialize_with = "serialize_using_to_string")]
     #[serde(deserialize_with = "deserialize_using_from_string")]
@@ -341,9 +342,9 @@ impl From<&SortVariable> for StructureSortVariable {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct StructureReducer {
-    assigned: StructureVariableId,
-    reducer: String,
-    arguments: Vec<StructureVariableId>
+    pub assigned: StructureVariableId,
+    pub reducer: String,
+    pub arguments: Vec<StructureVariableId>
 }
 
 impl From<&AssignedReduction> for StructureReducer {
