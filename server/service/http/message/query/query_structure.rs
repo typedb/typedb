@@ -154,6 +154,12 @@ pub enum QueryStructureConstraint {
         r#type: QueryStructureVertexResponse,
         label: String,
     },
+    Value {
+        #[serde(rename = "attributeType")]
+        attribute_type: QueryStructureVertexResponse,
+        #[serde(rename = "valueType")]
+        value_type: String,
+    },
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -419,9 +425,15 @@ fn query_structure_constraint(
                     .to_owned(),
             },
         }),
+        Constraint::Value(value) => constraints.push(QueryStructureConstraintResponse {
+            text_span: span,
+            constraint: QueryStructureConstraint::Value {
+                attribute_type: query_structure_vertex(context, value.attribute_type())?,
+                value_type: value.value_type().to_string(),
+            },
+        }),
         // Constraints that probably don't need to be handled
         Constraint::RoleName(_) => {} // Handled separately via resolved_role_names
-        Constraint::Value(_) => {}    // Seems unused.
         // Optimisations don't represent the structure
         Constraint::LinksDeduplication(_) | Constraint::Unsatisfiable(_) => {}
     };
