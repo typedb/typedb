@@ -853,6 +853,7 @@ impl TransactionService {
         let mut warning = None;
         let encode_query_structure_result =
             query_structure.as_ref().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+        let always_taken_blocks = query_structure.map(|qs| qs.parametrised_structure.always_taken_blocks());
         let query_structure_response = match encode_query_structure_result {
             Ok(structure_opt) => structure_opt,
             Err(typedb_source) => {
@@ -883,6 +884,7 @@ impl TransactionService {
                 &thing_manager,
                 query_options.include_instance_types,
                 storage_counters.clone(),
+                always_taken_blocks.as_ref(),
             );
             match encoded_row {
                 Ok(encoded_row) => result.push(encoded_row),
@@ -1079,6 +1081,8 @@ impl TransactionService {
 
             let encode_query_structure_result =
                 pipeline.query_structure().map(|qs| encode_query_structure(&*snapshot, &type_manager, qs)).transpose();
+            let always_taken_blocks =
+                pipeline.query_structure().map(|qs| qs.parametrised_structure.always_taken_blocks());
             let query_structure_response = match encode_query_structure_result {
                 Ok(structure_opt) => structure_opt,
                 Err(typedb_source) => {
@@ -1128,6 +1132,7 @@ impl TransactionService {
                     &thing_manager,
                     query_options.include_instance_types,
                     storage_counters.clone(),
+                    always_taken_blocks.as_ref(),
                 );
                 match encoded_row {
                     Ok(encoded_row) => result.push(encoded_row),
