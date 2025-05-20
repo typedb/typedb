@@ -104,6 +104,7 @@ impl TabledCallExecutor {
                             .enumerate()
                             .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?))),
                     );
+                    output_row.set_provenance(input.provenance())
                 });
             }
         }
