@@ -66,6 +66,7 @@ impl Config {
         // finalise:
         self.storage.data_directory = Self::resolve_path_from_executable(&self.storage.data_directory);
         self.logging.directory = Self::resolve_path_from_executable(&self.logging.directory);
+        self.development_mode = self.development_mode | Self::IS_DEVELOPMENT_MODE_FORCED;
         Ok(())
     }
 
