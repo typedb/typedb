@@ -11,13 +11,11 @@ use std::{
     time::Duration,
 };
 
-use resource::constants::server::{
-    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL, DEFAULT_DATA_DIR, DEFAULT_LOG_DIR, MONITORING_DEFAULT_PORT,
-};
+use resource::constants::server::{DEFAULT_AUTHENTICATION_TOKEN_TTL, MONITORING_DEFAULT_PORT};
 use serde::Deserialize;
 use serde_with::{serde_as, DurationSeconds};
 
-use crate::parameters::ConfigError;
+use crate::parameters::{cli::CLIArgs, ConfigError};
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -31,55 +29,7 @@ pub struct Config {
     pub development_mode: DevelopmentModeConfig,
 }
 
-impl Config {
-    #[cfg(feature = "published")]
-    pub const IS_DEVELOPMENT_MODE_FORCED: bool = false;
-    #[cfg(not(feature = "published"))]
-    pub const IS_DEVELOPMENT_MODE_FORCED: bool = true;
-
-    pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
-        let mut config = String::new();
-        let resolved_path = Self::resolve_path_from_executable(&path);
-        File::open(resolved_path.clone())
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
-            .read_to_string(&mut config)
-            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
-        serde_yaml2::from_str::<Config>(config.as_str()).map_err(|source| ConfigError::ErrorParsingYaml { source })
-    }
-
-    pub(crate) fn validate_and_finalise(&mut self) -> Result<(), ConfigError> {
-        let encryption = &self.server.encryption;
-        if encryption.enabled && encryption.certificate.is_none() {
-            return Err(ConfigError::ValidationError {
-                message: "Server encryption was enabled, but certificate was not configured.",
-            });
-        }
-        if encryption.enabled && encryption.certificate_key.is_none() {
-            return Err(ConfigError::ValidationError {
-                message: "Server encryption was enabled, but certificate key was not configured.",
-            });
-        }
-        // finalise:
-        self.storage.data_directory = Self::resolve_path_from_executable(&self.storage.data_directory);
-        self.logging.directory = Self::resolve_path_from_executable(&self.logging.directory);
-        self.development_mode.enabled = self.development_mode.enabled | Self::IS_DEVELOPMENT_MODE_FORCED;
-        Ok(())
-    }
-
-    pub fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
-        let typedb_dir_or_current = std::env::current_exe()
-            .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
-            .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
-        // if path is absolute, join will just return path
-        typedb_dir_or_current.join(path)
-    }
-
-    fn is_development_mode_default() -> bool {
-        false
-    }
-}
-
-#[derive(Clone, Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
     pub(crate) address: String,
@@ -183,75 +133,147 @@ impl Default for DevelopmentModeConfig {
     }
 }
 
-#[derive(Debug, Default)]
-pub struct ConfigBuilderForTests {
-    server_address: Option<String>,
-    server_http_address: Option<String>,
-    authentication: Option<AuthenticationConfig>,
-    encryption: Option<EncryptionConfig>,
-    diagnostics: Option<DiagnosticsConfig>,
-    data_directory: Option<PathBuf>,
-    log_directory: Option<PathBuf>,
-    is_development_mode: Option<bool>,
+macro_rules! override_config {
+    ($($target:expr => $field:expr;)*) => {
+        $( if let Some(value) = $field {
+            $target = value;
+        }
+        )*
+    }
 }
 
-impl ConfigBuilderForTests {
+#[derive(Debug)]
+pub struct ConfigBuilder {
+    config: Config,
+}
+
+impl ConfigBuilder {
+    #[cfg(feature = "published")]
+    pub const IS_DEVELOPMENT_MODE_FORCED: bool = false;
+    #[cfg(not(feature = "published"))]
+    pub const IS_DEVELOPMENT_MODE_FORCED: bool = true;
+
+    pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
+        let mut config = String::new();
+        let resolved_path = Self::resolve_path_from_executable(&path);
+        File::open(resolved_path.clone())
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path: resolved_path.clone() })?
+            .read_to_string(&mut config)
+            .map_err(|source| ConfigError::ErrorReadingConfigFile { source, path })?;
+        serde_yaml2::from_str::<Config>(config.as_str())
+            .map_err(|source| ConfigError::ErrorParsingYaml { source })
+            .map(|config| Self { config })
+    }
+    pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
+        let CLIArgs {
+            config_file_override: _,
+            server_address,
+            server_http_enabled,
+            server_http_address,
+            server_authentication_token_ttl_seconds,
+            server_encryption_enabled,
+            server_encryption_certificate,
+            server_encryption_cert_key,
+            server_encryption_ca_certificate,
+            storage_data,
+            logging_logdir,
+            diagnostics_reporting_metrics,
+            diagnostics_reporting_errors,
+            diagnostics_monitoring_enabled,
+            diagnostics_monitoring_port,
+            development_mode_enabled,
+        } = cliargs;
+        let Self { config } = self;
+        override_config! {
+            config.development_mode.enabled => development_mode_enabled;
+
+            config.server.address => server_address;
+            config.server.http_enabled => server_http_enabled;
+            config.server.http_address => server_http_address;
+
+            config.server.encryption.enabled => server_encryption_enabled;
+            config.server.encryption.certificate => server_encryption_certificate.map(|cert| Some(cert.into()));
+            config.server.encryption.certificate_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
+            config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
+
+            config.storage.data_directory => storage_data.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
+
+            config.logging.directory => logging_logdir.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
+
+            config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
+            config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
+            config.diagnostics.monitoring.enabled => diagnostics_monitoring_enabled;
+            config.diagnostics.monitoring.port => diagnostics_monitoring_port;
+            config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
+        }
+    }
+
+    pub fn finish(self) -> Result<Config, ConfigError> {
+        let Self { mut config } = self;
+        let encryption = &config.server.encryption;
+        if encryption.enabled && encryption.certificate.is_none() {
+            return Err(ConfigError::ValidationError {
+                message: "Server encryption was enabled, but certificate was not configured.",
+            });
+        }
+        if encryption.enabled && encryption.certificate_key.is_none() {
+            return Err(ConfigError::ValidationError {
+                message: "Server encryption was enabled, but certificate key was not configured.",
+            });
+        }
+        // finalise:
+        config.storage.data_directory = Self::resolve_path_from_executable(&config.storage.data_directory);
+        config.logging.directory = Self::resolve_path_from_executable(&config.logging.directory);
+        config.development_mode.enabled = config.development_mode.enabled | Self::IS_DEVELOPMENT_MODE_FORCED;
+        Ok(config)
+    }
+
+    pub fn resolve_path_from_executable(path: &PathBuf) -> PathBuf {
+        let typedb_dir_or_current = std::env::current_exe()
+            .map(|path| path.parent().expect("Expected parent directory of: {path}").to_path_buf())
+            .unwrap_or(std::env::current_dir().expect("Expected access to the current directory"));
+        // if path is absolute, join will just return path
+        typedb_dir_or_current.join(path)
+    }
+
+    fn is_development_mode_default() -> bool {
+        false
+    }
+
+    // Overrides
     pub fn server_address(mut self, address: impl Into<String>) -> Self {
-        self.server_address = Some(address.into());
+        self.config.server.address = address.into();
         self
     }
 
     pub fn server_http_address(mut self, address: impl Into<String>) -> Self {
-        self.server_http_address = Some(address.into());
+        self.config.server.http_address = address.into();
         self
     }
 
     pub fn authentication(mut self, config: AuthenticationConfig) -> Self {
-        self.authentication = Some(config);
+        self.config.server.authentication = config;
         self
     }
 
     pub fn encryption(mut self, config: EncryptionConfig) -> Self {
-        self.encryption = Some(config);
+        self.config.server.encryption = config;
         self
     }
 
     pub fn diagnostics(mut self, config: DiagnosticsConfig) -> Self {
-        self.diagnostics = Some(config);
+        self.config.diagnostics = config;
         self
     }
 
     pub fn data_directory(mut self, path: impl AsRef<Path>) -> Self {
-        self.data_directory = Some(path.as_ref().to_path_buf());
+        self.config.storage.data_directory = path.as_ref().to_path_buf();
         self
     }
 
     pub fn development_mode(mut self, is_enabled: bool) -> Self {
-        self.is_development_mode = Some(is_enabled);
+        self.config.development_mode.enabled = is_enabled;
         self
-    }
-
-    pub fn build(self) -> Result<Config, ConfigError> {
-        let data_directory = self.data_directory.unwrap_or(DEFAULT_DATA_DIR.into()).into();
-        let log_directory = self.log_directory.unwrap_or(DEFAULT_LOG_DIR.into());
-        let development_mode = DevelopmentModeConfig {
-            enabled: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
-        };
-        let mut config = Config {
-            server: ServerConfig {
-                address: self.server_address.unwrap_or_else(|| DEFAULT_ADDRESS.to_string()),
-                http_address: self.server_http_address.clone().unwrap_or("".to_owned()),
-                http_enabled: self.server_http_address.is_some(),
-                authentication: self.authentication.unwrap_or_else(AuthenticationConfig::default),
-                encryption: self.encryption.unwrap_or_else(EncryptionConfig::default),
-            },
-            storage: StorageConfig { data_directory: data_directory },
-            diagnostics: DiagnosticsConfig::default(),
-            logging: LoggingConfig { directory: log_directory },
-            development_mode,
-        };
-        config.validate_and_finalise()?;
-        Ok(config)
     }
 }
 

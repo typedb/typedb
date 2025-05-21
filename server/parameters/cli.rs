@@ -9,7 +9,10 @@ use std::{path::PathBuf, time::Duration};
 use clap::Parser;
 use resource::constants::server::SERVER_INFO;
 
-use crate::parameters::{config::Config, ConfigError};
+use crate::parameters::{
+    config::{AuthenticationConfig, Config, ConfigBuilder, DiagnosticsConfig, EncryptionConfig},
+    ConfigError,
+};
 
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
@@ -85,60 +88,7 @@ pub struct CLIArgs {
     pub development_mode_enabled: Option<bool>,
 }
 
-macro_rules! override_config {
-    ($($target:expr => $field:expr;)*) => {
-        $( if let Some(value) = $field {
-            $target = value;
-        }
-        )*
-    }
-}
-
 impl CLIArgs {
-    pub fn override_config(self, config: &mut Config) -> Result<(), ConfigError> {
-        let Self {
-            config_file_override: _,
-            server_address,
-            server_http_enabled,
-            server_http_address,
-            server_authentication_token_ttl_seconds,
-            server_encryption_enabled,
-            server_encryption_certificate,
-            server_encryption_cert_key,
-            server_encryption_ca_certificate,
-            storage_data,
-            logging_logdir,
-            diagnostics_reporting_metrics,
-            diagnostics_reporting_errors,
-            diagnostics_monitoring_enabled,
-            diagnostics_monitoring_port,
-            development_mode_enabled,
-        } = self;
-        override_config! {
-            config.development_mode.enabled => development_mode_enabled;
-
-            config.server.address => server_address;
-            config.server.http_enabled => server_http_enabled;
-            config.server.http_address => server_http_address;
-
-            config.server.encryption.enabled => server_encryption_enabled;
-            config.server.encryption.certificate => server_encryption_certificate.map(|cert| Some(cert.into()));
-            config.server.encryption.certificate_key => server_encryption_cert_key.map(|cert| Some(cert.into()));
-            config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
-
-            config.storage.data_directory => storage_data.map(|p| Self::resolve_path_from_pwd(&p.into()));
-
-            config.logging.directory => logging_logdir.map(|p| Self::resolve_path_from_pwd(&p.into()));
-
-            config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
-            config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
-            config.diagnostics.monitoring.enabled => diagnostics_monitoring_enabled;
-            config.diagnostics.monitoring.port => diagnostics_monitoring_port;
-            config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
-        }
-        config.validate_and_finalise()
-    }
-
     pub fn resolve_path_from_pwd(path: &PathBuf) -> PathBuf {
         std::env::current_dir().expect("Could not read working directory").join(path)
     }
