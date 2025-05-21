@@ -6,14 +6,13 @@
 use std::{convert, sync::Arc};
 
 use axum::{body::Body, response::IntoResponse};
-use diagnostics::diagnostics_manager::DiagnosticsManager;
 use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
 use crate::service::state::ServerState;
 use crate::{
-    authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
+    authentication::authenticate,
     service::http::error::HttpServiceError,
 };
 

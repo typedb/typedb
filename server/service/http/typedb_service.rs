@@ -6,33 +6,9 @@
 
 use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect},
-    routing::{delete, get, post, put},
-    Router,
-};
-use concurrency::TokioIntervalRunner;
-use database::database_manager::DatabaseManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
-use http::StatusCode;
-use options::{QueryOptions, TransactionOptions};
-use resource::constants::common::SECONDS_IN_MINUTE;
-use system::concepts::{Credential, User};
-use tokio::{
-    sync::{
-        mpsc::{channel, Sender},
-        oneshot, RwLock,
-    },
-    time::timeout,
-};
-use tower_http::cors::CorsLayer;
-use user::user_manager::UserManager;
-use uuid::Uuid;
-use resource::server_info::ServerInfo;
 use crate::service::state::ServerState;
 use crate::{
-    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
+    authentication::Accessor,
     service::{
         http::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
@@ -55,6 +31,28 @@ use crate::{
         QueryType,
     },
 };
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect},
+    routing::{delete, get, post, put},
+    Router,
+};
+use concurrency::TokioIntervalRunner;
+use diagnostics::metrics::ActionKind;
+use http::StatusCode;
+use options::{QueryOptions, TransactionOptions};
+use resource::constants::common::SECONDS_IN_MINUTE;
+use resource::server_info::ServerInfo;
+use system::concepts::{Credential, User};
+use tokio::{
+    sync::{
+        mpsc::{channel, Sender},
+        oneshot, RwLock,
+    },
+    time::timeout,
+};
+use tower_http::cors::CorsLayer;
+use uuid::Uuid;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
