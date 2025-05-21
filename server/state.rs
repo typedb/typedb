@@ -227,7 +227,7 @@ impl ServerState {
 
     pub fn database_schema(&self, name: String) -> Result<String, StateError> {
         match self.database_manager.database(&name) {
-            Some(db) => get_database_schema(db),
+            Some(db) => Self::get_database_schema(db),
             None => Err(StateError::DatabaseDoesNotExist { name })
         }
     }
@@ -236,12 +236,53 @@ impl ServerState {
         match self.database_manager.database(&name) {
             None => Err(StateError::DatabaseDoesNotExist { name: name.clone() }),
             Some(database) => {
-                match get_database_type_schema(database) {
+                match Self::get_database_type_schema(database) {
                     Ok(type_schema) => Ok(type_schema),
                     Err(err) => Err(err)
                 }
             }
         }
+    }
+
+    fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, StateError> {
+        let transaction = TransactionRead::open(database, TransactionOptions::default())
+            .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
+        let types_syntax = Self::get_types_syntax(&transaction)?;
+        let functions_syntax = Self::get_functions_syntax(&transaction)?;
+
+        let schema = match types_syntax.is_empty() & functions_syntax.is_empty() {
+            true => String::new(),
+            false => format!("{}\n{} {}", typeql::token::Clause::Define, types_syntax, functions_syntax),
+        };
+        Ok(schema)
+    }
+
+    fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
+        transaction
+            .function_manager
+            .get_functions_syntax(transaction.snapshot())
+            .map_err(|err| StateError::FunctionReadError { typedb_source: err })
+    }
+
+    pub(crate) fn get_database_type_schema<D: DurabilityClient>(
+        database: Arc<Database<D>>,
+    ) -> Result<String, StateError> {
+        let transaction = TransactionRead::open(database, TransactionOptions::default())
+            .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
+        let types_syntax = Self::get_types_syntax(&transaction)?;
+
+        let type_schema = match types_syntax.is_empty() {
+            true => String::new(),
+            false => format!("{}\n{}", typeql::token::Clause::Define, types_syntax),
+        };
+        Ok(type_schema)
+    }
+
+    fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
+        transaction
+            .type_manager
+            .get_types_syntax(transaction.snapshot())
+            .map_err(|err| StateError::ConceptReadError { typedb_source: err })
     }
 
     pub fn database_delete(&self, name: String) -> Result<(), DatabaseDeleteError> {
@@ -345,47 +386,6 @@ impl ServerState {
     pub fn database_manager(&self) -> &DatabaseManager {
         todo!()
     }
-}
-
-pub(crate) fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, StateError> {
-    let transaction = TransactionRead::open(database, TransactionOptions::default())
-        .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
-    let types_syntax = get_types_syntax(&transaction)?;
-    let functions_syntax = get_functions_syntax(&transaction)?;
-
-    let schema = match types_syntax.is_empty() & functions_syntax.is_empty() {
-        true => String::new(),
-        false => format!("{}\n{} {}", typeql::token::Clause::Define, types_syntax, functions_syntax),
-    };
-    Ok(schema)
-}
-
-pub(crate) fn get_database_type_schema<D: DurabilityClient>(
-    database: Arc<Database<D>>,
-) -> Result<String, StateError> {
-    let transaction = TransactionRead::open(database, TransactionOptions::default())
-        .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
-    let types_syntax = get_types_syntax(&transaction)?;
-
-    let type_schema = match types_syntax.is_empty() {
-        true => String::new(),
-        false => format!("{}\n{}", typeql::token::Clause::Define, types_syntax),
-    };
-    Ok(type_schema)
-}
-
-fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
-    transaction
-        .type_manager
-        .get_types_syntax(transaction.snapshot())
-        .map_err(|err| StateError::ConceptReadError { typedb_source: err })
-}
-
-fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
-    transaction
-        .function_manager
-        .get_functions_syntax(transaction.snapshot())
-        .map_err(|err| StateError::FunctionReadError { typedb_source: err })
 }
 
 typedb_error! {
