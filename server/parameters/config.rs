@@ -164,6 +164,7 @@ impl ConfigBuilder {
             .map_err(|source| ConfigError::ErrorParsingYaml { source })
             .map(|config| Self { config })
     }
+
     pub fn override_with_cliargs(&mut self, cliargs: CLIArgs) {
         let CLIArgs {
             config_file_override: _,
@@ -185,11 +186,10 @@ impl ConfigBuilder {
         } = cliargs;
         let Self { config } = self;
         override_config! {
-            config.development_mode.enabled => development_mode_enabled;
-
             config.server.address => server_address;
             config.server.http_enabled => server_http_enabled;
             config.server.http_address => server_http_address;
+            config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
 
             config.server.encryption.enabled => server_encryption_enabled;
             config.server.encryption.certificate => server_encryption_certificate.map(|cert| Some(cert.into()));
@@ -197,14 +197,14 @@ impl ConfigBuilder {
             config.server.encryption.ca_certificate => server_encryption_ca_certificate.map(|cert| Some(cert.into()));
 
             config.storage.data_directory => storage_data.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
-
             config.logging.directory => logging_logdir.map(|p| CLIArgs::resolve_path_from_pwd(&p.into()));
 
-            config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
             config.diagnostics.reporting.report_metrics => diagnostics_reporting_metrics;
+            config.diagnostics.reporting.report_errors => diagnostics_reporting_errors;
             config.diagnostics.monitoring.enabled => diagnostics_monitoring_enabled;
             config.diagnostics.monitoring.port => diagnostics_monitoring_port;
-            config.server.authentication.token_expiration => server_authentication_token_ttl_seconds.map(|secs| Duration::new(secs, 0));
+
+            config.development_mode.enabled => development_mode_enabled;
         }
     }
 
