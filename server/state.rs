@@ -34,8 +34,6 @@ use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
 use storage::durability_client::DurabilityClient;
 
-const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
-
 #[derive(Debug)]
 pub struct ServerState {
     config: Config,
