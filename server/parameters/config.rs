@@ -284,6 +284,7 @@ pub mod tests {
     use clap::Parser;
 
     use crate::parameters::{cli::CLIArgs, config::Config, ConfigError};
+    use crate::parameters::config::ConfigBuilder;
 
     fn config_path() -> PathBuf {
         #[cfg(feature = "bazel")]
@@ -297,10 +298,10 @@ pub mod tests {
         let mut args_with_binary_infront = Vec::with_capacity(args.len() + 1);
         args_with_binary_infront.push("dummy");
         args_with_binary_infront.extend(args);
-        let mut config = Config::from_file(yaml)?;
+        let mut config = ConfigBuilder::from_file(yaml)?;
         let cli_args: CLIArgs = CLIArgs::parse_from(args_with_binary_infront);
-        cli_args.override_config(&mut config)?;
-        Ok(config)
+        config.override_with_cliargs(cli_args);
+        config.finish()
     }
 
     #[test]
