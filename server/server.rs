@@ -28,7 +28,7 @@ use user::{initialise_default_user, user_manager::UserManager};
 use crate::{
     authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager},
     error::ServerOpenError,
-    parameters::config::{Config, DevelopmentMode, DiagnosticsConfig, EncryptionConfig},
+    parameters::config::{Config, DevelopmentModeConfig, DiagnosticsConfig, EncryptionConfig},
     service::{grpc, http},
 };
 
@@ -231,7 +231,7 @@ impl Server {
         version: &str,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
-        is_development_mode: &DevelopmentMode,
+        is_development_mode: &DevelopmentModeConfig,
     ) -> DiagnosticsManager {
         let diagnostics = Diagnostics::new(
             deployment_id,
