@@ -7,7 +7,6 @@
 use std::{
     error::Error,
     fmt,
-    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
