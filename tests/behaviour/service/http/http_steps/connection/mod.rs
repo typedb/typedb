@@ -11,7 +11,7 @@ use params::check_boolean;
 use resource::server_info::ServerInfo;
 use server::{
     error::ServerOpenError,
-    parameters::config::{AuthenticationConfig, Config},
+    parameters::config::{AuthenticationConfig, ConfigBuilderForTests},
     server::Server,
 };
 use test_utils::create_tmp_dir;
@@ -37,7 +37,8 @@ pub(crate) async fn start_typedb(
     let handle = std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
         let server_dir = create_tmp_dir();
-        let config = Config::new(GRPC_ADDRESS)
+        let config = ConfigBuilderForTests::default()
+            .server_address(GRPC_ADDRESS)
             .server_http_address(HTTP_ADDRESS)
             .data_directory(server_dir.as_ref())
             .development_mode(true)

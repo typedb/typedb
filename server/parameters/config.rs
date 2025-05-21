@@ -28,7 +28,7 @@ pub struct Config {
     pub diagnostics: DiagnosticsConfig,
     pub logging: LoggingConfig,
     #[serde(rename = "development-mode.enabled", default)]
-    pub development_mode: DevelopmentMode,
+    pub development_mode: DevelopmentModeConfig,
 }
 
 impl Config {
@@ -36,10 +36,6 @@ impl Config {
     pub const IS_DEVELOPMENT_MODE_FORCED: bool = false;
     #[cfg(not(feature = "published"))]
     pub const IS_DEVELOPMENT_MODE_FORCED: bool = true;
-
-    pub fn new(server_address: impl Into<String>) -> ConfigBuilder {
-        ConfigBuilder::default().server_address(server_address)
-    }
 
     pub fn from_file(path: PathBuf) -> Result<Self, ConfigError> {
         let mut config = String::new();
@@ -66,7 +62,7 @@ impl Config {
         // finalise:
         self.storage.data_directory = Self::resolve_path_from_executable(&self.storage.data_directory);
         self.logging.directory = Self::resolve_path_from_executable(&self.logging.directory);
-        self.development_mode = self.development_mode | Self::IS_DEVELOPMENT_MODE_FORCED;
+        self.development_mode.enabled = self.development_mode.enabled | Self::IS_DEVELOPMENT_MODE_FORCED;
         Ok(())
     }
 
@@ -177,19 +173,18 @@ pub struct LoggingConfig {
 
 #[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-pub struct DevelopmentMode {
+pub struct DevelopmentModeConfig {
     pub enabled: bool,
 }
 
-impl Default for DevelopmentMode {
+impl Default for DevelopmentModeConfig {
     fn default() -> Self {
         Self { enabled: false }
     }
 }
 
-// Only used in tests
 #[derive(Debug, Default)]
-pub struct ConfigBuilder {
+pub struct ConfigBuilderForTests {
     server_address: Option<String>,
     server_http_address: Option<String>,
     authentication: Option<AuthenticationConfig>,
@@ -200,8 +195,8 @@ pub struct ConfigBuilder {
     is_development_mode: Option<bool>,
 }
 
-impl ConfigBuilder {
-    fn server_address(mut self, address: impl Into<String>) -> Self {
+impl ConfigBuilderForTests {
+    pub fn server_address(mut self, address: impl Into<String>) -> Self {
         self.server_address = Some(address.into());
         self
     }
@@ -239,7 +234,7 @@ impl ConfigBuilder {
     pub fn build(self) -> Result<Config, ConfigError> {
         let data_directory = self.data_directory.unwrap_or(DEFAULT_DATA_DIR.into()).into();
         let log_directory = self.log_directory.unwrap_or(DEFAULT_LOG_DIR.into());
-        let development_mode = DevelopmentMode {
+        let development_mode = DevelopmentModeConfig {
             enabled: Config::IS_DEVELOPMENT_MODE_FORCED || self.is_development_mode.unwrap_or(false),
         };
         let mut config = Config {

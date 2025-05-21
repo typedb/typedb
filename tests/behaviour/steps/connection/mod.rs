@@ -15,6 +15,7 @@ use resource::constants::server::SERVER_INFO;
 use server::{parameters::config::Config, server::Server};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
+use server::parameters::config::ConfigBuilderForTests;
 
 use crate::{generic_step, Context};
 
@@ -32,8 +33,12 @@ pub async fn typedb_starts(context: &mut Context) {
     TYPEDB
         .get_or_init(|| async {
             let server_dir = create_tmp_dir();
-            let config =
-                Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build().unwrap();
+            let config = ConfigBuilderForTests::default()
+                .server_address(ADDRESS)
+                .data_directory(server_dir.as_ref())
+                .development_mode(true)
+                .build()
+                .unwrap();
             let server = Server::new(SERVER_INFO, config, None).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })
