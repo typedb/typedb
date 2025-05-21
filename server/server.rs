@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::service::state::ServerState;
 use crate::service::{grpc, http};
+use crate::state::ServerState;
 use crate::util::resolve_address;
 use crate::{
     error::ServerOpenError,

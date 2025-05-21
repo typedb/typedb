@@ -9,7 +9,8 @@ use error::{typedb_error, TypeDBError};
 
 use crate::{
     authentication::AuthenticationError,
-    service::{transaction_service::TransactionServiceError, state::StateError},
+    service::transaction_service::TransactionServiceError,
+    state::StateError
 };
 
 typedb_error!(

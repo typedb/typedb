@@ -10,7 +10,7 @@ use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
-use crate::service::state::ServerState;
+use crate::state::ServerState;
 use crate::{
     authentication::authenticate,
     service::http::error::HttpServiceError,

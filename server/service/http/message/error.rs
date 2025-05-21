@@ -11,8 +11,8 @@ use serde::{Deserialize, Serialize};
 use crate::service::{
     http::{error::HttpServiceError, message::body::JsonBody},
     transaction_service::TransactionServiceError,
-    state::StateError,
 };
+use crate::state::StateError;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

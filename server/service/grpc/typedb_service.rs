@@ -6,7 +6,8 @@
 
 use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
 
-use crate::service::state::ServerState;
+use crate::state::ServerState;
+use crate::state::StateError;
 use crate::{
     authentication::{
         credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
@@ -34,7 +35,6 @@ use crate::{
             ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        state::StateError,
     },
 };
 use axum::response::IntoResponse;
