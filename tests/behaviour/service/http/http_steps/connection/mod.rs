@@ -3,14 +3,14 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
+use std::{collections::HashMap, path::PathBuf};
 
 use itertools::Either;
 use macro_rules_attribute::apply;
 use params::check_boolean;
 use server::{
     error::ServerOpenError,
-    parameters::config::{AuthenticationConfig, Config},
+    parameters::config::{AuthenticationConfig, ConfigBuilder},
     server::Server,
 };
 use test_utils::create_tmp_dir;
@@ -30,6 +30,14 @@ const HTTP_ADDRESS: &str = "0.0.0.0:8000";
 const DISTRIBUTION: &str = "TypeDB CE TEST";
 const VERSION: &str = "0.0.0";
 
+fn config_path() -> PathBuf {
+    #[cfg(feature = "bazel")]
+    return std::env::current_dir().unwrap().join("server/config.yml");
+
+    #[cfg(not(feature = "bazel"))]
+    return std::env::current_dir().unwrap().join("config.yml");
+}
+
 pub(crate) async fn start_typedb(
 ) -> (tokio::sync::watch::Sender<()>, std::thread::JoinHandle<Result<(), ServerOpenError>>) {
     let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
@@ -37,12 +45,14 @@ pub(crate) async fn start_typedb(
     let handle = std::thread::spawn(move || {
         let rt = tokio::runtime::Runtime::new().expect("Failed to create runtime");
         let server_dir = create_tmp_dir();
-        let config = Config::new(GRPC_ADDRESS)
+        let config = ConfigBuilder::from_file(config_path())
+            .expect("Failed to load config file")
+            .server_address(GRPC_ADDRESS)
             .server_http_address(HTTP_ADDRESS)
             .data_directory(server_dir.as_ref())
             .development_mode(true)
             .authentication(AuthenticationConfig { token_expiration: TEST_TOKEN_EXPIRATION })
-            .build()
+            .finish()
             .unwrap();
 
         let server_future = async {
