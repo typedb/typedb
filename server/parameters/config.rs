@@ -236,10 +236,6 @@ impl ConfigBuilder {
         typedb_dir_or_current.join(path)
     }
 
-    fn is_development_mode_default() -> bool {
-        false
-    }
-
     // Overrides
     pub fn server_address(mut self, address: impl Into<String>) -> Self {
         self.config.server.address = address.into();
