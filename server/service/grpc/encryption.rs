@@ -18,14 +18,14 @@ pub(crate) fn prepare_tls_config(
         return Ok(None);
     }
 
-    let cert_path = encryption_config.cert.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
+    let cert_path = encryption_config.certificate.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificate {})?;
     let cert = fs::read_to_string(cert_path).map_err(|source| ServerOpenError::GrpcCouldNotReadTlsCertificate {
         path: cert_path.display().to_string(),
         source: Arc::new(source),
     })?;
 
     let cert_key_path =
-        encryption_config.cert_key.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
+        encryption_config.certificate_key.as_ref().ok_or_else(|| ServerOpenError::MissingTLSCertificateKey {})?;
     let cert_key =
         fs::read_to_string(cert_key_path).map_err(|source| ServerOpenError::GrpcCouldNotReadTlsCertificateKey {
             path: cert_key_path.display().to_string(),
@@ -34,7 +34,7 @@ pub(crate) fn prepare_tls_config(
 
     let mut tls_config = GrpcTlsConfig::new().identity(Identity::from_pem(cert, cert_key));
 
-    if let Some(root_ca_path) = &encryption_config.root_ca {
+    if let Some(root_ca_path) = &encryption_config.ca_certificate {
         let root_ca = fs::read_to_string(root_ca_path).map_err(|source| ServerOpenError::GrpcCouldNotReadRootCa {
             path: root_ca_path.display().to_string(),
             source: Arc::new(source),

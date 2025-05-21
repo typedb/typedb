@@ -18,7 +18,8 @@ use ir::{
 };
 use itertools::Itertools;
 
-use crate::annotation::pipeline::AnnotatedStage;
+use crate::{annotation::pipeline::AnnotatedStage, VariablePosition};
+
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructure {
     pub branches: [Option<Vec<Constraint<Variable>>>; 64],
@@ -31,8 +32,11 @@ impl ParametrisedQueryStructure {
         self: Arc<Self>,
         parameters: Arc<ParameterRegistry>,
         variable_names: HashMap<Variable, String>,
-        available_variables: HashSet<Variable>,
+        output_variable_positions: &HashMap<Variable, VariablePosition>,
     ) -> QueryStructure {
+        let mut available_variables =
+            output_variable_positions.keys().filter(|v| !v.is_anonymous()).copied().collect::<Vec<_>>();
+        available_variables.sort();
         QueryStructure { parametrised_structure: self, parameters, variable_names, available_variables }
     }
 }
@@ -41,13 +45,13 @@ impl ParametrisedQueryStructure {
 pub struct QueryStructure {
     pub parametrised_structure: Arc<ParametrisedQueryStructure>,
     pub variable_names: HashMap<Variable, String>,
-    pub available_variables: HashSet<Variable>,
+    pub available_variables: Vec<Variable>,
     pub parameters: Arc<ParameterRegistry>,
 }
 
-pub(crate) fn extract_query_structure_from(
+pub fn extract_query_structure_from(
     variable_registry: &VariableRegistry,
-    annotated_stages: Vec<AnnotatedStage>,
+    annotated_stages: &[AnnotatedStage],
     source_query: &str,
 ) -> Option<ParametrisedQueryStructure> {
     if variable_registry.highest_branch_id_allocated() > 63 {

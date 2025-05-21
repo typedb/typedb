@@ -22,7 +22,7 @@ pub(crate) fn prepare_tls_config(
         return Ok(None);
     }
 
-    let cert_path = encryption_config.cert.as_ref().ok_or(ServerOpenError::MissingTLSCertificate {})?;
+    let cert_path = encryption_config.certificate.as_ref().ok_or(ServerOpenError::MissingTLSCertificate {})?;
     let cert_iter = CertificateDer::pem_file_iter(cert_path.as_path()).map_err(|source| {
         ServerOpenError::HttpCouldNotReadTlsCertificate {
             path: cert_path.display().to_string(),
@@ -34,7 +34,8 @@ pub(crate) fn prepare_tls_config(
         source: Arc::new(source),
     })?;
 
-    let cert_key_path = encryption_config.cert_key.as_ref().ok_or(ServerOpenError::MissingTLSCertificateKey {})?;
+    let cert_key_path =
+        encryption_config.certificate_key.as_ref().ok_or(ServerOpenError::MissingTLSCertificateKey {})?;
     let key = PrivateKeyDer::from_pem_file(cert_key_path.as_path()).map_err(|source| {
         ServerOpenError::HttpCouldNotReadTlsCertificateKey {
             path: cert_key_path.display().to_string(),
@@ -42,7 +43,7 @@ pub(crate) fn prepare_tls_config(
         }
     })?;
 
-    let client_cert_verifier = match &encryption_config.root_ca {
+    let client_cert_verifier = match &encryption_config.ca_certificate {
         Some(root_ca_path) => {
             let mut client_auth_roots = RootCertStore::empty();
             let mut root_ca_iter = CertificateDer::pem_file_iter(root_ca_path.as_path()).map_err(|source| {

@@ -9,6 +9,7 @@ use std::{collections::HashSet, sync::Arc};
 use compiler::{
     annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline},
     executable::pipeline::{compile_pipeline_and_functions, ExecutablePipeline},
+    query_structure::extract_query_structure_from,
     transformation::transform::apply_transformations,
 };
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
@@ -162,6 +163,12 @@ impl QueryManager {
                 )
                 .map_err(|err| QueryError::Annotation { source_query: source_query.to_string(), typedb_source: err })?;
                 compile_profile.annotation_finished();
+                let query_structure = extract_query_structure_from(
+                    &variable_registry,
+                    &annotated_pipeline.annotated_stages,
+                    source_query,
+                )
+                .map(|query_structure| Arc::new(query_structure));
 
                 apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline).map_err(|err| {
                     QueryError::Transformation { source_query: source_query.to_string(), typedb_source: err }
@@ -177,7 +184,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
-                    source_query,
+                    query_structure,
                 )
                 .map_err(|err| QueryError::ExecutableCompilation {
                     source_query: source_query.to_string(),
@@ -306,6 +313,13 @@ impl QueryManager {
                 };
                 compile_profile.annotation_finished();
 
+                let query_structure = extract_query_structure_from(
+                    &variable_registry,
+                    &annotated_pipeline.annotated_stages,
+                    source_query,
+                )
+                .map(|query_structure| Arc::new(query_structure));
+
                 match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
                     Ok(_) => {}
                     Err(err) => {
@@ -330,7 +344,7 @@ impl QueryManager {
                     annotated_stages,
                     annotated_fetch,
                     &HashSet::with_capacity(0),
-                    source_query,
+                    query_structure,
                 ) {
                     Ok(executable) => executable,
                     Err(err) => {

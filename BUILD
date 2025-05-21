@@ -27,6 +27,13 @@ exports_files(
     ["VERSION", "deployment.bzl", "LICENSE", "README.md"],
 )
 
+genrule(
+    name = "config_at_root",
+    outs = ["config.yml"],
+    srcs = ["//server:config.yml"],
+    cmd = "cp $(location //server:config.yml) $(location config.yml)",
+)
+
 rust_binary(
     name = "typedb_server_bin",
     srcs = [
@@ -42,6 +49,7 @@ rust_binary(
         "@crates//:sentry",
         "@crates//:tokio",
     ],
+    data = ["//:config_at_root"]
 )
 
 # Assembly
@@ -71,8 +79,11 @@ alias(
 # The directory structure for distribution
 pkg_files(
     name = "package-layout-server",
-    srcs = ["//:typedb_server_bin", "//binary:typedb"],
-    renames = {"//:typedb_server_bin" : "server/typedb_server_bin"},
+    srcs = ["//:typedb_server_bin", "//binary:typedb", "//server:config.yml"],
+    renames = {
+        "//:typedb_server_bin" : "server/typedb_server_bin",
+        "//server:config.yml" : "server/config.yml",
+    },
     attributes = binary_permissions,
 )
 
@@ -284,7 +295,7 @@ docker_container_image(
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
     },
-    ports = ["1729"],
+    ports = ["1729", "8000"],
     tars = [":assemble-server-linux-x86_64-targz"],
     visibility = ["//test:__subpackages__"],
     volumes = ["/opt/typedb-server-linux-x86_64/server/data/"],
@@ -303,7 +314,7 @@ docker_container_image(
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
     },
-    ports = ["1729"],
+    ports = ["1729", "8000"],
     tars = [":assemble-server-linux-arm64-targz"],
     visibility = ["//test:__subpackages__"],
     volumes = ["/opt/typedb-server-linux-arm64/server/data/"],

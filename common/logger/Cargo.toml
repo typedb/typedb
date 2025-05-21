@@ -19,6 +19,11 @@ features = {}
 		version = "0.1.41"
 		default-features = false
 
+	[dependencies.tracing-appender]
+		features = []
+		version = "0.2.3"
+		default-features = false
+
 	[dependencies.tracing-subscriber]
 		features = ["alloc", "ansi", "default", "env-filter", "fmt", "matchers", "nu-ansi-term", "once_cell", "regex", "registry", "sharded-slab", "smallvec", "std", "thread_local", "tracing", "tracing-log"]
 		version = "0.3.19"

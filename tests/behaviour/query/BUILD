@@ -36,6 +36,7 @@ rust_test(
         "@typedb_behaviour//query/language:reduce.feature",
         "@typedb_behaviour//query/language:undefine.feature",
         "@typedb_behaviour//query/language:update.feature",
+        "@typedb_behaviour//query/language:validation.feature",
 
 
     ],

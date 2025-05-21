@@ -75,12 +75,12 @@ pub struct QueryAnswerResponse {
     pub query_type: QueryType,
     pub answer_type: AnswerType,
     pub answers: Option<Vec<serde_json::Value>>,
-    pub query_structure: Option<QueryStructureResponse>,
+    pub query: Option<QueryStructureResponse>,
     pub warning: Option<String>,
 }
 
 pub(crate) fn encode_query_ok_answer(query_type: QueryType) -> QueryAnswerResponse {
-    QueryAnswerResponse { query_type, answer_type: AnswerType::Ok, answers: None, query_structure: None, warning: None }
+    QueryAnswerResponse { answer_type: AnswerType::Ok, query_type, answers: None, query: None, warning: None }
 }
 
 pub(crate) fn encode_query_rows_answer(
@@ -90,10 +90,10 @@ pub(crate) fn encode_query_rows_answer(
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
-        query_type,
         answer_type: AnswerType::ConceptRows,
+        query_type,
         answers: Some(rows),
-        query_structure,
+        query: query_structure,
         warning,
     }
 }
@@ -104,10 +104,10 @@ pub(crate) fn encode_query_documents_answer(
     warning: Option<String>,
 ) -> QueryAnswerResponse {
     QueryAnswerResponse {
-        query_type,
         answer_type: AnswerType::ConceptDocuments,
         answers: Some(documents),
-        query_structure: None,
+        query_type,
+        query: None,
         warning,
     }
 }

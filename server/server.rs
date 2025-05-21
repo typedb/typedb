@@ -71,16 +71,15 @@ impl Server {
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
-        Self::print_hello(self.server_info.clone(), self.config.is_development_mode);
+        Self::print_hello(self.server_info.clone(), self.config.development_mode.enabled);
 
         Self::install_default_encryption_provider()?;
 
         let grpc_address = resolve_address(self.config.server.address).await;
-        let http_address_opt = match self.config.server.http_address.clone() {
-            Some(http_address) => Some(
-                Self::validate_and_resolve_http_address(http_address, grpc_address.clone()).await?
-            ),
-            None => None,
+        let http_address_opt = if self.config.server.http_enabled {
+            Some(Self::validate_and_resolve_http_address(self.config.server.http_address.clone(), grpc_address.clone()).await?)
+        } else {
+            None
         };
 
         let grpc_server = Self::serve_grpc(

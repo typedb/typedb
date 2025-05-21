@@ -9,7 +9,7 @@
 
 use std::{borrow::Cow, convert::Infallible, fmt, str::FromStr, sync::Arc};
 
-use chrono::{NaiveDate, NaiveDateTime, NaiveTime};
+use chrono::{NaiveDate, NaiveDateTime, NaiveTime, Offset, Utc};
 use concept::{
     error::ConceptWriteError,
     type_::{
@@ -604,7 +604,9 @@ impl Value {
 
                 assert!(!timezone.is_empty(), "No timezone when parsing {:?}", self.raw_value);
 
-                if timezone.starts_with(['+', '-']) {
+                if timezone.ends_with('Z') {
+                    TypeDBValue::DateTimeTZ(datetime.and_local_timezone(TimeZone::Fixed(Utc.fix())).unwrap())
+                } else if timezone.starts_with(['+', '-']) {
                     TypeDBValue::DateTimeTZ(
                         datetime.and_local_timezone(TimeZone::Fixed(timezone.parse().unwrap())).unwrap(),
                     )

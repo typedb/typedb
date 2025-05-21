@@ -63,7 +63,7 @@ impl ServerState {
         shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
         let address = resolve_address(config.server.address.clone()).await;
-        let storage_directory = &config.storage.data;
+        let storage_directory = &config.storage.data_directory;
         let diagnostics_config = &config.diagnostics;
 
         Self::may_initialise_storage_directory(storage_directory)?;
@@ -92,7 +92,7 @@ impl ServerState {
                 &server_info,
                 diagnostics_config,
                 storage_directory.clone(),
-                config.is_development_mode,
+                config.development_mode.enabled,
             ).await
         );
 
@@ -115,6 +115,7 @@ impl ServerState {
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
+        debug_assert!(storage_directory.is_absolute());
         if !storage_directory.exists() {
             Self::create_storage_directory(storage_directory)
         } else if !storage_directory.is_dir() {
@@ -179,12 +180,12 @@ impl ServerState {
             server_info.distribution.to_owned(),
             server_info.version.to_owned(),
             storage_directory,
-            config.is_reporting_metric_enabled,
+            config.reporting.report_metrics,
         );
         let diagnostics_manager = DiagnosticsManager::new(
             diagnostics,
-            config.monitoring_port,
-            config.is_monitoring_enabled,
+            config.monitoring.port,
+            config.monitoring.enabled,
             is_development_mode,
         );
         diagnostics_manager.may_start_monitoring().await;

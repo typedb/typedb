@@ -18,6 +18,7 @@ use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
         constraint::Constraint,
+        nested_pattern::NestedPattern,
         variable_category::VariableCategory,
         BranchID, Scope, ScopeId,
     },
@@ -101,8 +102,13 @@ impl<'reg> BlockBuilder<'reg> {
     }
 
     pub fn finish(self) -> Result<Block, Box<RepresentationError>> {
-        let Self { conjunction, context: BlockBuilderContext { block_context, variable_registry, .. } } = self;
+        let Self {
+            conjunction,
+            context:
+                BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. },
+        } = self;
         validate_conjunction(&conjunction, variable_registry, &block_context)?;
+        visible_variables.retain(|name, var| block_context.is_variable_available(conjunction.scope_id(), *var));
         Ok(Block { conjunction, block_context })
     }
 
@@ -146,7 +152,15 @@ fn validate_conjunction(
         }
     }
 
-    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find_or_first(|is| {
+    validate_is_variables_have_same_category(conjunction, variable_registry)?;
+    Ok(())
+}
+
+fn validate_is_variables_have_same_category(
+    conjunction: &Conjunction,
+    variable_registry: &VariableRegistry,
+) -> Result<(), Box<RepresentationError>> {
+    let is_with_mismatched_category = conjunction.constraints().iter().filter_map(|c| c.as_is()).find(|is| {
         let lhs_category = variable_registry.get_variable_category(is.lhs().as_variable().unwrap()).unwrap();
         let rhs_category = variable_registry.get_variable_category(is.rhs().as_variable().unwrap()).unwrap();
         lhs_category.narrowest(rhs_category).is_none()
@@ -166,6 +180,20 @@ fn validate_conjunction(
             source_span: is.source_span(),
         }));
     }
+
+    conjunction.nested_patterns().iter().try_for_each(|nested| match nested {
+        NestedPattern::Disjunction(disjunction) => disjunction
+            .conjunctions()
+            .iter()
+            .try_for_each(|inner| validate_is_variables_have_same_category(inner, variable_registry)),
+        NestedPattern::Negation(negation) => {
+            validate_is_variables_have_same_category(negation.conjunction(), variable_registry)
+        }
+        NestedPattern::Optional(optional) => {
+            validate_is_variables_have_same_category(optional.conjunction(), variable_registry)
+        }
+    })?;
+
     Ok(())
 }
 
