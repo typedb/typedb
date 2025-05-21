@@ -382,7 +382,7 @@ impl ServerState {
     }
 
     pub fn database_manager(&self) -> &DatabaseManager {
-        todo!()
+        &self.database_manager
     }
 }
 
