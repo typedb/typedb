@@ -127,7 +127,7 @@ impl<I: for<'a> LendingIterator<Item<'a> = TupleResult<'static>> + TupleSeekable
             .drain()
             .map(|mut it| it.iter.seek(target).map(|_| it))
             .collect::<Result<_, _>>()?;
-        if let Some(mut next_iterator) = self.next_iterator.as_mut() {
+        if let Some(next_iterator) = self.next_iterator.as_mut() {
             next_iterator.iter.seek(target)?;
         }
         // force recomputation of heap element

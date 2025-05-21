@@ -9,7 +9,6 @@ use std::{fmt, iter::Peekable, sync::Arc};
 use compiler::executable::{modifiers::SortExecutable, reduce::ReduceRowsExecutable};
 use ir::pipeline::modifier::SortVariable;
 use lending_iterator::LendingIterator;
-use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
 
 use crate::{

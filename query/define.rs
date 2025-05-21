@@ -24,7 +24,7 @@ use encoding::{
     graph::{definition::r#struct::StructDefinitionField, type_::Kind},
     value::{label::Label, value_type::ValueType},
 };
-use error::{typedb_error, unimplemented_feature};
+use error::typedb_error;
 use function::{function_manager::FunctionManager, FunctionError};
 use ir::{pipeline::VariableRegistry, translation::tokens::translate_annotation, LiteralParseError};
 use resource::profile::StorageCounters;

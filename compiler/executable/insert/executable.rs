@@ -448,7 +448,7 @@ pub(crate) fn resolve_links_roles(
                 Ok((role_type.clone(), TypeSource::InputVariable(*input_position)))
             } else {
                 let annotations = type_annotations.vertex_annotations_of(role_type_vertex).unwrap();
-                if let Ok((type_)) = annotations.iter().exactly_one() {
+                if let Ok(type_) = annotations.iter().exactly_one() {
                     Ok((role_type.clone(), TypeSource::Constant(*type_)))
                 } else {
                     let player_variable = variable_registry

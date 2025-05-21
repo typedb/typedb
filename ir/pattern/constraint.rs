@@ -2874,7 +2874,7 @@ impl Unsatisfiable {
         [].into_iter()
     }
 
-    pub fn ids_foreach<F, ID: IrID>(&self, mut function: F)
+    pub fn ids_foreach<F, ID: IrID>(&self, function: F)
     where
         F: FnMut(ID),
     {

@@ -48,7 +48,7 @@ pub fn compile(
     source_span: Option<Span>,
 ) -> Result<UpdateExecutable, Box<WriteCompilationError>> {
     let mut variable_positions = input_variables.clone();
-    let mut attributes_inserts = add_inserted_concepts(
+    let attributes_inserts = add_inserted_concepts(
         constraints,
         type_annotations,
         variable_registry,

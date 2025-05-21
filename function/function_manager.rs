@@ -13,7 +13,7 @@ use std::{
 
 use bytes::{byte_array::ByteArray, Bytes};
 use compiler::annotation::function::{annotate_stored_functions, AnnotatedSchemaFunctions};
-use concept::{error::ConceptReadError, type_::type_manager::TypeManager};
+use concept::type_::type_manager::TypeManager;
 use encoding::{
     graph::{
         definition::{
