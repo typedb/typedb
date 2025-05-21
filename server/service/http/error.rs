@@ -9,7 +9,7 @@ use error::{typedb_error, TypeDBError};
 
 use crate::{
     authentication::AuthenticationError,
-    service::{transaction_service::TransactionServiceError, ServiceError},
+    service::{transaction_service::TransactionServiceError, state::StateError},
 };
 
 typedb_error!(
@@ -21,16 +21,16 @@ typedb_error!(
         UnknownVersion(5, "Unknown API version '{version}'.", version: String),
         MissingPathParameter(6, "Requested resource not found: missing path parameter {parameter}.", parameter: String),
         InvalidPathParameter(7, "Requested resource not found: invalid path parameter {parameter}.", parameter: String),
-        Service(8, "Service error.", typedb_source: ServiceError),
+        Service(8, "Service error.", typedb_source: StateError),
         Authentication(9, "Authentication error.", typedb_source: AuthenticationError),
         DatabaseCreate(10, "Database create error.", typedb_source: DatabaseCreateError),
         DatabaseDelete(11, "Database delete error.", typedb_source: DatabaseDeleteError),
-        DatabaseSchema(19, "Database schema error.", typedb_source: ServiceError),
-        DatabaseTypeSchema(20, "Database type schema error.", typedb_source: ServiceError),
-        UserCreate(12, "User create error.", typedb_source: ServiceError),
-        UserUpdate(13, "User update error.", typedb_source: ServiceError),
-        UserDelete(14, "User delete error.", typedb_source: ServiceError),
-        UserGet(15, "User get error.", typedb_source: ServiceError),
+        DatabaseSchema(19, "Database schema error.", typedb_source: StateError),
+        DatabaseTypeSchema(20, "Database type schema error.", typedb_source: StateError),
+        UserCreate(12, "User create error.", typedb_source: StateError),
+        UserUpdate(13, "User update error.", typedb_source: StateError),
+        UserDelete(14, "User delete error.", typedb_source: StateError),
+        UserGet(15, "User get error.", typedb_source: StateError),
         Transaction(16, "Transaction error.", typedb_source: TransactionServiceError),
         QueryClose(17, "Error while closing single-query transaction.", typedb_source: TransactionServiceError),
         QueryCommit(18, "Error while committing single-query transaction.", typedb_source: TransactionServiceError),
@@ -47,7 +47,7 @@ impl HttpServiceError {
     }
 
     pub(crate) fn operation_not_permitted() -> Self {
-        Self::Service { typedb_source: ServiceError::OperationNotPermitted {} }
+        Self::Service { typedb_source: StateError::OperationNotPermitted {} }
     }
 
     pub(crate) fn no_open_transaction() -> Self {

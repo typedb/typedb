@@ -34,7 +34,7 @@ use crate::{
             ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        ServiceError,
+        state::StateError,
     },
 };
 use axum::response::IntoResponse;
@@ -182,7 +182,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Response::new(database_get_res(&self.server_state.address, db.name().to_string()))
                 ),
                 None => Err(
-                    ServiceError::DatabaseDoesNotExist { name }.into_error_message().into_status()
+                    StateError::DatabaseDoesNotExist { name }.into_error_message().into_status()
                 )
             }
         })

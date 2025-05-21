@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::service::{
     http::{error::HttpServiceError, message::body::JsonBody},
     transaction_service::TransactionServiceError,
-    ServiceError,
+    state::StateError,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -32,17 +32,17 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::Service { typedb_source } => match typedb_source {
-                ServiceError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
-                ServiceError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
-                ServiceError::DatabaseDoesNotExist { .. } => StatusCode::NOT_FOUND,
-                ServiceError::UserDoesNotExist { .. } => StatusCode::NOT_FOUND,
-                ServiceError::UserCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
-                ServiceError::UserCannotBeRetrieved { .. } => StatusCode::BAD_REQUEST,
-                ServiceError::UserCannotBeUpdated { .. } => StatusCode::BAD_REQUEST,
-                ServiceError::UserCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
-                ServiceError::FailedToOpenPrerequisiteTransaction { .. } => StatusCode::BAD_REQUEST,
-                ServiceError::ConceptReadError { .. } => StatusCode::BAD_REQUEST,
-                ServiceError::FunctionReadError { .. } => StatusCode::BAD_REQUEST,
+                StateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
+                StateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
+                StateError::DatabaseDoesNotExist { .. } => StatusCode::NOT_FOUND,
+                StateError::UserDoesNotExist { .. } => StatusCode::NOT_FOUND,
+                StateError::UserCannotBeCreated { .. } => StatusCode::BAD_REQUEST,
+                StateError::UserCannotBeRetrieved { .. } => StatusCode::BAD_REQUEST,
+                StateError::UserCannotBeUpdated { .. } => StatusCode::BAD_REQUEST,
+                StateError::UserCannotBeDeleted { .. } => StatusCode::BAD_REQUEST,
+                StateError::FailedToOpenPrerequisiteTransaction { .. } => StatusCode::BAD_REQUEST,
+                StateError::ConceptReadError { .. } => StatusCode::BAD_REQUEST,
+                StateError::FunctionReadError { .. } => StatusCode::BAD_REQUEST,
             },
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::DatabaseCreate { .. } => StatusCode::BAD_REQUEST,
