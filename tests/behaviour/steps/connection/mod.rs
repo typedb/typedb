@@ -12,7 +12,7 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::constants::server::ASCII_LOGO;
+use resource::constants::server::SERVER_INFO;
 use server::{parameters::config::Config, server::Server};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
@@ -34,7 +34,7 @@ pub async fn typedb_starts(context: &mut Context) {
         .get_or_init(|| async {
             let server_dir = create_tmp_dir();
             let config = Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build();
-            let server = Server::new(config, ASCII_LOGO, DISTRIBUTION, VERSION, None).await.unwrap();
+            let server = Server::new(SERVER_INFO, config, None).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })
         .await;
