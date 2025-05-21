@@ -75,21 +75,24 @@ impl Server {
         Self::install_default_encryption_provider()?;
 
         let grpc_address = resolve_address(self.config.server.address).await;
+        let http_address_opt = match self.config.server.http_address.clone() {
+            Some(http_address) => {
+                let http_address = resolve_address(http_address).await;
+                if grpc_address == http_address {
+                    return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
+                }
+                Some(http_address)
+            }
+            None => None,
+        };
+
         let grpc_server = Self::serve_grpc(
             grpc_address,
             &self.config.server.encryption,
             self.server_state.clone(),
             self.shutdown_sig_receiver.clone()
         );
-
-        let http_server_address = match self.config.server.http_address.clone() {
-            Some(http_address) => Some(resolve_address(http_address).await),
-            None => None,
-        };
-        let (http_server, http_address) = if let Some(http_address) = http_server_address {
-            if grpc_address == http_address {
-                return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
-            }
+        let http_server = if let Some(http_address) = http_address_opt {
             let server = Self::serve_http(
                 self.server_info,
                 http_address,
@@ -97,14 +100,14 @@ impl Server {
                 self.server_state.clone(),
                 self.shutdown_sig_receiver
             );
-            (Some(server), Some(http_address))
+            Some(server)
         } else {
-            (None, None)
+            None
         };
 
         Self::spawn_shutdown_handler(self.shutdown_sig_sender);
 
-        Self::print_serving_information(grpc_address, http_address);
+        Self::print_serving_information(grpc_address, http_address_opt);
 
         if let Some(http_server) = http_server {
             let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
