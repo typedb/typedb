@@ -6,7 +6,6 @@
 
 use std::{
     fs,
-    fs::File,
     net::SocketAddr,
     path::{Path, PathBuf},
     sync::Arc,
