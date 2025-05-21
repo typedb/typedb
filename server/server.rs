@@ -72,17 +72,14 @@ impl Server {
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
         Self::print_hello(self.server_info.clone(), self.config.is_development_mode);
+
         Self::install_default_encryption_provider()?;
 
         let grpc_address = resolve_address(self.config.server.address).await;
         let http_address_opt = match self.config.server.http_address.clone() {
-            Some(http_address) => {
-                let http_address = resolve_address(http_address).await;
-                if grpc_address == http_address {
-                    return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
-                }
-                Some(http_address)
-            }
+            Some(http_address) => Some(
+                Self::validate_and_resolve_http_address(http_address, grpc_address.clone()).await?
+            ),
             None => None,
         };
 
@@ -105,10 +102,9 @@ impl Server {
             None
         };
 
-        Self::spawn_shutdown_handler(self.shutdown_sig_sender);
-
         Self::print_serving_information(grpc_address, http_address_opt);
 
+        Self::spawn_shutdown_handler(self.shutdown_sig_sender);
         if let Some(http_server) = http_server {
             let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
             grpc_result?;
@@ -180,6 +176,14 @@ impl Server {
             None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
             .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
+    }
+
+    async fn validate_and_resolve_http_address(http_address: String, grpc_address: SocketAddr) -> Result<SocketAddr, ServerOpenError> {
+        let http_address = resolve_address(http_address).await;
+        if grpc_address == http_address {
+            return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
+        }
+        Ok(http_address)
     }
 
     fn print_hello(server_info: ServerInfo, is_development_mode_enabled: bool) {
