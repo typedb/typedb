@@ -1,7 +1,6 @@
 use crate::authentication::credential_verifier::CredentialVerifier;
 use crate::authentication::token_manager::TokenManager;
 use crate::authentication::{Accessor, AuthenticationError};
-use crate::service::typedb_service::{get_database_schema, get_database_type_schema};
 use crate::util::resolve_address;
 use crate::{
     error::ServerOpenError,
@@ -27,6 +26,12 @@ use user::errors::UserGetError;
 use user::initialise_default_user;
 use user::permission_manager::PermissionManager;
 use user::user_manager::UserManager;
+
+use database::transaction::TransactionRead;
+use options::TransactionOptions;
+use storage::durability_client::DurabilityClient;
+
+use crate::service::ServiceError;
 
 const ERROR_INVALID_CREDENTIAL: &str = "Invalid credential supplied";
 
@@ -219,16 +224,16 @@ impl ServerState {
         self.database_manager.create_database(name)
     }
 
-    pub fn database_schema(&self, name: String) -> Result<String, crate::service::ServiceError> {
+    pub fn database_schema(&self, name: String) -> Result<String, ServiceError> {
         match self.database_manager.database(&name) {
             Some(db) => get_database_schema(db),
-            None => Err(crate::service::ServiceError::DatabaseDoesNotExist { name })
+            None => Err(ServiceError::DatabaseDoesNotExist { name })
         }
     }
 
-    pub fn database_type_schema(&self, name: String) -> Result<String, crate::service::ServiceError> {
+    pub fn database_type_schema(&self, name: String) -> Result<String, ServiceError> {
         match self.database_manager.database(&name) {
-            None => Err(crate::service::ServiceError::DatabaseDoesNotExist { name: name.clone() }),
+            None => Err(ServiceError::DatabaseDoesNotExist { name: name.clone() }),
             Some(database) => {
                 match get_database_type_schema(database) {
                     Ok(type_schema) => Ok(type_schema),
@@ -246,25 +251,25 @@ impl ServerState {
         &self,
         name: String,
         accessor: Accessor
-    ) -> Result<User, crate::service::ServiceError> {
+    ) -> Result<User, ServiceError> {
         if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name.as_str()) {
-            return Err(crate::service::ServiceError::OperationNotPermitted {});
+            return Err(ServiceError::OperationNotPermitted {});
         }
 
         match self.user_manager.get(name.as_str()) {
             Ok(get) => {
                 match get {
                     Some((user, _)) => Ok(user),
-                    None => Err(crate::service::ServiceError::UserDoesNotExist {}),
+                    None => Err(ServiceError::UserDoesNotExist {}),
                 }
             }
-            Err(err) => Err(crate::service::ServiceError::UserCannotBeRetrieved { typedb_source: err }),
+            Err(err) => Err(ServiceError::UserCannotBeRetrieved { typedb_source: err }),
         }
     }
 
-    pub fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, crate::service::ServiceError> {
+    pub fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServiceError> {
         if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
-            return Err(crate::service::ServiceError::OperationNotPermitted {});
+            return Err(ServiceError::OperationNotPermitted {});
         }
         Ok(self.user_manager.all())
     }
@@ -278,13 +283,13 @@ impl ServerState {
         user: &User,
         credential: &Credential,
         accessor: Accessor
-    ) -> Result<(), crate::service::ServiceError> {
+    ) -> Result<(), ServiceError> {
         if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
-            return Err(crate::service::ServiceError::OperationNotPermitted {});
+            return Err(ServiceError::OperationNotPermitted {});
         }
         self.user_manager.create(user, credential)
             .map(|user| ())
-            .map_err(|err| crate::service::ServiceError::UserCannotBeCreated { typedb_source: err })
+            .map_err(|err| ServiceError::UserCannotBeCreated { typedb_source: err })
     }
 
     pub async fn users_update(
@@ -293,13 +298,13 @@ impl ServerState {
         user_update: Option<User>,
         credential_update: Option<Credential>,
         accessor: Accessor
-    ) -> Result<(), crate::service::ServiceError> {
+    ) -> Result<(), ServiceError> {
         if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
-            return Err(crate::service::ServiceError::OperationNotPermitted {});
+            return Err(ServiceError::OperationNotPermitted {});
         }
         self.user_manager
             .update(name, &user_update, &credential_update)
-            .map_err(|err| crate::service::ServiceError::UserCannotBeUpdated { typedb_source: err })?;
+            .map_err(|err| ServiceError::UserCannotBeUpdated { typedb_source: err })?;
         self.token_manager.invalidate_user(name).await;
         Ok(())
     }
@@ -308,13 +313,13 @@ impl ServerState {
         &self,
         name: &str,
         accessor: Accessor
-    ) -> Result<(), crate::service::ServiceError> {
+    ) -> Result<(), ServiceError> {
         if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
-            return Err(crate::service::ServiceError::OperationNotPermitted {});
+            return Err(ServiceError::OperationNotPermitted {});
         }
 
         self.user_manager.delete(name)
-            .map_err(|err| crate::service::ServiceError::UserCannotBeDeleted { typedb_source: err })?;
+            .map_err(|err| ServiceError::UserCannotBeDeleted { typedb_source: err })?;
         self.token_manager.invalidate_user(name).await;
         Ok(())
     }
@@ -339,4 +344,45 @@ impl ServerState {
     pub fn database_manager(&self) -> &DatabaseManager {
         todo!()
     }
+}
+
+pub(crate) fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, ServiceError> {
+    let transaction = TransactionRead::open(database, TransactionOptions::default())
+        .map_err(|err| ServiceError::FailedToOpenPrerequisiteTransaction {})?;
+    let types_syntax = get_types_syntax(&transaction)?;
+    let functions_syntax = get_functions_syntax(&transaction)?;
+
+    let schema = match types_syntax.is_empty() & functions_syntax.is_empty() {
+        true => String::new(),
+        false => format!("{}\n{} {}", typeql::token::Clause::Define, types_syntax, functions_syntax),
+    };
+    Ok(schema)
+}
+
+pub(crate) fn get_database_type_schema<D: DurabilityClient>(
+    database: Arc<Database<D>>,
+) -> Result<String, ServiceError> {
+    let transaction = TransactionRead::open(database, TransactionOptions::default())
+        .map_err(|err| ServiceError::FailedToOpenPrerequisiteTransaction {})?;
+    let types_syntax = get_types_syntax(&transaction)?;
+
+    let type_schema = match types_syntax.is_empty() {
+        true => String::new(),
+        false => format!("{}\n{}", typeql::token::Clause::Define, types_syntax),
+    };
+    Ok(type_schema)
+}
+
+fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, ServiceError> {
+    transaction
+        .type_manager
+        .get_types_syntax(transaction.snapshot())
+        .map_err(|err| ServiceError::ConceptReadError { typedb_source: err })
+}
+
+fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, ServiceError> {
+    transaction
+        .function_manager
+        .get_functions_syntax(transaction.snapshot())
+        .map_err(|err| ServiceError::FunctionReadError { typedb_source: err })
 }

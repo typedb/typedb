@@ -34,7 +34,6 @@ use crate::{
             ConnectionID,
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        typedb_service::{get_database_schema, get_database_type_schema},
         ServiceError,
     },
 };
