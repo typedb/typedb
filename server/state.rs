@@ -59,7 +59,7 @@ pub struct ServerState {
     credential_verifier: Arc<CredentialVerifier>,
     token_manager: Arc<TokenManager>,
     pub diagnostics_manager: Arc<DiagnosticsManager>,
-    database_diagnostics_updater: IntervalRunner,
+    _database_diagnostics_updater: IntervalRunner,
     pub shutdown_receiver: Receiver<()>,
 }
 
@@ -115,7 +115,7 @@ impl ServerState {
             credential_verifier,
             token_manager,
             diagnostics_manager: diagnostics_manager.clone(),
-            database_diagnostics_updater: IntervalRunner::new(
+            _database_diagnostics_updater: IntervalRunner::new(
                 move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
             ),
