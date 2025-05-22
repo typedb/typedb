@@ -125,18 +125,20 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
     ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        let request = request.into_inner();
-        let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
-            request.credentials
-        else {
-            return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
-        };
+        run_with_diagnostics_async(self.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
+            let request = request.into_inner();
+            let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
+                request.credentials
+            else {
+                return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
+            };
 
-        self.server_state
-            .token_create(password_credentials.username, password_credentials.password)
-            .await
-            .map(|result| Response::new(token_create_res(result)))
-            .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+            self.server_state
+                .token_create(password_credentials.username, password_credentials.password)
+                .await
+                .map(|result| Response::new(token_create_res(result)))
+                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+        }).await
     }
 
     async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
