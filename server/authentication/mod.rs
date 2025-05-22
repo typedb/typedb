@@ -55,8 +55,7 @@ pub(crate) async fn authenticate<T>(
 
     match extract_parts_authorization_token(parts.clone()).await {
         Some(token) => {
-            let accessor =
-                server_state.token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
+            let accessor = server_state.token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
             parts.extensions.insert(Accessor(accessor));
             Ok(http::Request::from_parts(parts, body))
         }

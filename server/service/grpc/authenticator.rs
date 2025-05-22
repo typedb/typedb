@@ -11,35 +11,39 @@ use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
-use crate::state::ServerState;
 use crate::{
     authentication::authenticate,
     service::grpc::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
     },
+    state::ServerState,
 };
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    server_state: Arc<ServerState>
+    server_state: Arc<ServerState>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(
-        server_state: Arc<ServerState>
-    ) -> Self {
+    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
         Self { server_state }
     }
 }
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
-        run_with_diagnostics_async(self.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
-            authenticate(self.server_state.clone(), request)
-                .await
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        }).await
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::Authenticate,
+            || async {
+                authenticate(self.server_state.clone(), request)
+                    .await
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+            },
+        )
+        .await
     }
 }
 

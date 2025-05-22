@@ -11,7 +11,7 @@ use std::path::PathBuf;
 
 use clap::Parser;
 use logger::initialise_logging_global;
-use resource::constants::server::{SENTRY_REPORTING_URI, SERVER_INFO, DEFAULT_CONFIG_PATH};
+use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
 use server::{
     parameters::{cli::CLIArgs, config::Config},
     server::Server,
@@ -50,8 +50,10 @@ fn initialise_abort_on_panic() {
 
 fn may_initialise_error_reporting(config: &Config) {
     if config.diagnostics.reporting.report_errors && !config.development_mode.enabled {
-        let opts =
-            (SENTRY_REPORTING_URI, sentry::ClientOptions { release: Some(SERVER_INFO.version.into()), ..Default::default() });
+        let opts = (
+            SENTRY_REPORTING_URI,
+            sentry::ClientOptions { release: Some(SERVER_INFO.version.into()), ..Default::default() },
+        );
         let _ = sentry::init(opts);
     }
 }

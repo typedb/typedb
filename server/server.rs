@@ -4,23 +4,20 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::service::{grpc, http};
-use crate::state::ServerState;
-use crate::util::resolve_address;
+use std::{net::SocketAddr, sync::Arc};
+
+use axum_server::{tls_rustls::RustlsConfig, Handle};
+use database::database_manager::DatabaseManager;
+use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
+use tokio::sync::watch::{channel, Receiver, Sender};
+
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
+    service::{grpc, http},
+    state::ServerState,
+    util::resolve_address,
 };
-use axum_server::tls_rustls::RustlsConfig;
-use axum_server::Handle;
-use database::database_manager::DatabaseManager;
-use resource::constants::server::GRPC_CONNECTION_KEEPALIVE;
-use resource::server_info::ServerInfo;
-use std::{
-    net::SocketAddr,
-    sync::Arc,
-};
-use tokio::sync::watch::{channel, Receiver, Sender};
 
 #[derive(Debug)]
 pub struct Server {
@@ -28,23 +25,18 @@ pub struct Server {
     config: Config,
     server_state: Arc<ServerState>,
     shutdown_sig_sender: Sender<()>,
-    shutdown_sig_receiver: Receiver<()>
+    shutdown_sig_receiver: Receiver<()>,
 }
 
 impl Server {
     pub async fn new(
         server_info: ServerInfo,
         config: Config,
-        deployment_id: Option<String>
+        deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
         let (shutdown_sig_sender, shutdown_sig_receiver) = channel(());
-        Self::new_with_external_shutdown(
-            server_info,
-            config,
-            deployment_id,
-            shutdown_sig_sender,
-            shutdown_sig_receiver
-        ).await
+        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sig_sender, shutdown_sig_receiver)
+            .await
     }
 
     pub async fn new_with_external_shutdown(
@@ -54,20 +46,15 @@ impl Server {
         shutdown_sig_sender: Sender<()>,
         shutdown_sig_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let server_state = ServerState::new(
-            server_info.clone(),
-            config.clone(),
-            deployment_id,
-            shutdown_sig_receiver.clone()
-        ).await;
-        server_state
-            .map(|srv_state| Self {
-                server_info,
-                config,
-                server_state: Arc::new(srv_state),
-                shutdown_sig_sender,
-                shutdown_sig_receiver
-            })
+        let server_state =
+            ServerState::new(server_info.clone(), config.clone(), deployment_id, shutdown_sig_receiver.clone()).await;
+        server_state.map(|srv_state| Self {
+            server_info,
+            config,
+            server_state: Arc::new(srv_state),
+            shutdown_sig_sender,
+            shutdown_sig_receiver,
+        })
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
@@ -77,7 +64,10 @@ impl Server {
 
         let grpc_address = resolve_address(self.config.server.address).await;
         let http_address_opt = if self.config.server.http_enabled {
-            Some(Self::validate_and_resolve_http_address(self.config.server.http_address.clone(), grpc_address.clone()).await?)
+            Some(
+                Self::validate_and_resolve_http_address(self.config.server.http_address.clone(), grpc_address.clone())
+                    .await?,
+            )
         } else {
             None
         };
@@ -86,7 +76,7 @@ impl Server {
             grpc_address,
             &self.config.server.encryption,
             self.server_state.clone(),
-            self.shutdown_sig_receiver.clone()
+            self.shutdown_sig_receiver.clone(),
         );
         let http_server = if let Some(http_address) = http_address_opt {
             let server = Self::serve_http(
@@ -94,7 +84,7 @@ impl Server {
                 http_address,
                 &self.config.server.encryption,
                 self.server_state.clone(),
-                self.shutdown_sig_receiver
+                self.shutdown_sig_receiver,
             );
             Some(server)
         } else {
@@ -148,8 +138,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
-        let service =
-            http::typedb_service::TypeDBService::new(server_info, address, server_state.clone());
+        let service = http::typedb_service::TypeDBService::new(server_info, address, server_state.clone());
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::TypeDBService::create_protected_router(http_service.clone())
@@ -174,10 +163,13 @@ impl Server {
             }
             None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
-            .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
+        .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
     }
 
-    async fn validate_and_resolve_http_address(http_address: String, grpc_address: SocketAddr) -> Result<SocketAddr, ServerOpenError> {
+    async fn validate_and_resolve_http_address(
+        http_address: String,
+        grpc_address: SocketAddr,
+    ) -> Result<SocketAddr, ServerOpenError> {
         let http_address = resolve_address(http_address).await;
         if grpc_address == http_address {
             return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });

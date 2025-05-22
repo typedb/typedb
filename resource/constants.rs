@@ -23,8 +23,10 @@ pub mod common {
 pub mod server {
     use std::{path::PathBuf, time::Duration};
 
-    use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR};
-    use crate::server_info::ServerInfo;
+    use crate::{
+        constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},
+        server_info::ServerInfo,
+    };
 
     const DISTRIBUTION: &str = "TypeDB CE";
     const VERSION: &str = include_str!("../VERSION");

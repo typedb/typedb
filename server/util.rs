@@ -5,6 +5,7 @@
  */
 
 use std::net::SocketAddr;
+
 use tokio::net::lookup_host;
 
 pub async fn resolve_address(address: String) -> SocketAddr {

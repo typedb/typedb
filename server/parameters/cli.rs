@@ -8,7 +8,8 @@ use std::{path::PathBuf, str::FromStr, time::Duration};
 
 use clap::{ArgAction, Parser};
 use resource::constants::server::{
-    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS, DEFAULT_HTTP_ADDRESS, MONITORING_DEFAULT_PORT, SERVER_INFO,
+    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS, DEFAULT_HTTP_ADDRESS, MONITORING_DEFAULT_PORT,
+    SERVER_INFO,
 };
 
 use crate::parameters::{

@@ -4,41 +4,49 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use crate::authentication::credential_verifier::CredentialVerifier;
-use crate::authentication::token_manager::TokenManager;
-use crate::authentication::{Accessor, AuthenticationError};
-use crate::util::resolve_address;
-use crate::{
-    error::ServerOpenError,
-    parameters::config::{Config, DiagnosticsConfig},
+use std::{
+    fs,
+    net::SocketAddr,
+    path::{Path, PathBuf},
+    sync::Arc,
 };
+
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
-use database::database::DatabaseCreateError;
-use database::database_manager::DatabaseManager;
-use database::{Database, DatabaseDeleteError};
+use database::{
+    database::DatabaseCreateError, database_manager::DatabaseManager, transaction::TransactionRead, Database,
+    DatabaseDeleteError,
+};
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use rand::prelude::SliceRandom;
-use resource::constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH};
-use resource::server_info::ServerInfo;
-use std::fs;
-use std::net::SocketAddr;
-use std::path::{Path, PathBuf};
-use std::sync::Arc;
-use storage::durability_client::WALClient;
-use system::concepts::{Credential, User};
-use system::initialise_system_database;
-use tokio::sync::watch::Receiver;
-use user::errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError};
-use user::initialise_default_user;
-use user::permission_manager::PermissionManager;
-use user::user_manager::UserManager;
-
-use database::transaction::TransactionRead;
 use error::typedb_error;
 use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
-use storage::durability_client::DurabilityClient;
+use rand::prelude::SliceRandom;
+use resource::{
+    constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH},
+    server_info::ServerInfo,
+};
+use storage::durability_client::{DurabilityClient, WALClient};
+use system::{
+    concepts::{Credential, User},
+    initialise_system_database,
+};
+use tokio::sync::watch::Receiver;
+use user::{
+    errors::{UserCreateError, UserDeleteError, UserGetError, UserUpdateError},
+    initialise_default_user,
+    permission_manager::PermissionManager,
+    user_manager::UserManager,
+};
+
+use crate::{
+    authentication::{
+        credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor, AuthenticationError,
+    },
+    error::ServerOpenError,
+    parameters::config::{Config, DiagnosticsConfig},
+    util::resolve_address,
+};
 
 #[derive(Debug)]
 pub struct ServerState {
@@ -93,7 +101,8 @@ impl ServerState {
                 diagnostics_config,
                 storage_directory.clone(),
                 config.development_mode.enabled,
-            ).await
+            )
+            .await,
         );
 
         Ok(Self {
@@ -110,7 +119,7 @@ impl ServerState {
                 move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
                 DATABASE_METRICS_UPDATE_INTERVAL,
             ),
-            shutdown_receiver
+            shutdown_receiver,
         })
     }
 
@@ -215,10 +224,7 @@ impl ServerState {
         self.database_manager.database_names()
     }
 
-    pub fn databases_get(
-        &self,
-        name: String
-    ) -> Option<Arc<Database<WALClient>>> {
+    pub fn databases_get(&self, name: String) -> Option<Arc<Database<WALClient>>> {
         self.database_manager.database(name.as_str())
     }
 
@@ -233,19 +239,17 @@ impl ServerState {
     pub fn database_schema(&self, name: String) -> Result<String, StateError> {
         match self.database_manager.database(&name) {
             Some(db) => Self::get_database_schema(db),
-            None => Err(StateError::DatabaseDoesNotExist { name })
+            None => Err(StateError::DatabaseDoesNotExist { name }),
         }
     }
 
     pub fn database_type_schema(&self, name: String) -> Result<String, StateError> {
         match self.database_manager.database(&name) {
             None => Err(StateError::DatabaseDoesNotExist { name: name.clone() }),
-            Some(database) => {
-                match Self::get_database_type_schema(database) {
-                    Ok(type_schema) => Ok(type_schema),
-                    Err(err) => Err(err)
-                }
-            }
+            Some(database) => match Self::get_database_type_schema(database) {
+                Ok(type_schema) => Ok(type_schema),
+                Err(err) => Err(err),
+            },
         }
     }
 
@@ -294,22 +298,16 @@ impl ServerState {
         self.database_manager.delete_database(name)
     }
 
-    pub fn users_get(
-        &self,
-        name: String,
-        accessor: Accessor
-    ) -> Result<User, StateError> {
+    pub fn users_get(&self, name: String, accessor: Accessor) -> Result<User, StateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name.as_str()) {
             return Err(StateError::OperationNotPermitted {});
         }
 
         match self.user_manager.get(name.as_str()) {
-            Ok(get) => {
-                match get {
-                    Some((user, _)) => Ok(user),
-                    None => Err(StateError::UserDoesNotExist {}),
-                }
-            }
+            Ok(get) => match get {
+                Some((user, _)) => Ok(user),
+                None => Err(StateError::UserDoesNotExist {}),
+            },
             Err(err) => Err(StateError::UserCannotBeRetrieved { typedb_source: err }),
         }
     }
@@ -325,16 +323,12 @@ impl ServerState {
         self.user_manager.contains(name)
     }
 
-    pub fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor
-    ) -> Result<(), StateError> {
+    pub fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), StateError> {
         if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
             return Err(StateError::OperationNotPermitted {});
         }
-        self.user_manager.create(user, credential)
+        self.user_manager
+            .create(user, credential)
             .map(|user| ())
             .map_err(|err| StateError::UserCannotBeCreated { typedb_source: err })
     }
@@ -344,7 +338,7 @@ impl ServerState {
         name: &str,
         user_update: Option<User>,
         credential_update: Option<Credential>,
-        accessor: Accessor
+        accessor: Accessor,
     ) -> Result<(), StateError> {
         if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
             return Err(StateError::OperationNotPermitted {});
@@ -356,17 +350,12 @@ impl ServerState {
         Ok(())
     }
 
-    pub async fn users_delete(
-        &self,
-        name: &str,
-        accessor: Accessor
-    ) -> Result<(), StateError> {
+    pub async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError> {
         if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
             return Err(StateError::OperationNotPermitted {});
         }
 
-        self.user_manager.delete(name)
-            .map_err(|err| StateError::UserCannotBeDeleted { typedb_source: err })?;
+        self.user_manager.delete(name).map_err(|err| StateError::UserCannotBeDeleted { typedb_source: err })?;
         self.token_manager.invalidate_user(name).await;
         Ok(())
     }

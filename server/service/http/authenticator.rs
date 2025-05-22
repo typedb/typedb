@@ -10,11 +10,7 @@ use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
-use crate::state::ServerState;
-use crate::{
-    authentication::authenticate,
-    service::http::error::HttpServiceError,
-};
+use crate::{authentication::authenticate, service::http::error::HttpServiceError, state::ServerState};
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {

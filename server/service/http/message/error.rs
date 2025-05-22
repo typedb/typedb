@@ -8,11 +8,13 @@ use error::TypeDBError;
 use http::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::service::{
-    http::{error::HttpServiceError, message::body::JsonBody},
-    transaction_service::TransactionServiceError,
+use crate::{
+    service::{
+        http::{error::HttpServiceError, message::body::JsonBody},
+        transaction_service::TransactionServiceError,
+    },
+    state::StateError,
 };
-use crate::state::StateError;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -47,8 +49,8 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::DatabaseCreate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::DatabaseDelete { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::DatabaseSchema { .. } => { StatusCode::BAD_REQUEST }
-            HttpServiceError::DatabaseTypeSchema { .. } => { StatusCode::BAD_REQUEST }
+            HttpServiceError::DatabaseSchema { .. } => StatusCode::BAD_REQUEST,
+            HttpServiceError::DatabaseTypeSchema { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserCreate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserUpdate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::UserDelete { .. } => StatusCode::BAD_REQUEST,

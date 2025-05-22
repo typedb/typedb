@@ -153,8 +153,8 @@ pub(crate) async fn execute_schema_query(
         );
         (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
     })
-        .await
-        .expect("Expected schema query execution finishing");
+    .await
+    .expect("Expected schema query execution finishing");
 
     let transaction = TransactionSchema::from_parts(
         snapshot,

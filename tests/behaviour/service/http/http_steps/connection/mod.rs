@@ -28,11 +28,7 @@ mod user;
 
 const GRPC_ADDRESS: &str = "0.0.0.0:1729";
 const HTTP_ADDRESS: &str = "0.0.0.0:8000";
-const SERVER_INFO: ServerInfo = ServerInfo::new(
-    "logo",
-    "TypeDB CE TEST",
-    "0.0.0"
-);
+const SERVER_INFO: ServerInfo = ServerInfo::new("logo", "TypeDB CE TEST", "0.0.0");
 
 pub(crate) async fn start_typedb(
 ) -> (tokio::sync::watch::Sender<()>, std::thread::JoinHandle<Result<(), ServerOpenError>>) {
@@ -50,15 +46,10 @@ pub(crate) async fn start_typedb(
             .unwrap();
 
         let server_future = async {
-            let server = Server::new_with_external_shutdown(
-                SERVER_INFO,
-                config,
-                None,
-                shutdown_sender_clone,
-                shutdown_receiver,
-            )
-            .await
-            .expect("Failed to start TypeDB server");
+            let server =
+                Server::new_with_external_shutdown(SERVER_INFO, config, None, shutdown_sender_clone, shutdown_receiver)
+                    .await
+                    .expect("Failed to start TypeDB server");
 
             server.serve().await
         };

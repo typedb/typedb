@@ -6,7 +6,28 @@
 
 use std::{collections::HashMap, net::SocketAddr, sync::Arc, time::Duration};
 
-use crate::state::ServerState;
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect},
+    routing::{delete, get, post, put},
+    Router,
+};
+use concurrency::TokioIntervalRunner;
+use diagnostics::metrics::ActionKind;
+use http::StatusCode;
+use options::{QueryOptions, TransactionOptions};
+use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
+use system::concepts::{Credential, User};
+use tokio::{
+    sync::{
+        mpsc::{channel, Sender},
+        oneshot, RwLock,
+    },
+    time::timeout,
+};
+use tower_http::cors::CorsLayer;
+use uuid::Uuid;
+
 use crate::{
     authentication::Accessor,
     service::{
@@ -26,33 +47,11 @@ use crate::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
             },
         },
-        transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE
-        ,
+        transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
         QueryType,
     },
+    state::ServerState,
 };
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect},
-    routing::{delete, get, post, put},
-    Router,
-};
-use concurrency::TokioIntervalRunner;
-use diagnostics::metrics::ActionKind;
-use http::StatusCode;
-use options::{QueryOptions, TransactionOptions};
-use resource::constants::common::SECONDS_IN_MINUTE;
-use resource::server_info::ServerInfo;
-use system::concepts::{Credential, User};
-use tokio::{
-    sync::{
-        mpsc::{channel, Sender},
-        oneshot, RwLock,
-    },
-    time::timeout,
-};
-use tower_http::cors::CorsLayer;
-use uuid::Uuid;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
@@ -98,7 +97,7 @@ impl TypeDBService {
             address,
             server_state,
             transaction_services: transaction_request_senders,
-            _transaction_cleanup_job: transaction_cleanup_job
+            _transaction_cleanup_job: transaction_cleanup_job,
         }
     }
 
@@ -237,11 +236,20 @@ impl TypeDBService {
         State(service): State<Arc<TypeDBService>>,
         JsonBody(payload): JsonBody<SigninPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(service.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
-            service.server_state.token_create(payload.username, payload.password).await
-                .map(|token| JsonBody(encode_token(token)))
-                .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
-        }).await
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::SignIn,
+            || async {
+                service
+                    .server_state
+                    .token_create(payload.username, payload.password)
+                    .await
+                    .map(|token| JsonBody(encode_token(token)))
+                    .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
+            },
+        )
+        .await
     }
 
     async fn databases(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
@@ -260,7 +268,8 @@ impl TypeDBService {
             Some(&database_path.database_name),
             ActionKind::DatabasesContains,
             || {
-                let database_name = service.server_state
+                let database_name = service
+                    .server_state
                     .databases_get(database_path.database_name.clone())
                     .ok_or(HttpServiceError::NotFound {})?
                     .name()
@@ -316,7 +325,9 @@ impl TypeDBService {
             Some(&database_path.database_name),
             ActionKind::DatabaseSchema,
             || {
-                service.server_state.database_schema(database_path.database_name.clone())
+                service
+                    .server_state
+                    .database_schema(database_path.database_name.clone())
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::DatabaseSchema { typedb_source })
             },
@@ -333,7 +344,9 @@ impl TypeDBService {
             Some(&database_path.database_name),
             ActionKind::DatabaseTypeSchema,
             || {
-                service.server_state.database_type_schema(database_path.database_name.clone())
+                service
+                    .server_state
+                    .database_type_schema(database_path.database_name.clone())
                     .map(|schema| PlainTextBody(schema))
                     .map_err(|typedb_source| HttpServiceError::DatabaseTypeSchema { typedb_source })
             },
@@ -346,7 +359,9 @@ impl TypeDBService {
         accessor: Accessor,
     ) -> impl IntoResponse {
         run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
-            service.server_state.users_all(accessor)
+            service
+                .server_state
+                .users_all(accessor)
                 .map(|users| JsonBody(encode_users(users)))
                 .map_err(|typedb_source| HttpServiceError::DatabaseTypeSchema { typedb_source })
         })
@@ -359,7 +374,8 @@ impl TypeDBService {
         user_path: UserPath,
     ) -> impl IntoResponse {
         run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
-            service.server_state
+            service
+                .server_state
                 .users_get(user_path.username.clone(), accessor)
                 .map_err(|typedb_source| HttpServiceError::UserGet { typedb_source })
                 .map(|user| JsonBody(encode_user(&user)))
@@ -376,7 +392,9 @@ impl TypeDBService {
         run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersCreate, || {
             let user = User { name: user_path.username };
             let credential = Credential::new_password(payload.password.as_str());
-            service.server_state.users_create(&user, &credential, accessor)
+            service
+                .server_state
+                .users_create(&user, &credential, accessor)
                 .map_err(|typedb_source| HttpServiceError::UserCreate { typedb_source })
         })
     }
@@ -396,7 +414,10 @@ impl TypeDBService {
                 let user_update = None; // updating username is not supported now
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
-                service.server_state.users_update(username, user_update, credential_update, accessor).await
+                service
+                    .server_state
+                    .users_update(username, user_update, credential_update, accessor)
+                    .await
                     .map_err(|typedb_source| HttpServiceError::UserUpdate { typedb_source })
                 // if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
                 //     return Err(HttpServiceError::operation_not_permitted());
@@ -409,7 +430,7 @@ impl TypeDBService {
                 // Ok(())
             },
         )
-            .await
+        .await
     }
 
     async fn users_delete(
@@ -424,10 +445,14 @@ impl TypeDBService {
             ActionKind::UsersDelete,
             || async {
                 let username = user_path.username.as_str();
-                service.server_state.users_delete(username, accessor).await
+                service
+                    .server_state
+                    .users_delete(username, accessor)
+                    .await
                     .map_err(|typedb_source| HttpServiceError::UserDelete { typedb_source })
             },
-        ).await
+        )
+        .await
     }
 
     async fn transaction_open(
@@ -447,7 +472,7 @@ impl TypeDBService {
                 Ok(JsonBody(encode_transaction(uuid)))
             },
         )
-            .await
+        .await
     }
 
     async fn transactions_commit(
@@ -471,7 +496,7 @@ impl TypeDBService {
                 Self::transaction_request(&transaction, TransactionRequest::Commit, true).await
             },
         )
-            .await
+        .await
     }
 
     async fn transactions_close(
@@ -497,7 +522,7 @@ impl TypeDBService {
                 Self::transaction_request(&transaction, TransactionRequest::Close, false).await
             },
         )
-            .await
+        .await
     }
 
     async fn transactions_rollback(
@@ -521,7 +546,7 @@ impl TypeDBService {
                 Self::transaction_request(&transaction, TransactionRequest::Rollback, true).await
             },
         )
-            .await
+        .await
     }
 
     async fn transactions_query(
@@ -548,10 +573,10 @@ impl TypeDBService {
                     Self::build_query_request(payload.query_options, payload.query),
                     true,
                 )
-                    .await
+                .await
             },
         )
-            .await
+        .await
     }
 
     async fn query(
@@ -573,7 +598,7 @@ impl TypeDBService {
                     Self::build_query_request(payload.query_options, payload.query),
                     true,
                 )
-                    .await?;
+                .await?;
                 let query_response = Self::try_get_query_response(transaction_response)?;
 
                 let commit = match query_response.query_type() {
@@ -587,7 +612,7 @@ impl TypeDBService {
                     true => Self::transaction_request(&transaction_info, TransactionRequest::Commit, true),
                     false => Self::transaction_request(&transaction_info, TransactionRequest::Close, true),
                 }
-                    .await?;
+                .await?;
                 if let TransactionServiceResponse::Err(typedb_source) = close_response {
                     return match commit {
                         true => Err(HttpServiceError::QueryCommit { typedb_source }),
@@ -598,6 +623,6 @@ impl TypeDBService {
                 Ok(TransactionServiceResponse::Query(query_response))
             },
         )
-            .await
+        .await
     }
 }
