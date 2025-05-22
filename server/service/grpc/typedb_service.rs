@@ -93,10 +93,9 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                         }
                         .into_status());
                     };
-                    let request = authentication;
                     let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(
                         password_credentials,
-                    )) = request.credentials
+                    )) = authentication.credentials
                     else {
                         return Err(AuthenticationError::InvalidCredential {})
                             .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
