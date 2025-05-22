@@ -419,15 +419,6 @@ impl TypeDBService {
                     .users_update(username, user_update, credential_update, accessor)
                     .await
                     .map_err(|typedb_source| HttpServiceError::UserUpdate { typedb_source })
-                // if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
-                //     return Err(HttpServiceError::operation_not_permitted());
-                // }
-                // service
-                //     .user_manager
-                //     .update(username, &user_update, &credential_update)
-                //     .map_err(|typedb_source| HttpServiceError::UserUpdate { typedb_source })?;
-                // service.token_manager.invalidate_user(username).await;
-                // Ok(())
             },
         )
         .await
