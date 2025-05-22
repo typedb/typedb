@@ -220,7 +220,6 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
-    // todo: used for test. expose appropriately
     pub fn database_manager(&self) -> &DatabaseManager {
         self.server_state.database_manager()
     }
