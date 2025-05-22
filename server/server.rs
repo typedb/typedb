@@ -47,7 +47,7 @@ impl Server {
         shutdown_sig_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
         let server_state =
-            ServerState::new(server_info.clone(), config.clone(), deployment_id, shutdown_sig_receiver.clone()).await;
+            ServerState::new(server_info, config.clone(), deployment_id, shutdown_sig_receiver.clone()).await;
         server_state.map(|srv_state| Self {
             server_info,
             config,
@@ -58,7 +58,7 @@ impl Server {
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
-        Self::print_hello(self.server_info.clone(), self.config.development_mode.enabled);
+        Self::print_hello(self.server_info, self.config.development_mode.enabled);
 
         Self::install_default_encryption_provider()?;
 
