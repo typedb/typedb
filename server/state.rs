@@ -369,10 +369,6 @@ impl ServerState {
         Ok(self.token_manager.new_token(username).await)
     }
 
-    pub async fn token_invalidate(&self, username: &str) {
-        self.token_manager.invalidate_user(username).await
-    }
-
     pub async fn token_get_owner(&self, token: &str) -> Option<String> {
         self.token_manager.get_valid_token_owner(token).await
     }
