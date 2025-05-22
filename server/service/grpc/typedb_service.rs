@@ -97,8 +97,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                         password_credentials,
                     )) = authentication.credentials
                     else {
-                        return Err(AuthenticationError::InvalidCredential {})
-                            .map_err(|typedb_source| typedb_source.into_error_message().into_status())?;
+                        return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status())
                     };
 
                     let token = self
@@ -134,8 +133,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
             request.credentials
         else {
-            return Err(AuthenticationError::InvalidCredential {})
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status());
+            return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
         };
 
         self.server_state
