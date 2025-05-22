@@ -254,10 +254,10 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::get::Res>, Status> {
-        let accessor = Accessor::from_extensions(&request.extensions());
-        let name = request.into_inner().name;
-        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::UsersGet, || {
-            let accessor = accessor.map_err(|err| err.into_error_message().into_status())?;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersGet, || {
+            let accessor = Accessor::from_extensions(&request.extensions())
+                .map_err(|err| err.into_error_message().into_status())?;
+            let name = request.into_inner().name;
             self.server_state
                 .users_get(name, accessor)
                 .map(|user| Ok(Response::new(users_get_res(user))))
@@ -269,9 +269,9 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::all::Res>, Status> {
-        let accessor = Accessor::from_extensions(&request.extensions());
         run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
-            let accessor = accessor.map_err(|err| err.into_error_message().into_status())?;
+            let accessor = Accessor::from_extensions(&request.extensions())
+                .map_err(|err| err.into_error_message().into_status())?;
             self.server_state
                 .users_all(accessor)
                 .map(|users| Ok(Response::new(users_all_res(users))))
@@ -283,8 +283,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
-        let name = request.into_inner().name;
-        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::UsersContains, || {
+        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
+            let name = request.into_inner().name;
             self.server_state
                 .users_contains(name.as_str())
                 .map(|contains| Response::new(users_contains_res(contains)))
