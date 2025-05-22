@@ -158,8 +158,8 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
-        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::DatabasesGet, || {
-            let name = request.into_inner().name;
+        let name = request.into_inner().name;
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabasesGet, || {
             match self.server_state.databases_get(name.clone()) {
                 Some(db) => Ok(Response::new(database_get_res(&self.server_state.address, db.name().to_string()))),
                 None => Err(StateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
@@ -282,7 +282,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::user_manager::contains::Req>,
     ) -> Result<Response<typedb_protocol::user_manager::contains::Res>, Status> {
         let name = request.into_inner().name;
-        run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
+        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::UsersContains, || {
             self.server_state
                 .users_contains(name.as_str())
                 .map(|contains| Response::new(users_contains_res(contains)))
