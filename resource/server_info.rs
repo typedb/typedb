@@ -10,9 +10,3 @@ pub struct ServerInfo {
     pub distribution: &'static str,
     pub version: &'static str,
 }
-
-impl ServerInfo {
-    pub const fn new(logo: &'static str, distribution: &'static str, version: &'static str) -> Self {
-        ServerInfo { logo, distribution, version }
-    }
-}

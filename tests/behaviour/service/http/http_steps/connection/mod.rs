@@ -28,7 +28,11 @@ mod user;
 
 const GRPC_ADDRESS: &str = "0.0.0.0:1729";
 const HTTP_ADDRESS: &str = "0.0.0.0:8000";
-const SERVER_INFO: ServerInfo = ServerInfo::new("logo", "TypeDB CE TEST", "0.0.0");
+const SERVER_INFO: ServerInfo = ServerInfo {
+    logo: "logo",
+    distribution: "TypeDB CE TEST",
+    version: "0.0.0"
+};
 
 pub(crate) async fn start_typedb(
 ) -> (tokio::sync::watch::Sender<()>, std::thread::JoinHandle<Result<(), ServerOpenError>>) {
