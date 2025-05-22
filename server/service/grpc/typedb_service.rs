@@ -130,8 +130,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
     ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        let message = request.into_inner();
-        let request = message;
+        let request = request.into_inner();
         let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
             request.credentials
         else {
