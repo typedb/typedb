@@ -56,10 +56,6 @@ impl TypeDBService {
     pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
         Self { server_state }
     }
-
-    fn generate_connection_id(&self) -> ConnectionID {
-        Uuid::new_v4().into_bytes()
-    }
 }
 
 #[tonic::async_trait]
