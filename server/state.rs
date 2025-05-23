@@ -45,7 +45,6 @@ use crate::{
     },
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
-    util::resolve_address,
 };
 
 #[derive(Debug)]
@@ -53,7 +52,6 @@ pub struct ServerState {
     config: Config,
     id: String,
     deployment_id: String,
-    pub address: SocketAddr,
     pub database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
@@ -70,7 +68,6 @@ impl ServerState {
         deployment_id: Option<String>,
         shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let address = resolve_address(config.server.address.clone()).await;
         let storage_directory = &config.storage.data_directory;
         let diagnostics_config = &config.diagnostics;
 
@@ -109,7 +106,6 @@ impl ServerState {
             config,
             id: server_id,
             deployment_id,
-            address,
             database_manager: database_manager.clone(),
             user_manager,
             credential_verifier,
@@ -214,10 +210,6 @@ impl ServerState {
             .map(|database| database.get_metrics())
             .collect();
         diagnostics_manager.submit_database_metrics(metrics);
-    }
-
-    pub fn servers_all(&self) -> &SocketAddr {
-        &self.address
     }
 
     pub fn databases_all(&self) -> Vec<String> {

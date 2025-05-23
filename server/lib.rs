@@ -14,4 +14,3 @@ pub mod parameters;
 pub mod server;
 pub mod service;
 pub(crate) mod state;
-mod util;

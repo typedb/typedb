@@ -7,6 +7,7 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
+use tokio::net::lookup_host;
 use database::database_manager::DatabaseManager;
 use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
 use tokio::sync::watch::{channel, Receiver, Sender};
@@ -16,7 +17,6 @@ use crate::{
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
     state::ServerState,
-    util::resolve_address,
 };
 
 #[derive(Debug)]
@@ -62,7 +62,7 @@ impl Server {
 
         Self::install_default_encryption_provider()?;
 
-        let grpc_address = resolve_address(self.config.server.address).await;
+        let grpc_address = Self::resolve_address(self.config.server.address).await;
         let http_address_opt = if self.config.server.http_enabled {
             Some(
                 Self::validate_and_resolve_http_address(self.config.server.http_address.clone(), grpc_address.clone())
@@ -111,7 +111,7 @@ impl Server {
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
-        let service = grpc::typedb_service::TypeDBService::new(server_state.clone());
+        let service = grpc::typedb_service::TypeDBService::new(address.clone(), server_state.clone());
         let mut grpc_server =
             tonic::transport::Server::builder().http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE));
         if let Some(tls_config) = grpc::encryption::prepare_tls_config(encryption_config)? {
@@ -170,11 +170,19 @@ impl Server {
         http_address: String,
         grpc_address: SocketAddr,
     ) -> Result<SocketAddr, ServerOpenError> {
-        let http_address = resolve_address(http_address).await;
+        let http_address = Self::resolve_address(http_address).await;
         if grpc_address == http_address {
             return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
         }
         Ok(http_address)
+    }
+
+    pub async fn resolve_address(address: String) -> SocketAddr {
+        lookup_host(address.clone())
+            .await
+            .unwrap()
+            .next()
+            .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
     }
 
     fn print_hello(server_info: ServerInfo, is_development_mode_enabled: bool) {

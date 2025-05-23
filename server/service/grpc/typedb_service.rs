@@ -5,7 +5,7 @@
  */
 
 use std::{pin::Pin, sync::Arc, time::Instant};
-
+use std::net::SocketAddr;
 use diagnostics::metrics::ActionKind;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
@@ -49,12 +49,13 @@ use crate::{
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
+    address: SocketAddr,
     server_state: Arc<ServerState>,
 }
 
 impl TypeDBService {
-    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
-        Self { server_state }
+    pub(crate) fn new(address: SocketAddr, server_state: Arc<ServerState>) -> Self {
+        Self { address, server_state }
     }
 }
 
@@ -111,7 +112,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                     Ok(Response::new(connection_open_res(
                         generate_connection_id(),
                         receive_time,
-                        database_all_res(&self.server_state.address, self.server_state.databases_all()),
+                        database_all_res(&self.address, self.server_state.databases_all()),
                         token_create_res(token),
                     )))
                 }
@@ -143,7 +144,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
 
     async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
         run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::ServersAll, || {
-            Ok(Response::new(servers_all_res(self.server_state.servers_all())))
+            Ok(Response::new(servers_all_res(&self.address)))
         })
     }
 
@@ -152,7 +153,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         _request: Request<typedb_protocol::database_manager::all::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::all::Res>, Status> {
         run_with_diagnostics(&self.server_state.diagnostics_manager, None::<&str>, ActionKind::DatabasesAll, || {
-            Ok(Response::new(database_all_res(&self.server_state.address, self.server_state.databases_all())))
+            Ok(Response::new(database_all_res(&self.address, self.server_state.databases_all())))
         })
     }
 
@@ -163,7 +164,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         let name = request.into_inner().name;
         run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabasesGet, || {
             match self.server_state.databases_get(name.clone()) {
-                Some(db) => Ok(Response::new(database_get_res(&self.server_state.address, db.name().to_string()))),
+                Some(db) => Ok(Response::new(database_get_res(&self.address, db.name().to_string()))),
                 None => Err(StateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
             }
         })
@@ -194,7 +195,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             || {
                 self.server_state
                     .databases_create(name.clone())
-                    .map(|_| Response::new(database_create_res(name, &self.server_state.address)))
+                    .map(|_| Response::new(database_create_res(name, &self.address)))
                     .map_err(|err| err.into_error_message().into_status())
             },
         )
