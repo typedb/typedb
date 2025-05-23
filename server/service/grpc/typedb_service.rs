@@ -325,7 +325,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager.clone(),
             None::<&str>,
-            ActionKind::UsersCreate,
+            ActionKind::UsersUpdate,
             || async {
                 let accessor = Accessor::from_extensions(&request.extensions())
                     .map_err(|err| err.into_error_message().into_status())?;

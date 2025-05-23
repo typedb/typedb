@@ -266,7 +266,7 @@ impl TypeDBService {
         run_with_diagnostics(
             &service.server_state.diagnostics_manager,
             Some(&database_path.database_name),
-            ActionKind::DatabasesContains,
+            ActionKind::DatabasesGet,
             || {
                 let database_name = service
                     .server_state
@@ -373,7 +373,7 @@ impl TypeDBService {
         accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
-        run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
+        run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersGet, || {
             service
                 .server_state
                 .users_get(user_path.username.clone(), accessor)
