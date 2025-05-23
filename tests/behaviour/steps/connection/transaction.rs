@@ -16,7 +16,7 @@ use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
-use server::server::Server;
+use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 

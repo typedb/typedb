@@ -8,7 +8,7 @@ use database::{database::DatabaseCreateError, DatabaseDeleteError};
 use error::{typedb_error, TypeDBError};
 
 use crate::{
-    authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::StateError,
+    authentication::AuthenticationError, service::transaction_service::TransactionServiceError, state::ServerStateError,
 };
 
 typedb_error!(
@@ -20,7 +20,7 @@ typedb_error!(
         UnknownVersion(5, "Unknown API version '{version}'.", version: String),
         MissingPathParameter(6, "Requested resource not found: missing path parameter {parameter}.", parameter: String),
         InvalidPathParameter(7, "Requested resource not found: invalid path parameter {parameter}.", parameter: String),
-        State(8, "State error.", typedb_source: StateError),
+        State(8, "State error.", typedb_source: ServerStateError),
         Authentication(9, "Authentication error.", typedb_source: AuthenticationError),
         DatabaseCreate(10, "Database create error.", typedb_source: DatabaseCreateError),
         DatabaseDelete(11, "Database delete error.", typedb_source: DatabaseDeleteError),
@@ -40,7 +40,7 @@ impl HttpServiceError {
     }
 
     pub(crate) fn operation_not_permitted() -> Self {
-        Self::State { typedb_source: StateError::OperationNotPermitted {} }
+        Self::State { typedb_source: ServerStateError::OperationNotPermitted {} }
     }
 
     pub(crate) fn no_open_transaction() -> Self {

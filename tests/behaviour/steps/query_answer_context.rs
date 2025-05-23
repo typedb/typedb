@@ -205,7 +205,7 @@ impl QueryAnswer {
                 Cow::Borrowed(s) => s.to_string(),
                 Cow::Owned(s) => s.clone(),
             })),
-            Value::Decimal(_) | Value::Date(_) | Value::DateTime(_) | Value::DateTimeTZ(_) | Value::Duration(_) => {
+            Value::Decimal(_) | Value::Date(_) | Value::Datetime(_) | Value::DatetimeTz(_) | Value::Duration(_) => {
                 JSON::String(Cow::Owned(value.to_string()))
             }
             Value::Struct(_) => todo!("Structs are not implemented in fetch tests"),

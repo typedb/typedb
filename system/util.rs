@@ -48,7 +48,7 @@ pub mod transaction_util {
             let mut snapshot: SchemaSnapshot<WALClient> = Arc::into_inner(snapshot).unwrap();
             let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
-                snapshot,
+                Arc::new(snapshot),
                 type_manager,
                 thing_manager,
                 function_manager,

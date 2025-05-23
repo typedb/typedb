@@ -24,7 +24,7 @@ use futures::{
     stream::{self, StreamExt},
 };
 use itertools::Itertools;
-use server::server::Server;
+use server::Server;
 use storage::durability_client::WALClient;
 use thing_util::ObjectWithKey;
 use transaction_context::ActiveTransaction;

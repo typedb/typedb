@@ -200,10 +200,10 @@ impl StreamingCondition {
 
 impl TransactionService {
     pub(crate) fn new(
-        request_stream: Streaming<typedb_protocol::transaction::Client>,
-        response_sender: Sender<Result<ProtocolServer, Status>>,
         database_manager: Arc<DatabaseManager>,
         diagnostics_manager: Arc<DiagnosticsManager>,
+        request_stream: Streaming<typedb_protocol::transaction::Client>,
+        response_sender: Sender<Result<ProtocolServer, Status>>,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);

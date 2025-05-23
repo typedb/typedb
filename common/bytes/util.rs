@@ -9,6 +9,8 @@ use std::{
     fmt::{self, Write},
 };
 
+use base64::Engine;
+
 pub const KB: u64 = 1024;
 pub const MB: u64 = KB * KB;
 pub const GB: u64 = MB * KB;
@@ -82,6 +84,10 @@ impl<'a> HexBytesFormatter<'a> {
         result.push_str(PREFIX);
         self.0.iter().for_each(|byte| write!(result, "{byte:02x}").expect("Expected IID formatting"));
         result
+    }
+
+    pub fn to_base64(&self) -> String {
+        base64::engine::general_purpose::STANDARD.encode(&self.0)
     }
 }
 

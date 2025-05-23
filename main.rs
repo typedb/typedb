@@ -17,7 +17,7 @@ use server::{
         cli::CLIArgs,
         config::{Config, ConfigBuilder},
     },
-    server::ServerBuilder,
+    ServerBuilder,
 };
 use tokio::runtime::Runtime;
 
