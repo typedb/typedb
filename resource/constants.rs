@@ -21,7 +21,7 @@ pub mod common {
 }
 
 pub mod server {
-    use std::{path::PathBuf, time::Duration};
+    use std::time::Duration;
 
     use crate::{
         constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},

@@ -13,7 +13,6 @@ use crate::{
     generic_step, in_background,
     message::{
         databases, databases_create, databases_delete, databases_get, databases_schema, databases_type_schema, query,
-        transactions_query,
     },
     params::TokenMode,
     util::{iter_table, random_uuid},

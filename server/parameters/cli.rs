@@ -4,18 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{path::PathBuf, str::FromStr, time::Duration};
+use std::{path::PathBuf, time::Duration};
 
-use clap::{ArgAction, Parser};
-use resource::constants::server::{
-    DEFAULT_ADDRESS, DEFAULT_AUTHENTICATION_TOKEN_TTL_SECONDS, DEFAULT_HTTP_ADDRESS, MONITORING_DEFAULT_PORT,
-    SERVER_INFO,
-};
+use clap::Parser;
+use resource::constants::server::SERVER_INFO;
 
-use crate::parameters::{
-    config::{AuthenticationConfig, Config, DiagnosticsConfig, EncryptionConfig},
-    ConfigError,
-};
+use crate::parameters::{config::Config, ConfigError};
 
 /// TypeDB CE usage
 #[derive(Parser, Debug)]

@@ -4,8 +4,8 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{pin::Pin, sync::Arc, time::Instant};
-use std::net::SocketAddr;
+use std::{net::SocketAddr, pin::Pin, sync::Arc, time::Instant};
+
 use diagnostics::metrics::ActionKind;
 use tokio::sync::mpsc::channel;
 use tokio_stream::wrappers::ReceiverStream;
@@ -94,7 +94,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                         password_credentials,
                     )) = authentication.credentials
                     else {
-                        return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status())
+                        return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
                     };
 
                     let token = self
@@ -126,20 +126,27 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::authentication::token::create::Req>,
     ) -> Result<Response<typedb_protocol::authentication::token::create::Res>, Status> {
-        run_with_diagnostics_async(self.server_state.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
-            let request = request.into_inner();
-            let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(password_credentials)) =
-                request.credentials
-            else {
-                return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
-            };
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::SignIn,
+            || async {
+                let request = request.into_inner();
+                let Some(typedb_protocol::authentication::token::create::req::Credentials::Password(
+                    password_credentials,
+                )) = request.credentials
+                else {
+                    return Err(AuthenticationError::InvalidCredential {}.into_error_message().into_status());
+                };
 
-            self.server_state
-                .token_create(password_credentials.username, password_credentials.password)
-                .await
-                .map(|result| Response::new(token_create_res(result)))
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        }).await
+                self.server_state
+                    .token_create(password_credentials.username, password_credentials.password)
+                    .await
+                    .map(|result| Response::new(token_create_res(result)))
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+            },
+        )
+        .await
     }
 
     async fn servers_all(&self, _request: Request<Req>) -> Result<Response<Res>, Status> {
@@ -162,12 +169,15 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         request: Request<typedb_protocol::database_manager::get::Req>,
     ) -> Result<Response<typedb_protocol::database_manager::get::Res>, Status> {
         let name = request.into_inner().name;
-        run_with_diagnostics(&self.server_state.diagnostics_manager, Some(name.clone()), ActionKind::DatabasesGet, || {
-            match self.server_state.databases_get(name.clone()) {
+        run_with_diagnostics(
+            &self.server_state.diagnostics_manager,
+            Some(name.clone()),
+            ActionKind::DatabasesGet,
+            || match self.server_state.databases_get(name.clone()) {
                 Some(db) => Ok(Response::new(database_get_res(&self.address, db.name().to_string()))),
                 None => Err(StateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
-            }
-        })
+            },
+        )
     }
 
     async fn databases_contains(

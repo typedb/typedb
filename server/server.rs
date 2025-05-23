@@ -7,10 +7,12 @@
 use std::{net::SocketAddr, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
-use tokio::net::lookup_host;
 use database::database_manager::DatabaseManager;
 use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
-use tokio::sync::watch::{channel, Receiver, Sender};
+use tokio::{
+    net::lookup_host,
+    sync::watch::{channel, Receiver, Sender},
+};
 
 use crate::{
     error::ServerOpenError,
@@ -35,8 +37,7 @@ impl Server {
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
         let (shutdown_sender, shutdown_receiver) = channel(());
-        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sender, shutdown_receiver)
-            .await
+        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sender, shutdown_receiver).await
     }
 
     pub async fn new_with_external_shutdown(

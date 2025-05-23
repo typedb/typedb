@@ -8,7 +8,6 @@ use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
-    str::FromStr,
     time::Duration,
 };
 
