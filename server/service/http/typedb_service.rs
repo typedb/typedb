@@ -329,7 +329,7 @@ impl TypeDBService {
                     .server_state
                     .database_schema(database_path.database_name.clone())
                     .map(|schema| PlainTextBody(schema))
-                    .map_err(|typedb_source| HttpServiceError::DatabaseSchema { typedb_source })
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
     }
@@ -348,7 +348,7 @@ impl TypeDBService {
                     .server_state
                     .database_type_schema(database_path.database_name.clone())
                     .map(|schema| PlainTextBody(schema))
-                    .map_err(|typedb_source| HttpServiceError::DatabaseTypeSchema { typedb_source })
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
     }
@@ -363,7 +363,7 @@ impl TypeDBService {
                 .server_state
                 .users_all(accessor)
                 .map(|users| JsonBody(encode_users(users)))
-                .map_err(|typedb_source| HttpServiceError::DatabaseTypeSchema { typedb_source })
+                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
         })
     }
 
@@ -377,7 +377,7 @@ impl TypeDBService {
             service
                 .server_state
                 .users_get(user_path.username.clone(), accessor)
-                .map_err(|typedb_source| HttpServiceError::UserGet { typedb_source })
+                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
                 .map(|user| JsonBody(encode_user(&user)))
         })
     }
@@ -395,7 +395,7 @@ impl TypeDBService {
             service
                 .server_state
                 .users_create(&user, &credential, accessor)
-                .map_err(|typedb_source| HttpServiceError::UserCreate { typedb_source })
+                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
         })
     }
 
@@ -418,7 +418,7 @@ impl TypeDBService {
                     .server_state
                     .users_update(username, user_update, credential_update, accessor)
                     .await
-                    .map_err(|typedb_source| HttpServiceError::UserUpdate { typedb_source })
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
         .await
@@ -440,7 +440,7 @@ impl TypeDBService {
                     .server_state
                     .users_delete(username, accessor)
                     .await
-                    .map_err(|typedb_source| HttpServiceError::UserDelete { typedb_source })
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
         .await

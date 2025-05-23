@@ -111,12 +111,3 @@ impl IntoGrpcStatus for typedb_protocol::Error {
         Status::with_error_details(Code::InvalidArgument, "Request generated error", details)
     }
 }
-
-typedb_error! {
-    pub ServiceError(component = "Server", prefix = "SRV") {
-        Unimplemented(1, "Not implemented: {description}", description: String),
-        OperationNotPermitted(2, "The user is not permitted to execute the operation"),
-        DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
-        UserDoesNotExist(4, "User does not exist"),
-    }
-}

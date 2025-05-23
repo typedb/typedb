@@ -33,7 +33,7 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::UnknownVersion { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::MissingPathParameter { .. } => StatusCode::NOT_FOUND,
             HttpServiceError::InvalidPathParameter { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::Service { typedb_source } => match typedb_source {
+            HttpServiceError::State { typedb_source } => match typedb_source {
                 StateError::Unimplemented { .. } => StatusCode::NOT_IMPLEMENTED,
                 StateError::OperationNotPermitted { .. } => StatusCode::FORBIDDEN,
                 StateError::DatabaseDoesNotExist { .. } => StatusCode::NOT_FOUND,
@@ -49,12 +49,6 @@ impl IntoResponse for HttpServiceError {
             HttpServiceError::Authentication { .. } => StatusCode::UNAUTHORIZED,
             HttpServiceError::DatabaseCreate { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::DatabaseDelete { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::DatabaseSchema { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::DatabaseTypeSchema { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::UserCreate { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::UserUpdate { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::UserDelete { .. } => StatusCode::BAD_REQUEST,
-            HttpServiceError::UserGet { .. } => StatusCode::BAD_REQUEST,
             HttpServiceError::Transaction { typedb_source } => match typedb_source {
                 TransactionServiceError::DatabaseNotFound { .. } => StatusCode::NOT_FOUND,
                 TransactionServiceError::CannotCommitReadTransaction { .. } => StatusCode::BAD_REQUEST,
