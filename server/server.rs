@@ -24,8 +24,8 @@ pub struct Server {
     server_info: ServerInfo,
     config: Config,
     server_state: Arc<ServerState>,
-    shutdown_sig_sender: Sender<()>,
-    shutdown_sig_receiver: Receiver<()>,
+    shutdown_sender: Sender<()>,
+    shutdown_receiver: Receiver<()>,
 }
 
 impl Server {
@@ -34,8 +34,8 @@ impl Server {
         config: Config,
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
-        let (shutdown_sig_sender, shutdown_sig_receiver) = channel(());
-        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sig_sender, shutdown_sig_receiver)
+        let (shutdown_sender, shutdown_receiver) = channel(());
+        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sender, shutdown_receiver)
             .await
     }
 
@@ -43,17 +43,17 @@ impl Server {
         server_info: ServerInfo,
         config: Config,
         deployment_id: Option<String>,
-        shutdown_sig_sender: Sender<()>,
-        shutdown_sig_receiver: Receiver<()>,
+        shutdown_sender: Sender<()>,
+        shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
         let server_state =
-            ServerState::new(server_info, config.clone(), deployment_id, shutdown_sig_receiver.clone()).await;
+            ServerState::new(server_info, config.clone(), deployment_id, shutdown_receiver.clone()).await;
         server_state.map(|srv_state| Self {
             server_info,
             config,
             server_state: Arc::new(srv_state),
-            shutdown_sig_sender,
-            shutdown_sig_receiver,
+            shutdown_sender,
+            shutdown_receiver,
         })
     }
 
@@ -76,7 +76,7 @@ impl Server {
             grpc_address,
             &self.config.server.encryption,
             self.server_state.clone(),
-            self.shutdown_sig_receiver.clone(),
+            self.shutdown_receiver.clone(),
         );
         let http_server = if let Some(http_address) = http_address_opt {
             let server = Self::serve_http(
@@ -84,7 +84,7 @@ impl Server {
                 http_address,
                 &self.config.server.encryption,
                 self.server_state.clone(),
-                self.shutdown_sig_receiver,
+                self.shutdown_receiver,
             );
             Some(server)
         } else {
@@ -93,7 +93,7 @@ impl Server {
 
         Self::print_serving_information(grpc_address, http_address_opt);
 
-        Self::spawn_shutdown_handler(self.shutdown_sig_sender);
+        Self::spawn_shutdown_handler(self.shutdown_sender);
         if let Some(http_server) = http_server {
             let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
             grpc_result?;
@@ -202,11 +202,11 @@ impl Server {
         println!(".\nReady!");
     }
 
-    fn spawn_shutdown_handler(shutdown_signal_sender: Sender<()>) {
+    fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
         tokio::spawn(async move {
             Self::wait_for_ctrl_c_signal().await;
             println!("\nReceived CTRL-C. Initiating shutdown...");
-            shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
+            shutdown_sender.send(()).expect("Expected a successful shutdown signal");
 
             tokio::spawn(Self::forced_shutdown_handler());
         });
