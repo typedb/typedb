@@ -105,8 +105,8 @@ fn encode_struct_into<'a>(struct_value: &StructValue<'a>, buf: &mut Vec<u8>) -> 
             | Value::Double(_)
             | Value::Decimal(_)
             | Value::Date(_)
-            | Value::DateTime(_)
-            | Value::DateTimeTZ(_)
+            | Value::Datetime(_)
+            | Value::DatetimeTz(_)
             | Value::Duration(_) => buf.extend_from_slice(&value.encode_bytes::<AD_HOC_BYTES_INLINE>()),
         }
     }
@@ -158,11 +158,11 @@ fn decode_struct_increment_offset(offset: &mut usize, buf: &[u8]) -> Result<Stru
                 DateBytes::new(read_bytes_increment_offset::<{ DateBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_naive_date(),
             ),
-            ValueTypeCategory::DateTime => Value::DateTime(
+            ValueTypeCategory::DateTime => Value::Datetime(
                 DateTimeBytes::new(read_bytes_increment_offset::<{ DateTimeBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_naive_date_time(),
             ),
-            ValueTypeCategory::DateTimeTZ => Value::DateTimeTZ(
+            ValueTypeCategory::DateTimeTZ => Value::DatetimeTz(
                 DateTimeTZBytes::new(read_bytes_increment_offset::<{ DateTimeTZBytes::ENCODED_LENGTH }>(offset, buf)?)
                     .as_date_time(),
             ),

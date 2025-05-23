@@ -157,7 +157,7 @@ pub(crate) async fn execute_schema_query(
     .expect("Expected schema query execution finishing");
 
     let transaction = TransactionSchema::from_parts(
-        snapshot,
+        Arc::new(snapshot),
         type_manager,
         thing_manager,
         function_manager,
@@ -201,7 +201,7 @@ pub(crate) fn execute_write_query_in_schema(
     );
 
     let transaction = Transaction::Schema(TransactionSchema::from_parts(
-        snapshot,
+        Arc::new(snapshot),
         type_manager,
         thing_manager,
         function_manager,

@@ -13,8 +13,10 @@ use tonic::{Request, Response, Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{
     self,
+    database::export::Server as DatabaseExportServerProto,
+    database_manager::import::Server as DatabasesImportServerProto,
     server_manager::all::{Req, Res},
-    transaction::{Client, Server},
+    transaction::{Client as TransactionClientProto, Server as TransactionServerProto},
 };
 use uuid::Uuid;
 
@@ -23,16 +25,17 @@ use crate::{
     service::{
         grpc::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
-            error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+            error::{GrpcServiceError, IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+            migration::{
+                export_service::{DatabaseExportService, DATABASE_EXPORT_REQUEST_BUFFER_SIZE},
+                import_service::{DatabaseImportService, IMPORT_RESPONSE_BUFFER_SIZE},
+            },
             request_parser::{users_create_req, users_update_req},
             response_builders::{
                 authentication::token_create_res,
                 connection::connection_open_res,
-                database::database_delete_res,
-                database_manager::{
-                    database_all_res, database_contains_res, database_create_res, database_get_res,
-                    database_schema_res, database_type_schema_res,
-                },
+                database::{database_delete_res, database_schema_res, database_type_schema_res},
+                database_manager::{database_all_res, database_contains_res, database_create_res, database_get_res},
                 server_manager::servers_all_res,
                 user_manager::{
                     user_create_res, user_update_res, users_all_res, users_contains_res, users_delete_res,
@@ -44,7 +47,7 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{BoxServerState, StateError},
+    state::{BoxServerState, ServerStateError},
 };
 
 #[derive(Debug)]
@@ -175,7 +178,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabasesGet,
             || match self.server_state.databases_get(&name) {
                 Some(db) => Ok(Response::new(database_get_res(&self.address, db.name().to_string()))),
-                None => Err(StateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
+                None => Err(ServerStateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
             },
         )
     }
@@ -211,6 +214,26 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         )
     }
 
+    type databases_importStream = Pin<Box<ReceiverStream<Result<DatabasesImportServerProto, Status>>>>;
+
+    async fn databases_import(
+        &self,
+        request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
+    ) -> Result<Response<Self::databases_importStream>, Status> {
+        // TODO: Add diagnostics!
+        let request_stream = request.into_inner();
+        let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
+        let mut service = DatabaseImportService::new(
+            self.server_state.database_manager(),
+            request_stream,
+            response_sender,
+            self.server_state.shutdown_receiver(),
+        );
+        tokio::spawn(async move { service.listen().await });
+        let stream: ReceiverStream<Result<DatabasesImportServerProto, Status>> = ReceiverStream::new(response_receiver);
+        Ok(Response::new(Box::pin(stream)))
+    }
+
     async fn database_schema(
         &self,
         request: Request<typedb_protocol::database::schema::Req>,
@@ -241,6 +264,40 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 Err(err) => Err(err.into_error_message().into_status()),
             },
         )
+    }
+
+    type database_exportStream = Pin<Box<ReceiverStream<Result<DatabaseExportServerProto, Status>>>>;
+
+    async fn database_export(
+        &self,
+        request: Request<typedb_protocol::database::export::Req>,
+    ) -> Result<Response<Self::database_exportStream>, Status> {
+        // TODO: Add diagnostics!
+        let database_name = request
+            .into_inner()
+            .req
+            .ok_or_else(|| {
+                GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }.into_error_message().into_status()
+            })?
+            .database;
+        match self.server_state.database_manager().database(&database_name) {
+            None => {
+                Err(ServerStateError::DatabaseDoesNotExist { name: database_name }.into_error_message().into_status())
+            }
+            Some(database) => {
+                let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
+                let mut service = DatabaseExportService::new(
+                    self.server_state.server_info(),
+                    database,
+                    response_sender,
+                    self.server_state.shutdown_receiver(),
+                );
+                tokio::spawn(async move { service.export().await });
+                let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
+                    ReceiverStream::new(response_receiver);
+                Ok(Response::new(Box::pin(stream)))
+            }
+        }
     }
 
     async fn database_delete(
@@ -364,24 +421,23 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         .await
     }
 
-    type transactionStream = Pin<Box<ReceiverStream<Result<Server, Status>>>>;
+    type transactionStream = Pin<Box<ReceiverStream<Result<TransactionServerProto, Status>>>>;
 
     async fn transaction(
         &self,
-        request: Request<Streaming<Client>>,
+        request: Request<Streaming<TransactionClientProto>>,
     ) -> Result<Response<Self::transactionStream>, Status> {
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(TRANSACTION_REQUEST_BUFFER_SIZE);
         let mut service = TransactionService::new(
-            request_stream,
-            response_sender,
             self.server_state.database_manager(),
             self.server_state.diagnostics_manager(),
+            request_stream,
+            response_sender,
             self.server_state.shutdown_receiver(),
         );
         tokio::spawn(async move { service.listen().await });
-        let stream: ReceiverStream<Result<Server, Status>> = ReceiverStream::new(response_receiver);
-
+        let stream: ReceiverStream<Result<TransactionServerProto, Status>> = ReceiverStream::new(response_receiver);
         Ok(Response::new(Box::pin(stream)))
     }
 }

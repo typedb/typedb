@@ -775,6 +775,27 @@ impl TypeEdgePropertyEncoding for Ordering {
     }
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
+pub struct Independency;
+
+impl fmt::Display for Independency {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Independency")
+    }
+}
+
+impl TypeVertexPropertyEncoding for Independency {
+    const INFIX: Infix = Infix::PropertyIndependency;
+
+    fn from_value_bytes(value: &[u8]) -> Independency {
+        bincode::deserialize(value).unwrap()
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
+    }
+}
+
 pub trait Capability:
     TypeEdgeEncoding<From = Self::ObjectType, To = Self::InterfaceType> + Sized + Copy + Hash + Eq + 'static
 {
