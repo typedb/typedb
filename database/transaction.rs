@@ -259,7 +259,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn from_parts(
-        snapshot: SchemaSnapshot<D>,
+        snapshot: Arc<SchemaSnapshot<D>>,
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
@@ -269,7 +269,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         profile: TransactionProfile,
     ) -> Self {
         Self {
-            snapshot: Arc::new(snapshot),
+            snapshot,
             type_manager,
             thing_manager,
             function_manager,

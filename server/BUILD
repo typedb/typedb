@@ -75,6 +75,7 @@ rust_library(
         "@crates//:moka",
         "@crates//:prost",
         "@crates//:rand",
+        "@crates//:regex",
         "@crates//:rustls-pemfile",
         "@crates//:serde",
         "@crates//:serde_json",

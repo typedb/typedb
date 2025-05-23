@@ -58,10 +58,10 @@ impl FromTypeQLLiteral for Value<'static> {
             ValueLiteral::Double(double) => Ok(Value::Double(f64::from_typeql_literal(double, source_span)?)),
             ValueLiteral::Date(date) => Ok(Value::Date(NaiveDate::from_typeql_literal(&date.date, source_span)?)),
             ValueLiteral::DateTime(datetime) => {
-                Ok(Value::DateTime(NaiveDateTime::from_typeql_literal(datetime, source_span)?))
+                Ok(Value::Datetime(NaiveDateTime::from_typeql_literal(datetime, source_span)?))
             }
             ValueLiteral::DateTimeTz(datetime_tz) => {
-                Ok(Value::DateTimeTZ(chrono::DateTime::from_typeql_literal(datetime_tz, source_span)?))
+                Ok(Value::DatetimeTz(chrono::DateTime::from_typeql_literal(datetime_tz, source_span)?))
             }
             ValueLiteral::Duration(duration) => {
                 Ok(Value::Duration(Duration::from_typeql_literal(duration, source_span)?))

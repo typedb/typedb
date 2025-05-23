@@ -10,7 +10,6 @@ use std::{
     sync::Arc,
 };
 
-use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
     database::DatabaseCreateError, database_manager::DatabaseManager, transaction::TransactionRead, Database,
@@ -18,7 +17,6 @@ use database::{
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
-use ir::pipeline::FunctionReadError;
 use options::TransactionOptions;
 use rand::prelude::SliceRandom;
 use resource::{
@@ -44,10 +42,12 @@ use crate::{
     },
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
+    service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError},
 };
 
 #[derive(Debug)]
 pub struct ServerState {
+    server_info: ServerInfo,
     config: Config,
     id: String,
     deployment_id: String,
@@ -93,7 +93,7 @@ impl ServerState {
             Self::initialise_diagnostics(
                 deployment_id.clone(),
                 server_id.clone(),
-                &server_info,
+                server_info,
                 diagnostics_config,
                 storage_directory.clone(),
                 config.development_mode.enabled,
@@ -102,6 +102,7 @@ impl ServerState {
         );
 
         Ok(Self {
+            server_info,
             config,
             id: server_id,
             deployment_id,
@@ -116,6 +117,10 @@ impl ServerState {
             ),
             shutdown_receiver,
         })
+    }
+
+    pub fn server_info(&self) -> ServerInfo {
+        self.server_info
     }
 
     fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
@@ -173,7 +178,7 @@ impl ServerState {
     async fn initialise_diagnostics(
         deployment_id: String,
         server_id: String,
-        server_info: &ServerInfo,
+        server_info: ServerInfo,
         config: &DiagnosticsConfig,
         storage_directory: PathBuf,
         is_development_mode: bool,
@@ -227,16 +232,16 @@ impl ServerState {
         self.database_manager.create_database(name)
     }
 
-    pub fn database_schema(&self, name: String) -> Result<String, StateError> {
+    pub fn database_schema(&self, name: String) -> Result<String, ServerStateError> {
         match self.database_manager.database(&name) {
             Some(db) => Self::get_database_schema(db),
-            None => Err(StateError::DatabaseDoesNotExist { name }),
+            None => Err(ServerStateError::DatabaseDoesNotExist { name }),
         }
     }
 
-    pub fn database_type_schema(&self, name: String) -> Result<String, StateError> {
+    pub fn database_type_schema(&self, name: String) -> Result<String, ServerStateError> {
         match self.database_manager.database(&name) {
-            None => Err(StateError::DatabaseDoesNotExist { name: name.clone() }),
+            None => Err(ServerStateError::DatabaseDoesNotExist { name: name.clone() }),
             Some(database) => match Self::get_database_type_schema(database) {
                 Ok(type_schema) => Ok(type_schema),
                 Err(err) => Err(err),
@@ -244,68 +249,49 @@ impl ServerState {
         }
     }
 
-    fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, StateError> {
+    fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, ServerStateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
-            .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
-        let types_syntax = Self::get_types_syntax(&transaction)?;
-        let functions_syntax = Self::get_functions_syntax(&transaction)?;
-
-        let schema = match types_syntax.is_empty() & functions_syntax.is_empty() {
-            true => String::new(),
-            false => format!("{}\n{} {}", typeql::token::Clause::Define, types_syntax, functions_syntax),
-        };
+            .map_err(|err| ServerStateError::FailedToOpenPrerequisiteTransaction {})?;
+        // TODO: Close transactions on errors?
+        let schema = get_transaction_schema(&transaction)
+            .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
+        transaction.close();
         Ok(schema)
-    }
-
-    fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
-        transaction
-            .function_manager
-            .get_functions_syntax(transaction.snapshot())
-            .map_err(|err| StateError::FunctionReadError { typedb_source: err })
     }
 
     pub(crate) fn get_database_type_schema<D: DurabilityClient>(
         database: Arc<Database<D>>,
-    ) -> Result<String, StateError> {
+    ) -> Result<String, ServerStateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
-            .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
-        let types_syntax = Self::get_types_syntax(&transaction)?;
-
-        let type_schema = match types_syntax.is_empty() {
-            true => String::new(),
-            false => format!("{}\n{}", typeql::token::Clause::Define, types_syntax),
-        };
+            .map_err(|err| ServerStateError::FailedToOpenPrerequisiteTransaction {})?;
+        // TODO: Close transactions on errors?
+        let type_schema = get_transaction_type_schema(&transaction)
+            .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
+        transaction.close();
         Ok(type_schema)
-    }
-
-    fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
-        transaction
-            .type_manager
-            .get_types_syntax(transaction.snapshot())
-            .map_err(|err| StateError::ConceptReadError { typedb_source: err })
     }
 
     pub fn database_delete(&self, name: String) -> Result<(), DatabaseDeleteError> {
         self.database_manager.delete_database(name)
     }
 
-    pub fn users_get(&self, name: String, accessor: Accessor) -> Result<User, StateError> {
+    pub fn users_get(&self, name: String, accessor: Accessor) -> Result<User, ServerStateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name.as_str()) {
-            return Err(StateError::OperationNotPermitted {});
+            return Err(ServerStateError::OperationNotPermitted {});
         }
 
         match self.user_manager.get(name.as_str()) {
             Ok(get) => match get {
                 Some((user, _)) => Ok(user),
-                None => Err(StateError::UserDoesNotExist {}),
+                None => Err(ServerStateError::UserDoesNotExist {}),
             },
-            Err(err) => Err(StateError::UserCannotBeRetrieved { typedb_source: err }),
+            Err(err) => Err(ServerStateError::UserCannotBeRetrieved { typedb_source: err }),
         }
     }
 
-    pub fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, StateError> {
+    pub fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, ServerStateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
-            return Err(StateError::OperationNotPermitted {});
+            return Err(ServerStateError::OperationNotPermitted {});
         }
         Ok(self.user_manager.all())
     }
@@ -314,14 +300,19 @@ impl ServerState {
         self.user_manager.contains(name)
     }
 
-    pub fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), StateError> {
+    pub fn users_create(
+        &self,
+        user: &User,
+        credential: &Credential,
+        accessor: Accessor,
+    ) -> Result<(), ServerStateError> {
         if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
-            return Err(StateError::OperationNotPermitted {});
+            return Err(ServerStateError::OperationNotPermitted {});
         }
         self.user_manager
             .create(user, credential)
             .map(|user| ())
-            .map_err(|err| StateError::UserCannotBeCreated { typedb_source: err })
+            .map_err(|err| ServerStateError::UserCannotBeCreated { typedb_source: err })
     }
 
     pub async fn users_update(
@@ -330,23 +321,23 @@ impl ServerState {
         user_update: Option<User>,
         credential_update: Option<Credential>,
         accessor: Accessor,
-    ) -> Result<(), StateError> {
+    ) -> Result<(), ServerStateError> {
         if !PermissionManager::exec_user_update_permitted(accessor.0.as_str(), name) {
-            return Err(StateError::OperationNotPermitted {});
+            return Err(ServerStateError::OperationNotPermitted {});
         }
         self.user_manager
             .update(name, &user_update, &credential_update)
-            .map_err(|err| StateError::UserCannotBeUpdated { typedb_source: err })?;
+            .map_err(|err| ServerStateError::UserCannotBeUpdated { typedb_source: err })?;
         self.token_manager.invalidate_user(name).await;
         Ok(())
     }
 
-    pub async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError> {
+    pub async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), ServerStateError> {
         if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
-            return Err(StateError::OperationNotPermitted {});
+            return Err(ServerStateError::OperationNotPermitted {});
         }
 
-        self.user_manager.delete(name).map_err(|err| StateError::UserCannotBeDeleted { typedb_source: err })?;
+        self.user_manager.delete(name).map_err(|err| ServerStateError::UserCannotBeDeleted { typedb_source: err })?;
         self.token_manager.invalidate_user(name).await;
         Ok(())
     }
@@ -370,17 +361,16 @@ impl ServerState {
 }
 
 typedb_error! {
-    pub StateError(component = "State", prefix = "SRV") {
+    pub ServerStateError(component = "Server state", prefix = "SRV") {
         Unimplemented(1, "Not implemented: {description}", description: String),
         OperationNotPermitted(2, "The user is not permitted to execute the operation"),
         DatabaseDoesNotExist(3, "Database '{name}' does not exist.", name: String),
         UserDoesNotExist(4, "User does not exist"),
-        UserCannotBeRetrieved(8, "Unable to retrieve user", typedb_source: UserGetError),
-        UserCannotBeCreated(9, "Unable to create user", typedb_source: UserCreateError),
-        UserCannotBeUpdated(10, "Unable to update user", typedb_source: UserUpdateError),
-        UserCannotBeDeleted(11, "Unable to delete user", typedb_source: UserDeleteError),
         FailedToOpenPrerequisiteTransaction(5, "Failed to open transaction, which is a prerequisite for the operation."),
-        ConceptReadError(6, "Error reading concepts", typedb_source: Box<ConceptReadError>),
-        FunctionReadError(7, "Error reading functions", typedb_source: FunctionReadError),
+        DatabaseExport(6, "Database export error", typedb_source: DatabaseExportError),
+        UserCannotBeRetrieved(7, "Unable to retrieve user", typedb_source: UserGetError),
+        UserCannotBeCreated(8, "Unable to create user", typedb_source: UserCreateError),
+        UserCannotBeUpdated(9, "Unable to update user", typedb_source: UserUpdateError),
+        UserCannotBeDeleted(10, "Unable to delete user", typedb_source: UserDeleteError),
     }
 }
