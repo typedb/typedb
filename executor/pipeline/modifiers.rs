@@ -400,7 +400,7 @@ where
         (Self::OutputIterator, ExecutionContext<Snapshot>),
         (Box<PipelineExecutionError>, ExecutionContext<Snapshot>),
     > {
-        let Self { previous, executable, .. } = self;
+        let Self { previous, .. } = self;
         let (previous_iterator, context) = previous.into_iterator(interrupt)?;
         let distinct_iterator = DistinctStageIterator::new(previous_iterator);
         Ok((distinct_iterator, context))

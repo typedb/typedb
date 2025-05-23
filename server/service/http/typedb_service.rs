@@ -13,11 +13,10 @@ use axum::{
     Router,
 };
 use concurrency::TokioIntervalRunner;
-use database::{database_manager::DatabaseManager, transaction::TransactionRead};
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
+use diagnostics::metrics::ActionKind;
 use http::StatusCode;
 use options::{QueryOptions, TransactionOptions};
-use resource::constants::common::SECONDS_IN_MINUTE;
+use resource::{constants::common::SECONDS_IN_MINUTE, server_info::ServerInfo};
 use system::concepts::{Credential, User};
 use tokio::{
     sync::{
@@ -26,13 +25,11 @@ use tokio::{
     },
     time::timeout,
 };
-use tonic::Response;
 use tower_http::cors::CorsLayer;
-use user::{permission_manager::PermissionManager, user_manager::UserManager};
 use uuid::Uuid;
 
 use crate::{
-    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager, Accessor},
+    authentication::Accessor,
     service::{
         http::{
             diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
@@ -44,16 +41,16 @@ use crate::{
                 query::{QueryOptionsPayload, QueryPayload, TransactionQueryPayload},
                 transaction::{encode_transaction, TransactionOpenPayload, TransactionPath},
                 user::{encode_user, encode_users, CreateUserPayload, UpdateUserPayload, UserPath},
-                version::{encode_server_version, ProtocolVersion, ServerVersionResponse, PROTOCOL_VERSION_LATEST},
+                version::{encode_server_version, ProtocolVersion, PROTOCOL_VERSION_LATEST},
             },
             transaction_service::{
                 QueryAnswer, TransactionRequest, TransactionResponder, TransactionService, TransactionServiceResponse,
             },
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
-        typedb_service::{get_database_schema, get_database_type_schema},
-        QueryType, ServiceError,
+        QueryType,
     },
+    state::ServerState,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -68,16 +65,10 @@ struct TransactionInfo {
 
 #[derive(Debug, Clone)]
 pub(crate) struct TypeDBService {
+    server_info: ServerInfo,
     address: SocketAddr,
-    distribution: &'static str,
-    version: &'static str,
-    database_manager: Arc<DatabaseManager>,
-    user_manager: Arc<UserManager>,
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: Arc<ServerState>,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
-    shutdown_receiver: tokio::sync::watch::Receiver<()>,
     _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
 
@@ -85,17 +76,7 @@ impl TypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(
-        address: SocketAddr,
-        distribution: &'static str,
-        version: &'static str,
-        database_manager: Arc<DatabaseManager>,
-        user_manager: Arc<UserManager>,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
-        shutdown_receiver: tokio::sync::watch::Receiver<()>,
-    ) -> Self {
+    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<ServerState>) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
 
         let controlled_transactions = transaction_request_senders.clone();
@@ -112,16 +93,10 @@ impl TypeDBService {
         ));
 
         Self {
+            server_info,
             address,
-            distribution,
-            version,
-            database_manager,
-            user_manager,
-            credential_verifier,
-            token_manager,
-            diagnostics_manager,
+            server_state,
             transaction_services: transaction_request_senders,
-            shutdown_receiver,
             _transaction_cleanup_job: transaction_cleanup_job,
         }
     }
@@ -145,10 +120,10 @@ impl TypeDBService {
             payload.transaction_options.map(|options| options.into()).unwrap_or_else(|| TransactionOptions::default());
         let transaction_timeout_millis = options.transaction_timeout_millis;
         let mut transaction_service = TransactionService::new(
-            service.database_manager.clone(),
-            service.diagnostics_manager.clone(),
+            service.server_state.database_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             request_stream,
-            service.shutdown_receiver.clone(),
+            service.server_state.shutdown_receiver.clone(),
         );
 
         let database_name = payload.database_name;
@@ -199,9 +174,7 @@ impl TypeDBService {
             }
         }
     }
-}
 
-impl TypeDBService {
     pub(crate) fn create_protected_router<T>(service: Arc<TypeDBService>) -> Router<T> {
         Router::new()
             .route("/:version/databases", get(Self::databases))
@@ -245,8 +218,8 @@ impl TypeDBService {
 
     async fn version(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
         Ok::<_, HttpServiceError>(JsonBody(encode_server_version(
-            service.distribution.to_string(),
-            service.version.to_string(),
+            service.server_info.distribution.to_string(),
+            service.server_info.version.to_string(),
         )))
     }
 
@@ -263,19 +236,25 @@ impl TypeDBService {
         State(service): State<Arc<TypeDBService>>,
         JsonBody(payload): JsonBody<SigninPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics_async(service.diagnostics_manager.clone(), None::<&str>, ActionKind::SignIn, || async {
-            service
-                .credential_verifier
-                .verify_password(&payload.username, &payload.password)
-                .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })?;
-            Ok(JsonBody(encode_token(service.token_manager.new_token(payload.username).await)))
-        })
+        run_with_diagnostics_async(
+            service.server_state.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::SignIn,
+            || async {
+                service
+                    .server_state
+                    .token_create(payload.username, payload.password)
+                    .await
+                    .map(|token| JsonBody(encode_token(token)))
+                    .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
+            },
+        )
         .await
     }
 
     async fn databases(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
-        run_with_diagnostics(&service.diagnostics_manager, None::<&str>, ActionKind::DatabasesAll, || {
-            Ok(JsonBody(encode_databases(service.database_manager.database_names())))
+        run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::DatabasesAll, || {
+            Ok(JsonBody(encode_databases(service.server_state.databases_all())))
         })
     }
 
@@ -285,13 +264,13 @@ impl TypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics(
-            &service.diagnostics_manager,
+            &service.server_state.diagnostics_manager,
             Some(&database_path.database_name),
-            ActionKind::DatabasesContains,
+            ActionKind::DatabasesGet,
             || {
                 let database_name = service
-                    .database_manager
-                    .database(&database_path.database_name)
+                    .server_state
+                    .databases_get(database_path.database_name.clone())
                     .ok_or(HttpServiceError::NotFound {})?
                     .name()
                     .to_string();
@@ -306,13 +285,13 @@ impl TypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics(
-            &service.diagnostics_manager,
+            &service.server_state.diagnostics_manager,
             Some(&database_path.database_name),
             ActionKind::DatabasesCreate,
             || {
                 service
-                    .database_manager
-                    .create_database(&database_path.database_name)
+                    .server_state
+                    .databases_create(database_path.database_name.clone())
                     .map_err(|typedb_source| HttpServiceError::DatabaseCreate { typedb_source })
             },
         )
@@ -324,13 +303,13 @@ impl TypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics(
-            &service.diagnostics_manager,
+            &service.server_state.diagnostics_manager,
             Some(&database_path.database_name),
             ActionKind::DatabaseDelete,
             || {
                 service
-                    .database_manager
-                    .delete_database(&database_path.database_name)
+                    .server_state
+                    .database_delete(database_path.database_name.clone())
                     .map_err(|typedb_source| HttpServiceError::DatabaseDelete { typedb_source })
             },
         )
@@ -342,15 +321,15 @@ impl TypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics(
-            &service.diagnostics_manager,
+            &service.server_state.diagnostics_manager,
             Some(&database_path.database_name),
             ActionKind::DatabaseSchema,
-            || match service.database_manager.database(&database_path.database_name) {
-                None => Err(HttpServiceError::NotFound {}),
-                Some(database) => Ok(PlainTextBody(
-                    get_database_schema(database)
-                        .map_err(|typedb_source| HttpServiceError::Service { typedb_source })?,
-                )),
+            || {
+                service
+                    .server_state
+                    .database_schema(database_path.database_name.clone())
+                    .map(|schema| PlainTextBody(schema))
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
     }
@@ -361,15 +340,15 @@ impl TypeDBService {
         database_path: DatabasePath,
     ) -> impl IntoResponse {
         run_with_diagnostics(
-            &service.diagnostics_manager,
+            &service.server_state.diagnostics_manager,
             Some(&database_path.database_name),
             ActionKind::DatabaseTypeSchema,
-            || match service.database_manager.database(&database_path.database_name) {
-                None => Err(HttpServiceError::NotFound {}),
-                Some(database) => Ok(PlainTextBody(
-                    get_database_type_schema(database)
-                        .map_err(|typedb_source| HttpServiceError::Service { typedb_source })?,
-                )),
+            || {
+                service
+                    .server_state
+                    .database_type_schema(database_path.database_name.clone())
+                    .map(|schema| PlainTextBody(schema))
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
     }
@@ -377,79 +356,69 @@ impl TypeDBService {
     async fn users(
         _version: ProtocolVersion,
         State(service): State<Arc<TypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
     ) -> impl IntoResponse {
-        run_with_diagnostics(&service.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
-            if !PermissionManager::exec_user_all_permitted(accessor.as_str()) {
-                return Err(HttpServiceError::operation_not_permitted());
-            }
-            Ok(JsonBody(encode_users(service.user_manager.all())))
+        run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersAll, || {
+            service
+                .server_state
+                .users_all(accessor)
+                .map(|users| JsonBody(encode_users(users)))
+                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
         })
     }
 
     async fn users_get(
         _version: ProtocolVersion,
         State(service): State<Arc<TypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
-        run_with_diagnostics(&service.diagnostics_manager, None::<&str>, ActionKind::UsersContains, || {
-            if !PermissionManager::exec_user_get_permitted(accessor.as_str(), &user_path.username) {
-                return Err(HttpServiceError::operation_not_permitted());
-            }
+        run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersGet, || {
             service
-                .user_manager
-                .get(&user_path.username)
-                .map_err(|typedb_source| HttpServiceError::UserGet { typedb_source })?
-                .map(|(user, _)| JsonBody(encode_user(&user)))
-                .ok_or(HttpServiceError::NotFound {})
+                .server_state
+                .users_get(user_path.username.clone(), accessor)
+                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
+                .map(|user| JsonBody(encode_user(&user)))
         })
     }
 
     async fn users_create(
         _version: ProtocolVersion,
         State(service): State<Arc<TypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         user_path: UserPath,
         JsonBody(payload): JsonBody<CreateUserPayload>,
     ) -> impl IntoResponse {
-        run_with_diagnostics(&service.diagnostics_manager, None::<&str>, ActionKind::UsersCreate, || {
-            if !PermissionManager::exec_user_create_permitted(accessor.as_str()) {
-                return Err(HttpServiceError::operation_not_permitted());
-            }
+        run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersCreate, || {
             let user = User { name: user_path.username };
             let credential = Credential::new_password(payload.password.as_str());
             service
-                .user_manager
-                .create(&user, &credential)
-                .map_err(|typedb_source| HttpServiceError::UserCreate { typedb_source })
+                .server_state
+                .users_create(&user, &credential, accessor)
+                .map_err(|typedb_source| HttpServiceError::State { typedb_source })
         })
     }
 
     async fn users_update(
         _version: ProtocolVersion,
         State(service): State<Arc<TypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         user_path: UserPath,
         JsonBody(payload): JsonBody<UpdateUserPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             None::<&str>,
             ActionKind::UsersUpdate,
             || async {
                 let user_update = None; // updating username is not supported now
                 let credential_update = Some(Credential::new_password(&payload.password));
                 let username = user_path.username.as_str();
-                if !PermissionManager::exec_user_update_permitted(accessor.as_str(), username) {
-                    return Err(HttpServiceError::operation_not_permitted());
-                }
                 service
-                    .user_manager
-                    .update(username, &user_update, &credential_update)
-                    .map_err(|typedb_source| HttpServiceError::UserUpdate { typedb_source })?;
-                service.token_manager.invalidate_user(username).await;
-                Ok(())
+                    .server_state
+                    .users_update(username, user_update, credential_update, accessor)
+                    .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
         .await
@@ -458,24 +427,20 @@ impl TypeDBService {
     async fn users_delete(
         _version: ProtocolVersion,
         State(service): State<Arc<TypeDBService>>,
-        Accessor(accessor): Accessor,
+        accessor: Accessor,
         user_path: UserPath,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             None::<&str>,
             ActionKind::UsersDelete,
             || async {
                 let username = user_path.username.as_str();
-                if !PermissionManager::exec_user_delete_allowed(accessor.as_str(), username) {
-                    return Err(HttpServiceError::operation_not_permitted());
-                }
                 service
-                    .user_manager
-                    .delete(&user_path.username)
-                    .map_err(|typedb_source| HttpServiceError::UserDelete { typedb_source })?;
-                service.token_manager.invalidate_user(username).await;
-                Ok(())
+                    .server_state
+                    .users_delete(username, accessor)
+                    .await
+                    .map_err(|typedb_source| HttpServiceError::State { typedb_source })
             },
         )
         .await
@@ -488,7 +453,7 @@ impl TypeDBService {
         JsonBody(payload): JsonBody<TransactionOpenPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(payload.database_name.clone()),
             ActionKind::TransactionOpen,
             || async {
@@ -512,7 +477,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionCommit,
             || async {
@@ -538,7 +503,7 @@ impl TypeDBService {
         };
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionClose,
             || async {
@@ -562,7 +527,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionRollback,
             || async {
@@ -587,7 +552,7 @@ impl TypeDBService {
         let transaction = senders.get(&uuid).ok_or(HttpServiceError::no_open_transaction())?;
 
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(transaction.database_name.clone()),
             ActionKind::TransactionQuery,
             || async {
@@ -612,7 +577,7 @@ impl TypeDBService {
         JsonBody(payload): JsonBody<QueryPayload>,
     ) -> impl IntoResponse {
         run_with_diagnostics_async(
-            service.diagnostics_manager.clone(),
+            service.server_state.diagnostics_manager.clone(),
             Some(payload.transaction_open_payload.database_name.clone()),
             ActionKind::OneshotQuery,
             || async {

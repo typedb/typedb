@@ -8,7 +8,6 @@ use std::{
     fs::File,
     io::Read,
     path::{Path, PathBuf},
-    str::FromStr,
     time::Duration,
 };
 
@@ -20,7 +19,7 @@ use serde_with::{serde_as, DurationSeconds};
 
 use crate::parameters::ConfigError;
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     pub server: ServerConfig,
@@ -83,7 +82,7 @@ impl Config {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct ServerConfig {
     pub(crate) address: String,
@@ -94,7 +93,7 @@ pub struct ServerConfig {
 }
 
 #[serde_as]
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct AuthenticationConfig {
     #[serde_as(as = "DurationSeconds")]
@@ -108,7 +107,7 @@ impl Default for AuthenticationConfig {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct EncryptionConfig {
     pub enabled: bool,
     pub certificate: Option<PathBuf>,
@@ -128,13 +127,13 @@ impl Default for EncryptionConfig {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub(crate) struct StorageConfig {
     pub(crate) data_directory: PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct DiagnosticsConfig {
     pub reporting: Reporting,
     pub monitoring: Monitoring,
@@ -155,7 +154,7 @@ impl Default for DiagnosticsConfig {
     }
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Reporting {
     #[serde(rename = "errors")]
     pub report_errors: bool,
@@ -163,19 +162,19 @@ pub struct Reporting {
     pub report_metrics: bool,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 pub struct Monitoring {
     pub enabled: bool,
     pub port: u16,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct LoggingConfig {
     pub directory: PathBuf,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Clone, Debug, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct DevelopmentMode {
     pub enabled: bool,

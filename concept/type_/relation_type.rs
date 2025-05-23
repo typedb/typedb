@@ -16,7 +16,7 @@ use encoding::{
         Typed,
     },
     layout::prefix::{Prefix, Prefix::VertexRelationType},
-    value::{label::Label, string_bytes::StringBytes},
+    value::label::Label,
     Prefixed,
 };
 use itertools::Itertools;

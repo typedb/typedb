@@ -33,16 +33,10 @@ use executor::{
 use ir::pipeline::ParameterRegistry;
 use itertools::{Either, Itertools};
 use lending_iterator::LendingIterator;
-use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::QueryManager};
-use resource::{
-    constants::server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
-    profile::{EncodingProfile, QueryProfile, StorageCounters},
-};
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot},
-};
+use options::QueryOptions;
+use query::error::QueryError;
+use resource::profile::{EncodingProfile, QueryProfile, StorageCounters};
+use storage::snapshot::ReadableSnapshot;
 use tokio::{
     sync::{
         broadcast,
@@ -59,7 +53,7 @@ use typedb_protocol::{
     query::Type::{Read, Write},
     transaction::{stream_signal::Req, Server as ProtocolServer},
 };
-use typeql::{parse_query, query::SchemaQuery, Query};
+use typeql::{parse_query, query::SchemaQuery};
 use uuid::Uuid;
 
 use crate::service::{

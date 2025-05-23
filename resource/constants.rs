@@ -21,13 +21,17 @@ pub mod common {
 }
 
 pub mod server {
-    use std::{path::PathBuf, time::Duration};
+    use std::time::Duration;
 
-    use crate::constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR};
+    use crate::{
+        constants::common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE, SECONDS_IN_YEAR},
+        server_info::ServerInfo,
+    };
 
-    pub const DISTRIBUTION: &str = "TypeDB CE";
-    pub const VERSION: &str = include_str!("../VERSION");
-    pub const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
+    const DISTRIBUTION: &str = "TypeDB CE";
+    const VERSION: &str = include_str!("../VERSION");
+    const ASCII_LOGO: &str = include_str!("typedb-ascii.txt");
+    pub const SERVER_INFO: ServerInfo = ServerInfo { logo: ASCII_LOGO, distribution: DISTRIBUTION, version: VERSION };
     pub const DEFAULT_CONFIG_PATH: &str = "config.yml";
 
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);

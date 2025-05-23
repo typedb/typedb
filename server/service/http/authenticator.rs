@@ -6,36 +6,26 @@
 use std::{convert, sync::Arc};
 
 use axum::{body::Body, response::IntoResponse};
-use diagnostics::diagnostics_manager::DiagnosticsManager;
 use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
-use crate::{
-    authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
-    service::http::error::HttpServiceError,
-};
+use crate::{authentication::authenticate, service::http::error::HttpServiceError, state::ServerState};
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: Arc<ServerState>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
-    ) -> Self {
-        Self { credential_verifier, token_manager, diagnostics_manager }
+    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
+        Self { server_state }
     }
 }
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<Body>) -> Result<Request<Body>, impl IntoResponse> {
-        authenticate(self.token_manager.clone(), request)
+        authenticate(self.server_state.clone(), request)
             .await
             .map_err(|typedb_source| HttpServiceError::Authentication { typedb_source })
     }

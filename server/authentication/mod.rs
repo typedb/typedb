@@ -14,7 +14,7 @@ use error::typedb_error;
 use http::Extensions;
 use tonic::metadata::MetadataMap;
 
-use crate::authentication::token_manager::TokenManager;
+use crate::state::ServerState;
 
 pub(crate) mod credential_verifier;
 pub(crate) mod token_manager;
@@ -48,15 +48,14 @@ pub(crate) fn extract_metadata_accessor(metadata: &MetadataMap) -> Option<String
 }
 
 pub(crate) async fn authenticate<T>(
-    token_manager: Arc<TokenManager>,
+    server_state: Arc<ServerState>,
     request: http::Request<T>,
 ) -> Result<http::Request<T>, AuthenticationError> {
     let (mut parts, body) = request.into_parts();
 
     match extract_parts_authorization_token(parts.clone()).await {
         Some(token) => {
-            let accessor =
-                token_manager.get_valid_token_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
+            let accessor = server_state.token_get_owner(&token).await.ok_or(AuthenticationError::InvalidToken {})?;
             parts.extensions.insert(Accessor(accessor));
             Ok(http::Request::from_parts(parts, body))
         }

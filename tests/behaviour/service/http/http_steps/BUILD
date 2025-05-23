@@ -16,6 +16,7 @@ rust_library(
         "//encoding:encoding",
         "//common/error:error",
         "//common/options:options",
+        "//resource",
         "//tests/behaviour/steps/params:params",
         "//util/test:test_utils",
 

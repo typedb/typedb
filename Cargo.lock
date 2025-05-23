@@ -2051,6 +2051,7 @@ dependencies = [
  "options",
  "params",
  "regex",
+ "resource",
  "serde",
  "serde_json",
  "server",

@@ -5,44 +5,44 @@
  */
 use std::sync::Arc;
 
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
+use diagnostics::metrics::ActionKind;
 use futures::future::BoxFuture;
 use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
 use crate::{
-    authentication::{authenticate, credential_verifier::CredentialVerifier, token_manager::TokenManager},
+    authentication::authenticate,
     service::grpc::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
     },
+    state::ServerState,
 };
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    diagnostics_manager: Arc<DiagnosticsManager>,
+    server_state: Arc<ServerState>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
-    ) -> Self {
-        Self { credential_verifier, token_manager, diagnostics_manager }
+    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
+        Self { server_state }
     }
 }
 
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
-        run_with_diagnostics_async(self.diagnostics_manager.clone(), None::<&str>, ActionKind::Authenticate, || async {
-            authenticate(self.token_manager.clone(), request)
-                .await
-                .map_err(|typedb_source| typedb_source.into_error_message().into_status())
-        })
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager.clone(),
+            None::<&str>,
+            ActionKind::Authenticate,
+            || async {
+                authenticate(self.server_state.clone(), request)
+                    .await
+                    .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+            },
+        )
         .await
     }
 }

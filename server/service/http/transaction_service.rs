@@ -44,7 +44,7 @@ use tokio::{
     time::Instant,
 };
 use tracing::{event, Level};
-use typeql::{parse_query, query::SchemaQuery, Query};
+use typeql::{parse_query, query::SchemaQuery};
 
 use super::message::query::query_structure::encode_query_structure;
 use crate::service::{

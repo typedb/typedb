@@ -18,7 +18,7 @@ use crate::{
     instruction::{
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
-        Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        Checker, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,

@@ -4,13 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-#![deny(unused_must_use)]
-#![deny(elided_lifetimes_in_paths)]
-extern crate core;
-
-mod authentication;
-pub mod error;
-pub mod parameters;
-pub mod server;
-pub mod service;
-pub(crate) mod state;
+#[derive(Clone, Copy, Debug)]
+pub struct ServerInfo {
+    pub logo: &'static str,
+    pub distribution: &'static str,
+    pub version: &'static str,
+}

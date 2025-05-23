@@ -367,7 +367,7 @@ fn translate_and_annotate(
         translate_match(&mut context, &mut parameters, &HashMapFunctionSignatureIndex::empty(), &parsed).unwrap();
 
     let block = translated.finish().unwrap();
-    let mut type_annotations = infer_types(
+    let type_annotations = infer_types(
         snapshot,
         &block,
         &context.variable_registry,
@@ -377,6 +377,6 @@ fn translate_and_annotate(
         false,
     )
     .unwrap();
-    let mut conjunction = block.into_conjunction();
+    let conjunction = block.into_conjunction();
     (conjunction, type_annotations)
 }

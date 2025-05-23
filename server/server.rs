@@ -4,307 +4,97 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fs,
-    fs::File,
-    net::SocketAddr,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
+use std::{net::SocketAddr, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
-use concurrency::IntervalRunner;
 use database::database_manager::DatabaseManager;
-use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
-use rand::seq::SliceRandom;
-use resource::constants::server::{
-    ASCII_LOGO, DATABASE_METRICS_UPDATE_INTERVAL, GRPC_CONNECTION_KEEPALIVE, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME,
-    SERVER_ID_LENGTH,
+use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
+use tokio::{
+    net::lookup_host,
+    sync::watch::{channel, Receiver, Sender},
 };
-use system::initialise_system_database;
-use tokio::net::lookup_host;
-use user::{initialise_default_user, user_manager::UserManager};
 
 use crate::{
-    authentication::{credential_verifier::CredentialVerifier, token_manager::TokenManager},
     error::ServerOpenError,
-    parameters::config::{Config, DevelopmentMode, DiagnosticsConfig, EncryptionConfig},
+    parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
+    state::ServerState,
 };
 
 #[derive(Debug)]
 pub struct Server {
-    id: String,
-    deployment_id: String,
-    logo: &'static str,
-    distribution: &'static str,
-    version: &'static str,
+    server_info: ServerInfo,
     config: Config,
-    data_directory: PathBuf,
-    diagnostics_manager: Arc<DiagnosticsManager>,
-    database_diagnostics_updater: IntervalRunner,
-    user_manager: Arc<UserManager>,
-    credential_verifier: Arc<CredentialVerifier>,
-    token_manager: Arc<TokenManager>,
-    grpc_service: grpc::typedb_service::TypeDBService,
-    http_service: Option<http::typedb_service::TypeDBService>,
-    shutdown_sender: tokio::sync::watch::Sender<()>,
-    shutdown_receiver: tokio::sync::watch::Receiver<()>,
+    server_state: Arc<ServerState>,
+    shutdown_sender: Sender<()>,
+    shutdown_receiver: Receiver<()>,
 }
 
 impl Server {
     pub async fn new(
+        server_info: ServerInfo,
         config: Config,
-        logo: &'static str,
-        distribution: &'static str,
-        version: &'static str,
         deployment_id: Option<String>,
     ) -> Result<Self, ServerOpenError> {
-        let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
-        Self::new_with_external_shutdown(
-            config,
-            logo,
-            distribution,
-            version,
-            deployment_id,
-            shutdown_sender,
-            shutdown_receiver,
-        )
-        .await
+        let (shutdown_sender, shutdown_receiver) = channel(());
+        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sender, shutdown_receiver).await
     }
 
     pub async fn new_with_external_shutdown(
+        server_info: ServerInfo,
         config: Config,
-        logo: &'static str,
-        distribution: &'static str,
-        version: &'static str,
         deployment_id: Option<String>,
-        shutdown_sender: tokio::sync::watch::Sender<()>,
-        shutdown_receiver: tokio::sync::watch::Receiver<()>,
+        shutdown_sender: Sender<()>,
+        shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let storage_directory = &config.storage.data_directory;
-        let server_config = &config.server;
-        let diagnostics_config = &config.diagnostics;
-
-        Self::may_initialise_storage_directory(storage_directory)?;
-
-        let server_id = Self::may_initialise_server_id(storage_directory)?;
-
-        let deployment_id = deployment_id.unwrap_or(server_id.clone());
-
-        let diagnostics_manager = Arc::new(
-            Self::initialise_diagnostics(
-                deployment_id.clone(),
-                server_id.clone(),
-                distribution,
-                version,
-                diagnostics_config,
-                storage_directory.clone(),
-                &config.development_mode,
-            )
-            .await,
-        );
-
-        let database_manager = DatabaseManager::new(storage_directory)
-            .map_err(|typedb_source| ServerOpenError::DatabaseOpen { typedb_source })?;
-        let system_database = initialise_system_database(&database_manager);
-
-        let user_manager = Arc::new(UserManager::new(system_database));
-        initialise_default_user(&user_manager);
-
-        let credential_verifier = Arc::new(CredentialVerifier::new(user_manager.clone()));
-        let token_manager = Arc::new(
-            TokenManager::new(server_config.authentication.token_expiration)
-                .map_err(|typedb_source| ServerOpenError::TokenConfiguration { typedb_source })?,
-        );
-
-        let grpc_server_address = Self::resolve_address(server_config.address.clone()).await;
-
-        let grpc_service = grpc::typedb_service::TypeDBService::new(
-            grpc_server_address,
-            database_manager.clone(),
-            user_manager.clone(),
-            credential_verifier.clone(),
-            token_manager.clone(),
-            diagnostics_manager.clone(),
-            shutdown_receiver.clone(),
-        );
-
-        let http_server_address = if server_config.http_enabled {
-            Some(Self::resolve_address(config.server.http_address.clone()).await)
-        } else {
-            None
-        };
-        let http_service = http_server_address.map(|http_address| {
-            http::typedb_service::TypeDBService::new(
-                http_address,
-                distribution,
-                version,
-                database_manager.clone(),
-                user_manager.clone(),
-                credential_verifier.clone(),
-                token_manager.clone(),
-                diagnostics_manager.clone(),
-                shutdown_receiver.clone(),
-            )
-        });
-
-        Ok(Self {
-            id: server_id,
-            deployment_id,
-            logo,
-            distribution,
-            version,
-            data_directory: storage_directory.to_owned(),
-            diagnostics_manager: diagnostics_manager.clone(),
-            database_diagnostics_updater: IntervalRunner::new(
-                move || Self::synchronize_database_metrics(diagnostics_manager.clone(), database_manager.clone()),
-                DATABASE_METRICS_UPDATE_INTERVAL,
-            ),
-            user_manager,
-            credential_verifier,
-            token_manager,
-            grpc_service,
-            http_service,
+        let server_state =
+            ServerState::new(server_info, config.clone(), deployment_id, shutdown_receiver.clone()).await;
+        server_state.map(|srv_state| Self {
+            server_info,
+            config,
+            server_state: Arc::new(srv_state),
             shutdown_sender,
             shutdown_receiver,
-            config,
         })
     }
 
-    fn may_initialise_server_id(storage_directory: &Path) -> Result<String, ServerOpenError> {
-        let server_id_file = storage_directory.join(SERVER_ID_FILE_NAME);
-        if server_id_file.exists() {
-            let server_id = fs::read_to_string(&server_id_file)
-                .map_err(|source| ServerOpenError::CouldNotReadServerIDFile {
-                    path: server_id_file.to_str().unwrap_or("").to_owned(),
-                    source: Arc::new(source),
-                })?
-                .trim()
-                .to_owned();
-            if server_id.is_empty() {
-                Err(ServerOpenError::InvalidServerID { path: server_id_file.to_str().unwrap_or("").to_owned() })
-            } else {
-                Ok(server_id)
-            }
-        } else {
-            let server_id = Self::generate_server_id();
-            assert!(!server_id.is_empty(), "Generated server ID should not be empty");
-            fs::write(server_id_file.clone(), &server_id).map_err(|source| {
-                ServerOpenError::CouldNotCreateServerIDFile {
-                    path: server_id_file.to_str().unwrap_or("").to_owned(),
-                    source: Arc::new(source),
-                }
-            })?;
-            Ok(server_id)
-        }
-    }
-
-    fn generate_server_id() -> String {
-        let mut rng = rand::thread_rng();
-        (0..SERVER_ID_LENGTH).map(|_| SERVER_ID_ALPHABET.choose(&mut rng).unwrap()).collect()
-    }
-
-    fn may_initialise_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
-        debug_assert!(storage_directory.is_absolute());
-        if !storage_directory.exists() {
-            Self::create_storage_directory(storage_directory)
-        } else if !storage_directory.is_dir() {
-            Err(ServerOpenError::NotADirectory { path: storage_directory.to_str().unwrap_or("").to_owned() })
-        } else {
-            Ok(())
-        }
-    }
-
-    fn create_storage_directory(storage_directory: &Path) -> Result<(), ServerOpenError> {
-        fs::create_dir_all(storage_directory).map_err(|source| ServerOpenError::CouldNotCreateDataDirectory {
-            path: storage_directory.to_str().unwrap_or("").to_owned(),
-            source: Arc::new(source),
-        })?;
-        Ok(())
-    }
-
-    async fn initialise_diagnostics(
-        deployment_id: String,
-        server_id: String,
-        distribution: &str,
-        version: &str,
-        config: &DiagnosticsConfig,
-        storage_directory: PathBuf,
-        is_development_mode: &DevelopmentMode,
-    ) -> DiagnosticsManager {
-        let diagnostics = Diagnostics::new(
-            deployment_id,
-            server_id,
-            distribution.to_owned(),
-            version.to_owned(),
-            storage_directory,
-            config.reporting.report_metrics,
-        );
-        let diagnostics_manager = DiagnosticsManager::new(
-            diagnostics,
-            config.monitoring.port,
-            config.monitoring.enabled,
-            is_development_mode.enabled,
-        );
-        diagnostics_manager.may_start_monitoring().await;
-        diagnostics_manager.may_start_reporting().await;
-
-        diagnostics_manager
-    }
-
-    fn synchronize_database_metrics(
-        diagnostics_manager: Arc<DiagnosticsManager>,
-        database_manager: Arc<DatabaseManager>,
-    ) {
-        let metrics = database_manager
-            .databases()
-            .values()
-            .filter(|database| DatabaseManager::is_user_database(database.name()))
-            .map(|database| database.get_metrics())
-            .collect();
-        diagnostics_manager.submit_database_metrics(metrics);
-    }
-
-    pub async fn serve(mut self) -> Result<(), ServerOpenError> {
-        Self::print_hello(ASCII_LOGO, self.distribution, self.version, self.config.development_mode.enabled);
+    pub async fn serve(self) -> Result<(), ServerOpenError> {
+        Self::print_hello(self.server_info, self.config.development_mode.enabled);
 
         Self::install_default_encryption_provider()?;
 
-        let grpc_address = *self.grpc_service.address();
-        let grpc_server = Self::serve_grpc(
-            grpc_address,
-            self.credential_verifier.clone(),
-            self.token_manager.clone(),
-            self.diagnostics_manager.clone(),
-            &self.config.server.encryption,
-            self.shutdown_receiver.clone(),
-            self.grpc_service,
-        );
-
-        let (http_server, http_address) = if let Some(mut http_service) = self.http_service {
-            let http_address = *http_service.address();
-            if grpc_address == http_address {
-                return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
-            }
-            let server = Self::serve_http(
-                http_address,
-                self.credential_verifier,
-                self.token_manager,
-                self.diagnostics_manager,
-                &self.config.server.encryption,
-                self.shutdown_receiver,
-                http_service,
-            );
-            (Some(server), Some(http_address))
+        let grpc_address = Self::resolve_address(self.config.server.address).await;
+        let http_address_opt = if self.config.server.http_enabled {
+            Some(
+                Self::validate_and_resolve_http_address(self.config.server.http_address.clone(), grpc_address.clone())
+                    .await?,
+            )
         } else {
-            (None, None)
+            None
         };
 
+        let grpc_server = Self::serve_grpc(
+            grpc_address,
+            &self.config.server.encryption,
+            self.server_state.clone(),
+            self.shutdown_receiver.clone(),
+        );
+        let http_server = if let Some(http_address) = http_address_opt {
+            let server = Self::serve_http(
+                self.server_info,
+                http_address,
+                &self.config.server.encryption,
+                self.server_state.clone(),
+                self.shutdown_receiver,
+            );
+            Some(server)
+        } else {
+            None
+        };
+
+        Self::print_serving_information(grpc_address, http_address_opt);
+
         Self::spawn_shutdown_handler(self.shutdown_sender);
-
-        Self::print_serving_information(grpc_address, http_address);
-
         if let Some(http_server) = http_server {
             let (grpc_result, http_result) = tokio::join!(grpc_server, http_server);
             grpc_result?;
@@ -315,21 +105,14 @@ impl Server {
         Ok(())
     }
 
-    fn install_default_encryption_provider() -> Result<(), ServerOpenError> {
-        tokio_rustls::rustls::crypto::ring::default_provider()
-            .install_default()
-            .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
-    }
-
     async fn serve_grpc(
         address: SocketAddr,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
         encryption_config: &EncryptionConfig,
-        mut shutdown_receiver: tokio::sync::watch::Receiver<()>,
-        service: grpc::typedb_service::TypeDBService,
+        server_state: Arc<ServerState>,
+        mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
+        let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
+        let service = grpc::typedb_service::TypeDBService::new(address.clone(), server_state.clone());
         let mut grpc_server =
             tonic::transport::Server::builder().http2_keepalive_interval(Some(GRPC_CONNECTION_KEEPALIVE));
         if let Some(tls_config) = grpc::encryption::prepare_tls_config(encryption_config)? {
@@ -337,9 +120,6 @@ impl Server {
                 .tls_config(tls_config)
                 .map_err(|source| ServerOpenError::GrpcTlsFailedConfiguration { source: Arc::new(source) })?;
         }
-        let authenticator =
-            grpc::authenticator::Authenticator::new(credential_verifier, token_manager, diagnostics_manager);
-
         grpc_server
             .layer(&authenticator)
             .add_service(typedb_protocol::type_db_server::TypeDbServer::new(service))
@@ -348,21 +128,18 @@ impl Server {
                 shutdown_receiver.changed().await.expect("Expected shutdown receiver signal");
             })
             .await
-            .map_err(|source| ServerOpenError::GrpcServe { address, source: Arc::new(source) })
+            .map_err(|err| ServerOpenError::GrpcServe { address, source: Arc::new(err) })
     }
 
     async fn serve_http(
+        server_info: ServerInfo,
         address: SocketAddr,
-        credential_verifier: Arc<CredentialVerifier>,
-        token_manager: Arc<TokenManager>,
-        diagnostics_manager: Arc<DiagnosticsManager>,
         encryption_config: &EncryptionConfig,
-        mut shutdown_receiver: tokio::sync::watch::Receiver<()>,
-        service: http::typedb_service::TypeDBService,
+        server_state: Arc<ServerState>,
+        mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
-        let authenticator =
-            http::authenticator::Authenticator::new(credential_verifier, token_manager, diagnostics_manager);
-
+        let authenticator = http::authenticator::Authenticator::new(server_state.clone());
+        let service = http::typedb_service::TypeDBService::new(server_info, address, server_state.clone());
         let encryption_config = http::encryption::prepare_tls_config(encryption_config)?;
         let http_service = Arc::new(service);
         let router_service = http::typedb_service::TypeDBService::create_protected_router(http_service.clone())
@@ -390,7 +167,18 @@ impl Server {
         .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
     }
 
-    async fn resolve_address(address: String) -> SocketAddr {
+    async fn validate_and_resolve_http_address(
+        http_address: String,
+        grpc_address: SocketAddr,
+    ) -> Result<SocketAddr, ServerOpenError> {
+        let http_address = Self::resolve_address(http_address).await;
+        if grpc_address == http_address {
+            return Err(ServerOpenError::GrpcHttpConflictingAddress { address: grpc_address });
+        }
+        Ok(http_address)
+    }
+
+    pub async fn resolve_address(address: String) -> SocketAddr {
         lookup_host(address.clone())
             .await
             .unwrap()
@@ -398,13 +186,12 @@ impl Server {
             .unwrap_or_else(|| panic!("Unable to map address '{}' to any IP addresses", address))
     }
 
-    fn print_hello(logo: &str, distribution: &str, version: &str, is_development_mode_enabled: bool) {
-        println!("{logo}"); // very important
-        let version = version.trim();
+    fn print_hello(server_info: ServerInfo, is_development_mode_enabled: bool) {
+        println!("{}", server_info.logo); // very important
         if is_development_mode_enabled {
-            println!("Running {distribution} {version} in development mode.");
+            println!("Running {} {} in development mode.", server_info.distribution, server_info.version);
         } else {
-            println!("Running {distribution} {version}.");
+            println!("Running {} {}.", server_info.distribution, server_info.version);
         }
     }
 
@@ -416,27 +203,33 @@ impl Server {
         println!(".\nReady!");
     }
 
-    fn spawn_shutdown_handler(shutdown_signal_sender: tokio::sync::watch::Sender<()>) {
+    fn spawn_shutdown_handler(shutdown_sender: Sender<()>) {
         tokio::spawn(async move {
-            Self::listen_to_ctrl_c_signal().await;
+            Self::wait_for_ctrl_c_signal().await;
             println!("\nReceived CTRL-C. Initiating shutdown...");
-            shutdown_signal_sender.send(()).expect("Expected a successful shutdown signal");
+            shutdown_sender.send(()).expect("Expected a successful shutdown signal");
 
             tokio::spawn(Self::forced_shutdown_handler());
         });
     }
 
     async fn forced_shutdown_handler() {
-        Self::listen_to_ctrl_c_signal().await;
+        Self::wait_for_ctrl_c_signal().await;
         println!("\nReceived CTRL-C. Forcing shutdown...");
         std::process::exit(1);
     }
 
-    async fn listen_to_ctrl_c_signal() {
+    async fn wait_for_ctrl_c_signal() {
         tokio::signal::ctrl_c().await.expect("Failed to listen for CTRL-C signal");
     }
 
+    fn install_default_encryption_provider() -> Result<(), ServerOpenError> {
+        tokio_rustls::rustls::crypto::ring::default_provider()
+            .install_default()
+            .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
+    }
+
     pub fn database_manager(&self) -> &DatabaseManager {
-        self.grpc_service.database_manager()
+        self.server_state.database_manager()
     }
 }

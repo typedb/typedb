@@ -39,6 +39,11 @@ features = {}
 		version = "1.0.219"
 		default-features = false
 
+	[dependencies.resource]
+		path = "../../../../../resource"
+		features = []
+		default-features = false
+
 	[dependencies.cucumber]
 		features = ["default", "macros"]
 		version = "0.19.1"

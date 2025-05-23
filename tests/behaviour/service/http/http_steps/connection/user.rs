@@ -14,7 +14,7 @@ use crate::{
     generic_step,
     message::{users, users_create, users_delete, users_get, users_update},
     params::TokenMode,
-    util::{iter_table, random_uuid},
+    util::iter_table,
     Context, HttpContext,
 };
 

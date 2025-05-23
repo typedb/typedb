@@ -50,7 +50,6 @@ use crate::{
         get_struct_field_status, get_sub_status, get_type_annotation_status, get_value_type_status, DefinableStatus,
         DefinableStatusMode,
     },
-    define::DefineError,
 };
 
 macro_rules! verify_no_annotations_for_capability {

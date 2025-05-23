@@ -209,7 +209,7 @@ fn structs_lists_optionals() {
                 } = err.as_ref()
                 {
                     if let RepresentationError::UnimplementedLanguageFeature { feature } = err.as_ref() {
-                        matches = (feature == &error::UnimplementedFeature::Optionals)
+                        matches = feature == &error::UnimplementedFeature::Optionals
                     }
                 }
             }

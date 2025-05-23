@@ -7,7 +7,6 @@
 use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
-    fmt::Write,
     sync::Arc,
 };
 
