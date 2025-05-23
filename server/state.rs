@@ -48,9 +48,6 @@ use crate::{
 
 #[derive(Debug)]
 pub struct ServerState {
-    config: Config,
-    id: String,
-    deployment_id: String,
     pub database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
@@ -102,9 +99,6 @@ impl ServerState {
         );
 
         Ok(Self {
-            config,
-            id: server_id,
-            deployment_id,
             database_manager: database_manager.clone(),
             user_manager,
             credential_verifier,
