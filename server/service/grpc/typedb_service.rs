@@ -173,7 +173,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             &self.server_state.diagnostics_manager,
             Some(name.clone()),
             ActionKind::DatabasesGet,
-            || match self.server_state.databases_get(name.clone()) {
+            || match self.server_state.databases_get(&name) {
                 Some(db) => Ok(Response::new(database_get_res(&self.address, db.name().to_string()))),
                 None => Err(StateError::DatabaseDoesNotExist { name }.into_error_message().into_status()),
             },
@@ -189,7 +189,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             &self.server_state.diagnostics_manager,
             Some(name.clone()),
             ActionKind::DatabasesContains,
-            || Ok(Response::new(database_contains_res(self.server_state.databases_contains(name)))),
+            || Ok(Response::new(database_contains_res(self.server_state.databases_contains(&name)))),
         )
     }
 
@@ -270,7 +270,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 .map_err(|err| err.into_error_message().into_status())?;
             let name = request.into_inner().name;
             self.server_state
-                .users_get(name, accessor)
+                .users_get(&name, accessor)
                 .map(|user| Ok(Response::new(users_get_res(user))))
                 .map_err(|err| err.into_error_message().into_status())?
         })

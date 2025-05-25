@@ -209,15 +209,15 @@ impl ServerState {
         self.database_manager.database_names()
     }
 
-    pub fn databases_get(&self, name: String) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.database(name.as_str())
+    pub fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+        self.database_manager.database(name)
     }
 
-    pub fn databases_contains(&self, name: String) -> bool {
-        self.database_manager.database(&name).is_some()
+    pub fn databases_contains(&self, name: &str) -> bool {
+        self.database_manager.database(name).is_some()
     }
 
-    pub fn databases_create(&self, name: String) -> Result<(), DatabaseCreateError> {
+    pub fn databases_create(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         self.database_manager.create_database(name)
     }
 
@@ -279,16 +279,16 @@ impl ServerState {
             .map_err(|err| StateError::ConceptReadError { typedb_source: err })
     }
 
-    pub fn database_delete(&self, name: String) -> Result<(), DatabaseDeleteError> {
+    pub fn database_delete(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
         self.database_manager.delete_database(name)
     }
 
-    pub fn users_get(&self, name: String, accessor: Accessor) -> Result<User, StateError> {
-        if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name.as_str()) {
+    pub fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, StateError> {
+        if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name) {
             return Err(StateError::OperationNotPermitted {});
         }
 
-        match self.user_manager.get(name.as_str()) {
+        match self.user_manager.get(name) {
             Ok(get) => match get {
                 Some((user, _)) => Ok(user),
                 None => Err(StateError::UserDoesNotExist {}),

@@ -270,7 +270,7 @@ impl TypeDBService {
             || {
                 let database_name = service
                     .server_state
-                    .databases_get(database_path.database_name.clone())
+                    .databases_get(&database_path.database_name)
                     .ok_or(HttpServiceError::NotFound {})?
                     .name()
                     .to_string();
@@ -376,7 +376,7 @@ impl TypeDBService {
         run_with_diagnostics(&service.server_state.diagnostics_manager, None::<&str>, ActionKind::UsersGet, || {
             service
                 .server_state
-                .users_get(user_path.username.clone(), accessor)
+                .users_get(&user_path.username, accessor)
                 .map_err(|typedb_source| HttpServiceError::State { typedb_source })
                 .map(|user| JsonBody(encode_user(&user)))
         })
