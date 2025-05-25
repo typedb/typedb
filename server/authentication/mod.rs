@@ -15,6 +15,7 @@ use http::Extensions;
 use tonic::metadata::MetadataMap;
 
 use crate::state::ServerState;
+use crate::state::IState;
 
 pub(crate) mod credential_verifier;
 pub(crate) mod token_manager;

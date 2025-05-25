@@ -31,31 +31,29 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn new(
+    pub fn new(
         server_info: ServerInfo,
         config: Config,
-        deployment_id: Option<String>,
-    ) -> Result<Self, ServerOpenError> {
+        server_state: Arc<ServerState>
+    ) -> Self {
         let (shutdown_sender, shutdown_receiver) = channel(());
-        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sender, shutdown_receiver).await
+        Self::new_with_external_shutdown(server_info, config, server_state, shutdown_sender, shutdown_receiver)
     }
 
-    pub async fn new_with_external_shutdown(
+    pub fn new_with_external_shutdown(
         server_info: ServerInfo,
         config: Config,
-        deployment_id: Option<String>,
+        server_state: Arc<ServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
-    ) -> Result<Self, ServerOpenError> {
-        let server_state =
-            ServerState::new(server_info, config.clone(), deployment_id, shutdown_receiver.clone()).await;
-        server_state.map(|srv_state| Self {
+    ) -> Self {
+        Self {
             server_info,
             config,
-            server_state: Arc::new(srv_state),
+            server_state,
             shutdown_sender,
             shutdown_receiver,
-        })
+        }
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {

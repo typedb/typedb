@@ -9,7 +9,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-
+use std::net::SocketAddr;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
@@ -45,6 +45,55 @@ use crate::{
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
 };
+
+pub trait IState {
+    fn databases_all(&self) -> Vec<String>;
+
+    fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
+
+    fn databases_contains(&self, name: &str) -> bool;
+
+    fn databases_create(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError>;
+
+    fn database_schema(&self, name: String) -> Result<String, StateError>;
+
+    fn database_type_schema(&self, name: String) -> Result<String, StateError>;
+
+    fn database_delete(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError>;
+
+    fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, StateError>;
+
+    fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, StateError>;
+
+    fn users_contains(&self, name: &str) -> Result<bool, UserGetError>;
+
+    fn users_create(
+        &self,
+        user: &User,
+        credential: &Credential,
+        accessor: Accessor
+    ) -> Result<(), StateError>;
+
+    async fn users_update(
+        &self,
+        name: &str,
+        user_update: Option<User>,
+        credential_update: Option<Credential>,
+        accessor: Accessor
+    ) -> Result<(), StateError>;
+
+    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError>;
+
+    fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError>;
+    
+    async fn token_create(
+        &self,
+        username: String,
+        password: String
+    ) -> Result<String, AuthenticationError>;
+    
+    async fn token_get_owner(&self, token: &str) -> Option<String>;
+}
 
 #[derive(Debug)]
 pub struct ServerState {
@@ -95,7 +144,7 @@ impl ServerState {
                 storage_directory.clone(),
                 config.development_mode.enabled,
             )
-            .await,
+                .await,
         );
 
         Ok(Self {
@@ -205,40 +254,7 @@ impl ServerState {
         diagnostics_manager.submit_database_metrics(metrics);
     }
 
-    pub fn databases_all(&self) -> Vec<String> {
-        self.database_manager.database_names()
-    }
-
-    pub fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
-        self.database_manager.database(name)
-    }
-
-    pub fn databases_contains(&self, name: &str) -> bool {
-        self.database_manager.database(name).is_some()
-    }
-
-    pub fn databases_create(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
-        self.database_manager.create_database(name)
-    }
-
-    pub fn database_schema(&self, name: String) -> Result<String, StateError> {
-        match self.database_manager.database(&name) {
-            Some(db) => Self::get_database_schema(db),
-            None => Err(StateError::DatabaseDoesNotExist { name }),
-        }
-    }
-
-    pub fn database_type_schema(&self, name: String) -> Result<String, StateError> {
-        match self.database_manager.database(&name) {
-            None => Err(StateError::DatabaseDoesNotExist { name: name.clone() }),
-            Some(database) => match Self::get_database_type_schema(database) {
-                Ok(type_schema) => Ok(type_schema),
-                Err(err) => Err(err),
-            },
-        }
-    }
-
-    fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, StateError> {
+    pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, StateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
             .map_err(|err| StateError::FailedToOpenPrerequisiteTransaction {})?;
         let types_syntax = Self::get_types_syntax(&transaction)?;
@@ -251,7 +267,7 @@ impl ServerState {
         Ok(schema)
     }
 
-    fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
+    pub fn get_functions_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
         transaction
             .function_manager
             .get_functions_syntax(transaction.snapshot())
@@ -272,18 +288,58 @@ impl ServerState {
         Ok(type_schema)
     }
 
-    fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
+    pub fn get_types_syntax<D: DurabilityClient>(transaction: &TransactionRead<D>) -> Result<String, StateError> {
         transaction
             .type_manager
             .get_types_syntax(transaction.snapshot())
             .map_err(|err| StateError::ConceptReadError { typedb_source: err })
     }
 
-    pub fn database_delete(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
+    pub fn database_manager(&self) -> &DatabaseManager {
+        &self.database_manager
+    }
+}
+
+impl IState for ServerState {
+
+    fn databases_all(&self) -> Vec<String> {
+        self.database_manager.database_names()
+    }
+
+    fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>> {
+        self.database_manager.database(name)
+    }
+
+    fn databases_contains(&self, name: &str) -> bool {
+        self.database_manager.database(name).is_some()
+    }
+
+    fn databases_create(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
+        self.database_manager.create_database(name)
+    }
+
+    fn database_schema(&self, name: String) -> Result<String, StateError> {
+        match self.database_manager.database(&name) {
+            Some(db) => Self::get_database_schema(db),
+            None => Err(StateError::DatabaseDoesNotExist { name }),
+        }
+    }
+
+    fn database_type_schema(&self, name: String) -> Result<String, StateError> {
+        match self.database_manager.database(&name) {
+            None => Err(StateError::DatabaseDoesNotExist { name: name.clone() }),
+            Some(database) => match Self::get_database_type_schema(database) {
+                Ok(type_schema) => Ok(type_schema),
+                Err(err) => Err(err),
+            },
+        }
+    }
+
+    fn database_delete(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
         self.database_manager.delete_database(name)
     }
 
-    pub fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, StateError> {
+    fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, StateError> {
         if !PermissionManager::exec_user_get_permitted(accessor.0.as_str(), name) {
             return Err(StateError::OperationNotPermitted {});
         }
@@ -297,18 +353,18 @@ impl ServerState {
         }
     }
 
-    pub fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, StateError> {
+    fn users_all(&self, accessor: Accessor) -> Result<Vec<User>, StateError> {
         if !PermissionManager::exec_user_all_permitted(accessor.0.as_str()) {
             return Err(StateError::OperationNotPermitted {});
         }
         Ok(self.user_manager.all())
     }
 
-    pub fn users_contains(&self, name: &str) -> Result<bool, UserGetError> {
+    fn users_contains(&self, name: &str) -> Result<bool, UserGetError> {
         self.user_manager.contains(name)
     }
 
-    pub fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), StateError> {
+    fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), StateError> {
         if !PermissionManager::exec_user_create_permitted(accessor.0.as_str()) {
             return Err(StateError::OperationNotPermitted {});
         }
@@ -318,7 +374,7 @@ impl ServerState {
             .map_err(|err| StateError::UserCannotBeCreated { typedb_source: err })
     }
 
-    pub async fn users_update(
+    async fn users_update(
         &self,
         name: &str,
         user_update: Option<User>,
@@ -335,7 +391,7 @@ impl ServerState {
         Ok(())
     }
 
-    pub async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError> {
+    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError> {
         if !PermissionManager::exec_user_delete_allowed(accessor.0.as_str(), name) {
             return Err(StateError::OperationNotPermitted {});
         }
@@ -345,21 +401,17 @@ impl ServerState {
         Ok(())
     }
 
-    pub fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError> {
+    fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError> {
         self.credential_verifier.verify_password(username, password)
     }
 
-    pub async fn token_create(&self, username: String, password: String) -> Result<String, AuthenticationError> {
+    async fn token_create(&self, username: String, password: String) -> Result<String, AuthenticationError> {
         self.user_verify_password(&username, &password)?;
         Ok(self.token_manager.new_token(username).await)
     }
 
-    pub async fn token_get_owner(&self, token: &str) -> Option<String> {
+    async fn token_get_owner(&self, token: &str) -> Option<String> {
         self.token_manager.get_valid_token_owner(token).await
-    }
-
-    pub fn database_manager(&self) -> &DatabaseManager {
-        &self.database_manager
     }
 }
 

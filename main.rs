@@ -8,7 +8,7 @@
 #![deny(elided_lifetimes_in_paths)]
 
 use std::path::PathBuf;
-
+use std::sync::Arc;
 use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
@@ -17,6 +17,8 @@ use server::{
     server::Server,
 };
 use tokio::runtime::Runtime;
+use tokio::sync::watch::channel;
+use server::state::ServerState;
 
 fn main() {
     initialise_abort_on_panic();
@@ -30,7 +32,10 @@ fn main() {
     initialise_logging_global(&config.logging.directory);
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
-        let server = Server::new(SERVER_INFO, config, None).await.unwrap();
+        let (shutdown_sender, shutdown_receiver) = channel(());
+        
+        let server_state = ServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await.unwrap();
+        let server = Server::new_with_external_shutdown(SERVER_INFO, config, Arc::new(server_state), shutdown_sender, shutdown_receiver);
         match server.serve().await {
             Ok(_) => println!("Exited."),
             Err(err) => println!("Exited with error: {:?}", err),

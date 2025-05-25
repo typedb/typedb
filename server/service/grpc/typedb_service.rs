@@ -46,6 +46,7 @@ use crate::{
     },
     state::{ServerState, StateError},
 };
+use crate::state::IState;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {

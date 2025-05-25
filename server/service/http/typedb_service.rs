@@ -52,6 +52,7 @@ use crate::{
     },
     state::ServerState,
 };
+use crate::state::IState;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
