@@ -13,7 +13,7 @@ use tokio::{
     net::lookup_host,
     sync::watch::{channel, Receiver, Sender},
 };
-
+use resource::constants::server::SERVER_INFO;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
@@ -31,16 +31,17 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(
+    pub async fn new_core(
         server_info: ServerInfo,
         config: Config,
-        server_state: Arc<ServerState>
-    ) -> Self {
-        let (shutdown_sender, shutdown_receiver) = channel(());
-        Self::new_with_external_shutdown(server_info, config, server_state, shutdown_sender, shutdown_receiver)
+        shutdown_sender: Sender<()>,
+        shutdown_receiver: Receiver<()>,
+    ) -> Result<Self, ServerOpenError> {
+        let server_state = ServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?;
+        Ok(Self::new(server_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
     }
-
-    pub fn new_with_external_shutdown(
+    
+    pub fn new(
         server_info: ServerInfo,
         config: Config,
         server_state: Arc<ServerState>,

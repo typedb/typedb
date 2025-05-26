@@ -11,19 +11,18 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::constants::server::SERVER_INFO;
 use server::{parameters::config::Config, server::Server};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
-
+use resource::server_info::ServerInfo;
+use server::state::ServerState;
 use crate::{generic_step, Context};
 
 mod database;
 mod transaction;
 
 const ADDRESS: &str = "0.0.0.0:1729";
-const DISTRIBUTION: &str = "TypeDB CE TEST";
-const VERSION: &str = "0.0.0";
+const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 #[apply(generic_step)]
@@ -31,10 +30,12 @@ static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 pub async fn typedb_starts(context: &mut Context) {
     TYPEDB
         .get_or_init(|| async {
+            let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+            let shutdown_sender_clone = shutdown_sender.clone();
             let server_dir = create_tmp_dir();
             let config =
                 Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build().unwrap();
-            let server = Server::new(SERVER_INFO, config, None).await.unwrap();
+            let server = Server::new_core(SERVER_INFO, config, shutdown_sender_clone, shutdown_receiver).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })
         .await;

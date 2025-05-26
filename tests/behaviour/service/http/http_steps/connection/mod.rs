@@ -14,6 +14,7 @@ use server::{
     parameters::config::{AuthenticationConfig, Config},
     server::Server,
 };
+use server::state::ServerState;
 use test_utils::create_tmp_dir;
 
 use crate::{
@@ -21,6 +22,7 @@ use crate::{
     message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
     Context, TEST_TOKEN_EXPIRATION,
 };
+use std::sync::Arc;
 
 mod database;
 mod transaction;
@@ -46,11 +48,7 @@ pub(crate) async fn start_typedb(
             .unwrap();
 
         let server_future = async {
-            let server =
-                Server::new_with_external_shutdown(SERVER_INFO, config, None, shutdown_sender_clone, shutdown_receiver)
-                    .await
-                    .expect("Failed to start TypeDB server");
-
+            let server = Server::new_core(SERVER_INFO, config, shutdown_sender_clone, shutdown_receiver).await.expect("Failed to start TypeDB server");;
             server.serve().await
         };
 
