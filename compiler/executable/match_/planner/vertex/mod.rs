@@ -192,7 +192,7 @@ impl Cost {
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
         Self {
-            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix missing cartesian product compression when retrieving from Rocks
+            cost: std::cmp::min(self.cost, other.cost), // We seek at most twice the size of the smaller iterator.
             io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probability of join = 1 / total_join_size
         }
     }
