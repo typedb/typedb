@@ -6,12 +6,11 @@
 
 use std::{net::SocketAddr, sync::Arc};
 
-use crate::state::ServerState;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
-    state::LocalServerState,
+    state::{BoxServerState, LocalServerState},
 };
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
@@ -25,7 +24,7 @@ use tokio::{
 pub struct Server {
     server_info: ServerInfo,
     config: Config,
-    server_state: Arc<Box<dyn ServerState + Send + Sync>>,
+    server_state: Arc<BoxServerState>,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
@@ -44,7 +43,7 @@ impl Server {
     pub fn new(
         server_info: ServerInfo,
         config: Config,
-        server_state: Arc<Box<dyn ServerState + Send + Sync>>,
+        server_state: Arc<BoxServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
@@ -107,7 +106,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<Box<dyn ServerState + Send + Sync>>,
+        server_state: Arc<BoxServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -134,7 +133,7 @@ impl Server {
         server_info: ServerInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<Box<dyn ServerState + Send + Sync>>,
+        server_state: Arc<BoxServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());

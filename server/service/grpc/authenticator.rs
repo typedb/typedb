@@ -11,7 +11,7 @@ use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
-use crate::state::ServerState;
+use crate::state::BoxServerState;
 use crate::{
     authentication::authenticate,
     service::grpc::{
@@ -23,11 +23,11 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Authenticator {
-    server_state: Arc<Box<dyn ServerState + Send + Sync>>,
+    server_state: Arc<BoxServerState>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<Box<dyn ServerState + Send + Sync>>) -> Self {
+    pub(crate) fn new(server_state: Arc<BoxServerState>) -> Self {
         Self { server_state }
     }
 }

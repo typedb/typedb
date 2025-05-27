@@ -46,6 +46,8 @@ use crate::{
     parameters::config::{Config, DiagnosticsConfig},
 };
 
+pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
+
 #[async_trait]
 pub trait ServerState {
     fn databases_all(&self) -> Vec<String>;
