@@ -64,7 +64,7 @@ pub(crate) async fn authenticate<T>(
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub struct Accessor(pub(crate) String);
+pub struct Accessor(pub String);
 
 impl Accessor {
     pub fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
