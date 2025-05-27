@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::{collections::HashMap, sync::Arc};
+use std::collections::HashMap;
 
 use itertools::Either;
 use macro_rules_attribute::apply;
@@ -13,7 +13,6 @@ use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, Config},
     server::Server,
-    state::LocalServerState,
 };
 use test_utils::create_tmp_dir;
 

@@ -44,7 +44,7 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{BoxServerState, LocalServerState, StateError},
+    state::{BoxServerState, StateError},
 };
 
 #[derive(Debug)]
