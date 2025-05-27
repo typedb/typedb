@@ -7,12 +7,16 @@
 use std::{
     error::Error,
     fmt,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
 use macro_rules_attribute::apply;
 use resource::constants::server::SERVER_INFO;
-use server::{parameters::config::Config, server::Server};
+use server::{
+    parameters::config::{Config, ConfigBuilder},
+    server::Server,
+};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
 
@@ -26,14 +30,23 @@ const DISTRIBUTION: &str = "TypeDB CE TEST";
 const VERSION: &str = "0.0.0";
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
+fn config_path() -> PathBuf {
+    return std::env::current_dir().unwrap().join("server/config.yml");
+}
+
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
     TYPEDB
         .get_or_init(|| async {
             let server_dir = create_tmp_dir();
-            let config =
-                Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build().unwrap();
+            let config = ConfigBuilder::from_file(config_path())
+                .expect("Failed to load config file")
+                .server_address(ADDRESS)
+                .data_directory(server_dir.as_ref())
+                .development_mode(true)
+                .finish()
+                .unwrap();
             let server = Server::new(SERVER_INFO, config, None).await.unwrap();
             (server_dir, Arc::new(Mutex::new(server)))
         })

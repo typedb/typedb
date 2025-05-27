@@ -44,6 +44,7 @@ rust_library(
         "@crates//:serde_json",
         "@crates//:tokio",
     ],
+    data = ["//server:config.yml"]
 )
 
 checkstyle_test(

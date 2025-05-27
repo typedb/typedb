@@ -38,7 +38,7 @@ rust_test(
         "@typedb_behaviour//query/language:update.feature",
         "@typedb_behaviour//query/language:validation.feature",
 
-
+        "//server:config.yml",
     ],
     crate_features = ["bazel"],
     env = {"RUST_MIN_STACK" : "40960000"}, # for recursion.feature

@@ -13,7 +13,10 @@ use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
 use server::{
-    parameters::{cli::CLIArgs, config::Config},
+    parameters::{
+        cli::CLIArgs,
+        config::{Config, ConfigBuilder},
+    },
     server::Server,
 };
 use tokio::runtime::Runtime;
@@ -22,11 +25,12 @@ fn main() {
     initialise_abort_on_panic();
     let cli_args: CLIArgs = CLIArgs::parse();
     let config_file = match cli_args.config_file_override.as_ref() {
-        None => Config::resolve_path_from_executable(&PathBuf::from(DEFAULT_CONFIG_PATH)),
+        None => ConfigBuilder::resolve_path_from_executable(&PathBuf::from(DEFAULT_CONFIG_PATH)),
         Some(path) => CLIArgs::resolve_path_from_pwd(&path.into()),
     };
-    let mut config = Config::from_file(config_file.into()).expect("Error reading from config file");
-    cli_args.override_config(&mut config).expect("Error validating config file overridden with cli args");
+    let mut config_builder = ConfigBuilder::from_file(config_file.into()).expect("Error reading from config file");
+    config_builder.override_with_cliargs(cli_args);
+    let config = config_builder.finish().expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {

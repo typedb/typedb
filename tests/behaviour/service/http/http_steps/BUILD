@@ -38,6 +38,7 @@ rust_library(
 
         "@typeql//rust:typeql",
     ],
+    data = ["//server:config.yml"]
 )
 
 checkstyle_test(
