@@ -6,19 +6,22 @@
 
 use std::{net::SocketAddr, sync::Arc};
 
+use axum_server::{tls_rustls::RustlsConfig, Handle};
+use database::database_manager::DatabaseManager;
+use resource::{
+    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
+    server_info::ServerInfo,
+};
+use tokio::{
+    net::lookup_host,
+    sync::watch::{Receiver, Sender},
+};
+
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
     state::{BoxServerState, LocalServerState},
-};
-use axum_server::{tls_rustls::RustlsConfig, Handle};
-use database::database_manager::DatabaseManager;
-use resource::constants::server::SERVER_INFO;
-use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
-use tokio::{
-    net::lookup_host,
-    sync::watch::{Receiver, Sender},
 };
 
 #[derive(Debug)]
@@ -40,7 +43,7 @@ impl Server {
         let server_state = LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?;
         Ok(Self::new(server_info, config, Arc::new(Box::new(server_state)), shutdown_sender, shutdown_receiver))
     }
-    
+
     pub fn new(
         server_info: ServerInfo,
         config: Config,
@@ -48,13 +51,7 @@ impl Server {
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
-        Self {
-            server_info,
-            config,
-            server_state,
-            shutdown_sender,
-            shutdown_receiver,
-        }
+        Self { server_info, config, server_state, shutdown_sender, shutdown_receiver }
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {

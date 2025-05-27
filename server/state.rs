@@ -4,6 +4,13 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use std::{
+    fmt::Debug,
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
+};
+
 use async_trait::async_trait;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
@@ -20,12 +27,6 @@ use resource::{
     constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH},
     server_info::ServerInfo,
 };
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-use std::fmt::Debug;
 use storage::durability_client::{DurabilityClient, WALClient};
 use system::{
     concepts::{Credential, User},
@@ -71,30 +72,21 @@ pub trait ServerState: Debug {
 
     fn users_contains(&self, name: &str) -> Result<bool, UserGetError>;
 
-    fn users_create(
-        &self,
-        user: &User,
-        credential: &Credential,
-        accessor: Accessor
-    ) -> Result<(), StateError>;
+    fn users_create(&self, user: &User, credential: &Credential, accessor: Accessor) -> Result<(), StateError>;
 
     async fn users_update(
         &self,
         name: &str,
         user_update: Option<User>,
         credential_update: Option<Credential>,
-        accessor: Accessor
+        accessor: Accessor,
     ) -> Result<(), StateError>;
 
-    async fn users_delete(&self, name: &str, accessor: Accessor) ->  Result<(), StateError>;
+    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError>;
 
     fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError>;
 
-    async fn token_create(
-        &self,
-        username: String,
-        password: String
-    ) -> Result<String, AuthenticationError>;
+    async fn token_create(&self, username: String, password: String) -> Result<String, AuthenticationError>;
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 
@@ -154,7 +146,7 @@ impl LocalServerState {
                 storage_directory.clone(),
                 config.development_mode.enabled,
             )
-                .await,
+            .await,
         );
 
         Ok(Self {
@@ -304,12 +296,10 @@ impl LocalServerState {
             .get_types_syntax(transaction.snapshot())
             .map_err(|err| StateError::ConceptReadError { typedb_source: err })
     }
-
 }
 
 #[async_trait]
 impl ServerState for LocalServerState {
-
     fn databases_all(&self) -> Vec<String> {
         self.database_manager.database_names()
     }

@@ -18,7 +18,6 @@ use typedb_protocol::{
 };
 use uuid::Uuid;
 
-use crate::state::BoxServerState;
 use crate::{
     authentication::{Accessor, AuthenticationError},
     service::{
@@ -45,7 +44,7 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{LocalServerState, StateError},
+    state::{BoxServerState, LocalServerState, StateError},
 };
 
 #[derive(Debug)]

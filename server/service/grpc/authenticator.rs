@@ -11,14 +11,13 @@ use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
-use crate::state::BoxServerState;
 use crate::{
     authentication::authenticate,
     service::grpc::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-    }
-    ,
+    },
+    state::BoxServerState,
 };
 
 #[derive(Clone, Debug)]

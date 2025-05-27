@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::Arc};
 
 use itertools::Either;
 use macro_rules_attribute::apply;
@@ -13,8 +13,8 @@ use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, Config},
     server::Server,
+    state::LocalServerState,
 };
-use server::state::LocalServerState;
 use test_utils::create_tmp_dir;
 
 use crate::{
@@ -22,7 +22,6 @@ use crate::{
     message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
     Context, TEST_TOKEN_EXPIRATION,
 };
-use std::sync::Arc;
 
 mod database;
 mod transaction;
@@ -48,7 +47,10 @@ pub(crate) async fn start_typedb(
             .unwrap();
 
         let server_future = async {
-            let server = Server::new_with_local_server_state(SERVER_INFO, config, shutdown_sender_clone, shutdown_receiver).await.expect("Failed to start TypeDB server");;
+            let server =
+                Server::new_with_local_server_state(SERVER_INFO, config, shutdown_sender_clone, shutdown_receiver)
+                    .await
+                    .expect("Failed to start TypeDB server");
             server.serve().await
         };
 

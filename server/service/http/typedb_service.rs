@@ -28,7 +28,6 @@ use tokio::{
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
-use crate::state::BoxServerState;
 use crate::{
     authentication::Accessor,
     service::{
@@ -50,8 +49,8 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
         QueryType,
-    }
-    ,
+    },
+    state::BoxServerState,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -254,9 +253,12 @@ impl TypeDBService {
     }
 
     async fn databases(_version: ProtocolVersion, State(service): State<Arc<TypeDBService>>) -> impl IntoResponse {
-        run_with_diagnostics(&service.server_state.diagnostics_manager(), None::<&str>, ActionKind::DatabasesAll, || {
-            Ok(JsonBody(encode_databases(service.server_state.databases_all())))
-        })
+        run_with_diagnostics(
+            &service.server_state.diagnostics_manager(),
+            None::<&str>,
+            ActionKind::DatabasesAll,
+            || Ok(JsonBody(encode_databases(service.server_state.databases_all()))),
+        )
     }
 
     async fn databases_get(
