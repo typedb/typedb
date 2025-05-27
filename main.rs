@@ -7,8 +7,6 @@
 #![deny(unused_must_use)]
 #![deny(elided_lifetimes_in_paths)]
 
-use std::path::PathBuf;
-use std::sync::Arc;
 use clap::Parser;
 use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
@@ -16,9 +14,9 @@ use server::{
     parameters::{cli::CLIArgs, config::Config},
     server::Server,
 };
+use std::path::PathBuf;
 use tokio::runtime::Runtime;
 use tokio::sync::watch::channel;
-use server::state::ServerState;
 
 fn main() {
     initialise_abort_on_panic();

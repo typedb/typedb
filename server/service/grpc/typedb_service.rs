@@ -18,6 +18,7 @@ use typedb_protocol::{
 };
 use uuid::Uuid;
 
+use crate::state::IState;
 use crate::{
     authentication::{Accessor, AuthenticationError},
     service::{
@@ -46,7 +47,6 @@ use crate::{
     },
     state::{ServerState, StateError},
 };
-use crate::state::IState;
 
 #[derive(Debug)]
 pub(crate) struct TypeDBService {

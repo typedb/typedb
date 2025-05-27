@@ -6,19 +6,19 @@
 
 use std::{net::SocketAddr, sync::Arc};
 
-use axum_server::{tls_rustls::RustlsConfig, Handle};
-use database::database_manager::DatabaseManager;
-use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
-use tokio::{
-    net::lookup_host,
-    sync::watch::{channel, Receiver, Sender},
-};
-use resource::constants::server::SERVER_INFO;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
     state::ServerState,
+};
+use axum_server::{tls_rustls::RustlsConfig, Handle};
+use database::database_manager::DatabaseManager;
+use resource::constants::server::SERVER_INFO;
+use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
+use tokio::{
+    net::lookup_host,
+    sync::watch::{Receiver, Sender},
 };
 
 #[derive(Debug)]

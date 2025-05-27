@@ -4,12 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{
-    fs,
-    path::{Path, PathBuf},
-    sync::Arc,
-};
-use std::net::SocketAddr;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
@@ -24,6 +18,11 @@ use rand::prelude::SliceRandom;
 use resource::{
     constants::server::{DATABASE_METRICS_UPDATE_INTERVAL, SERVER_ID_ALPHABET, SERVER_ID_FILE_NAME, SERVER_ID_LENGTH},
     server_info::ServerInfo,
+};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+    sync::Arc,
 };
 use storage::durability_client::{DurabilityClient, WALClient};
 use system::{

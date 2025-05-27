@@ -28,6 +28,7 @@ use tokio::{
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
+use crate::state::IState;
 use crate::{
     authentication::Accessor,
     service::{
@@ -52,7 +53,6 @@ use crate::{
     },
     state::ServerState,
 };
-use crate::state::IState;
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
