@@ -19,14 +19,15 @@ use crate::{
     },
     state::ServerState,
 };
+use crate::state::IState;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Authenticator {
-    server_state: Arc<Box<ServerState>>,
+    server_state: Arc<Box<dyn IState + Send + Sync>>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<Box<ServerState>>) -> Self {
+    pub(crate) fn new(server_state: Arc<Box<dyn IState + Send + Sync>>) -> Self {
         Self { server_state }
     }
 }
@@ -34,7 +35,7 @@ impl Authenticator {
 impl Authenticator {
     pub async fn authenticate(&self, request: Request<BoxBody>) -> Result<Request<BoxBody>, Status> {
         run_with_diagnostics_async(
-            self.server_state.diagnostics_manager.clone(),
+            self.server_state.diagnostics_manager(),
             None::<&str>,
             ActionKind::Authenticate,
             || async {

@@ -11,14 +11,15 @@ use http::{Request, Response};
 use tower::{Layer, Service};
 
 use crate::{authentication::authenticate, service::http::error::HttpServiceError, state::ServerState};
+use crate::state::IState;
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct Authenticator {
-    server_state: Arc<Box<ServerState>>,
+    server_state: Arc<Box<dyn IState + Send + Sync>>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<Box<ServerState>>) -> Self {
+    pub(crate) fn new(server_state: Arc<Box<dyn IState + Send + Sync>>) -> Self {
         Self { server_state }
     }
 }

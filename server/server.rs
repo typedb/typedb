@@ -20,12 +20,12 @@ use tokio::{
     net::lookup_host,
     sync::watch::{Receiver, Sender},
 };
+use crate::state::IState;
 
-#[derive(Debug)]
 pub struct Server {
     server_info: ServerInfo,
     config: Config,
-    server_state: Arc<Box<ServerState>>,
+    server_state: Arc<Box<dyn IState + Send + Sync>>,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
@@ -44,7 +44,7 @@ impl Server {
     pub fn new(
         server_info: ServerInfo,
         config: Config,
-        server_state: Arc<Box<ServerState>>,
+        server_state: Arc<Box<dyn IState + Send + Sync>>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
@@ -107,7 +107,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<Box<ServerState>>,
+        server_state: Arc<Box<dyn IState + Send + Sync>>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -134,7 +134,7 @@ impl Server {
         server_info: ServerInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<Box<ServerState>>,
+        server_state: Arc<Box<dyn IState + Send + Sync>>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
@@ -228,7 +228,7 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
-    pub fn database_manager(&self) -> &DatabaseManager {
+    pub fn database_manager(&self) -> Arc<DatabaseManager> {
         self.server_state.database_manager()
     }
 }

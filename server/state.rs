@@ -94,17 +94,22 @@ pub trait IState {
     ) -> Result<String, AuthenticationError>;
 
     async fn token_get_owner(&self, token: &str) -> Option<String>;
+
+    fn database_manager(&self) -> Arc<DatabaseManager>;
+
+    fn diagnostics_manager(&self) -> Arc<DiagnosticsManager>;
+
+    fn shutdown_receiver(&self) -> Receiver<()>;
 }
 
-#[derive(Debug)]
 pub struct ServerState {
     pub database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
     token_manager: Arc<TokenManager>,
-    pub diagnostics_manager: Arc<DiagnosticsManager>,
+    diagnostics_manager: Arc<DiagnosticsManager>,
     _database_diagnostics_updater: IntervalRunner,
-    pub shutdown_receiver: Receiver<()>,
+    shutdown_receiver: Receiver<()>,
 }
 
 impl ServerState {
@@ -296,9 +301,6 @@ impl ServerState {
             .map_err(|err| StateError::ConceptReadError { typedb_source: err })
     }
 
-    pub fn database_manager(&self) -> &DatabaseManager {
-        &self.database_manager
-    }
 }
 
 #[async_trait]
@@ -414,6 +416,18 @@ impl IState for ServerState {
 
     async fn token_get_owner(&self, token: &str) -> Option<String> {
         self.token_manager.get_valid_token_owner(token).await
+    }
+
+    fn database_manager(&self) -> Arc<DatabaseManager> {
+        self.database_manager.clone()
+    }
+
+    fn diagnostics_manager(&self) -> Arc<DiagnosticsManager> {
+        self.diagnostics_manager.clone()
+    }
+
+    fn shutdown_receiver(&self) -> Receiver<()> {
+        self.shutdown_receiver.clone()
     }
 }
 
