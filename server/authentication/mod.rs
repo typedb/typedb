@@ -65,10 +65,10 @@ pub(crate) async fn authenticate<T>(
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub(crate) struct Accessor(pub(crate) String);
+pub struct Accessor(pub(crate) String);
 
 impl Accessor {
-    pub(crate) fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
+    pub fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
         extensions.get::<Self>().cloned().ok_or_else(|| AuthenticationError::CorruptedAccessor {})
     }
 }
