@@ -90,8 +90,47 @@ use crate::service::{
         response_builders::database_manager::database_import_res_done,
     },
     import_service::DatabaseImportError,
-    transaction_service::{execute_schema_query, TransactionServiceError},
+    transaction_service::{execute_schema_query, with_transaction_parts, TransactionServiceError},
 };
+
+macro_rules! is_specializing_with_only_cardinality_specializations_fn {
+    (
+        $fn_name:ident,
+        $capability_ty:ty,
+        $get_cardinality_method:ident
+    ) => {
+        fn $fn_name(
+            snapshot: &impl ReadableSnapshot,
+            type_manager: &TypeManager,
+            capability: $capability_ty,
+        ) -> Result<bool, DatabaseImportError> {
+            let object_type = capability.object();
+            let interface_type = capability.interface();
+            let cardinalities = object_type
+                .$get_cardinality_method(snapshot, type_manager, interface_type)
+                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
+            let same_interface_type_count = cardinalities
+                .into_iter()
+                .filter(|constraint| constraint.source().interface() == interface_type)
+                .count();
+
+            // If this capability is affected by multiple cardinality constraints from the same interface type, then
+            // the object type has multiple ownerships of this interface type: some inherited and one declared (specializing)
+            if same_interface_type_count > 1 {
+                let non_cardinality_count = capability
+                    .get_annotations_declared(snapshot, type_manager)
+                    .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
+                    .into_iter()
+                    .map(|annotation| Into::<Annotation>::into(annotation.clone()).category())
+                    .filter(|category| !matches!(category, &AnnotationCategory::Cardinality))
+                    .count();
+                Ok(non_cardinality_count == 0)
+            } else {
+                Ok(false)
+            }
+        }
+    };
+}
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
 
@@ -129,7 +168,7 @@ impl DatabaseInfo {
     ) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
         match self.data_transaction.take() {
             Some(transaction) => Ok(transaction),
-            None => open_write_transaction(database),
+            None => DatabaseImportService::open_write_transaction(database),
         }
     }
 }
@@ -422,7 +461,7 @@ impl DatabaseImportService {
             result?;
             database_info.transaction_item_count += 1;
             if database_info.transaction_item_count % Self::COMMIT_BATCH_SIZE == 0 {
-                commit_write_transaction(database_info.data_transaction.take().unwrap())?;
+                Self::commit_write_transaction(database_info.data_transaction.take().unwrap())?;
             }
         }
 
@@ -436,7 +475,7 @@ impl DatabaseImportService {
         };
 
         if let Some(data_transaction) = database_info.data_transaction.take() {
-            commit_write_transaction(data_transaction)?;
+            Self::commit_write_transaction(data_transaction)?;
         }
 
         Self::validate_imported_data(&database_info.data_info)?;
@@ -487,33 +526,18 @@ impl DatabaseImportService {
         database: Arc<Database<WALClient>>,
         schema_info: &mut SchemaInfo,
     ) -> Result<(), DatabaseImportError> {
-        let transaction = open_schema_transaction(database)?;
-        let TransactionSchema {
-            snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        } = transaction;
-        let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
-
-        Self::make_attribute_types_independent(&mut inner_snapshot, &type_manager, &thing_manager, schema_info)?;
-        Self::make_relation_types_independent(&mut inner_snapshot, &type_manager, schema_info)?;
-        Self::relax_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager, schema_info)?;
-
-        let transaction = TransactionSchema::from_parts(
-            Arc::new(inner_snapshot),
-            type_manager,
-            thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        );
+        let transaction = Self::open_schema_transaction(database)?;
+        let (transaction, ()) =
+            with_transaction_parts!(TransactionSchema, transaction, |inner_snapshot, type_manager, thing_manager| {
+                Self::make_attribute_types_independent(
+                    &mut inner_snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    schema_info,
+                )?;
+                Self::make_relation_types_independent(&mut inner_snapshot, &type_manager, schema_info)?;
+                Self::relax_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager, schema_info)?;
+            });
         let (_, commit_result) = transaction.commit();
         commit_result.map_err(|typedb_source| DatabaseImportError::PreparationSchemaCommitFailed { typedb_source })
     }
@@ -522,33 +546,18 @@ impl DatabaseImportService {
         database: Arc<Database<WALClient>>,
         schema_info: &SchemaInfo,
     ) -> Result<(), DatabaseImportError> {
-        let transaction = open_schema_transaction(database)?;
-        let TransactionSchema {
-            snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        } = transaction;
-        let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
-
-        Self::restore_independent_attribute_types(&mut inner_snapshot, &type_manager, schema_info)?;
-        Self::restore_independent_relation_types(&mut inner_snapshot, &type_manager, schema_info)?;
-        Self::restore_capabilities_and_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager, schema_info)?;
-
-        let transaction = TransactionSchema::from_parts(
-            Arc::new(inner_snapshot),
-            type_manager,
-            thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        );
+        let transaction = Self::open_schema_transaction(database)?;
+        let (transaction, ()) =
+            with_transaction_parts!(TransactionSchema, transaction, |inner_snapshot, type_manager, thing_manager| {
+                Self::restore_independent_attribute_types(&mut inner_snapshot, &type_manager, schema_info)?;
+                Self::restore_independent_relation_types(&mut inner_snapshot, &type_manager, schema_info)?;
+                Self::restore_capabilities_and_cardinalities(
+                    &mut inner_snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    schema_info,
+                )?;
+            });
         let (_, commit_result) = transaction.commit();
         commit_result.map_err(|typedb_source| DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source })
     }
@@ -753,62 +762,16 @@ impl DatabaseImportService {
         Ok(())
     }
 
-    fn is_specializing_owns_with_only_cardinality_specializations(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        owns: Owns,
-    ) -> Result<bool, DatabaseImportError> {
-        let object_type = owns.object();
-        let interface_type = owns.interface();
-        let cardinalities = object_type
-            .get_owned_attribute_type_constraints_cardinality(snapshot, type_manager, interface_type)
-            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-        let same_interface_type_count =
-            cardinalities.into_iter().filter(|constraint| constraint.source().interface() == interface_type).count();
-        // If this capability is affected by multiple cardinality constraints from the same interface type, then
-        // the object type has multiple ownerships of this interface type: some inherited and one declared (specializing)
-        if same_interface_type_count > 1 {
-            let non_cardinality_count = owns
-                .get_annotations_declared(snapshot, type_manager)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .into_iter()
-                .map(|annotation| Into::<Annotation>::into(annotation.clone()).category())
-                .filter(|category| !matches!(category, &AnnotationCategory::Cardinality))
-                .count();
-            Ok(non_cardinality_count == 0)
-        } else {
-            Ok(false)
-        }
-    }
-
-    fn is_specializing_plays_with_only_cardinality_specializations(
-        snapshot: &impl ReadableSnapshot,
-        type_manager: &TypeManager,
-        plays: Plays,
-    ) -> Result<bool, DatabaseImportError> {
-        let object_type = plays.object();
-        let interface_type = plays.interface();
-        let cardinalities = object_type
-            .get_played_role_type_constraints_cardinality(snapshot, type_manager, interface_type)
-            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?;
-        let same_interface_type_count =
-            cardinalities.into_iter().filter(|constraint| constraint.source().interface() == interface_type).count();
-
-        // If this capability is affected by multiple cardinality constraints from the same interface type, then
-        // the object type has multiple ownerships of this interface type: some inherited and one declared (specializing)
-        if same_interface_type_count > 1 {
-            let non_cardinality_count = plays
-                .get_annotations_declared(snapshot, type_manager)
-                .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })?
-                .into_iter()
-                .map(|annotation| Into::<Annotation>::into(annotation.clone()).category())
-                .filter(|category| !matches!(category, &AnnotationCategory::Cardinality))
-                .count();
-            Ok(non_cardinality_count == 0)
-        } else {
-            Ok(false)
-        }
-    }
+    is_specializing_with_only_cardinality_specializations_fn!(
+        is_specializing_owns_with_only_cardinality_specializations,
+        Owns,
+        get_owned_attribute_type_constraints_cardinality
+    );
+    is_specializing_with_only_cardinality_specializations_fn!(
+        is_specializing_plays_with_only_cardinality_specializations,
+        Plays,
+        get_played_role_type_constraints_cardinality
+    );
 
     fn restore_independent_attribute_types(
         snapshot: &mut impl WritableSnapshot,
@@ -921,7 +884,7 @@ impl DatabaseImportService {
         source_query: String,
     ) -> Result<(), DatabaseImportError> {
         let (transaction, query_result) =
-            execute_schema_query(open_schema_transaction(database)?, query, source_query).await;
+            execute_schema_query(Self::open_schema_transaction(database)?, query, source_query).await;
         query_result.map_err(|typedb_source| DatabaseImportError::SchemaQueryFailed { typedb_source })?;
 
         let (_, commit_result) = transaction.commit();
@@ -939,45 +902,24 @@ impl DatabaseImportService {
             return (transaction, Err(DatabaseImportError::EmptyItem {}));
         };
 
-        let TransactionWrite {
-            snapshot,
-            type_manager,
-            thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        } = transaction;
-        let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
-
-        let result = match item {
-            item::Item::Attribute(attribute) => {
-                let data_info = &mut database_info.data_info;
-                Self::process_attribute(&mut inner_snapshot, &type_manager, &thing_manager, attribute, data_info)
+        with_transaction_parts!(TransactionWrite, transaction, |inner_snapshot, type_manager, thing_manager| {
+            match item {
+                item::Item::Attribute(attribute) => {
+                    let data_info = &mut database_info.data_info;
+                    Self::process_attribute(&mut inner_snapshot, &type_manager, &thing_manager, attribute, data_info)
+                }
+                item::Item::Entity(entity) => {
+                    let data_info = &mut database_info.data_info;
+                    Self::process_entity(&mut inner_snapshot, &type_manager, &thing_manager, entity, data_info)
+                }
+                item::Item::Relation(relation) => {
+                    let data_info = &mut database_info.data_info;
+                    Self::process_relation(&mut inner_snapshot, &type_manager, &thing_manager, relation, data_info)
+                }
+                item::Item::Header(header) => Self::process_header(header, database_info),
+                item::Item::Checksums(checksums) => database_info.data_info.record_client_checksums(checksums),
             }
-            item::Item::Entity(entity) => {
-                let data_info = &mut database_info.data_info;
-                Self::process_entity(&mut inner_snapshot, &type_manager, &thing_manager, entity, data_info)
-            }
-            item::Item::Relation(relation) => {
-                let data_info = &mut database_info.data_info;
-                Self::process_relation(&mut inner_snapshot, &type_manager, &thing_manager, relation, data_info)
-            }
-            item::Item::Header(header) => Self::process_header(header, database_info),
-            item::Item::Checksums(checksums) => database_info.data_info.record_client_checksums(checksums),
-        };
-        let transaction = TransactionWrite::from_parts(
-            Arc::new(inner_snapshot),
-            type_manager,
-            thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        );
-        (transaction, result)
+        })
     }
 
     fn process_attribute(
@@ -1196,6 +1138,25 @@ impl DatabaseImportService {
         }
     }
 
+    fn open_schema_transaction(
+        database: Arc<Database<WALClient>>,
+    ) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
+        TransactionSchema::open(database.clone(), Self::transaction_options())
+            .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
+    }
+
+    fn open_write_transaction(
+        database: Arc<Database<WALClient>>,
+    ) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
+        TransactionWrite::open(database.clone(), Self::transaction_options())
+            .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
+    }
+
+    fn commit_write_transaction(transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
+        let (_, result) = transaction.commit();
+        result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
+    }
+
     fn transaction_options() -> TransactionOptions {
         TransactionOptions {
             parallel: Self::OPTIONS_PARALLEL,
@@ -1203,23 +1164,4 @@ impl DatabaseImportService {
             transaction_timeout_millis: Self::OPTIONS_TRANSACTION_TIMEOUT_MILLIS,
         }
     }
-}
-
-fn open_schema_transaction(
-    database: Arc<Database<WALClient>>,
-) -> Result<TransactionSchema<WALClient>, DatabaseImportError> {
-    TransactionSchema::open(database.clone(), DatabaseImportService::transaction_options())
-        .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
-}
-
-fn open_write_transaction(
-    database: Arc<Database<WALClient>>,
-) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
-    TransactionWrite::open(database.clone(), DatabaseImportService::transaction_options())
-        .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
-}
-
-fn commit_write_transaction(transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
-    let (_, result) = transaction.commit();
-    result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
 }
