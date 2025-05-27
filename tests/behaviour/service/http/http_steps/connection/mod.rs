@@ -31,11 +31,7 @@ const HTTP_ADDRESS: &str = "0.0.0.0:8000";
 const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 
 fn config_path() -> PathBuf {
-    #[cfg(feature = "bazel")]
     return std::env::current_dir().unwrap().join("server/config.yml");
-
-    #[cfg(not(feature = "bazel"))]
-    return std::env::current_dir().unwrap().join("config.yml");
 }
 
 pub(crate) async fn start_typedb(

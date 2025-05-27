@@ -283,11 +283,7 @@ pub mod tests {
     use crate::parameters::config::ConfigBuilder;
 
     fn config_path() -> PathBuf {
-        #[cfg(feature = "bazel")]
         return std::env::current_dir().unwrap().join("server/config.yml");
-
-        #[cfg(not(feature = "bazel"))]
-        return std::env::current_dir().unwrap().join("config.yml");
     }
 
     fn load_and_parse(yaml: PathBuf, args: Vec<&str>) -> Result<Config, ConfigError> {

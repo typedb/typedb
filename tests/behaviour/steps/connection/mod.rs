@@ -31,11 +31,7 @@ const VERSION: &str = "0.0.0";
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 fn config_path() -> PathBuf {
-    #[cfg(feature = "bazel")]
     return std::env::current_dir().unwrap().join("server/config.yml");
-
-    #[cfg(not(feature = "bazel"))]
-    return std::env::current_dir().unwrap().join("config.yml");
 }
 
 #[apply(generic_step)]
