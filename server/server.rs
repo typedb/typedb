@@ -21,6 +21,7 @@ use tokio::{
     sync::watch::{Receiver, Sender},
 };
 
+#[derive(Debug)]
 pub struct Server {
     server_info: ServerInfo,
     config: Config,

@@ -13,7 +13,7 @@ use tower::{Layer, Service};
 use crate::state::BoxServerState;
 use crate::{authentication::authenticate, service::http::error::HttpServiceError};
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Authenticator {
     server_state: Arc<BoxServerState>,
 }

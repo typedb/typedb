@@ -25,6 +25,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
+use std::fmt::Debug;
 use storage::durability_client::{DurabilityClient, WALClient};
 use system::{
     concepts::{Credential, User},
@@ -49,7 +50,7 @@ use crate::{
 pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
 
 #[async_trait]
-pub trait ServerState {
+pub trait ServerState: Debug {
     fn databases_all(&self) -> Vec<String>;
 
     fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
@@ -104,6 +105,7 @@ pub trait ServerState {
     fn shutdown_receiver(&self) -> Receiver<()>;
 }
 
+#[derive(Debug)]
 pub struct LocalServerState {
     pub database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,

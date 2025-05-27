@@ -21,7 +21,7 @@ use crate::{
     ,
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Authenticator {
     server_state: Arc<BoxServerState>,
 }

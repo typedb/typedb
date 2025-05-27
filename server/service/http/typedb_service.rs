@@ -56,7 +56,7 @@ use crate::{
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 struct TransactionInfo {
     pub owner: String,
     pub database_name: String,
@@ -64,7 +64,7 @@ struct TransactionInfo {
     pub transaction_timeout_millis: u64,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypeDBService {
     server_info: ServerInfo,
     address: SocketAddr,

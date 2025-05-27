@@ -48,6 +48,7 @@ use crate::{
     state::{LocalServerState, StateError},
 };
 
+#[derive(Debug)]
 pub(crate) struct TypeDBService {
     address: SocketAddr,
     server_state: Arc<BoxServerState>,
