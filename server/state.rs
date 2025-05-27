@@ -47,7 +47,7 @@ use crate::{
 };
 
 #[async_trait]
-pub trait IState {
+pub trait ServerState {
     fn databases_all(&self) -> Vec<String>;
 
     fn databases_get(&self, name: &str) -> Option<Arc<Database<WALClient>>>;
@@ -102,7 +102,7 @@ pub trait IState {
     fn shutdown_receiver(&self) -> Receiver<()>;
 }
 
-pub struct ServerState {
+pub struct LocalServerState {
     pub database_manager: Arc<DatabaseManager>,
     user_manager: Arc<UserManager>,
     credential_verifier: Arc<CredentialVerifier>,
@@ -112,7 +112,7 @@ pub struct ServerState {
     shutdown_receiver: Receiver<()>,
 }
 
-impl ServerState {
+impl LocalServerState {
     pub async fn new(
         server_info: ServerInfo,
         config: Config,
@@ -304,7 +304,7 @@ impl ServerState {
 }
 
 #[async_trait]
-impl IState for ServerState {
+impl ServerState for LocalServerState {
 
     fn databases_all(&self) -> Vec<String> {
         self.database_manager.database_names()

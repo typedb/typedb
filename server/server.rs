@@ -10,7 +10,7 @@ use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
-    state::ServerState,
+    state::LocalServerState,
 };
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
@@ -20,31 +20,31 @@ use tokio::{
     net::lookup_host,
     sync::watch::{Receiver, Sender},
 };
-use crate::state::IState;
+use crate::state::ServerState;
 
 pub struct Server {
     server_info: ServerInfo,
     config: Config,
-    server_state: Arc<Box<dyn IState + Send + Sync>>,
+    server_state: Arc<Box<dyn ServerState + Send + Sync>>,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
 
 impl Server {
-    pub async fn new_core(
+    pub async fn new_with_local_server_state(
         server_info: ServerInfo,
         config: Config,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Result<Self, ServerOpenError> {
-        let server_state = ServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?;
+        let server_state = LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?;
         Ok(Self::new(server_info, config, Arc::new(Box::new(server_state)), shutdown_sender, shutdown_receiver))
     }
     
     pub fn new(
         server_info: ServerInfo,
         config: Config,
-        server_state: Arc<Box<dyn IState + Send + Sync>>,
+        server_state: Arc<Box<dyn ServerState + Send + Sync>>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
     ) -> Self {
@@ -107,7 +107,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<Box<dyn IState + Send + Sync>>,
+        server_state: Arc<Box<dyn ServerState + Send + Sync>>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -134,7 +134,7 @@ impl Server {
         server_info: ServerInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<Box<dyn IState + Send + Sync>>,
+        server_state: Arc<Box<dyn ServerState + Send + Sync>>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());

@@ -28,7 +28,7 @@ use tokio::{
 use tower_http::cors::CorsLayer;
 use uuid::Uuid;
 
-use crate::state::IState;
+use crate::state::ServerState;
 use crate::{
     authentication::Accessor,
     service::{
@@ -51,7 +51,7 @@ use crate::{
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
         QueryType,
     },
-    state::ServerState,
+    state::LocalServerState,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;
@@ -68,7 +68,7 @@ struct TransactionInfo {
 pub(crate) struct TypeDBService {
     server_info: ServerInfo,
     address: SocketAddr,
-    server_state: Arc<Box<dyn IState + Send + Sync>>,
+    server_state: Arc<Box<dyn ServerState + Send + Sync>>,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
     _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
@@ -77,7 +77,7 @@ impl TypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<Box<dyn IState + Send + Sync>>) -> Self {
+    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<Box<dyn ServerState + Send + Sync>>) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
 
         let controlled_transactions = transaction_request_senders.clone();

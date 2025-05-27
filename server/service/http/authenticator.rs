@@ -10,16 +10,16 @@ use futures::future::BoxFuture;
 use http::{Request, Response};
 use tower::{Layer, Service};
 
-use crate::{authentication::authenticate, service::http::error::HttpServiceError, state::ServerState};
-use crate::state::IState;
+use crate::{authentication::authenticate, service::http::error::HttpServiceError, state::LocalServerState};
+use crate::state::ServerState;
 
 #[derive(Clone)]
 pub struct Authenticator {
-    server_state: Arc<Box<dyn IState + Send + Sync>>,
+    server_state: Arc<Box<dyn ServerState + Send + Sync>>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<Box<dyn IState + Send + Sync>>) -> Self {
+    pub(crate) fn new(server_state: Arc<Box<dyn ServerState + Send + Sync>>) -> Self {
         Self { server_state }
     }
 }

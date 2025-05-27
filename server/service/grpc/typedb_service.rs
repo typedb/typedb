@@ -18,7 +18,7 @@ use typedb_protocol::{
 };
 use uuid::Uuid;
 
-use crate::state::IState;
+use crate::state::ServerState;
 use crate::{
     authentication::{Accessor, AuthenticationError},
     service::{
@@ -45,16 +45,16 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
     },
-    state::{ServerState, StateError},
+    state::{LocalServerState, StateError},
 };
 
 pub(crate) struct TypeDBService {
     address: SocketAddr,
-    server_state: Arc<Box<dyn IState + Send + Sync>>,
+    server_state: Arc<Box<dyn ServerState + Send + Sync>>,
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: SocketAddr, server_state: Arc<Box<dyn IState + Send + Sync>>) -> Self {
+    pub(crate) fn new(address: SocketAddr, server_state: Arc<Box<dyn ServerState + Send + Sync>>) -> Self {
         Self { address, server_state }
     }
 }

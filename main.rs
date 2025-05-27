@@ -31,7 +31,7 @@ fn main() {
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
         let (shutdown_sender, shutdown_receiver) = channel(());
-        let server = Server::new_core(SERVER_INFO, config, shutdown_sender, shutdown_receiver).await.unwrap();
+        let server = Server::new_with_local_server_state(SERVER_INFO, config, shutdown_sender, shutdown_receiver).await.unwrap();
         match server.serve().await {
             Ok(_) => println!("Exited."),
             Err(err) => println!("Exited with error: {:?}", err),
