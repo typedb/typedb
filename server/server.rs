@@ -6,6 +6,7 @@
 
 use std::{net::SocketAddr, sync::Arc};
 
+use crate::state::ServerState;
 use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
@@ -20,7 +21,6 @@ use tokio::{
     net::lookup_host,
     sync::watch::{Receiver, Sender},
 };
-use crate::state::ServerState;
 
 pub struct Server {
     server_info: ServerInfo,

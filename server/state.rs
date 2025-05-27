@@ -4,6 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+use async_trait::async_trait;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
@@ -36,7 +37,6 @@ use user::{
     permission_manager::PermissionManager,
     user_manager::UserManager,
 };
-use async_trait::async_trait;
 
 use crate::{
     authentication::{

@@ -50,8 +50,8 @@ use crate::{
         },
         transaction_service::TRANSACTION_REQUEST_BUFFER_SIZE,
         QueryType,
-    },
-    state::LocalServerState,
+    }
+    ,
 };
 
 type TransactionRequestSender = Sender<(TransactionRequest, TransactionResponder)>;

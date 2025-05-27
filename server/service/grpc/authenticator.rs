@@ -11,15 +11,15 @@ use http::Request;
 use tonic::{body::BoxBody, Status};
 use tower::{Layer, Service};
 
+use crate::state::ServerState;
 use crate::{
     authentication::authenticate,
     service::grpc::{
         diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-    },
-    state::LocalServerState,
+    }
+    ,
 };
-use crate::state::ServerState;
 
 #[derive(Clone)]
 pub struct Authenticator {
