@@ -68,7 +68,7 @@ struct TransactionInfo {
 pub(crate) struct TypeDBService {
     server_info: ServerInfo,
     address: SocketAddr,
-    server_state: Arc<ServerState>,
+    server_state: Arc<Box<ServerState>>,
     transaction_services: Arc<RwLock<HashMap<Uuid, TransactionInfo>>>,
     _transaction_cleanup_job: Arc<TokioIntervalRunner>,
 }
@@ -77,7 +77,7 @@ impl TypeDBService {
     const TRANSACTION_CHECK_INTERVAL: Duration = Duration::from_secs(5 * SECONDS_IN_MINUTE);
     const QUERY_ENDPOINT_COMMIT_DEFAULT: bool = true;
 
-    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<ServerState>) -> Self {
+    pub(crate) fn new(server_info: ServerInfo, address: SocketAddr, server_state: Arc<Box<ServerState>>) -> Self {
         let transaction_request_senders = Arc::new(RwLock::new(HashMap::new()));
 
         let controlled_transactions = transaction_request_senders.clone();
@@ -292,7 +292,7 @@ impl TypeDBService {
             || {
                 service
                     .server_state
-                    .databases_create(database_path.database_name.clone())
+                    .databases_create(&database_path.database_name)
                     .map_err(|typedb_source| HttpServiceError::DatabaseCreate { typedb_source })
             },
         )
@@ -310,7 +310,7 @@ impl TypeDBService {
             || {
                 service
                     .server_state
-                    .database_delete(database_path.database_name.clone())
+                    .database_delete(&database_path.database_name)
                     .map_err(|typedb_source| HttpServiceError::DatabaseDelete { typedb_source })
             },
         )

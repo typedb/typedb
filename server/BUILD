@@ -5,7 +5,8 @@
 load("@bazel_skylib//rules:common_settings.bzl", "string_flag")
 load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 load("@rules_rust//rust:defs.bzl", "rust_library", "rust_test")
-package(default_visibility = ["//visibility:public",])
+
+package(default_visibility = ["//visibility:public"])
 
 string_flag(
     name = "mode",
@@ -36,6 +37,16 @@ rust_library(
         "parameters/**/*.rs",
         "service/**/*.rs",
     ]),
+    crate_features = select({
+        ":development_mode": [],
+        ":published_mode": ["published"],
+    }),
+    proc_macro_deps = [
+        "@crates//:async-trait",
+    ],
+    tags = [
+        "declared-features=published",
+    ],
     deps = [
         "//answer",
         "//common/bytes",
@@ -48,7 +59,6 @@ rust_library(
         "//concept",
         "//database",
         "//diagnostics",
-        "//user",
         "//encoding",
         "//executor",
         "//function",
@@ -57,16 +67,13 @@ rust_library(
         "//resource",
         "//storage",
         "//system",
-
-        "@typeql//rust:typeql",
-        "@typedb_protocol//grpc/rust:typedb_protocol",
-
+        "//user",
         "@crates//:axum",
         "@crates//:axum-extra",
         "@crates//:axum-server",
-        "@crates//:clap",
         "@crates//:chrono",
         "@crates//:chrono-tz",
+        "@crates//:clap",
         "@crates//:futures",
         "@crates//:http",
         "@crates//:hyper",
@@ -74,6 +81,7 @@ rust_library(
         "@crates//:jsonwebtoken",
         "@crates//:moka",
         "@crates//:prost",
+        "@crates//:pwhash",
         "@crates//:rand",
         "@crates//:rustls-pemfile",
         "@crates//:serde",
@@ -89,30 +97,30 @@ rust_library(
         "@crates//:tower-http",
         "@crates//:tracing",
         "@crates//:uuid",
-        "@crates//:pwhash",
-        "@crates//:yaml-rust2",
         "@crates//:xxhash-rust",
+        "@crates//:yaml-rust2",
+        "@typedb_protocol//grpc/rust:typedb_protocol",
+        "@typeql//rust:typeql",
     ],
-    crate_features = select({
-        ":development_mode": [],
-        ":published_mode": ["published"],
-    }),
-    tags = [
-        "declared-features=published",
-    ]
 )
 
 rust_test(
     name = "test_crate_server",
     crate = ":server",
-    deps = [],
-    data = [":config.yml"],
     crate_features = ["bazel"],
+    data = [":config.yml"],
+    deps = [],
 )
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*", "*/*", "*/*/*", "*/*/*/*", "*/*/*/*/*"]),
+    include = glob([
+        "*",
+        "*/*",
+        "*/*/*",
+        "*/*/*/*",
+        "*/*/*/*/*",
+    ]),
     exclude = glob([
         "Cargo.*",
     ]),

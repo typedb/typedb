@@ -51,11 +51,11 @@ use crate::{
 #[derive(Debug)]
 pub(crate) struct TypeDBService {
     address: SocketAddr,
-    server_state: Arc<ServerState>,
+    server_state: Arc<Box<ServerState>>,
 }
 
 impl TypeDBService {
-    pub(crate) fn new(address: SocketAddr, server_state: Arc<ServerState>) -> Self {
+    pub(crate) fn new(address: SocketAddr, server_state: Arc<Box<ServerState>>) -> Self {
         Self { address, server_state }
     }
 }
@@ -205,7 +205,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabasesCreate,
             || {
                 self.server_state
-                    .databases_create(name.clone())
+                    .databases_create(&name)
                     .map(|_| Response::new(database_create_res(name, &self.address)))
                     .map_err(|err| err.into_error_message().into_status())
             },
@@ -255,7 +255,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             ActionKind::DatabaseDelete,
             || {
                 self.server_state
-                    .database_delete(name)
+                    .database_delete(&name)
                     .map(|_| Response::new(database_delete_res()))
                     .map_err(|err| err.into_error_message().into_status())
             },

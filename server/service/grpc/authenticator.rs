@@ -22,11 +22,11 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct Authenticator {
-    server_state: Arc<ServerState>,
+    server_state: Arc<Box<ServerState>>,
 }
 
 impl Authenticator {
-    pub(crate) fn new(server_state: Arc<ServerState>) -> Self {
+    pub(crate) fn new(server_state: Arc<Box<ServerState>>) -> Self {
         Self { server_state }
     }
 }

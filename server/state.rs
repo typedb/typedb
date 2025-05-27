@@ -36,6 +36,7 @@ use user::{
     permission_manager::PermissionManager,
     user_manager::UserManager,
 };
+use async_trait::async_trait;
 
 use crate::{
     authentication::{
@@ -45,6 +46,7 @@ use crate::{
     parameters::config::{Config, DiagnosticsConfig},
 };
 
+#[async_trait]
 pub trait IState {
     fn databases_all(&self) -> Vec<String>;
 
@@ -52,13 +54,13 @@ pub trait IState {
 
     fn databases_contains(&self, name: &str) -> bool;
 
-    fn databases_create(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError>;
+    fn databases_create(&self, name: &str) -> Result<(), DatabaseCreateError>;
 
     fn database_schema(&self, name: String) -> Result<String, StateError>;
 
     fn database_type_schema(&self, name: String) -> Result<String, StateError>;
 
-    fn database_delete(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError>;
+    fn database_delete(&self, name: &str) -> Result<(), DatabaseDeleteError>;
 
     fn users_get(&self, name: &str, accessor: Accessor) -> Result<User, StateError>;
 
@@ -81,16 +83,16 @@ pub trait IState {
         accessor: Accessor
     ) -> Result<(), StateError>;
 
-    async fn users_delete(&self, name: &str, accessor: Accessor) -> Result<(), StateError>;
+    async fn users_delete(&self, name: &str, accessor: Accessor) ->  Result<(), StateError>;
 
     fn user_verify_password(&self, username: &str, password: &str) -> Result<(), AuthenticationError>;
-    
+
     async fn token_create(
         &self,
         username: String,
         password: String
     ) -> Result<String, AuthenticationError>;
-    
+
     async fn token_get_owner(&self, token: &str) -> Option<String>;
 }
 
@@ -299,6 +301,7 @@ impl ServerState {
     }
 }
 
+#[async_trait]
 impl IState for ServerState {
 
     fn databases_all(&self) -> Vec<String> {
@@ -313,7 +316,7 @@ impl IState for ServerState {
         self.database_manager.database(name).is_some()
     }
 
-    fn databases_create(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
+    fn databases_create(&self, name: &str) -> Result<(), DatabaseCreateError> {
         self.database_manager.create_database(name)
     }
 
@@ -334,7 +337,7 @@ impl IState for ServerState {
         }
     }
 
-    fn database_delete(&self, name: impl AsRef<str>) -> Result<(), DatabaseDeleteError> {
+    fn database_delete(&self, name: &str) -> Result<(), DatabaseDeleteError> {
         self.database_manager.delete_database(name)
     }
 
