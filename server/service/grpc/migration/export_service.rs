@@ -142,7 +142,7 @@ pub(crate) struct DatabaseExportService {
 }
 
 impl DatabaseExportService {
-    const BATCH_SIZE: usize = 250;
+    const ITEM_BATCH_SIZE: usize = 250;
 
     const OPTIONS_PARALLEL: bool = true;
     const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
@@ -168,7 +168,7 @@ impl DatabaseExportService {
             return;
         }
 
-        let mut buffer = Vec::with_capacity(Self::BATCH_SIZE);
+        let mut buffer = Vec::with_capacity(Self::ITEM_BATCH_SIZE);
         unwrap_else_send_error_and_return!(self, self.export_header(&mut buffer).await);
         unwrap_else_send_error_and_return!(self, self.export_entities(transaction, &mut buffer).await);
         unwrap_else_send_error_and_return!(self, self.export_relations(transaction, &mut buffer).await);
@@ -266,7 +266,7 @@ impl DatabaseExportService {
     }
 
     async fn flush_buffer_if_needed(&mut self, buffer: &mut Vec<MigrationItemProto>) {
-        if buffer.len() >= Self::BATCH_SIZE {
+        if buffer.len() >= Self::ITEM_BATCH_SIZE {
             Self::send_items(&self.response_sender, buffer.split_off(0)).await;
         }
     }

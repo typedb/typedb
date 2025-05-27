@@ -38,6 +38,8 @@ use tracing::{event, Level};
 use typeql::query::{stage::Stage, SchemaQuery};
 use uuid::Uuid;
 
+use crate::service::TransactionType;
+
 pub(crate) const TRANSACTION_REQUEST_BUFFER_SIZE: usize = 10;
 
 #[derive(Debug)]
@@ -71,7 +73,40 @@ macro_rules! unwrap_or_execute_and_return {
 }
 pub(crate) use unwrap_or_execute_and_return;
 
-use crate::service::TransactionType;
+macro_rules! with_transaction_parts {
+    (
+        $TransactionType:ident, $transaction:ident, |$inner_snapshot:ident, $type_manager:ident, $thing_manager:ident| $expr:expr
+    ) => {{
+        let $TransactionType {
+            snapshot,
+            type_manager: $type_manager,
+            thing_manager: $thing_manager,
+            function_manager,
+            query_manager,
+            database,
+            transaction_options,
+            profile,
+        } = $transaction;
+
+        let mut $inner_snapshot = Arc::into_inner(snapshot).unwrap();
+
+        let result = $expr;
+
+        let $transaction = $TransactionType::from_parts(
+            Arc::new($inner_snapshot),
+            $type_manager,
+            $thing_manager,
+            function_manager,
+            query_manager,
+            database,
+            transaction_options,
+            profile,
+        );
+
+        ($transaction, result)
+    }};
+}
+pub(crate) use with_transaction_parts;
 
 impl Transaction {
     pub fn to_load_kind(&self) -> LoadKind {
