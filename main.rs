@@ -14,10 +14,9 @@ use logger::initialise_logging_global;
 use resource::constants::server::{DEFAULT_CONFIG_PATH, SENTRY_REPORTING_URI, SERVER_INFO};
 use server::{
     parameters::{cli::CLIArgs, config::Config},
-    server::Server,
+    server::{Server, ServerBuilder},
 };
 use tokio::{runtime::Runtime, sync::watch::channel};
-use server::server::ServerBuilder;
 
 fn main() {
     initialise_abort_on_panic();
