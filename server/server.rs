@@ -37,7 +37,7 @@ impl ServerBuilder {
         self
     }
 
-    pub async fn server_state(mut self, server_state: BoxServerState) -> Self {
+    pub fn server_state(mut self, server_state: BoxServerState) -> Self {
         self.server_state = Some(server_state);
         self
     }
