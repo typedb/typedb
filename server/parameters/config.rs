@@ -279,8 +279,11 @@ pub mod tests {
 
     use clap::Parser;
 
-    use crate::parameters::{cli::CLIArgs, config::Config, ConfigError};
-    use crate::parameters::config::ConfigBuilder;
+    use crate::parameters::{
+        cli::CLIArgs,
+        config::{Config, ConfigBuilder},
+        ConfigError,
+    };
 
     fn config_path() -> PathBuf {
         return std::env::current_dir().unwrap().join("server/config.yml");
