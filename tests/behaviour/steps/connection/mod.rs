@@ -7,13 +7,14 @@
 use std::{
     error::Error,
     fmt,
+    path::PathBuf,
     sync::{Arc, Mutex},
 };
 
 use macro_rules_attribute::apply;
 use resource::server_info::ServerInfo;
 use server::{
-    parameters::config::Config,
+    parameters::config::{Config, ConfigBuilder},
     server::{Server, ServerBuilder},
 };
 use test_utils::{create_tmp_dir, TempDir};
@@ -28,6 +29,10 @@ const ADDRESS: &str = "0.0.0.0:1729";
 const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
+fn config_path() -> PathBuf {
+    return std::env::current_dir().unwrap().join("server/config.yml");
+}
+
 #[apply(generic_step)]
 #[step("typedb starts")]
 pub async fn typedb_starts(context: &mut Context) {
@@ -36,8 +41,13 @@ pub async fn typedb_starts(context: &mut Context) {
             let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
             let shutdown_sender_clone = shutdown_sender.clone();
             let server_dir = create_tmp_dir();
-            let config =
-                Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build().unwrap();
+            let config = ConfigBuilder::from_file(config_path())
+                .expect("Failed to load config file")
+                .server_address(ADDRESS)
+                .data_directory(server_dir.as_ref())
+                .development_mode(true)
+                .finish()
+                .unwrap();
             let server = ServerBuilder::default()
                 .server_info(SERVER_INFO)
                 .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
