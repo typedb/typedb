@@ -12,7 +12,7 @@ use resource::server_info::ServerInfo;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, Config},
-    server::{Server, ServerBuilder},
+    server::ServerBuilder,
 };
 use test_utils::create_tmp_dir;
 
