@@ -29,6 +29,7 @@ pub(super) mod constraint;
 pub(super) mod variable;
 
 pub(super) const OPEN_ITERATOR_RELATIVE_COST: f64 = 5.0;
+pub(super) const SEEK_ITERATOR_RELATIVE_COST: f64 = 5.0;
 pub(super) const ADVANCE_ITERATOR_RELATIVE_COST: f64 = 1.0;
 
 const _REGEX_EXPECTED_CHECKS_PER_MATCH: f64 = 2.0;
@@ -191,9 +192,10 @@ impl Cost {
     }
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
+        let io_ratio = f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO); // Probability of join = 1 / total_join_size
         Self {
-            cost: self.cost + other.cost, // Cost is additive, both scans are performed separately // TODO: fix missing cartesian product compression when retrieving from Rocks
-            io_ratio: f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO), // Probability of join = 1 / total_join_size
+            cost: (2.0 + io_ratio) * SEEK_ITERATOR_RELATIVE_COST, // We expect to seek once per intersection on average
+            io_ratio,
         }
     }
 
