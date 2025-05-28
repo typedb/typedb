@@ -24,8 +24,10 @@ use crate::{
     state::{BoxServerState, LocalServerState},
 };
 
+#[derive(Default)]
 pub struct ServerBuilder {
     server_info: Option<ServerInfo>,
+    server_state: Option<BoxServerState>,
     shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
 }
 
@@ -35,23 +37,24 @@ impl ServerBuilder {
         self
     }
     
+    pub async fn server_state(mut self, server_state: BoxServerState) -> Self {
+        self.server_state = Some(server_state);
+        self
+    }
+    
     pub fn shutdown_channel(mut self, shutdown_channel: (Sender<()>, Receiver<()>)) -> Self {
         self.shutdown_channel = Some(shutdown_channel);
         self
     }
     
-    pub fn build(self, config: Config, server_state: BoxServerState) -> Server {
+    pub async fn build(self, config: Config) -> Result<Server, ServerOpenError> {
         let server_info = self.server_info.unwrap_or(SERVER_INFO);
         let (shutdown_sender, shutdown_receiver) = self.shutdown_channel
             .unwrap_or_else(|| { channel(()) });
-        Server::new(server_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver)
-    }
-    
-    pub async fn build_core(self, config: Config) -> Result<Server, ServerOpenError> {
-        let server_info = self.server_info.unwrap_or(SERVER_INFO);
-        let (shutdown_sender, shutdown_receiver) = self.shutdown_channel
-            .unwrap_or_else(|| { channel(()) });
-        let server_state = Box::new(LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?);
+        let server_state = match self.server_state {
+            Some(s) => s,
+            None => Box::new(LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?)
+        };
         Ok(Server::new(server_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
     }
 }
@@ -66,16 +69,6 @@ pub struct Server {
 }
 
 impl Server {
-    pub async fn new_with_local_server_state(
-        server_info: ServerInfo,
-        config: Config,
-        shutdown_sender: Sender<()>,
-        shutdown_receiver: Receiver<()>,
-    ) -> Result<Self, ServerOpenError> {
-        let server_state = LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?;
-        Ok(Self::new(server_info, config, Arc::new(Box::new(server_state)), shutdown_sender, shutdown_receiver))
-    }
-
     pub fn new(
         server_info: ServerInfo,
         config: Config,

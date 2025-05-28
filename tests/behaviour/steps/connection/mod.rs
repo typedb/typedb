@@ -15,7 +15,7 @@ use resource::server_info::ServerInfo;
 use server::{parameters::config::Config, server::Server};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
-
+use server::server::ServerBuilder;
 use crate::{generic_step, Context};
 
 mod database;
@@ -35,10 +35,12 @@ pub async fn typedb_starts(context: &mut Context) {
             let server_dir = create_tmp_dir();
             let config =
                 Config::new(ADDRESS).data_directory(server_dir.as_ref()).development_mode(true).build().unwrap();
-            let server =
-                Server::new_with_local_server_state(SERVER_INFO, config, shutdown_sender_clone, shutdown_receiver)
-                    .await
-                    .unwrap();
+            let server = ServerBuilder::default()
+                .server_info(SERVER_INFO)
+                .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
+                .build(config)
+                .await
+                .expect("Failed to start TypeDB server");
             (server_dir, Arc::new(Mutex::new(server)))
         })
         .await;
