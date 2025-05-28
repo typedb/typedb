@@ -9,7 +9,6 @@ use std::path::PathBuf;
 use clap::Parser;
 use resource::constants::server::SERVER_INFO;
 
-
 /// TypeDB CE usage
 #[derive(Parser, Debug)]
 #[command(about, long_about = None)]
