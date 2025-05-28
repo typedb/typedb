@@ -8,9 +8,9 @@
 #![deny(elided_lifetimes_in_paths)]
 extern crate core;
 
-mod authentication;
+pub mod authentication;
 pub mod error;
 pub mod parameters;
 pub mod server;
 pub mod service;
-pub(crate) mod state;
+pub mod state;

@@ -8,7 +8,10 @@ use std::{net::SocketAddr, sync::Arc};
 
 use axum_server::{tls_rustls::RustlsConfig, Handle};
 use database::database_manager::DatabaseManager;
-use resource::{constants::server::GRPC_CONNECTION_KEEPALIVE, server_info::ServerInfo};
+use resource::{
+    constants::server::{GRPC_CONNECTION_KEEPALIVE, SERVER_INFO},
+    server_info::ServerInfo,
+};
 use tokio::{
     net::lookup_host,
     sync::watch::{channel, Receiver, Sender},
@@ -18,44 +21,63 @@ use crate::{
     error::ServerOpenError,
     parameters::config::{Config, EncryptionConfig},
     service::{grpc, http},
-    state::ServerState,
+    state::{BoxServerState, LocalServerState},
 };
+
+#[derive(Default)]
+pub struct ServerBuilder {
+    server_info: Option<ServerInfo>,
+    server_state: Option<BoxServerState>,
+    shutdown_channel: Option<(Sender<()>, Receiver<()>)>,
+}
+
+impl ServerBuilder {
+    pub fn server_info(mut self, server_info: ServerInfo) -> Self {
+        self.server_info = Some(server_info);
+        self
+    }
+
+    pub fn server_state(mut self, server_state: BoxServerState) -> Self {
+        self.server_state = Some(server_state);
+        self
+    }
+
+    pub fn shutdown_channel(mut self, shutdown_channel: (Sender<()>, Receiver<()>)) -> Self {
+        self.shutdown_channel = Some(shutdown_channel);
+        self
+    }
+
+    pub async fn build(self, config: Config) -> Result<Server, ServerOpenError> {
+        let server_info = self.server_info.unwrap_or(SERVER_INFO);
+        let (shutdown_sender, shutdown_receiver) = self.shutdown_channel.unwrap_or_else(|| channel(()));
+        let server_state = match self.server_state {
+            Some(s) => s,
+            None => {
+                Box::new(LocalServerState::new(SERVER_INFO, config.clone(), None, shutdown_receiver.clone()).await?)
+            }
+        };
+        Ok(Server::new(server_info, config, Arc::new(server_state), shutdown_sender, shutdown_receiver))
+    }
+}
 
 #[derive(Debug)]
 pub struct Server {
     server_info: ServerInfo,
     config: Config,
-    server_state: Arc<ServerState>,
+    server_state: Arc<BoxServerState>,
     shutdown_sender: Sender<()>,
     shutdown_receiver: Receiver<()>,
 }
 
 impl Server {
-    pub async fn new(
+    pub fn new(
         server_info: ServerInfo,
         config: Config,
-        deployment_id: Option<String>,
-    ) -> Result<Self, ServerOpenError> {
-        let (shutdown_sender, shutdown_receiver) = channel(());
-        Self::new_with_external_shutdown(server_info, config, deployment_id, shutdown_sender, shutdown_receiver).await
-    }
-
-    pub async fn new_with_external_shutdown(
-        server_info: ServerInfo,
-        config: Config,
-        deployment_id: Option<String>,
+        server_state: Arc<BoxServerState>,
         shutdown_sender: Sender<()>,
         shutdown_receiver: Receiver<()>,
-    ) -> Result<Self, ServerOpenError> {
-        let server_state =
-            ServerState::new(server_info, config.clone(), deployment_id, shutdown_receiver.clone()).await;
-        server_state.map(|srv_state| Self {
-            server_info,
-            config,
-            server_state: Arc::new(srv_state),
-            shutdown_sender,
-            shutdown_receiver,
-        })
+    ) -> Self {
+        Self { server_info, config, server_state, shutdown_sender, shutdown_receiver }
     }
 
     pub async fn serve(self) -> Result<(), ServerOpenError> {
@@ -108,7 +130,7 @@ impl Server {
     async fn serve_grpc(
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<ServerState>,
+        server_state: Arc<BoxServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = grpc::authenticator::Authenticator::new(server_state.clone());
@@ -135,7 +157,7 @@ impl Server {
         server_info: ServerInfo,
         address: SocketAddr,
         encryption_config: &EncryptionConfig,
-        server_state: Arc<ServerState>,
+        server_state: Arc<BoxServerState>,
         mut shutdown_receiver: Receiver<()>,
     ) -> Result<(), ServerOpenError> {
         let authenticator = http::authenticator::Authenticator::new(server_state.clone());
@@ -229,7 +251,7 @@ impl Server {
             .map_err(|_| ServerOpenError::HttpTlsUnsetDefaultCryptoProvider {})
     }
 
-    pub fn database_manager(&self) -> &DatabaseManager {
+    pub fn database_manager(&self) -> Arc<DatabaseManager> {
         self.server_state.database_manager()
     }
 }

@@ -199,6 +199,11 @@ dev-dependencies = {}
 		version = "0.9.0"
 		default-features = false
 
+	[dependencies.async-trait]
+		features = []
+		version = "0.1.88"
+		default-features = false
+
 	[dependencies.compiler]
 		path = "../compiler"
 		features = []

@@ -12,7 +12,7 @@ use resource::server_info::ServerInfo;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, ConfigBuilder},
-    server::Server,
+    server::ServerBuilder,
 };
 use test_utils::create_tmp_dir;
 
@@ -52,11 +52,12 @@ pub(crate) async fn start_typedb(
             .unwrap();
 
         let server_future = async {
-            let server =
-                Server::new_with_external_shutdown(SERVER_INFO, config, None, shutdown_sender_clone, shutdown_receiver)
-                    .await
-                    .expect("Failed to start TypeDB server");
-
+            let server = ServerBuilder::default()
+                .server_info(SERVER_INFO)
+                .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
+                .build(config)
+                .await
+                .expect("Failed to start TypeDB server");
             server.serve().await
         };
 

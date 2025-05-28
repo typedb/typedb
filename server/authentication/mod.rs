@@ -14,7 +14,7 @@ use error::typedb_error;
 use http::Extensions;
 use tonic::metadata::MetadataMap;
 
-use crate::state::ServerState;
+use crate::state::BoxServerState;
 
 pub(crate) mod credential_verifier;
 pub(crate) mod token_manager;
@@ -48,7 +48,7 @@ pub(crate) fn extract_metadata_accessor(metadata: &MetadataMap) -> Option<String
 }
 
 pub(crate) async fn authenticate<T>(
-    server_state: Arc<ServerState>,
+    server_state: Arc<BoxServerState>,
     request: http::Request<T>,
 ) -> Result<http::Request<T>, AuthenticationError> {
     let (mut parts, body) = request.into_parts();
@@ -64,10 +64,10 @@ pub(crate) async fn authenticate<T>(
 }
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord, Hash)]
-pub(crate) struct Accessor(pub(crate) String);
+pub struct Accessor(pub String);
 
 impl Accessor {
-    pub(crate) fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
+    pub fn from_extensions(extensions: &Extensions) -> Result<Self, AuthenticationError> {
         extensions.get::<Self>().cloned().ok_or_else(|| AuthenticationError::CorruptedAccessor {})
     }
 }

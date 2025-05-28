@@ -12,10 +12,10 @@ use std::{
 };
 
 use macro_rules_attribute::apply;
-use resource::constants::server::SERVER_INFO;
+use resource::server_info::ServerInfo;
 use server::{
-    parameters::config::{Config, ConfigBuilder},
-    server::Server,
+    parameters::config::ConfigBuilder,
+    server::{Server, ServerBuilder},
 };
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
@@ -26,8 +26,7 @@ mod database;
 mod transaction;
 
 const ADDRESS: &str = "0.0.0.0:1729";
-const DISTRIBUTION: &str = "TypeDB CE TEST";
-const VERSION: &str = "0.0.0";
+const SERVER_INFO: ServerInfo = ServerInfo { logo: "logo", distribution: "TypeDB CE TEST", version: "0.0.0" };
 static TYPEDB: OnceCell<(TempDir, Arc<Mutex<Server>>)> = OnceCell::const_new();
 
 fn config_path() -> PathBuf {
@@ -39,6 +38,8 @@ fn config_path() -> PathBuf {
 pub async fn typedb_starts(context: &mut Context) {
     TYPEDB
         .get_or_init(|| async {
+            let (shutdown_sender, shutdown_receiver) = tokio::sync::watch::channel(());
+            let shutdown_sender_clone = shutdown_sender.clone();
             let server_dir = create_tmp_dir();
             let config = ConfigBuilder::from_file(config_path())
                 .expect("Failed to load config file")
@@ -47,7 +48,12 @@ pub async fn typedb_starts(context: &mut Context) {
                 .development_mode(true)
                 .finish()
                 .unwrap();
-            let server = Server::new(SERVER_INFO, config, None).await.unwrap();
+            let server = ServerBuilder::default()
+                .server_info(SERVER_INFO)
+                .shutdown_channel((shutdown_sender_clone, shutdown_receiver))
+                .build(config)
+                .await
+                .expect("Failed to start TypeDB server");
             (server_dir, Arc::new(Mutex::new(server)))
         })
         .await;
