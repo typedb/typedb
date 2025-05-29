@@ -48,7 +48,7 @@ pub(crate) async fn start_typedb(
             .data_directory(server_dir.as_ref())
             .development_mode(true)
             .authentication(AuthenticationConfig { token_expiration: TEST_TOKEN_EXPIRATION })
-            .finish()
+            .build()
             .unwrap();
 
         let server_future = async {

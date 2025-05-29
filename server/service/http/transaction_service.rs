@@ -680,8 +680,7 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        self.run_write_query(responder, query_options, pipeline, query).await;
-                        Continue(())
+                        self.run_write_query(responder, query_options, pipeline, query).await
                     }
                 } else {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {

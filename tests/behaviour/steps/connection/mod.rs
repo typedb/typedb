@@ -43,7 +43,7 @@ pub async fn typedb_starts(context: &mut Context) {
                 .server_address(ADDRESS)
                 .data_directory(server_dir.as_ref())
                 .development_mode(true)
-                .finish()
+                .build()
                 .unwrap();
             let server = ServerBuilder::default()
                 .server_info(SERVER_INFO)

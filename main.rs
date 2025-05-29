@@ -30,7 +30,7 @@ fn main() {
     };
     let mut config_builder = ConfigBuilder::from_file(config_file.into()).expect("Error reading from config file");
     config_builder.override_with_cliargs(cli_args);
-    let config = config_builder.finish().expect("Error validating config file overridden with cli args");
+    let config = config_builder.build().expect("Error validating config file overridden with cli args");
     initialise_logging_global(&config.logging.directory);
     may_initialise_error_reporting(&config);
     create_tokio_runtime().block_on(async {
