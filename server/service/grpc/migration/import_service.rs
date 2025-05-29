@@ -44,7 +44,7 @@ use database::{
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
     Database,
 };
-use diagnostics::metrics::ActionKind;
+use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
 use encoding::value::label::Label;
 use options::TransactionOptions;
 use regex::Regex;
@@ -81,11 +81,11 @@ use uuid::Uuid;
 use crate::service::{
     export_service::DatabaseExportError,
     grpc::{
-        diagnostics::run_with_diagnostics_async,
+        diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
         error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
         migration::{
             item::{decode_checksums, decode_migration_value, encode_entity_item},
-            Checksums, TransactionHolder,
+            Checksums,
         },
         response_builders::database_manager::database_import_res_done,
     },
@@ -316,6 +316,7 @@ impl AttributesInfo {
 #[derive(Debug)]
 pub(crate) struct DatabaseImportService {
     database_manager: Arc<DatabaseManager>,
+    diagnostics_manager: Arc<DiagnosticsManager>,
     request_stream: Streaming<ProtocolClient>,
     response_sender: ResponseSender,
     shutdown_receiver: watch::Receiver<()>,
@@ -333,12 +334,14 @@ impl DatabaseImportService {
 
     pub(crate) fn new(
         database_manager: Arc<DatabaseManager>,
+        diagnostics_manager: Arc<DiagnosticsManager>,
         request_stream: Streaming<ProtocolClient>,
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         Self {
             database_manager,
+            diagnostics_manager,
             request_stream,
             response_sender,
             shutdown_receiver,
@@ -418,11 +421,26 @@ impl DatabaseImportService {
     ) -> Result<ControlFlow<(), ()>, Status> {
         use typedb_protocol::migration::import::client::{Client, Done, InitialReq, ReqPart};
         match req {
-            Client::InitialReq(InitialReq { name, schema }) => self.handle_database_schema(name, schema).await,
-            Client::ReqPart(ReqPart { items }) => self.handle_items(items).await,
-            Client::Done(Done {}) => self.handle_done().await,
+            Client::InitialReq(InitialReq { name, schema }) => {
+                run_with_diagnostics_async(
+                    self.diagnostics_manager.clone(),
+                    Some(name.clone()),
+                    ActionKind::DatabasesImport,
+                    || async {
+                        self.handle_database_schema(name, schema)
+                            .await
+                            .map_err(|typedb_source| typedb_source.into_error_message().into_status())
+                    },
+                )
+                .await
+            }
+            Client::ReqPart(ReqPart { items }) => {
+                self.handle_items(items).await.map_err(|typedb_source| typedb_source.into_error_message().into_status())
+            }
+            Client::Done(Done {}) => {
+                self.handle_done().await.map_err(|typedb_source| typedb_source.into_error_message().into_status())
+            }
         }
-        .map_err(|typedb_source| typedb_source.into_error_message().into_status())
     }
 
     async fn handle_database_schema(
@@ -536,7 +554,12 @@ impl DatabaseImportService {
                     schema_info,
                 )?;
                 Self::make_relation_types_independent(&mut inner_snapshot, &type_manager, schema_info)?;
-                Self::relax_cardinalities(&mut inner_snapshot, &type_manager, &thing_manager, schema_info)?;
+                Self::relax_capabilities_and_cardinalities(
+                    &mut inner_snapshot,
+                    &type_manager,
+                    &thing_manager,
+                    schema_info,
+                )?;
             });
         let (_, commit_result) = transaction.commit();
         commit_result.map_err(|typedb_source| DatabaseImportError::PreparationSchemaCommitFailed { typedb_source })
@@ -603,7 +626,7 @@ impl DatabaseImportService {
         Ok(())
     }
 
-    fn relax_cardinalities(
+    fn relax_capabilities_and_cardinalities(
         snapshot: &mut impl WritableSnapshot,
         type_manager: &TypeManager,
         thing_manager: &ThingManager,
@@ -767,6 +790,7 @@ impl DatabaseImportService {
         Owns,
         get_owned_attribute_type_constraints_cardinality
     );
+
     is_specializing_with_only_cardinality_specializations_fn!(
         is_specializing_plays_with_only_cardinality_specializations,
         Plays,
