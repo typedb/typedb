@@ -46,8 +46,8 @@ use crate::{
     },
     error::ServerOpenError,
     parameters::config::{Config, DiagnosticsConfig},
+    service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError},
 };
-use crate::service::export_service::{get_transaction_schema, get_transaction_type_schema, DatabaseExportError};
 
 pub type BoxServerState = Box<dyn ServerState + Send + Sync>;
 
@@ -151,7 +151,7 @@ impl LocalServerState {
                 storage_directory.clone(),
                 config.development_mode.enabled,
             )
-                .await,
+            .await,
         );
 
         Ok(Self {

@@ -13,10 +13,7 @@ use std::{
 
 use macro_rules_attribute::apply;
 use resource::server_info::ServerInfo;
-use server::{
-    parameters::config::ConfigBuilder,
-    Server, ServerBuilder,
-};
+use server::{parameters::config::ConfigBuilder, Server, ServerBuilder};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
 
