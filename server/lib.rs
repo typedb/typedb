@@ -196,7 +196,7 @@ impl Server {
             }
             None => axum_server::bind(address).handle(shutdown_handle).serve(router_service).await,
         }
-            .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
+        .map_err(|source| ServerOpenError::HttpServe { address, source: Arc::new(source) })
     }
 
     async fn validate_and_resolve_http_address(
