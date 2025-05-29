@@ -335,12 +335,18 @@ impl Database<WALClient> {
         let thing_vertex_generator =
             Arc::new(ThingVertexGenerator::load(storage.clone()).map_err(|err| Encoding { source: err })?);
 
+        event!(Level::TRACE, "Finding last database '{}' statistics WAL entry", &name);
         let mut thing_statistics = storage
             .durability()
             .find_last_unsequenced_type::<Statistics>()
             .map_err(|err| DurabilityClientRead { typedb_source: err })?
             .unwrap_or_else(|| Statistics::new(SequenceNumber::MIN));
-        event!(Level::TRACE, "Synchronising database '{}' statistics", &name);
+        event!(
+            Level::TRACE,
+            "Synchronising database '{}' statistics from seq nr '{}'",
+            &name,
+            thing_statistics.sequence_number
+        );
         thing_statistics.may_synchronise(&storage).map_err(|err| StatisticsInitialise { typedb_source: err })?;
         event!(Level::TRACE, "Thing statistics: {:?}", thing_statistics);
         let thing_statistics = Arc::new(thing_statistics);
