@@ -220,11 +220,12 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<Streaming<typedb_protocol::database_manager::import::Client>>,
     ) -> Result<Response<Self::databases_importStream>, Status> {
-        // TODO: Add diagnostics!
+        // diagnostics are inside the service
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
         let mut service = DatabaseImportService::new(
             self.server_state.database_manager(),
+            self.server_state.diagnostics_manager(),
             request_stream,
             response_sender,
             self.server_state.shutdown_receiver(),
@@ -272,7 +273,6 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         &self,
         request: Request<typedb_protocol::database::export::Req>,
     ) -> Result<Response<Self::database_exportStream>, Status> {
-        // TODO: Add diagnostics!
         let database_name = request
             .into_inner()
             .req
@@ -280,24 +280,32 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                 GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }.into_error_message().into_status()
             })?
             .database;
-        match self.server_state.database_manager().database(&database_name) {
-            None => {
-                Err(ServerStateError::DatabaseDoesNotExist { name: database_name }.into_error_message().into_status())
-            }
-            Some(database) => {
-                let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
-                let mut service = DatabaseExportService::new(
-                    self.server_state.server_info(),
-                    database,
-                    response_sender,
-                    self.server_state.shutdown_receiver(),
-                );
-                tokio::spawn(async move { service.export().await });
-                let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
-                    ReceiverStream::new(response_receiver);
-                Ok(Response::new(Box::pin(stream)))
-            }
-        }
+        run_with_diagnostics_async(
+            self.server_state.diagnostics_manager(),
+            Some(database_name.clone()),
+            ActionKind::DatabaseExport,
+            || async {
+                match self.server_state.database_manager().database(&database_name) {
+                    None => Err(ServerStateError::DatabaseDoesNotExist { name: database_name }
+                        .into_error_message()
+                        .into_status()),
+                    Some(database) => {
+                        let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
+                        let mut service = DatabaseExportService::new(
+                            self.server_state.server_info(),
+                            database,
+                            response_sender,
+                            self.server_state.shutdown_receiver(),
+                        );
+                        tokio::spawn(async move { service.export().await });
+                        let stream: ReceiverStream<Result<DatabaseExportServerProto, Status>> =
+                            ReceiverStream::new(response_receiver);
+                        Ok(Response::new(Box::pin(stream)))
+                    }
+                }
+            },
+        )
+        .await
     }
 
     async fn database_delete(

@@ -625,20 +625,21 @@ impl TransactionService {
         // unblock requests until the first write request, which we begin executing if it exists
         while let Some((responder, query_options, query_pipeline, source_query)) = self.query_queue.pop_front() {
             if is_write_pipeline(&query_pipeline) {
-                if let Break(()) = self.run_write_query(responder, query_options, query_pipeline, source_query).await {
+                return self.run_write_query(responder, query_options, query_pipeline, source_query).await;
+            } else {
+                if let Break(()) = self
+                    .blocking_read_query_worker(
+                        responder,
+                        query_options,
+                        query_pipeline,
+                        source_query,
+                        StorageCounters::DISABLED,
+                    )
+                    .await
+                    .expect("Expected read query completion")
+                {
                     return Break(());
                 }
-                return Continue(());
-            } else {
-                self.blocking_read_query_worker(
-                    responder,
-                    query_options,
-                    query_pipeline,
-                    source_query,
-                    StorageCounters::DISABLED,
-                )
-                .await
-                .expect("Expected read query completion");
             }
         }
         Continue(())
@@ -696,9 +697,7 @@ impl TransactionService {
                             StorageCounters::DISABLED,
                         )
                         .await
-                        .expect("Expected read query completion");
-                        // running read queries have no response on the main loop and will respond asynchronously
-                        Continue(())
+                        .expect("Expected read query completion")
                     }
                 }
             }
