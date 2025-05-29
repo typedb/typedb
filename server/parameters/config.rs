@@ -208,7 +208,7 @@ impl ConfigBuilder {
         }
     }
 
-    pub fn finish(self) -> Result<Config, ConfigError> {
+    pub fn build(self) -> Result<Config, ConfigError> {
         let Self { mut config } = self;
         let encryption = &config.server.encryption;
         if encryption.enabled && encryption.certificate.is_none() {
@@ -296,7 +296,7 @@ pub mod tests {
         let mut config = ConfigBuilder::from_file(yaml)?;
         let cli_args: CLIArgs = CLIArgs::parse_from(args_with_binary_infront);
         config.override_with_cliargs(cli_args);
-        config.finish()
+        config.build()
     }
 
     #[test]

@@ -829,7 +829,7 @@ impl TransactionService {
         source_query: String,
     ) -> Result<ImmediateQueryResponse, Status> {
         self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;
-        self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
+        let _ = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
         self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
 
         if let Some(transaction) = self.transaction.take() {
@@ -868,7 +868,7 @@ impl TransactionService {
             }
             Err(err) => {
                 // non-fatal errors we will respond immediately
-                Self::respond_query_response(&self.response_sender, req_id, ImmediateQueryResponse::non_fatal_err(err))
+                let _ = Self::respond_query_response(&self.response_sender, req_id, ImmediateQueryResponse::non_fatal_err(err))
                     .await;
                 return;
             }

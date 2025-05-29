@@ -51,15 +51,16 @@ build:
         source ~/.cargo/env
         cargo check --all --profile=ci-check
 
-    cargo-toml-sync:
-      image: typedb-ubuntu-22.04
-      command: |
-        tool/rust/sync.sh
-        git add .
-        git diff --exit-code HEAD || { 
-          echo "Failed to verify toml files: please update them manually and verify the changes"
-          exit 1
-        }
+# TODO: Cannot be run because the sync tool does not guarantee a specific order of targets
+#    cargo-toml-sync:
+#      image: typedb-ubuntu-22.04
+#      command: |
+#        tool/rust/sync.sh
+#        git add .
+#        git diff --exit-code HEAD || {
+#          echo "Failed to verify toml files: please update them manually and verify the changes"
+#          exit 1
+#        }
 
     test-unit:
       image: typedb-ubuntu-22.04
