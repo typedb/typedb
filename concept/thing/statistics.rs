@@ -13,13 +13,6 @@ use std::{
     time::Instant,
 };
 
-use crate::{
-    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
-    type_::{
-        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
-        role_type::RoleType, TypeAPI,
-    },
-};
 use bytes::Bytes;
 use durability::{DurabilityRecordType, DurabilitySequenceNumber};
 use encoding::graph::{
@@ -33,9 +26,11 @@ use encoding::graph::{
     Typed,
 };
 use error::typedb_error;
-use resource::constants::database::{STATISTICS_DURABLE_WRITE_CHANGE_COUNT, STATISTICS_DURABLE_WRITE_SEQ_NUMBERS};
 use resource::{
-    constants::snapshot::BUFFER_KEY_INLINE,
+    constants::{
+        database::{STATISTICS_DURABLE_WRITE_CHANGE_COUNT, STATISTICS_DURABLE_WRITE_SEQ_NUMBERS},
+        snapshot::BUFFER_KEY_INLINE,
+    },
     profile::StorageCounters,
 };
 use serde::{Deserialize, Serialize};
@@ -51,6 +46,14 @@ use storage::{
     MVCCStorage,
 };
 use tracing::{event, Level};
+
+use crate::{
+    thing::{attribute::Attribute, entity::Entity, object::Object, relation::Relation, ThingAPI},
+    type_::{
+        attribute_type::AttributeType, entity_type::EntityType, object_type::ObjectType, relation_type::RelationType,
+        role_type::RoleType, TypeAPI,
+    },
+};
 
 type StatisticsEncodingVersion = u64;
 
@@ -179,7 +182,8 @@ impl Statistics {
 
         // checkpoint statistics on a huge change/a few large commits, or worst case on K commits
         // TODO: ideally, we'd want to check if the total number of changes in absolute terms is large or K commits
-        let count_change_since_last_durable_write = self.total_count as i64 - self.last_durable_write_total_count as i64;
+        let count_change_since_last_durable_write =
+            self.total_count as i64 - self.last_durable_write_total_count as i64;
         let sequence_numbers_since_last_durable_write = self.sequence_number - self.last_durable_write_sequence_number;
         if count_change_since_last_durable_write.abs() > STATISTICS_DURABLE_WRITE_CHANGE_COUNT as i64
             || sequence_numbers_since_last_durable_write > STATISTICS_DURABLE_WRITE_SEQ_NUMBERS
