@@ -131,10 +131,6 @@ features = {}
 	name = "test_concept"
 
 [[test]]
-	path = "tests/behaviour/service/http/driver.rs"
-	name = "test_http_driver"
-
-[[test]]
 	path = "tests/behaviour/service/http/connection/database.rs"
 	name = "test_http_database"
 
@@ -143,12 +139,24 @@ features = {}
 	name = "test_http_transaction"
 
 [[test]]
-	path = "tests/behaviour/service/http/http.rs"
-	name = "test_http"
+	path = "tests/behaviour/service/http/driver/concept.rs"
+	name = "test_http_driver_concept"
 
 [[test]]
-	path = "tests/behaviour/service/http/user.rs"
-	name = "test_http_user"
+	path = "tests/behaviour/service/http/driver/http.rs"
+	name = "test_http_driver_http"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/query.rs"
+	name = "test_http_driver_query"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/user.rs"
+	name = "test_http_driver_user"
+
+[[test]]
+	path = "tests/behaviour/service/http/driver/connection.rs"
+	name = "test_http_driver_connection"
 
 [[test]]
 	path = "tests/behaviour/service/http/debug/debug.rs"

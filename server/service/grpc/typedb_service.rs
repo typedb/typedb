@@ -279,7 +279,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
             .ok_or_else(|| {
                 GrpcServiceError::UnexpectedMissingField { field: "req".to_string() }.into_error_message().into_status()
             })?
-            .database;
+            .name;
         run_with_diagnostics_async(
             self.server_state.diagnostics_manager(),
             Some(database_name.clone()),
