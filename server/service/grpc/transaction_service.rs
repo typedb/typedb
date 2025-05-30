@@ -188,10 +188,10 @@ impl StreamingCondition {
 
 impl TransactionService {
     pub(crate) fn new(
-        request_stream: Streaming<typedb_protocol::transaction::Client>,
-        response_sender: Sender<Result<ProtocolServer, Status>>,
         database_manager: Arc<DatabaseManager>,
         diagnostics_manager: Arc<DiagnosticsManager>,
+        request_stream: Streaming<typedb_protocol::transaction::Client>,
+        response_sender: Sender<Result<ProtocolServer, Status>>,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
@@ -807,7 +807,7 @@ impl TransactionService {
         source_query: String,
     ) -> Result<ImmediateQueryResponse, Status> {
         self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;
-        self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
+        let _ = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
         self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
 
         if let Some(transaction) = self.transaction.take() {
@@ -846,8 +846,12 @@ impl TransactionService {
             }
             Err(err) => {
                 // non-fatal errors we will respond immediately
-                Self::respond_query_response(&self.response_sender, req_id, ImmediateQueryResponse::non_fatal_err(err))
-                    .await;
+                let _ = Self::respond_query_response(
+                    &self.response_sender,
+                    req_id,
+                    ImmediateQueryResponse::non_fatal_err(err),
+                )
+                .await;
                 return;
             }
         };

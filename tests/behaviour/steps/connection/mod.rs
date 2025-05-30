@@ -13,10 +13,7 @@ use std::{
 
 use macro_rules_attribute::apply;
 use resource::server_info::ServerInfo;
-use server::{
-    parameters::config::ConfigBuilder,
-    server::{Server, ServerBuilder},
-};
+use server::{parameters::config::ConfigBuilder, Server, ServerBuilder};
 use test_utils::{create_tmp_dir, TempDir};
 use tokio::sync::OnceCell;
 
@@ -46,7 +43,7 @@ pub async fn typedb_starts(context: &mut Context) {
                 .server_address(ADDRESS)
                 .data_directory(server_dir.as_ref())
                 .development_mode(true)
-                .finish()
+                .build()
                 .unwrap();
             let server = ServerBuilder::default()
                 .server_info(SERVER_INFO)

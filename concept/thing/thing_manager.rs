@@ -276,7 +276,7 @@ impl ThingManager {
     ) -> Result<impl Iterator<Item = Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
         Ok(self
             .get_attributes_short(snapshot, storage_counters.clone())?
-            .chain(self.get_attributes_integer(snapshot, storage_counters)?))
+            .chain(self.get_attributes_long(snapshot, storage_counters)?))
     }
 
     pub fn get_attributes_short<Snapshot: ReadableSnapshot>(
@@ -294,12 +294,12 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_attributes_integer<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_long<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
-        let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
+        let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_long(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
@@ -349,8 +349,8 @@ impl ThingManager {
             AttributeID::Double(id) => Ok(Value::Double(id.read().as_f64())),
             AttributeID::Decimal(id) => Ok(Value::Decimal(id.read().as_decimal())),
             AttributeID::Date(id) => Ok(Value::Date(id.read().as_naive_date())),
-            AttributeID::DateTime(id) => Ok(Value::DateTime(id.read().as_naive_date_time())),
-            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.read().as_date_time())),
+            AttributeID::DateTime(id) => Ok(Value::Datetime(id.read().as_naive_date_time())),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DatetimeTz(id.read().as_date_time())),
             AttributeID::Duration(id) => Ok(Value::Duration(id.read().as_duration())),
             AttributeID::String(id) => {
                 let string = if id.is_inline() {
@@ -1930,8 +1930,10 @@ impl ThingManager {
                     continue;
                 }
                 if !relation.has_players(snapshot, self, storage_counters.clone()) {
-                    relation.delete(snapshot, self, storage_counters.clone())?;
-                    any_deleted = true;
+                    if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())? {
+                        relation.delete(snapshot, self, storage_counters.clone())?;
+                        any_deleted = true;
+                    }
                 }
             }
         }
@@ -2757,7 +2759,7 @@ impl ThingManager {
                 let encoded_date = DateBytes::build(date);
                 self.vertex_generator.create_attribute_date(attribute_type.vertex().type_id_(), encoded_date, snapshot)
             }
-            Value::DateTime(date_time) => {
+            Value::Datetime(date_time) => {
                 let encoded_date_time = DateTimeBytes::build(date_time);
                 self.vertex_generator.create_attribute_date_time(
                     attribute_type.vertex().type_id_(),
@@ -2765,7 +2767,7 @@ impl ThingManager {
                     snapshot,
                 )
             }
-            Value::DateTimeTZ(date_time_tz) => {
+            Value::DatetimeTz(date_time_tz) => {
                 let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
                 self.vertex_generator.create_attribute_date_time_tz(
                     attribute_type.vertex().type_id_(),

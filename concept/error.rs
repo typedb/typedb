@@ -77,13 +77,26 @@ typedb_error! {
         ValueTypeMismatchWithAttributeType(22, "Attribute type '{attribute_type}' has value type '{expected:?}' and cannot be used with '{provided}'.", attribute_type: AttributeType, expected: Option<ValueType>, provided: ValueType),
         RelationIndexNotAvailable(23, "Relation index not available for relations of type '{relation_label}'.", relation_label: Label),
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
-        InternalIncomparableTypes(25, "Incomparable types"),
-        FormatError(26, "Formatting error", source: fmt::Error),
+        InternalIncomparableTypes(25, "Internal error: incomparable types."),
+        Format(26, "Formatting error.", source: fmt::Error),
     }
 }
 
 impl Into<ConceptReadError> for fmt::Error {
     fn into(self) -> ConceptReadError {
-        ConceptReadError::FormatError { source: self }
+        ConceptReadError::Format { source: self }
+    }
+}
+
+typedb_error! {
+    pub ConceptDecodeError(component = "Concept decode", prefix = "COD") {
+        NoValue(1, "Failed to decode a 'value' from a migration item: no value provided."),
+        InvalidDate(2, "Failed to decode a 'date' value from '{days}'.", days: i32),
+        InvalidDatetime(3, "Failed to decode a 'datetime' value from '{seconds}', '{nanos}'.", seconds: i64, nanos: u32),
+        InvalidDatetimeMillis(4, "Failed to decode a 'datetime' value from millis: '{millis}'.", millis: i64),
+        MissingDatetimeTzDatetime(5, "Invalid format of 'datetime_tz': missing the 'datetime' part."),
+        MissingDatetimeTzTimezone(6, "Invalid format of 'datetime_tz': missing the 'timezone' part."),
+        InvalidDatetimeTzName(7, "Invalid format of 'datetime_tz': timezone provided has name '{name}', which is not an officially recognized timezone.", name: String),
+        InvalidDatetimeTzOffset(8, "Invalid format of 'datetime_tz': timezone provided has numerical offset '{offset_seconds}', which is not recognised as a valid value for offset in seconds.", offset_seconds: i32),
     }
 }

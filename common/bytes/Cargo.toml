@@ -24,6 +24,11 @@ features = {}
 		version = "1.0.219"
 		default-features = false
 
+	[dependencies.base64]
+		features = ["alloc", "default", "std"]
+		version = "0.22.1"
+		default-features = false
+
 	[dependencies.lending_iterator]
 		path = "../../common/lending_iterator"
 		features = []
