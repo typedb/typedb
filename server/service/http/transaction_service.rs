@@ -972,7 +972,7 @@ impl TransactionService {
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
-                let pipeline = prepare_read_query_in(
+                let pipeline_result = prepare_read_query_in(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
@@ -981,10 +981,16 @@ impl TransactionService {
                     &pipeline,
                     &source_query,
                 );
-                let pipeline =
-                    unwrap_or_execute_else_respond_error_and_return_break!(pipeline, responder, |typedb_source| {
-                        TransactionServiceError::QueryFailed { typedb_source }
-                    });
+                let pipeline = match pipeline_result {
+                    Ok(pipeline) => pipeline,
+                    Err(typedb_source) => {
+                        respond_else_return_break!(
+                            responder,
+                            TransactionServiceResponse::Err(TransactionServiceError::QueryFailed { typedb_source })
+                        );
+                        return Continue(());
+                    }
+                };
                 Self::respond_read_query_sync(
                     query_options,
                     pipeline,

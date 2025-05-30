@@ -868,8 +868,12 @@ impl TransactionService {
             }
             Err(err) => {
                 // non-fatal errors we will respond immediately
-                let _ = Self::respond_query_response(&self.response_sender, req_id, ImmediateQueryResponse::non_fatal_err(err))
-                    .await;
+                let _ = Self::respond_query_response(
+                    &self.response_sender,
+                    req_id,
+                    ImmediateQueryResponse::non_fatal_err(err),
+                )
+                .await;
                 return;
             }
         };
