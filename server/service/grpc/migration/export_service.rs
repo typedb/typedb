@@ -6,64 +6,20 @@
 
 use std::{
     collections::{HashMap, VecDeque},
-    ops::{
-        ControlFlow,
-        ControlFlow::{Break, Continue},
-    },
     sync::Arc,
     time::Duration,
 };
 
-use compiler::query_structure::QueryStructure;
-use concept::{
-    error::ConceptReadError,
-    thing::{entity::Entity, thing_manager::ThingManager},
-    type_::type_manager::TypeManager,
-};
-use database::{
-    database_manager::DatabaseManager,
-    transaction::{TransactionError, TransactionRead, TransactionSchema, TransactionWrite},
-    Database,
-};
-use diagnostics::{
-    diagnostics_manager::DiagnosticsManager,
-    metrics::{ActionKind, ClientEndpoint, LoadKind},
-};
-use error::typedb_error;
-use executor::{
-    batch::Batch,
-    document::ConceptDocument,
-    pipeline::{pipeline::Pipeline, stage::ReadPipelineStage, PipelineExecutionError},
-    ExecutionInterrupt, InterruptType,
-};
-use ir::pipeline::ParameterRegistry;
-use itertools::{Either, Itertools};
-use lending_iterator::LendingIterator;
-use options::{QueryOptions, TransactionOptions};
-use query::{error::QueryError, query_manager::QueryManager};
+use database::{transaction::TransactionRead, Database};
+use options::TransactionOptions;
 use resource::{
-    constants::{
-        common::{SECONDS_IN_HOUR, SECONDS_IN_MINUTE},
-        server::{DEFAULT_PREFETCH_SIZE, DEFAULT_TRANSACTION_TIMEOUT_MILLIS},
-    },
+    constants::common::SECONDS_IN_DAY,
     profile::{EncodingProfile, QueryProfile, StorageCounters},
     server_info::ServerInfo,
 };
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadSnapshot, ReadableSnapshot},
-};
-use tokio::{
-    sync::{
-        broadcast,
-        mpsc::{channel, Receiver, Sender},
-        watch,
-    },
-    task::{spawn_blocking, JoinHandle},
-    time::{timeout, Instant},
-};
-use tokio_stream::StreamExt;
-use tonic::{Status, Streaming};
+use storage::durability_client::WALClient;
+use tokio::sync::{mpsc::Sender, watch};
+use tonic::Status;
 use tracing::{event, Level};
 use typedb_protocol::{database::export::Server as ProtocolServer, migration::Item as MigrationItemProto};
 use typeql::{parse_query, query::SchemaQuery, Query};
@@ -72,9 +28,7 @@ use uuid::Uuid;
 use crate::service::{
     export_service::{get_transaction_schema, DatabaseExportError},
     grpc::{
-        diagnostics::run_with_diagnostics_async,
-        document::encode_document,
-        error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
+        error::{IntoGrpcStatus, IntoProtocolErrorMessage},
         migration::{
             item::{
                 encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item,
@@ -82,25 +36,9 @@ use crate::service::{
             },
             Checksums, TransactionHolder,
         },
-        options::{query_options_from_proto, transaction_options_from_proto},
-        response_builders::{
-            database::{database_export_initial_res_ok, database_export_res_done, database_export_res_part_items},
-            transaction::{
-                query_initial_res_from_error, query_initial_res_from_query_res_ok,
-                query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
-                query_res_ok_concept_row_stream, query_res_ok_done, query_res_part_from_concept_documents,
-                query_res_part_from_concept_rows, transaction_open_res,
-                transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
-                transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
-                transaction_server_res_query_res, transaction_server_res_rollback_res,
-            },
+        response_builders::database::{
+            database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
         },
-        row::encode_row,
-    },
-    transaction_service::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, init_transaction_timeout,
-        is_write_pipeline, prepare_read_query_in, unwrap_or_execute_and_return, with_readable_transaction,
-        StreamQueryOutputDescriptor, Transaction, TransactionServiceError, WriteQueryAnswer, WriteQueryResult,
     },
 };
 
@@ -146,7 +84,7 @@ impl DatabaseExportService {
 
     const OPTIONS_PARALLEL: bool = true;
     const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
-    const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(6 * SECONDS_IN_HOUR).as_millis() as u64;
+    const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
 
     pub(crate) fn new(
         server_info: ServerInfo,

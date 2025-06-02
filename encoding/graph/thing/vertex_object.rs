@@ -12,7 +12,7 @@ use storage::{key_value::StorageKeyReference, keyspace::KeyspaceSet};
 
 use crate::{
     graph::{
-        thing::ThingVertex,
+        thing::{vertex_attribute::AttributeVertex, ThingVertex},
         type_::vertex::{TypeID, TypeVertex},
         Typed,
     },
@@ -40,19 +40,6 @@ impl ObjectVertex {
 
     pub const fn build_relation(type_id: TypeID, object_id: ObjectID) -> Self {
         Self { prefix: Prefix::VertexRelation, type_id, object_id }
-    }
-
-    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() != Self::LENGTH {
-            return None;
-        }
-        let prefix = bytes[0];
-        if prefix != Prefix::VertexEntity.prefix_id().byte && prefix != Prefix::VertexRelation.prefix_id().byte {
-            return None;
-        }
-
-        // all byte patterns beyond the prefix are valid for object vertices
-        Some(Self::decode(bytes))
     }
 
     pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
@@ -125,6 +112,19 @@ impl ThingVertex for ObjectVertex {
         let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
         let object_id = ObjectID::decode(bytes[Self::range_object_id()].try_into().unwrap());
         Self { prefix, type_id, object_id }
+    }
+
+    fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let prefix = bytes[0];
+        if prefix != Prefix::VertexEntity.prefix_id().byte && prefix != Prefix::VertexRelation.prefix_id().byte {
+            return None;
+        }
+
+        // all byte patterns beyond the prefix are valid for object vertices
+        Some(Self::decode(bytes))
     }
 }
 

@@ -36,7 +36,7 @@ use crate::type_::{
     relation_type::RelationType,
     role_type::RoleType,
     type_manager::type_reader::TypeReader,
-    Capability, Independency, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
+    Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, PlayerAPI, TypeAPI,
 };
 
 #[derive(Debug)]
@@ -53,7 +53,7 @@ pub(crate) struct RelationTypeCache {
     pub(super) relates: HashSet<Relates>,
     pub(super) relates_with_specialised: HashSet<Relates>,
     pub(super) related_role_type_constraints: HashMap<RoleType, HashSet<CapabilityConstraint<Relates>>>,
-    pub(super) independency: Option<Independency>,
+    pub(super) independence: Option<Independent>,
     pub(super) object_cache: ObjectCache,
 }
 
@@ -170,7 +170,7 @@ impl RelationTypeCache {
                 TypeReader::get_capabilities::<Relates>(snapshot, relation_type, true).unwrap();
             let related_role_type_constraints =
                 TypeReader::get_type_capabilities_constraints::<Relates>(snapshot, relation_type).unwrap();
-            let independency = TypeReader::get_relation_type_independency(snapshot, relation_type).unwrap();
+            let independency = TypeReader::get_relation_type_independence(snapshot, relation_type).unwrap();
             let cache = RelationTypeCache {
                 common_type_cache,
                 relates_root,
@@ -178,7 +178,7 @@ impl RelationTypeCache {
                 relates,
                 relates_with_specialised,
                 related_role_type_constraints,
-                independency,
+                independence: independency,
                 object_cache,
             };
             caches[relation_type.vertex().type_id_().as_u16() as usize] = Some(cache);

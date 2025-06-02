@@ -55,7 +55,7 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::type_reader::TypeReader,
-        Capability, Independency, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
+        Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
     },
 };
 
@@ -2662,23 +2662,21 @@ impl TypeManager {
         self.unset_supertype(snapshot, role_type)
     }
 
-    // WARNING: Migration use only. Do not expose through Concept API.
     pub fn set_relation_type_independent(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        TypeWriter::storage_put_type_vertex_property(snapshot, relation_type, Some(Independency));
+        TypeWriter::storage_put_type_vertex_property(snapshot, relation_type, Some(Independent));
         Ok(())
     }
 
-    // WARNING: Migration use only. Do not expose through Concept API.
     pub fn unset_relation_type_independent(
         &self,
         snapshot: &mut impl WritableSnapshot,
         relation_type: RelationType,
     ) -> Result<(), Box<ConceptWriteError>> {
-        TypeWriter::storage_delete_type_vertex_property::<Independency>(snapshot, relation_type);
+        TypeWriter::storage_delete_type_vertex_property::<Independent>(snapshot, relation_type);
         Ok(())
     }
 
@@ -2688,9 +2686,9 @@ impl TypeManager {
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {
-            Ok(cache.get_relation_type_independency(relation_type).is_some())
+            Ok(cache.get_relation_type_independence(relation_type).is_some())
         } else {
-            TypeReader::get_relation_type_independency(snapshot, relation_type).map(|opt| opt.is_some())
+            TypeReader::get_relation_type_independence(snapshot, relation_type).map(|opt| opt.is_some())
         }
     }
 
