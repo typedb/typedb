@@ -5,8 +5,7 @@
  */
 use std::{
     collections::{HashMap, HashSet},
-    fmt,
-    fmt::Formatter,
+    marker::PhantomData,
     ops::{
         ControlFlow,
         ControlFlow::{Break, Continue},
@@ -41,30 +40,30 @@ use concept::{
 };
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionRead, TransactionSchema, TransactionWrite},
+    transaction::{TransactionSchema, TransactionWrite},
     Database,
 };
-use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind, Diagnostics};
+use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
 use encoding::value::label::Label;
 use options::TransactionOptions;
 use regex::Regex;
 use resource::{
-    constants::{common::SECONDS_IN_HOUR, snapshot::BUFFER_KEY_INLINE},
+    constants::{
+        common::{SECONDS_IN_DAY, SECONDS_IN_HOUR},
+        snapshot::BUFFER_KEY_INLINE,
+    },
     profile::StorageCounters,
 };
 use storage::{
     durability_client::{DurabilityClient, WALClient},
-    snapshot::{ReadableSnapshot, SchemaSnapshot, WritableSnapshot},
+    snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use tokio::sync::{
-    mpsc::{Receiver, Sender},
-    watch,
-};
+use tokio::sync::{mpsc::Sender, watch};
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
 use typedb_protocol::{
-    database_manager::import::{Client as ProtocolClient, Client, Server as ProtocolServer},
+    database_manager::import::{Client as ProtocolClient, Server as ProtocolServer},
     migration::{
         item::{
             relation::{role::Player as MigrationRolePlayerProto, Role as MigrationRoleProto},
@@ -72,25 +71,23 @@ use typedb_protocol::{
             Header as MigrationHeaderProto, OwnedAttribute as MigrationOwnedAttributeProto,
             Relation as MigrationRelationProto,
         },
-        Item as MigrationItemProto, MigrationValue,
+        Item as MigrationItemProto,
     },
 };
 use typeql::{parse_query, query::SchemaQuery};
-use uuid::Uuid;
 
 use crate::service::{
-    export_service::DatabaseExportError,
     grpc::{
-        diagnostics::{run_with_diagnostics, run_with_diagnostics_async},
+        diagnostics::run_with_diagnostics_async,
         error::{IntoGrpcStatus, IntoProtocolErrorMessage, ProtocolError},
         migration::{
-            item::{decode_checksums, decode_migration_value, encode_entity_item},
+            item::{decode_checksums, decode_migration_value},
             Checksums,
         },
         response_builders::database_manager::database_import_res_done,
     },
     import_service::DatabaseImportError,
-    transaction_service::{execute_schema_query, with_transaction_parts, TransactionServiceError},
+    transaction_service::{execute_schema_query, with_transaction_parts},
 };
 
 macro_rules! is_specializing_with_only_cardinality_specializations_fn {
@@ -206,8 +203,8 @@ type IID = Bytes<'static, BUFFER_KEY_INLINE>;
 struct DataInfo {
     objects: ObjectsInfo,
     attributes: AttributesInfo,
-    self_checksums: Checksums,
-    client_checksums: Option<Checksums>,
+    checksums: Checksums,
+    expected_checksums: Option<Checksums>,
 }
 
 impl DataInfo {
@@ -215,45 +212,45 @@ impl DataInfo {
         Self {
             objects: ObjectsInfo::new(),
             attributes: AttributesInfo::new(),
-            self_checksums: Checksums::new(),
-            client_checksums: None,
+            checksums: Checksums::new(),
+            expected_checksums: None,
         }
     }
 
     fn record_entity(&mut self, original_id: String, entity: Entity) {
-        self.objects.instance_buffer.record(original_id, entity.into_object());
-        self.self_checksums.entity_count += 1;
+        self.objects.instance_id_mapping.record(original_id, entity.into_object());
+        self.checksums.entity_count += 1;
     }
 
     fn record_relation(&mut self, original_id: String, relation: Relation) {
-        self.objects.instance_buffer.record(original_id, relation.into_object());
-        self.self_checksums.relation_count += 1;
+        self.objects.instance_id_mapping.record(original_id, relation.into_object());
+        self.checksums.relation_count += 1;
     }
 
     fn record_attribute(&mut self, original_id: String, attribute: Attribute) {
-        self.attributes.instance_buffer.record(original_id, attribute);
-        self.self_checksums.attribute_count += 1;
+        self.attributes.instance_id_mapping.record(original_id, attribute);
+        self.checksums.attribute_count += 1;
     }
 
     fn record_ownership(&mut self) {
-        self.self_checksums.ownership_count += 1;
+        self.checksums.ownership_count += 1;
     }
 
     fn record_role(&mut self) {
-        self.self_checksums.role_count += 1;
+        self.checksums.role_count += 1;
     }
 
     fn record_client_checksums(&mut self, checksums_proto: MigrationChecksumsProto) -> Result<(), DatabaseImportError> {
-        if self.client_checksums.is_some() {
+        if self.expected_checksums.is_some() {
             return Err(DatabaseImportError::DuplicateClientChecksums {});
         }
-        self.client_checksums = Some(decode_checksums(checksums_proto));
+        self.expected_checksums = Some(decode_checksums(checksums_proto));
         Ok(())
     }
 
     fn verify_checksums(&self) -> Result<(), DatabaseImportError> {
-        let self_checksums = &self.self_checksums;
-        match &self.client_checksums {
+        let self_checksums = &self.checksums;
+        match &self.expected_checksums {
             Some(client_checksums) => {
                 if self_checksums == client_checksums {
                     Ok(())
@@ -268,48 +265,56 @@ impl DataInfo {
 }
 
 #[derive(Debug)]
-struct InstanceBuffer<T: ThingAPI> {
+struct InstanceIDMapping<T: ThingAPI> {
     original_to_buffered_ids: HashMap<String, IID>,
-    buffered_ids_to_instances: HashMap<IID, T>,
+    _phantom_data: PhantomData<T>,
 }
 
-impl<T: ThingAPI> InstanceBuffer<T> {
+impl<T: ThingAPI> InstanceIDMapping<T> {
     fn new() -> Self {
-        Self { original_to_buffered_ids: HashMap::new(), buffered_ids_to_instances: HashMap::new() }
+        Self { original_to_buffered_ids: HashMap::new(), _phantom_data: PhantomData }
     }
 
-    fn get_by_original_id(&self, id: &str) -> Option<&T> {
-        self.original_to_buffered_ids.get(id).and_then(|buffered_id| self.buffered_ids_to_instances.get(buffered_id))
+    fn get_by_original_id(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        thing_manager: &ThingManager,
+        id: &str,
+    ) -> Result<Option<T>, DatabaseImportError> {
+        let Some(buffered_id) = self.original_to_buffered_ids.get(id) else {
+            return Ok(None);
+        };
+        thing_manager
+            .get_instance::<T>(snapshot, buffered_id, StorageCounters::DISABLED)
+            .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
     }
 
     fn record(&mut self, original_id: String, instance: T) {
-        let buffered_id = instance.iid().into_owned();
-        self.original_to_buffered_ids.insert(original_id.clone(), buffered_id.clone());
-        self.buffered_ids_to_instances.insert(buffered_id, instance);
+        self.original_to_buffered_ids.insert(original_id, instance.iid().into_owned());
     }
 }
 
 #[derive(Debug)]
 struct ObjectsInfo {
-    pub instance_buffer: InstanceBuffer<Object>,
+    pub instance_id_mapping: InstanceIDMapping<Object>,
     pub awaited_for_roles: HashMap<String, HashSet<(RoleType, Relation)>>,
 }
 
 impl ObjectsInfo {
     fn new() -> Self {
-        Self { instance_buffer: InstanceBuffer::new(), awaited_for_roles: HashMap::new() }
+        Self { instance_id_mapping: InstanceIDMapping::new(), awaited_for_roles: HashMap::new() }
     }
 }
 
 #[derive(Debug)]
 struct AttributesInfo {
-    pub instance_buffer: InstanceBuffer<Attribute>,
+    pub instance_id_mapping: InstanceIDMapping<Attribute>,
     pub awaited_for_ownerships: HashMap<String, HashSet<Object>>,
 }
 
 impl AttributesInfo {
     fn new() -> Self {
-        Self { instance_buffer: InstanceBuffer::new(), awaited_for_ownerships: HashMap::new() }
+        Self { instance_id_mapping: InstanceIDMapping::new(), awaited_for_ownerships: HashMap::new() }
     }
 }
 
@@ -328,7 +333,7 @@ pub(crate) struct DatabaseImportService {
 impl DatabaseImportService {
     const OPTIONS_PARALLEL: bool = true;
     const OPTIONS_SCHEMA_LOCK_ACQUIRE_TIMEOUT_MILLIS: u64 = Duration::from_secs(10).as_millis() as u64;
-    const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(6 * SECONDS_IN_HOUR).as_millis() as u64;
+    const OPTIONS_TRANSACTION_TIMEOUT_MILLIS: u64 = Duration::from_secs(1 * SECONDS_IN_DAY).as_millis() as u64;
 
     const COMMIT_BATCH_SIZE: u64 = 10_000;
 
@@ -487,7 +492,7 @@ impl DatabaseImportService {
     }
 
     async fn handle_done(&mut self) -> Result<ControlFlow<(), ()>, DatabaseImportError> {
-        let mut database_info = match &mut self.database_info {
+        let database_info = match &mut self.database_info {
             Some(database_info) => database_info,
             None => return Err(DatabaseImportError::DatabaseNotFoundForDone {}),
         };
@@ -1042,10 +1047,10 @@ impl DatabaseImportService {
         data_info: &mut DataInfo,
     ) -> Result<(), DatabaseImportError> {
         for MigrationOwnedAttributeProto { id } in owned_attributes {
-            match data_info.attributes.instance_buffer.get_by_original_id(&id) {
+            match data_info.attributes.instance_id_mapping.get_by_original_id(snapshot, thing_manager, &id)? {
                 Some(attribute) => {
                     object
-                        .set_has_unordered(snapshot, thing_manager, attribute, StorageCounters::DISABLED)
+                        .set_has_unordered(snapshot, thing_manager, &attribute, StorageCounters::DISABLED)
                         .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
                     data_info.record_ownership();
                 }
@@ -1091,10 +1096,10 @@ impl DatabaseImportService {
                 .ok_or_else(|| DatabaseImportError::UnknownRoleType { label })?;
 
             for MigrationRolePlayerProto { id } in players {
-                match data_info.objects.instance_buffer.get_by_original_id(&id) {
+                match data_info.objects.instance_id_mapping.get_by_original_id(snapshot, thing_manager, &id)? {
                     Some(player) => {
                         relation
-                            .add_player(snapshot, thing_manager, role_type, *player, StorageCounters::DISABLED)
+                            .add_player(snapshot, thing_manager, role_type, player, StorageCounters::DISABLED)
                             .map_err(|typedb_source| DatabaseImportError::ConceptWrite { typedb_source })?;
                         data_info.record_role();
                     }

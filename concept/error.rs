@@ -79,6 +79,7 @@ typedb_error! {
         UnimplementedFunctionality(24, "Unimplemented functionality encountered: {functionality}.", functionality: error::UnimplementedFeature),
         InternalIncomparableTypes(25, "Internal error: incomparable types."),
         Format(26, "Formatting error.", source: fmt::Error),
+        IidRepresentsWrongInstanceKind(27, "Could not read a concept of the expected kind by IID."),
     }
 }
 

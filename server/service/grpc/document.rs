@@ -165,10 +165,10 @@ fn encode_leaf(
                         type_manager,
                     )?)
                 }
-                Concept::Thing(Thing::Entity(entity)) => {
+                Concept::Thing(Thing::Entity(_entity)) => {
                     unreachable!()
                 }
-                Concept::Thing(Thing::Relation(relation)) => {
+                Concept::Thing(Thing::Relation(_relation)) => {
                     unreachable!()
                 }
                 Concept::Thing(Thing::Attribute(attribute)) => {

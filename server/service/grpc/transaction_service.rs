@@ -1387,8 +1387,7 @@ impl QueryStreamTransmitter {
 
     async fn finish_current(self) {
         if let Some(task) = self.transmitter_task {
-            let result = task.await.unwrap();
-            // let (control_flow, query_response_receiver) = task.await.unwrap();
+            let _result = task.await.unwrap();
         }
     }
 

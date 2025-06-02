@@ -8,7 +8,7 @@ use std::{
     collections::HashMap,
 };
 
-use bytes::util::HexBytesFormatter;
+use bytes::util::Base64Formatter;
 use concept::{
     error::{ConceptDecodeError, ConceptReadError},
     thing::{
@@ -25,7 +25,6 @@ use storage::snapshot::ReadableSnapshot;
 use typedb_protocol::{
     migration,
     migration::{item, Item, MigrationValue},
-    value,
 };
 
 use crate::service::grpc::{
@@ -98,7 +97,7 @@ fn encode_item(inner_item: item::Item) -> Item {
 }
 
 fn encode_thing_iid(thing: &impl ThingAPI) -> String {
-    HexBytesFormatter::borrowed(thing.iid().borrow()).format_iid()
+    Base64Formatter::borrowed(thing.iid().borrow()).format()
 }
 
 fn encode_type_label(

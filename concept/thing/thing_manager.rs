@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
+    io::Read,
     iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
@@ -163,82 +164,7 @@ impl ThingManager {
         InstanceIterator::new(snapshot_iterator)
     }
 
-    pub fn get_entities(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
-    }
-
-    pub fn get_relations(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
-    }
-
-    pub fn get_entities_in(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: EntityType,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_entities_in_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        entity_type_range: &impl RangeBounds<EntityType>,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_thing_in_range(snapshot, entity_type_range, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_relations_in(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: RelationType,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_relations_in_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation_type_range: &impl RangeBounds<RelationType>,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_thing_in_range(
-            snapshot,
-            relation_type_range,
-            <Relation as ThingAPI>::Vertex::KEYSPACE,
-            storage_counters,
-        )
-    }
-
-    pub fn get_objects_in(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        object_type: ObjectType,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Object> {
-        self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_objects_in_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        object_type_range: &impl RangeBounds<ObjectType>,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Object> {
-        self.get_thing_in_range(snapshot, object_type_range, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    fn get_thing_in_range<T: ThingAPI>(
+    fn get_instances_in_range<T: ThingAPI>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_range: &impl RangeBounds<T::TypeAPI>,
@@ -267,6 +193,115 @@ impl ThingManager {
             <T as ThingAPI>::Vertex::FIXED_WIDTH_ENCODING,
         );
         InstanceIterator::new(snapshot.iterate_range(&key_range, storage_counters))
+    }
+
+    pub fn get_instance<T: ThingAPI>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        iid: &Bytes<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<T>, Box<ConceptReadError>> {
+        let Some(vertex) = T::Vertex::try_decode(iid) else {
+            return Err(Box::new(ConceptReadError::IidRepresentsWrongInstanceKind {}));
+        };
+        let exists = snapshot
+            .contains(StorageKeyReference::new(vertex.keyspace(), iid), storage_counters)
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
+        Ok(exists.then_some(T::new(vertex)))
+    }
+
+    pub fn get_objects_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        object_type: ObjectType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Object> {
+        self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
+    }
+
+    pub fn get_objects_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        object_type_range: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Object> {
+        self.get_instances_in_range(
+            snapshot,
+            object_type_range,
+            <Object as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
+        )
+    }
+
+    pub fn get_object(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        iid: &Bytes<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<Object>, Box<ConceptReadError>> {
+        self.get_instance::<Object>(snapshot, iid, storage_counters)
+    }
+
+    pub fn get_entities(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
+    }
+
+    pub fn get_entities_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: EntityType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
+    }
+
+    pub fn get_entities_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        entity_type_range: &impl RangeBounds<EntityType>,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances_in_range(
+            snapshot,
+            entity_type_range,
+            <Entity as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
+        )
+    }
+
+    pub fn get_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
+    }
+
+    pub fn get_relations_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: RelationType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE, storage_counters)
+    }
+
+    pub fn get_relations_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type_range: &impl RangeBounds<RelationType>,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances_in_range(
+            snapshot,
+            relation_type_range,
+            <Relation as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
+        )
     }
 
     pub fn get_attributes<Snapshot: ReadableSnapshot>(
@@ -335,6 +370,15 @@ impl ThingManager {
             has_reverse_iterator,
             self.type_manager().get_independent_attribute_types(snapshot)?,
         ))
+    }
+
+    pub fn get_attribute(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        iid: &Bytes<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
+        self.get_instance::<Attribute>(snapshot, iid, storage_counters)
     }
 
     pub(crate) fn get_attribute_value(

@@ -51,7 +51,7 @@ use crate::{
         relation_type::RelationType,
         role_type::RoleType,
         sub::Sub,
-        Capability, Independency, KindAPI, Ordering, TypeAPI,
+        Capability, Independent, KindAPI, Ordering, TypeAPI,
     },
 };
 
@@ -460,11 +460,11 @@ impl TypeReader {
         Self::get_value_type(snapshot, type_).map(|result| result.map(|(value_type, _)| value_type))
     }
 
-    pub(crate) fn get_relation_type_independency(
+    pub(crate) fn get_relation_type_independence(
         snapshot: &impl ReadableSnapshot,
         type_: RelationType,
-    ) -> Result<Option<Independency>, Box<ConceptReadError>> {
-        Self::get_type_property_declared::<Independency>(snapshot, type_)
+    ) -> Result<Option<Independent>, Box<ConceptReadError>> {
+        Self::get_type_property_declared::<Independent>(snapshot, type_)
     }
 
     pub(crate) fn get_type_property_declared<PROPERTY>(
@@ -580,7 +580,7 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
-                    | Infix::PropertyIndependency
+                    | Infix::PropertyRelationTypeIndependent
                     | Infix::PropertyHasOrder
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
@@ -672,7 +672,7 @@ impl TypeReader {
                     | Infix::PropertyLabel
                     | Infix::PropertyValueType
                     | Infix::PropertyOrdering
-                    | Infix::PropertyIndependency
+                    | Infix::PropertyRelationTypeIndependent
                     | Infix::PropertyHasOrder
                     | Infix::PropertyLinksOrder => {
                         unreachable!("Retrieved unexpected infixes while reading annotations.")
