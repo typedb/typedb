@@ -377,11 +377,8 @@ impl DatabaseImportService {
                 }
                 Err(status) => {
                     event!(Level::TRACE, "Stream ended with error, closing database import service.");
-                    let result = self.response_sender.send(Err(status)).await;
-                    if let Err(send_error) = result {
-                        event!(Level::DEBUG, ?send_error, "Failed to send error to client");
-                    }
-                    self.do_close().await;
+                    self.do_close().await; // Make sure to clean up before replying with an error
+                    Self::send_error(&self.response_sender, status).await;
                     return;
                 }
             }
@@ -1163,7 +1160,13 @@ impl DatabaseImportService {
 
     async fn send_done(response_sender: &ResponseSender) {
         if let Err(err) = response_sender.send(Ok(database_import_res_done())).await {
-            event!(Level::TRACE, "Submit database import message failed: {:?}", err);
+            event!(Level::TRACE, "Submit database import done message failed: {:?}", err);
+        }
+    }
+
+    async fn send_error(response_sender: &ResponseSender, status: Status) {
+        if let Err(err) = response_sender.send(Err(status)).await {
+            event!(Level::DEBUG, "Submit database import error message failed: {:?}", err);
         }
     }
 
