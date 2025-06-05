@@ -443,8 +443,8 @@ impl TransactionService {
                 Break(())
             })
             .await
-            .expect("Expected write transaction execution completion"),
-            Transaction::Schema(transaction) => {
+            .expect("Expected write transaction commit completion"),
+            Transaction::Schema(transaction) => spawn_blocking(move || {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
@@ -457,7 +457,9 @@ impl TransactionService {
                 );
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Break(())
-            }
+            })
+            .await
+            .expect("Expected schema transaction commit completion"),
         }
     }
 

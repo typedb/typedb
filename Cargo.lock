@@ -695,6 +695,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "cache"
+version = "0.0.0"
+dependencies = [
+ "bincode",
+ "resource",
+ "rocksdb",
+ "serde",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "cast"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1184,6 +1196,7 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 name = "database"
 version = "0.0.0"
 dependencies = [
+ "cache",
  "concept",
  "concurrency",
  "diagnostics",
@@ -4155,6 +4168,7 @@ dependencies = [
  "axum-extra",
  "axum-server",
  "bytes 0.0.0",
+ "cache",
  "chrono",
  "chrono-tz",
  "clap",
