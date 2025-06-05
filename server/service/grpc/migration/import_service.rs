@@ -194,7 +194,6 @@ impl DatabaseImportService {
             .import_schema(schema)
             .await
             .map_err(|typedb_source| DatabaseImportServiceError::DatabaseImport { typedb_source })?;
-
         Ok(Continue(()))
     }
 
