@@ -541,8 +541,8 @@ impl TransactionService {
                 })
             })
             .await
-            .expect("Expected write transaction execution completion"),
-            Transaction::Schema(transaction) => {
+            .expect("Expected write transaction commit completion"),
+            Transaction::Schema(transaction) => spawn_blocking(move || {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
@@ -555,7 +555,9 @@ impl TransactionService {
                 commit_result.map_err(|typedb_source| {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
                 })
-            }
+            })
+            .await
+            .expect("Expected schema transaction commit completion"),
         }?;
 
         send_ok_message!(

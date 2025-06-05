@@ -11,7 +11,7 @@ use std::{
         ControlFlow::{Break, Continue},
     },
     sync::Arc,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use bytes::Bytes;
@@ -40,7 +40,7 @@ use concept::{
 };
 use database::{
     database_manager::DatabaseManager,
-    transaction::{TransactionSchema, TransactionWrite},
+    transaction::{SchemaCommitError, TransactionSchema, TransactionWrite},
     Database,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, metrics::ActionKind};
@@ -58,7 +58,10 @@ use storage::{
     durability_client::{DurabilityClient, WALClient},
     snapshot::{ReadableSnapshot, WritableSnapshot},
 };
-use tokio::sync::{mpsc::Sender, watch};
+use tokio::{
+    sync::{mpsc::Sender, watch},
+    task::spawn_blocking,
+};
 use tokio_stream::StreamExt;
 use tonic::{Status, Streaming};
 use tracing::{event, Level};
@@ -130,6 +133,7 @@ macro_rules! is_specializing_with_only_cardinality_specializations_fn {
 }
 
 pub(crate) const IMPORT_RESPONSE_BUFFER_SIZE: usize = 1;
+const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
@@ -141,6 +145,7 @@ struct DatabaseInfo {
 
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_item_count: u64,
+    total_item_count: u64,
 }
 
 impl DatabaseInfo {
@@ -152,11 +157,29 @@ impl DatabaseInfo {
 
             data_transaction: None,
             transaction_item_count: 0,
+            total_item_count: 0,
         }
     }
 
     fn database(&self) -> Arc<Database<WALClient>> {
         self.database.clone()
+    }
+
+    fn transaction_item_count(&self) -> u64 {
+        self.transaction_item_count
+    }
+
+    fn total_item_count(&self) -> u64 {
+        self.total_item_count
+    }
+
+    fn count_item(&mut self) {
+        self.transaction_item_count += 1;
+        self.total_item_count += 1;
+
+        if self.total_item_count % ITEMS_LOG_INTERVAL == 0 {
+            event!(Level::INFO, "Processed {} imported items...", self.total_item_count);
+        }
     }
 
     fn get_data_transaction(
@@ -328,6 +351,7 @@ pub(crate) struct DatabaseImportService {
 
     database_info: Option<DatabaseInfo>,
     is_done: bool,
+    start: Option<Instant>,
 }
 
 impl DatabaseImportService {
@@ -352,6 +376,7 @@ impl DatabaseImportService {
             shutdown_receiver,
             database_info: None,
             is_done: false,
+            start: None,
         }
     }
 
@@ -450,6 +475,7 @@ impl DatabaseImportService {
         name: String,
         schema: String,
     ) -> Result<ControlFlow<(), ()>, DatabaseImportError> {
+        self.start = Some(Instant::now());
         let database = match self.get_database(&name) {
             None => {
                 self.create_database(&name)?;
@@ -461,7 +487,7 @@ impl DatabaseImportService {
         self.database_info = Some(DatabaseInfo::new(database.clone()));
 
         Self::import_schema(database.clone(), schema).await?;
-        Self::relax_schema(database.clone(), &mut self.database_info.as_mut().unwrap().schema_info)?;
+        Self::relax_schema(database.clone(), &mut self.database_info.as_mut().unwrap().schema_info).await?;
         Ok(Continue(()))
     }
 
@@ -478,10 +504,12 @@ impl DatabaseImportService {
             let transaction = database_info.get_data_transaction(database_info.database())?;
             let (result_transaction, result) = Self::process_item(transaction, item, database_info);
             database_info.data_transaction = Some(result_transaction);
+
             result?;
-            database_info.transaction_item_count += 1;
-            if database_info.transaction_item_count % Self::COMMIT_BATCH_SIZE == 0 {
-                Self::commit_write_transaction(database_info.data_transaction.take().unwrap())?;
+            database_info.count_item();
+            if database_info.transaction_item_count() % Self::COMMIT_BATCH_SIZE == 0 {
+                let transaction = database_info.data_transaction.take().unwrap();
+                Self::commit_write_transaction(transaction).await?;
             }
         }
 
@@ -495,11 +523,11 @@ impl DatabaseImportService {
         };
 
         if let Some(data_transaction) = database_info.data_transaction.take() {
-            Self::commit_write_transaction(data_transaction)?;
+            Self::commit_write_transaction(data_transaction).await?;
         }
 
         Self::validate_imported_data(&database_info.data_info)?;
-        Self::restore_relaxed_schema(database_info.database(), &database_info.schema_info)?;
+        Self::restore_relaxed_schema(database_info.database(), &database_info.schema_info).await?;
 
         Self::send_done(&self.response_sender).await;
         self.is_done = true;
@@ -512,10 +540,18 @@ impl DatabaseImportService {
                 data_transaction.close();
             }
 
-            if !self.is_done {
-                let name = database_info.database().name().to_string();
+            let database_name = database_info.database().name().to_string();
+            if self.is_done {
+                event!(
+                    Level::INFO,
+                    "Import to '{}' finished successfully. {} items imported in {} seconds.",
+                    database_name,
+                    database_info.total_item_count(),
+                    self.start.unwrap_or(Instant::now()).elapsed().as_secs()
+                );
+            } else {
                 drop(database_info);
-                self.database_manager.delete_database(&name).ok();
+                self.database_manager.delete_database(&database_name).ok();
             }
         }
     }
@@ -535,14 +571,21 @@ impl DatabaseImportService {
             .map_err(|typedb_source| DatabaseImportError::SchemaQueryParseFailed { typedb_source })?;
         match parsed.into_structure() {
             typeql::query::QueryStructure::Schema(schema_query) => match &schema_query {
-                SchemaQuery::Define(_) => Self::execute_schema_query(database, schema_query, schema).await,
+                SchemaQuery::Define(_) => {
+                    let (transaction, query_result) =
+                        execute_schema_query(Self::open_schema_transaction(database)?, schema_query, schema).await;
+                    query_result.map_err(|typedb_source| DatabaseImportError::SchemaQueryFailed { typedb_source })?;
+                    Self::commit_schema_transaction(transaction)
+                        .await
+                        .map_err(|typedb_source| DatabaseImportError::ProvidedSchemaCommitFailed { typedb_source })
+                }
                 _ => Err(DatabaseImportError::InvalidSchemaDefineQuery {}),
             },
             _ => Err(DatabaseImportError::InvalidSchemaDefineQuery {}),
         }
     }
 
-    fn relax_schema(
+    async fn relax_schema(
         database: Arc<Database<WALClient>>,
         schema_info: &mut SchemaInfo,
     ) -> Result<(), DatabaseImportError> {
@@ -563,14 +606,17 @@ impl DatabaseImportService {
                     schema_info,
                 )?;
             });
-        let (_, commit_result) = transaction.commit();
-        commit_result.map_err(|typedb_source| DatabaseImportError::PreparationSchemaCommitFailed { typedb_source })
+
+        Self::commit_schema_transaction(transaction)
+            .await
+            .map_err(|typedb_source| DatabaseImportError::PreparationSchemaCommitFailed { typedb_source })
     }
 
-    fn restore_relaxed_schema(
+    async fn restore_relaxed_schema(
         database: Arc<Database<WALClient>>,
         schema_info: &SchemaInfo,
     ) -> Result<(), DatabaseImportError> {
+        event!(Level::INFO, "Finalising imported schema...");
         let transaction = Self::open_schema_transaction(database)?;
         let (transaction, ()) =
             with_transaction_parts!(TransactionSchema, transaction, |inner_snapshot, type_manager, thing_manager| {
@@ -583,8 +629,10 @@ impl DatabaseImportService {
                     schema_info,
                 )?;
             });
-        let (_, commit_result) = transaction.commit();
-        commit_result.map_err(|typedb_source| DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source })
+
+        Self::commit_schema_transaction(transaction)
+            .await
+            .map_err(|typedb_source| DatabaseImportError::FinalizationSchemaCommitFailed { typedb_source })
     }
 
     fn make_attribute_types_independent(
@@ -904,19 +952,6 @@ impl DatabaseImportService {
         Ok(())
     }
 
-    async fn execute_schema_query(
-        database: Arc<Database<WALClient>>,
-        query: SchemaQuery,
-        source_query: String,
-    ) -> Result<(), DatabaseImportError> {
-        let (transaction, query_result) =
-            execute_schema_query(Self::open_schema_transaction(database)?, query, source_query).await;
-        query_result.map_err(|typedb_source| DatabaseImportError::SchemaQueryFailed { typedb_source })?;
-
-        let (_, commit_result) = transaction.commit();
-        commit_result.map_err(|typedb_source| DatabaseImportError::ProvidedSchemaCommitFailed { typedb_source })
-    }
-
     fn process_item(
         transaction: TransactionWrite<WALClient>,
         item_proto: MigrationItemProto,
@@ -1154,7 +1189,7 @@ impl DatabaseImportService {
     ) -> Result<(), DatabaseImportError> {
         let MigrationHeaderProto { typedb_version: original_version, original_database } = header_proto;
         let new_database = database_info.database.name();
-        event!(Level::INFO, "Importing '{original_database}' from TypeDB {original_version} to '{new_database}'");
+        event!(Level::INFO, "Importing '{original_database}' from TypeDB {original_version} to '{new_database}'.");
         Ok(())
     }
 
@@ -1184,9 +1219,22 @@ impl DatabaseImportService {
             .map_err(|typedb_source| DatabaseImportError::TransactionFailed { typedb_source })
     }
 
-    fn commit_write_transaction(transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
-        let (_, result) = transaction.commit();
-        result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
+    async fn commit_write_transaction(transaction: TransactionWrite<WALClient>) -> Result<(), DatabaseImportError> {
+        spawn_blocking(move || {
+            let (_, result) = transaction.commit();
+            result.map_err(|typedb_source| DatabaseImportError::DataCommitFailed { typedb_source })
+        })
+        .await
+        .expect("Expected write transaction commit completion")
+    }
+
+    async fn commit_schema_transaction(transaction: TransactionSchema<WALClient>) -> Result<(), SchemaCommitError> {
+        spawn_blocking(move || {
+            let (_, result) = transaction.commit();
+            result
+        })
+        .await
+        .expect("Expected schema transaction commit completion")
     }
 
     fn transaction_options() -> TransactionOptions {

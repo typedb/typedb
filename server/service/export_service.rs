@@ -53,5 +53,7 @@ typedb_error! {
         TransactionFailed(1, "Transaction failed.", typedb_source: TransactionError),
         ConceptRead(2, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
         FunctionRead(3, "Error reading functions.", typedb_source: FunctionReadError),
+        ShutdownInterrupt(4, "Execution interrupted by a shutdown signal."),
+        ClientChannelIsClosed(5, "Client channel is closed."),
     }
 }

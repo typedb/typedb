@@ -7,7 +7,7 @@
 use std::{
     collections::{HashMap, VecDeque},
     sync::Arc,
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 use database::{transaction::TransactionRead, Database};
@@ -44,13 +44,11 @@ use crate::service::{
 
 macro_rules! send_response {
     ($response_sender: expr, $message: expr) => {{
-        match $response_sender.send($message).await {
-            Ok(_) => true,
-            Err(err) => {
-                event!(Level::TRACE, "Submit database export message failed: {:?}", err);
-                false
-            }
+        let res = $response_sender.send($message).await;
+        if let Err(err) = &res {
+            event!(Level::TRACE, "Send database export message failed: {:?}", err);
         }
+        res.map_err(|_| DatabaseExportError::ClientChannelIsClosed {})
     }};
 }
 
@@ -66,7 +64,22 @@ macro_rules! unwrap_else_send_error_and_return {
     }};
 }
 
+macro_rules! return_error_if_shutdown {
+    ($self:ident) => {{
+        match $self.shutdown_receiver.has_changed() {
+            Ok(true) => return Err(DatabaseExportError::ShutdownInterrupt {}),
+            Ok(false) => {}
+            Err(err) => {
+                // If the channel is closed, something has happened. Log + consider it a shutdown
+                event!(Level::TRACE, "Shutdown receiver is not available from export service: {:?}", err);
+                return Err(DatabaseExportError::ShutdownInterrupt {});
+            }
+        }
+    }};
+}
+
 pub(crate) const DATABASE_EXPORT_REQUEST_BUFFER_SIZE: usize = 10;
+const ITEMS_LOG_INTERVAL: u64 = 1_000_000;
 
 type ResponseSender = Sender<Result<ProtocolServer, Status>>;
 
@@ -77,6 +90,8 @@ pub(crate) struct DatabaseExportService {
     response_sender: ResponseSender,
     checksums: Checksums,
     shutdown_receiver: watch::Receiver<()>,
+
+    total_item_count: u64,
 }
 
 impl DatabaseExportService {
@@ -92,20 +107,29 @@ impl DatabaseExportService {
         response_sender: ResponseSender,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
-        Self { server_info, database, response_sender, checksums: Checksums::new(), shutdown_receiver }
+        Self {
+            server_info,
+            database,
+            response_sender,
+            checksums: Checksums::new(),
+            shutdown_receiver,
+            total_item_count: 0,
+        }
     }
 
     pub(crate) async fn export(mut self) {
-        event!(Level::INFO, "Exporting '{}' from TypeDB {}", self.database.name(), self.server_info.version);
+        let start = Instant::now();
+        event!(Level::INFO, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
         let Some(holder) = self.open_transaction().await else {
             return;
         };
         let transaction = holder.transaction();
 
         let schema = unwrap_else_send_error_and_return!(self, get_transaction_schema(transaction));
-        if !send_response!(self.response_sender, Ok(database_export_initial_res_ok(schema))) {
-            return;
-        }
+        unwrap_else_send_error_and_return!(
+            self,
+            send_response!(self.response_sender, Ok(database_export_initial_res_ok(schema)))
+        );
 
         let mut buffer = Vec::with_capacity(Self::ITEM_BATCH_SIZE);
         unwrap_else_send_error_and_return!(self, self.export_header(&mut buffer).await);
@@ -114,10 +138,18 @@ impl DatabaseExportService {
         unwrap_else_send_error_and_return!(self, self.export_attributes(transaction, &mut buffer).await);
         unwrap_else_send_error_and_return!(self, self.export_checksums(&mut buffer).await);
         if !buffer.is_empty() {
-            Self::send_items(&self.response_sender, buffer).await;
+            unwrap_else_send_error_and_return!(self, Self::send_items(&self.response_sender, buffer).await);
         }
 
-        Self::send_done(&self.response_sender).await;
+        unwrap_else_send_error_and_return!(self, Self::send_done(&self.response_sender).await);
+        event!(
+            Level::INFO,
+            "Export '{}' from TypeDB {} finished successfully. {} items exported in {} seconds.",
+            self.database.name(),
+            self.server_info.version,
+            self.total_item_count,
+            start.elapsed().as_secs()
+        );
     }
 
     async fn export_entities(
@@ -127,19 +159,19 @@ impl DatabaseExportService {
     ) -> Result<(), DatabaseExportError> {
         let entities = transaction.thing_manager.get_entities(transaction.snapshot(), StorageCounters::DISABLED);
         for entity in entities {
+            return_error_if_shutdown!(self);
             let entity = entity.map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
-            buffer.push(
-                encode_entity_item(
-                    transaction.snapshot(),
-                    &transaction.type_manager,
-                    &transaction.thing_manager,
-                    &mut self.checksums,
-                    entity,
-                )
-                .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?,
-            );
+            let item = encode_entity_item(
+                transaction.snapshot(),
+                &transaction.type_manager,
+                &transaction.thing_manager,
+                &mut self.checksums,
+                entity,
+            )
+            .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
+            self.buffer_push(buffer, item);
             self.checksums.entity_count += 1;
-            self.flush_buffer_if_needed(buffer).await;
+            self.flush_buffer_if_needed(buffer).await?;
         }
         Ok(())
     }
@@ -151,19 +183,19 @@ impl DatabaseExportService {
     ) -> Result<(), DatabaseExportError> {
         let relations = transaction.thing_manager.get_relations(transaction.snapshot(), StorageCounters::DISABLED);
         for relation in relations {
+            return_error_if_shutdown!(self);
             let relation = relation.map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
-            buffer.push(
-                encode_relation_item(
-                    transaction.snapshot(),
-                    &transaction.type_manager,
-                    &transaction.thing_manager,
-                    &mut self.checksums,
-                    relation,
-                )
-                .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?,
-            );
+            let item = encode_relation_item(
+                transaction.snapshot(),
+                &transaction.type_manager,
+                &transaction.thing_manager,
+                &mut self.checksums,
+                relation,
+            )
+            .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
+            self.buffer_push(buffer, item);
             self.checksums.relation_count += 1;
-            self.flush_buffer_if_needed(buffer).await;
+            self.flush_buffer_if_needed(buffer).await?;
         }
         Ok(())
     }
@@ -178,48 +210,67 @@ impl DatabaseExportService {
             .get_attributes(transaction.snapshot(), StorageCounters::DISABLED)
             .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
         for attribute in attributes {
+            return_error_if_shutdown!(self);
             let attribute = attribute.map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
-            buffer.push(
-                encode_attribute_item(
-                    transaction.snapshot(),
-                    &transaction.type_manager,
-                    &transaction.thing_manager,
-                    attribute,
-                )
-                .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?,
-            );
+            let item = encode_attribute_item(
+                transaction.snapshot(),
+                &transaction.type_manager,
+                &transaction.thing_manager,
+                attribute,
+            )
+            .map_err(|typedb_source| DatabaseExportError::ConceptRead { typedb_source })?;
+            self.buffer_push(buffer, item);
             self.checksums.attribute_count += 1;
-            self.flush_buffer_if_needed(buffer).await;
+            self.flush_buffer_if_needed(buffer).await?;
         }
         Ok(())
     }
 
     async fn export_header(&mut self, buffer: &mut Vec<MigrationItemProto>) -> Result<(), DatabaseExportError> {
-        buffer.push(encode_header_item(self.server_info.version.to_string(), self.database.name().to_string()));
+        self.buffer_push(
+            buffer,
+            encode_header_item(self.server_info.version.to_string(), self.database.name().to_string()),
+        );
         Ok(())
     }
 
     async fn export_checksums(&mut self, buffer: &mut Vec<MigrationItemProto>) -> Result<(), DatabaseExportError> {
-        buffer.push(encode_checksums_item(&self.checksums));
+        self.buffer_push(buffer, encode_checksums_item(&self.checksums));
         Ok(())
     }
 
-    async fn flush_buffer_if_needed(&mut self, buffer: &mut Vec<MigrationItemProto>) {
+    async fn flush_buffer_if_needed(
+        &mut self,
+        buffer: &mut Vec<MigrationItemProto>,
+    ) -> Result<(), DatabaseExportError> {
         if buffer.len() >= Self::ITEM_BATCH_SIZE {
-            Self::send_items(&self.response_sender, buffer.split_off(0)).await;
+            Self::send_items(&self.response_sender, buffer.split_off(0)).await?;
+        }
+        Ok(())
+    }
+
+    fn buffer_push(&mut self, buffer: &mut Vec<MigrationItemProto>, item: MigrationItemProto) {
+        buffer.push(item);
+        self.total_item_count += 1;
+
+        if self.total_item_count % ITEMS_LOG_INTERVAL == 0 {
+            event!(Level::INFO, "Processed {} exported items...", self.total_item_count);
         }
     }
 
     async fn send_error(response_sender: &ResponseSender, error: DatabaseExportError) {
-        let _ = send_response!(response_sender, Err(error.into_error_message().into_status()));
+        let _ = send_response!(response_sender, Err(error.into_error_message().into_status())).ok();
     }
 
-    async fn send_done(response_sender: &ResponseSender) {
-        let _ = send_response!(response_sender, Ok(database_export_res_done()));
+    async fn send_done(response_sender: &ResponseSender) -> Result<(), DatabaseExportError> {
+        send_response!(response_sender, Ok(database_export_res_done()))
     }
 
-    async fn send_items(response_sender: &ResponseSender, items: Vec<MigrationItemProto>) {
-        let _ = send_response!(response_sender, Ok(database_export_res_part_items(items)));
+    async fn send_items(
+        response_sender: &ResponseSender,
+        items: Vec<MigrationItemProto>,
+    ) -> Result<(), DatabaseExportError> {
+        send_response!(response_sender, Ok(database_export_res_part_items(items)))
     }
 
     async fn open_transaction(&self) -> Option<TransactionHolder> {
