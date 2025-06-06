@@ -120,20 +120,20 @@ impl DatabaseManager {
     }
 
     pub(crate) fn prepare_imported_database(&self, name: String) -> Result<Database<WALClient>, DatabaseCreateError> {
-        Self::validate_database_name(&name)?;
-        if self.database(&name).is_some() {
-            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
-        }
-
         let mut imported_databases =
             self.imported_databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if imported_databases.contains(&name) {
             return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
         }
-        imported_databases.insert(name.to_string());
 
-        let database = Database::<WALClient>::open(&self.data_directory.join(name))
+        Self::validate_database_name(&name)?;
+        if self.database(&name).is_some() {
+            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+        }
+
+        let database = Database::<WALClient>::open(&self.data_directory.join(name.clone()))
             .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })?;
+        imported_databases.insert(name);
         database.mark_imported()?;
         Ok(database)
     }
@@ -142,14 +142,14 @@ impl DatabaseManager {
         let name = database.name().to_string();
 
         let mut imported_databases =
-            self.imported_databases.write().map_err(|typedb_source| DatabaseCreateError::WriteAccessDenied {})?;
+            self.imported_databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if !imported_databases.contains(&name) {
             return Err(DatabaseCreateError::DatabaseIsNotBeingImported { name });
         }
         imported_databases.remove(&name);
 
         let mut databases =
-            self.databases.write().map_err(|typedb_source| DatabaseCreateError::WriteAccessDenied {})?;
+            self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if databases.contains_key(&name) {
             return Err(DatabaseCreateError::AlreadyExists { name });
         } else {
@@ -161,17 +161,14 @@ impl DatabaseManager {
 
     pub(crate) fn cancel_database_import(&self, database: Database<WALClient>) -> Result<(), DatabaseDeleteError> {
         let name = database.name().to_string();
-        database.delete()?;
 
-        let mut imported_databases = match self.imported_databases.write() {
-            Ok(imported_databases) => imported_databases,
-            Err(_) => return Err(DatabaseDeleteError::WriteAccessDenied {}),
-        };
-
+        let mut imported_databases =
+            self.imported_databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
         if !imported_databases.contains(&name) {
             return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name });
         }
 
+        database.delete()?;
         imported_databases.remove(&name);
         Ok(())
     }

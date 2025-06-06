@@ -532,7 +532,7 @@ impl DatabaseImporter {
         match parsed.into_structure() {
             typeql::query::QueryStructure::Schema(schema_query) => match &schema_query {
                 SchemaQuery::Define(_) => {
-                    let transaction = Self::open_schema_transaction(self.database())?;
+                    let transaction = Self::open_schema_transaction(self.database()?)?;
                     let (transaction, query_result) =
                         spawn_blocking(move || execute_schema_query(transaction, schema_query, schema))
                             .await
@@ -549,7 +549,7 @@ impl DatabaseImporter {
     }
 
     async fn relax_schema(&mut self) -> Result<(), DatabaseImportError> {
-        let transaction = Self::open_schema_transaction(self.database())?;
+        let transaction = Self::open_schema_transaction(self.database()?)?;
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
@@ -566,7 +566,7 @@ impl DatabaseImporter {
     }
 
     async fn restore_relaxed_schema(&self) -> Result<(), DatabaseImportError> {
-        let transaction = Self::open_schema_transaction(self.database())?;
+        let transaction = Self::open_schema_transaction(self.database()?)?;
         let (transaction, ()) = with_transaction_parts!(
             TransactionSchema,
             transaction,
@@ -925,12 +925,12 @@ impl DatabaseImporter {
     fn get_data_transaction(&mut self) -> Result<TransactionWrite<WALClient>, DatabaseImportError> {
         match self.data_transaction.take() {
             Some(transaction) => Ok(transaction),
-            None => Self::open_write_transaction(self.database()),
+            None => Self::open_write_transaction(self.database()?),
         }
     }
 
-    fn database(&self) -> Arc<Database<WALClient>> {
-        self.database.as_ref().expect("Expected imported database").clone()
+    fn database(&self) -> Result<Arc<Database<WALClient>>, DatabaseImportError> {
+        self.database.as_ref().ok_or(DatabaseImportError::AccessAfterFinalisation {}).cloned()
     }
 
     fn open_schema_transaction(
@@ -1028,7 +1028,8 @@ typedb_error! {
         InvalidChecksumsOnDone(19, "Invalid imported database with a checksums mismatch: {details}.", details: String),
         IncompleteOwnershipsOnDone(20, "Invalid imported database with {count} unknown owned attributes. It is a sign of a corrupted file or a client bug.", count: usize),
         IncompleteRolesOnDone(21, "Invalid imported database with {count} unknown role players. It is a sign of a corrupted file or a client bug.", count: usize),
-        DoubleFinalisation(22, "Error finalising import for database '{name}': it was already finalised. It is a sign of a corrupted file or a client bug.", name: String),
-        Finalisation(23, "Error finalising the imported database.", typedb_source: DatabaseCreateError),
+        DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
+        Finalisation(23, "Error finalizing the imported database.", typedb_source: DatabaseCreateError),
+        AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
     }
 }
