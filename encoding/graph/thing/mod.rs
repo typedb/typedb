@@ -38,6 +38,8 @@ pub trait ThingVertex: Prefixed<BUFFER_KEY_INLINE> + Typed<BUFFER_KEY_INLINE> + 
 
     fn decode(bytes: &[u8]) -> Self;
 
+    fn try_decode(bytes: &[u8]) -> Option<Self>;
+
     fn build_prefix_prefix(prefix: Prefix, keyspace: EncodingKeyspace) -> StorageKey<'static, { PrefixID::LENGTH }> {
         debug_assert!(matches!(prefix, Prefix::VertexEntity | Prefix::VertexRelation | Prefix::VertexAttribute));
         let mut array = ByteArray::zeros(PrefixID::LENGTH);

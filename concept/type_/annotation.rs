@@ -333,8 +333,8 @@ impl AnnotationRange {
                         Value::Double(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_double(),
                         Value::Decimal(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_decimal(),
                         Value::Date(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date(),
-                        Value::DateTime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
-                        Value::DateTimeTZ(start_inclusive) => {
+                        Value::Datetime(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_date_time(),
+                        Value::DatetimeTz(start_inclusive) => {
                             start_inclusive < &end_inclusive.clone().unwrap_date_time_tz()
                         }
                         Value::String(start_inclusive) => start_inclusive < &end_inclusive.clone().unwrap_string(),
@@ -383,8 +383,8 @@ impl AnnotationRange {
                     Value::Double(value) => &start.unwrap_double() <= value,
                     Value::Decimal(value) => &start.unwrap_decimal() <= value,
                     Value::Date(value) => &start.unwrap_date() <= value,
-                    Value::DateTime(value) => &start.unwrap_date_time() <= value,
-                    Value::DateTimeTZ(value) => &start.unwrap_date_time_tz() <= value,
+                    Value::Datetime(value) => &start.unwrap_date_time() <= value,
+                    Value::DatetimeTz(value) => &start.unwrap_date_time_tz() <= value,
                     Value::String(value) => &start.unwrap_string() <= value,
                     Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
                     Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
@@ -404,8 +404,8 @@ impl AnnotationRange {
                     Value::Double(value) => &end.unwrap_double() >= value,
                     Value::Decimal(value) => &end.unwrap_decimal() >= value,
                     Value::Date(value) => &end.unwrap_date() >= value,
-                    Value::DateTime(value) => &end.unwrap_date_time() >= value,
-                    Value::DateTimeTZ(value) => &end.unwrap_date_time_tz() >= value,
+                    Value::Datetime(value) => &end.unwrap_date_time() >= value,
+                    Value::DatetimeTz(value) => &end.unwrap_date_time_tz() >= value,
                     Value::String(value) => &end.unwrap_string() >= value,
                     Value::Duration(_) => unreachable!("Cannot use duration for AnnotationRange"),
                     Value::Struct(_) => unreachable!("Cannot use structs for AnnotationRange"),
@@ -908,10 +908,10 @@ mod serialize_annotation {
             ValueTypeCategory::Decimal => Value::Decimal(DecimalBytes::new(bytes.try_into().unwrap()).as_decimal()),
             ValueTypeCategory::Date => Value::Date(DateBytes::new(bytes.try_into().unwrap()).as_naive_date()),
             ValueTypeCategory::DateTime => {
-                Value::DateTime(DateTimeBytes::new(bytes.try_into().unwrap()).as_naive_date_time())
+                Value::Datetime(DateTimeBytes::new(bytes.try_into().unwrap()).as_naive_date_time())
             }
             ValueTypeCategory::DateTimeTZ => {
-                Value::DateTimeTZ(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time())
+                Value::DatetimeTz(DateTimeTZBytes::new(bytes.try_into().unwrap()).as_date_time())
             }
             ValueTypeCategory::Duration => Value::Duration(DurationBytes::new(bytes.try_into().unwrap()).as_duration()),
             ValueTypeCategory::String => Value::String(Cow::Owned(
@@ -1160,8 +1160,8 @@ mod serialize_annotation {
                 | Value::Double(_)
                 | Value::Decimal(_)
                 | Value::Date(_)
-                | Value::DateTime(_)
-                | Value::DateTimeTZ(_)
+                | Value::Datetime(_)
+                | Value::DatetimeTz(_)
                 | Value::String(_)
                 | Value::Duration(_) => value.encode_bytes::<AD_HOC_BYTES_INLINE>().to_vec(),
                 Value::Struct(_) => unreachable!("Can't use struct for AnnotationValues"),

@@ -55,7 +55,7 @@ use crate::{
         relation_type::{RelationType, RelationTypeAnnotation},
         role_type::{RoleType, RoleTypeAnnotation},
         type_manager::type_reader::TypeReader,
-        Capability, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
+        Capability, Independent, KindAPI, ObjectTypeAPI, Ordering, OwnerAPI, PlayerAPI, TypeAPI, TypeQLSyntax,
     },
 };
 
@@ -2660,6 +2660,36 @@ impl TypeManager {
         .map_err(|typedb_source| ConceptWriteError::SchemaValidation { typedb_source })?;
 
         self.unset_supertype(snapshot, role_type)
+    }
+
+    pub fn set_relation_type_independent(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        TypeWriter::storage_put_type_vertex_property(snapshot, relation_type, Some(Independent));
+        Ok(())
+    }
+
+    pub fn unset_relation_type_independent(
+        &self,
+        snapshot: &mut impl WritableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<(), Box<ConceptWriteError>> {
+        TypeWriter::storage_delete_type_vertex_property::<Independent>(snapshot, relation_type);
+        Ok(())
+    }
+
+    pub fn get_is_relation_type_independent(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type: RelationType,
+    ) -> Result<bool, Box<ConceptReadError>> {
+        if let Some(cache) = &self.type_cache {
+            Ok(cache.get_relation_type_independence(relation_type).is_some())
+        } else {
+            TypeReader::get_relation_type_independence(snapshot, relation_type).map(|opt| opt.is_some())
+        }
     }
 
     pub(crate) fn set_owns_annotation_distinct(

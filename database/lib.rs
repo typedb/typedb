@@ -11,4 +11,6 @@ pub use self::database::{Database, DatabaseDeleteError, DatabaseOpenError, Datab
 
 pub mod database;
 pub mod database_manager;
+pub mod migration;
+pub mod query;
 pub mod transaction;

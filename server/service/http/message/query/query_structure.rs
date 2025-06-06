@@ -494,7 +494,7 @@ fn deserialize_using_from_string<'de, D: serde::de::Deserializer<'de>, T: FromSt
     // `ActualData` encoded as json within a string
     struct Visitor<T> {
         phantom: PhantomData<T>,
-    };
+    }
 
     impl<'de, T1: FromStr> serde::de::Visitor<'de> for Visitor<T1> {
         type Value = T1;

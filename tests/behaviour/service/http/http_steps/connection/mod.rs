@@ -12,14 +12,14 @@ use resource::server_info::ServerInfo;
 use server::{
     error::ServerOpenError,
     parameters::config::{AuthenticationConfig, ConfigBuilder},
-    server::ServerBuilder,
+    ServerBuilder,
 };
 use test_utils::create_tmp_dir;
 
 use crate::{
     generic_step,
     message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
-    Context, TEST_TOKEN_EXPIRATION,
+    Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION,
 };
 
 mod database;
@@ -48,7 +48,7 @@ pub(crate) async fn start_typedb(
             .data_directory(server_dir.as_ref())
             .development_mode(true)
             .authentication(AuthenticationConfig { token_expiration: TEST_TOKEN_EXPIRATION })
-            .finish()
+            .build()
             .unwrap();
 
         let server_future = async {
@@ -177,6 +177,7 @@ async fn connection_has_count_users(context: &mut Context, count: usize) {
 async fn connection_closes(context: &mut Context, may_error: params::MayError) {
     context.cleanup_transactions().await;
     context.http_context.auth_token = None;
+    may_error.check(Ok::<(), HttpBehaviourTestError>(()));
 }
 
 #[apply(generic_step)]

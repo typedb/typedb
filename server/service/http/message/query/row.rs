@@ -10,7 +10,6 @@ use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use executor::row::MaybeOwnedRow;
-use hyper::body::HttpBody;
 use resource::profile::StorageCounters;
 use serde::Serialize;
 use serde_json::json;

@@ -18,6 +18,10 @@ use compiler::query_structure::QueryStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
+    query::{
+        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
+        WriteQueryAnswer, WriteQueryResult,
+    },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::{
@@ -74,11 +78,21 @@ use crate::service::{
         row::encode_row,
     },
     transaction_service::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, init_transaction_timeout,
-        is_write_pipeline, prepare_read_query_in, unwrap_or_execute_and_return, with_readable_transaction,
-        StreamQueryOutputDescriptor, Transaction, TransactionServiceError, WriteQueryAnswer, WriteQueryResult,
+        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
 };
+
+macro_rules! unwrap_or_execute_and_return {
+    ($match_: expr, |$err:pat_param| $err_mapper: block) => {{
+        match $match_ {
+            Ok(inner) => inner,
+            Err($err) => {
+                $err_mapper
+                return;
+            }
+        }
+    }};
+}
 
 #[derive(Debug)]
 pub(crate) struct TransactionService {
@@ -188,10 +202,10 @@ impl StreamingCondition {
 
 impl TransactionService {
     pub(crate) fn new(
-        request_stream: Streaming<typedb_protocol::transaction::Client>,
-        response_sender: Sender<Result<ProtocolServer, Status>>,
         database_manager: Arc<DatabaseManager>,
         diagnostics_manager: Arc<DiagnosticsManager>,
+        request_stream: Streaming<typedb_protocol::transaction::Client>,
+        response_sender: Sender<Result<ProtocolServer, Status>>,
         shutdown_receiver: watch::Receiver<()>,
     ) -> Self {
         let (query_interrupt_sender, query_interrupt_receiver) = broadcast::channel(1);
@@ -475,7 +489,7 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
-        self.diagnostics_manager.increment_load_count(ClientEndpoint::Grpc, &database_name, transaction.to_load_kind());
+        self.diagnostics_manager.increment_load_count(ClientEndpoint::Grpc, &database_name, transaction.load_kind());
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
         self.is_open = true;
@@ -525,8 +539,8 @@ impl TransactionService {
                 })
             })
             .await
-            .expect("Expected write transaction execution completion"),
-            Transaction::Schema(transaction) => {
+            .expect("Expected write transaction commit completion"),
+            Transaction::Schema(transaction) => spawn_blocking(move || {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Grpc,
                     transaction.database.name(),
@@ -539,7 +553,9 @@ impl TransactionService {
                 commit_result.map_err(|typedb_source| {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
                 })
-            }
+            })
+            .await
+            .expect("Expected schema transaction commit completion"),
         }
     }
 
@@ -807,13 +823,16 @@ impl TransactionService {
         source_query: String,
     ) -> Result<ImmediateQueryResponse, Status> {
         self.interrupt_and_close_responders(InterruptType::SchemaQueryExecution).await;
-        self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
+        let _ = self.cancel_queued_read_queries(InterruptType::SchemaQueryExecution).await;
         self.finish_queued_write_queries(InterruptType::SchemaQueryExecution).await?;
 
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
-                    let (transaction, result) = execute_schema_query(schema_transaction, query, source_query).await;
+                    let (transaction, result) =
+                        spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
+                            .await
+                            .expect("Expected schema query execution finishing");
                     self.transaction = Some(Transaction::Schema(transaction));
                     let message_ok_done =
                         result.map(|_| query_res_ok_done(typedb_protocol::query::Type::Schema)).map_err(|err| {
@@ -846,8 +865,12 @@ impl TransactionService {
             }
             Err(err) => {
                 // non-fatal errors we will respond immediately
-                Self::respond_query_response(&self.response_sender, req_id, ImmediateQueryResponse::non_fatal_err(err))
-                    .await;
+                let _ = Self::respond_query_response(
+                    &self.response_sender,
+                    req_id,
+                    ImmediateQueryResponse::non_fatal_err(err),
+                )
+                .await;
                 return;
             }
         };
@@ -899,10 +922,14 @@ impl TransactionService {
         let interrupt = self.query_interrupt_receiver.clone();
         match self.transaction.take() {
             Some(Transaction::Schema(schema_transaction)) => Ok(spawn_blocking(move || {
-                execute_write_query_in_schema(schema_transaction, query_options, pipeline, source_query, interrupt)
+                let (transaction, result) =
+                    execute_write_query_in_schema(schema_transaction, query_options, pipeline, source_query, interrupt);
+                (Transaction::Schema(transaction), result)
             })),
             Some(Transaction::Write(write_transaction)) => Ok(spawn_blocking(move || {
-                execute_write_query_in_write(write_transaction, query_options, pipeline, source_query, interrupt)
+                let (transaction, result) =
+                    execute_write_query_in_write(write_transaction, query_options, pipeline, source_query, interrupt);
+                (Transaction::Write(transaction), result)
             })),
             Some(Transaction::Read(transaction)) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -968,7 +995,7 @@ impl TransactionService {
         thing_manager: Arc<ThingManager>,
         output_descriptor: StreamQueryOutputDescriptor,
         query_options: QueryOptions,
-        query_structure: Option<QueryStructure>,
+        _query_structure: Option<QueryStructure>,
         batch: Batch,
         sender: Sender<StreamQueryResponse>,
         timeout_at: Instant,
@@ -1096,12 +1123,11 @@ impl TransactionService {
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
                 let start_time = Instant::now();
-                let pipeline = prepare_read_query_in(
+                let pipeline = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
-                    &query_manager,
                     &pipeline,
                     &source_query,
                 );
@@ -1274,13 +1300,13 @@ impl TransactionService {
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
         if let Err(err) = sender.blocking_send(response) {
-            event!(Level::ERROR, "Failed to send error message: {:?}", err)
+            event!(Level::DEBUG, "Failed to send error message: {:?}", err)
         }
     }
 
     async fn submit_response_async(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
         if let Err(err) = sender.send(response).await {
-            event!(Level::ERROR, "Failed to send error message: {:?}", err)
+            event!(Level::DEBUG, "Failed to send error message: {:?}", err)
         }
     }
 
@@ -1306,7 +1332,7 @@ impl TransactionService {
     }
 
     fn get_database_name(&self) -> Option<&str> {
-        self.transaction.as_ref().map(Transaction::get_database_name)
+        self.transaction.as_ref().map(Transaction::database_name)
     }
 }
 
@@ -1383,8 +1409,7 @@ impl QueryStreamTransmitter {
 
     async fn finish_current(self) {
         if let Some(task) = self.transmitter_task {
-            let result = task.await.unwrap();
-            // let (control_flow, query_response_receiver) = task.await.unwrap();
+            let _result = task.await.unwrap();
         }
     }
 

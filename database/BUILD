@@ -8,18 +8,24 @@ load("@typedb_dependencies//tool/checkstyle:rules.bzl", "checkstyle_test")
 rust_library(
     name = "database",
     srcs = glob([
-        "*.rs"
+        "*.rs",
+        "migration/*.rs",
     ]),
     deps = [
+        "//common/bytes",
+        "//common/cache",
         "//common/concurrency",
         "//common/logger",
         "//common/options",
         "//common/error",
+        "//compiler",
         "//concept",
+        "//executor",
         "//diagnostics",
         "//durability",
         "//encoding",
         "//function",
+        "//ir",
         "//query",
         "//resource",
         "//storage",
@@ -41,7 +47,10 @@ rust_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+        "migration/*.rs",
+    ]),
     exclude = glob([
         "Cargo.*",
     ]),

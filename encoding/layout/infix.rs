@@ -27,6 +27,7 @@ pub enum Infix {
     PropertyLabel,
     PropertyValueType,
     PropertyOrdering,
+    PropertyRelationTypeIndependent, // system, should not be exposed to the user
 
     PropertyAnnotationAbstract,
     PropertyAnnotationDistinct,
@@ -78,6 +79,7 @@ impl Infix {
         PropertyLabel => [0];
         PropertyValueType => [1];
         PropertyOrdering => [2];
+        PropertyRelationTypeIndependent => [3];
 
        // Reserve: range 50 - 99 to store annotations with a value type - see InfixID::<CONSTANTS>
         PropertyAnnotationAbstract => [50];
