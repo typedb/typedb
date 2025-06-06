@@ -47,7 +47,10 @@ rust_test(
 
 checkstyle_test(
     name = "checkstyle",
-    include = glob(["*"]),
+    include = glob([
+        "*",
+        "migration/*.rs",
+    ]),
     exclude = glob([
         "Cargo.*",
     ]),
