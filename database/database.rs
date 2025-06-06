@@ -7,7 +7,9 @@
 use std::{
     collections::VecDeque,
     ffi::OsString,
-    fmt, fs, io,
+    fmt, fs,
+    fs::DirEntry,
+    io,
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -16,6 +18,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use cache::CACHE_DB_NAME_PREFIX;
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{
@@ -47,6 +50,7 @@ use storage::{
 use tracing::{event, Level};
 
 use crate::{
+    migration::database_importer::DONE_IMPORT_FILE_MARKER,
     transaction::TransactionError,
     DatabaseOpenError::FunctionCacheInitialise,
     DatabaseResetError::{
@@ -316,6 +320,9 @@ impl Database<WALClient> {
             std::path::absolute(path)
         );
 
+        event!(Level::TRACE, "Checking database '{}' completeness.", &name);
+        Self::check_completeness(path)?;
+
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
         let wal_last_sequence_number = wal.previous();
@@ -403,6 +410,43 @@ impl Database<WALClient> {
         }
         event!(Level::TRACE, "Finished loading database '{}'", &name);
         Ok(database)
+    }
+
+    fn check_completeness(path: &Path) -> Result<(), DatabaseOpenError> {
+        use DatabaseOpenError::{CouldNotReadDataDirectory, CouldNotWriteToDataDirectory, IncompleteDatabaseImport};
+        let mut entries = fs::read_dir(path)
+            .map_err(|source| CouldNotReadDataDirectory { path: path.to_owned(), source: Arc::new(source) })?
+            .filter_map(Result::ok);
+        let done_path = path.join(DONE_IMPORT_FILE_MARKER);
+
+        if let Some(import_cache) =
+            entries.find(|entry| entry.file_name().to_string_lossy().starts_with(CACHE_DB_NAME_PREFIX))
+        {
+            let cache_path = import_cache.path();
+            if done_path.exists() {
+                if cache_path.is_dir() {
+                    fs::remove_dir_all(&cache_path).map_err(|source| CouldNotWriteToDataDirectory {
+                        path: path.to_owned(),
+                        source: Arc::new(source),
+                    })?;
+                } else {
+                    assert!(false, "Import cache should be a directory!");
+                    fs::remove_file(&cache_path).map_err(|source| CouldNotWriteToDataDirectory {
+                        path: path.to_owned(),
+                        source: Arc::new(source),
+                    })?;
+                }
+            } else {
+                return Err(IncompleteDatabaseImport {});
+            }
+        }
+
+        if done_path.exists() {
+            fs::remove_file(done_path)
+                .map_err(|source| CouldNotWriteToDataDirectory { path: path.to_owned(), source: Arc::new(source) })?;
+        }
+
+        Ok(())
     }
 
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
@@ -528,8 +572,8 @@ fn make_update_statistics_fn(
 
 typedb_error! {
     pub DatabaseOpenError(component = "Database open", prefix = "DBO") {
-        InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString),
-        CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
+        InvalidUnicodeName(1, "Could not open database: invalid unicode name '{name:?}'.", name: OsString),
+        CouldNotReadDataDirectory(2, "Error while reading data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
         DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
         WALOpen(5, "Error opening WAL.", source: WALError),
@@ -540,7 +584,9 @@ typedb_error! {
         Encoding(10, "Data encoding error.", source: EncodingError),
         StatisticsInitialise(11, "Error initialising statistics manager.", typedb_source: StatisticsError),
         TypeCacheInitialise(12, "Error initialising type cache.", typedb_source: TypeCacheCreateError),
-        FunctionCacheInitialise(13, "Error initialising function cache", typedb_source: FunctionError),
+        FunctionCacheInitialise(13, "Error initialising function cache.", typedb_source: FunctionError),
+        IncompleteDatabaseImport(14, "Could not open database: it is not in a complete state after an import operations."),
+        CouldNotWriteToDataDirectory(15, "Error while writing to data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
     }
 }
 

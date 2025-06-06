@@ -2682,7 +2682,7 @@ impl TypeManager {
 
     pub fn get_is_relation_type_independent(
         &self,
-        snapshot: &mut impl WritableSnapshot,
+        snapshot: &impl ReadableSnapshot,
         relation_type: RelationType,
     ) -> Result<bool, Box<ConceptReadError>> {
         if let Some(cache) = &self.type_cache {

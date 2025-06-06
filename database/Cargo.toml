@@ -31,6 +31,11 @@ features = {}
 		version = "0.1.41"
 		default-features = false
 
+	[dependencies.cache]
+		path = "../common/cache"
+		features = []
+		default-features = false
+
 	[dependencies.resource]
 		path = "../resource"
 		features = []
@@ -53,6 +58,11 @@ features = {}
 
 	[dependencies.durability]
 		path = "../durability"
+		features = []
+		default-features = false
+
+	[dependencies.ir]
+		path = "../ir"
 		features = []
 		default-features = false
 
@@ -86,6 +96,16 @@ features = {}
 		features = []
 		default-features = false
 
+	[dependencies.executor]
+		path = "../executor"
+		features = []
+		default-features = false
+
+	[dependencies.bytes]
+		path = "../common/bytes"
+		features = []
+		default-features = false
+
 	[dependencies.function]
 		path = "../function"
 		features = []
@@ -105,6 +125,11 @@ features = {}
 		features = []
 		git = "https://github.com/typedb/typeql"
 		tag = "3.2.0"
+		default-features = false
+
+	[dependencies.compiler]
+		path = "../compiler"
+		features = []
 		default-features = false
 
 [[test]]

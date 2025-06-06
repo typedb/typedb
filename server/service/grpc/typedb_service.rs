@@ -223,7 +223,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
         // diagnostics are inside the service
         let request_stream = request.into_inner();
         let (response_sender, response_receiver) = channel(IMPORT_RESPONSE_BUFFER_SIZE);
-        let mut service = DatabaseImportService::new(
+        let service = DatabaseImportService::new(
             self.server_state.database_manager(),
             self.server_state.diagnostics_manager(),
             request_stream,
@@ -291,7 +291,7 @@ impl typedb_protocol::type_db_server::TypeDb for TypeDBService {
                         .into_status()),
                     Some(database) => {
                         let (response_sender, response_receiver) = channel(DATABASE_EXPORT_REQUEST_BUFFER_SIZE);
-                        let mut service = DatabaseExportService::new(
+                        let service = DatabaseExportService::new(
                             self.server_state.server_info(),
                             database,
                             response_sender,
