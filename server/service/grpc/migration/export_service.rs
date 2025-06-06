@@ -247,7 +247,7 @@ impl DatabaseExportService {
         self.total_item_count += 1;
 
         if self.total_item_count % ITEMS_LOG_INTERVAL == 0 {
-            event!(Level::INFO, "Processed {} exported items...", self.total_item_count);
+            event!(Level::INFO, "Processed {} exported items of '{}'...", self.total_item_count, self.database.name());
         }
     }
 

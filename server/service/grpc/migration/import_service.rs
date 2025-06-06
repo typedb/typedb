@@ -212,7 +212,8 @@ impl DatabaseImportService {
 
             let total_items = database_importer.total_item_count();
             if total_items != 0 && total_items % ITEMS_LOG_INTERVAL == 0 {
-                event!(Level::INFO, "Processed {total_items} imported items...");
+                let name = database_importer.database_name();
+                event!(Level::INFO, "Processed {total_items} imported items of '{name}'...");
             }
         }
 
