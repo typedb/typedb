@@ -58,7 +58,7 @@ impl DatabaseManager {
                     databases.insert(database.name().to_owned(), Arc::new(database));
                 }
                 Err(DatabaseOpenError::IncompleteDatabaseImport {}) => {
-                    event!(Level::WARN, "Database {database_name} is in an incomplete state after an interrupted import operation. It will be deleted.");
+                    event!(Level::WARN, "Database '{database_name}' is in an incomplete state after an interrupted import operation. It will be deleted.");
                     fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
                         path: entry_path.to_owned(),
                         source: Arc::new(source),
@@ -148,8 +148,7 @@ impl DatabaseManager {
         }
         imported_databases.remove(&name);
 
-        let mut databases =
-            self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if databases.contains_key(&name) {
             return Err(DatabaseCreateError::AlreadyExists { name });
         } else {
