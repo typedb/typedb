@@ -7,12 +7,8 @@
 use std::{
     collections::{HashMap, HashSet},
     marker::PhantomData,
-    ops::{
-        ControlFlow,
-        ControlFlow::{Break, Continue},
-    },
     sync::Arc,
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 use bytes::Bytes;
@@ -62,7 +58,7 @@ use crate::{
     migration::Checksums,
     query::execute_schema_query,
     transaction::{DataCommitError, SchemaCommitError, TransactionError, TransactionSchema, TransactionWrite},
-    with_transaction_parts, Database,
+    with_transaction_parts, Database, DatabaseDeleteError,
 };
 
 macro_rules! is_specializing_with_only_cardinality_specializations_fn {
@@ -277,17 +273,14 @@ impl AttributesInfo {
 #[derive(Debug)]
 pub struct DatabaseImporter {
     database_manager: Arc<DatabaseManager>,
-    database: Option<Arc<Database<WALClient>>>,
     database_name: String,
+    database: Option<Arc<Database<WALClient>>>, // owned by the importer!
     schema_info: SchemaInfo,
     data_info: DataInfo,
     data_transaction: Option<TransactionWrite<WALClient>>,
     transaction_item_count: u64,
     total_item_count: u64,
-    is_done: bool,
 }
-
-pub const DONE_IMPORT_FILE_MARKER: &str = "_done";
 
 impl DatabaseImporter {
     const OPTIONS_PARALLEL: bool = true;
@@ -297,27 +290,19 @@ impl DatabaseImporter {
     const COMMIT_BATCH_SIZE: u64 = 10_000;
 
     pub fn new(database_manager: Arc<DatabaseManager>, name: String) -> Result<Self, DatabaseImportError> {
-        let database = match database_manager.database(&name) {
-            None => {
-                database_manager
-                    .create_database(&name)
-                    .map_err(|typedb_source| DatabaseImportError::DatabaseCreate { typedb_source })?;
-                database_manager.database(&name).ok_or_else(|| DatabaseImportError::CreatedDatabaseNotFound { name })?
-            }
-            Some(_) => return Err(DatabaseImportError::DatabaseAlreadyExists { name }),
-        };
+        let database = database_manager
+            .prepare_imported_database(name)
+            .map_err(|typedb_source| DatabaseImportError::DatabaseCreate { typedb_source })?;
         let database_name = database.name().to_string();
-
         Ok(Self {
             database_manager,
-            database: Some(database),
             database_name,
+            database: Some(Arc::new(database)),
             schema_info: SchemaInfo::new(),
             data_info: DataInfo::new(),
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
-            is_done: false,
         })
     }
 
@@ -413,8 +398,25 @@ impl DatabaseImporter {
 
         self.validate_imported_data()?;
         self.restore_relaxed_schema().await?;
-        self.is_done = true;
+
+        let Some(database) = self.take_owned_database() else {
+            return Err(DatabaseImportError::DoubleFinalisation { name: self.database_name().to_string() });
+        };
+
+        self.database_manager
+            .finalise_imported_database(database)
+            .expect("Expected imported database finalization. Cannot safely progress without it.");
         Ok(())
+    }
+
+    fn take_owned_database(&mut self) -> Option<Database<WALClient>> {
+        let Some(database) = self.database.take() else {
+            return None;
+        };
+        Some(
+            Arc::into_inner(database)
+                .expect("Expected a unique ownership of the imported database, but it is used by other components"),
+        )
     }
 
     fn process_owned_attributes(
@@ -975,14 +977,23 @@ impl DatabaseImporter {
 impl Drop for DatabaseImporter {
     fn drop(&mut self) {
         if let Some(data_transaction) = self.data_transaction.take() {
-            assert!(!self.is_done, "Unexpected open import transaction while the import is still not done");
+            assert!(self.database.is_some(), "Unexpected open import transaction while the import is still not done");
             data_transaction.close();
         }
 
-        if !self.is_done {
-            let name = self.database_name().to_string();
-            drop(self.database.take().expect("Expected imported database on drop"));
-            if let Err(err) = self.database_manager.delete_database(&name) {
+        let name = self.database_name().to_string();
+        if self.database.is_some() {
+            // import is not completed
+            let Some(database) = self.take_owned_database() else {
+                assert!(false, "Could not delete database {name} after unsuccessful import: used by other components.");
+                event!(
+                    Level::ERROR,
+                    "Could not delete database {name} after unsuccessful import: used by other components."
+                );
+                return;
+            };
+
+            if let Err(err) = self.database_manager.cancel_database_import(database) {
                 assert!(false, "Could not delete database {name} after unsuccessful import: {err:?}");
                 event!(
                     Level::ERROR,
@@ -999,24 +1010,25 @@ typedb_error! {
         TransactionFailed(1, "Import transaction failed.", typedb_source: TransactionError),
         ConceptRead(2, "Error reading concepts.", typedb_source: Box<ConceptReadError>),
         ConceptWrite(3, "Error writing concepts.", typedb_source: Box<ConceptWriteError>),
-        DatabaseCreate(5, "Error creating imported database.", typedb_source: DatabaseCreateError),
-        DatabaseAlreadyExists(6, "Imported database '{name}' already exists.", name: String),
-        CreatedDatabaseNotFound(7, "Interrupted: database '{name}' was not found after its creation. It might have been deleted due to a parallel operation or an internal error.", name: String),
-        DataCommitFailed(8, "Import data transaction commit failed.", typedb_source: DataCommitError),
-        ProvidedSchemaCommitFailed(9, "Imported schema cannot be committed due to errors.", typedb_source: SchemaCommitError),
-        PreparationSchemaCommitFailed(10, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: SchemaCommitError),
-        FinalizationSchemaCommitFailed(11, "Import schema transaction commit failed on finalization. It is a sign of a bug.", typedb_source: SchemaCommitError),
-        SchemaQueryParseFailed(12, "Import schema query parsing failed.", typedb_source: typeql::Error),
-        SchemaQueryFailed(13, "Import schema query failed.", typedb_source: Box<QueryError>),
-        InvalidSchemaDefineQuery(14, "Import schema query is not a valid define query."),
-        DuplicateClientChecksums(15, "Checksums received multiple times. It is a sign of a corrupted file or a client bug."),
-        UnknownAttributeType(16, "Cannot process an attribute: attribute type '{label}' does not exist in the schema.", label: Label),
-        UnknownEntityType(17, "Cannot process an entity: entity type '{label}' does not exist in the schema.", label: Label),
-        UnknownRelationType(18, "Cannot process a relation: relation type '{label}' does not exist in the schema.", label: Label),
-        UnknownRoleType(19, "Cannot process a role player: role type '{label}' does not exist in the schema.", label: Label),
-        NoClientChecksumsOnDone(20, "Cannot verify the imported database as there are no checksums received from the client. It is a sign of a corrupted file or a client bug."),
-        InvalidChecksumsOnDone(21, "Invalid imported database with a checksums mismatch: {details}.", details: String),
-        IncompleteOwnershipsOnDone(22, "Invalid imported database with {count} unknown owned attributes. It is a sign of a corrupted file or a client bug.", count: usize),
-        IncompleteRolesOnDone(23, "Invalid imported database with {count} unknown role players. It is a sign of a corrupted file or a client bug.", count: usize),
+        DatabaseCreate(4, "Error creating imported database.", typedb_source: DatabaseCreateError),
+        DatabaseDelete(5, "Error deleting an unsuccessfully imported database. Another attempt will be performed on the next startup.", typedb_source: DatabaseDeleteError),
+        DataCommitFailed(6, "Import data transaction commit failed.", typedb_source: DataCommitError),
+        ProvidedSchemaCommitFailed(7, "Imported schema cannot be committed due to errors.", typedb_source: SchemaCommitError),
+        PreparationSchemaCommitFailed(8, "Import schema transaction commit failed on preparation. It is a sign of a bug.", typedb_source: SchemaCommitError),
+        FinalizationSchemaCommitFailed(9, "Import schema transaction commit failed on finalization. It is a sign of a bug.", typedb_source: SchemaCommitError),
+        SchemaQueryParseFailed(10, "Import schema query parsing failed.", typedb_source: typeql::Error),
+        SchemaQueryFailed(11, "Import schema query failed.", typedb_source: Box<QueryError>),
+        InvalidSchemaDefineQuery(12, "Import schema query is not a valid define query."),
+        DuplicateClientChecksums(13, "Checksums received multiple times. It is a sign of a corrupted file or a client bug."),
+        UnknownAttributeType(14, "Cannot process an attribute: attribute type '{label}' does not exist in the schema.", label: Label),
+        UnknownEntityType(15, "Cannot process an entity: entity type '{label}' does not exist in the schema.", label: Label),
+        UnknownRelationType(16, "Cannot process a relation: relation type '{label}' does not exist in the schema.", label: Label),
+        UnknownRoleType(17, "Cannot process a role player: role type '{label}' does not exist in the schema.", label: Label),
+        NoClientChecksumsOnDone(18, "Cannot verify the imported database as there are no checksums received from the client. It is a sign of a corrupted file or a client bug."),
+        InvalidChecksumsOnDone(19, "Invalid imported database with a checksums mismatch: {details}.", details: String),
+        IncompleteOwnershipsOnDone(20, "Invalid imported database with {count} unknown owned attributes. It is a sign of a corrupted file or a client bug.", count: usize),
+        IncompleteRolesOnDone(21, "Invalid imported database with {count} unknown role players. It is a sign of a corrupted file or a client bug.", count: usize),
+        DoubleFinalisation(22, "Error finalising import for database '{name}': it was already finalised. It is a sign of a corrupted file or a client bug.", name: String),
+        Finalisation(23, "Error finalising the imported database.", typedb_source: DatabaseCreateError),
     }
 }

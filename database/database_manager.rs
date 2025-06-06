@@ -5,15 +5,16 @@
  */
 
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, RwLock, RwLockReadGuard},
+    sync::{Arc, LockResult, RwLock, RwLockReadGuard},
 };
 
 use logger::debug;
 use resource::constants::{database::INTERNAL_DATABASE_PREFIX, server::SYSTEM_FILE_PREFIX};
 use storage::durability_client::WALClient;
+use tracing::{event, Level};
 
 use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
 
@@ -21,11 +22,12 @@ use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, Databa
 pub struct DatabaseManager {
     data_directory: PathBuf,
     databases: RwLock<HashMap<String, Arc<Database<WALClient>>>>,
+    imported_databases: RwLock<HashSet<String>>,
 }
 
 impl DatabaseManager {
     pub fn new(data_directory: &Path) -> Result<Arc<Self>, DatabaseOpenError> {
-        let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+        let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
             path: data_directory.to_owned(),
             source: Arc::new(error),
         })?;
@@ -34,7 +36,7 @@ impl DatabaseManager {
 
         for entry in entries {
             let entry_path = entry
-                .map_err(|error| DatabaseOpenError::CouldNotReadDataDirectory {
+                .map_err(|error| DatabaseOpenError::DirectoryRead {
                     path: data_directory.to_owned(),
                     source: Arc::new(error),
                 })?
@@ -45,36 +47,49 @@ impl DatabaseManager {
                 continue;
             }
 
-            if entry_path.file_name().unwrap().to_string_lossy().starts_with(SYSTEM_FILE_PREFIX) {
+            let database_name = entry_path.file_name().unwrap().to_string_lossy();
+            if database_name.starts_with(SYSTEM_FILE_PREFIX) {
                 continue;
             }
 
-            let database = Database::<WALClient>::open(&entry_path)?;
-            assert!(!databases.contains_key(database.name()));
-            databases.insert(database.name().to_owned(), Arc::new(database));
+            match Database::<WALClient>::open(&entry_path) {
+                Ok(database) => {
+                    assert!(!databases.contains_key(database.name()));
+                    databases.insert(database.name().to_owned(), Arc::new(database));
+                }
+                Err(DatabaseOpenError::IncompleteDatabaseImport {}) => {
+                    event!(Level::WARN, "Database {database_name} is in an incomplete state after an interrupted import operation. It will be deleted.");
+                    fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
+                        path: entry_path.to_owned(),
+                        source: Arc::new(source),
+                    })?;
+                }
+                Err(other) => return Err(other),
+            }
         }
 
-        Ok(Arc::new(Self { data_directory: data_directory.to_owned(), databases: RwLock::new(databases) }))
+        Ok(Arc::new(Self {
+            data_directory: data_directory.to_owned(),
+            databases: RwLock::new(databases),
+            imported_databases: RwLock::new(HashSet::new()),
+        }))
     }
 
     pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         let name = name.as_ref();
-        if Self::is_internal_database(name) {
-            return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
-        }
-        if !typeql::common::identifier::is_valid_identifier(name) {
-            return Err(DatabaseCreateError::InvalidName { name: name.to_owned() });
-        }
+        Self::validate_database_name(name.as_ref())?;
         self.create_database_unrestricted(name)
     }
 
     pub fn create_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
+        // Allows databases to already exist
         let name = name.as_ref();
-        self.databases
-            .write()
-            .unwrap()
-            .entry(name.to_owned())
-            .or_insert_with(|| Arc::new(Database::<WALClient>::open(&self.data_directory.join(name)).unwrap()));
+        let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        if !databases.contains_key(name) {
+            let database = Database::<WALClient>::open(&self.data_directory.join(name))
+                .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })?;
+            databases.insert(name.to_string(), Arc::new(database));
+        }
         Ok(())
     }
 
@@ -86,7 +101,7 @@ impl DatabaseManager {
 
         // TODO: this is a partial implementation, only single threaded and without cooperative transaction shutdown
         // remove from map to make DB unavailable
-        let mut databases = self.databases.write().unwrap();
+        let mut databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
         let db = databases.remove(name);
         match db {
             None => return Err(DatabaseDeleteError::DoesNotExist {}),
@@ -101,6 +116,63 @@ impl DatabaseManager {
                 }
             }
         }
+        Ok(())
+    }
+
+    pub(crate) fn prepare_imported_database(&self, name: String) -> Result<Database<WALClient>, DatabaseCreateError> {
+        Self::validate_database_name(&name)?;
+        if self.database(&name).is_some() {
+            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+        }
+
+        let mut imported_databases =
+            self.imported_databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        if imported_databases.contains(&name) {
+            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+        }
+        imported_databases.insert(name.to_string());
+
+        let database = Database::<WALClient>::open(&self.data_directory.join(name))
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })?;
+        database.mark_imported()?;
+        Ok(database)
+    }
+
+    pub(crate) fn finalise_imported_database(&self, database: Database<WALClient>) -> Result<(), DatabaseCreateError> {
+        let name = database.name().to_string();
+
+        let mut imported_databases =
+            self.imported_databases.write().map_err(|typedb_source| DatabaseCreateError::WriteAccessDenied {})?;
+        if !imported_databases.contains(&name) {
+            return Err(DatabaseCreateError::DatabaseIsNotBeingImported { name });
+        }
+        imported_databases.remove(&name);
+
+        let mut databases =
+            self.databases.write().map_err(|typedb_source| DatabaseCreateError::WriteAccessDenied {})?;
+        if databases.contains_key(&name) {
+            return Err(DatabaseCreateError::AlreadyExists { name });
+        } else {
+            database.unmark_imported()?;
+            databases.insert(name, Arc::new(database));
+            Ok(())
+        }
+    }
+
+    pub(crate) fn cancel_database_import(&self, database: Database<WALClient>) -> Result<(), DatabaseDeleteError> {
+        let name = database.name().to_string();
+        database.delete()?;
+
+        let mut imported_databases = match self.imported_databases.write() {
+            Ok(imported_databases) => imported_databases,
+            Err(_) => return Err(DatabaseDeleteError::WriteAccessDenied {}),
+        };
+
+        if !imported_databases.contains(&name) {
+            return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name });
+        }
+
+        imported_databases.remove(&name);
         Ok(())
     }
 
@@ -166,5 +238,15 @@ impl DatabaseManager {
 
     pub fn is_internal_database(name: &str) -> bool {
         name.starts_with(INTERNAL_DATABASE_PREFIX)
+    }
+
+    fn validate_database_name(name: &str) -> Result<(), DatabaseCreateError> {
+        if Self::is_internal_database(name) {
+            return Err(DatabaseCreateError::InternalDatabaseCreationProhibited {});
+        }
+        if !typeql::common::identifier::is_valid_identifier(name) {
+            return Err(DatabaseCreateError::InvalidName { name: name.to_string() });
+        }
+        Ok(())
     }
 }
