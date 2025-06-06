@@ -425,10 +425,10 @@ pub async fn answer_get_row_get_variable_is_empty(
 #[apply(generic_step)]
 #[step(expr = r"answer get row\({int}\) get variable by index\({int}\){may_error}")]
 pub async fn answer_get_row_get_variable_by_index(
-    context: &mut Context,
-    index: usize,
-    variable_index: usize,
-    may_error: params::MayError,
+    _context: &mut Context,
+    _index: usize,
+    _variable_index: usize,
+    _may_error: params::MayError,
 ) {
     // no-op:
 }
@@ -436,10 +436,10 @@ pub async fn answer_get_row_get_variable_by_index(
 #[apply(generic_step)]
 #[step(expr = r"answer get row\({int}\) get variable by index\({int}\) {is_or_not} empty")]
 pub async fn answer_get_row_get_variable_by_index_is_empty(
-    context: &mut Context,
-    index: usize,
-    variable_index: usize,
-    is_or_not: IsOrNot,
+    _context: &mut Context,
+    _index: usize,
+    _variable_index: usize,
+    _is_or_not: IsOrNot,
 ) {
     // no op
 }
@@ -677,7 +677,6 @@ pub async fn answer_get_row_get_variable_get_type_get_value_type(
         return; // http does not have indices
     }
     let concept = get_answer_rows_var(context, index, var).unwrap().clone().into();
-    let type_ = concept_get_type(&concept);
     check_concept_is_kind(&concept, var_kind, params::Boolean::True);
     match value_type.as_str() {
         "none" => assert!(concept.get_value_type().is_none()),
@@ -722,7 +721,6 @@ pub async fn answer_get_row_get_variable_get_value(
     }
     let concept = get_answer_rows_var(context, index, var).unwrap().clone().into();
     check_concept_is_kind(&concept, var_kind, params::Boolean::True);
-    let actual_value = concept.get_value();
     check_is_value(is_or_not, value, concept.get_value(), concept.get_value_type().unwrap());
 }
 

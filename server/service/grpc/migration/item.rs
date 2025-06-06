@@ -17,6 +17,7 @@ use concept::{
     },
     type_::{role_type::RoleType, type_manager::TypeManager, TypeAPI},
 };
+use database::migration::Checksums;
 use encoding::value::value::Value;
 use error::unimplemented_feature;
 use itertools::Itertools;
@@ -27,12 +28,9 @@ use typedb_protocol::{
     migration::{item, Item, MigrationValue},
 };
 
-use crate::service::grpc::{
-    concept::{
-        decode_date, decode_datetime, decode_datetime_from_millis, decode_datetime_tz, decode_decimal, decode_duration,
-        encode_date, encode_datetime, encode_datetime_tz, encode_decimal, encode_duration,
-    },
-    migration::Checksums,
+use crate::service::grpc::concept::{
+    decode_date, decode_datetime, decode_datetime_from_millis, decode_datetime_tz, decode_decimal, decode_duration,
+    encode_date, encode_datetime, encode_datetime_tz, encode_decimal, encode_duration,
 };
 
 pub(crate) fn encode_entity_item(

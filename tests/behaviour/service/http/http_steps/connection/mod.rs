@@ -16,11 +16,7 @@ use server::{
 };
 use test_utils::create_tmp_dir;
 
-use crate::{
-    generic_step,
-    message::{authenticate, authenticate_default, check_health, databases, send_get_request, users},
-    Context, TEST_TOKEN_EXPIRATION,
-};
+use crate::{generic_step, message::{authenticate, authenticate_default, check_health, databases, send_get_request, users}, Context, HttpBehaviourTestError, TEST_TOKEN_EXPIRATION};
 
 mod database;
 mod transaction;
@@ -177,6 +173,7 @@ async fn connection_has_count_users(context: &mut Context, count: usize) {
 async fn connection_closes(context: &mut Context, may_error: params::MayError) {
     context.cleanup_transactions().await;
     context.http_context.auth_token = None;
+    may_error.check(Ok::<(), HttpBehaviourTestError>(()));
 }
 
 #[apply(generic_step)]

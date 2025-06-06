@@ -4,38 +4,19 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{sync::Arc, time::Duration};
+use std::time::Duration;
 
-use compiler::{query_structure::QueryStructure, VariablePosition};
-use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::transaction::{
     DataCommitError, SchemaCommitError, TransactionError, TransactionRead, TransactionSchema, TransactionWrite,
 };
 use diagnostics::metrics::LoadKind;
 use error::typedb_error;
-use executor::{
-    batch::Batch,
-    document::ConceptDocument,
-    pipeline::{
-        pipeline::Pipeline,
-        stage::{ExecutionContext, ReadPipelineStage, StageIterator},
-        PipelineExecutionError,
-    },
-    ExecutionInterrupt, InterruptType,
-};
-use function::function_manager::FunctionManager;
-use ir::pipeline::ParameterRegistry;
-use itertools::{Either, Itertools};
-use options::QueryOptions;
-use query::{error::QueryError, query_manager::QueryManager};
+use executor::{pipeline::PipelineExecutionError, InterruptType};
+use query::error::QueryError;
 use resource::constants::server::DEFAULT_TRANSACTION_TIMEOUT_MILLIS;
-use storage::{
-    durability_client::WALClient,
-    snapshot::{ReadableSnapshot, WritableSnapshot},
-};
-use tokio::{task::spawn_blocking, time::Instant};
-use tracing::{event, Level};
-use typeql::query::{stage::Stage, SchemaQuery};
+use storage::durability_client::WALClient;
+use tokio::time::Instant;
+use typeql::query::stage::Stage;
 use uuid::Uuid;
 
 use crate::service::TransactionType;
@@ -60,96 +41,19 @@ macro_rules! with_readable_transaction {
 }
 pub(crate) use with_readable_transaction;
 
-macro_rules! unwrap_or_execute_and_return {
-    ($match_: expr, |$err:pat_param| $err_mapper: block) => {{
-        match $match_ {
-            Ok(inner) => inner,
-            Err($err) => {
-                $err_mapper
-                return;
-            }
-        }
-    }};
-}
-pub(crate) use unwrap_or_execute_and_return;
-
-macro_rules! with_transaction_parts {
-    (
-        $TransactionType:ident, $transaction:ident, |$inner_snapshot:ident, $type_manager:ident, $thing_manager:ident| $expr:expr
-    ) => {{
-        let $TransactionType {
-            snapshot,
-            type_manager: $type_manager,
-            thing_manager: $thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        } = $transaction;
-
-        let mut $inner_snapshot = Arc::into_inner(snapshot).unwrap();
-
-        let result = $expr;
-
-        let $transaction = $TransactionType::from_parts(
-            Arc::new($inner_snapshot),
-            $type_manager,
-            $thing_manager,
-            function_manager,
-            query_manager,
-            database,
-            transaction_options,
-            profile,
-        );
-
-        ($transaction, result)
-    }};
-}
-pub(crate) use with_transaction_parts;
-
 impl Transaction {
-    pub fn to_load_kind(&self) -> LoadKind {
+    pub fn load_kind(&self) -> LoadKind {
         match self {
             Transaction::Read(_) => LoadKind::ReadTransactions,
             Transaction::Write(_) => LoadKind::WriteTransactions,
             Transaction::Schema(_) => LoadKind::SchemaTransactions,
         }
     }
-    pub fn to_transaction_kind(&self) -> TransactionType {
-        match self {
-            Transaction::Read(_) => TransactionType::Read,
-            Transaction::Write(_) => TransactionType::Write,
-            Transaction::Schema(_) => TransactionType::Schema,
-        }
-    }
 
-    pub fn get_database_name(&self) -> &str {
+    pub fn database_name(&self) -> &str {
         with_readable_transaction!(self, |transaction| { transaction.database.name() })
     }
 }
-
-pub(crate) type StreamQueryOutputDescriptor = Vec<(String, VariablePosition)>;
-pub(crate) type WriteQueryBatchAnswer = (StreamQueryOutputDescriptor, Batch, Option<QueryStructure>);
-pub(crate) type WriteQueryDocumentsAnswer = (Arc<ParameterRegistry>, Vec<ConceptDocument>);
-
-#[derive(Debug)]
-pub(crate) struct WriteQueryAnswer {
-    pub(crate) query_options: QueryOptions,
-    pub(crate) answer: Either<WriteQueryBatchAnswer, WriteQueryDocumentsAnswer>,
-}
-
-impl WriteQueryAnswer {
-    pub(crate) fn new_batch(query_options: QueryOptions, answer: WriteQueryBatchAnswer) -> Self {
-        Self { query_options, answer: Either::Left(answer) }
-    }
-
-    pub(crate) fn new_documents(query_options: QueryOptions, answer: WriteQueryDocumentsAnswer) -> Self {
-        Self { query_options, answer: Either::Right(answer) }
-    }
-}
-
-pub(crate) type WriteQueryResult = Result<WriteQueryAnswer, Box<QueryError>>;
 
 pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
     for stage in &pipeline.stages {
@@ -159,263 +63,6 @@ pub(crate) fn is_write_pipeline(pipeline: &typeql::query::Pipeline) -> bool {
         }
     }
     false
-}
-
-pub(crate) async fn execute_schema_query(
-    transaction: TransactionSchema<WALClient>,
-    query: SchemaQuery,
-    source_query: String,
-) -> (TransactionSchema<WALClient>, Result<(), Box<QueryError>>) {
-    let TransactionSchema {
-        snapshot,
-        type_manager,
-        thing_manager,
-        function_manager,
-        query_manager,
-        database,
-        transaction_options,
-        profile,
-    } = transaction;
-    let mut snapshot = Arc::into_inner(snapshot).unwrap();
-    let (snapshot, type_manager, thing_manager, query_manager, function_manager, result) = spawn_blocking(move || {
-        let result = query_manager.execute_schema(
-            &mut snapshot,
-            &type_manager,
-            &thing_manager,
-            &function_manager,
-            query,
-            &source_query,
-        );
-        (snapshot, type_manager, thing_manager, query_manager, function_manager, result)
-    })
-    .await
-    .expect("Expected schema query execution finishing");
-
-    let transaction = TransactionSchema::from_parts(
-        Arc::new(snapshot),
-        type_manager,
-        thing_manager,
-        function_manager,
-        query_manager,
-        database,
-        transaction_options,
-        profile,
-    );
-
-    (transaction, result)
-}
-
-pub(crate) fn execute_write_query_in_schema(
-    transaction: TransactionSchema<WALClient>,
-    query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
-    source_query: String,
-    interrupt: ExecutionInterrupt,
-) -> (Transaction, WriteQueryResult) {
-    let TransactionSchema {
-        snapshot,
-        type_manager,
-        thing_manager,
-        function_manager,
-        query_manager,
-        database,
-        transaction_options,
-        profile,
-    } = transaction;
-
-    let (snapshot, result) = execute_write_query_in(
-        Arc::into_inner(snapshot).unwrap(),
-        &type_manager,
-        thing_manager.clone(),
-        &function_manager,
-        &query_manager,
-        query_options,
-        &pipeline,
-        &source_query,
-        interrupt,
-    );
-
-    let transaction = Transaction::Schema(TransactionSchema::from_parts(
-        Arc::new(snapshot),
-        type_manager,
-        thing_manager,
-        function_manager,
-        query_manager,
-        database,
-        transaction_options,
-        profile,
-    ));
-
-    (transaction, result)
-}
-
-pub(crate) fn execute_write_query_in_write(
-    transaction: TransactionWrite<WALClient>,
-    query_options: QueryOptions,
-    pipeline: typeql::query::Pipeline,
-    source_query: String,
-    interrupt: ExecutionInterrupt,
-) -> (Transaction, WriteQueryResult) {
-    let TransactionWrite {
-        snapshot,
-        type_manager,
-        thing_manager,
-        function_manager,
-        query_manager,
-        database,
-        transaction_options,
-        profile,
-    } = transaction;
-
-    let (snapshot, result) = execute_write_query_in(
-        Arc::into_inner(snapshot).expect("Cannot unwrap Arc<Snapshot>, still in use."),
-        &type_manager,
-        thing_manager.clone(),
-        &function_manager,
-        &query_manager,
-        query_options,
-        &pipeline,
-        &source_query,
-        interrupt,
-    );
-
-    let transaction = Transaction::Write(TransactionWrite::from_parts(
-        Arc::new(snapshot),
-        type_manager,
-        thing_manager,
-        function_manager,
-        query_manager,
-        database,
-        transaction_options,
-        profile,
-    ));
-
-    (transaction, result)
-}
-
-pub(crate) fn execute_write_query_in<Snapshot: WritableSnapshot + 'static>(
-    snapshot: Snapshot,
-    type_manager: &TypeManager,
-    thing_manager: Arc<ThingManager>,
-    function_manager: &FunctionManager,
-    query_manager: &QueryManager,
-    query_options: QueryOptions,
-    pipeline: &typeql::query::Pipeline,
-    source_query: &str,
-    interrupt: ExecutionInterrupt,
-) -> (Snapshot, WriteQueryResult) {
-    let start_time = Instant::now();
-    let result = query_manager.prepare_write_pipeline(
-        snapshot,
-        type_manager,
-        thing_manager,
-        function_manager,
-        pipeline,
-        source_query,
-    );
-    let pipeline = match result {
-        Ok(pipeline) => pipeline,
-        Err((snapshot, err)) => return (snapshot, Err(err)),
-    };
-
-    if pipeline.has_fetch() {
-        let (iterator, parameters, snapshot, query_profile) = match pipeline.into_documents_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, profile, parameters, .. })) => {
-                (iterator, parameters, snapshot, profile)
-            }
-            Err((err, ExecutionContext { snapshot, .. })) => {
-                return (
-                    Arc::into_inner(snapshot).unwrap(),
-                    Err(Box::new(QueryError::WritePipelineExecution {
-                        source_query: source_query.to_string(),
-                        typedb_source: err,
-                    })),
-                );
-            }
-        };
-
-        let mut documents = Vec::new();
-        for next in iterator {
-            match next {
-                Ok(document) => documents.push(document),
-                Err(typedb_source) => {
-                    return (
-                        Arc::into_inner(snapshot).unwrap(),
-                        Err(Box::new(QueryError::WritePipelineExecution {
-                            source_query: source_query.to_string(),
-                            typedb_source,
-                        })),
-                    )
-                }
-            }
-        }
-        if query_profile.is_enabled() {
-            let micros = Instant::now().duration_since(start_time).as_micros();
-            event!(
-                Level::INFO,
-                "Write query done (excluding network request time) in {} micros.\n{}",
-                micros,
-                query_profile
-            );
-        }
-        (
-            Arc::into_inner(snapshot).unwrap(),
-            Ok(WriteQueryAnswer::new_documents(query_options, (parameters, documents))),
-        )
-    } else {
-        let named_outputs = pipeline.rows_positions().unwrap();
-        let query_structure = pipeline.query_structure().cloned();
-        let query_output_descriptor: StreamQueryOutputDescriptor = named_outputs.clone().into_iter().sorted().collect();
-        let (iterator, snapshot, query_profile) = match pipeline.into_rows_iterator(interrupt) {
-            Ok((iterator, ExecutionContext { snapshot, profile, .. })) => (iterator, snapshot, profile),
-            Err((err, ExecutionContext { snapshot, .. })) => {
-                return (
-                    Arc::into_inner(snapshot).unwrap(),
-                    Err(Box::new(QueryError::WritePipelineExecution {
-                        source_query: source_query.to_string(),
-                        typedb_source: err,
-                    })),
-                );
-            }
-        };
-
-        let result = match iterator.collect_owned() {
-            Ok(batch) => (
-                Arc::into_inner(snapshot).unwrap(),
-                Ok(WriteQueryAnswer::new_batch(query_options, (query_output_descriptor, batch, query_structure))),
-            ),
-            Err(err) => (
-                Arc::into_inner(snapshot).unwrap(),
-                Err(Box::new(QueryError::WritePipelineExecution {
-                    source_query: source_query.to_string(),
-                    typedb_source: err,
-                })),
-            ),
-        };
-
-        if query_profile.is_enabled() {
-            let micros = Instant::now().duration_since(start_time).as_micros();
-            event!(
-                Level::INFO,
-                "Write query done (excluding network request time) in {} micros.\n{}",
-                micros,
-                query_profile
-            );
-        }
-        result
-    }
-}
-
-pub(crate) fn prepare_read_query_in<Snapshot: ReadableSnapshot + 'static>(
-    snapshot: Arc<Snapshot>,
-    type_manager: &TypeManager,
-    thing_manager: Arc<ThingManager>,
-    function_manager: &FunctionManager,
-    query_manager: &QueryManager,
-    pipeline: &typeql::query::Pipeline,
-    source_query: &str,
-) -> Result<Pipeline<Snapshot, ReadPipelineStage<Snapshot>>, Box<QueryError>> {
-    query_manager.prepare_read_pipeline(snapshot, type_manager, thing_manager, function_manager, pipeline, source_query)
 }
 
 pub(crate) fn init_transaction_timeout(transaction_timeout_millis: Option<u64>) -> Instant {

@@ -5,25 +5,18 @@
  */
 
 use std::{
-    collections::{HashMap, VecDeque},
     sync::Arc,
     time::{Duration, Instant},
 };
 
-use database::{transaction::TransactionRead, Database};
+use database::{migration::Checksums, transaction::TransactionRead, Database};
 use options::TransactionOptions;
-use resource::{
-    constants::common::SECONDS_IN_DAY,
-    profile::{EncodingProfile, QueryProfile, StorageCounters},
-    server_info::ServerInfo,
-};
+use resource::{constants::common::SECONDS_IN_DAY, profile::StorageCounters, server_info::ServerInfo};
 use storage::durability_client::WALClient;
 use tokio::sync::{mpsc::Sender, watch};
 use tonic::Status;
 use tracing::{event, Level};
 use typedb_protocol::{database::export::Server as ProtocolServer, migration::Item as MigrationItemProto};
-use typeql::{parse_query, query::SchemaQuery, Query};
-use uuid::Uuid;
 
 use crate::service::{
     export_service::{get_transaction_schema, DatabaseExportError},
@@ -34,7 +27,7 @@ use crate::service::{
                 encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item,
                 encode_relation_item,
             },
-            Checksums, TransactionHolder,
+            TransactionHolder,
         },
         response_builders::database::{
             database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,

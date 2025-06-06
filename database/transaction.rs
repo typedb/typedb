@@ -395,6 +395,40 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 }
 
+#[macro_export]
+macro_rules! with_transaction_parts {
+    (
+        $TransactionType:ident, $transaction:ident, |$inner_snapshot:ident, $type_manager:ident, $thing_manager:ident, $function_manager:ident, $query_manager:ident| $expr:expr
+    ) => {{
+        let $TransactionType {
+            snapshot,
+            type_manager: $type_manager,
+            thing_manager: $thing_manager,
+            function_manager: $function_manager,
+            query_manager: $query_manager,
+            database,
+            transaction_options,
+            profile,
+        } = $transaction;
+        let mut $inner_snapshot = Arc::into_inner(snapshot).unwrap();
+
+        let result = $expr;
+
+        let $transaction = $TransactionType::from_parts(
+            Arc::new($inner_snapshot),
+            $type_manager,
+            $thing_manager,
+            $function_manager,
+            $query_manager,
+            database,
+            transaction_options,
+            profile,
+        );
+
+        ($transaction, result)
+    }};
+}
+
 // TODO: Same issue with ConceptWriteErrors vs ErrorsFirst as for DataCommitError
 typedb_error! {
     pub SchemaCommitError(component = "Schema commit", prefix = "SCT") {

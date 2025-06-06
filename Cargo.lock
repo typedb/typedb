@@ -1196,14 +1196,18 @@ checksum = "2a2330da5de22e8a3cb63252ce2abb30116bf5265e89c0e01bc17015ce30a476"
 name = "database"
 version = "0.0.0"
 dependencies = [
+ "bytes 0.0.0",
  "cache",
+ "compiler",
  "concept",
  "concurrency",
  "diagnostics",
  "durability",
  "encoding",
  "error",
+ "executor",
  "function",
+ "ir",
  "itertools 0.10.5",
  "logger",
  "options",
@@ -4168,7 +4172,6 @@ dependencies = [
  "axum-extra",
  "axum-server",
  "bytes 0.0.0",
- "cache",
  "chrono",
  "chrono-tz",
  "clap",

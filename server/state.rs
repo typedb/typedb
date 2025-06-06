@@ -355,7 +355,7 @@ impl ServerState for LocalServerState {
         }
         self.user_manager
             .create(user, credential)
-            .map(|user| ())
+            .map(|_user| ())
             .map_err(|err| ServerStateError::UserCannotBeCreated { typedb_source: err })
     }
 
