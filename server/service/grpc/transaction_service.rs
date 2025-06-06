@@ -1322,13 +1322,13 @@ impl TransactionService {
 
     fn submit_response_sync(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
         if let Err(err) = sender.blocking_send(response) {
-            event!(Level::ERROR, "Failed to send error message: {:?}", err)
+            event!(Level::DEBUG, "Failed to send error message: {:?}", err)
         }
     }
 
     async fn submit_response_async(sender: &Sender<StreamQueryResponse>, response: StreamQueryResponse) {
         if let Err(err) = sender.send(response).await {
-            event!(Level::ERROR, "Failed to send error message: {:?}", err)
+            event!(Level::DEBUG, "Failed to send error message: {:?}", err)
         }
     }
 

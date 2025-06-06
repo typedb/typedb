@@ -123,7 +123,7 @@ impl DatabaseManager {
         let mut imported_databases =
             self.imported_databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
         if imported_databases.contains(&name) {
-            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+            return Err(DatabaseCreateError::DatabaseIsBeingImported { name: name.to_string() });
         }
 
         Self::validate_database_name(&name)?;
