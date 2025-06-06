@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{collections::HashMap, fmt, path::PathBuf};
+use std::{collections::HashMap, error::Error, fmt, path::PathBuf};
 
 use resource::internal_database_prefix;
 use serde::{de::DeserializeOwned, Serialize};
@@ -15,6 +15,7 @@ pub const CACHE_DB_NAME_PREFIX: &str = concat!(internal_database_prefix!(), "cac
 
 // A single-threaded configurable cache which prioritizes using a simple in-memory storage, but
 // spills the excessive data not fitting into the memory requirements over to disk.
+#[derive(Debug)]
 pub struct SpilloverCache<T: Serialize + DeserializeOwned + Clone> {
     memory_storage: HashMap<String, T>,
     disk_storage_path: PathBuf,
@@ -23,7 +24,7 @@ pub struct SpilloverCache<T: Serialize + DeserializeOwned + Clone> {
 }
 
 impl<T: Serialize + DeserializeOwned + Clone> SpilloverCache<T> {
-    pub fn new(disk_storage_dir: PathBuf, memory_size_limit: usize) -> Self {
+    pub fn new(disk_storage_dir: &PathBuf, memory_size_limit: usize) -> Self {
         assert!(disk_storage_dir.is_dir(), "SpilloverCache requires a disk storage path to a directory!");
         let unique_db_name = Uuid::new_v4().to_string();
         let disk_storage_path = disk_storage_dir.join(format!("{}{}", CACHE_DB_NAME_PREFIX, unique_db_name));
@@ -118,6 +119,16 @@ impl fmt::Display for CacheError {
             CacheError::DiskStorageDeserialization => {
                 write!(f, "Internal error: disk storage is corrupted and data cannot be read")
             }
+        }
+    }
+}
+
+impl Error for CacheError {
+    fn source(&self) -> Option<&(dyn Error + 'static)> {
+        match self {
+            CacheError::DiskStorageAccess { source } => Some(source),
+            CacheError::DiskStorageSerialization => None,
+            CacheError::DiskStorageDeserialization => None,
         }
     }
 }

@@ -12,7 +12,7 @@ use storage::{key_value::StorageKeyReference, keyspace::KeyspaceSet};
 
 use crate::{
     graph::{
-        thing::{vertex_attribute::AttributeVertex, ThingVertex},
+        thing::ThingVertex,
         type_::vertex::{TypeID, TypeVertex},
         Typed,
     },

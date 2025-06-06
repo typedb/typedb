@@ -10,6 +10,7 @@ use std::{
     fmt, fs,
     fs::OpenOptions,
     io,
+    io::Write,
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -17,7 +18,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
-use std::io::Write;
+
 use cache::CACHE_DB_NAME_PREFIX;
 use concept::{
     thing::statistics::{Statistics, StatisticsError},

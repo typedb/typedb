@@ -6,12 +6,15 @@
 
 use std::{
     collections::{HashMap, HashSet},
+    io::Read,
     marker::PhantomData,
+    path::PathBuf,
     sync::Arc,
     time::Duration,
 };
 
-use bytes::Bytes;
+use bytes::{byte_array::ByteArray, Bytes};
+use cache::{CacheError, SpilloverCache};
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
     thing::{
@@ -149,7 +152,7 @@ impl SchemaInfo {
     }
 }
 
-type IID = Bytes<'static, BUFFER_KEY_INLINE>;
+type IID = ByteArray<BUFFER_KEY_INLINE>;
 
 #[derive(Debug)]
 struct DataInfo {
@@ -160,28 +163,28 @@ struct DataInfo {
 }
 
 impl DataInfo {
-    fn new() -> Self {
+    fn new(data_directory: &PathBuf) -> Self {
         Self {
-            objects: ObjectsInfo::new(),
-            attributes: AttributesInfo::new(),
+            objects: ObjectsInfo::new(&data_directory),
+            attributes: AttributesInfo::new(data_directory),
             checksums: Checksums::new(),
             expected_checksums: None,
         }
     }
 
-    fn record_entity(&mut self, original_id: String, entity: Entity) {
-        self.objects.instance_id_mapping.record(original_id, entity.into_object());
+    fn record_entity(&mut self, original_id: String, entity: Entity) -> Result<(), DatabaseImportError> {
         self.checksums.entity_count += 1;
+        self.objects.instance_id_mapping.record(original_id, entity.into_object())
     }
 
-    fn record_relation(&mut self, original_id: String, relation: Relation) {
-        self.objects.instance_id_mapping.record(original_id, relation.into_object());
+    fn record_relation(&mut self, original_id: String, relation: Relation) -> Result<(), DatabaseImportError> {
         self.checksums.relation_count += 1;
+        self.objects.instance_id_mapping.record(original_id, relation.into_object())
     }
 
-    fn record_attribute(&mut self, original_id: String, attribute: Attribute) {
-        self.attributes.instance_id_mapping.record(original_id, attribute);
+    fn record_attribute(&mut self, original_id: String, attribute: Attribute) -> Result<(), DatabaseImportError> {
         self.checksums.attribute_count += 1;
+        self.attributes.instance_id_mapping.record(original_id, attribute)
     }
 
     fn record_ownership(&mut self) {
@@ -218,13 +221,18 @@ impl DataInfo {
 
 #[derive(Debug)]
 struct InstanceIDMapping<T: ThingAPI> {
-    original_to_buffered_ids: HashMap<String, IID>,
+    original_to_buffered_ids: SpilloverCache<IID>,
     _phantom_data: PhantomData<T>,
 }
 
 impl<T: ThingAPI> InstanceIDMapping<T> {
-    fn new() -> Self {
-        Self { original_to_buffered_ids: HashMap::new(), _phantom_data: PhantomData }
+    const CACHE_SPILLOVER_THRESHOLD: usize = 300_000;
+
+    fn new(data_directory: &PathBuf) -> Self {
+        Self {
+            original_to_buffered_ids: SpilloverCache::new(data_directory, Self::CACHE_SPILLOVER_THRESHOLD),
+            _phantom_data: PhantomData,
+        }
     }
 
     fn get_by_original_id(
@@ -233,16 +241,20 @@ impl<T: ThingAPI> InstanceIDMapping<T> {
         thing_manager: &ThingManager,
         id: &str,
     ) -> Result<Option<T>, DatabaseImportError> {
-        let Some(buffered_id) = self.original_to_buffered_ids.get(id) else {
+        let buffered_id_opt =
+            self.original_to_buffered_ids.get(id).map_err(|source| DatabaseImportError::CacheError { source })?;
+        let Some(buffered_id) = buffered_id_opt else {
             return Ok(None);
         };
         thing_manager
-            .get_instance::<T>(snapshot, buffered_id, StorageCounters::DISABLED)
+            .get_instance::<T>(snapshot, &Bytes::Array(buffered_id), StorageCounters::DISABLED)
             .map_err(|typedb_source| DatabaseImportError::ConceptRead { typedb_source })
     }
 
-    fn record(&mut self, original_id: String, instance: T) {
-        self.original_to_buffered_ids.insert(original_id, instance.iid().into_owned());
+    fn record(&mut self, original_id: String, instance: T) -> Result<(), DatabaseImportError> {
+        self.original_to_buffered_ids
+            .insert(original_id, instance.iid().into_array())
+            .map_err(|source| DatabaseImportError::CacheError { source })
     }
 }
 
@@ -253,8 +265,8 @@ struct ObjectsInfo {
 }
 
 impl ObjectsInfo {
-    fn new() -> Self {
-        Self { instance_id_mapping: InstanceIDMapping::new(), awaited_for_roles: HashMap::new() }
+    fn new(data_directory: &PathBuf) -> Self {
+        Self { instance_id_mapping: InstanceIDMapping::new(data_directory), awaited_for_roles: HashMap::new() }
     }
 }
 
@@ -265,8 +277,8 @@ struct AttributesInfo {
 }
 
 impl AttributesInfo {
-    fn new() -> Self {
-        Self { instance_id_mapping: InstanceIDMapping::new(), awaited_for_ownerships: HashMap::new() }
+    fn new(data_directory: &PathBuf) -> Self {
+        Self { instance_id_mapping: InstanceIDMapping::new(data_directory), awaited_for_ownerships: HashMap::new() }
     }
 }
 
@@ -294,12 +306,13 @@ impl DatabaseImporter {
             .prepare_imported_database(name)
             .map_err(|typedb_source| DatabaseImportError::DatabaseCreate { typedb_source })?;
         let database_name = database.name().to_string();
+        let database_data_directory = database.path.clone();
         Ok(Self {
             database_manager,
             database_name,
             database: Some(Arc::new(database)),
             schema_info: SchemaInfo::new(),
-            data_info: DataInfo::new(),
+            data_info: DataInfo::new(&database_data_directory),
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
@@ -330,8 +343,7 @@ impl DatabaseImporter {
 
             self.fulfill_awaiting_ownerships(&mut snapshot, &thing_manager, &id, &attribute)?;
 
-            self.data_info.record_attribute(id, attribute);
-            Ok(())
+            self.data_info.record_attribute(id, attribute)
         })
     }
 
@@ -354,8 +366,7 @@ impl DatabaseImporter {
             self.process_owned_attributes(&mut snapshot, &thing_manager, entity.into_object(), owned_attributes)?;
             self.fulfill_awaiting_roles(&mut snapshot, &thing_manager, &id, entity.into_object())?;
 
-            self.data_info.record_entity(id, entity);
-            Ok(())
+            self.data_info.record_entity(id, entity)
         })
     }
 
@@ -382,8 +393,7 @@ impl DatabaseImporter {
             self.process_related_roles(&mut snapshot, &type_manager, &thing_manager, relation, related_role_players)?;
             self.fulfill_awaiting_roles(&mut snapshot, &thing_manager, &id, relation.into_object())?;
 
-            self.data_info.record_relation(id, relation);
-            Ok(())
+            self.data_info.record_relation(id, relation)
         })
     }
 
@@ -1031,5 +1041,6 @@ typedb_error! {
         DoubleFinalisation(22, "Error finalizing import for database '{name}': it was already finalized. It is a sign of a corrupted file or a client bug.", name: String),
         Finalisation(23, "Error finalizing the imported database.", typedb_source: DatabaseCreateError),
         AccessAfterFinalisation(24, "Tried to modify the imported database's state after finalization. It is a sign of a client bug."),
+        CacheError(25, "Error writing import data.", source: CacheError),
     }
 }
