@@ -371,7 +371,7 @@ impl<'a> BlockBuilderContext<'a> {
     ) -> Result<Variable, Box<RepresentationError>> {
         match self.variable_names_index.get(name) {
             None => {
-                let variable = self.variable_registry.register_variable_named(name.to_string(), source_span);
+                let variable = self.variable_registry.register_variable_named(name.to_string(), source_span)?;
                 self.block_context.add_variable_declaration(variable, scope);
                 self.variable_names_index.insert(name.to_string(), variable);
                 Ok(variable)
@@ -393,7 +393,7 @@ impl<'a> BlockBuilderContext<'a> {
         scope: ScopeId,
         source_span: Option<Span>,
     ) -> Result<Variable, Box<RepresentationError>> {
-        let variable = self.variable_registry.register_anonymous_variable(source_span);
+        let variable = self.variable_registry.register_anonymous_variable(source_span)?;
         self.block_context.add_variable_declaration(variable, scope);
         Ok(variable)
     }

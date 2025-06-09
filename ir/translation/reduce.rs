@@ -30,8 +30,13 @@ pub fn translate_reduce(
             reduce_assign.variable.name().ok_or(Box::new(RepresentationError::NonAnonymousVariableExpected {
                 source_span: reduce_assign.variable.span(),
             }))?;
-        let assigned_var =
-            context.register_reduced_variable(var_name, category, is_optional, reduce_assign.variable.span(), reducer);
+        let assigned_var = context.register_reduced_variable(
+            var_name,
+            category,
+            is_optional,
+            reduce_assign.variable.span(),
+            reducer,
+        )?;
         reductions.push(AssignedReduction::new(assigned_var, reducer));
     }
 

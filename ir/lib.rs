@@ -255,6 +255,12 @@ typedb_error! {
             source: regex::Error,
             source_span: Option<Span>,
         ),
+        VariablesOverflow(
+            52,
+            "The query is too big and exceeds the limit of {variable_count} declared and anonymous variables. Please split it in parts and execute separately for better performance.",
+            variable_count: u16,
+            source_span: Option<Span>,
+        ),
         UnimplementedLanguageFeature(
             254,
             "The language feature is not yet implemented: {feature}.",

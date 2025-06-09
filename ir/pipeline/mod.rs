@@ -143,27 +143,36 @@ impl VariableRegistry {
         BranchID(branch_id)
     }
 
-    fn register_variable_named(&mut self, name: String, source_span: Option<Span>) -> Variable {
-        let variable = self.allocate_variable(false);
+    fn register_variable_named(
+        &mut self,
+        name: String,
+        source_span: Option<Span>,
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let variable = self.allocate_variable(false, source_span)?;
         self.variable_names.insert(variable, name);
         source_span.map(|span| self.variable_source_spans.entry(variable).or_insert(span));
-        variable
+        Ok(variable)
     }
 
-    fn register_anonymous_variable(&mut self, source_span: Option<Span>) -> Variable {
-        let variable = self.allocate_variable(true);
+    fn register_anonymous_variable(&mut self, source_span: Option<Span>) -> Result<Variable, Box<RepresentationError>> {
+        let variable = self.allocate_variable(true, source_span)?;
         source_span.map(|span| self.variable_source_spans.entry(variable).or_insert(span));
-        variable
+        Ok(variable)
     }
 
-    fn allocate_variable(&mut self, anonymous: bool) -> Variable {
+    fn allocate_variable(
+        &mut self,
+        anonymous: bool,
+        source_span: Option<Span>,
+    ) -> Result<Variable, Box<RepresentationError>> {
         let variable = if anonymous {
             Variable::new_anonymous(self.variable_id_allocator)
         } else {
             Variable::new(self.variable_id_allocator)
         };
-        self.variable_id_allocator += 1;
-        variable
+        self.variable_id_allocator.checked_add(1).map(|_| variable).ok_or(Box::new(
+            RepresentationError::VariablesOverflow { variable_count: self.variable_id_allocator, source_span },
+        ))
     }
 
     pub fn set_assigned_value_variable_category(
@@ -266,11 +275,12 @@ impl VariableRegistry {
         name: &str,
         category: VariableCategory,
         source_span: Option<Span>,
-    ) -> Variable {
-        let variable = self.register_variable_named(name.to_owned(), source_span);
-        self.set_variable_category(variable, category, VariableCategorySource::Argument).unwrap(); // We just created the variable. It cannot error
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let variable = self.register_variable_named(name.to_owned(), source_span)?;
+        self.set_variable_category(variable, category, VariableCategorySource::Argument)
+            .expect("Expected a newly created variable");
         self.set_variable_is_optional(variable, false);
-        variable
+        Ok(variable)
     }
 
     pub(crate) fn register_reduce_output_variable(
@@ -280,11 +290,12 @@ impl VariableRegistry {
         is_optional: bool,
         source_span: Option<Span>,
         reducer: Reducer,
-    ) -> Variable {
-        let variable = self.register_variable_named(name, source_span);
-        self.set_variable_category(variable, category, VariableCategorySource::Reduce(reducer)).unwrap(); // We just created the variable. It cannot error
+    ) -> Result<Variable, Box<RepresentationError>> {
+        let variable = self.register_variable_named(name, source_span)?;
+        self.set_variable_category(variable, category, VariableCategorySource::Reduce(reducer))
+            .expect("Expected a newly created variable");
         self.set_variable_is_optional(variable, is_optional);
-        variable
+        Ok(variable)
     }
 }
 
