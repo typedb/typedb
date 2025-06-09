@@ -288,6 +288,13 @@ pub(crate) mod transaction {
     ) -> typedb_protocol::transaction::Server {
         transaction_server_res(req_id, typedb_protocol::transaction::res::Res::RollbackRes(message))
     }
+
+    pub(crate) fn transaction_server_res_commit_res(
+        req_id: Uuid,
+        message: typedb_protocol::transaction::commit::Res,
+    ) -> typedb_protocol::transaction::Server {
+        transaction_server_res(req_id, typedb_protocol::transaction::res::Res::CommitRes(message))
+    }
 }
 
 pub(crate) mod user_manager {

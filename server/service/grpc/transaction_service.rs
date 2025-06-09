@@ -66,10 +66,10 @@ use crate::service::{
             query_initial_res_from_error, query_initial_res_from_query_res_ok,
             query_initial_res_ok_from_query_res_ok_ok, query_res_ok_concept_document_stream,
             query_res_ok_concept_row_stream, query_res_ok_done, query_res_part_from_concept_documents,
-            query_res_part_from_concept_rows, transaction_open_res, transaction_server_res_part_stream_signal_continue,
-            transaction_server_res_part_stream_signal_done, transaction_server_res_part_stream_signal_error,
-            transaction_server_res_parts_query_part, transaction_server_res_query_res,
-            transaction_server_res_rollback_res,
+            query_res_part_from_concept_rows, transaction_open_res, transaction_server_res_commit_res,
+            transaction_server_res_part_stream_signal_continue, transaction_server_res_part_stream_signal_done,
+            transaction_server_res_part_stream_signal_error, transaction_server_res_parts_query_part,
+            transaction_server_res_query_res, transaction_server_res_rollback_res,
         },
         row::encode_row,
     },
@@ -102,12 +102,24 @@ pub(crate) struct TransactionService {
     running_write_query: Option<(Uuid, JoinHandle<(Transaction, WriteQueryResult)>)>,
 }
 
-macro_rules! send_ok_message_else_return_break {
+macro_rules! send_ok_message {
     ($response_sender: expr, $message: expr) => {{
         if let Err(err) = $response_sender.send(Ok($message)).await {
             event!(Level::TRACE, "Submit message failed: {:?}", err);
-            return Break(());
         }
+    }};
+
+    ($response_sender: expr, $message: expr, else $expr: expr) => {{
+        if let Err(err) = $response_sender.send(Ok($message)).await {
+            event!(Level::TRACE, "Submit message failed: {:?}", err);
+            $expr;
+        }
+    }};
+}
+
+macro_rules! send_ok_message_else_return_break {
+    ($response_sender: expr, $message: expr) => {{
+        send_ok_message!($response_sender, $message, else return Break(()))
     }};
 }
 
@@ -371,7 +383,7 @@ impl TransactionService {
                     ActionKind::TransactionCommit,
                     || async {
                         // Eagerly executed in main loop
-                        self.handle_commit(commit_req).await?;
+                        self.handle_commit(request_id, commit_req).await?;
                         Ok(Break(()))
                     },
                 )
@@ -481,15 +493,19 @@ impl TransactionService {
         self.is_open = true;
 
         let processing_time_millis = Instant::now().duration_since(receive_time).as_millis() as u64;
-        if let Err(err) = self.response_sender.send(Ok(transaction_open_res(req_id, processing_time_millis))).await {
-            event!(Level::TRACE, "Submit message failed: {:?}", err);
-            Ok(Break(()))
-        } else {
-            Ok(Continue(()))
-        }
+        send_ok_message!(
+            self.response_sender,
+            transaction_open_res(req_id, processing_time_millis),
+            else return Ok(Break(()))
+        );
+        Ok(Continue(()))
     }
 
-    async fn handle_commit(&mut self, _commit_req: typedb_protocol::transaction::commit::Req) -> Result<(), Status> {
+    async fn handle_commit(
+        &mut self,
+        req_id: Uuid,
+        _commit_req: typedb_protocol::transaction::commit::Req,
+    ) -> Result<(), Status> {
         // finish any running write query, interrupt running queries, clear all running/queued reads, finish all writes
         //   note: if any write query errors, the whole transaction errors
         // finish any active write query
@@ -540,7 +556,13 @@ impl TransactionService {
                     TransactionServiceError::SchemaCommitFailed { typedb_source }.into_error_message().into_status()
                 })
             }
-        }
+        }?;
+
+        send_ok_message!(
+            self.response_sender,
+            transaction_server_res_commit_res(req_id, typedb_protocol::transaction::commit::Res {})
+        );
+        Ok(())
     }
 
     async fn handle_rollback(
@@ -576,11 +598,11 @@ impl TransactionService {
             }
         };
 
-        let res = transaction_server_res_rollback_res(req_id, typedb_protocol::transaction::rollback::Res {});
-        if let Err(err) = self.response_sender.send(Ok(res)).await {
-            event!(Level::TRACE, "Submit message failed: {:?}", err);
-            return Ok(Break(()));
-        }
+        send_ok_message!(
+            self.response_sender,
+            transaction_server_res_rollback_res(req_id, typedb_protocol::transaction::rollback::Res {}),
+            else return Ok(Break(()))
+        );
         Ok(Continue(()))
     }
 
