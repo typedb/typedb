@@ -99,7 +99,8 @@ impl<T: Serialize + DeserializeOwned + Clone> Drop for SpilloverCache<T> {
     fn drop(&mut self) {
         drop(std::mem::take(&mut self.disk_storage)); // release its files
         if let Err(e) = std::fs::remove_dir_all(&self.disk_storage_path) {
-            event!(Level::ERROR, "Failed to delete a temporary DB directory {:?}: {e}", self.disk_storage_path);
+            // Can be cleaned up by the cache's user
+            event!(Level::TRACE, "Failed to delete a temporary DB directory {:?}: {e}", self.disk_storage_path);
         }
     }
 }
