@@ -257,7 +257,7 @@ typedb_error! {
         ),
         VariablesOverflow(
             52,
-            "The query is too big and exceeds the limit of {variable_count} declared and anonymous variables. Please split it in parts and execute separately for better performance.",
+            "The query is too big and exceeds the limit of {variable_count} declared and anonymous variables. Please split it into parts and execute separately for better performance.",
             variable_count: u16,
             source_span: Option<Span>,
         ),
