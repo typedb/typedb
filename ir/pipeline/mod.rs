@@ -170,9 +170,16 @@ impl VariableRegistry {
         } else {
             Variable::new(self.variable_id_allocator)
         };
-        self.variable_id_allocator.checked_add(1).map(|_| variable).ok_or(Box::new(
-            RepresentationError::VariablesOverflow { variable_count: self.variable_id_allocator, source_span },
-        ))
+
+        if let Some(variable_id_allocator) = self.variable_id_allocator.checked_add(1) {
+            self.variable_id_allocator = variable_id_allocator;
+            Ok(variable)
+        } else {
+            Err(Box::new(RepresentationError::VariablesOverflow {
+                variable_count: self.variable_id_allocator,
+                source_span,
+            }))
+        }
     }
 
     pub fn set_assigned_value_variable_category(
