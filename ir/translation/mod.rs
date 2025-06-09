@@ -12,6 +12,7 @@ use typeql::common::Span;
 use crate::{
     pattern::variable_category::VariableCategory,
     pipeline::{block::BlockBuilderContext, reduce::Reducer, ParameterRegistry, VariableRegistry},
+    RepresentationError,
 };
 
 mod constraints;
@@ -45,17 +46,17 @@ impl TranslationContext {
 
     pub fn new_with_function_arguments(
         input_variables: Vec<(String, Option<Span>, VariableCategory)>,
-    ) -> (Self, Vec<Variable>) {
+    ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
         let mut visible_variables = HashMap::new();
         let mut variable_registry = VariableRegistry::new();
         let mut variables = Vec::with_capacity(input_variables.len());
         for (name, source_span, category) in input_variables {
-            let variable = variable_registry.register_function_argument(name.as_str(), category, source_span);
+            let variable = variable_registry.register_function_argument(name.as_str(), category, source_span)?;
             visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
         let this = Self { variable_registry, visible_variables };
-        (this, variables)
+        Ok((this, variables))
     }
 
     pub fn new_block_builder_context<'a>(
@@ -73,16 +74,16 @@ impl TranslationContext {
         is_optional: bool,
         source_span: Option<Span>,
         reducer: Reducer,
-    ) -> Variable {
+    ) -> Result<Variable, Box<RepresentationError>> {
         let variable = self.variable_registry.register_reduce_output_variable(
             name.to_owned(),
             variable_category,
             is_optional,
             source_span,
             reducer,
-        );
+        )?;
         self.visible_variables.insert(name.to_owned(), variable);
-        variable
+        Ok(variable)
     }
 
     pub fn get_variable(&self, variable: &str) -> Option<Variable> {
