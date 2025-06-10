@@ -11,6 +11,7 @@ use std::{
     sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
+use cache::CACHE_DB_NAME_PREFIX;
 use itertools::Itertools;
 use logger::debug;
 use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
@@ -110,7 +111,14 @@ impl DatabaseManager {
             match entry_path.is_dir() {
                 true => {
                     let name = entry_path.file_name().unwrap_or("".as_ref()).to_string_lossy();
-                    event!(Level::WARN, "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted.");
+                    if name.starts_with(CACHE_DB_NAME_PREFIX) {
+                        event!(
+                            Level::DEBUG,
+                            "Cache '{name}' was not removed after an interrupted import operation. It will be deleted."
+                        );
+                    } else {
+                        event!(Level::WARN, "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted.");
+                    }
                     fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
                         name: Self::file_name_lossy(&entry_path),
                         source: Arc::new(source),
