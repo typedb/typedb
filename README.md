@@ -193,7 +193,6 @@ Today TypeDB and TypeQL use
 [RocksDB](https://rocksdb.org),
 [Rust](https://www.rust-lang.org/),
 [pest](https://pest.rs/),
-[SCIP](https://www.scipopt.org),
 [Bazel](https://bazel.build),
 [gRPC](https://grpc.io),
 and [ZeroMQ](https://zeromq.org).
@@ -208,7 +207,8 @@ In the past, TypeDB was enabled by various open-source products and communities 
 [Apache Spark](http://spark.apache.org), 
 [Apache TinkerPop](http://tinkerpop.apache.org),
 [Caffeine](https://github.com/ben-manes/caffeine),
-and [JanusGraph](http://janusgraph.org). 
+[JanusGraph](http://janusgraph.org),
+and [SCIP](https://www.scipopt.org). 
 
 ### Package hosting
 Package repository hosting is graciously provided by [Cloudsmith](https://cloudsmith.com).
