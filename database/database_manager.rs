@@ -287,7 +287,6 @@ impl DatabaseManager {
         name.starts_with(INTERNAL_DATABASE_PREFIX)
     }
 
-    // TODO: Remove if not needed
     pub(crate) fn import_directory(&self) -> &PathBuf {
         &self.import_directory
     }

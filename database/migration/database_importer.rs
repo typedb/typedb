@@ -163,10 +163,10 @@ struct DataInfo {
 }
 
 impl DataInfo {
-    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
+    fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            objects: ObjectsInfo::new(&data_directory, database_name),
-            attributes: AttributesInfo::new(data_directory, database_name),
+            objects: ObjectsInfo::new(&cache_directory, database_name),
+            attributes: AttributesInfo::new(cache_directory, database_name),
             checksums: Checksums::new(),
             expected_checksums: None,
         }
@@ -228,10 +228,10 @@ struct InstanceIDMapping<T: ThingAPI> {
 impl<T: ThingAPI> InstanceIDMapping<T> {
     const CACHE_SPILLOVER_THRESHOLD: usize = 300_000;
 
-    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
+    fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
             original_to_buffered_ids: SpilloverCache::new(
-                data_directory,
+                cache_directory,
                 Some(database_name),
                 Self::CACHE_SPILLOVER_THRESHOLD,
             ),
@@ -270,9 +270,9 @@ struct ObjectsInfo {
 }
 
 impl ObjectsInfo {
-    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
+    fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            instance_id_mapping: InstanceIDMapping::new(data_directory, database_name),
+            instance_id_mapping: InstanceIDMapping::new(cache_directory, database_name),
             awaited_for_roles: HashMap::new(),
         }
     }
@@ -286,9 +286,9 @@ struct AttributesInfo {
 }
 
 impl AttributesInfo {
-    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
+    fn new(cache_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            instance_id_mapping: InstanceIDMapping::new(data_directory, database_name),
+            instance_id_mapping: InstanceIDMapping::new(cache_directory, database_name),
             awaited_for_ownerships: HashMap::new(),
         }
     }
@@ -318,7 +318,7 @@ impl DatabaseImporter {
             .prepare_imported_database(name)
             .map_err(|typedb_source| DatabaseImportError::DatabaseCreate { typedb_source })?;
         let database_name = database.name().to_string();
-        let data_info = DataInfo::new(&database.path, &database_name);
+        let data_info = DataInfo::new(database_manager.import_directory(), &database_name);
         let database = Some(Arc::new(database));
         Ok(Self {
             database_manager,
