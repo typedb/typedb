@@ -22,12 +22,8 @@ use crate::service::{
     export_service::{get_transaction_schema, DatabaseExportError},
     grpc::{
         error::{IntoGrpcStatus, IntoProtocolErrorMessage},
-        migration::{
-            item::{
-                encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item,
-                encode_relation_item,
-            },
-            TransactionHolder,
+        migration::item::{
+            encode_attribute_item, encode_checksums_item, encode_entity_item, encode_header_item, encode_relation_item,
         },
         response_builders::database::{
             database_export_initial_res_ok, database_export_res_done, database_export_res_part_items,
@@ -113,12 +109,11 @@ impl DatabaseExportService {
     pub(crate) async fn export(mut self) {
         let start = Instant::now();
         event!(Level::INFO, "Exporting '{}' from TypeDB {}.", self.database.name(), self.server_info.version);
-        let Some(holder) = self.open_transaction().await else {
+        let Some(transaction) = self.open_transaction().await else {
             return;
         };
-        let transaction = holder.transaction();
 
-        let schema = unwrap_else_send_error_and_return!(self, get_transaction_schema(transaction));
+        let schema = unwrap_else_send_error_and_return!(self, get_transaction_schema(&transaction));
         unwrap_else_send_error_and_return!(
             self,
             send_response!(self.response_sender, Ok(database_export_initial_res_ok(schema)))
@@ -126,9 +121,9 @@ impl DatabaseExportService {
 
         let mut buffer = Vec::with_capacity(Self::ITEM_BATCH_SIZE);
         unwrap_else_send_error_and_return!(self, self.export_header(&mut buffer).await);
-        unwrap_else_send_error_and_return!(self, self.export_entities(transaction, &mut buffer).await);
-        unwrap_else_send_error_and_return!(self, self.export_relations(transaction, &mut buffer).await);
-        unwrap_else_send_error_and_return!(self, self.export_attributes(transaction, &mut buffer).await);
+        unwrap_else_send_error_and_return!(self, self.export_entities(&transaction, &mut buffer).await);
+        unwrap_else_send_error_and_return!(self, self.export_relations(&transaction, &mut buffer).await);
+        unwrap_else_send_error_and_return!(self, self.export_attributes(&transaction, &mut buffer).await);
         unwrap_else_send_error_and_return!(self, self.export_checksums(&mut buffer).await);
         if !buffer.is_empty() {
             unwrap_else_send_error_and_return!(self, Self::send_items(&self.response_sender, buffer).await);
@@ -266,9 +261,9 @@ impl DatabaseExportService {
         send_response!(response_sender, Ok(database_export_res_part_items(items)))
     }
 
-    async fn open_transaction(&self) -> Option<TransactionHolder> {
+    async fn open_transaction(&self) -> Option<TransactionRead<WALClient>> {
         match TransactionRead::open(self.database.clone(), Self::transaction_options()) {
-            Ok(transaction) => Some(TransactionHolder::new(transaction)),
+            Ok(transaction) => Some(transaction),
             Err(typedb_source) => {
                 Self::send_error(&self.response_sender, DatabaseExportError::TransactionFailed { typedb_source }).await;
                 None

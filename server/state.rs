@@ -15,8 +15,10 @@ use async_trait::async_trait;
 use concept::error::ConceptReadError;
 use concurrency::IntervalRunner;
 use database::{
-    database::DatabaseCreateError, database_manager::DatabaseManager, transaction::TransactionRead, Database,
-    DatabaseDeleteError,
+    database::DatabaseCreateError,
+    database_manager::DatabaseManager,
+    transaction::{TransactionRead, TransactionSchema},
+    Database, DatabaseDeleteError,
 };
 use diagnostics::{diagnostics_manager::DiagnosticsManager, Diagnostics};
 use error::typedb_error;
@@ -265,10 +267,8 @@ impl LocalServerState {
     pub fn get_database_schema<D: DurabilityClient>(database: Arc<Database<D>>) -> Result<String, ServerStateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
             .map_err(|err| ServerStateError::FailedToOpenPrerequisiteTransaction {})?;
-        // TODO: Close transactions on errors?
         let schema = get_transaction_schema(&transaction)
             .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
-        transaction.close();
         Ok(schema)
     }
 
@@ -277,10 +277,8 @@ impl LocalServerState {
     ) -> Result<String, ServerStateError> {
         let transaction = TransactionRead::open(database, TransactionOptions::default())
             .map_err(|err| ServerStateError::FailedToOpenPrerequisiteTransaction {})?;
-        // TODO: Close transactions on errors?
         let type_schema = get_transaction_type_schema(&transaction)
             .map_err(|typedb_source| ServerStateError::DatabaseExport { typedb_source })?;
-        transaction.close();
         Ok(type_schema)
     }
 }

@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
 use concept::type_::{object_type::ObjectType, TypeAPI};
 use cucumber::gherkin::Step;
@@ -31,7 +30,7 @@ pub async fn attribute_type_set_value_type(
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
         let parsed_value_type = value_type.into_typedb(&tx.type_manager, tx.snapshot.as_ref());
         let res = attribute_type.set_value_type(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.snapshot.as_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             parsed_value_type,
@@ -50,11 +49,7 @@ pub async fn attribute_type_unset_value_type(
     with_schema_tx!(context, |tx| {
         let attribute_type =
             tx.type_manager.get_attribute_type(tx.snapshot.as_ref(), &type_label.into_typedb()).unwrap().unwrap();
-        let res = attribute_type.unset_value_type(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
-            &tx.type_manager,
-            &tx.thing_manager,
-        );
+        let res = attribute_type.unset_value_type(tx.snapshot.as_mut().unwrap(), &tx.type_manager, &tx.thing_manager);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }

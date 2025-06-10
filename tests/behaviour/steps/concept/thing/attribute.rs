@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
 use concept::{
     error::{ConceptReadError, ConceptWriteError},
@@ -32,7 +31,7 @@ pub fn attribute_put_instance_with_value_impl(
         let value = value.into_typedb(
             attribute_type.get_value_type_without_source(tx.snapshot.as_ref(), &tx.type_manager).unwrap().unwrap(),
         );
-        tx.thing_manager.create_attribute(Arc::get_mut(&mut tx.snapshot).unwrap(), attribute_type, value)
+        tx.thing_manager.create_attribute(tx.snapshot.as_mut().unwrap(), attribute_type, value)
     })
 }
 
@@ -154,7 +153,7 @@ async fn delete_attribute(context: &mut Context, var: params::Var) {
         context.attributes[&var.name]
             .clone()
             .unwrap()
-            .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+            .delete(tx.snapshot.as_mut().unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
             .unwrap()
     })
 }
@@ -193,7 +192,7 @@ async fn delete_attributes_of_type(context: &mut Context, type_label: params::La
         while let Some(attribute) = attribute_iterator.next() {
             attribute
                 .unwrap()
-                .delete(Arc::get_mut(&mut tx.snapshot).unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
+                .delete(tx.snapshot.as_mut().unwrap(), &tx.thing_manager, StorageCounters::DISABLED)
                 .unwrap();
         }
     })

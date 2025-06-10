@@ -88,7 +88,7 @@ pub fn execute_write_query_in_schema(
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
-        Arc::into_inner(snapshot).unwrap(),
+        snapshot.into_inner(),
         &type_manager,
         thing_manager.clone(),
         &function_manager,
@@ -132,7 +132,7 @@ pub fn execute_write_query_in_write(
     } = transaction;
 
     let (snapshot, result) = execute_write_query_in(
-        Arc::into_inner(snapshot).expect("Cannot unwrap Arc<Snapshot>, still in use."),
+        snapshot.into_inner(),
         &type_manager,
         thing_manager.clone(),
         &function_manager,
