@@ -18,6 +18,10 @@ use compiler::query_structure::QueryStructure;
 use concept::{thing::thing_manager::ThingManager, type_::type_manager::TypeManager};
 use database::{
     database_manager::DatabaseManager,
+    query::{
+        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, StreamQueryOutputDescriptor,
+        WriteQueryAnswer, WriteQueryResult,
+    },
     transaction::{TransactionRead, TransactionSchema, TransactionWrite},
 };
 use diagnostics::{
@@ -50,9 +54,7 @@ use super::message::query::query_structure::encode_query_structure;
 use crate::service::{
     http::message::query::{document::encode_document, query_structure::QueryStructureResponse, row::encode_row},
     transaction_service::{
-        execute_schema_query, execute_write_query_in_schema, execute_write_query_in_write, init_transaction_timeout,
-        is_write_pipeline, prepare_read_query_in, with_readable_transaction, StreamQueryOutputDescriptor, Transaction,
-        TransactionServiceError, WriteQueryAnswer, WriteQueryResult,
+        init_transaction_timeout, is_write_pipeline, with_readable_transaction, Transaction, TransactionServiceError,
     },
     QueryType, TransactionType,
 };
@@ -281,7 +283,7 @@ impl TransactionService {
                 Transaction::Schema(transaction)
             }
         };
-        self.diagnostics_manager.increment_load_count(ClientEndpoint::Http, &database_name, transaction.to_load_kind());
+        self.diagnostics_manager.increment_load_count(ClientEndpoint::Http, &database_name, transaction.load_kind());
         self.transaction = Some(transaction);
         self.timeout_at = init_transaction_timeout(Some(transaction_timeout_millis));
 
@@ -443,8 +445,8 @@ impl TransactionService {
                 Break(())
             })
             .await
-            .expect("Expected write transaction execution completion"),
-            Transaction::Schema(transaction) => {
+            .expect("Expected write transaction commit completion"),
+            Transaction::Schema(transaction) => spawn_blocking(move || {
                 diagnostics_manager.decrement_load_count(
                     ClientEndpoint::Http,
                     transaction.database.name(),
@@ -457,7 +459,9 @@ impl TransactionService {
                 );
                 respond_else_return_break!(responder, TransactionServiceResponse::Ok);
                 Break(())
-            }
+            })
+            .await
+            .expect("Expected schema transaction commit completion"),
         }
     }
 
@@ -625,20 +629,21 @@ impl TransactionService {
         // unblock requests until the first write request, which we begin executing if it exists
         while let Some((responder, query_options, query_pipeline, source_query)) = self.query_queue.pop_front() {
             if is_write_pipeline(&query_pipeline) {
-                if let Break(()) = self.run_write_query(responder, query_options, query_pipeline, source_query).await {
+                return self.run_write_query(responder, query_options, query_pipeline, source_query).await;
+            } else {
+                if let Break(()) = self
+                    .blocking_read_query_worker(
+                        responder,
+                        query_options,
+                        query_pipeline,
+                        source_query,
+                        StorageCounters::DISABLED,
+                    )
+                    .await
+                    .expect("Expected read query completion")
+                {
                     return Break(());
                 }
-                return Continue(());
-            } else {
-                self.blocking_read_query_worker(
-                    responder,
-                    query_options,
-                    query_pipeline,
-                    source_query,
-                    StorageCounters::DISABLED,
-                )
-                .await
-                .expect("Expected read query completion");
             }
         }
         Continue(())
@@ -679,8 +684,7 @@ impl TransactionService {
                         // queued queries are not handled yet so there will be no query response yet
                         Continue(())
                     } else {
-                        self.run_write_query(responder, query_options, pipeline, query).await;
-                        Continue(())
+                        self.run_write_query(responder, query_options, pipeline, query).await
                     }
                 } else {
                     if !self.query_queue.is_empty() || self.running_write_query.is_some() {
@@ -696,9 +700,7 @@ impl TransactionService {
                             StorageCounters::DISABLED,
                         )
                         .await
-                        .expect("Expected read query completion");
-                        // running read queries have no response on the main loop and will respond asynchronously
-                        Continue(())
+                        .expect("Expected read query completion")
                     }
                 }
             }
@@ -721,7 +723,10 @@ impl TransactionService {
         if let Some(transaction) = self.transaction.take() {
             match transaction {
                 Transaction::Schema(schema_transaction) => {
-                    let (transaction, result) = execute_schema_query(schema_transaction, query, source_query).await;
+                    let (transaction, result) =
+                        spawn_blocking(move || execute_schema_query(schema_transaction, query, source_query))
+                            .await
+                            .expect("Expected schema query execution finishing");
                     self.transaction = Some(Transaction::Schema(transaction));
                     match result {
                         Ok(_) => return Ok(TransactionServiceResponse::Query(QueryAnswer::ResOk(QueryType::Schema))),
@@ -766,7 +771,7 @@ impl TransactionService {
     ) -> ControlFlow<(), ()> {
         // Write query is already executed, but for simplicity, we convert it to something that conform to the same API as the read path
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
-            let snapshot = transaction.snapshot.clone();
+            let snapshot = transaction.snapshot.clone_inner();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let timeout_at = self.timeout_at;
@@ -822,10 +827,14 @@ impl TransactionService {
         let interrupt = self.query_interrupt_receiver.clone();
         match self.transaction.take() {
             Some(Transaction::Schema(schema_transaction)) => Ok(spawn_blocking(move || {
-                execute_write_query_in_schema(schema_transaction, query_options, pipeline, source_query, interrupt)
+                let (transaction, result) =
+                    execute_write_query_in_schema(schema_transaction, query_options, pipeline, source_query, interrupt);
+                (Transaction::Schema(transaction), result)
             })),
             Some(Transaction::Write(write_transaction)) => Ok(spawn_blocking(move || {
-                execute_write_query_in_write(write_transaction, query_options, pipeline, source_query, interrupt)
+                let (transaction, result) =
+                    execute_write_query_in_write(write_transaction, query_options, pipeline, source_query, interrupt);
+                (Transaction::Write(transaction), result)
             })),
             Some(Transaction::Read(transaction)) => {
                 self.transaction = Some(Transaction::Read(transaction));
@@ -968,25 +977,30 @@ impl TransactionService {
         let timeout_at = self.timeout_at;
         let interrupt = self.query_interrupt_receiver.clone();
         with_readable_transaction!(self.transaction.as_ref().unwrap(), |transaction| {
-            let snapshot = transaction.snapshot.clone();
+            let snapshot = transaction.snapshot.clone_inner();
             let type_manager = transaction.type_manager.clone();
             let thing_manager = transaction.thing_manager.clone();
             let function_manager = transaction.function_manager.clone();
             let query_manager = transaction.query_manager.clone();
             spawn_blocking(move || {
-                let pipeline = prepare_read_query_in(
+                let pipeline_result = query_manager.prepare_read_pipeline(
                     snapshot.clone(),
                     &type_manager,
                     thing_manager.clone(),
                     &function_manager,
-                    &query_manager,
                     &pipeline,
                     &source_query,
                 );
-                let pipeline =
-                    unwrap_or_execute_else_respond_error_and_return_break!(pipeline, responder, |typedb_source| {
-                        TransactionServiceError::QueryFailed { typedb_source }
-                    });
+                let pipeline = match pipeline_result {
+                    Ok(pipeline) => pipeline,
+                    Err(typedb_source) => {
+                        respond_else_return_break!(
+                            responder,
+                            TransactionServiceResponse::Err(TransactionServiceError::QueryFailed { typedb_source })
+                        );
+                        return Continue(());
+                    }
+                };
                 Self::respond_read_query_sync(
                     query_options,
                     pipeline,
@@ -1156,9 +1170,5 @@ impl TransactionService {
             event!(Level::INFO, "Read query done (including network request time).\n{}", query_profile);
         }
         Continue(())
-    }
-
-    fn get_database_name(&self) -> Option<&str> {
-        self.transaction.as_ref().map(Transaction::get_database_name)
     }
 }

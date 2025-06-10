@@ -42,19 +42,6 @@ impl ObjectVertex {
         Self { prefix: Prefix::VertexRelation, type_id, object_id }
     }
 
-    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
-        if bytes.len() != Self::LENGTH {
-            return None;
-        }
-        let prefix = bytes[0];
-        if prefix != Prefix::VertexEntity.prefix_id().byte && prefix != Prefix::VertexRelation.prefix_id().byte {
-            return None;
-        }
-
-        // all byte patterns beyond the prefix are valid for object vertices
-        Some(Self::decode(bytes))
-    }
-
     pub fn is_entity_vertex(storage_key: StorageKeyReference<'_>) -> bool {
         storage_key.keyspace_id() == Self::KEYSPACE.id()
             && storage_key.bytes().len() == Self::LENGTH
@@ -125,6 +112,19 @@ impl ThingVertex for ObjectVertex {
         let type_id = TypeID::decode(bytes[Self::RANGE_TYPE_ID].try_into().unwrap());
         let object_id = ObjectID::decode(bytes[Self::range_object_id()].try_into().unwrap());
         Self { prefix, type_id, object_id }
+    }
+
+    fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if bytes.len() != Self::LENGTH {
+            return None;
+        }
+        let prefix = bytes[0];
+        if prefix != Prefix::VertexEntity.prefix_id().byte && prefix != Prefix::VertexRelation.prefix_id().byte {
+            return None;
+        }
+
+        // all byte patterns beyond the prefix are valid for object vertices
+        Some(Self::decode(bytes))
     }
 }
 

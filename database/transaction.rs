@@ -3,8 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::{mpsc::RecvTimeoutError, Arc};
+use std::{
+    fmt::Formatter,
+    ops::Deref,
+    sync::{mpsc::RecvTimeoutError, Arc},
+};
 
 use concept::{
     error::ConceptWriteError,
@@ -21,7 +24,10 @@ use query::query_manager::QueryManager;
 use resource::profile::TransactionProfile;
 use storage::{
     durability_client::DurabilityClient,
-    snapshot::{CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotError, WritableSnapshot, WriteSnapshot},
+    snapshot::{
+        CommittableSnapshot, ReadSnapshot, SchemaSnapshot, SnapshotDropGuard, SnapshotError, WritableSnapshot,
+        WriteSnapshot,
+    },
 };
 use tracing::Level;
 
@@ -29,12 +35,12 @@ use crate::Database;
 
 #[derive(Debug)]
 pub struct TransactionRead<D> {
-    pub snapshot: Arc<ReadSnapshot<D>>,
+    pub snapshot: SnapshotDropGuard<ReadSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
     pub query_manager: Arc<QueryManager>,
-    pub database: Arc<Database<D>>,
+    pub database: DatabaseDropGuard<D>,
     transaction_options: TransactionOptions,
     pub profile: TransactionProfile,
 }
@@ -68,12 +74,12 @@ impl<D: DurabilityClient> TransactionRead<D> {
         drop(schema);
 
         Ok(Self {
-            snapshot: Arc::new(snapshot),
+            snapshot: SnapshotDropGuard::new(snapshot),
             type_manager,
             thing_manager,
             function_manager,
             query_manager,
-            database,
+            database: DatabaseDropGuard::new(database),
             transaction_options,
             profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
         })
@@ -84,20 +90,18 @@ impl<D: DurabilityClient> TransactionRead<D> {
     }
 
     pub fn close(self) {
-        drop(self.thing_manager);
-        drop(self.type_manager);
-        Arc::into_inner(self.snapshot).unwrap().close_resources()
+        drop(self)
     }
 }
 
 #[derive(Debug)]
 pub struct TransactionWrite<D> {
-    pub snapshot: Arc<WriteSnapshot<D>>,
+    pub snapshot: SnapshotDropGuard<WriteSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
     pub query_manager: Arc<QueryManager>,
-    pub database: Arc<Database<D>>,
+    pub database: DatabaseDropGuard<D>,
     pub transaction_options: TransactionOptions,
     pub profile: TransactionProfile,
 }
@@ -126,12 +130,12 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         drop(schema);
 
         Ok(Self {
-            snapshot: Arc::new(snapshot),
+            snapshot: SnapshotDropGuard::new(snapshot),
             type_manager,
             thing_manager,
             function_manager,
             query_manager,
-            database,
+            database: DatabaseDropGuard::new_with_fn(database, Database::release_write_transaction),
             transaction_options,
             profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
         })
@@ -143,12 +147,12 @@ impl<D: DurabilityClient> TransactionWrite<D> {
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
         query_manager: Arc<QueryManager>,
-        database: Arc<Database<D>>,
+        database: DatabaseDropGuard<D>,
         transaction_options: TransactionOptions,
         profile: TransactionProfile,
     ) -> Self {
         Self {
-            snapshot,
+            snapshot: SnapshotDropGuard::from_arc(snapshot),
             type_manager,
             thing_manager,
             function_manager,
@@ -161,9 +165,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
 
     pub fn commit(mut self) -> (TransactionProfile, Result<(), DataCommitError>) {
         self.profile.commit_profile().start();
-        let database = self.database.clone();
         let (mut profile, result) = self.try_commit();
-        database.release_write_transaction();
         profile.commit_profile().end();
         (profile, result)
     }
@@ -171,7 +173,7 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     pub fn try_commit(self) -> (TransactionProfile, Result<(), DataCommitError>) {
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = match Arc::into_inner(self.snapshot) {
+        let mut snapshot = match self.snapshot.try_into_inner() {
             None => return (profile, Err(DataCommitError::SnapshotInUse {})),
             Some(snapshot) => snapshot,
         };
@@ -190,14 +192,11 @@ impl<D: DurabilityClient> TransactionWrite<D> {
     }
 
     pub fn rollback(&mut self) {
-        Arc::get_mut(&mut self.snapshot).unwrap().clear()
+        self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()
     }
 
     pub fn close(self) {
-        self.database.release_write_transaction();
-        drop(self.thing_manager);
-        drop(self.type_manager);
-        Arc::into_inner(self.snapshot).unwrap().close_resources()
+        drop(self)
     }
 }
 
@@ -215,12 +214,12 @@ typedb_error! {
 
 #[derive(Debug)]
 pub struct TransactionSchema<D> {
-    pub snapshot: Arc<SchemaSnapshot<D>>,
+    pub snapshot: SnapshotDropGuard<SchemaSnapshot<D>>,
     pub type_manager: Arc<TypeManager>,
     pub thing_manager: Arc<ThingManager>,
     pub function_manager: Arc<FunctionManager>,
     pub query_manager: Arc<QueryManager>,
-    pub database: Arc<Database<D>>,
+    pub database: DatabaseDropGuard<D>,
     pub transaction_options: TransactionOptions,
     pub profile: TransactionProfile,
 }
@@ -247,29 +246,29 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         let query_manager = Arc::new(QueryManager::new(None));
 
         Ok(Self {
-            snapshot: Arc::new(snapshot),
+            snapshot: SnapshotDropGuard::new(snapshot),
             type_manager,
             thing_manager: Arc::new(thing_manager),
             function_manager,
             query_manager,
-            database,
+            database: DatabaseDropGuard::new_with_fn(database, Database::release_schema_transaction),
             transaction_options,
             profile: TransactionProfile::new(tracing::enabled!(Level::TRACE)),
         })
     }
 
     pub fn from_parts(
-        snapshot: SchemaSnapshot<D>,
+        snapshot: Arc<SchemaSnapshot<D>>,
         type_manager: Arc<TypeManager>,
         thing_manager: Arc<ThingManager>,
         function_manager: Arc<FunctionManager>,
         query_manager: Arc<QueryManager>,
-        database: Arc<Database<D>>,
+        database: DatabaseDropGuard<D>,
         transaction_options: TransactionOptions,
         profile: TransactionProfile,
     ) -> Self {
         Self {
-            snapshot: Arc::new(snapshot),
+            snapshot: SnapshotDropGuard::from_arc(snapshot),
             type_manager,
             thing_manager,
             function_manager,
@@ -282,9 +281,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
 
     pub fn commit(mut self) -> (TransactionProfile, Result<(), SchemaCommitError>) {
         self.profile.commit_profile().start();
-        let database = self.database.clone(); // TODO: can we get away without cloning the database before?
         let (mut profile, result) = self.try_commit(); // TODO include
-        database.release_schema_transaction();
         profile.commit_profile().end();
         (profile, result)
     }
@@ -295,7 +292,7 @@ impl<D: DurabilityClient> TransactionSchema<D> {
         };
         let mut profile = self.profile;
         let commit_profile = profile.commit_profile();
-        let mut snapshot = Arc::into_inner(self.snapshot).expect("Failed to unwrap Arc<Snapshot>");
+        let mut snapshot = self.snapshot.into_inner();
         if let Err(errs) = self.type_manager.validate(&snapshot) {
             // TODO: send all the errors, not just the first,
             // when we can print the stacktraces of multiple errors, not just a single one
@@ -384,14 +381,87 @@ impl<D: DurabilityClient> TransactionSchema<D> {
     }
 
     pub fn rollback(&mut self) {
-        Arc::get_mut(&mut self.snapshot).unwrap().clear()
+        self.snapshot.as_mut().expect("Expected owning snapshot on rollback").clear()
     }
 
     pub fn close(self) {
-        self.database.release_schema_transaction();
-        drop(self.thing_manager);
-        drop(self.type_manager);
-        Arc::into_inner(self.snapshot).unwrap().close_resources();
+        drop(self)
+    }
+}
+
+#[macro_export]
+macro_rules! with_transaction_parts {
+    (
+        $TransactionType:ident, $transaction:ident, |$inner_snapshot:ident, $type_manager:ident, $thing_manager:ident, $function_manager:ident, $query_manager:ident| $expr:expr
+    ) => {{
+        let $TransactionType {
+            snapshot,
+            type_manager: $type_manager,
+            thing_manager: $thing_manager,
+            function_manager: $function_manager,
+            query_manager: $query_manager,
+            database,
+            transaction_options,
+            profile,
+        } = $transaction;
+        let mut $inner_snapshot = snapshot.into_inner();
+
+        let result = $expr;
+
+        let $transaction = $TransactionType::from_parts(
+            Arc::new($inner_snapshot),
+            $type_manager,
+            $thing_manager,
+            $function_manager,
+            $query_manager,
+            database,
+            transaction_options,
+            profile,
+        );
+
+        ($transaction, result)
+    }};
+}
+
+pub struct DatabaseDropGuard<D> {
+    database: Option<Arc<Database<D>>>,
+    on_drop_fn: Option<fn(&Database<D>)>,
+}
+
+impl<D> DatabaseDropGuard<D> {
+    pub fn new(database: Arc<Database<D>>) -> Self {
+        Self { database: Some(database), on_drop_fn: None }
+    }
+
+    pub fn new_with_fn(database: Arc<Database<D>>, on_drop_fn: fn(&Database<D>)) -> Self {
+        Self { database: Some(database), on_drop_fn: Some(on_drop_fn) }
+    }
+
+    fn database(&self) -> &Arc<Database<D>> {
+        self.database.as_ref().expect("Expected a database in the guard")
+    }
+}
+
+impl<D> Deref for DatabaseDropGuard<D> {
+    type Target = Arc<Database<D>>;
+
+    fn deref(&self) -> &Self::Target {
+        self.database()
+    }
+}
+
+impl<D> Drop for DatabaseDropGuard<D> {
+    fn drop(&mut self) {
+        if let Some(on_drop_fn) = self.on_drop_fn.take() {
+            let database = self.database.take().expect("Expected database");
+            on_drop_fn(&database);
+        }
+    }
+}
+
+impl<D> std::fmt::Debug for DatabaseDropGuard<D> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self.database)
     }
 }
 

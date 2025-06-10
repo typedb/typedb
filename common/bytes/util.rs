@@ -9,6 +9,8 @@ use std::{
     fmt::{self, Write},
 };
 
+use base64::Engine;
+
 pub const KB: u64 = 1024;
 pub const MB: u64 = KB * KB;
 pub const GB: u64 = MB * KB;
@@ -114,5 +116,34 @@ impl fmt::Debug for HexBytesFormatter<'_> {
         }
         f.write_char(']')?;
         Ok(())
+    }
+}
+
+#[derive(Clone)]
+pub struct Base64Formatter<'a>(Cow<'a, [u8]>);
+
+impl<'a> Base64Formatter<'a> {
+    pub fn owned(bytes: Vec<u8>) -> Self {
+        Self(Cow::Owned(bytes))
+    }
+
+    pub fn borrowed(bytes: &'a [u8]) -> Self {
+        Self(Cow::Borrowed(bytes))
+    }
+
+    pub fn format(&self) -> String {
+        base64::engine::general_purpose::STANDARD.encode(&self.0)
+    }
+}
+
+impl fmt::Display for Base64Formatter<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(self, f)
+    }
+}
+
+impl fmt::Debug for Base64Formatter<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.format())
     }
 }

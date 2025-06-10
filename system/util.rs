@@ -45,10 +45,10 @@ pub mod transaction_util {
                 transaction_options,
                 profile,
             } = TransactionSchema::open(self.database.clone(), TransactionOptions::default()).unwrap(); // TODO
-            let mut snapshot: SchemaSnapshot<WALClient> = Arc::into_inner(snapshot).unwrap();
+            let mut snapshot: SchemaSnapshot<WALClient> = snapshot.into_inner();
             let result = fn_(&mut snapshot, &type_manager, &thing_manager, &function_manager, &query_manager);
             let tx = TransactionSchema::from_parts(
-                snapshot,
+                Arc::new(snapshot),
                 type_manager,
                 thing_manager,
                 function_manager,
@@ -70,7 +70,7 @@ pub mod transaction_util {
         pub fn write_transaction<T>(
             &self,
             fn_: impl Fn(
-                Arc<WriteSnapshot<WALClient>>,
+                WriteSnapshot<WALClient>,
                 Arc<TypeManager>,
                 Arc<ThingManager>,
                 Arc<FunctionManager>,
@@ -90,7 +90,7 @@ pub mod transaction_util {
                 profile,
             } = TransactionWrite::open(self.database.clone(), TransactionOptions::default()).unwrap();
             let (rows, snapshot) = fn_(
-                snapshot,
+                snapshot.into_inner(),
                 type_manager.clone(),
                 thing_manager.clone(),
                 function_manager.clone(),
@@ -143,7 +143,7 @@ pub mod query_util {
         let prepared_pipeline = tx
             .query_manager
             .prepare_read_pipeline(
-                tx.snapshot.clone(),
+                tx.snapshot.clone_inner(),
                 &tx.type_manager,
                 tx.thing_manager.clone(),
                 &tx.function_manager,

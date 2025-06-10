@@ -83,6 +83,7 @@ rust_library(
         "@crates//:prost",
         "@crates//:pwhash",
         "@crates//:rand",
+        "@crates//:regex",
         "@crates//:rustls-pemfile",
         "@crates//:serde",
         "@crates//:serde_json",

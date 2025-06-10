@@ -39,7 +39,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         transaction_options,
         profile,
     } = tx;
-    let mut inner_snapshot = Arc::into_inner(snapshot).unwrap();
+    let mut inner_snapshot = snapshot.into_inner();
     query_manager
         .execute_schema(
             &mut inner_snapshot,
@@ -51,7 +51,7 @@ fn load_schema_tql(database: Arc<Database<WALClient>>, schema_tql: &Path) {
         )
         .unwrap();
     let tx = TransactionSchema::from_parts(
-        inner_snapshot,
+        Arc::new(inner_snapshot),
         type_manager,
         thing_manager,
         function_manager,
@@ -82,7 +82,7 @@ fn load_data_tql(database: Arc<Database<WALClient>>, data_tql: &Path) {
     } = tx;
     let write_pipeline = query_manager
         .prepare_write_pipeline(
-            Arc::into_inner(snapshot).unwrap(),
+            snapshot.into_inner(),
             &type_manager,
             thing_manager.clone(),
             &function_manager,
@@ -108,7 +108,7 @@ fn setup() -> Arc<Database<WALClient>> {
     let tmp_dir = create_tmp_dir();
     {
         let dbm = DatabaseManager::new(&tmp_dir).unwrap();
-        dbm.create_database(DB_NAME).unwrap();
+        dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
         let schema_path = Path::new(RESOURCE_PATH).join(Path::new(SCHEMA_FILENAME));
         let functions_path = Path::new(RESOURCE_PATH).join(Path::new(FUNCTIONS_FILENAME));
@@ -119,7 +119,7 @@ fn setup() -> Arc<Database<WALClient>> {
         load_data_tql(database.clone(), &data_path);
     }
     let dbm = DatabaseManager::new(&tmp_dir).unwrap();
-    dbm.create_database(DB_NAME).unwrap();
+    dbm.put_database(DB_NAME).unwrap();
 
     dbm.database(DB_NAME).unwrap()
 }
@@ -130,7 +130,7 @@ fn run_query(database: Arc<Database<WALClient>>, query_str: &str) -> Batch {
     let query = typeql::parse_query(query_str).unwrap().into_structure().into_pipeline();
     let pipeline = query_manager
         .prepare_read_pipeline(
-            snapshot.clone(),
+            snapshot.clone_inner(),
             type_manager,
             thing_manager.clone(),
             function_manager,

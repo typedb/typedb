@@ -93,6 +93,20 @@ pub(crate) mod database_manager {
         typedb_protocol::database_manager::create::Res { database: Some(database_replicas(name, server_address)) }
     }
 
+    pub(crate) fn database_import_res_done() -> typedb_protocol::database_manager::import::Server {
+        typedb_protocol::database_manager::import::Server {
+            server: Some(typedb_protocol::migration::import::Server {
+                done: Some(typedb_protocol::migration::import::server::Done {}),
+            }),
+        }
+    }
+}
+
+pub(crate) mod database {
+    pub(crate) fn database_delete_res() -> typedb_protocol::database::delete::Res {
+        typedb_protocol::database::delete::Res {}
+    }
+
     pub(crate) fn database_schema_res(schema: String) -> typedb_protocol::database::schema::Res {
         typedb_protocol::database::schema::Res { schema }
     }
@@ -100,11 +114,52 @@ pub(crate) mod database_manager {
     pub(crate) fn database_type_schema_res(schema: String) -> typedb_protocol::database::type_schema::Res {
         typedb_protocol::database::type_schema::Res { schema }
     }
-}
 
-pub(crate) mod database {
-    pub(crate) fn database_delete_res() -> typedb_protocol::database::delete::Res {
-        typedb_protocol::database::delete::Res {}
+    pub(crate) fn database_export_initial_res_ok(schema: String) -> typedb_protocol::database::export::Server {
+        let message = typedb_protocol::migration::export::InitialRes { schema };
+        database_export_server_initial_res(message)
+    }
+
+    pub(crate) fn database_export_res_part_items(
+        items: Vec<typedb_protocol::migration::Item>,
+    ) -> typedb_protocol::database::export::Server {
+        let message = typedb_protocol::migration::export::ResPart { items };
+        database_export_server_res_part(message)
+    }
+
+    pub(crate) fn database_export_res_done() -> typedb_protocol::database::export::Server {
+        let message = typedb_protocol::migration::export::Done {};
+        database_export_server_done(message)
+    }
+
+    #[inline]
+    fn database_export_server_initial_res(
+        message: typedb_protocol::migration::export::InitialRes,
+    ) -> typedb_protocol::database::export::Server {
+        database_export_server_res(typedb_protocol::migration::export::server::Server::InitialRes(message))
+    }
+
+    #[inline]
+    fn database_export_server_res_part(
+        message: typedb_protocol::migration::export::ResPart,
+    ) -> typedb_protocol::database::export::Server {
+        database_export_server_res(typedb_protocol::migration::export::server::Server::ResPart(message))
+    }
+
+    #[inline]
+    fn database_export_server_done(
+        message: typedb_protocol::migration::export::Done,
+    ) -> typedb_protocol::database::export::Server {
+        database_export_server_res(typedb_protocol::migration::export::server::Server::Done(message))
+    }
+
+    #[inline]
+    fn database_export_server_res(
+        message: typedb_protocol::migration::export::server::Server,
+    ) -> typedb_protocol::database::export::Server {
+        typedb_protocol::database::export::Server {
+            server: Some(typedb_protocol::migration::export::Server { server: Some(message) }),
+        }
     }
 }
 

@@ -775,6 +775,27 @@ impl TypeEdgePropertyEncoding for Ordering {
     }
 }
 
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Default, Eq, PartialEq, Hash)]
+pub struct Independent;
+
+impl fmt::Display for Independent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Independent")
+    }
+}
+
+impl TypeVertexPropertyEncoding for Independent {
+    const INFIX: Infix = Infix::PropertyRelationTypeIndependent;
+
+    fn from_value_bytes(value: &[u8]) -> Independent {
+        bincode::deserialize(value).unwrap()
+    }
+
+    fn to_value_bytes(&self) -> Option<Bytes<'static, BUFFER_VALUE_INLINE>> {
+        Some(Bytes::copy(bincode::serialize(self).unwrap().as_slice()))
+    }
+}
+
 pub trait Capability:
     TypeEdgeEncoding<From = Self::ObjectType, To = Self::InterfaceType> + Sized + Copy + Hash + Eq + 'static
 {

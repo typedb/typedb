@@ -3,7 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
 use cucumber::gherkin::Step;
 use database::{
@@ -16,7 +16,7 @@ use itertools::Either;
 use macro_rules_attribute::apply;
 use options::TransactionOptions;
 use params::{self, check_boolean};
-use server::server::Server;
+use server::Server;
 use storage::durability_client::WALClient;
 use test_utils::assert_matches;
 
@@ -176,7 +176,7 @@ fn test_schema_export(context: &mut Context, types_syntax: &str) {
     let database_manager = guard.database_manager();
     if !types_syntax.trim().is_empty() {
         const REIMPORT_DB: &str = "schema_reimport_from_test_tmp";
-        database_manager.create_database(REIMPORT_DB).unwrap();
+        database_manager.put_database(REIMPORT_DB).unwrap();
         let reimport = database_manager.database(REIMPORT_DB).unwrap();
         match execute_schema_transaction(reimport.clone(), types_syntax) {
             Ok(_) => {
@@ -207,7 +207,7 @@ fn execute_schema_transaction(
     transaction
         .query_manager
         .execute_schema(
-            Arc::get_mut(&mut transaction.snapshot).ok_or("Failed to get mutable reference").unwrap(),
+            transaction.snapshot.as_mut().unwrap(),
             &transaction.type_manager,
             &transaction.thing_manager,
             &transaction.function_manager,

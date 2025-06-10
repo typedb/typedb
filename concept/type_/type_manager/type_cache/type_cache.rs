@@ -35,7 +35,7 @@ use crate::type_::{
         selection::{CacheGetter, HasCommonTypeCache, HasObjectCache},
         struct_definition_cache::StructDefinitionCache,
     },
-    KindAPI, Ordering, OwnerAPI, PlayerAPI,
+    Independent, KindAPI, Ordering, OwnerAPI, PlayerAPI,
 };
 
 // TODO: could/should we slab allocate the schema cache?
@@ -389,6 +389,10 @@ impl TypeCache {
         relation_type: RelationType,
     ) -> &HashMap<RoleType, HashSet<CapabilityConstraint<Relates>>> {
         &RelationType::get_cache(self, relation_type).related_role_type_constraints
+    }
+
+    pub(crate) fn get_relation_type_independence(&self, relation_type: RelationType) -> Option<Independent> {
+        RelationType::get_cache(self, relation_type).independence
     }
 
     pub(crate) fn get_relates_annotations_declared(&self, relates: Relates) -> &HashSet<RelatesAnnotation> {

@@ -228,8 +228,8 @@ impl StructIndexEntry<'static> {
             | Value::Double(_)
             | Value::Decimal(_)
             | Value::Date(_)
-            | Value::DateTime(_)
-            | Value::DateTimeTZ(_)
+            | Value::Datetime(_)
+            | Value::DatetimeTz(_)
             | Value::Duration(_) => None,
             Value::String(value) => Some(StringBytes::<BUFFER_VALUE_INLINE>::build_owned(value).to_bytes()),
             Value::Struct(_) => unreachable!(),
@@ -282,8 +282,8 @@ impl StructIndexEntry<'static> {
             Value::Double(value) => buf.extend_from_slice(&DoubleBytes::build(*value).bytes()),
             Value::Decimal(value) => buf.extend_from_slice(&DecimalBytes::build(*value).bytes()),
             Value::Date(value) => buf.extend_from_slice(&DateBytes::build(*value).bytes()),
-            Value::DateTime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
-            Value::DateTimeTZ(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
+            Value::Datetime(value) => buf.extend_from_slice(&DateTimeBytes::build(*value).bytes()),
+            Value::DatetimeTz(value) => buf.extend_from_slice(&DateTimeTZBytes::build(*value).bytes()),
             Value::Duration(value) => buf.extend_from_slice(&DurationBytes::build(*value).bytes()),
             Value::String(value) => {
                 let string_bytes = StringBytes::<0>::build_ref(value);

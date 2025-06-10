@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-use std::{slice, sync::Arc};
+use std::{ops::DerefMut, slice, sync::Arc};
 
 use concept::{
     thing::object::{Object, ObjectAPI},
@@ -42,7 +42,7 @@ async fn relation_add_player_for_role(
         {
             let role_type = relates.role();
             let res = relation.add_player(
-                Arc::get_mut(&mut tx.snapshot).unwrap(),
+                tx.snapshot.as_mut().unwrap(),
                 &tx.thing_manager,
                 role_type,
                 player,
@@ -75,7 +75,7 @@ async fn relation_set_players_for_role(
             .unwrap()
             .role();
         relation.set_players_ordered(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.snapshot.as_mut().unwrap(),
             &tx.thing_manager,
             role_type,
             players,
@@ -105,7 +105,7 @@ async fn relation_remove_player_for_role(
             .role();
 
         let res = relation.remove_player_single(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.snapshot.as_mut().unwrap(),
             &tx.thing_manager,
             role_type,
             player,
@@ -135,7 +135,7 @@ async fn relation_remove_count_players_for_role(
             .role();
         relation
             .remove_player_many(
-                Arc::get_mut(&mut tx.snapshot).unwrap(),
+                tx.snapshot.as_mut().unwrap(),
                 &tx.thing_manager,
                 role_type,
                 player,

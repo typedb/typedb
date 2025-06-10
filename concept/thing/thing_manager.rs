@@ -7,6 +7,7 @@
 use std::{
     borrow::Cow,
     collections::{Bound, HashMap, HashSet},
+    io::Read,
     iter::{once, Map},
     ops::RangeBounds,
     sync::Arc,
@@ -163,82 +164,7 @@ impl ThingManager {
         InstanceIterator::new(snapshot_iterator)
     }
 
-    pub fn get_entities(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
-    }
-
-    pub fn get_relations(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
-    }
-
-    pub fn get_entities_in(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: EntityType,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_entities_in_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        entity_type_range: &impl RangeBounds<EntityType>,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Entity> {
-        self.get_thing_in_range(snapshot, entity_type_range, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_relations_in(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        type_: RelationType,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_relations_in_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        relation_type_range: &impl RangeBounds<RelationType>,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Relation> {
-        self.get_thing_in_range(
-            snapshot,
-            relation_type_range,
-            <Relation as ThingAPI>::Vertex::KEYSPACE,
-            storage_counters,
-        )
-    }
-
-    pub fn get_objects_in(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        object_type: ObjectType,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Object> {
-        self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    pub fn get_objects_in_range(
-        &self,
-        snapshot: &impl ReadableSnapshot,
-        object_type_range: &impl RangeBounds<ObjectType>,
-        storage_counters: StorageCounters,
-    ) -> InstanceIterator<Object> {
-        self.get_thing_in_range(snapshot, object_type_range, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
-    }
-
-    fn get_thing_in_range<T: ThingAPI>(
+    fn get_instances_in_range<T: ThingAPI>(
         &self,
         snapshot: &impl ReadableSnapshot,
         type_range: &impl RangeBounds<T::TypeAPI>,
@@ -269,6 +195,115 @@ impl ThingManager {
         InstanceIterator::new(snapshot.iterate_range(&key_range, storage_counters))
     }
 
+    pub fn get_instance<T: ThingAPI>(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        iid: &Bytes<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<T>, Box<ConceptReadError>> {
+        let Some(vertex) = T::Vertex::try_decode(iid) else {
+            return Err(Box::new(ConceptReadError::IidRepresentsWrongInstanceKind {}));
+        };
+        let exists = snapshot
+            .contains(StorageKeyReference::new(vertex.keyspace(), iid), storage_counters)
+            .map_err(|err| Box::new(ConceptReadError::SnapshotGet { source: err }))?;
+        Ok(exists.then_some(T::new(vertex)))
+    }
+
+    pub fn get_objects_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        object_type: ObjectType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Object> {
+        self.get_instances_in(snapshot, object_type, <Object as ThingAPI>::Vertex::KEYSPACE, storage_counters)
+    }
+
+    pub fn get_objects_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        object_type_range: &impl RangeBounds<ObjectType>,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Object> {
+        self.get_instances_in_range(
+            snapshot,
+            object_type_range,
+            <Object as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
+        )
+    }
+
+    pub fn get_object(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        iid: &Bytes<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<Object>, Box<ConceptReadError>> {
+        self.get_instance::<Object>(snapshot, iid, storage_counters)
+    }
+
+    pub fn get_entities(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances::<Entity>(<Entity as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
+    }
+
+    pub fn get_entities_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: EntityType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances_in(snapshot, type_, <Entity as ThingAPI>::Vertex::KEYSPACE, storage_counters)
+    }
+
+    pub fn get_entities_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        entity_type_range: &impl RangeBounds<EntityType>,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Entity> {
+        self.get_instances_in_range(
+            snapshot,
+            entity_type_range,
+            <Entity as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
+        )
+    }
+
+    pub fn get_relations(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances::<Relation>(<Relation as ThingAPI>::Vertex::KEYSPACE, snapshot, storage_counters)
+    }
+
+    pub fn get_relations_in(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        type_: RelationType,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances_in(snapshot, type_, <Relation as ThingAPI>::Vertex::KEYSPACE, storage_counters)
+    }
+
+    pub fn get_relations_in_range(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        relation_type_range: &impl RangeBounds<RelationType>,
+        storage_counters: StorageCounters,
+    ) -> InstanceIterator<Relation> {
+        self.get_instances_in_range(
+            snapshot,
+            relation_type_range,
+            <Relation as ThingAPI>::Vertex::KEYSPACE,
+            storage_counters,
+        )
+    }
+
     pub fn get_attributes<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
@@ -276,7 +311,7 @@ impl ThingManager {
     ) -> Result<impl Iterator<Item = Result<Attribute, Box<ConceptReadError>>>, Box<ConceptReadError>> {
         Ok(self
             .get_attributes_short(snapshot, storage_counters.clone())?
-            .chain(self.get_attributes_integer(snapshot, storage_counters)?))
+            .chain(self.get_attributes_long(snapshot, storage_counters)?))
     }
 
     pub fn get_attributes_short<Snapshot: ReadableSnapshot>(
@@ -294,12 +329,12 @@ impl ThingManager {
         ))
     }
 
-    pub fn get_attributes_integer<Snapshot: ReadableSnapshot>(
+    pub fn get_attributes_long<Snapshot: ReadableSnapshot>(
         &self,
         snapshot: &Snapshot,
         storage_counters: StorageCounters,
     ) -> Result<AttributeIterator<InstanceIterator<Attribute>>, Box<ConceptReadError>> {
-        let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_short(Prefix::VertexAttribute);
+        let has_reverse_start = ThingEdgeHasReverse::prefix_from_prefix_long(Prefix::VertexAttribute);
         let range = KeyRange::new_within(has_reverse_start, Prefix::VertexAttribute.fixed_width_keys());
         let has_reverse_iterator = HasReverseIterator::new(snapshot.iterate_range(&range, storage_counters.clone()));
         Ok(AttributeIterator::new(
@@ -337,6 +372,15 @@ impl ThingManager {
         ))
     }
 
+    pub fn get_attribute(
+        &self,
+        snapshot: &impl ReadableSnapshot,
+        iid: &Bytes<'_, BUFFER_KEY_INLINE>,
+        storage_counters: StorageCounters,
+    ) -> Result<Option<Attribute>, Box<ConceptReadError>> {
+        self.get_instance::<Attribute>(snapshot, iid, storage_counters)
+    }
+
     pub(crate) fn get_attribute_value(
         &self,
         snapshot: &impl ReadableSnapshot,
@@ -349,8 +393,8 @@ impl ThingManager {
             AttributeID::Double(id) => Ok(Value::Double(id.read().as_f64())),
             AttributeID::Decimal(id) => Ok(Value::Decimal(id.read().as_decimal())),
             AttributeID::Date(id) => Ok(Value::Date(id.read().as_naive_date())),
-            AttributeID::DateTime(id) => Ok(Value::DateTime(id.read().as_naive_date_time())),
-            AttributeID::DateTimeTZ(id) => Ok(Value::DateTimeTZ(id.read().as_date_time())),
+            AttributeID::DateTime(id) => Ok(Value::Datetime(id.read().as_naive_date_time())),
+            AttributeID::DateTimeTZ(id) => Ok(Value::DatetimeTz(id.read().as_date_time())),
             AttributeID::Duration(id) => Ok(Value::Duration(id.read().as_duration())),
             AttributeID::String(id) => {
                 let string = if id.is_inline() {
@@ -1930,8 +1974,10 @@ impl ThingManager {
                     continue;
                 }
                 if !relation.has_players(snapshot, self, storage_counters.clone()) {
-                    relation.delete(snapshot, self, storage_counters.clone())?;
-                    any_deleted = true;
+                    if !self.type_manager().get_is_relation_type_independent(snapshot, relation.type_())? {
+                        relation.delete(snapshot, self, storage_counters.clone())?;
+                        any_deleted = true;
+                    }
                 }
             }
         }
@@ -2757,7 +2803,7 @@ impl ThingManager {
                 let encoded_date = DateBytes::build(date);
                 self.vertex_generator.create_attribute_date(attribute_type.vertex().type_id_(), encoded_date, snapshot)
             }
-            Value::DateTime(date_time) => {
+            Value::Datetime(date_time) => {
                 let encoded_date_time = DateTimeBytes::build(date_time);
                 self.vertex_generator.create_attribute_date_time(
                     attribute_type.vertex().type_id_(),
@@ -2765,7 +2811,7 @@ impl ThingManager {
                     snapshot,
                 )
             }
-            Value::DateTimeTZ(date_time_tz) => {
+            Value::DatetimeTz(date_time_tz) => {
                 let encoded_date_time_tz = DateTimeTZBytes::build(date_time_tz);
                 self.vertex_generator.create_attribute_date_time_tz(
                     attribute_type.vertex().type_id_(),

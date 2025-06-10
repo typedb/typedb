@@ -34,6 +34,14 @@ pub mod server {
     pub const SERVER_INFO: ServerInfo = ServerInfo { logo: ASCII_LOGO, distribution: DISTRIBUTION, version: VERSION };
     pub const DEFAULT_CONFIG_PATH: &str = "config.yml";
 
+    #[macro_export]
+    macro_rules! system_file_prefix {
+        () => {
+            "_"
+        };
+    }
+    pub const SYSTEM_FILE_PREFIX: &str = system_file_prefix!();
+
     pub const GRPC_CONNECTION_KEEPALIVE: Duration = Duration::from_secs(2 * SECONDS_IN_HOUR);
 
     // TODO: Maybe we start moving these options to separate crates?
@@ -50,7 +58,7 @@ pub mod server {
 
     pub const MONITORING_DEFAULT_PORT: u16 = 4104;
 
-    pub const SERVER_ID_FILE_NAME: &str = "_server_id";
+    pub const SERVER_ID_FILE_NAME: &str = concat!(system_file_prefix!(), "server_id");
     pub const SERVER_ID_LENGTH: u64 = 16;
     pub const SERVER_ID_ALPHABET: [char; 36] = [
         'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V',
@@ -73,8 +81,6 @@ pub mod server {
     pub const DEFAULT_USER_PASSWORD: &str = "password";
     pub const DEFAULT_DATA_DIR: &str = "data";
     pub const DEFAULT_LOG_DIR: &str = "log";
-
-    pub const SYSTEM_FILE_PREFIX: &str = "_";
 
     pub const SENTRY_REPORTING_URI: &str =
         "https://3d710295c75c81492e57e1997d9e01e1@o4506315929812992.ingest.sentry.io/4506316048629760";

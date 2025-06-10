@@ -61,15 +61,7 @@ impl UserManager {
         let create_result = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _dbb, _tx_opts| {
-                user_repository::create(
-                    Arc::into_inner(snapshot).unwrap(),
-                    &type_mgr,
-                    thing_mgr.clone(),
-                    &fn_mgr,
-                    &query_mgr,
-                    user,
-                    credential,
-                )
+                user_repository::create(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, user, credential)
             })
             .1;
         match create_result {
@@ -89,7 +81,7 @@ impl UserManager {
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
                 user_repository::update(
-                    Arc::into_inner(snapshot).unwrap(),
+                    snapshot,
                     &type_mgr,
                     thing_mgr.clone(),
                     &fn_mgr,
@@ -127,14 +119,7 @@ impl UserManager {
         let delete_result = self
             .transaction_util
             .write_transaction(|snapshot, type_mgr, thing_mgr, fn_mgr, query_mgr, _db, _tx_opts| {
-                user_repository::delete(
-                    Arc::into_inner(snapshot).unwrap(),
-                    &type_mgr,
-                    thing_mgr.clone(),
-                    &fn_mgr,
-                    &query_mgr,
-                    username,
-                )
+                user_repository::delete(snapshot, &type_mgr, thing_mgr.clone(), &fn_mgr, &query_mgr, username)
             })
             .1;
         match delete_result {

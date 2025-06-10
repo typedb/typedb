@@ -7,7 +7,10 @@
 use std::{
     collections::VecDeque,
     ffi::OsString,
-    fmt, fs, io,
+    fmt, fs,
+    fs::OpenOptions,
+    io,
+    io::Write,
     path::{Path, PathBuf},
     sync::{
         mpsc::{sync_channel, SyncSender},
@@ -16,6 +19,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use cache::CACHE_DB_NAME_PREFIX;
 use concept::{
     thing::statistics::{Statistics, StatisticsError},
     type_::type_manager::{
@@ -66,7 +70,7 @@ type SchemaWriteTransactionState = (bool, usize, VecDeque<TransactionReservation
 
 pub struct Database<D> {
     name: String,
-    path: PathBuf,
+    pub(super) path: PathBuf,
     pub(super) storage: Arc<MVCCStorage<D>>,
     pub(super) definition_key_generator: Arc<DefinitionKeyGenerator>,
     pub(super) type_vertex_generator: Arc<TypeVertexGenerator>,
@@ -249,7 +253,7 @@ impl Database<WALClient> {
 
         let name = name.as_ref();
 
-        fs::create_dir(path).map_err(|error| DirectoryCreate { path: path.to_owned(), source: Arc::new(error) })?;
+        fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
         let wal = WAL::create(path).map_err(|error| WALOpen { source: error })?;
         let mut wal_client = WALClient::new(wal);
@@ -528,9 +532,9 @@ fn make_update_statistics_fn(
 
 typedb_error! {
     pub DatabaseOpenError(component = "Database open", prefix = "DBO") {
-        InvalidUnicodeName(1, "Could not open database, invalid unicode name '{name:?}'.", name: OsString),
-        CouldNotReadDataDirectory(2, "error while reading data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
-        DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, source: Arc<io::Error>),
+        InvalidUnicodeName(1, "Could not open database: invalid unicode name '{name:?}'.", name: OsString),
+        DirectoryRead(2, "Error while reading directory for '{name}'.", name: String, source: Arc<io::Error>),
+        DirectoryCreate(3, "Error creating directory for '{name}'", name: String, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
         WALOpen(5, "Error opening WAL.", source: WALError),
         DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
@@ -540,14 +544,25 @@ typedb_error! {
         Encoding(10, "Data encoding error.", source: EncodingError),
         StatisticsInitialise(11, "Error initialising statistics manager.", typedb_source: StatisticsError),
         TypeCacheInitialise(12, "Error initialising type cache.", typedb_source: TypeCacheCreateError),
-        FunctionCacheInitialise(13, "Error initialising function cache", typedb_source: FunctionError),
+        FunctionCacheInitialise(13, "Error initialising function cache.", typedb_source: FunctionError),
+        FileDelete(14, "Error while deleting file for '{name}'", name: String, source: Arc<io::Error>),
+        DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
     }
 }
 
 typedb_error! {
     pub DatabaseCreateError(component = "Database create", prefix = "DBC") {
         InvalidName(1, "Cannot create database since '{name}' is not a valid database name.", name: String),
-        InternalDatabaseCreationProhibited(2, "Creating an internal database is prohibited"),
+        InternalDatabaseCreationProhibited(2, "Creating an internal database is prohibited."),
+        DatabaseOpen(3, "Database open error.", typedb_source: DatabaseOpenError),
+        WriteAccessDenied(4, "Cannot access databases for writing."),
+        ReadAccessDenied(5, "Cannot access databases for reading."),
+        AlreadyExists(6, "Database '{name}' already exists.", name: String),
+        AlreadyExistsAndCleanupBlocked(7, "Database '{name}' already exists. Error while removing the imported duplicate.", name: String, typedb_source: DatabaseDeleteError),
+        IsBeingImported(8, "Cannot create database '{name}' since it is being imported.", name: String),
+        IsNotBeingImported(9, "Internal error: database '{name}' is not being imported.", name: String),
+        DirectoryWrite(10, "Error while writing to data directory for '{name}'.", name: String, source: Arc<io::Error>),
+        DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
     }
 }
 
@@ -558,6 +573,8 @@ typedb_error! {
         StorageDelete(3, "Error while deleting storage resources.", typedb_source: StorageDeleteError),
         DirectoryDelete(4, "Error deleting directory.", source: Arc<io::Error>),
         InternalDatabaseDeletionProhibited(5, "Deleting an internal database is prohibited"),
+        WriteAccessDenied(6, "Cannot access databases for writing."),
+        DatabaseIsNotBeingImported(7, "Internal error: database '{name}' is not being imported.", name: String),
     }
 }
 

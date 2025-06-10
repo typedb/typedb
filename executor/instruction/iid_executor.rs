@@ -12,7 +12,7 @@ use concept::{
     error::ConceptReadError,
     thing::{attribute::Attribute, object::Object, ThingAPI},
 };
-use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex};
+use encoding::graph::thing::{vertex_attribute::AttributeVertex, vertex_object::ObjectVertex, ThingVertex};
 use ir::pattern::constraint::Iid;
 use lending_iterator::AsLendingIterator;
 use resource::profile::StorageCounters;
@@ -107,12 +107,12 @@ impl IidExecutor {
         let iid_parameter = self.iid.iid().as_parameter().unwrap();
         let bytes = context.parameters().iid(iid_parameter).unwrap();
 
-        let instance = if let Some(object) = ObjectVertex::try_from_bytes(bytes) {
+        let instance = if let Some(object) = ObjectVertex::try_decode(bytes) {
             let object = Object::new(object);
             thing_manager
                 .instance_exists(snapshot, &object, storage_counters.clone())
                 .map(move |exists| exists.then_some(VariableValue::Thing(object.into())))
-        } else if let Some(attribute) = AttributeVertex::try_from_bytes(bytes) {
+        } else if let Some(attribute) = AttributeVertex::try_decode(bytes) {
             let attribute = Attribute::new(attribute);
             thing_manager
                 .instance_exists(snapshot, &attribute, storage_counters.clone())

@@ -3,8 +3,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
-use std::sync::Arc;
+use std::{ops::DerefMut, sync::Arc};
 
 use concept::type_::{annotation, constraint::Constraint, plays::PlaysAnnotation, Capability, PlayerAPI, TypeAPI};
 use cucumber::gherkin::Step;
@@ -33,7 +32,7 @@ pub async fn set_plays(
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let res = object_type.set_plays(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.snapshot.as_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             role_type,
@@ -56,12 +55,8 @@ pub async fn unset_plays(
     with_schema_tx!(context, |tx| {
         let role_type =
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
-        let res = object_type.unset_plays(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
-            &tx.type_manager,
-            &tx.thing_manager,
-            role_type,
-        );
+        let res =
+            object_type.unset_plays(tx.snapshot.as_mut().unwrap(), &tx.type_manager, &tx.thing_manager, role_type);
         may_error.check_concept_write_without_read_errors(&res);
     });
 }
@@ -173,7 +168,7 @@ pub async fn get_plays_set_annotation(
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.set_annotation(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.snapshot.as_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation.into_typedb(None).try_into().unwrap(),
@@ -200,7 +195,7 @@ pub async fn get_plays_unset_annotation(
             tx.type_manager.get_role_type(tx.snapshot.as_ref(), &role_label.into_typedb()).unwrap().unwrap();
         let plays = player_type.get_plays_role(tx.snapshot.as_ref(), &tx.type_manager, role_type).unwrap().unwrap();
         let res = plays.unset_annotation(
-            Arc::get_mut(&mut tx.snapshot).unwrap(),
+            tx.snapshot.as_mut().unwrap(),
             &tx.type_manager,
             &tx.thing_manager,
             annotation_category.into_typedb(),

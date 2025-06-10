@@ -3,18 +3,22 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+use std::str::FromStr;
 
 use answer::{Thing, Type};
-use chrono::{Datelike, NaiveDateTime, Timelike};
+use chrono::{DateTime, Datelike, FixedOffset, NaiveDate, NaiveDateTime, TimeZone as ChronoTimeZone, Timelike};
+use chrono_tz::Tz;
 use concept::{
-    error::ConceptReadError,
+    error::{ConceptDecodeError, ConceptReadError},
     thing::{attribute::Attribute, entity::Entity, relation::Relation, thing_manager::ThingManager, ThingAPI},
     type_::{
         attribute_type::AttributeType, entity_type::EntityType, relation_type::RelationType, role_type::RoleType,
         type_manager::TypeManager, TypeAPI,
     },
 };
-use encoding::value::{timezone::TimeZone, value::Value, value_type::ValueType};
+use encoding::value::{
+    decimal_value::Decimal, duration_value::Duration, timezone::TimeZone, value::Value, value_type::ValueType,
+};
 use error::unimplemented_feature;
 use resource::profile::StorageCounters;
 use storage::snapshot::ReadableSnapshot;
@@ -199,44 +203,105 @@ pub(crate) fn encode_value_type(
 }
 
 pub(crate) fn encode_value(value: Value<'_>) -> typedb_protocol::Value {
+    use typedb_protocol::value::Value as ValueProto;
     let value_message = match value {
-        Value::Boolean(bool) => typedb_protocol::value::Value::Boolean(bool),
-        Value::Integer(integer) => typedb_protocol::value::Value::Integer(integer),
-        Value::Double(double) => typedb_protocol::value::Value::Double(double),
-        Value::Decimal(decimal) => typedb_protocol::value::Value::Decimal(typedb_protocol::value::Decimal {
-            integer: decimal.integer_part(),
-            fractional: decimal.fractional_part(),
-        }),
-        Value::Date(date) => typedb_protocol::value::Value::Date(typedb_protocol::value::Date {
-            num_days_since_ce: Datelike::num_days_from_ce(&date),
-        }),
-        Value::DateTime(date_time) => typedb_protocol::value::Value::Datetime(encode_date_time(date_time)),
-        Value::DateTimeTZ(date_time_tz) => {
-            typedb_protocol::value::Value::DatetimeTz(typedb_protocol::value::DatetimeTz {
-                datetime: Some(encode_date_time(date_time_tz.naive_utc())),
-                timezone: Some(encode_time_zone(date_time_tz.timezone())),
-            })
-        }
-        Value::Duration(duration) => typedb_protocol::value::Value::Duration(typedb_protocol::value::Duration {
-            months: duration.months,
-            days: duration.days,
-            nanos: duration.nanos,
-        }),
-        Value::String(string) => typedb_protocol::value::Value::String(string.to_string()),
-        Value::Struct(_struct) => {
-            unimplemented_feature!(Structs)
-        }
+        Value::Boolean(boolean) => ValueProto::Boolean(boolean),
+        Value::Integer(integer) => ValueProto::Integer(integer),
+        Value::Double(double) => ValueProto::Double(double),
+        Value::Decimal(decimal) => ValueProto::Decimal(encode_decimal(decimal)),
+        Value::Date(date) => ValueProto::Date(encode_date(date)),
+        Value::Datetime(date_time) => ValueProto::Datetime(encode_datetime(date_time)),
+        Value::DatetimeTz(datetime_tz) => ValueProto::DatetimeTz(encode_datetime_tz(datetime_tz)),
+        Value::Duration(duration) => ValueProto::Duration(encode_duration(duration)),
+        Value::String(string) => ValueProto::String(string.to_string()),
+        Value::Struct(_struct) => unimplemented_feature!(Structs),
     };
     typedb_protocol::Value { value: Some(value_message) }
 }
 
-fn encode_date_time(date_time: NaiveDateTime) -> typedb_protocol::value::Datetime {
-    typedb_protocol::value::Datetime { seconds: date_time.and_utc().timestamp(), nanos: date_time.nanosecond() }
+pub(crate) fn encode_decimal(decimal: Decimal) -> typedb_protocol::value::Decimal {
+    typedb_protocol::value::Decimal { integer: decimal.integer_part(), fractional: decimal.fractional_part() }
 }
 
-fn encode_time_zone(timezone: TimeZone) -> typedb_protocol::value::datetime_tz::Timezone {
+pub(crate) fn decode_decimal(proto: typedb_protocol::value::Decimal) -> Result<Decimal, Box<ConceptDecodeError>> {
+    Ok(Decimal::new(proto.integer, proto.fractional))
+}
+
+pub(crate) fn encode_date(date: NaiveDate) -> typedb_protocol::value::Date {
+    typedb_protocol::value::Date { num_days_since_ce: Datelike::num_days_from_ce(&date) }
+}
+
+pub(crate) fn decode_date(proto: typedb_protocol::value::Date) -> Result<NaiveDate, Box<ConceptDecodeError>> {
+    NaiveDate::from_num_days_from_ce_opt(proto.num_days_since_ce)
+        .ok_or_else(|| Box::new(ConceptDecodeError::InvalidDate { days: proto.num_days_since_ce }))
+}
+
+pub(crate) fn encode_datetime(datetime: NaiveDateTime) -> typedb_protocol::value::Datetime {
+    typedb_protocol::value::Datetime { seconds: datetime.and_utc().timestamp(), nanos: datetime.nanosecond() }
+}
+
+pub(crate) fn decode_datetime(
+    proto: typedb_protocol::value::Datetime,
+) -> Result<NaiveDateTime, Box<ConceptDecodeError>> {
+    let seconds = proto.seconds;
+    let nanos = proto.nanos;
+    DateTime::from_timestamp(seconds, nanos)
+        .map(|value| value.naive_utc())
+        .ok_or_else(|| Box::new(ConceptDecodeError::InvalidDatetime { seconds, nanos }))
+}
+
+pub(crate) fn decode_datetime_from_millis(millis: i64) -> Result<NaiveDateTime, Box<ConceptDecodeError>> {
+    DateTime::from_timestamp_millis(millis)
+        .map(|value| value.naive_utc())
+        .ok_or_else(|| Box::new(ConceptDecodeError::InvalidDatetimeMillis { millis }))
+}
+
+pub(crate) fn encode_datetime_tz(datetime_tz: DateTime<TimeZone>) -> typedb_protocol::value::DatetimeTz {
+    typedb_protocol::value::DatetimeTz {
+        datetime: Some(encode_datetime(datetime_tz.naive_utc())),
+        timezone: Some(encode_timezone(datetime_tz.timezone())),
+    }
+}
+
+pub(crate) fn decode_datetime_tz(
+    proto: typedb_protocol::value::DatetimeTz,
+) -> Result<DateTime<TimeZone>, Box<ConceptDecodeError>> {
+    let datetime_proto = proto.datetime.ok_or_else(|| Box::new(ConceptDecodeError::MissingDatetimeTzDatetime {}))?;
+    let datetime = decode_datetime(datetime_proto)?;
+    let timezone_proto = proto.timezone.ok_or_else(|| Box::new(ConceptDecodeError::MissingDatetimeTzTimezone {}))?;
+    let timezone = decode_timezone(timezone_proto)?;
+    Ok(timezone.from_utc_datetime(&datetime))
+}
+
+fn encode_timezone(timezone: TimeZone) -> typedb_protocol::value::datetime_tz::Timezone {
     match timezone {
         TimeZone::IANA(tz) => typedb_protocol::value::datetime_tz::Timezone::Named(tz.name().to_string()),
         TimeZone::Fixed(fixed) => typedb_protocol::value::datetime_tz::Timezone::Offset(fixed.local_minus_utc()),
     }
+}
+
+fn decode_timezone(proto: typedb_protocol::value::datetime_tz::Timezone) -> Result<TimeZone, Box<ConceptDecodeError>> {
+    match proto {
+        typedb_protocol::value::datetime_tz::Timezone::Named(name) => {
+            let tz = Tz::from_str(&name).map_err(|_| Box::new(ConceptDecodeError::InvalidDatetimeTzName { name }))?;
+            Ok(TimeZone::IANA(tz))
+        }
+        typedb_protocol::value::datetime_tz::Timezone::Offset(offset_seconds) => {
+            let fixed_offset = if offset_seconds >= 0 {
+                FixedOffset::east_opt(offset_seconds)
+            } else {
+                FixedOffset::west_opt(-offset_seconds)
+            }
+            .ok_or_else(|| Box::new(ConceptDecodeError::InvalidDatetimeTzOffset { offset_seconds }))?;
+            Ok(TimeZone::Fixed(fixed_offset))
+        }
+    }
+}
+
+pub(crate) fn encode_duration(duration: Duration) -> typedb_protocol::value::Duration {
+    typedb_protocol::value::Duration { months: duration.months, days: duration.days, nanos: duration.nanos }
+}
+
+pub(crate) fn decode_duration(proto: typedb_protocol::value::Duration) -> Result<Duration, Box<ConceptDecodeError>> {
+    Ok(Duration { months: proto.months, days: proto.days, nanos: proto.nanos })
 }

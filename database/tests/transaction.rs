@@ -39,7 +39,7 @@ macro_rules! assert_transaction_timeout {
 
 fn create_database(databases_path: &TempDir) -> Arc<Database<WALClient>> {
     let database_manager = DatabaseManager::new(databases_path).expect("Expected database manager");
-    database_manager.create_database(DB_NAME).expect("Expected database creation");
+    database_manager.put_database(DB_NAME).expect("Expected database creation");
     database_manager.database(DB_NAME).expect("Expected database retrieval")
 }
 
@@ -143,6 +143,35 @@ fn open_close_read_transaction() {
 /////////////////////////////
 // SCHEMA TRANSACTION LOCK //
 /////////////////////////////
+
+#[test]
+fn schema_transaction_does_not_block_concurrent_schema_transactions_after_freeing() {
+    init_logging();
+    let databases_path = create_tmp_dir();
+    let database = create_database(&databases_path);
+
+    let runtime = Runtime::new().expect("Expected runtime");
+    runtime
+        .block_on(async move {
+            let database_clone = database.clone();
+            let notify_transaction1_ready = Arc::new(Notify::new());
+            let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+
+            let task1 = tokio::spawn(async move {
+                let _tx_schema = open_schema(database);
+                notify_transaction1_ready.notify_one();
+                // it frees the locks here
+            });
+
+            let task2 = tokio::spawn(async move {
+                notify_transaction1_ready_clone.notified().await;
+                let _tx_schema = TransactionSchema::open(database_clone, TransactionOptions::default()).unwrap();
+            });
+
+            tokio::try_join!(task1, task2)
+        })
+        .unwrap();
+}
 
 #[test]
 fn schema_transaction_blocks_concurrent_schema_transactions() {
@@ -312,18 +341,22 @@ fn schema_transaction_rollback_does_not_unblock_concurrent_schema_transactions()
             let database_clone = database.clone();
             let notify_transaction1_ready = Arc::new(Notify::new());
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+            let notify_can_drop = Arc::new(Notify::new());
+            let notify_can_drop_clone = notify_can_drop.clone();
 
             let task1 = tokio::spawn(async move {
                 let mut tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
                 tx_schema.rollback();
+                notify_can_drop_clone.notified().await; // don't drop until done
             });
 
             let task2 = tokio::spawn(async move {
                 notify_transaction1_ready_clone.notified().await;
                 let error = TransactionSchema::open(database_clone, TransactionOptions::default()).unwrap_err();
                 assert_transaction_timeout!(error);
+                notify_can_drop.notify_one();
             });
 
             tokio::try_join!(task1, task2)
@@ -403,18 +436,22 @@ fn schema_transaction_rollback_does_not_unblock_concurrent_write_transactions() 
             let database_clone = database.clone();
             let notify_transaction1_ready = Arc::new(Notify::new());
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+            let notify_can_drop = Arc::new(Notify::new());
+            let notify_can_drop_clone = notify_can_drop.clone();
 
             let task1 = tokio::spawn(async move {
                 let mut tx_schema = open_schema(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
                 tx_schema.rollback();
+                notify_can_drop_clone.notified().await; // don't drop until done
             });
 
             let task2 = tokio::spawn(async move {
                 notify_transaction1_ready_clone.notified().await;
                 let error = TransactionWrite::open(database_clone, TransactionOptions::default()).unwrap_err();
                 assert_transaction_timeout!(error);
+                notify_can_drop.notify_one();
             });
 
             tokio::try_join!(task1, task2)
@@ -427,32 +464,65 @@ fn schema_transaction_rollback_does_not_unblock_concurrent_write_transactions() 
 /////////////////////////////
 
 #[test]
+fn write_transaction_does_not_block_concurrent_schema_transactions_after_freeing() {
+    init_logging();
+    let databases_path = create_tmp_dir();
+    let database = create_database(&databases_path);
+
+    let runtime = Runtime::new().expect("Expected runtime");
+    runtime
+        .block_on(async move {
+            let database_clone = database.clone();
+            let notify_transaction1_ready = Arc::new(Notify::new());
+            let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+
+            let task1 = tokio::spawn(async move {
+                let _tx_write = open_write(database);
+                notify_transaction1_ready.notify_one();
+                // it frees the locks here
+            });
+
+            let task2 = tokio::spawn(async move {
+                notify_transaction1_ready_clone.notified().await;
+                let _tx_schema = TransactionSchema::open(database_clone, TransactionOptions::default()).unwrap();
+            });
+
+            tokio::try_join!(task1, task2)
+        })
+        .unwrap();
+}
+
+#[test]
 fn write_transaction_blocks_concurrent_schema_transactions() {
     init_logging();
     let databases_path = create_tmp_dir();
     let database = create_database(&databases_path);
 
     let runtime = Runtime::new().expect("Expected runtime");
-    runtime.block_on(async move {
-        let database_clone = database.clone();
-        let notify_transaction1_ready = Arc::new(Notify::new());
-        let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+    runtime
+        .block_on(async move {
+            let database_clone = database.clone();
+            let notify_transaction1_ready = Arc::new(Notify::new());
+            let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+            let notify_can_drop = Arc::new(Notify::new());
+            let notify_can_drop_clone = notify_can_drop.clone();
 
-        tokio::spawn(async move {
-            let _tx_write = open_write(database);
-            notify_transaction1_ready.notify_one();
-        })
-        .await
-        .unwrap();
+            let task1 = tokio::spawn(async move {
+                let _tx_write = open_write(database);
+                notify_transaction1_ready.notify_one();
+                notify_can_drop_clone.notified().await; // don't drop _tx_write until then
+            });
 
-        tokio::spawn(async move {
-            notify_transaction1_ready_clone.notified().await;
-            let error = TransactionSchema::open(database_clone, TransactionOptions::default()).unwrap_err();
-            assert_transaction_timeout!(error);
+            let task2 = tokio::spawn(async move {
+                notify_transaction1_ready_clone.notified().await;
+                let error = TransactionSchema::open(database_clone, TransactionOptions::default()).unwrap_err();
+                assert_transaction_timeout!(error);
+                notify_can_drop.notify_one();
+            });
+
+            tokio::try_join!(task1, task2)
         })
-        .await
         .unwrap();
-    });
 }
 
 #[test]
@@ -527,18 +597,22 @@ fn write_transaction_rollback_does_not_unblock_concurrent_schema_transactions() 
             let database_clone = database.clone();
             let notify_transaction1_ready = Arc::new(Notify::new());
             let notify_transaction1_ready_clone = notify_transaction1_ready.clone();
+            let notify_can_drop = Arc::new(Notify::new());
+            let notify_can_drop_clone = notify_can_drop.clone();
 
             let task1 = tokio::spawn(async move {
                 let mut tx_write = open_write(database);
                 notify_transaction1_ready.notify_one();
                 sleep(transaction_sleep_timeout()).await;
                 tx_write.rollback();
+                notify_can_drop_clone.notified().await; // don't drop until done
             });
 
             let task2 = tokio::spawn(async move {
                 notify_transaction1_ready_clone.notified().await;
                 let error = TransactionSchema::open(database_clone, TransactionOptions::default()).unwrap_err();
                 assert_transaction_timeout!(error);
+                notify_can_drop.notify_one();
             });
 
             tokio::try_join!(task1, task2)

@@ -64,13 +64,6 @@ impl AttributeVertex {
         Self { type_id, attribute_id }
     }
 
-    pub fn try_from_bytes(bytes: &[u8]) -> Option<Self> {
-        if !Self::is_attribute_bytes(bytes) {
-            return None;
-        }
-        Some(Self::decode(bytes))
-    }
-
     pub fn build_or_prefix_for_value(
         type_id: TypeID,
         value: Value<'_>,
@@ -182,6 +175,13 @@ impl ThingVertex for AttributeVertex {
 
     fn decode(bytes: &[u8]) -> Self {
         AttributeVertex::decode(bytes)
+    }
+
+    fn try_decode(bytes: &[u8]) -> Option<Self> {
+        if !Self::is_attribute_bytes(bytes) {
+            return None;
+        }
+        Some(Self::decode(bytes))
     }
 }
 

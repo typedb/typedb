@@ -100,8 +100,8 @@ dev-dependencies = {}
 
 	[dependencies.typedb-protocol]
 		features = []
+		rev = "f6528beec33d6e3c31cb5dafc30e8f0f097c3f82"
 		git = "https://github.com/typedb/typedb-protocol"
-		tag = "3.2.0"
 		default-features = false
 
 	[dependencies.resource]
@@ -122,6 +122,11 @@ dev-dependencies = {}
 	[dependencies.encoding]
 		path = "../encoding"
 		features = []
+		default-features = false
+
+	[dependencies.regex]
+		features = ["default", "perf", "perf-backtrack", "perf-cache", "perf-dfa", "perf-inline", "perf-literal", "perf-onepass", "std", "unicode", "unicode-age", "unicode-bool", "unicode-case", "unicode-gencat", "unicode-perl", "unicode-script", "unicode-segment"]
+		version = "1.11.1"
 		default-features = false
 
 	[dependencies.system]
@@ -211,17 +216,17 @@ dev-dependencies = {}
 
 	[dependencies.serde_yaml2]
 		features = []
-		version = "0.1.2"
+		version = "0.1.3"
 		default-features = false
 
 	[dependencies.tokio]
 		features = ["bytes", "default", "fs", "full", "io-std", "io-util", "libc", "macros", "mio", "net", "parking_lot", "process", "rt", "rt-multi-thread", "signal", "signal-hook-registry", "socket2", "sync", "time", "tokio-macros"]
-		version = "1.44.2"
+		version = "1.45.0"
 		default-features = false
 
 	[dependencies.tower-http]
 		features = ["cors", "default"]
-		version = "0.6.2"
+		version = "0.6.4"
 		default-features = false
 
 	[dependencies.serde]
@@ -261,7 +266,7 @@ dev-dependencies = {}
 
 	[dependencies.clap]
 		features = ["color", "default", "derive", "error-context", "help", "std", "suggestions", "usage", "wrap_help"]
-		version = "4.5.37"
+		version = "4.5.38"
 		default-features = false
 
 	[dependencies.bytes]

@@ -90,4 +90,6 @@ impl ReadableSnapshot for MockSnapshot {
     fn iterator_pool(&self) -> &IteratorPool {
         &self.iterator_pool
     }
+
+    fn close_resources(&self) {}
 }
