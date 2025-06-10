@@ -12,5 +12,5 @@ def typedb_console_artifact():
         artifact_name = "typedb-console-{platform}-{version}.{ext}",
         tag_source = deployment["artifact"]["release"]["download"],
         commit_source = deployment["artifact"]["snapshot"]["download"],
-        tag = "3.2.0",
+        commit = "afd09d27e70698e821918d72a1d716f70e0efa4f",
     )
