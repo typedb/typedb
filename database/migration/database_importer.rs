@@ -261,6 +261,7 @@ impl<T: ThingAPI> InstanceIDMapping<T> {
 #[derive(Debug)]
 struct ObjectsInfo {
     pub instance_id_mapping: InstanceIDMapping<Object>,
+    // TODO: Should be a SpilloverCache
     pub awaited_for_roles: HashMap<String, HashSet<(RoleType, Relation)>>,
 }
 
@@ -273,6 +274,7 @@ impl ObjectsInfo {
 #[derive(Debug)]
 struct AttributesInfo {
     pub instance_id_mapping: InstanceIDMapping<Attribute>,
+    // TODO: Should be a SpilloverCache
     pub awaited_for_ownerships: HashMap<String, HashSet<Object>>,
 }
 
