@@ -24,10 +24,11 @@ pub struct SpilloverCache<T: Serialize + DeserializeOwned + Clone> {
 }
 
 impl<T: Serialize + DeserializeOwned + Clone> SpilloverCache<T> {
-    pub fn new(disk_storage_dir: &PathBuf, memory_size_limit: usize) -> Self {
+    pub fn new(disk_storage_dir: &PathBuf, name_prefix: Option<&str>, memory_size_limit: usize) -> Self {
         assert!(disk_storage_dir.is_dir(), "SpilloverCache requires a disk storage path to a directory!");
         let unique_db_name = Uuid::new_v4().to_string();
-        let disk_storage_path = disk_storage_dir.join(format!("{}{}", CACHE_DB_NAME_PREFIX, unique_db_name));
+        let disk_storage_path =
+            disk_storage_dir.join(format!("{}{}{}", CACHE_DB_NAME_PREFIX, name_prefix.unwrap_or(""), unique_db_name));
 
         SpilloverCache { memory_storage: HashMap::new(), disk_storage_path, disk_storage: None, memory_size_limit }
     }

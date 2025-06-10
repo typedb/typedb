@@ -176,7 +176,7 @@ fn test_schema_export(context: &mut Context, types_syntax: &str) {
     let database_manager = guard.database_manager();
     if !types_syntax.trim().is_empty() {
         const REIMPORT_DB: &str = "schema_reimport_from_test_tmp";
-        database_manager.create_database(REIMPORT_DB).unwrap();
+        database_manager.put_database(REIMPORT_DB).unwrap();
         let reimport = database_manager.database(REIMPORT_DB).unwrap();
         match execute_schema_transaction(reimport.clone(), types_syntax) {
             Ok(_) => {

@@ -23,7 +23,7 @@ pub fn initialise_system_database(database_manager: &DatabaseManager) -> Arc<Dat
         Some(db) => db,
         None => {
             database_manager
-                .create_database_unrestricted(SYSTEM_DB)
+                .put_database_unrestricted(SYSTEM_DB)
                 .unwrap_or_else(|_| panic!("Unable to create the {} database.", SYSTEM_DB));
             let db = database_manager
                 .database_unrestricted(SYSTEM_DB)

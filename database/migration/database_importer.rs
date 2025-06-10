@@ -163,10 +163,10 @@ struct DataInfo {
 }
 
 impl DataInfo {
-    fn new(data_directory: &PathBuf) -> Self {
+    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            objects: ObjectsInfo::new(&data_directory),
-            attributes: AttributesInfo::new(data_directory),
+            objects: ObjectsInfo::new(&data_directory, database_name),
+            attributes: AttributesInfo::new(data_directory, database_name),
             checksums: Checksums::new(),
             expected_checksums: None,
         }
@@ -228,9 +228,13 @@ struct InstanceIDMapping<T: ThingAPI> {
 impl<T: ThingAPI> InstanceIDMapping<T> {
     const CACHE_SPILLOVER_THRESHOLD: usize = 300_000;
 
-    fn new(data_directory: &PathBuf) -> Self {
+    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
         Self {
-            original_to_buffered_ids: SpilloverCache::new(data_directory, Self::CACHE_SPILLOVER_THRESHOLD),
+            original_to_buffered_ids: SpilloverCache::new(
+                data_directory,
+                Some(database_name),
+                Self::CACHE_SPILLOVER_THRESHOLD,
+            ),
             _phantom_data: PhantomData,
         }
     }
@@ -266,8 +270,11 @@ struct ObjectsInfo {
 }
 
 impl ObjectsInfo {
-    fn new(data_directory: &PathBuf) -> Self {
-        Self { instance_id_mapping: InstanceIDMapping::new(data_directory), awaited_for_roles: HashMap::new() }
+    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
+        Self {
+            instance_id_mapping: InstanceIDMapping::new(data_directory, database_name),
+            awaited_for_roles: HashMap::new(),
+        }
     }
 }
 
@@ -279,8 +286,11 @@ struct AttributesInfo {
 }
 
 impl AttributesInfo {
-    fn new(data_directory: &PathBuf) -> Self {
-        Self { instance_id_mapping: InstanceIDMapping::new(data_directory), awaited_for_ownerships: HashMap::new() }
+    fn new(data_directory: &PathBuf, database_name: &str) -> Self {
+        Self {
+            instance_id_mapping: InstanceIDMapping::new(data_directory, database_name),
+            awaited_for_ownerships: HashMap::new(),
+        }
     }
 }
 
@@ -308,13 +318,14 @@ impl DatabaseImporter {
             .prepare_imported_database(name)
             .map_err(|typedb_source| DatabaseImportError::DatabaseCreate { typedb_source })?;
         let database_name = database.name().to_string();
-        let database_data_directory = database.path.clone();
+        let data_info = DataInfo::new(&database.path, &database_name);
+        let database = Some(Arc::new(database));
         Ok(Self {
             database_manager,
             database_name,
-            database: Some(Arc::new(database)),
+            database,
             schema_info: SchemaInfo::new(),
-            data_info: DataInfo::new(&database_data_directory),
+            data_info,
             data_transaction: None,
             transaction_item_count: 0,
             total_item_count: 0,
@@ -417,8 +428,7 @@ impl DatabaseImporter {
 
         self.database_manager
             .finalise_imported_database(database)
-            .expect("Expected imported database finalization. Cannot safely progress without it.");
-        Ok(())
+            .map_err(|typedb_source| DatabaseImportError::Finalisation { typedb_source })
     }
 
     fn take_owned_database(&mut self) -> Option<Database<WALClient>> {

@@ -298,7 +298,7 @@ impl ServerState for LocalServerState {
     }
 
     fn databases_create(&self, name: &str) -> Result<(), DatabaseCreateError> {
-        self.database_manager.create_database(name)
+        self.database_manager.put_database(name)
     }
 
     fn database_schema(&self, name: String) -> Result<String, ServerStateError> {

@@ -13,7 +13,7 @@ use server::Server;
 use crate::{generic_step, util, Context};
 
 async fn server_create_database(server: &'_ Server, name: String, may_error: params::MayError) {
-    may_error.check(server.database_manager().create_database(&name));
+    may_error.check(server.database_manager().put_database(&name));
 }
 
 async fn server_delete_database(server: &'_ Server, name: String, may_error: params::MayError) {

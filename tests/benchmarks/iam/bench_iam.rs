@@ -108,7 +108,7 @@ fn setup() -> Arc<Database<WALClient>> {
     let tmp_dir = create_tmp_dir();
     {
         let dbm = DatabaseManager::new(&tmp_dir).unwrap();
-        dbm.create_database(DB_NAME).unwrap();
+        dbm.put_database(DB_NAME).unwrap();
         let database = dbm.database(DB_NAME).unwrap();
         let schema_path = Path::new(RESOURCE_PATH).join(Path::new(SCHEMA_FILENAME));
         let functions_path = Path::new(RESOURCE_PATH).join(Path::new(FUNCTIONS_FILENAME));
@@ -119,7 +119,7 @@ fn setup() -> Arc<Database<WALClient>> {
         load_data_tql(database.clone(), &data_path);
     }
     let dbm = DatabaseManager::new(&tmp_dir).unwrap();
-    dbm.create_database(DB_NAME).unwrap();
+    dbm.put_database(DB_NAME).unwrap();
 
     dbm.database(DB_NAME).unwrap()
 }

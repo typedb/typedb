@@ -96,7 +96,6 @@ impl<D> fmt::Debug for Database<D> {
 
 impl<D> Database<D> {
     const TRY_LOCK_SLEEP_INTERVAL: Duration = Duration::from_millis(10);
-    const IMPORTING_FILE_MARKER: &'static str = "_importing";
 
     pub fn name(&self) -> &str {
         &self.name
@@ -254,7 +253,7 @@ impl Database<WALClient> {
 
         let name = name.as_ref();
 
-        fs::create_dir(path).map_err(|source| DirectoryCreate { path: path.to_owned(), source: Arc::new(source) })?;
+        fs::create_dir(path).map_err(|source| DirectoryCreate { name: name.to_string(), source: Arc::new(source) })?;
 
         let wal = WAL::create(path).map_err(|error| WALOpen { source: error })?;
         let mut wal_client = WALClient::new(wal);
@@ -320,9 +319,6 @@ impl Database<WALClient> {
             path,
             std::path::absolute(path)
         );
-
-        event!(Level::TRACE, "Checking database '{}' completeness.", &name);
-        Self::verify_files_consistency(path)?;
 
         event!(Level::TRACE, "Loading database '{}' WAL.", &name);
         let wal = WAL::load(path).map_err(|err| WALOpen { source: err })?;
@@ -413,62 +409,11 @@ impl Database<WALClient> {
         Ok(database)
     }
 
-    fn verify_files_consistency(path: &Path) -> Result<(), DatabaseOpenError> {
-        use DatabaseOpenError::{CouldNotWriteToDataDirectory, DirectoryRead, IncompleteDatabaseImport};
-
-        let importing_path = path.join(Self::IMPORTING_FILE_MARKER);
-        if importing_path.exists() {
-            return Err(IncompleteDatabaseImport {});
-        }
-
-        let mut entries = fs::read_dir(path)
-            .map_err(|source| DirectoryRead { path: path.to_owned(), source: Arc::new(source) })?
-            .filter_map(Result::ok);
-
-        if let Some(import_cache) =
-            entries.find(|entry| entry.file_name().to_string_lossy().starts_with(CACHE_DB_NAME_PREFIX))
-        {
-            let cache_path = import_cache.path();
-            if cache_path.is_dir() {
-                fs::remove_dir_all(&cache_path).map_err(|source| CouldNotWriteToDataDirectory {
-                    path: path.to_owned(),
-                    source: Arc::new(source),
-                })?;
-            } else {
-                assert!(false, "Import cache should be a directory!");
-                fs::remove_file(&cache_path).map_err(|source| CouldNotWriteToDataDirectory {
-                    path: path.to_owned(),
-                    source: Arc::new(source),
-                })?;
-            }
-        }
-
-        Ok(())
-    }
-
     fn checkpoint(&self) -> Result<(), CheckpointCreateError> {
         let checkpoint = Checkpoint::new(&self.path)?;
         self.storage.checkpoint(&checkpoint)?;
         checkpoint.finish()?;
         Ok(())
-    }
-
-    pub(super) fn mark_imported(&self) -> Result<(), DatabaseCreateError> {
-        let marker_path = self.path.join(Self::IMPORTING_FILE_MARKER);
-        OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&marker_path)
-            .map(|_| ())
-            .map_err(|source| DatabaseCreateError::DirectoryWrite { path: self.path.clone(), source: Arc::new(source) })
-    }
-
-    pub(super) fn unmark_imported(&self) -> Result<(), DatabaseCreateError> {
-        let marker_path = self.path.join(Self::IMPORTING_FILE_MARKER);
-        assert!(marker_path.exists(), "Tried to unmark an imported database that has not been marked");
-        assert!(marker_path.is_file(), "Marker should be a file");
-        fs::remove_file(marker_path)
-            .map_err(|source| DatabaseCreateError::DirectoryWrite { path: self.path.clone(), source: Arc::new(source) })
     }
 
     #[allow(clippy::drop_non_drop)]
@@ -588,8 +533,8 @@ fn make_update_statistics_fn(
 typedb_error! {
     pub DatabaseOpenError(component = "Database open", prefix = "DBO") {
         InvalidUnicodeName(1, "Could not open database: invalid unicode name '{name:?}'.", name: OsString),
-        DirectoryRead(2, "Error while reading data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
-        DirectoryCreate(3, "Error creating directory at '{path:?}'", path: PathBuf, source: Arc<io::Error>),
+        DirectoryRead(2, "Error while reading directory for '{name}'.", name: String, source: Arc<io::Error>),
+        DirectoryCreate(3, "Error creating directory for '{name}'", name: String, source: Arc<io::Error>),
         StorageOpen(4, "Error opening storage layer.", typedb_source: StorageOpenError),
         WALOpen(5, "Error opening WAL.", source: WALError),
         DurabilityClientOpen(6, "Error opening durability client.", typedb_source:DurabilityClientError),
@@ -600,9 +545,8 @@ typedb_error! {
         StatisticsInitialise(11, "Error initialising statistics manager.", typedb_source: StatisticsError),
         TypeCacheInitialise(12, "Error initialising type cache.", typedb_source: TypeCacheCreateError),
         FunctionCacheInitialise(13, "Error initialising function cache.", typedb_source: FunctionError),
-        IncompleteDatabaseImport(14, "Could not open database: it is not in a complete state after an import operations."),
-        CouldNotWriteToDataDirectory(15, "Error while writing to data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
-        DirectoryDelete(16, "Error while deleting directory at '{path:?}'", path: PathBuf, source: Arc<io::Error>),
+        FileDelete(14, "Error while deleting file for '{name}'", name: String, source: Arc<io::Error>),
+        DirectoryDelete(15, "Error while deleting directory of '{name}'", name: String, source: Arc<io::Error>),
     }
 }
 
@@ -614,9 +558,11 @@ typedb_error! {
         WriteAccessDenied(4, "Cannot access databases for writing."),
         ReadAccessDenied(5, "Cannot access databases for reading."),
         AlreadyExists(6, "Database '{name}' already exists.", name: String),
-        DatabaseIsBeingImported(7, "Cannot create database '{name}' since it is being imported.", name: String),
-        DatabaseIsNotBeingImported(8, "Internal error: database '{name}' is not being imported.", name: String),
-        DirectoryWrite(9, "Error while writing to data directory at '{path:?}'.", path: PathBuf, source: Arc<io::Error>),
+        AlreadyExistsAndCleanupBlocked(7, "Database '{name}' already exists. Error while removing the imported duplicate.", name: String, typedb_source: DatabaseDeleteError),
+        IsBeingImported(8, "Cannot create database '{name}' since it is being imported.", name: String),
+        IsNotBeingImported(9, "Internal error: database '{name}' is not being imported.", name: String),
+        DirectoryWrite(10, "Error while writing to data directory for '{name}'.", name: String, source: Arc<io::Error>),
+        DatabaseMove(11, "Error while moving database {name} while finalization.", name: String),
     }
 }
 

@@ -8,86 +8,140 @@ use std::{
     collections::{HashMap, HashSet},
     fs,
     path::{Path, PathBuf},
-    sync::{Arc, LockResult, RwLock, RwLockReadGuard},
+    sync::{Arc, LockResult, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
+use itertools::Itertools;
 use logger::debug;
-use resource::constants::{database::INTERNAL_DATABASE_PREFIX, server::SYSTEM_FILE_PREFIX};
+use resource::{constants::database::INTERNAL_DATABASE_PREFIX, internal_database_prefix};
 use storage::durability_client::WALClient;
 use tracing::{event, Level};
 
-use crate::{database::DatabaseCreateError, Database, DatabaseDeleteError, DatabaseOpenError, DatabaseResetError};
+use crate::{
+    database::DatabaseCreateError, migration::database_importer::DatabaseImporter, Database, DatabaseDeleteError,
+    DatabaseOpenError, DatabaseResetError,
+};
+
+type DatabasesMap = HashMap<String, Arc<Database<WALClient>>>;
+type Databases = RwLock<DatabasesMap>;
+type DatabasesReadLock<'a> = RwLockReadGuard<'a, DatabasesMap>;
+type DatabasesWriteLock<'a> = RwLockWriteGuard<'a, DatabasesMap>;
 
 #[derive(Debug)]
 pub struct DatabaseManager {
     data_directory: PathBuf,
-    databases: RwLock<HashMap<String, Arc<Database<WALClient>>>>,
-    imported_databases: RwLock<HashSet<String>>,
+    import_directory: PathBuf,
+    databases: Databases,
 }
 
 impl DatabaseManager {
-    pub fn new(data_directory: &Path) -> Result<Arc<Self>, DatabaseOpenError> {
+    const IMPORT_DIRECTORY_NAME: &'static str = concat!(internal_database_prefix!(), "import");
+
+    pub fn new(data_directory: impl AsRef<Path>) -> Result<Arc<Self>, DatabaseOpenError> {
+        let data_directory = data_directory.as_ref().to_owned();
+        let import_directory = data_directory.join(Self::IMPORT_DIRECTORY_NAME);
+
+        let databases = RwLock::new(Self::initialise_databases(&data_directory, &import_directory)?);
+        Self::cleanup_import_directory(&import_directory)?;
+
+        Ok(Arc::new(Self { data_directory, import_directory, databases }))
+    }
+
+    fn initialise_databases(
+        data_directory: &PathBuf,
+        import_directory: &PathBuf,
+    ) -> Result<DatabasesMap, DatabaseOpenError> {
         let entries = fs::read_dir(data_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
-            path: data_directory.to_owned(),
+            name: Self::file_name_lossy(data_directory),
             source: Arc::new(error),
         })?;
 
-        let mut databases: HashMap<String, Arc<Database<WALClient>>> = HashMap::new();
+        let mut databases = DatabasesMap::new();
 
         for entry in entries {
             let entry_path = entry
                 .map_err(|error| DatabaseOpenError::DirectoryRead {
-                    path: data_directory.to_owned(),
+                    name: Self::file_name_lossy(data_directory),
                     source: Arc::new(error),
                 })?
                 .path();
 
             if !entry_path.is_dir() {
-                debug!("Not attempting to load database @ {:?}: not a directory", entry_path);
+                event!(Level::DEBUG, "Not attempting to load database @ {:?}: not a directory", entry_path);
+                continue;
+            }
+
+            // TODO: Can be extended to "is in ignored/system/private directories"
+            if &entry_path == import_directory {
                 continue;
             }
 
             let database_name = entry_path.file_name().unwrap().to_string_lossy();
-            if database_name.starts_with(SYSTEM_FILE_PREFIX) {
+            if Self::is_internal_database(&database_name) {
                 continue;
             }
 
-            match Database::<WALClient>::open(&entry_path) {
-                Ok(database) => {
-                    assert!(!databases.contains_key(database.name()));
-                    databases.insert(database.name().to_owned(), Arc::new(database));
-                }
-                Err(DatabaseOpenError::IncompleteDatabaseImport {}) => {
-                    event!(Level::WARN, "Database '{database_name}' is in an incomplete state after an interrupted import operation. It will be deleted.");
+            let database = Database::<WALClient>::open(&entry_path)?;
+            assert!(!databases.contains_key(database.name()));
+            databases.insert(database.name().to_owned(), Arc::new(database));
+        }
+
+        Ok(databases)
+    }
+
+    fn cleanup_import_directory(import_directory: &PathBuf) -> Result<(), DatabaseOpenError> {
+        if !import_directory.exists() {
+            return Ok(());
+        }
+
+        let entries = fs::read_dir(import_directory).map_err(|error| DatabaseOpenError::DirectoryRead {
+            name: Self::file_name_lossy(import_directory),
+            source: Arc::new(error),
+        })?;
+
+        for entry in entries {
+            let entry_path = entry
+                .map_err(|error| DatabaseOpenError::DirectoryRead {
+                    name: Self::file_name_lossy(import_directory),
+                    source: Arc::new(error),
+                })?
+                .path();
+
+            match entry_path.is_dir() {
+                true => {
+                    let name = entry_path.file_name().unwrap_or("".as_ref()).to_string_lossy();
+                    event!(Level::WARN, "Database '{name}' is in an incomplete state after an interrupted import operation. It will be deleted.");
                     fs::remove_dir_all(&entry_path).map_err(|source| DatabaseOpenError::DirectoryDelete {
-                        path: entry_path.to_owned(),
+                        name: Self::file_name_lossy(&entry_path),
                         source: Arc::new(source),
                     })?;
                 }
-                Err(other) => return Err(other),
+                false => {
+                    event!(Level::DEBUG, "Removing import file @ {:?}: expected to be temporary", entry_path);
+                    fs::remove_file(&entry_path).map_err(|source| DatabaseOpenError::FileDelete {
+                        name: Self::file_name_lossy(&entry_path),
+                        source: Arc::new(source),
+                    })?;
+                }
             }
         }
 
-        Ok(Arc::new(Self {
-            data_directory: data_directory.to_owned(),
-            databases: RwLock::new(databases),
-            imported_databases: RwLock::new(HashSet::new()),
-        }))
+        Ok(())
     }
 
-    pub fn create_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
-        let name = name.as_ref();
+    pub fn put_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         Self::validate_database_name(name.as_ref())?;
-        self.create_database_unrestricted(name)
+        self.put_database_unrestricted(name)
     }
 
-    pub fn create_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
-        // Allows databases to already exist
+    pub fn put_database_unrestricted(&self, name: impl AsRef<str>) -> Result<(), DatabaseCreateError> {
         let name = name.as_ref();
         let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        if self.exists_import(&databases, name) {
+            return Err(DatabaseCreateError::IsBeingImported { name: name.to_string() });
+        }
         if !databases.contains_key(name) {
-            let database = Database::<WALClient>::open(&self.data_directory.join(name))
-                .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })?;
+            let database = self.new_public_database(name)?;
             databases.insert(name.to_string(), Arc::new(database));
         }
         Ok(())
@@ -120,56 +174,54 @@ impl DatabaseManager {
     }
 
     pub(crate) fn prepare_imported_database(&self, name: String) -> Result<Database<WALClient>, DatabaseCreateError> {
-        let mut imported_databases =
-            self.imported_databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        if imported_databases.contains(&name) {
-            return Err(DatabaseCreateError::DatabaseIsBeingImported { name: name.to_string() });
+        if !self.import_directory.exists() {
+            fs::create_dir(&self.import_directory).map_err(|source| DatabaseCreateError::DirectoryWrite {
+                name: name.clone(),
+                source: Arc::new(source),
+            })?;
         }
 
         Self::validate_database_name(&name)?;
-        if self.database(&name).is_some() {
-            return Err(DatabaseCreateError::AlreadyExists { name: name.to_string() });
+
+        let databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
+        if self.exists_public(&databases, &name) {
+            return Err(DatabaseCreateError::AlreadyExists { name });
+        }
+        if self.exists_import(&databases, &name) {
+            return Err(DatabaseCreateError::IsBeingImported { name });
         }
 
-        let database = Database::<WALClient>::open(&self.data_directory.join(name.clone()))
-            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })?;
-        imported_databases.insert(name);
-        database.mark_imported()?;
-        Ok(database)
+        self.new_imported_database(&name)
     }
 
     pub(crate) fn finalise_imported_database(&self, database: Database<WALClient>) -> Result<(), DatabaseCreateError> {
-        let name = database.name().to_string();
-
-        let mut imported_databases =
-            self.imported_databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        if !imported_databases.contains(&name) {
-            return Err(DatabaseCreateError::DatabaseIsNotBeingImported { name });
-        }
-        imported_databases.remove(&name);
-
         let mut databases = self.databases.write().map_err(|_| DatabaseCreateError::WriteAccessDenied {})?;
-        if databases.contains_key(&name) {
-            return Err(DatabaseCreateError::AlreadyExists { name });
+        let name = database.name().to_string();
+        let database_path = database.path.clone();
+
+        assert!(self.exists_import(&databases, &name), "Imported database is not in the import folder");
+        if self.exists_public(&databases, &name) {
+            database.delete().map_err(|typedb_source| DatabaseCreateError::AlreadyExistsAndCleanupBlocked {
+                name: name.clone(),
+                typedb_source,
+            })?;
+            Err(DatabaseCreateError::AlreadyExists { name })
         } else {
-            database.unmark_imported()?;
+            drop(database);
+            self.move_directory_to_data(&name, &database_path)?;
+            let database = self.new_public_database(&name)?;
             databases.insert(name, Arc::new(database));
             Ok(())
         }
     }
 
     pub(crate) fn cancel_database_import(&self, database: Database<WALClient>) -> Result<(), DatabaseDeleteError> {
+        let databases = self.databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
         let name = database.name().to_string();
-
-        let mut imported_databases =
-            self.imported_databases.write().map_err(|_| DatabaseDeleteError::WriteAccessDenied {})?;
-        if !imported_databases.contains(&name) {
+        if !self.exists_import(&databases, &name) {
             return Err(DatabaseDeleteError::DatabaseIsNotBeingImported { name });
         }
-
-        database.delete()?;
-        imported_databases.remove(&name);
-        Ok(())
+        database.delete()
     }
 
     pub fn reset_else_recreate_database(&self, name: impl AsRef<str>) -> Result<(), DatabaseResetError> {
@@ -192,7 +244,7 @@ impl DatabaseManager {
             }
         } else {
             drop(databases);
-            self.create_database(name).map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?;
+            self.put_database(name).map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?;
             return Ok(());
         };
 
@@ -202,8 +254,7 @@ impl DatabaseManager {
             Err(_) => {
                 self.delete_database(name.as_ref())
                     .map_err(|typedb_source| DatabaseResetError::DatabaseDelete { typedb_source })?;
-                self.create_database(name)
-                    .map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?
+                self.put_database(name).map_err(|typedb_source| DatabaseResetError::DatabaseCreate { typedb_source })?
             }
         };
         Ok(())
@@ -234,6 +285,53 @@ impl DatabaseManager {
 
     pub fn is_internal_database(name: &str) -> bool {
         name.starts_with(INTERNAL_DATABASE_PREFIX)
+    }
+
+    // TODO: Remove if not needed
+    pub(crate) fn import_directory(&self) -> &PathBuf {
+        &self.import_directory
+    }
+
+    fn new_public_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
+        Database::<WALClient>::open(&self.data_directory.join(name))
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+    }
+
+    fn new_imported_database(&self, name: &str) -> Result<Database<WALClient>, DatabaseCreateError> {
+        Database::<WALClient>::open(&self.import_directory.join(name))
+            .map_err(|typedb_source| DatabaseCreateError::DatabaseOpen { typedb_source })
+    }
+
+    fn exists_public<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {
+        let exists_public = self.data_directory.join(name).is_dir();
+        assert_eq!(
+            exists_public,
+            databases.contains_key(name),
+            "Public databases should be in the public database list: {name}"
+        );
+        exists_public
+    }
+
+    fn exists_import<'a>(&'a self, databases: &'a DatabasesWriteLock<'a>, name: &str) -> bool {
+        let exists_import = self.import_directory.join(name).is_dir();
+        assert!(
+            !exists_import || !databases.contains_key(name),
+            "Imported databases cannot be in the public database list: {name}"
+        );
+        exists_import
+    }
+
+    fn move_directory_to_data(&self, name: &str, directory: &PathBuf) -> Result<(), DatabaseCreateError> {
+        let directory_name =
+            directory.file_name().ok_or_else(|| DatabaseCreateError::DatabaseMove { name: name.to_string() })?;
+
+        let target_path = self.data_directory.join(directory_name);
+        fs::rename(directory, &target_path)
+            .map_err(|source| DatabaseCreateError::DirectoryWrite { name: name.to_string(), source: Arc::new(source) })
+    }
+
+    fn file_name_lossy(path: &PathBuf) -> String {
+        path.file_name().unwrap_or("".as_ref()).to_string_lossy().to_string()
     }
 
     fn validate_database_name(name: &str) -> Result<(), DatabaseCreateError> {
