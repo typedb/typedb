@@ -32,7 +32,7 @@ pub mod authentication;
 pub mod error;
 pub mod parameters;
 pub mod service;
-pub(crate) mod state;
+pub mod state;
 
 #[derive(Default)]
 pub struct ServerBuilder {
