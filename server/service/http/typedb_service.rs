@@ -152,7 +152,10 @@ impl TypeDBService {
 
         match timeout(Duration::from_millis(transaction.transaction_timeout_millis), result_receiver).await {
             Ok(Ok(response)) => Ok(response),
-            Ok(Err(_)) => Err(HttpServiceError::no_open_transaction()),
+            Ok(Err(_)) => match error_if_closed {
+                false => Ok(TransactionServiceResponse::Ok),
+                true => Err(HttpServiceError::no_open_transaction()),
+            },
             Err(_) => Err(HttpServiceError::transaction_timeout()),
         }
     }
