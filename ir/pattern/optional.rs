@@ -16,15 +16,18 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
+use crate::pattern::BranchID;
+use crate::pipeline::block::VariableLocality;
 
 #[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
+    branch_id: BranchID,
 }
 
 impl Optional {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunction: Conjunction::new(scope_id) }
+    pub fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
+        Self { conjunction: Conjunction::new(scope_id), branch_id }
     }
 
     pub(super) fn new_builder<'cx, 'reg>(
@@ -36,6 +39,10 @@ impl Optional {
 
     pub fn conjunction(&self) -> &Conjunction {
         &self.conjunction
+    }
+
+    pub fn branch_id(&self) -> BranchID {
+        self.branch_id
     }
 
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
@@ -50,14 +57,28 @@ impl Optional {
             .variable_dependency(block_context)
             .into_iter()
             .map(|(var, mut mode)| {
-                // VariableDependency::Producing means "producing in all code paths".
-                // A try {} block never produces.
-                if mode.is_producing() {
-                    mode.set_referencing()
+                let status = block_context.variable_status_in_scope(var, self.scope_id());
+                if status == VariableLocality::Parent {
+                    mode.set_required();
+                    // TODO: including this, means that we don't consider Try variables as produce
+                    //   Which means that we don't include them as 'selected', and the planner can't register them in the graph
+                    // } else if mode.is_producing() {
+                    //     // VariableDependency::Producing means "producing in all code paths".
+                    //     // A try {} block never produces.
+                    //     mode.set_referencing()
+                    // }
                 }
                 (var, mode)
             })
             .collect()
+    }
+
+    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunction().referenced_variables()
+    }
+
+    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
     }
 }
 

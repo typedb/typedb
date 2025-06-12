@@ -482,6 +482,14 @@ impl fmt::Display for NegationStep {
 #[derive(Clone, Debug)]
 pub struct OptionalStep {
     pub optional: MatchExecutable,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+}
+
+impl OptionalStep {
+    pub fn new(optional: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
+        Self { optional, selected_variables, output_width }
+    }
 }
 
 impl fmt::Display for OptionalStep {

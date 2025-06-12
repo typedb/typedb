@@ -37,6 +37,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::match_executable::OptionalStep;
 
 pub mod match_executable;
 pub mod plan;
@@ -131,6 +132,17 @@ impl NegationBuilder {
 }
 
 #[derive(Debug)]
+struct OptionalBuilder {
+    optional: MatchExecutableBuilder,
+}
+
+impl OptionalBuilder {
+    fn new(optional: MatchExecutableBuilder) -> Self {
+        Self { optional }
+    }
+}
+
+#[derive(Debug)]
 struct DisjunctionBuilder {
     branch_ids: Vec<BranchID>,
     branches: Vec<MatchExecutableBuilder>,
@@ -157,6 +169,7 @@ enum StepInstructionsBuilder {
     Check(CheckBuilder),
     Negation(NegationBuilder),
     Disjunction(DisjunctionBuilder),
+    Optional(OptionalBuilder),
     Expression(ExpressionBuilder),
     FunctionCall(FunctionCallBuilder),
 }
@@ -248,6 +261,9 @@ impl StepBuilder {
 
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
+            ),
+            StepInstructionsBuilder::Optional(OptionalBuilder { optional }) => ExecutionStep::Optional(
+                OptionalStep::new(optional.finish(variable_registry), selected_variables, output_width),
             ),
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
