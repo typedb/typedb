@@ -192,9 +192,16 @@ impl Cost {
     }
 
     pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
-        let io_ratio = f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO); // Probability of join = 1 / total_join_size
+        let io_ratio = f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO);
+        let num_seeks = f64::min(self.io_ratio, other.io_ratio); // FIXME detect when seeks can be replaced by advancing
+        // if cost = Ci + Co * io
+        // cost / io ~ Co
+        let self_out_cost = self.cost / self.io_ratio;
+        let other_out_cost = other.cost / other.io_ratio;
+        let cost_self = SEEK_ITERATOR_RELATIVE_COST + self_out_cost * num_seeks;
+        let cost_other = SEEK_ITERATOR_RELATIVE_COST +  other_out_cost * num_seeks;
         Self {
-            cost: (2.0 + io_ratio) * SEEK_ITERATOR_RELATIVE_COST, // We expect to seek once per intersection on average
+            cost: cost_self + cost_other, // We expect to seek once per intersection on average
             io_ratio,
         }
     }
