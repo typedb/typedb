@@ -286,7 +286,7 @@ fn compile_stage(
         AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(input_variables.keys().copied());
-            selected_variables.extend(block.conjunction().named_producible_variables(block.block_context()));
+            selected_variables.extend(block.conjunction().named_visible_binding_variables(block.block_context()));
             let plan = crate::executable::match_::planner::compile(
                 block,
                 input_variable_annotations,
@@ -327,7 +327,7 @@ fn compile_stage(
         AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
             selected_variables.extend(input_variables.keys().copied());
-            selected_variables.extend(block.conjunction().named_producible_variables(block.block_context()));
+            selected_variables.extend(block.conjunction().named_visible_binding_variables(block.block_context()));
             let match_plan = crate::executable::match_::planner::compile(
                 block,
                 input_variable_annotations,

@@ -42,11 +42,12 @@ use crate::{
     instruction::{
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{unsafe_compare_result_tuple, Tuple, TupleOrderingFn, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapUnchangedFn,
+        FilterFn, FilterMapUnchangedFn,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) type IndexedRelationTupleIteratorSingle = IndexedRelationTupleIterator<IndexedRelationsIterator>;
 pub(crate) type IndexedRelationTupleIteratorMerged =

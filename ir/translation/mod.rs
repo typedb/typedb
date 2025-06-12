@@ -55,7 +55,7 @@ impl PipelineTranslationContext {
             last_stage_visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
-        let this = Self { variable_registry, last_stage_visible_variables };
+        let this = Self { variable_registry, last_stage_visible_variables: visible_variables };
         Ok((this, variables))
     }
 

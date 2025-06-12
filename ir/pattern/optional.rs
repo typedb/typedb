@@ -16,15 +16,18 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
+use crate::pattern::BranchID;
+use crate::pipeline::block::VariableLocality;
 
 #[derive(Debug, Clone)]
 pub struct Optional {
     conjunction: Conjunction,
+    branch_id: BranchID,
 }
 
 impl Optional {
-    pub fn new(scope_id: ScopeId) -> Self {
-        Self { conjunction: Conjunction::new(scope_id) }
+    pub fn new(scope_id: ScopeId, branch_id: BranchID) -> Self {
+        Self { conjunction: Conjunction::new(scope_id), branch_id }
     }
 
     pub(super) fn new_builder<'cx, 'reg>(
@@ -38,26 +41,52 @@ impl Optional {
         &self.conjunction
     }
 
+    pub fn branch_id(&self) -> BranchID {
+        self.branch_id
+    }
+
     pub fn conjunction_mut(&mut self) -> &mut Conjunction {
         &mut self.conjunction
     }
 
-    pub(crate) fn variable_dependency(
+    pub(crate) fn variable_binding_modes(
         &self,
-        block_context: &BlockContext,
     ) -> HashMap<Variable, VariableBindingMode<'_>> {
-        self.conjunction
-            .variable_dependency(block_context)
+        self.conjunction.variable_binding_modes()
             .into_iter()
-            .map(|(var, mut mode)| {
-                // VariableDependency::Producing means "producing in all code paths".
-                // A try {} block never produces.
-                if mode.is_producing() {
-                    mode.set_referencing()
+            .map(|(v, mut mode)| {
+                if mode.is_always_binding() {
+                    mode.set_optionally_binding()
                 }
-                (var, mode)
+                (v, mode)
             })
             .collect()
+    }
+
+    pub fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_binding_variables(block_context).filter(Variable::is_named)
+    }
+
+    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v)
+        })
+    }
+
+    pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.conjunction().referenced_variables()
+    }
+
+    // Union of non-binding variables used here or below, and variables declared in parent scopes
+    pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
+            if locality == VariableLocality::Parent || mode.is_non_binding() {
+                Some(v)
+            } else {
+                None
+            }
+        })
     }
 }
 

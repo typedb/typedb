@@ -30,11 +30,12 @@ use crate::{
             EXTRACT_ROLE,
         },
         tuple::{relates_to_tuple_relation_role, relates_to_tuple_role_relation, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct RelatesReverseExecutor {
     relates: ir::pattern::constraint::Relates<ExecutorVariable>,

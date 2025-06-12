@@ -41,11 +41,12 @@ use crate::{
             tuple_owner_attribute_to_has_canonical, unsafe_compare_result_tuple, HasToTupleFn, Tuple, TupleOrderingFn,
             TuplePositions, TupleResult, TupleToHasFn,
         },
-        BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct HasExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,

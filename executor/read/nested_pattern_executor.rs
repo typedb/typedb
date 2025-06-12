@@ -52,6 +52,49 @@ impl DisjunctionExecutor {
 }
 
 #[derive(Debug)]
+pub struct OptionalExecutor {
+    pub inner: PatternExecutor,
+    pub branch_id: BranchID,
+    pub selected_variables: Vec<VariablePosition>,
+    pub output_width: u32,
+}
+
+impl OptionalExecutor {
+    pub(crate) fn new(
+        branch_id: BranchID,
+        inner: PatternExecutor,
+        selected_variables: Vec<VariablePosition>,
+        output_width: u32,
+    ) -> Self {
+        Self { inner, branch_id, selected_variables, output_width }
+    }
+
+    pub(crate) fn reset(&mut self) {
+        self.inner.reset()
+    }
+
+    pub(crate) fn map_output(&self, unmapped: FixedBatch) -> FixedBatch {
+        let mut output = FixedBatch::new(self.output_width);
+        unmapped.into_iter().for_each(|row| {
+            output.append(|mut output_row| {
+                output_row.copy_mapped(row, self.selected_variables.iter().map(|&pos| (pos, pos)));
+                output_row.set_branch_id_in_provenance(self.branch_id);
+            })
+        });
+        output
+    }
+
+    pub(crate) fn map_as_failed_output(&self, unmapped_input: MaybeOwnedRow<'_>) -> FixedBatch {
+        let mut output = FixedBatch::new(self.output_width);
+        output.append(|mut output_row|  {
+            output_row.copy_mapped(unmapped_input.as_reference(), self.selected_variables.iter().map(|&pos| (pos, pos)));
+            output_row.set_provenance(unmapped_input.provenance()); // Pass through old provenance
+        });
+        output
+    }
+}
+
+#[derive(Debug)]
 pub struct NegationExecutor {
     pub inner: PatternExecutor,
 }
@@ -128,6 +171,12 @@ impl InlinedCallExecutor {
 impl From<NegationExecutor> for StepExecutors {
     fn from(value: NegationExecutor) -> Self {
         Self::Negation(value)
+    }
+}
+
+impl From<OptionalExecutor> for StepExecutors {
+    fn from(value: OptionalExecutor) -> Self {
+        Self::Optional(value)
     }
 }
 

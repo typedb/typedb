@@ -22,11 +22,12 @@ use crate::{
     instruction::{
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{Tuple, TuplePositions, TupleResult},
-        Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct IidExecutor {
     iid: Iid<ExecutorVariable>,

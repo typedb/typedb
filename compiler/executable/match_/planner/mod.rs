@@ -18,7 +18,7 @@ use ir::{
 };
 use itertools::Itertools;
 use tracing::{debug, trace};
-
+use ir::pattern::variable_category::VariableOptionality;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
     executable::{
@@ -37,6 +37,7 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
+use crate::executable::match_::planner::conjunction_executable::OptionalStep;
 
 pub mod conjunction_executable;
 pub mod plan;
@@ -121,23 +122,38 @@ struct CheckBuilder {
 
 #[derive(Debug)]
 struct NegationBuilder {
-    negation: MatchExecutableBuilder,
+    negation: ConjunctionExecutableBuilder,
 }
 
 impl NegationBuilder {
-    fn new(negation: MatchExecutableBuilder) -> Self {
+    fn new(negation: ConjunctionExecutableBuilder) -> Self {
         Self { negation }
+    }
+}
+
+#[derive(Debug)]
+struct OptionalBuilder {
+    optional: ConjunctionExecutableBuilder,
+}
+
+impl OptionalBuilder {
+    fn new(optional: ConjunctionExecutableBuilder) -> Self {
+        Self { optional }
+    }
+
+    fn branch_id(&self) -> BranchID {
+        self.optional.branch_id.expect("Optionals must be assigned a branch ID")
     }
 }
 
 #[derive(Debug)]
 struct DisjunctionBuilder {
     branch_ids: Vec<BranchID>,
-    branches: Vec<MatchExecutableBuilder>,
+    branches: Vec<ConjunctionExecutableBuilder>,
 }
 
 impl DisjunctionBuilder {
-    fn new(branch_ids: Vec<BranchID>, branches: Vec<MatchExecutableBuilder>) -> Self {
+    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionExecutableBuilder>) -> Self {
         Self { branch_ids, branches }
     }
 }
@@ -157,6 +173,7 @@ enum StepInstructionsBuilder {
     Check(CheckBuilder),
     Negation(NegationBuilder),
     Disjunction(DisjunctionBuilder),
+    Optional(OptionalBuilder),
     Expression(ExpressionBuilder),
     FunctionCall(FunctionCallBuilder),
 }
@@ -249,6 +266,13 @@ impl StepBuilder {
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
             ),
+            StepInstructionsBuilder::Optional(builder) => {
+                let branch_id = builder.branch_id();
+                let OptionalBuilder { optional } = builder;
+                ExecutionStep::Optional(
+                    OptionalStep::new(optional.finish(variable_registry), selected_variables, output_width, branch_id)
+                )
+            }
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
                     branch_ids,
@@ -276,9 +300,11 @@ impl StepBuilder {
 }
 
 #[derive(Debug)]
-struct MatchExecutableBuilder {
+struct ConjunctionExecutableBuilder {
     selected_variables: Vec<Variable>,
     input_variables: Vec<Variable>,
+    constraint_variables: HashSet<Variable>,
+
     current_outputs: HashSet<Variable>,
     produced_so_far: HashSet<Variable>,
 
@@ -293,12 +319,13 @@ struct MatchExecutableBuilder {
     branch_id: Option<BranchID>,
 }
 
-impl MatchExecutableBuilder {
+impl ConjunctionExecutableBuilder {
     fn new(
         branch_id: Option<BranchID>,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         selected_variables: Vec<Variable>,
         input_variables: Vec<Variable>,
+        constraint_variables: HashSet<Variable>,
         planner_statistics: PlannerStatistics,
     ) -> Self {
         let index = assigned_positions.clone();
@@ -316,6 +343,7 @@ impl MatchExecutableBuilder {
             branch_id,
             selected_variables,
             input_variables,
+            constraint_variables,
             current_outputs,
             produced_so_far,
             steps: Vec::new(),
@@ -484,11 +512,25 @@ impl MatchExecutableBuilder {
             .iter()
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
-        let steps = self
+        let mut steps = Vec::with_capacity(self.steps.len() + 1);
+
+        let optional_inputs_in_constraints = self.optional_inputs_in_constraints(variable_registry);
+        if !optional_inputs_in_constraints.is_empty() {
+            let mut builder = StepBuilder {
+                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
+                builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
+            };
+            builder.builder.as_check_mut().unwrap().instructions.push(
+                CheckInstruction::NotNone { variables: optional_inputs_in_constraints },
+            );
+            steps.push(builder.finish(&self.index, &named_variables, variable_registry));
+        }
+
+        steps.extend(self
             .steps
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
-            .collect();
+        );
         ConjunctionExecutable::new(
             next_executable_id(),
             steps,
@@ -496,5 +538,18 @@ impl MatchExecutableBuilder {
             self.reverse_index,
             self.planner_statistics,
         )
+    }
+
+    fn optional_inputs_in_constraints(&self, variable_registry: &VariableRegistry) -> Vec<ExecutorVariable> {
+        self.input_variables
+            .iter()
+            .filter(|&var| variable_registry
+                .get_variable_optionality(*var)
+                .is_some_and(|optionality| {
+                    matches!(optionality, VariableOptionality::Optional) &&
+                        self.constraint_variables.contains(var)
+                }))
+            .map(|optional_var| self.index[optional_var])
+            .collect_vec()
     }
 }

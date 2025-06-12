@@ -355,17 +355,19 @@ impl fmt::Display for ValueType {
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 enum BindingMode {
-    Required,
-    Producing,
-    Referencing,
+    NonBinding,
+    AlwaysBinding,
+    LocallyBindingInChild,
+    OptionallyBinding,
 }
 
 impl BitAndAssign for BindingMode {
     fn bitand_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
-            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
-            (Self::Referencing, Self::Referencing) => (),
+            (Self::AlwaysBinding, _) | (_, Self::AlwaysBinding) => *self = Self::AlwaysBinding,
+            (Self::NonBinding, _) | (_, Self::NonBinding) => *self = Self::NonBinding,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
+            (Self::OptionallyBinding, Self::OptionallyBinding) => (),
         }
     }
 }
@@ -373,9 +375,10 @@ impl BitAndAssign for BindingMode {
 impl BitOrAssign for BindingMode {
     fn bitor_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
-            (Self::Referencing, _) | (_, Self::Referencing) => *self = Self::Referencing,
-            (Self::Producing, Self::Producing) => (),
+            (Self::NonBinding, _) | (_, Self::NonBinding) => *self = Self::NonBinding,
+            (Self::OptionallyBinding, _) | (_, Self::OptionallyBinding) => *self = Self::OptionallyBinding,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
+            (Self::AlwaysBinding, Self::AlwaysBinding) => (),
         }
     }
 }
@@ -387,36 +390,40 @@ pub struct VariableBindingMode<'a> {
 }
 
 impl<'a> VariableBindingMode<'a> {
-    pub fn required(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::Required, referencing_constraints: vec![constraint] }
+    pub fn non_binding(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::NonBinding, referencing_constraints: vec![constraint] }
     }
 
-    pub fn producing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::Producing, referencing_constraints: vec![constraint] }
+    pub fn always_binding(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::AlwaysBinding, referencing_constraints: vec![constraint] }
     }
 
-    pub fn referencing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: BindingMode::Referencing, referencing_constraints: vec![constraint] }
+    pub fn set_non_binding(&mut self) {
+        self.mode = BindingMode::NonBinding;
     }
 
-    pub fn set_required(&mut self) {
-        self.mode = BindingMode::Required;
+    pub fn set_locally_binding_in_child(&mut self) {
+        self.mode = BindingMode::LocallyBindingInChild;
     }
 
-    pub fn set_referencing(&mut self) {
-        self.mode = BindingMode::Referencing;
+    pub fn set_optionally_binding(&mut self) {
+        self.mode = BindingMode::OptionallyBinding;
     }
 
-    pub fn is_required(&self) -> bool {
-        self.mode == BindingMode::Required
+    pub fn is_non_binding(&self) -> bool {
+        self.mode == BindingMode::NonBinding
     }
 
-    pub fn is_producing(&self) -> bool {
-        self.mode == BindingMode::Producing
+    pub fn is_always_binding(&self) -> bool {
+        self.mode == BindingMode::AlwaysBinding
     }
 
-    pub fn is_referencing(&self) -> bool {
-        self.mode == BindingMode::Referencing
+    pub fn is_locally_binding_in_child(&self) -> bool {
+        self.mode == BindingMode::LocallyBindingInChild
+    }
+
+    pub fn is_optionally_binding(&self) -> bool {
+        self.mode == BindingMode::OptionallyBinding
     }
 
     pub fn referencing_constraints(&self) -> &[&Constraint<Variable>] {

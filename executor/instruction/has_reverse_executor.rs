@@ -35,11 +35,12 @@ use crate::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, tuple_attribute_owner_to_has_reverse,
             tuple_owner_attribute_to_has_reverse, unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
         },
-        BinaryIterateMode, Checker, VariableModes,
+        BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,

@@ -11,10 +11,7 @@ use std::{
 
 use answer::{variable::Variable, Type};
 use concept::thing::statistics::Statistics;
-use ir::pattern::{
-    constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable},
-    Vertex,
-};
+use ir::pattern::{constraint::{Comparison, FunctionCallBinding, Is, LinksDeduplication, Unsatisfiable}, BranchID, Vertex};
 use itertools::chain;
 
 use crate::{
@@ -24,6 +21,7 @@ use crate::{
         vertex::{constraint::ConstraintVertex, variable::VariableVertex},
     },
 };
+use crate::executable::match_::planner::plan::OptionalPlan;
 
 pub(super) mod constraint;
 pub(super) mod variable;
@@ -51,6 +49,7 @@ pub(super) enum PlannerVertex<'a> {
 
     Negation(NegationPlanner<'a>),
     Disjunction(DisjunctionPlanner<'a>),
+    Optional(OptionalPlanner<'a>),
 }
 
 impl PlannerVertex<'_> {
@@ -65,6 +64,7 @@ impl PlannerVertex<'_> {
             Self::FunctionCall(inner) => inner.is_valid(vertex_plan, graph),
             Self::Negation(inner) => inner.is_valid(vertex_plan, graph),
             Self::Disjunction(inner) => inner.is_valid(vertex_plan, graph),
+            Self::Optional(inner) => inner.is_valid(vertex_plan, graph),
             Self::Unsatisfiable(inner) => inner.is_valid(vertex_plan, graph),
         }
     }
@@ -80,6 +80,7 @@ impl PlannerVertex<'_> {
             Self::FunctionCall(inner) => Box::new(inner.variables()),
             Self::Negation(inner) => Box::new(inner.variables()),
             Self::Disjunction(inner) => Box::new(inner.variables()),
+            Self::Optional(inner) => Box::new(inner.variables()),
             Self::Unsatisfiable(inner) => Box::new(inner.variables()),
         }
     }
@@ -155,6 +156,9 @@ impl<'a> fmt::Display for PlannerVertex<'a> {
             } //TODO
             PlannerVertex::Disjunction(_) => {
                 write!(f, "|Disjunction|")
+            } //TODO
+            PlannerVertex::Optional(_) => {
+                write!(f, "|Optional|")
             } //TODO
             PlannerVertex::Unsatisfiable(_) => {
                 write!(f, "|Unsatisfiable|")
@@ -239,6 +243,7 @@ impl Costed for PlannerVertex<'_> {
 
             Self::Negation(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Disjunction(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
+            Self::Optional(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
             Self::Unsatisfiable(planner) => planner.cost_and_metadata(vertex_ordering, fix_dir, graph),
         }
     }
@@ -559,7 +564,7 @@ pub(super) struct NegationPlanner<'a> {
 
 impl<'a> NegationPlanner<'a> {
     pub(super) fn new(plan: ConjunctionPlan<'a>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
-        let shared_variables = plan.shared_variables().iter().map(|v| variable_index[v]).collect();
+        let shared_variables = plan.bound_or_binding_vars().iter().map(|v| variable_index[v]).collect();
         Self { plan, shared_variables }
     }
 
@@ -588,6 +593,45 @@ impl Costed for NegationPlanner<'_> {
 }
 
 #[derive(Clone, Debug)]
+pub(super) struct OptionalPlanner<'a> {
+    pub(super) input_variables: Vec<VariableVertexId>,
+    pub(super) shared_variables: Vec<VariableVertexId>,
+    pub(super) plan: OptionalPlan<'a>,
+}
+
+impl<'a> OptionalPlanner<'a> {
+    pub(super) fn new(plan: OptionalPlan<'a>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
+        let input_variables = plan.required_inputs().map(|v| variable_index[&v]).collect();
+        let shared_variables = plan.plan().bound_or_binding_vars().iter().map(|v| variable_index[v]).collect();
+        Self { plan, input_variables, shared_variables }
+    }
+
+    fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
+        self.input_variables.iter().all(|var| ordered.contains(&VertexId::Variable(*var)))
+    }
+
+    pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+        chain!(self.input_variables.iter(), self.shared_variables.iter()).copied()
+    }
+
+    pub(super) fn plan(&self) -> &OptionalPlan<'a> {
+        &self.plan
+    }
+}
+
+impl Costed for OptionalPlanner<'_> {
+    fn cost_and_metadata(
+        &self,
+        _vertex_ordering: &[VertexId],
+        _fix_dir: Option<Direction>,
+        _graph: &Graph<'_>,
+    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
+        Ok((self.plan.plan().planner_statistics.query_cost, CostMetaData::None))
+    }
+}
+
+
+#[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanner<'a> {
     input_variables: Vec<VariableVertexId>,
     shared_variables: HashSet<VariableVertexId>,
@@ -600,7 +644,7 @@ impl<'a> DisjunctionPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
     ) -> Self {
         let shared_variables: HashSet<_> =
-            builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
+            builder.branches().iter().flat_map(|pb| pb.bound_or_binding_variables()).map(|v| variable_index[v]).collect();
         let input_variables = builder.required_inputs().iter().map(|v| variable_index[v]).collect();
         Self { input_variables, shared_variables, builder }
     }
