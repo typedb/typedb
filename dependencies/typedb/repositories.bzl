@@ -12,11 +12,10 @@ def typedb_bazel_distribution():
     )
 
 def typedb_dependencies():
-    # TODO: Return typedb
     git_repository(
         name = "typedb_dependencies",
-        remote = "https://github.com/farost/typedb-dependencies",
-        commit = "24a0d12e3523c96a349e0742435194423f2dd1f9",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
+        remote = "https://github.com/typedb/typedb-dependencies",
+        commit = "fac1121c903b0c9e5924d391a883e4a0749a82a2",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_dependencies
     )
 
 def typeql():
@@ -27,11 +26,10 @@ def typeql():
     )
 
 def typedb_protocol():
-    # TODO: Return typedb
     git_repository(
         name = "typedb_protocol",
         remote = "https://github.com/typedb/typedb-protocol",
-        commit = "92d992f3c667acbf460786401b11281df4437e72",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
+        commit = "38f66a1cc4db3b7a301676f50800e9530ac5c8a3",  # sync-marker: do not remove this comment, this is used for sync-dependencies by @typedb_protocol
     )
 
 def typedb_behaviour():
