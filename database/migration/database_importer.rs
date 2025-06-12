@@ -333,6 +333,9 @@ impl DatabaseImporter {
     }
 
     pub async fn import_schema(&mut self, schema: String) -> Result<(), DatabaseImportError> {
+        if schema.trim().is_empty() {
+            return Ok(());
+        }
         self.submit_original_schema(schema).await?;
         self.relax_schema().await
     }
