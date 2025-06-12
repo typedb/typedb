@@ -26,11 +26,12 @@ use crate::{
     instruction::{
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, PlaysToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct PlaysExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,
@@ -127,7 +128,7 @@ impl PlaysExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
         let filter_for_row: Box<PlaysFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),

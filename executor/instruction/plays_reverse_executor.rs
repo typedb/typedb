@@ -30,11 +30,12 @@ use crate::{
             EXTRACT_ROLE,
         },
         tuple::{plays_to_tuple_player_role, plays_to_tuple_role_player, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct PlaysReverseExecutor {
     plays: ir::pattern::constraint::Plays<ExecutorVariable>,
@@ -122,7 +123,7 @@ impl PlaysReverseExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
         let filter_for_row: Box<PlaysFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),

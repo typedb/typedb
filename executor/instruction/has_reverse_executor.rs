@@ -35,11 +35,12 @@ use crate::{
             has_to_tuple_attribute_owner, has_to_tuple_owner_attribute, tuple_attribute_owner_to_has_reverse,
             tuple_owner_attribute_to_has_reverse, unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
         },
-        BinaryIterateMode, Checker, VariableModes,
+        BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct HasReverseExecutor {
     has: ir::pattern::constraint::Has<ExecutorVariable>,
@@ -162,7 +163,7 @@ impl HasReverseExecutor {
         }
 
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Arc<HasFilterMapFn> = Arc::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),

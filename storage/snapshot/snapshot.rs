@@ -9,7 +9,7 @@ use std::{
     error::Error,
     fmt,
     iter::empty,
-    ops::{Deref, DerefMut},
+    ops::{Deref},
     sync::Arc,
 };
 

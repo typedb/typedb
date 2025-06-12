@@ -21,7 +21,7 @@ use ir::{
         },
         ParameterRegistry, VariableRegistry,
     },
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use storage::snapshot::ReadableSnapshot;
 use typeql::common::Span;
@@ -355,7 +355,7 @@ fn annotate_sub_fetch(
     input_value_type_annotations: &BTreeMap<Variable, ExpressionValueType>,
 ) -> Result<AnnotatedFetchListSubFetch, AnnotationError> {
     let FetchListSubFetch { context, input_variables, stages, fetch } = sub_fetch;
-    let TranslationContext { mut variable_registry, .. } = context;
+    let PipelineTranslationContext { mut variable_registry, .. } = context;
     let (annotated_stages, annotated_fetch) = annotate_stages_and_fetch(
         snapshot,
         type_manager,

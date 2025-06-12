@@ -49,14 +49,14 @@ use crate::{
         literal::FromTypeQLLiteral,
         pipeline::{translate_pipeline_stages, TranslatedStage},
         tokens::checked_identifier,
-        TranslationContext,
+        PipelineTranslationContext,
     },
     RepresentationError,
 };
 
 pub(super) fn translate_fetch(
     snapshot: &impl ReadableSnapshot,
-    parent_context: &mut TranslationContext,
+    parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     fetch: &TypeQLFetch,
@@ -68,7 +68,7 @@ pub(super) fn translate_fetch(
 // This gives us a simpler entry point for the fetch stage translation
 fn translate_fetch_object(
     snapshot: &impl ReadableSnapshot,
-    parent_context: &mut TranslationContext,
+    parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     typeql_object: &TypeQLFetchObject,
@@ -109,7 +109,7 @@ fn translate_fetch_object(
 
 fn translate_fetch_some(
     snapshot: &impl ReadableSnapshot,
-    parent_context: &mut TranslationContext,
+    parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     fetch_some: &TypeQLFetchSome,
@@ -130,7 +130,7 @@ fn translate_fetch_some(
 
 fn translate_fetch_list(
     snapshot: &impl ReadableSnapshot,
-    parent_context: &mut TranslationContext,
+    parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     list: &TypeQLFetchList,
@@ -203,7 +203,7 @@ fn translate_fetch_list(
 // Note: TypeQL fetch-single can turn either into a List or a Single IR
 fn translate_fetch_single(
     snapshot: &impl ReadableSnapshot,
-    parent_context: &mut TranslationContext,
+    parent_context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     single: &TypeQLFetchSingle,
@@ -301,7 +301,7 @@ fn extract_fetch_attribute(fetch_attribute: &FetchAttribute) -> Result<(bool, La
 
 // translate an expression that produces a single output (not a stream)
 fn translate_inline_expression_single(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     expression: &Expression,
@@ -312,7 +312,7 @@ fn translate_inline_expression_single(
     let mut local_context = context.clone();
     let builder_context = BlockBuilderContext::new(
         &mut local_context.variable_registry,
-        &mut local_context.visible_variables,
+        &mut local_context.last_stage_visible_variables,
         value_parameters,
     );
     let mut builder = Block::builder(builder_context);
@@ -328,7 +328,7 @@ fn translate_inline_expression_single(
 }
 
 fn translate_inline_user_function_call_single(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     call: &FunctionCall,
@@ -348,7 +348,7 @@ fn translate_inline_user_function_call_single(
 }
 
 fn translate_inline_user_function_call_stream(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &impl FunctionSignatureIndex,
     call: &FunctionCall,
@@ -364,13 +364,13 @@ fn translate_inline_user_function_call_stream(
 }
 
 fn translate_inline_user_function_call<'a>(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_index: &'a impl FunctionSignatureIndex,
     call: &FunctionCall,
     function_name: &str,
 ) -> Result<
-    (TranslationContext, TranslatedStage, Vec<Variable>, MaybeOwns<'a, FunctionSignature>),
+    (PipelineTranslationContext, TranslatedStage, Vec<Variable>, MaybeOwns<'a, FunctionSignature>),
     Box<FetchRepresentationError>,
 > {
     let signature = function_index
@@ -394,7 +394,7 @@ fn translate_inline_user_function_call<'a>(
     let mut local_context = context.clone();
     let builder_context = BlockBuilderContext::new(
         &mut local_context.variable_registry,
-        &mut local_context.visible_variables,
+        &mut local_context.last_stage_visible_variables,
         value_parameters,
     );
     let mut builder = Block::builder(builder_context);
@@ -448,7 +448,7 @@ fn add_expression(
 }
 
 fn create_anonymous_function(
-    context: TranslationContext,
+    context: PipelineTranslationContext,
     parameters: ParameterRegistry,
     args: Vec<Variable>,
     body: FunctionBody,
@@ -457,7 +457,7 @@ fn create_anonymous_function(
 }
 
 // Given a function body, and the _parent_ translation context, we can reconstruct which are arguments
-fn find_function_body_arguments(parent_context: &TranslationContext, function_body: &FunctionBody) -> Vec<Variable> {
+fn find_function_body_arguments(parent_context: &PipelineTranslationContext, function_body: &FunctionBody) -> Vec<Variable> {
     let mut arguments = HashSet::new();
     // Note: we rely on the fact that named variables that are "the same" become the same Variable, and the logic of
     //       selecting variables in/out is handled by the translation of the stages
@@ -477,7 +477,7 @@ fn find_function_body_arguments(parent_context: &TranslationContext, function_bo
 }
 
 fn find_sub_fetch_inputs(
-    parent_context: &TranslationContext,
+    parent_context: &PipelineTranslationContext,
     stages: &[TranslatedStage],
     fetch: &FetchObject,
 ) -> HashSet<Variable> {
@@ -502,7 +502,7 @@ fn find_sub_fetch_inputs(
 }
 
 fn try_get_variable(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     variable: &TypeQLVariable,
 ) -> Result<Variable, Box<FetchRepresentationError>> {
     let name = match variable {

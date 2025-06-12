@@ -29,11 +29,12 @@ use crate::{
         isa_executor::{IsaFilterMapFn, EXTRACT_THING, EXTRACT_TYPE},
         iterator::{SortedTupleIterator, TupleIterator, TupleSeekable},
         tuple::{isa_to_tuple_thing_type, isa_to_tuple_type_thing, Tuple, TuplePositions, TupleResult},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) struct IsaReverseExecutor {
@@ -88,7 +89,7 @@ impl IsaReverseExecutor {
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,

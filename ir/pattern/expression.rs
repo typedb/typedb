@@ -63,7 +63,7 @@ impl<ID: IrID> ExpressionTree<ID> {
         self.preorder_tree.len() - 1
     }
 
-    pub fn variables(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.preorder_tree.iter().filter_map(|expr| match expr {
             &Expression::Variable(variable) => Some(variable),
             Expression::ListIndex(list_index) => Some(list_index.list_variable()),

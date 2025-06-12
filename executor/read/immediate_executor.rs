@@ -11,7 +11,7 @@ use compiler::{
     annotation::expression::compiled_expression::ExecutableExpression,
     executable::match_::{
         instructions::{CheckInstruction, ConstraintInstruction, VariableModes},
-        planner::match_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
+        planner::conjunction_executable::{AssignmentStep, CheckStep, IntersectionStep, UnsortedJoinStep},
     },
     ExecutorVariable, VariablePosition,
 };
@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
+    instruction::{iterator::TupleIterator, InstructionExecutor},
     pipeline::stage::ExecutionContext,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
@@ -34,6 +34,7 @@ use crate::{
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, Provenance, SelectedPositions,
 };
+use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) enum ImmediateExecutor {
@@ -199,8 +200,8 @@ impl IntersectionExecutor {
             iterators: Vec::with_capacity(instruction_count),
             cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, profile.clone()),
             input: None,
-            intersection_value: VariableValue::Empty,
-            intersection_row: vec![VariableValue::Empty; output_width as usize],
+            intersection_value: VariableValue::None,
+            intersection_row: vec![VariableValue::None; output_width as usize],
             intersection_multiplicity: 1,
             intersection_provenance: Provenance::INITIAL,
             profile,
@@ -437,12 +438,12 @@ impl IntersectionExecutor {
     }
 
     fn record_intersection(&mut self) -> Result<(), ReadExecutionError> {
-        self.intersection_value = VariableValue::Empty;
-        self.intersection_row.fill(VariableValue::Empty);
+        self.intersection_value = VariableValue::None;
+        self.intersection_row.fill(VariableValue::None);
         let mut provenance = Provenance::INITIAL;
         let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity, &mut provenance);
         for iter in &mut self.iterators {
-            if !self.intersection_value.is_empty() {
+            if !self.intersection_value.is_none() {
                 iter.peek_first_unbound_value()
                     .transpose()
                     .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
@@ -458,15 +459,15 @@ impl IntersectionExecutor {
             }
             iter.write_values(&mut row)
         }
-        assert!(!self.intersection_value.is_empty());
+        assert!(!self.intersection_value.is_none());
 
         let input_row = self.input.as_mut().unwrap().peek().unwrap().as_ref().map_err(|&err| err.clone())?;
         for &position in &self.outputs_selected {
             // note: some input variable positions are re-used across stages, so we should only copy
             //       inputs into the output row if it is not already populated by the intersection
             if position.as_usize() < input_row.len()
-                && !input_row.get(position).is_empty()
-                && row.get(position).is_empty()
+                && !input_row.get(position).is_none()
+                && row.get(position).is_none()
             {
                 row.set(position, input_row.get(position).clone().into_owned())
             }
@@ -529,9 +530,9 @@ impl CartesianIterator {
     fn new(width: usize, iterator_executor_count: usize, profile: Arc<StepProfile>) -> Self {
         CartesianIterator {
             is_active: false,
-            intersection_value: VariableValue::Empty,
-            input_row: vec![VariableValue::Empty; width],
-            intersection_source: vec![VariableValue::Empty; width],
+            intersection_value: VariableValue::None,
+            input_row: vec![VariableValue::None; width],
+            intersection_source: vec![VariableValue::None; width],
             intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
             iterators: (0..iterator_executor_count).map(|_| Option::None).collect_vec(),
@@ -702,7 +703,7 @@ impl CartesianIterator {
             row.unset(pos);
         }
         for (index, value) in self.intersection_source.iter().enumerate() {
-            if *row.get(VariablePosition::new(index as u32)) == VariableValue::Empty {
+            if *row.get(VariablePosition::new(index as u32)) == VariableValue::None {
                 row.set(VariablePosition::new(index as u32), value.clone());
             }
         }
@@ -893,7 +894,7 @@ impl CheckExecutor {
 
         while let Some(row) = input.next() {
             let input_row = row.map_err(|err| err.clone())?;
-            if self.checker.filter_for_row(context, &input_row, self.profile.storage_counters())(&Ok(()))
+            if self.checker.filter(context, &input_row, (), self.profile.storage_counters())
                 .map_err(|err| ReadExecutionError::ConceptRead { typedb_source: err })?
             {
                 output.append(|mut row| {

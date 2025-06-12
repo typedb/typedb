@@ -20,12 +20,12 @@ use typeql::{
 
 use crate::{
     pipeline::{reduce::Reducer, ParameterRegistry},
-    translation::{pipeline::TranslatedStage, TranslationContext},
+    translation::{pipeline::TranslatedStage, PipelineTranslationContext},
 };
 
 #[derive(Debug, Clone)]
 pub struct Function {
-    pub context: TranslationContext,
+    pub context: PipelineTranslationContext,
     pub parameters: ParameterRegistry,
     pub name: String,
     pub function_body: FunctionBody,
@@ -38,7 +38,7 @@ pub struct Function {
 impl Function {
     pub fn new(
         name: &str,
-        context: TranslationContext,
+        context: PipelineTranslationContext,
         parameters: ParameterRegistry,
         arguments: Vec<Variable>,
         argument_labels: Option<Vec<NamedTypeAny>>,
@@ -52,7 +52,7 @@ impl Function {
         &self.name
     }
 
-    pub fn translation_context(&self) -> &TranslationContext {
+    pub fn translation_context(&self) -> &PipelineTranslationContext {
         &self.context
     }
 
