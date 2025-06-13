@@ -287,6 +287,9 @@ pub mod tests {
     use assert as assert_true;
 
     fn config_path() -> PathBuf {
+        #[cfg(feature = "bazel")]
+        return std::env::current_dir().unwrap().join("server/config.yml");
+        #[cfg(not(feature = "bazel"))]
         return std::env::current_dir().unwrap().join("config.yml");
     }
 
