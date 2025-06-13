@@ -274,7 +274,7 @@ pub(crate) fn create_executors_for_function(
             let pattern_executor = PatternExecutor::new(executable_function.executable_id, steps);
             let step = StreamModifierExecutor::new_check(pattern_executor);
             Ok(vec![step.into()])
-        },
+        }
         ExecutableReturn::Reduce(executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(executable_function.executable_id, steps),

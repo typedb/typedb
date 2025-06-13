@@ -5,8 +5,8 @@
  */
 
 use std::collections::HashSet;
-use answer::variable_value::VariableValue;
 
+use answer::variable_value::VariableValue;
 use compiler::VariablePosition;
 use encoding::value::value::Value;
 
@@ -79,9 +79,7 @@ impl StreamModifierExecutor {
             Self::Select { removed_positions, .. } => {
                 StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()))
             }
-            Self::Offset { offset, .. } => {
-                StreamModifierResultMapper::Offset(OffsetMapper::new(*offset))
-            }
+            Self::Offset { offset, .. } => StreamModifierResultMapper::Offset(OffsetMapper::new(*offset)),
             Self::Limit { limit, .. } => StreamModifierResultMapper::Limit(LimitMapper::new(*limit)),
             Self::Distinct { output_width, .. } => {
                 StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width))
@@ -298,7 +296,7 @@ impl StreamModifierResultMapperTrait for CheckMapper {
                     let false_row = MaybeOwnedRow::new_owned(
                         vec![VariableValue::Value(Value::Boolean(false))],
                         1,
-                        Provenance::INITIAL
+                        Provenance::INITIAL,
                     );
                     Some(FixedBatch::from(false_row))
                 }
@@ -310,7 +308,7 @@ impl StreamModifierResultMapperTrait for CheckMapper {
                         let true_row = MaybeOwnedRow::new_owned(
                             vec![VariableValue::Value(Value::Boolean(true))],
                             1,
-                            batch.get_row(0).provenance()
+                            batch.get_row(0).provenance(),
                         );
                         Some(FixedBatch::from(true_row))
                     }
