@@ -9,7 +9,7 @@
 use steps::Context;
 
 #[tokio::test]
-async fn test_definition() {
+async fn test_functions_definition() {
     // Bazel specific path: when running the test in bazel, the external data from
     // @typedb_behaviour is stored in a directory that is a sibling to
     // the working directory.

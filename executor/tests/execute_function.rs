@@ -708,3 +708,43 @@ fn write_pipelines() {
     assert_eq!(rows[0].get(*positions.get("hops1").unwrap()), &VariableValue::Value(Value::Integer(0)));
     assert_eq!(rows[0].get(*positions.get("hops2").unwrap()), &VariableValue::Value(Value::Integer(1)));
 }
+
+#[test]
+fn return_check() {
+    let custom_schema = r#"define
+        attribute name value string;
+        entity node, owns name @card(0..), plays edge:start, plays edge:end_;
+        relation edge, relates start, relates end_;
+    "#;
+    let context = setup_common(custom_schema);
+    let (rows, _positions) = run_write_query(&context, REACHABILITY_DATA).unwrap();
+    assert_eq!(1, rows.len());
+    let placeholder_start_node = "<<NODE_NAME>>";
+    let query_template = r#"
+            with
+            fun has_children($start: node) -> boolean:
+            match
+                $e isa edge, links (start: $start, end_: $any);
+            return check;
+
+            match
+                $start isa node, has name "<<NODE_NAME>>";
+                let $checked = has_children($start);
+        "#;
+
+    {
+        // Chain beginning c1
+        let query = query_template.replace(placeholder_start_node, "c1");
+        let (rows, positions) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get(*positions.get("checked").unwrap()), &VariableValue::Value(Value::Boolean(true)));
+    }
+
+    {
+        // Chain end c3
+        let query = query_template.replace(placeholder_start_node, "c3");
+        let (rows, positions) = run_read_query(&context, query.as_str()).unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].get(*positions.get("checked").unwrap()), &VariableValue::Value(Value::Boolean(false)));
+    }
+}

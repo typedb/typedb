@@ -270,9 +270,11 @@ pub(crate) fn create_executors_for_function(
             };
             Ok(vec![step.into()])
         }
-        ExecutableReturn::Check => Err(Box::new(ConceptReadError::UnimplementedFunctionality {
-            functionality: UnimplementedFeature::PipelineStageInFunction("return check"),
-        })),
+        ExecutableReturn::Check => {
+            let pattern_executor = PatternExecutor::new(executable_function.executable_id, steps);
+            let step = StreamModifierExecutor::new_check(pattern_executor);
+            Ok(vec![step.into()])
+        }
         ExecutableReturn::Reduce(executable) => {
             let step = CollectingStageExecutor::new_reduce(
                 PatternExecutor::new(executable_function.executable_id, steps),
