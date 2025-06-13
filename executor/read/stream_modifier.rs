@@ -5,8 +5,10 @@
  */
 
 use std::collections::HashSet;
+use answer::variable_value::VariableValue;
 
 use compiler::VariablePosition;
+use encoding::value::value::Value;
 
 use crate::{
     batch::FixedBatch,
@@ -22,6 +24,7 @@ pub(crate) enum StreamModifierExecutor {
     Limit { inner: PatternExecutor, limit: u64 },
     Distinct { inner: PatternExecutor, output_width: u32 },
     Last { inner: PatternExecutor },
+    Check { inner: PatternExecutor },
 }
 
 impl From<StreamModifierExecutor> for StepExecutors {
@@ -56,6 +59,10 @@ impl StreamModifierExecutor {
         Self::Last { inner }
     }
 
+    pub(crate) fn new_check(inner: PatternExecutor) -> Self {
+        Self::Check { inner }
+    }
+
     pub(crate) fn inner(&mut self) -> &mut PatternExecutor {
         match self {
             Self::Select { inner, .. } => inner,
@@ -63,22 +70,24 @@ impl StreamModifierExecutor {
             Self::Limit { inner, .. } => inner,
             Self::Distinct { inner, .. } => inner,
             Self::Last { inner, .. } => inner,
+            Self::Check { inner, .. } => inner,
         }
     }
 
     pub(crate) fn create_mapper(&self) -> StreamModifierResultMapper {
         match self {
-            StreamModifierExecutor::Select { removed_positions, .. } => {
+            Self::Select { removed_positions, .. } => {
                 StreamModifierResultMapper::Select(SelectMapper::new(removed_positions.clone()))
             }
-            StreamModifierExecutor::Offset { offset, .. } => {
+            Self::Offset { offset, .. } => {
                 StreamModifierResultMapper::Offset(OffsetMapper::new(*offset))
             }
-            StreamModifierExecutor::Limit { limit, .. } => StreamModifierResultMapper::Limit(LimitMapper::new(*limit)),
-            StreamModifierExecutor::Distinct { output_width, .. } => {
+            Self::Limit { limit, .. } => StreamModifierResultMapper::Limit(LimitMapper::new(*limit)),
+            Self::Distinct { output_width, .. } => {
                 StreamModifierResultMapper::Distinct(DistinctMapper::new(*output_width))
             }
-            StreamModifierExecutor::Last { .. } => StreamModifierResultMapper::Last(LastMapper::new()),
+            Self::Last { .. } => StreamModifierResultMapper::Last(LastMapper::new()),
+            Self::Check { inner, .. } => StreamModifierResultMapper::Check(CheckMapper::new()),
         }
     }
 
@@ -94,6 +103,7 @@ pub(super) enum StreamModifierResultMapper {
     Limit(LimitMapper),
     Distinct(DistinctMapper),
     Last(LastMapper),
+    Check(CheckMapper),
 }
 
 impl StreamModifierResultMapper {
@@ -104,6 +114,7 @@ impl StreamModifierResultMapper {
             Self::Limit(inner) => inner.map_output(subquery_result),
             Self::Distinct(inner) => inner.map_output(subquery_result),
             Self::Last(inner) => inner.map_output(subquery_result),
+            Self::Check(inner) => inner.map_output(subquery_result),
         }
     }
 }
@@ -261,6 +272,50 @@ impl StreamModifierResultMapperTrait for LastMapper {
             Some(FixedBatch::EMPTY) // Retry this instruction without returning any rows
         } else {
             self.last_row.take().map(FixedBatch::from)
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct CheckMapper {
+    returned: Option<bool>,
+}
+
+impl CheckMapper {
+    pub(crate) fn new() -> Self {
+        Self { returned: None }
+    }
+}
+
+impl StreamModifierResultMapperTrait for CheckMapper {
+    fn map_output(&mut self, subquery_result: Option<FixedBatch>) -> Option<FixedBatch> {
+        if self.returned.is_some() {
+            return None;
+        } else {
+            match subquery_result {
+                None => {
+                    self.returned = Some(false);
+                    let false_row = MaybeOwnedRow::new_owned(
+                        vec![VariableValue::Value(Value::Boolean(false))],
+                        1,
+                        Provenance::INITIAL
+                    );
+                    Some(FixedBatch::from(false_row))
+                }
+                Some(batch) => {
+                    if batch.is_empty() {
+                        Some(FixedBatch::EMPTY)
+                    } else {
+                        self.returned = Some(true);
+                        let true_row = MaybeOwnedRow::new_owned(
+                            vec![VariableValue::Value(Value::Boolean(true))],
+                            1,
+                            batch.get_row(0).provenance()
+                        );
+                        Some(FixedBatch::from(true_row))
+                    }
+                }
+            }
         }
     }
 }
