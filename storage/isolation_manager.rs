@@ -857,7 +857,7 @@ mod tests {
         sequence_number::SequenceNumber,
         snapshot::buffer::OperationsBuffer,
     };
-
+    use assert as assert_true;
     macro_rules! test_keyspace_set {
         {$($variant:ident => $id:literal : $name: literal),* $(,)?} => {
             #[derive(Clone, Copy)]
@@ -985,12 +985,12 @@ mod tests {
             let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
-        assert!(timeline.try_get_window(_seq(1)).is_some());
+        assert_true!(timeline.try_get_window(_seq(1)).is_some());
         for i in stop_at..tx_count {
             let tx = &MockTransaction::new(_seq(0), _seq(i as u64));
             tx_finalise_commit_status(timeline, tx, true);
         }
-        assert!(timeline.try_get_window(_seq(1)).is_none());
+        assert_true!(timeline.try_get_window(_seq(1)).is_none());
     }
 
     #[test]
@@ -1002,7 +1002,7 @@ mod tests {
         tx_finalise_commit_status(&timeline, tx1, true);
 
         let got_window = timeline.try_get_window(tx1.commit_sequence_number);
-        assert!(got_window.is_some());
+        assert_true!(got_window.is_some());
 
         let mut i = tx1.commit_sequence_number + 1;
         while timeline.try_get_window(i).is_some() {
@@ -1047,6 +1047,6 @@ mod tests {
         let (timeline, _) = &*timeline_and_counter;
         assert_eq!(expected_watermark, timeline.watermark());
         let some_index_in_penultimate_window = expected_watermark - TIMELINE_WINDOW_SIZE - 1;
-        assert!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
+        assert_true!(timeline.try_get_window(some_index_in_penultimate_window).is_none());
     }
 }
