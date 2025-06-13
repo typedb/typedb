@@ -5,35 +5,34 @@
  */
 
 use std::{
+    collections::HashMap,
     hash::{DefaultHasher, Hash, Hasher},
     sync::{Arc, Mutex},
 };
 
+use answer::Type;
 use compiler::executable::pipeline::ExecutablePipeline;
 use concept::thing::statistics::Statistics;
 use ir::{
     pipeline::{fetch::FetchObject, function::Function},
     translation::pipeline::TranslatedStage,
 };
-use moka::sync::Cache;
+use moka::sync::{Cache, CacheBuilder};
 use resource::{
     constants::database::{QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION, QUERY_PLAN_CACHE_SIZE},
     perf_counters::QUERY_CACHE_FLUSH,
 };
-use storage::sequence_number::SequenceNumber;
 use structural_equality::StructuralEquality;
-use tracing::{event, Level};
 
 #[derive(Debug)]
 pub struct QueryCache {
     cache: Cache<IRQuery, ExecutablePipeline>,
-    last_statistics: Mutex<Statistics>,
 }
 
 impl QueryCache {
     pub fn new() -> Self {
-        let cache = Cache::new(QUERY_PLAN_CACHE_SIZE);
-        QueryCache { cache, last_statistics: Mutex::new(Statistics::new(SequenceNumber::MIN)) }
+        let cache = CacheBuilder::new(QUERY_PLAN_CACHE_SIZE).support_invalidation_closures().build();
+        QueryCache { cache }
     }
 
     pub(crate) fn get(
@@ -57,21 +56,41 @@ impl QueryCache {
         self.cache.insert(key, pipeline);
     }
 
-    pub fn may_reset(&self, new_statistics: &Statistics) {
-        let last_statistics_guard = self.last_statistics.lock().unwrap();
-        let largest_change = last_statistics_guard.largest_difference_frac(new_statistics);
-        if largest_change > QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION {
-            event!(Level::TRACE, "Invalidating query cache given a statistic change of {}.", largest_change);
-            drop(last_statistics_guard);
-            self.force_reset(new_statistics);
-        }
+    pub fn may_evict(&self, new_statistics: &Statistics) {
+        let new_statistics = new_statistics.clone(); // it's either this or clone the entire cache
+        let _predicate_id = self
+            .cache
+            .invalidate_entries_if(move |_, pipeline| {
+                let mut total_increase = 1.0;
+                let mut total_decrease = 1.0;
+                for (&ty, &pop) in &pipeline.type_pop {
+                    let type_count = match ty {
+                        Type::Entity(ty) => new_statistics.entity_counts[&ty],
+                        Type::Relation(ty) => new_statistics.relation_counts[&ty],
+                        Type::Attribute(ty) => new_statistics.attribute_counts[&ty],
+                        Type::RoleType(_) => 1, // uhhh
+                    };
+                    match u64::min(type_count, 1) as f64 / u64::min(pop, 1) as f64 {
+                        increase @ 1.0.. => total_increase *= increase,
+                        decrease @ ..1.0 => total_decrease /= decrease,
+                        _ => panic!("NaN?!"),
+                    }
+                }
+                total_increase >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
+                    || total_decrease >= QUERY_PLAN_CACHE_FLUSH_ANY_STATISTIC_CHANGE_FRACTION
+            })
+            .unwrap();
     }
 
-    pub fn force_reset(&self, new_statistics: &Statistics) {
-        let statistics = new_statistics.clone();
-        *self.last_statistics.lock().unwrap() = statistics;
+    pub fn force_reset(&self, _statistics: &Statistics) {
         self.cache.invalidate_all();
         QUERY_CACHE_FLUSH.increment();
+    }
+}
+
+impl Default for QueryCache {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

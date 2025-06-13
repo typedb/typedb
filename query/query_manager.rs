@@ -168,7 +168,7 @@ impl QueryManager {
                     &annotated_pipeline.annotated_stages,
                     source_query,
                 )
-                .map(|query_structure| Arc::new(query_structure));
+                .map(Arc::new);
 
                 apply_transformations(snapshot.as_ref(), type_manager, &mut annotated_pipeline).map_err(|err| {
                     QueryError::Transformation { source_query: source_query.to_string(), typedb_source: err }
@@ -199,7 +199,7 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } =
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure, .. } =
             executable_pipeline;
 
         // 4: Executor
@@ -318,7 +318,7 @@ impl QueryManager {
                     &annotated_pipeline.annotated_stages,
                     source_query,
                 )
-                .map(|query_structure| Arc::new(query_structure));
+                .map(Arc::new);
 
                 match apply_transformations(&snapshot, type_manager, &mut annotated_pipeline) {
                     Ok(_) => {}
@@ -366,7 +366,7 @@ impl QueryManager {
             }
         };
 
-        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure } =
+        let ExecutablePipeline { executable_functions, executable_stages, executable_fetch, query_structure, .. } =
             executable_pipeline;
 
         // 4: Executor

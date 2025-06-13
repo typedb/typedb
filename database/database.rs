@@ -524,7 +524,7 @@ fn make_update_statistics_fn(
             let _schema_txn_guard = schema_txn_lock.read().unwrap(); // prevent Schema txns from opening during statistics update
             let mut new_statistics = (*schema.read().unwrap().thing_statistics).clone();
             new_statistics.may_synchronise(&storage).expect("Statistics sync failed");
-            query_cache.may_reset(&new_statistics);
+            query_cache.may_evict(&new_statistics);
             schema.write().unwrap().thing_statistics = Arc::new(new_statistics);
         }
     }
