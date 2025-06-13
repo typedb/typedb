@@ -101,7 +101,7 @@ impl InlinedCallExecutor {
             .iter()
             .enumerate()
             .filter_map(|(src, &dst)| Some((VariablePosition::new(src as u32), dst?)))
-            .filter(|(_src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::Empty)
+            .filter(|(_src, dst)| dst.as_usize() < input.len() && input.get(*dst) != &VariableValue::None)
             .collect(); // TODO: Can we move this to compilation?
         for return_index in 0..batch.len() {
             let returned_row = batch.get_row(return_index);

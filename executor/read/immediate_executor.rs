@@ -199,8 +199,8 @@ impl IntersectionExecutor {
             iterators: Vec::with_capacity(instruction_count),
             cartesian_iterator: CartesianIterator::new(output_width as usize, instruction_count, profile.clone()),
             input: None,
-            intersection_value: VariableValue::Empty,
-            intersection_row: vec![VariableValue::Empty; output_width as usize],
+            intersection_value: VariableValue::None,
+            intersection_row: vec![VariableValue::None; output_width as usize],
             intersection_multiplicity: 1,
             intersection_provenance: Provenance::INITIAL,
             profile,
@@ -437,8 +437,8 @@ impl IntersectionExecutor {
     }
 
     fn record_intersection(&mut self) -> Result<(), ReadExecutionError> {
-        self.intersection_value = VariableValue::Empty;
-        self.intersection_row.fill(VariableValue::Empty);
+        self.intersection_value = VariableValue::None;
+        self.intersection_row.fill(VariableValue::None);
         let mut provenance = Provenance::INITIAL;
         let mut row = Row::new(&mut self.intersection_row, &mut self.intersection_multiplicity, &mut provenance);
         for iter in &mut self.iterators {
@@ -529,9 +529,9 @@ impl CartesianIterator {
     fn new(width: usize, iterator_executor_count: usize, profile: Arc<StepProfile>) -> Self {
         CartesianIterator {
             is_active: false,
-            intersection_value: VariableValue::Empty,
-            input_row: vec![VariableValue::Empty; width],
-            intersection_source: vec![VariableValue::Empty; width],
+            intersection_value: VariableValue::None,
+            input_row: vec![VariableValue::None; width],
+            intersection_source: vec![VariableValue::None; width],
             intersection_multiplicity: 1,
             cartesian_executor_indices: Vec::with_capacity(iterator_executor_count),
             iterators: (0..iterator_executor_count).map(|_| Option::None).collect_vec(),
@@ -702,7 +702,7 @@ impl CartesianIterator {
             row.unset(pos);
         }
         for (index, value) in self.intersection_source.iter().enumerate() {
-            if *row.get(VariablePosition::new(index as u32)) == VariableValue::Empty {
+            if *row.get(VariablePosition::new(index as u32)) == VariableValue::None {
                 row.set(VariablePosition::new(index as u32), value.clone());
             }
         }
