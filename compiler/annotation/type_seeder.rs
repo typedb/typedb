@@ -268,7 +268,7 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
                     }
                 }
                 &Vertex::Parameter(_) => {
-                    assert!(!graph.vertices.contains_key(vertex));
+                    debug_assert!(!graph.vertices.contains_key(vertex));
                 }
             }
         }

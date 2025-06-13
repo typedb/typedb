@@ -613,7 +613,7 @@ mod test {
 
     use super::WAL;
     use crate::{DurabilityRecordType, DurabilitySequenceNumber, DurabilityService, RawRecord};
-
+    use assert as assert_true;
     #[derive(Debug, PartialEq, Eq, Clone, Copy)]
     struct TestRecord {
         bytes: [u8; 4],
@@ -795,7 +795,7 @@ mod test {
         let wal = load_wal(&directory);
         let read_records =
             wal.iter_any_from(DurabilitySequenceNumber::MAX).unwrap().map(|res| res.unwrap()).collect_vec();
-        assert!(read_records.is_empty());
+        assert_true!(read_records.is_empty());
     }
 
     #[test]
@@ -814,7 +814,7 @@ mod test {
         wal.sequenced_write(TestRecord::RECORD_TYPE, sequenced_2.bytes()).unwrap();
 
         let found = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
-        assert!(
+        assert_true!(
             matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
 
@@ -823,7 +823,7 @@ mod test {
         let wal = load_wal(&directory);
 
         let found = wal.find_last_type(UnsequencedTestRecord::RECORD_TYPE).unwrap().unwrap();
-        assert!(
+        assert_true!(
             matches!(found, RawRecord { bytes: Cow::Owned(bytes), record_type: UnsequencedTestRecord::RECORD_TYPE, .. } if bytes == unsequenced_2.bytes())
         );
     }

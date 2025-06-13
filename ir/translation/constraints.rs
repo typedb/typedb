@@ -134,7 +134,11 @@ fn add_type_statement(
         add_typeql_kind(constraints, var, kind, type_statement.span())?;
     }
     for constraint in &type_statement.constraints {
-        assert!(constraint.annotations.is_empty(), "TODO: handle type statement annotations");
+        if !constraint.annotations.is_empty() {
+            return Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
+                feature: UnimplementedFeature::QueryingAnnotations
+            }));
+        }
         match &constraint.base {
             typeql::statement::type_::ConstraintBase::Sub(sub) => add_typeql_sub(constraints, type_.clone(), sub)?,
             typeql::statement::type_::ConstraintBase::Label(label) => match label {
