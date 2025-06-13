@@ -134,7 +134,7 @@ fn compile_some(
         }
         AnnotatedFetchSome::ListSubFetch(sub_fetch) => {
             let AnnotatedFetchListSubFetch { variable_registry, input_variables, stages, fetch } = sub_fetch;
-            let (input_positions, compiled_stages, compiled_fetch) = compile_stages_and_fetch(
+            let (input_positions, compiled_stages, compiled_fetch, _) = compile_stages_and_fetch(
                 statistics,
                 &variable_registry,
                 available_functions,
