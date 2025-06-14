@@ -605,7 +605,7 @@ impl<'a> OptionalPlanner<'a> {
     }
 
     fn is_valid(&self, ordered: &[VertexId], _graph: &Graph<'_>) -> bool {
-        self.variables().all(|var| ordered.contains(&VertexId::Variable(var)))
+        self.input_variables.iter().all(|var| ordered.contains(&VertexId::Variable(*var)))
     }
 
     pub(crate) fn variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {

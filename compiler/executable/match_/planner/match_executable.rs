@@ -105,7 +105,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => &step.selected_variables,
             ExecutionStep::Disjunction(step) => &step.selected_variables,
             ExecutionStep::Negation(step) => &step.selected_variables,
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => &step.selected_variables,
             ExecutionStep::FunctionCall(step) => &step.selected_variables,
         }
     }
@@ -132,7 +132,7 @@ impl ExecutionStep {
             ExecutionStep::Check(step) => step.output_width(),
             ExecutionStep::Disjunction(step) => step.output_width(),
             ExecutionStep::Negation(step) => step.output_width(),
-            ExecutionStep::Optional(_) => unimplemented_feature!(Optionals),
+            ExecutionStep::Optional(step) => step.output_width(),
             ExecutionStep::FunctionCall(step) => step.output_width(),
         }
     }
@@ -489,6 +489,10 @@ pub struct OptionalStep {
 impl OptionalStep {
     pub fn new(optional: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
         Self { optional, selected_variables, output_width }
+    }
+
+    pub fn output_width(&self) -> u32 {
+        self.output_width
     }
 }
 
