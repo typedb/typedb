@@ -6,13 +6,12 @@
 
 use std::{
     any::type_name_of_val,
-    cmp::Ordering,
+    cmp::{Ordering, Reverse},
     collections::{BTreeMap, BTreeSet, BinaryHeap, HashMap, HashSet},
     fmt,
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
 };
-use std::cmp::Reverse;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -758,11 +757,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 }
 
-struct DrainSorted<'a,T: Ord> {
-    heap: &'a mut BinaryHeap<T>
+struct DrainSorted<'a, T: Ord> {
+    heap: &'a mut BinaryHeap<T>,
 }
 
-fn drain_sorted<T: Ord>(heap: &mut BinaryHeap<T>) -> impl Iterator<Item=T> + '_ {
+fn drain_sorted<T: Ord>(heap: &mut BinaryHeap<T>) -> impl Iterator<Item = T> + '_ {
     DrainSorted { heap }
 }
 
@@ -983,8 +982,7 @@ impl PartialCostPlan {
             if !extension.is_constraint(graph) {
                 self.clone_and_extend_with_new_step(extension, graph)
             } else if extension.step_join_var.is_some()
-                && (self.ongoing_step_join_var.is_none()
-                || self.ongoing_step_join_var == extension.step_join_var)
+                && (self.ongoing_step_join_var.is_none() || self.ongoing_step_join_var == extension.step_join_var)
             {
                 self.clone_and_extend_with_continued_step(extension, graph)
             } else {
@@ -1219,7 +1217,7 @@ impl PartialCostPlan {
     fn hash(&self) -> PartialCostHash {
         PartialCostHash {
             n_remaining_patterns: self.remaining_patterns.len() as u32,
-            planned_vertices: self.vertex_ordering.iter().filter_map(|v| v.as_pattern_id()).collect::<BTreeSet<_>>(),
+            planned_patterns: self.vertex_ordering.iter().filter_map(|v| v.as_pattern_id()).collect::<BTreeSet<_>>(),
             ongoing_non_trivial_patterns: self.ongoing_step.iter().copied().collect::<BTreeSet<_>>(),
         }
     }
@@ -1242,7 +1240,7 @@ impl Ord for PartialCostPlan {
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub(super) struct PartialCostHash {
     n_remaining_patterns: u32, // Needed for continuous search (A*), but not step-based (beam)
-    planned_vertices: BTreeSet<PatternVertexId>,
+    planned_patterns: BTreeSet<PatternVertexId>,
     ongoing_non_trivial_patterns: BTreeSet<PatternVertexId>,
 }
 
