@@ -12,6 +12,7 @@ use std::{
     hash::{DefaultHasher, Hash, Hasher},
     sync::Arc,
 };
+use std::cmp::Reverse;
 
 use answer::variable::Variable;
 use concept::thing::statistics::Statistics;
@@ -669,11 +670,12 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         ));
 
         let mut extension_heap = BinaryHeap::with_capacity(extension_width); // reused
+        let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
+        let mut new_plans_hashset = HashSet::with_capacity(beam_width);
         for i in 0..num_patterns {
             event!(Level::TRACE, "{INDENT:4}PLANNER STEP {}", i);
-            let mut new_plans_heap = BinaryHeap::with_capacity(beam_width);
-            let mut new_plans_hashset = HashSet::with_capacity(beam_width);
 
+            // TODO: Do we need this?
             if i % BEAM_REDUCTION_CYCLE == 0 {
                 beam_width = usize::max(beam_width.saturating_sub(1), 2);
             }
@@ -681,6 +683,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 extension_width = usize::max(extension_width.saturating_sub(1), 2);
             } // Narrow the beam until it greedy at the tail (for large queries)
 
+            new_plans_heap.clear();
             for plan in best_partial_plans.drain(..) {
                 event!(
                     Level::TRACE,
@@ -693,87 +696,37 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     plan.cumulative_cost.chain(plan.ongoing_step_cost),
                     plan.heuristic
                 );
-
+                debug_assert!(extension_heap.is_empty());
+                // Add best k extensions from this plan to new_plan_heap (k = extension_width)
                 for extension in plan.extensions_iter(&self.graph)? {
                     if extension.is_trivial(&self.graph) {
-                        event!(
-                            Level::TRACE,
-                            "{INDENT:12}Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
-                            extension.pattern_id,
-                            self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
-                            extension.step_cost.cost,
-                            extension.heuristic
-                        );
-                        let mut plan = plan.clone();
-                        plan.add_to_stash(extension.pattern_id, &self.graph);
-                        if new_plans_heap.len() < beam_width {
-                            new_plans_heap.push(plan);
-                        } else if let Some(top) = new_plans_heap.peek() {
-                            if plan < *top {
-                                new_plans_heap.pop();
-                                new_plans_heap.push(plan);
-                            }
-                        }
                         extension_heap.clear();
-                        break;
-                    }
-
-                    if extension_heap.len() < extension_width {
                         extension_heap.push(extension);
-                    } else if let Some(top) = extension_heap.peek() {
-                        if extension < *top {
+                        break;
+                    } else {
+                        if extension_heap.len() < extension_width {
+                            extension_heap.push(extension);
+                        } else if &extension < extension_heap.peek().unwrap() {
                             extension_heap.pop();
                             extension_heap.push(extension);
                         }
                     }
                 }
-
-                for extension in extension_heap.drain() {
-                    event!(
-                        Level::TRACE,
-                        "{INDENT:12}Choice {:?} = {} <-- join: {:?}, cost: {:?}, heuristic: {:?} metadata: {:?}",
-                        extension.pattern_id,
-                        self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
-                        extension
-                            .step_join_var
-                            .map(|v| self.graph.elements[&VertexId::Variable(v)].as_variable().unwrap().variable()),
-                        extension.step_cost,
-                        extension.heuristic,
-                        extension.pattern_metadata
-                    );
-                    let new_plan = if !extension.is_constraint(&self.graph) {
-                        plan.clone_and_extend_with_new_step(extension, &self.graph)
-                    } else if extension.step_join_var.is_some()
-                        && (plan.ongoing_step_join_var.is_none()
-                            || plan.ongoing_step_join_var == extension.step_join_var)
-                    {
-                        plan.clone_and_extend_with_continued_step(extension, &self.graph)
-                    } else {
-                        plan.clone_and_extend_with_new_step(extension, &self.graph)
-                    };
-
-                    let new_plan_hash = new_plan.hash();
-                    if !new_plans_hashset.contains(&new_plan_hash) {
-                        if new_plans_heap.len() < beam_width {
-                            new_plans_heap.push(new_plan);
-                            new_plans_hashset.insert(new_plan_hash);
-                            event!(Level::TRACE, "{INDENT:16}(added)");
-                        } else if let Some(top) = new_plans_heap.peek() {
-                            if new_plan < *top {
-                                new_plans_heap.pop();
-                                new_plans_heap.push(new_plan);
-                                new_plans_hashset.insert(new_plan_hash);
-                                event!(Level::TRACE, "{INDENT:16}(added)");
-                            } else {
-                                event!(Level::TRACE, "{INDENT:16}(discarded)");
-                            }
-                        }
-                    } else {
-                        event!(Level::TRACE, "{INDENT:16}(hash collision)");
+                new_plans_heap.extend(
+                    extension_heap.drain().map(|extension| Reverse(plan.extend_with(&self.graph, extension)))
+                );
+            }
+            debug_assert!(best_partial_plans.is_empty());
+            // Pick best (k = beam_width) plans to beam.
+            new_plans_hashset.clear();
+            while let Some(Reverse(plan)) = new_plans_heap.pop() {
+                if new_plans_hashset.insert(plan.hash()) {
+                    best_partial_plans.push(plan);
+                    if best_partial_plans.len() >= beam_width {
+                        break;
                     }
                 }
             }
-            best_partial_plans = new_plans_heap.into_vec();
         }
 
         let best_plan =
@@ -981,6 +934,46 @@ impl PartialCostPlan {
                 })
             })
             .collect::<Result<Vec<_>, _>>()
+    }
+
+    pub(crate) fn extend_with(&self, graph: &Graph<'_>, extension: StepExtension) -> PartialCostPlan {
+        const INDENT: &str = "";
+        if extension.is_trivial(graph) {
+            event!(
+                Level::TRACE,
+                "{INDENT:12}Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
+                extension.pattern_id,
+                graph.elements[&VertexId::Pattern(extension.pattern_id)],
+                extension.step_cost.cost,
+                extension.heuristic
+            );
+            let mut new_plan = self.clone();
+            new_plan.add_to_stash(extension.pattern_id, graph);
+            new_plan
+        } else {
+            event!(
+                Level::TRACE,
+                "{INDENT:12}Choice {:?} = {} <-- join: {:?}, cost: {:?}, heuristic: {:?} metadata: {:?}",
+                extension.pattern_id,
+                graph.elements[&VertexId::Pattern(extension.pattern_id)],
+                extension
+                    .step_join_var
+                    .map(|v| graph.elements[&VertexId::Variable(v)].as_variable().unwrap().variable()),
+                extension.step_cost,
+                extension.heuristic,
+                extension.pattern_metadata
+            );
+            if !extension.is_constraint(graph) {
+                self.clone_and_extend_with_new_step(extension, graph)
+            } else if extension.step_join_var.is_some()
+                && (self.ongoing_step_join_var.is_none()
+                || self.ongoing_step_join_var == extension.step_join_var)
+            {
+                self.clone_and_extend_with_continued_step(extension, graph)
+            } else {
+                self.clone_and_extend_with_new_step(extension, graph)
+            }
+        }
     }
 
     fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
