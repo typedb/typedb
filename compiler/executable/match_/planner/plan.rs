@@ -1208,11 +1208,9 @@ impl PartialCostPlan {
 
     fn hash(&self) -> PartialCostHash {
         PartialCostHash {
-            all_vars: self.remaining_patterns.clone(),
-            ongoing_vars: self.ongoing_step.clone(),
-            approx_io: (self.cumulative_cost.io_ratio * self.ongoing_step_cost.io_ratio) as u64, // TODO: improve rounding/hashing (make relative)
-            approx_cost: self.cumulative_cost.chain(self.ongoing_step_cost).cost as u64, // TODO: improve rounding/hashing (make relative)
-            ongoing_join: self.ongoing_step_join_var.is_some(),
+            n_remaining_patterns: self.remaining_patterns.len() as u32,
+            planned_vertices: self.vertex_ordering.iter().filter_map(|v| v.as_pattern_id()).collect::<BTreeSet<_>>(),
+            ongoing_non_trivial_patterns: self.ongoing_step.iter().copied().collect::<BTreeSet<_>>(),
         }
     }
 }
@@ -1231,35 +1229,11 @@ impl Ord for PartialCostPlan {
     }
 }
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub(super) struct PartialCostHash {
-    all_vars: HashSet<PatternVertexId>,
-    ongoing_vars: HashSet<PatternVertexId>,
-    approx_io: u64,
-    approx_cost: u64,
-    ongoing_join: bool,
-}
-
-impl Hash for PartialCostHash {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        let mut acc = 0;
-        for pattern in &self.all_vars {
-            let mut hasher = DefaultHasher::new();
-            pattern.hash(&mut hasher);
-            acc ^= hasher.finish();
-        }
-        acc.hash(state);
-        let mut acc = 0;
-        for pattern in &self.ongoing_vars {
-            let mut hasher = DefaultHasher::new();
-            pattern.hash(&mut hasher);
-            acc ^= hasher.finish();
-        }
-        acc.hash(state);
-        self.approx_io.hash(state);
-        self.approx_cost.hash(state);
-        self.ongoing_join.hash(state);
-    }
+    n_remaining_patterns: u32, // Needed for continuous search (A*), but not step-based (beam)
+    planned_vertices: BTreeSet<PatternVertexId>,
+    ongoing_non_trivial_patterns: BTreeSet<PatternVertexId>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
