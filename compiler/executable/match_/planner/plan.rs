@@ -701,25 +701,20 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                 for extension in plan.extensions_iter(&self.graph)? {
                     if extension.is_trivial(&self.graph) {
                         extension_heap.clear();
-                        extension_heap.push(extension);
+                        extension_heap.push(Reverse(extension));
                         break;
                     } else {
-                        if extension_heap.len() < extension_width {
-                            extension_heap.push(extension);
-                        } else if &extension < extension_heap.peek().unwrap() {
-                            extension_heap.pop();
-                            extension_heap.push(extension);
-                        }
+                        extension_heap.push(Reverse(extension));
                     }
                 }
-                new_plans_heap.extend(
-                    extension_heap.drain().map(|extension| Reverse(plan.extend_with(&self.graph, extension)))
-                );
+                for extension in drain_sorted(&mut extension_heap).take(extension_width) {
+                    new_plans_heap.push(Reverse(plan.extend_with(&self.graph, extension.0)));
+                }
             }
-            debug_assert!(best_partial_plans.is_empty());
             // Pick best (k = beam_width) plans to beam.
+            debug_assert!(best_partial_plans.is_empty());
             new_plans_hashset.clear();
-            while let Some(Reverse(plan)) = new_plans_heap.pop() {
+            for Reverse(plan) in drain_sorted(&mut new_plans_heap) {
                 if new_plans_hashset.insert(plan.hash()) {
                     best_partial_plans.push(plan);
                     if best_partial_plans.len() >= beam_width {
@@ -760,6 +755,28 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             element_to_order,
             planner_statistics,
         })
+    }
+}
+
+struct DrainSorted<'a,T: Ord> {
+    heap: &'a mut BinaryHeap<T>
+}
+
+fn drain_sorted<T: Ord>(heap: &mut BinaryHeap<T>) -> impl Iterator<Item=T> + '_ {
+    DrainSorted { heap }
+}
+
+impl<'a, T: Ord> Iterator for DrainSorted<'a, T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.heap.pop()
+    }
+}
+
+impl<'a, T: Ord> Drop for DrainSorted<'a, T> {
+    fn drop(&mut self) {
+        self.heap.clear();
     }
 }
 
