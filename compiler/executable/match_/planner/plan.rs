@@ -707,8 +707,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         extension_heap.push(Reverse(extension));
                     }
                 }
-                for extension in drain_sorted(&mut extension_heap).take(extension_width) {
-                    new_plans_heap.push(Reverse(plan.extend_with(&self.graph, extension.0)));
+                for Reverse(extension) in drain_sorted(&mut extension_heap).take(extension_width) {
+                    new_plans_heap.push(Reverse(plan.extend_with(&self.graph, extension)));
                 }
             }
             // Pick best (k = beam_width) plans to beam.
