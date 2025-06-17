@@ -119,7 +119,6 @@ pub enum QueryStructureStage {
     Offset { offset: u64 },
     Limit { limit: u64 },
 
-    // TODO...
     Require { variables: Vec<StructureVariableId> },
     Distinct,
     Reduce { reducers: Vec<StructureReducer>, groupby: Vec<StructureVariableId> },

@@ -41,10 +41,6 @@ impl<'a, Snapshot: ReadableSnapshot> QueryStructureContext<'a, Snapshot> {
     }
 
     pub fn get_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
-        self.get_structure_variable_name(variable)
-    }
-
-    pub fn get_structure_variable_name(&self, variable: &StructureVariableId) -> Option<String> {
         self.query_structure.variable_names.get(&variable).cloned()
     }
 
