@@ -45,7 +45,7 @@ pub fn extract_query_structure_from(
     if branch_ids_allocated < 64 {
         let mut builder = ParametrisedQueryStructureBuilder::new(source_query, branch_ids_allocated);
         annotated_stages.into_iter().for_each(|stage| builder.add_stage(stage));
-        Some(builder.inner)
+        Some(builder.query_structure)
     } else {
         return None;
     }
@@ -149,7 +149,7 @@ pub struct QueryStructureBlockID(pub u16);
 
 #[derive(Debug, Clone)]
 pub struct ParametrisedQueryStructureBuilder<'a> {
-    inner: ParametrisedQueryStructure,
+    query_structure: ParametrisedQueryStructure,
     source_query: &'a str,
 }
 
@@ -159,7 +159,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
         Self {
             source_query,
-            inner: ParametrisedQueryStructure {
+            query_structure: ParametrisedQueryStructure {
                 stages: Vec::new(),
                 blocks,
                 resolved_labels: HashMap::new(),
@@ -172,45 +172,45 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         match stage {
             AnnotatedStage::Match { block, block_annotations, .. } => {
                 let conjunction = self.add_block(None, block.conjunction(), &block_annotations);
-                self.inner.stages.push(QueryStructureStage::Match(conjunction));
+                self.query_structure.stages.push(QueryStructureStage::Match(conjunction));
             }
             AnnotatedStage::Insert { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
-                self.inner.stages.push(QueryStructureStage::Insert { block });
+                self.query_structure.stages.push(QueryStructureStage::Insert { block });
             }
             AnnotatedStage::Put { block, insert_annotations: annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
-                self.inner.stages.push(QueryStructureStage::Put { block });
+                self.query_structure.stages.push(QueryStructureStage::Put { block });
             }
             AnnotatedStage::Update { block, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
-                self.inner.stages.push(QueryStructureStage::Update { block });
+                self.query_structure.stages.push(QueryStructureStage::Update { block });
             }
             AnnotatedStage::Delete { block, deleted_variables, annotations, .. } => {
                 debug_assert!(block.conjunction().nested_patterns().is_empty());
                 let block = self.add_block_impl(None, block.conjunction().constraints(), &annotations);
-                self.inner
+                self.query_structure
                     .stages
                     .push(QueryStructureStage::Delete { block, deleted_variables: vec_from(deleted_variables.iter()) });
             }
             AnnotatedStage::Select(select) => {
-                self.inner.stages.push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) })
+                self.query_structure.stages.push(QueryStructureStage::Select { variables: vec_from(select.variables.iter()) })
             }
             AnnotatedStage::Sort(sort) => {
-                self.inner.stages.push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) })
+                self.query_structure.stages.push(QueryStructureStage::Sort { variables: vec_from(sort.variables.iter()) })
             }
             AnnotatedStage::Offset(offset) => {
-                self.inner.stages.push(QueryStructureStage::Offset { offset: offset.offset() })
+                self.query_structure.stages.push(QueryStructureStage::Offset { offset: offset.offset() })
             }
-            AnnotatedStage::Limit(limit) => self.inner.stages.push(QueryStructureStage::Limit { limit: limit.limit() }),
+            AnnotatedStage::Limit(limit) => self.query_structure.stages.push(QueryStructureStage::Limit { limit: limit.limit() }),
             AnnotatedStage::Require(require) => {
-                self.inner.stages.push(QueryStructureStage::Require { variables: vec_from(require.variables.iter()) })
+                self.query_structure.stages.push(QueryStructureStage::Require { variables: vec_from(require.variables.iter()) })
             }
-            AnnotatedStage::Distinct(_) => self.inner.stages.push(QueryStructureStage::Distinct),
-            AnnotatedStage::Reduce(reduce, _) => self.inner.stages.push(QueryStructureStage::Reduce {
+            AnnotatedStage::Distinct(_) => self.query_structure.stages.push(QueryStructureStage::Distinct),
+            AnnotatedStage::Reduce(reduce, _) => self.query_structure.stages.push(QueryStructureStage::Reduce {
                 reducers: vec_from(reduce.assigned_reductions.iter()),
                 groupby: vec_from(reduce.groupby.iter()),
             }),
@@ -259,15 +259,15 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
     ) -> QueryStructureBlockID {
         self.extend_labels_from(annotations);
         self.extend_function_calls_syntax_from(constraints);
-        let branch_id = if let Some(BranchID(id)) = existing_branch_id {
-            debug_assert!((id as usize) < self.inner.blocks.len());
-            self.inner.blocks[id as usize] = QueryStructureBlock { constraints: Vec::from(constraints) };
+        let block_id = if let Some(BranchID(id)) = existing_branch_id {
+            debug_assert!((id as usize) < self.query_structure.blocks.len());
+            self.query_structure.blocks[id as usize] = QueryStructureBlock { constraints: Vec::from(constraints) };
             QueryStructureBlockID(id)
         } else {
-            self.inner.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
-            QueryStructureBlockID(self.inner.blocks.len() as u16 - 1)
+            self.query_structure.blocks.push(QueryStructureBlock { constraints: Vec::from(constraints) });
+            QueryStructureBlockID(self.query_structure.blocks.len() as u16 - 1)
         };
-        branch_id
+        block_id
     }
 
     fn extend_function_calls_syntax_from(&mut self, constraints: &[Constraint<Variable>]) {
@@ -279,13 +279,13 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             .for_each(|constraint| {
                 if let Some(span) = constraint.source_span() {
                     let syntax = self.source_query[span.begin_offset..span.end_offset].to_owned();
-                    self.inner.calls_syntax.insert(constraint.clone(), syntax);
+                    self.query_structure.calls_syntax.insert(constraint.clone(), syntax);
                 }
             });
     }
 
     fn extend_labels_from(&mut self, type_annotations: &TypeAnnotations) {
-        self.inner.resolved_labels.extend(type_annotations.vertex_annotations().iter().filter_map(
+        self.query_structure.resolved_labels.extend(type_annotations.vertex_annotations().iter().filter_map(
             |(vertex, type_)| match (vertex.as_label(), type_.iter().exactly_one()) {
                 (Some(label), Ok(type_)) => Some((label.clone(), type_.clone())),
                 _ => None,
