@@ -354,69 +354,65 @@ impl fmt::Display for ValueType {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-enum VariableDependencyMode {
-    Required,
-    Producing,
-    Referencing,
+enum BindingMode {
+    NonBinding,
+    Binding,
+    LocallyBindingInChild,
 }
 
-impl BitAndAssign for VariableDependencyMode {
+impl BitAndAssign for BindingMode {
     fn bitand_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::Producing, _) | (_, Self::Producing) => *self = Self::Producing,
-            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
-            (Self::Referencing, Self::Referencing) => (),
+            (Self::Binding, _) | (_, Self::Binding) => *self = Self::Binding,
+            (Self::NonBinding, _) | (_, Self::NonBinding) => *self = Self::NonBinding,
+            (Self::LocallyBindingInChild, Self::LocallyBindingInChild) => (),
         }
     }
 }
 
-impl BitOrAssign for VariableDependencyMode {
+impl BitOrAssign for BindingMode {
     fn bitor_assign(&mut self, rhs: Self) {
         match (*self, rhs) {
-            (Self::Required, _) | (_, Self::Required) => *self = Self::Required,
-            (Self::Referencing, _) | (_, Self::Referencing) => *self = Self::Referencing,
-            (Self::Producing, Self::Producing) => (),
+            (Self::NonBinding, _) | (_, Self::NonBinding) => *self = Self::NonBinding,
+            (Self::LocallyBindingInChild, _) | (_, Self::LocallyBindingInChild) => *self = Self::LocallyBindingInChild,
+            (Self::Binding, Self::Binding) => (),
         }
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct VariableDependency<'a> {
-    mode: VariableDependencyMode,
+pub struct VariableBindingMode<'a> {
+    mode: BindingMode,
     referencing_constraints: Vec<&'a Constraint<Variable>>,
 }
 
-impl<'a> VariableDependency<'a> {
-    pub fn required(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: VariableDependencyMode::Required, referencing_constraints: vec![constraint] }
+impl<'a> VariableBindingMode<'a> {
+    pub fn non_binding(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::NonBinding, referencing_constraints: vec![constraint] }
     }
 
-    pub fn producing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: VariableDependencyMode::Producing, referencing_constraints: vec![constraint] }
+    pub fn binding(constraint: &'a Constraint<Variable>) -> Self {
+        Self { mode: BindingMode::Binding, referencing_constraints: vec![constraint] }
     }
 
-    pub fn referencing(constraint: &'a Constraint<Variable>) -> Self {
-        Self { mode: VariableDependencyMode::Referencing, referencing_constraints: vec![constraint] }
+    pub fn set_non_binding(&mut self) {
+        self.mode = BindingMode::NonBinding;
     }
 
-    pub fn set_required(&mut self) {
-        self.mode = VariableDependencyMode::Required;
+    pub fn set_locally_binding_in_child(&mut self) {
+        self.mode = BindingMode::LocallyBindingInChild;
     }
 
-    pub fn set_referencing(&mut self) {
-        self.mode = VariableDependencyMode::Referencing;
+    pub fn is_non_binding(&self) -> bool {
+        self.mode == BindingMode::NonBinding
     }
 
-    pub fn is_required(&self) -> bool {
-        self.mode == VariableDependencyMode::Required
+    pub fn is_binding(&self) -> bool {
+        self.mode == BindingMode::Binding
     }
 
-    pub fn is_producing(&self) -> bool {
-        self.mode == VariableDependencyMode::Producing
-    }
-
-    pub fn is_referencing(&self) -> bool {
-        self.mode == VariableDependencyMode::Referencing
+    pub fn is_locally_binding_in_child(&self) -> bool {
+        self.mode == BindingMode::LocallyBindingInChild
     }
 
     pub fn referencing_constraints(&self) -> &[&Constraint<Variable>] {
@@ -424,14 +420,14 @@ impl<'a> VariableDependency<'a> {
     }
 }
 
-impl BitAndAssign for VariableDependency<'_> {
+impl BitAndAssign for VariableBindingMode<'_> {
     fn bitand_assign(&mut self, rhs: Self) {
         self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
         self.mode &= rhs.mode;
     }
 }
 
-impl BitOrAssign for VariableDependency<'_> {
+impl BitOrAssign for VariableBindingMode<'_> {
     fn bitor_assign(&mut self, rhs: Self) {
         self.referencing_constraints.extend_from_slice(&rhs.referencing_constraints);
         self.mode |= rhs.mode;

@@ -18,7 +18,7 @@ use typeql::common::Span;
 use crate::{
     pattern::ParameterID,
     pipeline::function::Function,
-    translation::{pipeline::TranslatedStage, TranslationContext},
+    translation::{pipeline::TranslatedStage, PipelineTranslationContext},
 };
 
 #[derive(Debug, Clone)]
@@ -167,7 +167,7 @@ impl StructuralEquality for FetchObject {
 
 #[derive(Debug, Clone)]
 pub struct FetchListSubFetch {
-    pub context: TranslationContext,
+    pub context: PipelineTranslationContext,
     pub input_variables: HashSet<Variable>,
     pub stages: Vec<TranslatedStage>,
     pub fetch: FetchObject,

@@ -24,7 +24,7 @@ use crate::{
         expression::{ExpressionRepresentationError, ExpressionTree},
         function_call::FunctionCall,
         variable_category::VariableCategory,
-        IrID, ParameterID, ScopeId, ValueType, VariableDependency, Vertex,
+        IrID, ParameterID, ScopeId, ValueType, VariableBindingMode, Vertex,
     },
     pipeline::{
         block::BlockBuilderContext, function_signature::FunctionSignature, ParameterRegistry, VariableRegistry,
@@ -68,25 +68,25 @@ impl Constraints {
         self.constraints.last().unwrap()
     }
 
-    pub(crate) fn variable_dependency(&self) -> HashMap<Variable, VariableDependency<'_>> {
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.constraints().iter().fold(HashMap::new(), |mut acc, constraint| {
-            for var in constraint.produced_ids() {
+            for var in constraint.binding_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::producing(constraint);
+                        *entry.get_mut() &= VariableBindingMode::binding(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::producing(constraint));
+                        vacant_entry.insert(VariableBindingMode::binding(constraint));
                     }
                 }
             }
-            for var in constraint.required_ids() {
+            for var in constraint.non_binding_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableDependency::required(constraint);
+                        *entry.get_mut() &= VariableBindingMode::non_binding(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableDependency::required(constraint));
+                        vacant_entry.insert(VariableBindingMode::non_binding(constraint));
                     }
                 }
             }
@@ -610,7 +610,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn produced_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+    pub fn binding_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Is(is) => Box::new(is.ids()),
             Constraint::Kind(kind) => Box::new(kind.ids()),
@@ -634,7 +634,7 @@ impl<ID: IrID> Constraint<ID> {
         }
     }
 
-    pub fn required_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
+    pub fn non_binding_ids(&self) -> Box<dyn Iterator<Item = ID> + '_> {
         match self {
             Constraint::Is(is) => Box::new(is.ids()), // FIXME _technically_ it's legal to only have one side of `is` bound
             | Constraint::Kind(_)
@@ -652,8 +652,8 @@ impl<ID: IrID> Constraint<ID> {
             | Constraint::Value(_)
             | Constraint::LinksDeduplication(_)
             | Constraint::Unsatisfiable(_) => Box::new(iter::empty()),
-            Constraint::ExpressionBinding(binding) => Box::new(binding.required_ids()),
-            Constraint::FunctionCallBinding(binding) => Box::new(binding.required_ids()),
+            Constraint::ExpressionBinding(binding) => Box::new(binding.expression_ids()),
+            Constraint::FunctionCallBinding(binding) => Box::new(binding.function_call_arg_ids()),
             Constraint::Comparison(comparison) => Box::new(comparison.ids()),
         }
     }
@@ -2056,8 +2056,8 @@ impl<ID: IrID> ExpressionBinding<ID> {
         [&self.left].into_iter()
     }
 
-    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.expression.variables()
+    pub fn expression_ids(&self) -> impl Iterator<Item = ID> + '_ {
+        self.expression.ids()
     }
 
     pub fn ids_assigned(&self) -> impl Iterator<Item = ID> {
@@ -2065,7 +2065,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
     }
 
     pub(crate) fn ids(&self) -> impl Iterator<Item = ID> + '_ {
-        self.ids_assigned().chain(self.expression().variables())
+        self.ids_assigned().chain(self.expression().ids())
     }
 
     pub fn ids_foreach<F>(&self, mut function: F)
@@ -2073,7 +2073,7 @@ impl<ID: IrID> ExpressionBinding<ID> {
         F: FnMut(ID),
     {
         self.ids_assigned().for_each(&mut function);
-        self.expression().variables().for_each(function);
+        self.expression().ids().for_each(function);
     }
 
     pub(crate) fn validate(&self, context: &mut BlockBuilderContext<'_>) -> Result<(), ExpressionRepresentationError> {
@@ -2168,7 +2168,7 @@ impl<ID: IrID> FunctionCallBinding<ID> {
         self.ids_assigned().chain(self.function_call.argument_ids())
     }
 
-    pub fn required_ids(&self) -> impl Iterator<Item = ID> + '_ {
+    pub fn function_call_arg_ids(&self) -> impl Iterator<Item = ID> + '_ {
         self.function_call.argument_ids()
     }
 

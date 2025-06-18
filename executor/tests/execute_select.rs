@@ -38,7 +38,7 @@ use executor::{
 use ir::{
     pattern::constraint::IsaKind,
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -196,7 +196,7 @@ fn anonymous_vars_not_enumerated_or_counted() {
     //    $person has $_;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -291,7 +291,7 @@ fn unselected_named_vars_counted() {
     //   select $person;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -388,7 +388,7 @@ fn cartesian_named_counted_checked() {
     //   select $person, $name;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();

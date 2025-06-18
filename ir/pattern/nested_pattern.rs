@@ -11,7 +11,7 @@ use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
 use crate::{
-    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, VariableDependency},
+    pattern::{disjunction::Disjunction, negation::Negation, optional::Optional, VariableBindingMode},
     pipeline::block::BlockContext,
 };
 
@@ -65,22 +65,22 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn variable_dependency(
+    pub(crate) fn variable_binding_modes(
         &self,
         block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableDependency<'_>> {
+    ) -> HashMap<Variable, VariableBindingMode<'_>> {
         match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_dependency(block_context),
-            NestedPattern::Negation(negation) => negation.variable_dependency(block_context),
-            NestedPattern::Optional(optional) => optional.variable_dependency(block_context),
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_binding_modes(block_context),
+            NestedPattern::Negation(negation) => negation.variable_binding_modes(block_context),
+            NestedPattern::Optional(optional) => optional.variable_binding_modes(block_context),
         }
     }
 
-    pub(crate) fn find_disjoint(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
+    pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
         match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint(block_context),
-            NestedPattern::Negation(negation) => negation.conjunction().find_disjoint(block_context),
-            NestedPattern::Optional(optional) => optional.conjunction().find_disjoint(block_context),
+            NestedPattern::Disjunction(disjunction) => disjunction.find_disjoint_variable(block_context),
+            NestedPattern::Negation(negation) => negation.conjunction().find_disjoint_variable(block_context),
+            NestedPattern::Optional(optional) => optional.conjunction().find_disjoint_variable(block_context),
         }
     }
 }

@@ -67,6 +67,17 @@ impl FixedBatch {
         }
     }
 
+    pub(crate) fn new_with_rows(width: u32, rows: u32) -> Self {
+        let size = width * rows;
+        FixedBatch {
+            width,
+            data: vec![VariableValue::None; size as usize],
+            entries: 0,
+            multiplicities: FixedBatch::INIT_MULTIPLICITIES,
+            provenance: FixedBatch::INIT_PROVENANCES,
+        }
+    }
+
     pub fn width(&self) -> u32 {
         self.width
     }

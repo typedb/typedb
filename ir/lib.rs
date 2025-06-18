@@ -147,7 +147,7 @@ typedb_error! {
         ),
         ReduceVariableNotAvailable(
             19,
-            "The variable '{variable}' was not available in for use in the reduce.",
+            "The variable '{variable}' was not available for use in the reduce.",
             variable: String,
             source_span: Option<Span>,
         ),

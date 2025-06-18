@@ -28,23 +28,23 @@ pub mod tokens;
 pub mod writes;
 
 #[derive(Debug, Clone)]
-pub struct TranslationContext {
+pub struct PipelineTranslationContext {
     pub variable_registry: VariableRegistry, // TODO: Unpub
-    visible_variables: HashMap<String, Variable>,
+    last_stage_visible_variables: HashMap<String, Variable>,
 }
 
-impl Default for TranslationContext {
+impl Default for PipelineTranslationContext {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl TranslationContext {
+impl PipelineTranslationContext {
     pub fn new() -> Self {
-        Self { variable_registry: VariableRegistry::new(), visible_variables: HashMap::new() }
+        Self { variable_registry: VariableRegistry::new(), last_stage_visible_variables: HashMap::new() }
     }
 
-    pub fn new_with_function_arguments(
+    pub fn new_function_pipeline(
         input_variables: Vec<(String, Option<Span>, VariableCategory)>,
     ) -> Result<(Self, Vec<Variable>), Box<RepresentationError>> {
         let mut visible_variables = HashMap::new();
@@ -55,7 +55,7 @@ impl TranslationContext {
             visible_variables.insert(name.clone(), variable);
             variables.push(variable);
         }
-        let this = Self { variable_registry, visible_variables };
+        let this = Self { variable_registry, last_stage_visible_variables: visible_variables };
         Ok((this, variables))
     }
 
@@ -63,7 +63,7 @@ impl TranslationContext {
         &'a mut self,
         parameters: &'a mut ParameterRegistry,
     ) -> BlockBuilderContext<'a> {
-        let Self { variable_registry, visible_variables } = self;
+        let Self { variable_registry, last_stage_visible_variables: visible_variables } = self;
         BlockBuilderContext::new(variable_registry, visible_variables, parameters)
     }
 
@@ -82,12 +82,12 @@ impl TranslationContext {
             source_span,
             reducer,
         )?;
-        self.visible_variables.insert(name.to_owned(), variable);
+        self.last_stage_visible_variables.insert(name.to_owned(), variable);
         Ok(variable)
     }
 
     pub fn get_variable(&self, variable: &str) -> Option<Variable> {
-        self.visible_variables.get(variable).cloned()
+        self.last_stage_visible_variables.get(variable).cloned()
     }
 }
 

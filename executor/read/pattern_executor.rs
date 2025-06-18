@@ -29,6 +29,8 @@ use crate::{
     row::MaybeOwnedRow,
     ExecutionInterrupt, Provenance,
 };
+use crate::read::control_instruction::ExecuteOptional;
+use crate::read::nested_pattern_executor::OptionalExecutor;
 
 #[derive(Debug)]
 pub(crate) struct PatternExecutor {
@@ -65,6 +67,7 @@ impl PatternExecutor {
             match executor {
                 StepExecutors::Immediate(inner) => inner.reset(),
                 StepExecutors::Negation(inner) => inner.reset(),
+                StepExecutors::Optional(inner) => inner.reset(),
                 StepExecutors::Disjunction(inner) => inner.reset(),
                 StepExecutors::InlinedCall(inner) => inner.reset(),
                 StepExecutors::StreamModifier(inner) => inner.reset(),
@@ -139,6 +142,23 @@ impl PatternExecutor {
                             inner.reset()
                         }
                     };
+                }
+                ControlInstruction::ExecuteOptional(ExecuteOptional { index, input, any_found }) => {
+                    let optional = &mut executors[*index].unwrap_optional();
+                    let batch_opt = optional.inner.batch_continue(context, interrupt, tabled_functions, suspensions)?
+                        .map(|batch| optional.map_output(batch));
+                    if let Some(batch) = batch_opt {
+                        debug_assert!(!batch.is_empty());
+                        control_stack.push(ExecuteOptional { index, input, any_found: true }.into());
+                        self.push_next_instruction(context, index.next(), batch)?;
+                    } else if !any_found {
+                        // if we never found anything for this input, we still push the next instruction
+                        //   this will continue with None for all the new variables
+                        //   we also don't re-visit this instruction on backtracking.
+                        // TODO: verify correctness
+                        let batch = optional.map_as_failed_output(input);
+                        self.push_next_instruction(context, index.next(), batch)?;
+                    } // else: we've already found some optional values, so we don't need to re-explore and just backtrack
                 }
                 ControlInstruction::ExecuteDisjunctionBranch(ExecuteDisjunctionBranch {
                     index,
@@ -232,6 +252,7 @@ impl PatternExecutor {
                 }
                 StepExecutors::Negation(_)
                 | StepExecutors::Disjunction(_)
+                | StepExecutors::Optional(_)
                 | StepExecutors::InlinedCall(_)
                 | StepExecutors::StreamModifier(_)
                 | StepExecutors::TabledCall(_) => {
@@ -266,7 +287,13 @@ impl PatternExecutor {
                     )
                 }
             }
+            StepExecutors::Optional(OptionalExecutor { inner, .. }) => {
+                inner.prepare(FixedBatch::from(input.as_reference()));
+                self.control_stack.push(ExecuteOptional { index, input: input.into_owned(), any_found: false }.into());
+            }
             StepExecutors::Negation(NegationExecutor { inner }) => {
+                // TODO: question: why do we send the input row into the Inner, but also stash it in the ExecuteNegation control instruction?
+                //     Is it so we can restore the executor to the same state somehow?
                 inner.prepare(FixedBatch::from(input.as_reference()));
                 self.control_stack.push(ExecuteNegation { index, input: input.into_owned() }.into());
             }
@@ -382,6 +409,13 @@ fn restore_suspension(
                     disjunction.branches[*branch_index].prepare_to_restore_from_suspension(nested_pattern_depth);
                     control_stack
                         .push(ExecuteDisjunctionBranch { index, branch_index, input: input_row.into_owned() }.into())
+                }
+                StepExecutors::Optional(optional) => {
+                    optional.inner.prepare_to_restore_from_suspension(nested_pattern_depth);
+                    // TODO: verify correct? ***How do we know if any where found??***
+                    //  ---> Can we only be resuming an optional if we already found an answer before?
+                    control_stack
+                        .push(ExecuteOptional { index, input: input_row.into_owned(), any_found: true }.into())
                 }
                 StepExecutors::InlinedCall(inlined) => {
                     inlined.inner.prepare_to_restore_from_suspension(nested_pattern_depth);

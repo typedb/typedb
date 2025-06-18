@@ -41,7 +41,7 @@ use executor::{
 use ir::{
     pattern::constraint::IsaKind,
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -165,7 +165,7 @@ fn traverse_has_unbounded_sorted_from() {
     //    $person isa person, has age $age;
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -255,7 +255,7 @@ fn traverse_has_bounded_sorted_from_chain_intersect() {
     //    $person-2 has name $name; # reverse!
 
     // IR
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -365,7 +365,7 @@ fn traverse_has_unbounded_sorted_from_intersect() {
 
     // IR
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -464,7 +464,7 @@ fn traverse_has_unbounded_sorted_to_merged() {
 
     // IR
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -565,7 +565,7 @@ fn traverse_has_reverse_unbounded_sorted_from() {
 
     // IR
 
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();

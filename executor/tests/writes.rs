@@ -34,7 +34,7 @@ use executor::{
 };
 use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use itertools::Itertools;
 use lending_iterator::{AsHkt, AsNarrowingIterator, LendingIterator};
@@ -173,7 +173,7 @@ fn execute_insert<Snapshot: WritableSnapshot + 'static>(
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let typeql_insert =
         typeql::parse_query(query_str).unwrap().into_structure().into_pipeline().stages.pop().unwrap().into_insert();
@@ -251,7 +251,7 @@ fn execute_delete<Snapshot: WritableSnapshot + 'static>(
     input_row_var_names: &[&str],
     input_rows: Vec<Vec<VariableValue<'static>>>,
 ) -> Result<(Vec<MaybeOwnedRow<'static>>, Snapshot), Box<WriteError>> {
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let (block, block_annotations) = {
         let typeql_match = typeql::parse_query(mock_match_string_for_annotations)

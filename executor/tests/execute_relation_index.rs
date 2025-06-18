@@ -44,7 +44,7 @@ use ir::{
         Vertex,
     },
     pipeline::{block::Block, ParameterRegistry},
-    translation::TranslationContext,
+    translation::PipelineTranslationContext,
 };
 use lending_iterator::LendingIterator;
 use resource::profile::{CommitProfile, QueryProfile, StorageCounters};
@@ -302,7 +302,7 @@ fn traverse_index_from_unbound() {
     //    $casting links (movie: $movie, character: $character), isa casting;
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();
@@ -551,7 +551,7 @@ fn traverse_index_from_bound() {
     //    $casting links (movie: $movie, actor: $person), isa casting;
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let id_0_parameter = value_parameters.register_value(Value::Integer(0), Span { begin_offset: 0, end_offset: 0 });
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
@@ -728,7 +728,7 @@ fn traverse_index_bound_role_type_filtered_correctly() {
     //    $casting links (movie: $movie, $other), isa casting;
 
     // IR to compute type annotations
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
     let mut conjunction = builder.conjunction_mut();

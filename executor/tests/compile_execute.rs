@@ -27,7 +27,7 @@ use executor::{
 use function::function_manager::FunctionManager;
 use ir::{
     pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-    translation::{match_::translate_match, TranslationContext},
+    translation::{match_::translate_match, PipelineTranslationContext},
 };
 use itertools::Itertools;
 use lending_iterator::LendingIterator;
@@ -115,7 +115,7 @@ fn test_has_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -140,7 +140,7 @@ fn test_has_planning_traversal() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -205,7 +205,7 @@ fn test_expression_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -241,7 +241,7 @@ fn test_expression_planning_traversal() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &compiled_expressions,
@@ -305,7 +305,7 @@ fn test_links_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -330,7 +330,7 @@ fn test_links_planning_traversal() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -401,7 +401,7 @@ fn test_links_intersection() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -426,7 +426,7 @@ fn test_links_intersection() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -488,7 +488,7 @@ fn test_negation_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -513,7 +513,7 @@ fn test_negation_planning_traversal() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -596,7 +596,7 @@ fn test_forall_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -621,7 +621,7 @@ fn test_forall_planning_traversal() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -691,7 +691,7 @@ fn test_named_var_select() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -716,7 +716,7 @@ fn test_named_var_select() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -785,7 +785,7 @@ fn test_disjunction_planning_traversal() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -810,7 +810,7 @@ fn test_disjunction_planning_traversal() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -883,7 +883,7 @@ fn test_disjunction_planning_nested_negations() {
 
     // IR
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -908,7 +908,7 @@ fn test_disjunction_planning_nested_negations() {
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),
@@ -1047,7 +1047,7 @@ fn compile_query(
     // IR
     let match_ = typeql::parse_query(query).unwrap().into_structure().into_pipeline().stages.remove(0).into_match();
     let empty_function_index = HashMapFunctionSignatureIndex::empty();
-    let mut translation_context = TranslationContext::new();
+    let mut translation_context = PipelineTranslationContext::new();
     let mut value_parameters = ParameterRegistry::new();
     let builder =
         translate_match(&mut translation_context, &mut value_parameters, &empty_function_index, &match_).unwrap();
@@ -1069,7 +1069,7 @@ fn compile_query(
         &block,
         &BTreeMap::new(),
         &HashMap::new(),
-        &block.conjunction().named_producible_variables(block.block_context()).collect(),
+        &block.conjunction().named_binding_variables(block.block_context()).collect(),
         &entry_annotations,
         &translation_context.variable_registry,
         &HashMap::new(),

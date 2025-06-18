@@ -12,7 +12,7 @@ use structural_equality::StructuralEquality;
 use crate::{
     pattern::{
         conjunction::{Conjunction, ConjunctionBuilder},
-        Scope, ScopeId, VariableDependency,
+        Scope, ScopeId, VariableBindingMode,
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
@@ -49,17 +49,17 @@ impl Optional {
         &mut self.conjunction
     }
 
-    pub(crate) fn variable_dependency(
+    pub(crate) fn variable_binding_modes(
         &self,
         block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableDependency<'_>> {
+    ) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.conjunction
-            .variable_dependency(block_context)
+            .variable_binding_modes(block_context)
             .into_iter()
             .map(|(var, mut mode)| {
-                let status = block_context.variable_status_in_scope(var, self.scope_id());
+                let status = block_context.variable_locality_in_scope(var, self.scope_id());
                 if status == VariableLocality::Parent {
-                    mode.set_required();
+                    mode.set_non_binding();
                     // TODO: including this, means that we don't consider Try variables as produce
                     //   Which means that we don't include them as 'selected', and the planner can't register them in the graph
                     // } else if mode.is_producing() {
@@ -73,12 +73,20 @@ impl Optional {
             .collect()
     }
 
+    pub fn named_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.binding_variables(block_context).filter(Variable::is_named)
+    }
+
+    fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_binding().then_some(v))
+    }
+
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_dependency(block_context).into_iter().filter_map(|(v, dep)| dep.is_required().then_some(v))
+        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_non_binding().then_some(v))
     }
 }
 

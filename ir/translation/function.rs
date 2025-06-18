@@ -26,7 +26,7 @@ use crate::{
     translation::{
         pipeline::{translate_pipeline_stages, TranslatedStage},
         reduce::build_reducer,
-        TranslationContext,
+        PipelineTranslationContext,
     },
 };
 
@@ -82,7 +82,7 @@ pub fn translate_function_from(
             ))
         })
         .collect::<Result<Vec<_>, _>>()?;
-    let (mut context, arguments) = TranslationContext::new_with_function_arguments(args_sources_categories)
+    let (mut context, arguments) = PipelineTranslationContext::new_function_pipeline(args_sources_categories)
         .map_err(|typedb_source| FunctionRepresentationError::BlockDefinition { typedb_source })?;
     let mut value_parameters = ParameterRegistry::new();
     let body = translate_function_block(snapshot, function_index, &mut context, &mut value_parameters, block)?;
@@ -137,7 +137,7 @@ pub fn translate_function_from(
 pub(crate) fn translate_function_block(
     snapshot: &impl ReadableSnapshot,
     function_index: &impl FunctionSignatureIndex,
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     function_block: &FunctionBlock,
 ) -> Result<FunctionBody, Box<FunctionRepresentationError>> {
@@ -226,7 +226,7 @@ fn named_type_any_to_category_and_optionality(
 }
 
 fn build_return_stream(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     stream: &ReturnStream,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     let variables = stream
@@ -238,7 +238,7 @@ fn build_return_stream(
 }
 
 fn build_return_single(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     single: &ReturnSingle,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     let variables = single
@@ -251,7 +251,7 @@ fn build_return_single(
 }
 
 fn build_return_reduce(
-    context: &TranslationContext,
+    context: &PipelineTranslationContext,
     reduction: &ReturnReduction,
 ) -> Result<ReturnOperation, FunctionRepresentationError> {
     match reduction {

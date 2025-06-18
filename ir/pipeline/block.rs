@@ -129,21 +129,23 @@ fn validate_conjunction(
     let unbound = conjunction.referenced_variables().find(|&variable| {
         matches!(variable_registry.get_variable_category(variable), Some(VariableCategory::AttributeOrValue) | None)
     });
+    // unbound variable somewhere in the pattern is insufficient - a variable could be bound, but
+    //   it's actually requierd in a different part of the pattern
     if let Some(variable) = unbound {
         return Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
             source_span: variable_registry.source_span(variable),
         }));
     }
-    if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint(block_context) {
+    if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint_variable(block_context) {
         let name = variable_registry.get_variable_name(var).unwrap().clone();
         return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
     }
 
-    for (var, dep) in conjunction.variable_dependency(block_context) {
-        if dep.is_required() && block_context.get_scope(&var) != Some(ScopeId::INPUT) {
+    for (var, mode) in conjunction.variable_binding_modes(block_context) {
+        if mode.is_non_binding() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
-            let spans = dep.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
+            let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();
             return Err(Box::new(RepresentationError::UnboundRequiredVariable {
                 variable,
                 source_span: spans[0],
@@ -201,8 +203,8 @@ fn validate_is_variables_have_same_category(
 pub struct BlockContext {
     variable_declaration: HashMap<Variable, ScopeId>,
     scope_parents: HashMap<ScopeId, ScopeId>,
-    scope_transparency: HashMap<ScopeId, ScopeTransparency>,
     referenced_variables: HashSet<Variable>,
+    scope_types: HashMap<ScopeId, ScopeType>,
 }
 
 impl BlockContext {
@@ -219,7 +221,13 @@ impl BlockContext {
         self.add_referenced_variable(var);
     }
 
+    fn declare_scope(&mut self, scope_id: ScopeId, scope_type: ScopeType) {
+        debug_assert!(!self.scope_types.contains_key(&scope_id));
+        self.scope_types.insert(scope_id, scope_type);
+    }
+
     fn set_scope_parent(&mut self, scope_id: ScopeId, parent_scope_id: ScopeId) {
+        debug_assert!(self.scope_types.contains_key(&scope_id));
         self.scope_parents.insert(scope_id, parent_scope_id);
     }
 
@@ -239,28 +247,40 @@ impl BlockContext {
             // Child defines the same name: ok, reuse the variable, and change the declaration scope to the current one
             *self.variable_declaration.get_mut(&var).unwrap() = scope;
         } else {
-            let ancestor = common_ancestor(&self.scope_parents, recorded_scope, scope);
-            if !self.is_visible_child(scope, ancestor) || !self.is_visible_child(recorded_scope, ancestor) {
-                return Err(Box::new(RepresentationError::DisjointVariableReuse {
-                    name: var_name.to_owned(),
-                    source_span,
-                }));
-            }
-            *self.variable_declaration.get_mut(&var).unwrap() = ancestor;
+            // Sibling scope declares the name
+            // This could be "{ A(x) } or { B(x) }" or "{ A(x) } or { B(y) }; { C(x) } or { D(y) };"
+            // or even " not { A(x) }; not { B(x) }; "
+            // These same-named variables will for now be all treated as identical so the constraints using assigned VarId don't have to get rewritten later
+            // Future: we can allow scope-local variables with re-use across branches by always assigning new variables and equating them elsewhere
+            // In these cases the 'x' and 'y' declarations will be pulled up the root conjunction
+            // We can only later validate the requirements about whether each pattern conforms to the required variable usages & visibility
+
+            let ancestor = lowest_common_ancestor(&self.scope_parents, recorded_scope, scope);
+            let ancestor_conjunction = lowest_parent_conjunction(&self.scope_parents, &self.scope_types, ancestor);
+            // if !self.is_visible_child(scope, ancestor) || !self.is_visible_child(recorded_scope, ancestor) {
+            //     return Err(Box::new(RepresentationError::DisjointVariableReuse {
+            //         name: var_name.to_owned(),
+            //         source_span,
+            //     }));
+            // }
+            *self.variable_declaration.get_mut(&var).unwrap() = ancestor_conjunction;
         }
         Ok(())
     }
 
-    pub fn get_scope(&self, var: &Variable) -> Option<ScopeId> {
+    pub fn get_declaring_scope(&self, var: &Variable) -> Option<ScopeId> {
         self.variable_declaration.get(var).cloned()
     }
 
     pub(crate) fn is_transparent(&self, scope: ScopeId) -> bool {
-        self.scope_transparency[&scope] == ScopeTransparency::Transparent
-    }
-
-    fn set_scope_transparency(&mut self, scope: ScopeId, transparency: ScopeTransparency) {
-        self.scope_transparency.insert(scope, transparency);
+        debug_assert!(self.scope_types.contains_key(&scope));
+        self.scope_types.get(&scope).is_some_and(|scope_type| match scope_type {
+            ScopeType::Input
+            | ScopeType::Conjunction
+            | ScopeType::Disjunction
+            | ScopeType::Optional => true,
+            ScopeType::Negation => false,
+        })
     }
 
     fn add_referenced_variable(&mut self, var: Variable) {
@@ -273,8 +293,9 @@ impl BlockContext {
 
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
-        variable_scope
-            .is_some_and(|variable_scope| is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope))
+        let is_available = variable_scope
+            .is_some_and(|variable_scope| is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope));
+        is_available
     }
 
     pub fn is_child_scope(&self, child: ScopeId, ancestor: ScopeId) -> bool {
@@ -290,11 +311,7 @@ impl BlockContext {
         parent == ancestor || self.is_visible_child(parent, ancestor)
     }
 
-    pub fn get_variable_scopes(&self) -> impl Iterator<Item = (Variable, ScopeId)> + '_ {
-        self.variable_declaration.iter().map(|(&var, &scope)| (var, scope))
-    }
-
-    pub fn variable_status_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
+    pub fn variable_locality_in_scope(&self, var: Variable, scope: ScopeId) -> VariableLocality {
         let var_scope = self.variable_declaration[&var];
         if var_scope == scope {
             VariableLocality::Local
@@ -314,9 +331,12 @@ pub enum VariableLocality {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum ScopeTransparency {
-    Transparent,
-    Opaque,
+pub(crate) enum ScopeType {
+    Input,
+    Conjunction,
+    Disjunction,
+    Negation,
+    Optional,
 }
 
 #[derive(Debug)]
@@ -339,9 +359,9 @@ impl<'a> BlockBuilderContext<'a> {
         available_input_names.values().for_each(|v| {
             block_context.add_input_declaration(*v);
         });
+        block_context.declare_scope(ScopeId::ROOT, ScopeType::Conjunction);
+        block_context.declare_scope(ScopeId::INPUT, ScopeType::Input);
         block_context.set_scope_parent(ScopeId::ROOT, ScopeId::INPUT);
-        block_context.set_scope_transparency(ScopeId::ROOT, ScopeTransparency::Transparent);
-        block_context.set_scope_transparency(ScopeId::INPUT, ScopeTransparency::Transparent);
         Self {
             variable_registry,
             variable_names_index: available_input_names,
@@ -353,10 +373,6 @@ impl<'a> BlockBuilderContext<'a> {
 
     pub(crate) fn next_branch_id(&mut self) -> BranchID {
         self.variable_registry.next_branch_id()
-    }
-
-    pub fn get_variable_named(&self, name: &str) -> Option<&Variable> {
-        self.variable_names_index.get(name)
     }
 
     pub(crate) fn get_variable_name(&self, variable: Variable) -> Option<&String> {
@@ -398,10 +414,6 @@ impl<'a> BlockBuilderContext<'a> {
         Ok(variable)
     }
 
-    pub fn named_variable_mapping(&self) -> &HashMap<String, Variable> {
-        self.variable_names_index
-    }
-
     pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
         self.block_context.is_variable_available(scope, variable)
     }
@@ -410,12 +422,12 @@ impl<'a> BlockBuilderContext<'a> {
         self.block_context.variable_declaration.get(&variable) == Some(&ScopeId::INPUT)
     }
 
-    pub(crate) fn create_child_scope(&mut self, parent: ScopeId, transparency: ScopeTransparency) -> ScopeId {
+    pub(crate) fn create_child_scope(&mut self, parent: ScopeId, scope_type: ScopeType) -> ScopeId {
         let scope = ScopeId::new(self.scope_id_allocator);
         debug_assert_ne!(scope, ScopeId::ROOT);
         self.scope_id_allocator += 1;
+        self.block_context.declare_scope(scope, scope_type);
         self.block_context.set_scope_parent(scope, parent);
-        self.block_context.set_scope_transparency(scope, transparency);
         scope
     }
 
@@ -441,12 +453,21 @@ fn is_child_scope(parents: &HashMap<ScopeId, ScopeId>, scope: ScopeId, maybe_chi
     parents.get(&maybe_child).is_some_and(|&c| c == scope || is_child_scope(parents, scope, c))
 }
 
-fn common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, right: ScopeId) -> ScopeId {
+fn lowest_common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, right: ScopeId) -> ScopeId {
     if left == right || is_child_scope(parents, left, right) {
         left
     } else if is_child_scope(parents, right, left) {
         right
     } else {
-        common_ancestor(parents, parents[&left], parents[&right])
+        lowest_common_ancestor(parents, parents[&left], parents[&right])
+    }
+}
+
+fn lowest_parent_conjunction(parents: &HashMap<ScopeId, ScopeId>, scope_types: &HashMap<ScopeId, ScopeType>, scope_id: ScopeId) -> ScopeId {
+    debug_assert!(scope_types.contains_key(&scope_id));
+    if *scope_types.get(&scope_id).unwrap() == ScopeType::Conjunction {
+        scope_id
+    } else {
+        lowest_parent_conjunction(parents, scope_types, *parents.get(&scope_id).unwrap())
     }
 }
