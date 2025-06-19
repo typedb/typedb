@@ -984,33 +984,24 @@ impl PartialCostPlan {
     }
 
     fn determine_joinability(&self, graph: &Graph<'_>, pattern: PatternVertexId) -> Option<VariableVertexId> {
+        // If there is no ongoing step, there is no join
         let &prev_pattern = self.ongoing_step.iter().next()?;
+
         // We only join constraint patterns, so let's extract constraints
-        let prev_planner = &graph.elements[&VertexId::Pattern(prev_pattern)];
-        let PlannerVertex::Constraint(prev_constraint) = prev_planner else { return None };
-        let planner = &graph.elements[&VertexId::Pattern(pattern)];
-        let PlannerVertex::Constraint(constraint) = planner else { return None };
-        // Determine whether there are any candidate join variables:
-        let candidate_join_var = constraint
-            .variables()
-            .filter(|var| self.ongoing_step_produced_vars.contains(var) && constraint.can_join_on(*var))
-            .exactly_one()
-            .ok()?;
-        // Only direct-able patterns are join-able:
+        let prev_constraint = &graph.elements[&VertexId::Pattern(prev_pattern)].as_constraint()?;
+        let constraint = &graph.elements[&VertexId::Pattern(pattern)].as_constraint()?;
         let Some(CostMetaData::Direction(prev_dir)) = self.pattern_metadata.get(&prev_pattern) else { return None };
         // If no join var is set yet, only join when we are on the "non-inverted join var" of the previous constraint based on its direction
-        if (self.ongoing_step_join_var.is_none()
-            && Some(candidate_join_var)
-                == prev_constraint.join_from_direction_and_inputs(
-                    prev_dir,
-                    &self.ongoing_step_produced_vars,
-                    &self.all_produced_vars,
-                ))
-            || self.ongoing_step_join_var == Some(candidate_join_var)
-        {
-            return Some(candidate_join_var);
-        }
-        None
+        let possible_join_var = match &self.ongoing_step_join_var {
+            Some(existing_join_var) => *existing_join_var,
+            None => prev_constraint.join_from_direction_and_inputs(
+                prev_dir,
+                &self.ongoing_step_produced_vars,
+                &self.all_produced_vars,
+            )?
+        };
+        (constraint.variables().contains(&possible_join_var) && constraint.can_join_on(possible_join_var))
+        .then(|| possible_join_var)
     }
 
     fn compute_added_cost(

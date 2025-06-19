@@ -92,7 +92,7 @@ impl ConstraintVertex<'_> {
             Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
                 let unbound_join_variables: Vec<VariableVertexId> = self
                     .variables()
-                    .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
+                    .filter(|&var| self.can_join_on(var) && (include.contains(&var) && !exclude.contains(&var)))
                     .collect();
                 if unbound_join_variables.len() == 1 {
                     return unbound_join_variables.get(0).cloned();
