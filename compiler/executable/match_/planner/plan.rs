@@ -1218,6 +1218,7 @@ impl PartialCostPlan {
         PartialCostHash {
             n_remaining_patterns: self.remaining_patterns.len() as u32,
             planned_patterns: self.vertex_ordering.iter().filter_map(|v| v.as_pattern_id()).collect::<BTreeSet<_>>(),
+            ongoing_step_join_var: self.ongoing_step_join_var,
             ongoing_non_trivial_patterns: self.ongoing_step.iter().copied().collect::<BTreeSet<_>>(),
         }
     }
@@ -1242,6 +1243,7 @@ pub(super) struct PartialCostHash {
     n_remaining_patterns: u32, // Needed for continuous search (A*), but not step-based (beam)
     planned_patterns: BTreeSet<PatternVertexId>,
     ongoing_non_trivial_patterns: BTreeSet<PatternVertexId>,
+    ongoing_step_join_var: Option<VariableVertexId>,
 }
 
 #[derive(Clone, PartialEq, Debug)]
