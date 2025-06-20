@@ -129,8 +129,8 @@ fn validate_conjunction(
     let unbound = conjunction.referenced_variables().find(|&variable| {
         matches!(variable_registry.get_variable_category(variable), Some(VariableCategory::AttributeOrValue) | None)
     });
-    // unbound variable somewhere in the pattern is insufficient - a variable could be bound, but
-    //   it's actually requierd in a different part of the pattern
+    // TODO: unbound variable somewhere in the pattern is insufficient - a variable could be bound, but
+    //   it's actually only required in a sibling part of the pattern ??
     if let Some(variable) = unbound {
         return Err(Box::new(RepresentationError::UnboundVariable {
             variable: variable_registry.get_variable_name(variable).cloned().unwrap_or(String::new()),
@@ -142,7 +142,7 @@ fn validate_conjunction(
         return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
     }
 
-    for (var, mode) in conjunction.variable_binding_modes(block_context) {
+    for (var, mode) in conjunction.variable_binding_modes() {
         if mode.is_non_binding() && block_context.get_declaring_scope(&var) != Some(ScopeId::INPUT) {
             let variable = variable_registry.get_variable_name(var).unwrap().clone();
             let spans = mode.referencing_constraints().iter().map(|s| s.source_span()).collect_vec();

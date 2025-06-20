@@ -140,6 +140,10 @@ impl OptionalBuilder {
     fn new(optional: MatchExecutableBuilder) -> Self {
         Self { optional }
     }
+
+    fn branch_id(&self) -> BranchID {
+        self.optional.branch_id.expect("Optionals must be assigned a branch ID")
+    }
 }
 
 #[derive(Debug)]
@@ -262,9 +266,13 @@ impl StepBuilder {
             StepInstructionsBuilder::Negation(NegationBuilder { negation }) => ExecutionStep::Negation(
                 NegationStep::new(negation.finish(variable_registry), selected_variables, output_width),
             ),
-            StepInstructionsBuilder::Optional(OptionalBuilder { optional }) => ExecutionStep::Optional(
-                OptionalStep::new(optional.finish(variable_registry), selected_variables, output_width),
-            ),
+            StepInstructionsBuilder::Optional(builder) => {
+                let branch_id = builder.branch_id();
+                let OptionalBuilder { optional } = builder;
+                ExecutionStep::Optional(
+                    OptionalStep::new(optional.finish(variable_registry), selected_variables, output_width, branch_id)
+                )
+            }
             StepInstructionsBuilder::Disjunction(DisjunctionBuilder { branch_ids, branches }) => {
                 ExecutionStep::Disjunction(DisjunctionStep::new(
                     branch_ids,

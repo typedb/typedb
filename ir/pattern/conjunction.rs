@@ -94,17 +94,17 @@ impl Conjunction {
     }
 
     fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_binding().then_some(v))
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_binding().then_some(v))
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_non_binding().then_some(v))
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_non_binding().then_some(v))
     }
 
-    pub fn variable_binding_modes(&self, block_context: &BlockContext) -> HashMap<Variable, VariableBindingMode<'_>> {
+    pub fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         let mut binding_modes = self.constraints.variable_binding_modes();
         for nested in self.nested_patterns.iter() {
-            let nested_pattern_modes = nested.variable_binding_modes(block_context);
+            let nested_pattern_modes = nested.variable_binding_modes();
             for (var, mode) in nested_pattern_modes {
                 match binding_modes.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
@@ -122,7 +122,7 @@ impl Conjunction {
     }
 
     pub(crate) fn find_disjoint_variable(&self, block_context: &BlockContext) -> ControlFlow<(Variable, Option<Span>)> {
-        for (var, mode) in self.variable_binding_modes(block_context) {
+        for (var, mode) in self.variable_binding_modes() {
             let scope = block_context.get_declaring_scope(&var).unwrap();
             // variables present in sibling scopes are "declared" in their common ancestor
             // variables are only considered locally binding in child if the variable is locally bound in all children it is present in

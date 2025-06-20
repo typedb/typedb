@@ -21,7 +21,7 @@ use crate::{
     },
     pipeline::block::{BlockBuilderContext, BlockContext},
 };
-use crate::pipeline::block::ScopeType;
+use crate::pipeline::block::{ScopeType, VariableLocality};
 
 #[derive(Clone, Debug)]
 pub struct Disjunction {
@@ -56,30 +56,35 @@ impl Disjunction {
     }
 
     fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_binding().then_some(v))
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_binding().then_some(v))
+    }
+
+    // Union of non-binding variables used here or below, and variables declared in parent scopes
+    pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            if mode.is_non_binding() {
+                debug_assert!(block_context.variable_locality_in_scope(v, self.scope_id) == VariableLocality::Parent);
+                Some(v)
+            } else {
+                None
+            }
+        })
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunctions().iter().flat_map(|conjunction| conjunction.referenced_variables())
     }
 
-    pub fn required_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_non_binding().then_some(v))
-    }
-
     /// Returns: non_binding for any variable in any branch that is required as an argument/input
     ///          locally_binding for any binding variable that is not binding in all branches
     ///          binding for any variable that is bound in all branches
-    pub(crate) fn variable_binding_modes(
-        &self,
-        block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableBindingMode<'_>> {
+    pub(crate) fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         if self.conjunctions.is_empty() {
             return HashMap::new();
         }
-        let mut binding_modes = self.conjunctions[0].variable_binding_modes(block_context);
+        let mut binding_modes = self.conjunctions[0].variable_binding_modes();
         for branch in &self.conjunctions[1..] {
-            let branch_binding_modes = branch.variable_binding_modes(block_context);
+            let branch_binding_modes = branch.variable_binding_modes();
             for (var, mode) in &mut binding_modes {
                 // Not present in this branch: local to only 1 branch in the disjunction
                 if !branch_binding_modes.contains_key(var) && mode.is_binding() {

@@ -46,16 +46,16 @@ impl Negation {
         self.conjunction().referenced_variables()
     }
 
-    pub fn variable_binding_modes(&self, block_context: &BlockContext) -> HashMap<Variable, VariableBindingMode<'_>> {
+    pub fn variable_binding_modes(&self) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.conjunction
-            .variable_binding_modes(block_context)
+            .variable_binding_modes()
             .into_iter()
             .filter_map(|(var, mut mode)| {
-                let locality = block_context.variable_locality_in_scope(var, self.scope_id());
-                if locality == VariableLocality::Parent {
-                    // if it is expected to originate from the parent, even if it is binding in any form, it is treated as non-binding
-                    mode.set_non_binding();
-                }
+                // let locality = block_context.variable_locality_in_scope(var, self.scope_id());
+                // if locality == VariableLocality::Parent {
+                //     // if it is expected to originate from the parent, even if it is binding in any form, it is treated as non-binding
+                //     mode.set_non_binding();
+                // }
                 if mode.is_binding() {
                     // if it is binding, we demote it to only locally binding (only relevant in the negation)
                     mode.set_locally_binding_in_child();
@@ -66,9 +66,16 @@ impl Negation {
             .collect()
     }
 
-    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        // Note: all returned variable binding modes must be Non-Binding!
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_non_binding().then_some(v))
+    // Union of non-binding variables used here or below, and variables declared in parent scopes
+    pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
+            if locality == VariableLocality::Parent || mode.is_non_binding() {
+                Some(v)
+            } else {
+                None
+            }
+        })
     }
 }
 

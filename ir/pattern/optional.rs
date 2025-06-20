@@ -51,26 +51,8 @@ impl Optional {
 
     pub(crate) fn variable_binding_modes(
         &self,
-        block_context: &BlockContext,
     ) -> HashMap<Variable, VariableBindingMode<'_>> {
-        self.conjunction
-            .variable_binding_modes(block_context)
-            .into_iter()
-            .map(|(var, mut mode)| {
-                let status = block_context.variable_locality_in_scope(var, self.scope_id());
-                if status == VariableLocality::Parent {
-                    mode.set_non_binding();
-                    // TODO: including this, means that we don't consider Try variables as produce
-                    //   Which means that we don't include them as 'selected', and the planner can't register them in the graph
-                    // } else if mode.is_producing() {
-                    //     // VariableDependency::Producing means "producing in all code paths".
-                    //     // A try {} block never produces.
-                    //     mode.set_referencing()
-                    // }
-                }
-                (var, mode)
-            })
-            .collect()
+        self.conjunction.variable_binding_modes()
     }
 
     pub fn named_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
@@ -78,15 +60,23 @@ impl Optional {
     }
 
     fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_binding().then_some(v))
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_binding().then_some(v))
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
         self.conjunction().referenced_variables()
     }
 
-    pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes(block_context).into_iter().filter_map(|(v, dep)| dep.is_non_binding().then_some(v))
+    // Union of non-binding variables used here or below, and variables declared in parent scopes
+    pub fn required_inputs<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            let locality = block_context.variable_locality_in_scope(v, self.scope_id());
+            if locality == VariableLocality::Parent || mode.is_non_binding() {
+                Some(v)
+            } else {
+                None
+            }
+        })
     }
 }
 

@@ -138,8 +138,9 @@ fn debug_assert_all_vertex_annotations_available(
 ) {
     let conjunction_annotations = by_scope.get(&conjunction.scope_id()).unwrap();
     conjunction
-        .named_producible_variables(context)
-        .chain(conjunction.variable_dependency(context).keys().copied())
+        .variable_binding_modes()
+        .keys()
+        .copied()
         .all(|v| conjunction_annotations.vertex_annotations_of(&Vertex::Variable(v)).is_some());
     conjunction.nested_patterns().iter().for_each(|nested| match nested {
         NestedPattern::Disjunction(disj) => {

@@ -65,14 +65,11 @@ impl NestedPattern {
         }
     }
 
-    pub(crate) fn variable_binding_modes(
-        &self,
-        block_context: &BlockContext,
-    ) -> HashMap<Variable, VariableBindingMode<'_>> {
+    pub(crate) fn variable_binding_modes( &self, ) -> HashMap<Variable, VariableBindingMode<'_>> {
         match self {
-            NestedPattern::Disjunction(disjunction) => disjunction.variable_binding_modes(block_context),
-            NestedPattern::Negation(negation) => negation.variable_binding_modes(block_context),
-            NestedPattern::Optional(optional) => optional.variable_binding_modes(block_context),
+            NestedPattern::Disjunction(disjunction) => disjunction.variable_binding_modes(),
+            NestedPattern::Negation(negation) => negation.variable_binding_modes(),
+            NestedPattern::Optional(optional) => optional.variable_binding_modes(),
         }
     }
 

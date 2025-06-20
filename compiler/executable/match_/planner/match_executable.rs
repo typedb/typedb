@@ -484,11 +484,12 @@ pub struct OptionalStep {
     pub optional: MatchExecutable,
     pub selected_variables: Vec<VariablePosition>,
     pub output_width: u32,
+    pub branch_id: BranchID,
 }
 
 impl OptionalStep {
-    pub fn new(optional: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32) -> Self {
-        Self { optional, selected_variables, output_width }
+    pub fn new(optional: MatchExecutable, selected_variables: Vec<VariablePosition>, output_width: u32, branch_id: BranchID) -> Self {
+        Self { optional, selected_variables, output_width, branch_id }
     }
 
     pub fn output_width(&self) -> u32 {

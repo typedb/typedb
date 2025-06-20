@@ -178,10 +178,11 @@ fn make_builder<'a>(
                 )
             }
             NestedPattern::Optional(optional) => {
-                // TODO: is this correct?
-                // note: using a vec since the variables are expected to be few and we can avoid allocating again
-                let required_inputs = optional.required_inputs(block_context).collect_vec();
-                let shared_variables = optional.referenced_variables().filter(|v| !required_inputs.contains(v)).collect();
+                let required_inputs: Vec<_> = optional.required_inputs(block_context).collect();
+                debug_assert!(required_inputs.iter().all(|var| shared_variables.contains(&var)));
+                let local_shared_variables: HashSet<_> = optional
+                    .named_binding_variables(block_context)
+                    .collect();
                 optional_subplans.push(
                     OptionalPlan::new(
                         optional.branch_id(),
@@ -189,7 +190,7 @@ fn make_builder<'a>(
                             optional.conjunction(),
                             block_context,
                             variable_positions,
-                            &shared_variables,
+                            &local_shared_variables,
                             block_annotations,
                             variable_registry,
                             expressions,
@@ -1526,13 +1527,14 @@ impl ConjunctionPlan<'_> {
                 }
                 PlannerVertex::Optional(optional) => {
                     // TODO: optionals should just be added after everything else is planned?
-                    let optional_executable_builder = OptionalBuilder::new(optional.plan.plan().lower(
-                        self.local_annotations.vertex_annotations(),
-                        match_builder.row_variables().iter().copied(),
-                        match_builder.current_outputs.iter().copied(),
-                        match_builder.position_mapping(),
-                        variable_registry,
-                        Some(optional.plan.branch_id),
+                    let optional_executable_builder = OptionalBuilder::new(
+                        optional.plan.plan().lower(
+                            self.local_annotations.vertex_annotations(),
+                            match_builder.row_variables().iter().copied(),
+                            match_builder.current_outputs.iter().copied(),
+                            match_builder.position_mapping(),
+                            variable_registry,
+                            Some(optional.plan.branch_id),
                     )?);
                     let variable_positions: HashMap<Variable, ExecutorVariable> = optional_executable_builder.optional.index.clone();
                     let step_builder = StepInstructionsBuilder::Optional(optional_executable_builder);
