@@ -124,7 +124,7 @@ fn make_builder<'a>(
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
                 let planner = DisjunctionPlanBuilder::new(
-                    disjunction.branch_ids().iter().copied().collect(),
+                    disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
                         .conjunctions()
                         .iter()
