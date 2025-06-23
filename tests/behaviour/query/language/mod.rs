@@ -9,6 +9,7 @@
 mod define;
 mod delete;
 mod expressions;
+mod disjunction;
 mod fetch;
 mod insert;
 mod r#match;
@@ -20,4 +21,3 @@ mod redefine;
 mod reduce;
 mod undefine;
 mod update;
-mod validation;
