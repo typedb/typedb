@@ -81,9 +81,9 @@ impl ParametrisedQueryStructure {
             .iter()
             .filter_map(|stage| match stage {
                 QueryStructureStage::Match(QueryStructureConjunction { conjunction }) => match conjunction.first() {
-                    Some(QueryStructureConjunct::Block { index }) => Some(index),
+                    Some(QueryStructurePattern::Block { index }) => Some(index),
                     Some(_) | None => {
-                        debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructureConjunct::Block { .. })));
+                        debug_assert!(!conjunction.iter().any(|c| matches!(c, QueryStructurePattern::Block { .. })));
                         None
                     }
                 },
@@ -127,12 +127,12 @@ pub enum QueryStructureStage {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryStructureConjunction {
-    conjunction: Vec<QueryStructureConjunct>,
+    conjunction: Vec<QueryStructurePattern>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", tag = "tag")]
-pub enum QueryStructureConjunct {
+pub enum QueryStructurePattern {
     Block { index: QueryStructureBlockID },
     Or { branches: Vec<QueryStructureConjunction> },
     Not(QueryStructureConjunction),
@@ -155,7 +155,7 @@ pub struct ParametrisedQueryStructureBuilder<'a> {
 
 impl<'a> ParametrisedQueryStructureBuilder<'a> {
     fn new(source_query: &'a str, branch_ids_allocated: u16) -> Self {
-        // Pre-allocate for the optional branches. They come first
+        // Pre-allocated for query branches that have already been allocated branch ids
         let blocks = vec![QueryStructureBlock { constraints: Vec::new() }; branch_ids_allocated as usize];
         Self {
             source_query,
@@ -229,7 +229,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
             conjunction.constraints(),
             block_annotations.type_annotations_of(conjunction).unwrap(),
         );
-        conjuncts.push(QueryStructureConjunct::Block { index: block_id });
+        conjuncts.push(QueryStructurePattern::Block { index: block_id });
         conjunction.nested_patterns().iter().for_each(|nested| match nested {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
@@ -238,11 +238,11 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                     .zip(disjunction.conjunctions().iter())
                     .map(|(id, branch)| self.add_block(Some(*id), branch, block_annotations))
                     .collect::<Vec<_>>();
-                conjuncts.push(QueryStructureConjunct::Or { branches });
+                conjuncts.push(QueryStructurePattern::Or { branches });
             }
             NestedPattern::Negation(negation) => {
                 let inner = self.add_block(None, negation.conjunction(), block_annotations);
-                conjuncts.push(QueryStructureConjunct::Not(inner));
+                conjuncts.push(QueryStructurePattern::Not(inner));
             }
             NestedPattern::Optional(_) => {
                 unimplemented_feature!(Optionals);
