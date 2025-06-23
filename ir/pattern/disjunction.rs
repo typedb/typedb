@@ -33,9 +33,10 @@ impl Disjunction {
         Self::default()
     }
 
-    pub fn branch_ids(&self) -> &[BranchID] {
-        self.branch_ids.as_slice()
+    pub fn conjunctions_by_branch_id(&self) -> impl Iterator<Item=(&BranchID, &Conjunction)> {
+        self.branch_ids.iter().zip(self.conjunctions.iter())
     }
+
     pub fn conjunctions(&self) -> &[Conjunction] {
         &self.conjunctions
     }

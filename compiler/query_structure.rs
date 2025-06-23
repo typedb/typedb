@@ -233,9 +233,7 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
         conjunction.nested_patterns().iter().for_each(|nested| match nested {
             NestedPattern::Disjunction(disjunction) => {
                 let branches = disjunction
-                    .branch_ids()
-                    .iter()
-                    .zip(disjunction.conjunctions().iter())
+                    .conjunctions_by_branch_id()
                     .map(|(id, branch)| self.add_block(Some(*id), branch, block_annotations))
                     .collect::<Vec<_>>();
                 conjuncts.push(QueryStructurePattern::Or { branches });
