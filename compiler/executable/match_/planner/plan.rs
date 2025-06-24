@@ -126,16 +126,18 @@ fn make_builder<'a>(
     for pattern in conjunction.nested_patterns() {
         match pattern {
             NestedPattern::Disjunction(disjunction) => {
+                let disjunction_shared_variables: HashSet<_> = disjunction
+                    .named_always_binding_variables(block_context)
+                    .collect();
                 let planner = DisjunctionPlanBuilder::new(
                     disjunction.conjunctions_by_branch_id().map(|(id, _)| *id).collect(),
                     disjunction
                         .conjunctions()
                         .iter()
                         .map(|branch| {
-                             // TODO: can we use disjunction.named_producible_variables + intersection(branch.variables())?
                             let branch_shared_variables = branch
                                 .referenced_variables()
-                                .filter(|var| block_context.is_variable_available(conjunction.scope_id(), *var))
+                                .filter(|var| disjunction_shared_variables.contains(var))
                                 .collect();
                             make_builder(
                                 branch,
@@ -159,8 +161,6 @@ fn make_builder<'a>(
                 shared_variables.extend(negation.required_inputs(block_context));
                 shared_variables =
                     shared_variables.intersection(&negation.referenced_variables().collect()).copied().collect();
-                // TODO: for negations, the 'shared' variables are the intersection of (available + required) and referenced variables
-                //       in other words, just the input variables ?
                 negation_subplans.push(
                     make_builder(
                         negation.conjunction(),

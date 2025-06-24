@@ -51,11 +51,11 @@ impl Disjunction {
         &mut self.conjunctions
     }
 
-    pub fn named_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_variables(block_context).filter(Variable::is_named)
+    pub fn named_always_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.always_binding_variables(block_context).filter(Variable::is_named)
     }
 
-    fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+    fn always_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
         self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 

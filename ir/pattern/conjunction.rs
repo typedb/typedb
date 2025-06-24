@@ -69,7 +69,7 @@ impl Conjunction {
     }
 
     pub fn local_variables<'a>(&'a self, block_context: &'a BlockContext) -> impl Iterator<Item = Variable> + 'a {
-        self.referenced_variables().filter(|var| block_context.is_variable_available(self.scope_id, *var))
+        self.referenced_variables().filter(|var| block_context.is_in_scope_or_parent(self.scope_id, *var))
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {

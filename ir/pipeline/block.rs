@@ -108,7 +108,8 @@ impl<'reg> BlockBuilder<'reg> {
                 BlockBuilderContext { block_context, variable_registry, variable_names_index: visible_variables, .. },
         } = self;
         validate_conjunction(&conjunction, variable_registry, &block_context)?;
-        visible_variables.retain(|name, var| block_context.is_variable_available(conjunction.scope_id(), *var));
+        let conjunction_variables: HashSet<_> = conjunction.named_visible_binding_variables(&block_context).collect();
+        visible_variables.retain(|name, var| conjunction_variables.contains(var));
         Ok(Block { conjunction, block_context })
     }
 
@@ -291,11 +292,11 @@ impl BlockContext {
         self.referenced_variables.iter().copied()
     }
 
-    pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
+    pub fn is_in_scope_or_parent(&self, scope: ScopeId, variable: Variable) -> bool {
         let variable_scope = self.variable_declaration.get(&variable);
-        let is_available = variable_scope
+        let in_scope = variable_scope
             .is_some_and(|variable_scope| is_equal_or_parent_scope(&self.scope_parents, scope, *variable_scope));
-        is_available
+        in_scope
     }
 
     pub fn is_child_scope(&self, child: ScopeId, ancestor: ScopeId) -> bool {
@@ -423,8 +424,8 @@ impl<'a> BlockBuilderContext<'a> {
         Ok(variable)
     }
 
-    pub fn is_variable_available(&self, scope: ScopeId, variable: Variable) -> bool {
-        self.block_context.is_variable_available(scope, variable)
+    pub fn is_variable_in_scope_or_parent(&self, scope: ScopeId, variable: Variable) -> bool {
+        self.block_context.is_in_scope_or_parent(scope, variable)
     }
 
     pub(crate) fn is_variable_input(&self, variable: Variable) -> bool {
