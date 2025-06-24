@@ -2192,3 +2192,60 @@ impl<'a> Graph<'a> {
         &self.elements
     }
 }
+
+pub mod test {
+    use std::collections::{BTreeMap, HashMap, HashSet};
+    use answer::variable::Variable;
+    use concept::thing::statistics::Statistics;
+    use ir::pattern::constraint::ExpressionBinding;
+    use ir::pipeline::block::Block;
+    use ir::pipeline::VariableRegistry;
+    use crate::annotation::expression::compiled_expression::ExecutableExpression;
+    use crate::annotation::type_annotations::BlockAnnotations;
+    use crate::executable::function::ExecutableFunctionRegistry;
+    use crate::executable::match_::planner::match_executable::MatchExecutable;
+    use crate::executable::match_::planner::plan::{CompleteCostPlan, Graph, make_builder, PartialCostPlan, QueryPlanningError, VertexId};
+
+    pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
+        block: &'a Block,
+        annotations: &'a BlockAnnotations,
+        variable_registry: &VariableRegistry,
+        expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
+        statistics: &'a Statistics,
+    ) -> Result<Vec<(MatchExecutable, f64, f64)>, QueryPlanningError> {
+        let builder = make_builder(
+            block.conjunction(),
+            block.block_context(),
+            &HashMap::new(),
+            &HashSet::new(),
+            annotations,
+            variable_registry,
+            expressions,
+            statistics,
+            &ExecutableFunctionRegistry::empty(),
+        )?;
+        let search_patterns: HashSet<_> = builder.graph.pattern_to_variable.keys().copied().collect();
+        let input_variables = builder.graph
+            .variable_index
+            .values()
+            .copied()
+            .filter(|&v| builder.graph.elements[&VertexId::Variable(v)].as_variable().is_some_and(|v| v.is_input()));
+        let initial_empty_plan = PartialCostPlan::new(
+            builder.graph.elements.len(),
+            search_patterns.clone(),
+            input_variables,
+        );
+
+        plan_sampler(&builder.graph, initial_empty_plan)?.into_iter().map(|complete_plan| {
+            let conjunction_plan = builder.clone().build(complete_plan.clone())?;
+            let lowered = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
+                .finish(variable_registry);
+            Ok((lowered, complete_plan.cumulative_cost.cost, complete_plan.cumulative_cost.io_ratio))
+        }).collect::<Result<_, _>>()
+    }
+
+    fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
+        // TODO
+        Ok(Vec::new())
+    }
+}
