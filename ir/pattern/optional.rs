@@ -53,14 +53,24 @@ impl Optional {
         &self,
     ) -> HashMap<Variable, VariableBindingMode<'_>> {
         self.conjunction.variable_binding_modes()
+            .into_iter()
+            .map(|(v, mut mode)| {
+                if mode.is_always_binding() {
+                    mode.set_optionally_binding()
+                }
+                (v, mode)
+            })
+            .collect()
     }
 
-    pub fn named_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_variables(block_context).filter(Variable::is_named)
+    pub fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_binding_variables(block_context).filter(Variable::is_named)
     }
 
-    fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_binding().then_some(v))
+    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v)
+        })
     }
 
     pub fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {

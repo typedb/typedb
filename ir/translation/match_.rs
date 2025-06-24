@@ -35,12 +35,7 @@ pub(crate) fn add_patterns(
         typeql::Pattern::Conjunction(nested) => add_patterns(function_index, conjunction, &nested.patterns),
         typeql::Pattern::Disjunction(disjunction) => add_disjunction(function_index, conjunction, disjunction),
         typeql::Pattern::Negation(negation) => add_negation(function_index, conjunction, negation),
-        typeql::Pattern::Optional(optional) => {
-            add_optional(function_index, conjunction, optional)
-            // Err(Box::new(RepresentationError::UnimplementedLanguageFeature {
-            //     feature: error::UnimplementedFeature::Optionals,
-            // }))
-        }
+        typeql::Pattern::Optional(optional) => add_optional(function_index, conjunction, optional),
         typeql::Pattern::Statement(statement) => add_statement(function_index, conjunction, statement),
     })?;
     Ok(())
@@ -73,6 +68,6 @@ fn add_optional(
     conjunction: &mut ConjunctionBuilder<'_, '_>,
     optional: &typeql::pattern::Optional,
 ) -> Result<(), Box<RepresentationError>> {
-    let mut optional_builder = conjunction.add_optional();
+    let mut optional_builder = conjunction.add_optional(optional.span)?;
     add_patterns(function_index, &mut optional_builder, &optional.patterns)
 }

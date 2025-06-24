@@ -181,7 +181,7 @@ fn make_builder<'a>(
                 let required_inputs: Vec<_> = optional.required_inputs(block_context).collect();
                 debug_assert!(required_inputs.iter().all(|var| shared_variables.contains(&var)));
                 let local_shared_variables: HashSet<_> = optional
-                    .named_binding_variables(block_context)
+                    .named_visible_binding_variables(block_context)
                     .collect();
                 optional_subplans.push(
                     OptionalPlan::new(

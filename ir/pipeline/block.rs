@@ -139,7 +139,7 @@ fn validate_conjunction(
     }
     if let ControlFlow::Break((var, source_span)) = conjunction.find_disjoint_variable(block_context) {
         let name = variable_registry.get_variable_name(var).unwrap().clone();
-        return Err(Box::new(RepresentationError::DisjointVariableReuse { name, source_span }));
+        return Err(Box::new(RepresentationError::LocallyBoundVariableReuse { name, source_span }));
     }
 
     for (var, mode) in conjunction.variable_binding_modes() {
@@ -256,7 +256,7 @@ impl BlockContext {
             // We can only later validate the requirements about whether each pattern conforms to the required variable usages & visibility
 
             let ancestor = lowest_common_ancestor(&self.scope_parents, recorded_scope, scope);
-            let ancestor_conjunction = lowest_parent_conjunction(&self.scope_parents, &self.scope_types, ancestor);
+            let ancestor_conjunction = lowest_parent_conjunction_or_negation(&self.scope_parents, &self.scope_types, ancestor);
             // if !self.is_visible_child(scope, ancestor) || !self.is_visible_child(recorded_scope, ancestor) {
             //     return Err(Box::new(RepresentationError::DisjointVariableReuse {
             //         name: var_name.to_owned(),
@@ -379,6 +379,15 @@ impl<'a> BlockBuilderContext<'a> {
         self.variable_registry.get_variable_name(variable)
     }
 
+    pub(crate) fn get_parent_scope(&self, scope: ScopeId) -> Option<ScopeId> {
+        self.block_context.scope_parents.get(&scope).copied()
+    }
+
+    pub(crate) fn get_scope_type(&self, scope: ScopeId) -> ScopeType {
+        debug_assert!(self.block_context.scope_types.contains_key(&scope));
+        *self.block_context.scope_types.get(&scope).unwrap()
+    }
+
     pub(crate) fn get_or_declare_variable(
         &mut self,
         name: &str,
@@ -463,11 +472,12 @@ fn lowest_common_ancestor(parents: &HashMap<ScopeId, ScopeId>, left: ScopeId, ri
     }
 }
 
-fn lowest_parent_conjunction(parents: &HashMap<ScopeId, ScopeId>, scope_types: &HashMap<ScopeId, ScopeType>, scope_id: ScopeId) -> ScopeId {
+fn lowest_parent_conjunction_or_negation(parents: &HashMap<ScopeId, ScopeId>, scope_types: &HashMap<ScopeId, ScopeType>, scope_id: ScopeId) -> ScopeId {
     debug_assert!(scope_types.contains_key(&scope_id));
-    if *scope_types.get(&scope_id).unwrap() == ScopeType::Conjunction {
+    let scope_type = *scope_types.get(&scope_id).unwrap();
+    if scope_type == ScopeType::Conjunction || scope_type == ScopeType::Negation {
         scope_id
     } else {
-        lowest_parent_conjunction(parents, scope_types, *parents.get(&scope_id).unwrap())
+        lowest_parent_conjunction_or_negation(parents, scope_types, *parents.get(&scope_id).unwrap())
     }
 }

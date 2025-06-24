@@ -243,7 +243,8 @@ impl<'a> ParametrisedQueryStructureBuilder<'a> {
                 conjuncts.push(QueryStructurePattern::Not(inner));
             }
             NestedPattern::Optional(optional) => {
-                extract_query_structure_from_branch(branches, optional.branch_id(), optional.conjunction())
+                let inner = self.add_block(Some(optional.branch_id()), optional.conjunction(), block_annotations);
+                conjuncts.push(QueryStructurePattern::Try(inner));
             }
         });
         QueryStructureConjunction { conjunction: conjuncts }

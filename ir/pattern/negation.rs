@@ -56,7 +56,7 @@ impl Negation {
                 //     // if it is expected to originate from the parent, even if it is binding in any form, it is treated as non-binding
                 //     mode.set_non_binding();
                 // }
-                if mode.is_binding() {
+                if mode.is_always_binding() {
                     // if it is binding, we demote it to only locally binding (only relevant in the negation)
                     mode.set_locally_binding_in_child();
                 }

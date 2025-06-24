@@ -17,17 +17,14 @@ use itertools::Itertools;
 use structural_equality::StructuralEquality;
 use typeql::common::Span;
 
-use crate::{
-    pattern::{
-        constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
-        disjunction::{Disjunction, DisjunctionBuilder},
-        negation::Negation,
-        nested_pattern::NestedPattern,
-        optional::Optional,
-        Scope, ScopeId, VariableBindingMode,
-    },
-    pipeline::block::{BlockBuilderContext, BlockContext},
-};
+use crate::{pattern::{
+    constraint::{Constraint, Constraints, ConstraintsBuilder, Unsatisfiable},
+    disjunction::{Disjunction, DisjunctionBuilder},
+    negation::Negation,
+    nested_pattern::NestedPattern,
+    optional::Optional,
+    Scope, ScopeId, VariableBindingMode,
+}, pipeline::block::{BlockBuilderContext, BlockContext}, RepresentationError};
 use crate::pipeline::block::ScopeType;
 
 #[derive(Debug, Clone)]
@@ -89,12 +86,14 @@ impl Conjunction {
             .unique()
     }
 
-    pub fn named_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.binding_variables(block_context).filter(Variable::is_named)
+    pub fn named_visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.visible_binding_variables(block_context).filter(Variable::is_named)
     }
 
-    fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_binding().then_some(v))
+    fn visible_binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| {
+            (mode.is_always_binding() || mode.is_optionally_binding()).then_some(v)
+        })
     }
 
     pub fn required_inputs(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
@@ -128,7 +127,7 @@ impl Conjunction {
             // variables are only considered locally binding in child if the variable is locally bound in all children it is present in
             //   because locally-binding loses to both non-binding and binding modes
             // therefore: fail if the variable is only bound in >=1 child, but "declared" here
-            if scope == self.scope_id && mode.is_locally_binding_in_child() {
+            if scope == self.scope_id && (mode.is_locally_binding_in_child() || mode.is_optionally_binding()) {
                 return ControlFlow::Break((var, mode.referencing_constraints().first().and_then(|c| c.source_span())));
             }
 
@@ -208,14 +207,28 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
         Negation::new_builder(self.context, negation)
     }
 
-    pub fn add_optional(&mut self) -> ConjunctionBuilder<'_, 'reg> {
+    pub fn add_optional(&mut self, source_span: Option<Span>) -> Result<ConjunctionBuilder<'_, 'reg>, RepresentationError> {
         let nested_scope_id =
             self.context.create_child_scope(self.conjunction.scope_id, ScopeType::Optional);
         let optional = Optional::new(nested_scope_id, self.context.next_branch_id());
+        self.validate_optional_not_in_negation(&optional, source_span)?;
         self.conjunction.nested_patterns.push(NestedPattern::Optional(optional));
         let Some(NestedPattern::Optional(optional)) = self.conjunction.nested_patterns.last_mut() else {
             unreachable!()
         };
-        Optional::new_builder(self.context, optional)
+        Ok(Optional::new_builder(self.context, optional))
+    }
+
+    fn validate_optional_not_in_negation(&self, optional: &Optional, source_span: Option<Span>) -> Result<(), RepresentationError> {
+        let mut scope = optional.scope_id();
+        while let Some(parent_scope) = self.context.get_parent_scope(scope) {
+            let parent_scope_type = self.context.get_scope_type(parent_scope);
+            if parent_scope_type == ScopeType::Negation {
+                return Err(RepresentationError::OptionalInNegation { source_span });
+            } else {
+                scope = parent_scope;
+            }
+        }
+        Ok(())
     }
 }

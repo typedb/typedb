@@ -56,7 +56,7 @@ impl Disjunction {
     }
 
     fn binding_variables(&self, block_context: &BlockContext) -> impl Iterator<Item = Variable> + '_ {
-        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_binding().then_some(v))
+        self.variable_binding_modes().into_iter().filter_map(|(v, mode)| mode.is_always_binding().then_some(v))
     }
 
     // Union of non-binding variables used here or below, and variables declared in parent scopes
@@ -87,7 +87,7 @@ impl Disjunction {
             let branch_binding_modes = branch.variable_binding_modes();
             for (var, mode) in &mut binding_modes {
                 // Not present in this branch: local to only 1 branch in the disjunction
-                if !branch_binding_modes.contains_key(var) && mode.is_binding() {
+                if !branch_binding_modes.contains_key(var) && mode.is_always_binding() {
                     mode.set_locally_binding_in_child()
                 }
             }
@@ -100,7 +100,7 @@ impl Disjunction {
                     }
                     hash_map::Entry::Vacant(entry) => {
                         // Not present in first and maybe later branches ("merged" modes), so local to this branch
-                        if mode.is_binding() {
+                        if mode.is_always_binding() {
                             mode.set_locally_binding_in_child();
                         }
                         entry.insert(mode);

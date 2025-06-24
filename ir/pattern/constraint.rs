@@ -73,10 +73,10 @@ impl Constraints {
             for var in constraint.binding_ids() {
                 match acc.entry(var) {
                     hash_map::Entry::Occupied(mut entry) => {
-                        *entry.get_mut() &= VariableBindingMode::binding(constraint);
+                        *entry.get_mut() &= VariableBindingMode::always_binding(constraint);
                     }
                     hash_map::Entry::Vacant(vacant_entry) => {
-                        vacant_entry.insert(VariableBindingMode::binding(constraint));
+                        vacant_entry.insert(VariableBindingMode::always_binding(constraint));
                     }
                 }
             }
