@@ -297,7 +297,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         self.required_inputs.as_slice()
     }
 
-    fn input_variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
+    fn input_variables(&self) -> impl Iterator<Item=VariableVertexId> + '_ {
         self.graph
             .variable_index
             .values()
@@ -305,7 +305,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .filter(|&v| self.graph.elements[&VertexId::Variable(v)].as_variable().is_some_and(|v| v.is_input()))
     }
 
-    pub(super) fn with_inputs(mut self, input_variables: impl Iterator<Item = Variable>) -> Self {
+    pub(super) fn with_inputs(mut self, input_variables: impl Iterator<Item=Variable>) -> Self {
         for var in input_variables {
             if let Some(&id) = self.graph.variable_index.get(&var) {
                 self.graph.elements.insert(
@@ -319,9 +319,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_variables(
         &mut self,
-        input_variables: impl Iterator<Item = Variable>,
-        shared_variables: impl Iterator<Item = Variable>,
-        local_variables: impl Iterator<Item = Variable>,
+        input_variables: impl Iterator<Item=Variable>,
+        shared_variables: impl Iterator<Item=Variable>,
+        local_variables: impl Iterator<Item=Variable>,
         variable_registry: &VariableRegistry,
     ) {
         self.shared_variables.reserve(input_variables.size_hint().0 + shared_variables.size_hint().0);
@@ -697,6 +697,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         const INDENT: &str = "";
         const BEAM_REDUCTION_CYCLE: usize = 2;
         const EXTENSION_REDUCTION_CYCLE: usize = 2;
+
         let num_patterns = graph.pattern_to_variable.len();
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
         let mut extension_width = (num_patterns / 2) + 5; // ensure this is larger than (num_patterns / 2) or change narrowing logic (note, join options means patterns may appear twice as extensions)
@@ -780,7 +781,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         plan.clone_and_extend_with_new_step(extension, graph)
                     } else if extension.step_join_var.is_some()
                         && (plan.ongoing_step_join_var.is_none()
-                            || plan.ongoing_step_join_var == extension.step_join_var)
+                        || plan.ongoing_step_join_var == extension.step_join_var)
                     {
                         plan.clone_and_extend_with_continued_step(extension, graph)
                     } else {
