@@ -25,7 +25,7 @@ use compiler::{
                 CheckInstruction, CheckVertex, ConstraintInstruction, Inputs,
             },
             planner::{
-                match_executable::{ExecutionStep, IntersectionStep, MatchExecutable},
+                conjunction_executable::{ExecutionStep, IntersectionStep, ConjunctionExecutable},
                 plan::PlannerStatistics,
             },
         },
@@ -42,7 +42,7 @@ use concept::{
 };
 use encoding::value::{label::Label, value::Value, value_type::ValueType};
 use executor::{
-    error::ReadExecutionError, match_executor::MatchExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
+    error::ReadExecutionError, conjunction_executor::ConjunctionExecutor, pipeline::stage::ExecutionContext, row::MaybeOwnedRow,
     ExecutionInterrupt,
 };
 use ir::{
@@ -450,7 +450,7 @@ fn execute_steps(
     value_parameters: Arc<ParameterRegistry>,
     profile: &QueryProfile,
 ) -> Vec<Result<MaybeOwnedRow<'static>, Box<ReadExecutionError>>> {
-    let executable = MatchExecutable::new(
+    let executable = ConjunctionExecutable::new(
         next_executable_id(),
         steps,
         variable_positions.clone(),
@@ -460,7 +460,7 @@ fn execute_steps(
 
     // Executor
     let snapshot = Arc::new(storage.clone().open_snapshot_read());
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &executable,
         &snapshot,
         &thing_manager,

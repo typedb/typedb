@@ -16,7 +16,7 @@ use storage::snapshot::{ReadableSnapshot, WritableSnapshot};
 use crate::{
     batch::Batch,
     error::ReadExecutionError,
-    match_executor::MatchExecutor,
+    conjunction_executor::ConjunctionExecutor,
     pipeline::{
         stage::{ExecutionContext, StageAPI, StageIterator},
         PipelineExecutionError, WrittenRowsIterator,
@@ -126,7 +126,7 @@ fn match_iterator_for_row<Snapshot: ReadableSnapshot + 'static>(
     function_registry: Arc<ExecutableFunctionRegistry>,
     input_row: MaybeOwnedRow<'_>,
 ) -> Result<impl Iterator<Item = Result<MaybeOwnedRow<'static>, ReadExecutionError>>, Box<PipelineExecutionError>> {
-    let executor = MatchExecutor::new(
+    let executor = ConjunctionExecutor::new(
         &put_executable.match_,
         &context.snapshot,
         &context.thing_manager,

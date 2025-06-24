@@ -26,9 +26,9 @@ use crate::{
         match_::{
             instructions::{CheckInstruction, ConstraintInstruction},
             planner::{
-                match_executable::{
+                conjunction_executable::{
                     AssignmentStep, CheckStep, DisjunctionStep, ExecutionStep, FunctionCallStep, IntersectionStep,
-                    MatchExecutable, NegationStep,
+                    ConjunctionExecutable, NegationStep,
                 },
                 plan::{plan_conjunction, PlannerStatistics, QueryPlanningError},
             },
@@ -37,9 +37,9 @@ use crate::{
     },
     ExecutorVariable, VariablePosition,
 };
-use crate::executable::match_::planner::match_executable::OptionalStep;
+use crate::executable::match_::planner::conjunction_executable::OptionalStep;
 
-pub mod match_executable;
+pub mod conjunction_executable;
 pub mod plan;
 pub(crate) mod vertex;
 
@@ -59,7 +59,7 @@ pub fn compile(
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
     statistics: &Statistics,
     call_cost_provider: &impl FunctionCallCostProvider,
-) -> Result<MatchExecutable, MatchCompilationError> {
+) -> Result<ConjunctionExecutable, MatchCompilationError> {
     let conjunction = block.conjunction();
     let block_context = block.block_context();
 
@@ -122,22 +122,22 @@ struct CheckBuilder {
 
 #[derive(Debug)]
 struct NegationBuilder {
-    negation: MatchExecutableBuilder,
+    negation: ConjunctionExecutableBuilder,
 }
 
 impl NegationBuilder {
-    fn new(negation: MatchExecutableBuilder) -> Self {
+    fn new(negation: ConjunctionExecutableBuilder) -> Self {
         Self { negation }
     }
 }
 
 #[derive(Debug)]
 struct OptionalBuilder {
-    optional: MatchExecutableBuilder,
+    optional: ConjunctionExecutableBuilder,
 }
 
 impl OptionalBuilder {
-    fn new(optional: MatchExecutableBuilder) -> Self {
+    fn new(optional: ConjunctionExecutableBuilder) -> Self {
         Self { optional }
     }
 
@@ -149,11 +149,11 @@ impl OptionalBuilder {
 #[derive(Debug)]
 struct DisjunctionBuilder {
     branch_ids: Vec<BranchID>,
-    branches: Vec<MatchExecutableBuilder>,
+    branches: Vec<ConjunctionExecutableBuilder>,
 }
 
 impl DisjunctionBuilder {
-    fn new(branch_ids: Vec<BranchID>, branches: Vec<MatchExecutableBuilder>) -> Self {
+    fn new(branch_ids: Vec<BranchID>, branches: Vec<ConjunctionExecutableBuilder>) -> Self {
         Self { branch_ids, branches }
     }
 }
@@ -300,7 +300,7 @@ impl StepBuilder {
 }
 
 #[derive(Debug)]
-struct MatchExecutableBuilder {
+struct ConjunctionExecutableBuilder {
     selected_variables: Vec<Variable>,
     input_variables: Vec<Variable>,
     current_outputs: HashSet<Variable>,
@@ -317,7 +317,7 @@ struct MatchExecutableBuilder {
     branch_id: Option<BranchID>,
 }
 
-impl MatchExecutableBuilder {
+impl ConjunctionExecutableBuilder {
     fn new(
         branch_id: Option<BranchID>,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
@@ -501,7 +501,7 @@ impl MatchExecutableBuilder {
         }
     }
 
-    fn finish(mut self, variable_registry: &VariableRegistry) -> MatchExecutable {
+    fn finish(mut self, variable_registry: &VariableRegistry) -> ConjunctionExecutable {
         self.finish_one();
         let named_variables = self
             .index
@@ -513,7 +513,7 @@ impl MatchExecutableBuilder {
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
             .collect();
-        MatchExecutable::new(
+        ConjunctionExecutable::new(
             next_executable_id(),
             steps,
             self.index.into_iter().filter_map(|(var, id)| Some((var, id.as_position()?))).collect(),

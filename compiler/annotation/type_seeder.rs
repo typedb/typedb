@@ -183,13 +183,14 @@ impl<'this, Snapshot: ReadableSnapshot> TypeGraphSeedingContext<'this, Snapshot>
     fn build_disjunction_recursive<'conj>(
         &self,
         context: &BlockContext,
-        _parent_conjunction: &'conj Conjunction, // TODO: remove?
+        parent_conjunction: &'conj Conjunction,
         disjunction: &'conj Disjunction,
     ) -> NestedTypeInferenceGraphDisjunction<'conj> {
         let nested_graphs =
             disjunction.conjunctions().iter().map(|conj| self.build_recursive(context, conj)).collect_vec();
         let shared_variables = disjunction
-            .named_always_binding_variables(context)
+            .referenced_variables()
+            .filter(|var| context.is_in_scope_or_parent(parent_conjunction.scope_id(), *var))
             .collect();
         NestedTypeInferenceGraphDisjunction {
             disjunction: nested_graphs,

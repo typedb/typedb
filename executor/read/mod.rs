@@ -6,7 +6,7 @@
 
 use std::sync::Arc;
 
-use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::match_executable::MatchExecutable};
+use compiler::executable::{function::ExecutableFunctionRegistry, match_::planner::conjunction_executable::ConjunctionExecutable};
 use concept::{error::ConceptReadError, thing::thing_manager::ThingManager};
 use resource::profile::QueryProfile;
 use storage::snapshot::ReadableSnapshot;
@@ -52,19 +52,19 @@ impl std::ops::Deref for ExecutorIndex {
     }
 }
 
-pub(super) fn create_pattern_executor_for_match(
+pub(super) fn create_pattern_executor_for_conjunction(
     snapshot: &Arc<impl ReadableSnapshot + 'static>,
     thing_manager: &Arc<ThingManager>,
     function_registry: &ExecutableFunctionRegistry,
-    match_executable: &MatchExecutable,
+    conjunction_executable: &ConjunctionExecutable,
     profile: &QueryProfile,
 ) -> Result<PatternExecutor, Box<ConceptReadError>> {
-    let executors = step_executor::create_executors_for_match(
+    let executors = step_executor::create_executors_for_conjunction(
         snapshot,
         thing_manager,
         function_registry,
         profile,
-        match_executable,
+        conjunction_executable,
     )?;
-    Ok(PatternExecutor::new(match_executable.executable_id(), executors))
+    Ok(PatternExecutor::new(conjunction_executable.executable_id(), executors))
 }

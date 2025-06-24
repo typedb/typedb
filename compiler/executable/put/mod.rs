@@ -10,7 +10,7 @@ use answer::variable::Variable;
 
 use crate::{
     executable::{
-        insert::executable::InsertExecutable, match_::planner::match_executable::MatchExecutable, next_executable_id,
+        insert::executable::InsertExecutable, match_::planner::conjunction_executable::ConjunctionExecutable, next_executable_id,
     },
     VariablePosition,
 };
@@ -18,12 +18,12 @@ use crate::{
 #[derive(Debug)]
 pub struct PutExecutable {
     pub executable_id: u64,
-    pub match_: MatchExecutable,
+    pub match_: ConjunctionExecutable,
     pub insert: InsertExecutable,
 }
 
 impl PutExecutable {
-    pub(crate) fn new(match_: MatchExecutable, insert: InsertExecutable) -> PutExecutable {
+    pub(crate) fn new(match_: ConjunctionExecutable, insert: InsertExecutable) -> PutExecutable {
         debug_assert!({
             let match_positions = match_
                 .variable_positions()

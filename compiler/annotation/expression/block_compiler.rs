@@ -254,10 +254,11 @@ fn try_value_type_from_type_annotations<Snapshot: ReadableSnapshot>(
             }));
         }
     };
-    let value_types = resolve_value_types(annotations, context.snapshot, context.type_manager).map_err(|_source| {
-        Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariable {
+    let value_types = resolve_value_types(annotations, context.snapshot, context.type_manager).map_err(|source| {
+        Box::new(ExpressionCompileError::CouldNotDetermineValueTypeForVariableDueToTyping {
             variable: context.variable_name(&variable),
             source_span,
+            typedb_source: source,
         })
     })?;
     let unique_value_type = value_types
