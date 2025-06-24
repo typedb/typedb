@@ -347,6 +347,7 @@ pub enum UnimplementedFeature {
     PipelineStageInFunction(&'static str),
 
     IrrelevantUnboundInvertedMode(&'static str),
+    QueryingAnnotations,
 }
 impl std::fmt::Display for UnimplementedFeature {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
