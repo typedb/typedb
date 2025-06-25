@@ -2194,7 +2194,8 @@ impl<'a> Graph<'a> {
 }
 
 pub mod test {
-    use std::collections::{BTreeMap, HashMap, HashSet};
+    use std::collections::{BinaryHeap, BTreeMap, HashMap, HashSet};
+    use rand::RngCore;
     use answer::variable::Variable;
     use concept::thing::statistics::Statistics;
     use ir::pattern::constraint::ExpressionBinding;
@@ -2204,7 +2205,7 @@ pub mod test {
     use crate::annotation::type_annotations::BlockAnnotations;
     use crate::executable::function::ExecutableFunctionRegistry;
     use crate::executable::match_::planner::match_executable::MatchExecutable;
-    use crate::executable::match_::planner::plan::{CompleteCostPlan, Graph, make_builder, PartialCostPlan, QueryPlanningError, VertexId};
+    use crate::executable::match_::planner::plan::{CompleteCostPlan, Graph, make_builder, MAX_BEAM_WIDTH, PartialCostPlan, QueryPlanningError, VertexId};
     use crate::executable::match_::planner::vertex::Cost;
 
     pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
@@ -2213,6 +2214,7 @@ pub mod test {
         variable_registry: &VariableRegistry,
         expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         statistics: &'a Statistics,
+        n_plans: usize,
     ) -> Result<Vec<(MatchExecutable, Cost)>, QueryPlanningError> {
         let builder = make_builder(
             block.conjunction(),
@@ -2237,7 +2239,7 @@ pub mod test {
             input_variables,
         );
 
-        plan_sampler(&builder.graph, initial_empty_plan)?.into_iter().map(|complete_plan| {
+        plan_sampler(&builder.graph, initial_empty_plan, n_plans)?.into_iter().map(|complete_plan| {
             let conjunction_plan = builder.clone().build(complete_plan.clone())?;
             let lowered = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
                 .finish(variable_registry);
@@ -2245,7 +2247,44 @@ pub mod test {
         }).collect::<Result<_, _>>()
     }
 
-    fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
-        todo!()
+    fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan, n_samples: usize) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
+        let num_patterns = graph.pattern_to_variable.len();
+        let mut best_partial_plans = Vec::new();
+        best_partial_plans.push(initial_empty_plan);
+        let mut rng = rand::thread_rng();
+        for _i in 0..num_patterns {
+            let mut new_plans = Vec::new();
+            let mut candidates = Vec::new();
+            for plan in best_partial_plans {
+                for extension in plan.extensions_iter(graph)? {
+                    if extension.is_trivial(graph) {
+                        let mut plan = plan.clone();
+                        plan.add_to_stash(extension.pattern_id, graph);
+                        new_plans.push(plan);
+                        break;
+                    }
+                    let new_plan = if !extension.is_constraint(graph) {
+                        plan.clone_and_extend_with_new_step(extension, graph)
+                    } else if extension.step_join_var.is_some()
+                        && (plan.ongoing_step_join_var.is_none()
+                        || plan.ongoing_step_join_var == extension.step_join_var)
+                    {
+                        plan.clone_and_extend_with_continued_step(extension, graph)
+                    } else {
+                        plan.clone_and_extend_with_new_step(extension, graph)
+                    };
+                    candidates.push(new_plan);
+                }
+            }
+            candidates.sort();
+            let selection_probability = 0.25;// 1.0 / (candidates.len() as f64).sqrt();
+            new_plans.extend(candidates.into_iter().filter(|c| {
+                (rng.next_u64() as f64 / u64::MAX as f64 ) < selection_probability
+            }).take(n_samples));
+            new_plans.sort();
+            best_partial_plans = new_plans;
+            eprintln!("{:?}", best_partial_plans.iter().map(|p| p.cumulative_cost.cost).collect::<Vec<_>>());
+        }
+        Ok(best_partial_plans.into_iter().take(n_samples).map(|plan| plan.into_complete_plan(graph)).collect())
     }
 }
