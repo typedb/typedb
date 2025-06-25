@@ -121,7 +121,7 @@ impl PlannerVertex<'_> {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub(crate) struct Cost {
+pub struct Cost {
     pub cost: f64, // per input
     pub io_ratio: f64,
 }
@@ -642,5 +642,14 @@ pub(super) fn instance_count(type_: &Type, statistics: &Statistics) -> u64 {
         Type::Relation(relation) => *statistics.relation_counts.get(relation).unwrap_or(&0),
         Type::Attribute(attribute) => *statistics.attribute_counts.get(attribute).unwrap_or(&0),
         Type::RoleType(_) => unreachable!("Cannot count role instances"),
+    }
+}
+
+pub mod test {
+    use crate::executable::match_::planner::vertex::{ADVANCE_ITERATOR_RELATIVE_COST, Cost, SEEK_ITERATOR_RELATIVE_COST};
+
+    pub fn cost_of(seeks: u64, advances: u64, io_ratio: f64) -> Cost {
+        let cost = seeks as f64 * SEEK_ITERATOR_RELATIVE_COST + advances as f64 * ADVANCE_ITERATOR_RELATIVE_COST;
+        Cost { cost , io_ratio }
     }
 }

@@ -14,6 +14,7 @@ use std::{
     },
     time::{Duration, Instant},
 };
+use std::sync::RwLockReadGuard;
 
 use itertools::Itertools;
 
@@ -746,6 +747,55 @@ impl StorageCountersData {
             advance_mvcc_visible: AtomicU64::new(0),
             advance_mvcc_invisible: AtomicU64::new(0),
             advance_mvcc_deleted: AtomicU64::new(0),
+        }
+    }
+}
+
+pub mod test {
+    // TODO: Consider making the whole thing public so we can get finer step-wise comparisons
+    use std::sync::atomic::Ordering;
+    use crate::profile::{StageProfile};
+
+    pub struct StageProfileSummary {
+        pub sum_rows_across_steps: u64,
+        pub raw_advance: u64,
+        pub raw_seek: u64,
+        pub advance_mvcc_visible: u64,
+        pub advance_mvcc_invisible: u64,
+        pub advance_mvcc_deleted: u64,
+        pub last_step_rows: u64
+    }
+
+    impl StageProfileSummary {
+        pub fn from(stage_profile: &StageProfile) -> Self {
+            let mut sum_rows_across_steps = 0;
+            let mut raw_advance = 0;
+            let mut raw_seek = 0;
+            let mut advance_mvcc_visible = 0;
+            let mut advance_mvcc_invisible = 0;
+            let mut advance_mvcc_deleted = 0;
+
+            let step_profiles = stage_profile.step_profiles.read().unwrap();
+            step_profiles.iter().for_each(|step| {
+                let step_data = step.data.as_ref().unwrap();
+                sum_rows_across_steps += step_data.rows.load(Ordering::Relaxed);
+                let step_counters = step_data.storage.counters.as_ref().unwrap();
+                raw_advance += step_counters.raw_advance.load(Ordering::Relaxed);
+                raw_seek += step_counters.raw_seek.load(Ordering::Relaxed);
+                advance_mvcc_visible += step_counters.advance_mvcc_visible.load(Ordering::Relaxed);
+                advance_mvcc_invisible += step_counters.advance_mvcc_invisible.load(Ordering::Relaxed);
+                advance_mvcc_deleted += step_counters.advance_mvcc_deleted.load(Ordering::Relaxed);
+            });
+            let last_step_rows = step_profiles.last().as_ref().unwrap().data.as_ref().unwrap().rows.load(Ordering::Relaxed);
+            Self {
+                sum_rows_across_steps,
+                raw_advance,
+                raw_seek,
+                advance_mvcc_visible,
+                advance_mvcc_invisible,
+                advance_mvcc_deleted,
+                last_step_rows,
+            }
         }
     }
 }

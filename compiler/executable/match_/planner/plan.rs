@@ -2205,6 +2205,7 @@ pub mod test {
     use crate::executable::function::ExecutableFunctionRegistry;
     use crate::executable::match_::planner::match_executable::MatchExecutable;
     use crate::executable::match_::planner::plan::{CompleteCostPlan, Graph, make_builder, PartialCostPlan, QueryPlanningError, VertexId};
+    use crate::executable::match_::planner::vertex::Cost;
 
     pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
         block: &'a Block,
@@ -2212,7 +2213,7 @@ pub mod test {
         variable_registry: &VariableRegistry,
         expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         statistics: &'a Statistics,
-    ) -> Result<Vec<(MatchExecutable, f64, f64)>, QueryPlanningError> {
+    ) -> Result<Vec<(MatchExecutable, Cost)>, QueryPlanningError> {
         let builder = make_builder(
             block.conjunction(),
             block.block_context(),
@@ -2240,12 +2241,11 @@ pub mod test {
             let conjunction_plan = builder.clone().build(complete_plan.clone())?;
             let lowered = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
                 .finish(variable_registry);
-            Ok((lowered, complete_plan.cumulative_cost.cost, complete_plan.cumulative_cost.io_ratio))
+            Ok((lowered, complete_plan.cumulative_cost))
         }).collect::<Result<_, _>>()
     }
 
     fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
-        // TODO
-        Ok(Vec::new())
+        todo!()
     }
 }
