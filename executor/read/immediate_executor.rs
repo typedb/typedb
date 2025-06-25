@@ -25,7 +25,7 @@ use storage::snapshot::ReadableSnapshot;
 use crate::{
     batch::{FixedBatch, FixedBatchRowIterator},
     error::ReadExecutionError,
-    instruction::{iterator::TupleIterator, Checker, InstructionExecutor},
+    instruction::{iterator::TupleIterator, InstructionExecutor},
     pipeline::stage::ExecutionContext,
     read::{
         expression_executor::{evaluate_expression, ExpressionValue},
@@ -34,6 +34,7 @@ use crate::{
     row::{MaybeOwnedRow, Row},
     ExecutionInterrupt, Provenance, SelectedPositions,
 };
+use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) enum ImmediateExecutor {

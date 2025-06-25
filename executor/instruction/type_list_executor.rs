@@ -18,11 +18,12 @@ use crate::{
     instruction::{
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{type_to_tuple, TuplePositions, TypeToTupleFn},
-        Checker, FilterMapUnchangedFn, VariableModes,
+        FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 #[derive(Debug)]
 pub(crate) struct TypeListExecutor {

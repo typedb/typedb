@@ -620,6 +620,9 @@ pub enum CheckInstruction<ID> {
         role2: ID,
         player2: ID,
     },
+    VariablesNotNone {
+        variables: Vec<ID>,
+    },
     Comparison {
         lhs: CheckVertex<ID>,
         rhs: CheckVertex<ID>,
@@ -677,6 +680,9 @@ impl<ID: IrID> CheckInstruction<ID> {
                 role2: mapping[&role2],
                 player2: mapping[&player2],
             },
+            Self::VariablesNotNone { variables } => {
+                CheckInstruction::VariablesNotNone { variables: variables.into_iter().map(|v| mapping[&v]).collect() }
+            }
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
             }
@@ -732,6 +738,9 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
                     f,
                     "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_player}",
                 )?;
+            }
+            Self::VariablesNotNone { variables } => {
+                write!(f, "[{variables:?}] not_none")?;
             }
             Self::Is { lhs, rhs } => {
                 write!(f, "{lhs} {} {rhs}", typeql::token::Keyword::Is)?;

@@ -40,11 +40,12 @@ use crate::{
             unsafe_compare_result_tuple, LinksToTupleFn, Tuple, TupleOrderingFn, TuplePositions, TupleResult,
             TupleToLinksFn,
         },
-        Checker, FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
+        FilterFn, FilterMapUnchangedFn, LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct LinksExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
