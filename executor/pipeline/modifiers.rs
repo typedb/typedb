@@ -364,7 +364,7 @@ where
                 None => return None,
                 Some(Err(err)) => return Some(Err(err.clone())),
                 Some(Ok(row)) => {
-                    if self.require.required.iter().all(|&pos| !row.get(pos).is_empty()) {
+                    if self.require.required.iter().all(|&pos| !row.get(pos).is_none()) {
                         break;
                     }
                 }

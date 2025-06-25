@@ -117,7 +117,7 @@ impl IsaExecutor {
         row: MaybeOwnedRow<'_>,
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
         let filter_for_row: Box<IsaFilterMapFn> = Box::new(move |item| match check(&item) {
             Ok(true) | Err(_) => Some(item),
             Ok(false) => None,

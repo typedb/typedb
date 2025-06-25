@@ -129,7 +129,7 @@ impl RelatesExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
         let filter_for_row: Box<RelatesFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),
