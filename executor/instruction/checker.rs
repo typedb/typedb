@@ -208,7 +208,7 @@ impl<T> Checker<T> {
         storage_counters: StorageCounters,
     ) -> Result<bool, Box<ConceptReadError>> {
         for check in &self.checks {
-            let result = match check {
+            let passes = match check {
                 CheckInstruction::Iid { var, iid } => {
                     self.filter_iid(context, row, *var, &source, *iid)
                 },
@@ -263,7 +263,7 @@ impl<T> Checker<T> {
                 },
                 CheckInstruction::Unsatisfiable => false,
             };
-            if !result {
+            if !passes {
                 return Ok(false);
             }
         }
@@ -1094,7 +1094,7 @@ impl<T> Checker<T> {
                 row.get(pos).as_reference()
             }
         };
-        role1 == role2 && player1 == player2
+        !(role1 == role2 && player1 == player2)
     }
 
     fn filter_not_none_fn(
