@@ -621,7 +621,7 @@ pub enum CheckInstruction<ID> {
         player2: ID,
     },
     VariablesNotNone {
-        variables: Arc<Vec<ID>>,
+        variables: Vec<ID>,
     },
     Comparison {
         lhs: CheckVertex<ID>,
@@ -681,7 +681,7 @@ impl<ID: IrID> CheckInstruction<ID> {
                 player2: mapping[&player2],
             },
             Self::VariablesNotNone { variables } => {
-                CheckInstruction::VariablesNotNone { variables: Arc::new(variables.iter().map(|v| mapping[&v]).collect()) }
+                CheckInstruction::VariablesNotNone { variables: variables.iter().map(|v| mapping[&v]).collect() }
             }
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }

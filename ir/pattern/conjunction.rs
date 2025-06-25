@@ -25,6 +25,7 @@ use crate::{pattern::{
     optional::Optional,
     Scope, ScopeId, VariableBindingMode,
 }, pipeline::block::{BlockBuilderContext, BlockContext}, RepresentationError};
+use crate::pattern::variable_category::VariableOptionality;
 use crate::pipeline::block::ScopeType;
 
 #[derive(Debug, Clone)]
@@ -175,8 +176,8 @@ impl fmt::Display for Conjunction {
 }
 
 pub struct ConjunctionBuilder<'cx, 'reg> {
-    context: &'cx mut BlockBuilderContext<'reg>,
-    conjunction: &'cx mut Conjunction,
+    pub(crate) context: &'cx mut BlockBuilderContext<'reg>,
+    pub(crate) conjunction: &'cx mut Conjunction,
 }
 
 impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {

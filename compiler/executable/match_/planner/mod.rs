@@ -18,7 +18,7 @@ use ir::{
 };
 use itertools::Itertools;
 use tracing::{debug, trace};
-
+use ir::pattern::variable_category::VariableOptionality;
 use crate::{
     annotation::{expression::compiled_expression::ExecutableExpression, type_annotations::BlockAnnotations},
     executable::{
@@ -508,11 +508,38 @@ impl ConjunctionExecutableBuilder {
             .iter()
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
-        let steps = self
+
+        // TODO: we only need to Check those variables use non-optionally in this conjunction
+        //       The registry stores the original optionality of the variable
+        //       This applies recursively: a 'try' that has inputs that are optional need to be Checked.
+
+        let optional_inputs = self.input_variables
+            .iter()
+            .filter(|&var| variable_registry
+                .get_variable_optionality(*var)
+                .is_some_and(|optionality| {
+                    matches!(optionality, VariableOptionality::Optional) &&
+
+                }))
+            .map(|optional_var| self.index[optional_var])
+            .collect_vec();
+        let mut steps = Vec::with_capacity(self.steps.len() + 1);
+        if !optional_inputs.is_empty() {
+            let mut builder = StepBuilder {
+                selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
+                builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
+            };
+            builder.builder.as_check_mut().unwrap().instructions.push(
+                CheckInstruction::VariablesNotNone { variables: optional_inputs },
+            );
+            steps.push(builder.finish(&self.index, &named_variables, variable_registry));
+        }
+
+        steps.extend(self
             .steps
             .into_iter()
             .map(|builder| builder.finish(&self.index, &named_variables, variable_registry))
-            .collect();
+        );
         ConjunctionExecutable::new(
             next_executable_id(),
             steps,

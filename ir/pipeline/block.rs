@@ -25,6 +25,7 @@ use crate::{
     pipeline::{ParameterRegistry, VariableCategorySource, VariableRegistry},
     RepresentationError,
 };
+use crate::pattern::variable_category::VariableOptionality;
 
 #[derive(Debug, Clone)]
 pub struct Block {
@@ -450,6 +451,10 @@ impl<'a> BlockBuilderContext<'a> {
         source: Constraint<Variable>,
     ) -> Result<(), Box<RepresentationError>> {
         self.variable_registry.set_variable_category(variable, category, VariableCategorySource::Constraint(source))
+    }
+
+    pub(crate) fn set_variable_optionality(&mut self, variable: Variable, is_optional: bool) {
+        self.variable_registry.set_variable_is_optional(variable, is_optional);
     }
 
     pub fn parameters(&mut self) -> &mut ParameterRegistry {
