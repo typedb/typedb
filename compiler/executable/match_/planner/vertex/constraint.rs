@@ -326,7 +326,10 @@ impl Costed for TypeListPlanner<'_> {
         _fix_dir: Option<Direction>,
         _graph: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(self.types.len() as f64), CostMetaData::Direction(Direction::Canonical)))
+        Ok((
+            Cost::in_mem_complex_with_ratio(self.types.len() as f64),
+            CostMetaData::Direction(Direction::Canonical, None),
+        ))
     }
 }
 
@@ -482,7 +485,8 @@ impl Costed for IsaPlanner<'_> {
             false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
         };
         let io_ratio = scan_size;
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse)))
+        let join_var = (!is_thing_bound).then(|| self.thing);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse, join_var)))
     }
 }
 
@@ -695,7 +699,8 @@ impl Costed for HasPlanner<'_> {
         } else {
             OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse
         };
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
+        let join_var = pick_join_var(direction, is_owner_bound, is_attribute_bound, self.owner, self.attribute);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction, join_var)))
     }
 }
 
@@ -937,7 +942,8 @@ impl Costed for LinksPlanner<'_> {
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
         }
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
+        let join_var = pick_join_var(direction, is_relation_bound, is_player_bound, self.relation, self.player);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction, join_var)))
     }
 }
 
@@ -1154,7 +1160,8 @@ impl Costed for IndexedRelationPlanner<'_> {
         } else {
             cost = OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size_reverse;
         }
-        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction)))
+        let join_var = pick_join_var(direction, is_player1_bound, is_player2_bound, self.player_1, self.player_2);
+        Ok((Cost { cost, io_ratio }, CostMetaData::Direction(direction, join_var)))
     }
 }
 
@@ -1194,7 +1201,7 @@ impl Costed for SubPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse)))
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Reverse, None)))
     }
 }
 
@@ -1233,7 +1240,7 @@ impl Costed for OwnsPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
 
@@ -1272,7 +1279,7 @@ impl Costed for RelatesPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
     }
 }
 
@@ -1311,6 +1318,36 @@ impl Costed for PlaysPlanner<'_> {
         _: Option<Direction>,
         _: &Graph<'_>,
     ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical)))
+        Ok((Cost::in_mem_complex_with_ratio(1.0), CostMetaData::Direction(Direction::Canonical, None)))
+    }
+}
+
+fn pick_join_var(
+    direction: Direction,
+    is_from_bound: bool,
+    is_to_bound: bool,
+    from_var: VariableVertexId,
+    to_var: VariableVertexId,
+) -> Option<VariableVertexId> {
+    if is_from_bound && is_to_bound {
+        None
+    } else {
+        let join_var = match direction {
+            Direction::Canonical => {
+                if is_from_bound {
+                    to_var
+                } else {
+                    from_var
+                }
+            }
+            Direction::Reverse => {
+                if is_to_bound {
+                    from_var
+                } else {
+                    to_var
+                }
+            }
+        };
+        Some(join_var)
     }
 }

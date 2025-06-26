@@ -633,7 +633,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     pub(super) fn plan(self) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
         let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
-        let input_variables = self.graph
+        let input_variables = self
+            .graph
             .variable_index
             .values()
             .copied()
@@ -655,7 +656,6 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             metadata
         );
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
-
         let Self { graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
 
         planner_statistics.finalize(cost);
@@ -679,7 +679,8 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
     fn beam_search_plan(
-        graph: &Graph<'_>, initial_empty_plan: PartialCostPlan
+        graph: &Graph<'_>,
+        initial_empty_plan: PartialCostPlan,
     ) -> Result<(Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost), QueryPlanningError> {
         const INDENT: &str = "";
         const BEAM_REDUCTION_CYCLE: usize = 2;
@@ -915,11 +916,9 @@ impl PartialCostPlan {
                     graph.elements[&pattern_id].is_valid(pattern_id, &all_available_vars)
                 }
             })
-            .flat_map(move |&extension| {
-                match self.determine_joinability(graph, extension) {
-                    None => vec![(extension, None)].into_iter(),
-                    Some(var) => vec![(extension, None), (extension, Some(var))].into_iter()
-                }
+            .flat_map(move |&extension| match self.determine_joinability(graph, extension) {
+                None => vec![(extension, None)].into_iter(),
+                Some(var) => vec![(extension, None), (extension, Some(var))].into_iter(),
             })
             .map(move |(extension, join_var_opt)| {
                 let planner_vertex = &graph.elements[&VertexId::Pattern(extension)];
@@ -944,7 +943,8 @@ impl PartialCostPlan {
                     (self.cumulative_cost, step_cost, metadata)
                 } else {
                     // Step either ends or is a check
-                    let (constraint_cost, metadata) = planner_vertex.cost_and_metadata(&all_available_vars, None, graph)?;
+                    let (constraint_cost, metadata) =
+                        planner_vertex.cost_and_metadata(&all_available_vars, None, graph)?;
                     let cost_before_extension = self.cumulative_cost.chain(self.ongoing_step_cost);
                     (cost_before_extension, constraint_cost, metadata)
                 };
@@ -1005,7 +1005,7 @@ impl PartialCostPlan {
         let &prev_pattern = self.ongoing_step.iter().next()?;
         // We only join constraint patterns, so let's extract constraints
         let prev_planner = &graph.elements[&VertexId::Pattern(prev_pattern)];
-        let PlannerVertex::Constraint(prev_constraint) = prev_planner else { return None };
+        let PlannerVertex::Constraint(_) = prev_planner else { return None };
         let planner = &graph.elements[&VertexId::Pattern(pattern)];
         let PlannerVertex::Constraint(constraint) = planner else { return None };
         // Determine whether there are any candidate join variables:
@@ -1015,20 +1015,16 @@ impl PartialCostPlan {
             .exactly_one()
             .ok()?;
         // Only direct-able patterns are join-able:
-        let Some(CostMetaData::Direction(prev_dir)) = self.pattern_metadata.get(&prev_pattern) else { return None };
+        let Some(CostMetaData::Direction(_, prev_step_join_var)) = self.pattern_metadata.get(&prev_pattern) else {
+            return None;
+        };
         // If no join var is set yet, only join when we are on the "non-inverted join var" of the previous constraint based on its direction
-        if (self.ongoing_step_join_var.is_none()
-            && Some(candidate_join_var)
-                == prev_constraint.join_from_direction_and_inputs(
-                    prev_dir,
-                    &self.ongoing_step_produced_vars,
-                    &self.all_produced_vars,
-                ))
-            || self.ongoing_step_join_var == Some(candidate_join_var)
-        {
+        debug_assert!(self.ongoing_step_join_var.is_none() || &self.ongoing_step_join_var == prev_step_join_var);
+        if &Some(candidate_join_var) == prev_step_join_var {
             return Some(candidate_join_var);
+        } else {
+            None
         }
-        None
     }
 
     fn heuristic_plan_completion_cost(&self, pattern: PatternVertexId, graph: &Graph<'_>) -> Cost {
@@ -1670,7 +1666,7 @@ impl ConjunctionPlan<'_> {
                 };
 
                 let direction = if matches!(inputs, Inputs::None([])) {
-                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                    let CostMetaData::Direction(unbound_direction, _) = metadata else {
                         unreachable!("expected metadata for constraint")
                     };
                     unbound_direction
@@ -1762,7 +1758,7 @@ impl ConjunctionPlan<'_> {
                 let array_inputs = Inputs::build_from(&inputs);
 
                 let direction = if !inputs.contains(&player_1) && !inputs.contains(&player_2) {
-                    let CostMetaData::Direction(unbound_direction) = metadata else {
+                    let CostMetaData::Direction(unbound_direction, _) = metadata else {
                         unreachable!("expected metadata for constraint")
                     };
                     unbound_direction
