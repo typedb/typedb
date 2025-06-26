@@ -916,41 +916,47 @@ impl PartialCostPlan {
                 }
             })
             .flat_map(move |&extension| {
-                let join_var = self.determine_joinability(graph, extension);
-
-                if join_var.is_none() {
-                    vec![(extension, join_var)].into_iter()
-                } else {
-                    vec![(extension, None), (extension, join_var)].into_iter()
+                match self.determine_joinability(graph, extension) {
+                    None => vec![(extension, None)].into_iter(),
+                    Some(var) => vec![(extension, None), (extension, Some(var))].into_iter()
                 }
             })
-            .map(move |(extension, join_var)| {
-                let added_cost: Cost;
-                let meta_data: CostMetaData;
-
-                if join_var.is_none() {
-                    (added_cost, meta_data) =
-                        self.compute_added_cost(graph, extension, &all_available_vars, join_var)?;
+            .map(move |(extension, join_var_opt)| {
+                let planner_vertex = &graph.elements[&VertexId::Pattern(extension)];
+                let (cost_before_extension, cost_of_extension, metadata) = if let Some(join_var) = join_var_opt {
+                    // Step continues
+                    debug_assert!(matches!(planner_vertex, PlannerVertex::Constraint(_)));
+                    let PlannerVertex::Constraint(constraint) = planner_vertex else {
+                        unreachable!("Cannot join unless constraint");
+                    };
+                    let total_join_size = graph.elements[&VertexId::Variable(join_var)]
+                        .as_variable()
+                        .unwrap()
+                        .restricted_expected_output_size(&self.vertex_ordering);
+                    let fixed_direction = constraint.direction_from_join_var(
+                        join_var,
+                        &self.ongoing_step_produced_vars,
+                        &self.all_produced_vars,
+                    ); // TODO: we only allow unbounded regular joins for now
+                    let (constraint_cost, metadata) =
+                        constraint.cost_and_metadata(&self.vertex_ordering, fixed_direction, graph)?;
+                    let step_cost = self.ongoing_step_cost.join(constraint_cost, total_join_size);
+                    (self.cumulative_cost, step_cost, metadata)
                 } else {
-                    (added_cost, meta_data) =
-                        self.compute_added_cost(graph, extension, &self.vertex_ordering, join_var)?;
-                }
+                    // Step either ends or is a check
+                    let (constraint_cost, metadata) = planner_vertex.cost_and_metadata(&all_available_vars, None, graph)?;
+                    let cost_before_extension = self.cumulative_cost.chain(self.ongoing_step_cost);
+                    (cost_before_extension, constraint_cost, metadata)
+                };
 
-                let mut cost_before_extension = self.cumulative_cost;
-                if join_var.is_none() {
-                    // Complete ongoing step
-                    cost_before_extension = cost_before_extension.chain(self.ongoing_step_cost);
-                }
-
-                let cost_including_extension = cost_before_extension.chain(added_cost);
-
-                let heuristic = cost_including_extension.chain(self.heuristic_plan_completion_cost(extension, graph));
+                let heuristic_completion_cost = self.heuristic_plan_completion_cost(extension, graph);
+                let heuristic = cost_before_extension.chain(cost_of_extension).chain(heuristic_completion_cost);
 
                 Ok(StepExtension {
                     pattern_id: extension,
-                    pattern_metadata: meta_data,
-                    step_cost: added_cost,
-                    step_join_var: join_var,
+                    pattern_metadata: metadata,
+                    step_cost: cost_of_extension,
+                    step_join_var: join_var_opt,
                     heuristic,
                 })
             })
@@ -1023,38 +1029,6 @@ impl PartialCostPlan {
             return Some(candidate_join_var);
         }
         None
-    }
-
-    fn compute_added_cost(
-        &self,
-        graph: &Graph<'_>,
-        pattern: PatternVertexId,
-        input_vars: &[VertexId],
-        join_var: Option<VariableVertexId>,
-    ) -> Result<(Cost, CostMetaData), QueryPlanningError> {
-        let planner = &graph.elements[&VertexId::Pattern(pattern)];
-        let (updated_cost, extension_metadata) = match planner {
-            PlannerVertex::Constraint(constraint) => {
-                if let Some(join_var) = join_var {
-                    let total_join_size = graph.elements[&VertexId::Variable(join_var)]
-                        .as_variable()
-                        .unwrap()
-                        .restricted_expected_output_size(&self.vertex_ordering);
-                    let fixed_direction = constraint.direction_from_join_var(
-                        join_var,
-                        &self.ongoing_step_produced_vars,
-                        &self.all_produced_vars,
-                    ); // TODO: we only allow unbounded regular joins for now
-                    let (constraint_cost, meta_data) =
-                        constraint.cost_and_metadata(input_vars, fixed_direction, graph)?;
-                    (self.ongoing_step_cost.join(constraint_cost, total_join_size), meta_data)
-                } else {
-                    constraint.cost_and_metadata(input_vars, None, graph)?
-                }
-            }
-            planner_vertex => planner_vertex.cost_and_metadata(input_vars, None, graph)?,
-        };
-        Ok((updated_cost, extension_metadata))
     }
 
     fn heuristic_plan_completion_cost(&self, pattern: PatternVertexId, graph: &Graph<'_>) -> Cost {
