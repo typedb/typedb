@@ -1361,6 +1361,7 @@ impl ConjunctionPlan<'_> {
             already_assigned_positions,
             selected_variables.clone().into_iter().collect(),
             input_variables.clone().into_iter().collect(),
+            self.constraint_variables(),
             self.planner_statistics,
         );
         self.may_make_input_check_step(
@@ -2011,6 +2012,38 @@ impl ConjunctionPlan<'_> {
 
     pub(super) fn shared_variables(&self) -> &[Variable] {
         &self.shared_variables
+    }
+
+    /// Return variables in the constraints of the conjunction, but excluding any other inputs or nested variables
+    pub(super) fn constraint_variables(&self) -> HashSet<Variable> {
+         let mut variables = HashSet::new();
+         self.graph.elements().iter().filter(|(vertex_id, planner_vertex)| {
+             match planner_vertex {
+                 PlannerVertex::Variable(var) => !var.is_input(),
+                 PlannerVertex::Constraint(_)
+                 | PlannerVertex::Is(_)
+                 | PlannerVertex::LinksDeduplication(_)
+                 | PlannerVertex::Comparison(_)
+                 | PlannerVertex::Expression(_)
+                 | PlannerVertex::FunctionCall(_) => true,
+                 PlannerVertex::Unsatisfiable(_)
+                 | PlannerVertex::Negation(_)
+                 | PlannerVertex::Disjunction(_)
+                 | PlannerVertex::Optional(_) => false,
+             }
+         }).for_each(|(vertex_id, _)| {
+             match vertex_id {
+                 VertexId::Variable(index) => {
+                     variables.insert(self.graph.index_to_variable[index]);
+                 },
+                 VertexId::Pattern(pattern_index) => {
+                     self.graph.pattern_to_variable[pattern_index].iter().for_each(|index| {
+                         variables.insert(self.graph.index_to_variable[index]);
+                     });
+                 }
+             }
+         });
+        variables
     }
 
     pub(super) fn cost(&self) -> Cost {
