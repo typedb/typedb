@@ -620,7 +620,7 @@ pub enum CheckInstruction<ID> {
         role2: ID,
         player2: ID,
     },
-    VariablesNotNone {
+    NotNone {
         variables: Vec<ID>,
     },
     Comparison {
@@ -680,8 +680,8 @@ impl<ID: IrID> CheckInstruction<ID> {
                 role2: mapping[&role2],
                 player2: mapping[&player2],
             },
-            Self::VariablesNotNone { variables } => {
-                CheckInstruction::VariablesNotNone { variables: variables.iter().map(|v| mapping[&v]).collect() }
+            Self::NotNone { variables } => {
+                CheckInstruction::NotNone { variables: variables.iter().map(|v| mapping[&v]).collect() }
             }
             Self::Comparison { lhs, rhs, comparator } => {
                 CheckInstruction::Comparison { lhs: lhs.map(mapping), rhs: rhs.map(mapping), comparator }
@@ -739,7 +739,7 @@ impl<ID: IrID> fmt::Display for CheckInstruction<ID> {
                     "{start_player} indexed_relation(role {start_role}->{relation}->role {end_role}) {end_player}",
                 )?;
             }
-            Self::VariablesNotNone { variables } => {
+            Self::NotNone { variables } => {
                 write!(f, "[{variables:?}] not_none")?;
             }
             Self::Is { lhs, rhs } => {

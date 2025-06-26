@@ -562,7 +562,7 @@ pub(super) struct NegationPlanner<'a> {
 
 impl<'a> NegationPlanner<'a> {
     pub(super) fn new(plan: ConjunctionPlan<'a>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
-        let shared_variables = plan.shared_variables().iter().map(|v| variable_index[v]).collect();
+        let shared_variables = plan.bound_or_binding_vars().iter().map(|v| variable_index[v]).collect();
         Self { plan, shared_variables }
     }
 
@@ -600,7 +600,7 @@ pub(super) struct OptionalPlanner<'a> {
 impl<'a> OptionalPlanner<'a> {
     pub(super) fn new(plan: OptionalPlan<'a>, variable_index: &HashMap<Variable, VariableVertexId>) -> Self {
         let input_variables = plan.required_inputs().map(|v| variable_index[&v]).collect();
-        let shared_variables = plan.plan().shared_variables().iter().map(|v| variable_index[v]).collect();
+        let shared_variables = plan.plan().bound_or_binding_vars().iter().map(|v| variable_index[v]).collect();
         Self { plan, input_variables, shared_variables }
     }
 
@@ -642,7 +642,7 @@ impl<'a> DisjunctionPlanner<'a> {
         variable_index: &HashMap<Variable, VariableVertexId>,
     ) -> Self {
         let shared_variables: HashSet<_> =
-            builder.branches().iter().flat_map(|pb| pb.shared_variables()).map(|v| variable_index[v]).collect();
+            builder.branches().iter().flat_map(|pb| pb.bound_or_binding_variables()).map(|v| variable_index[v]).collect();
         let input_variables = builder.required_inputs().iter().map(|v| variable_index[v]).collect();
         Self { input_variables, shared_variables, builder }
     }

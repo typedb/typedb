@@ -747,7 +747,7 @@ fn test_named_var_select() {
     for row in &rows {
         let mut non_empty_count = 0;
         for value in row {
-            non_empty_count += !value.is_empty() as usize;
+            non_empty_count += !value.is_none() as usize;
             print!("{}, ", value);
         }
         println!();

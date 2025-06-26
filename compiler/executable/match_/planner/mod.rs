@@ -512,26 +512,16 @@ impl ConjunctionExecutableBuilder {
             .iter()
             .filter_map(|(var, &pos)| variable_registry.variable_names().get(var).and(Some(pos)))
             .collect();
-
-
-        let optional_inputs_in_constraints = self.input_variables
-            .iter()
-            .filter(|&var| variable_registry
-                .get_variable_optionality(*var)
-                .is_some_and(|optionality| {
-                    matches!(optionality, VariableOptionality::Optional) &&
-                        self.constraint_variables.contains(var)
-                }))
-            .map(|optional_var| self.index[optional_var])
-            .collect_vec();
         let mut steps = Vec::with_capacity(self.steps.len() + 1);
+
+        let optional_inputs_in_constraints = self.optional_inputs_in_constraints(variable_registry);
         if !optional_inputs_in_constraints.is_empty() {
             let mut builder = StepBuilder {
                 selected_variables: Vec::from_iter(self.current_outputs.iter().copied()),
                 builder: StepInstructionsBuilder::Check(CheckBuilder::default()),
             };
             builder.builder.as_check_mut().unwrap().instructions.push(
-                CheckInstruction::VariablesNotNone { variables: optional_inputs_in_constraints },
+                CheckInstruction::NotNone { variables: optional_inputs_in_constraints },
             );
             steps.push(builder.finish(&self.index, &named_variables, variable_registry));
         }
@@ -548,5 +538,18 @@ impl ConjunctionExecutableBuilder {
             self.reverse_index,
             self.planner_statistics,
         )
+    }
+
+    fn optional_inputs_in_constraints(&self, variable_registry: &VariableRegistry) -> Vec<ExecutorVariable> {
+        self.input_variables
+            .iter()
+            .filter(|&var| variable_registry
+                .get_variable_optionality(*var)
+                .is_some_and(|optionality| {
+                    matches!(optionality, VariableOptionality::Optional) &&
+                        self.constraint_variables.contains(var)
+                }))
+            .map(|optional_var| self.index[optional_var])
+            .collect_vec()
     }
 }

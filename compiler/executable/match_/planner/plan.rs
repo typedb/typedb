@@ -154,10 +154,6 @@ fn make_builder<'a>(
                 disjunction_planners.push(planner)
             }
             NestedPattern::Negation(negation) => {
-                // let mut negation_selected_vars = selected_variables.clone();
-                // negation_selected_vars.extend(negation.referenced_variables(block_context));
-                // negation_selected_vars =
-                //     negation_selected_vars.intersection(&negation.referenced_variables().collect()).copied().collect();
                 let negation_selected_vars = negation.conjunction().referenced_variables()
                     .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var))
                     .collect();
@@ -291,7 +287,7 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
 impl fmt::Debug for ConjunctionPlanBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("PlanBuilder")
-            .field("shared_variables", &self.bound_or_binding_variables)
+            .field("bound_or_binding_variables", &self.bound_or_binding_variables)
             .field("graph", &self.graph)
             .finish()
     }
@@ -309,7 +305,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
-    pub(super) fn shared_variables(&self) -> &[Variable] {
+    pub(super) fn bound_or_binding_variables(&self) -> &[Variable] {
         &self.bound_or_binding_variables
     }
 
@@ -824,11 +820,11 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
         let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
 
-        let Self { bound_or_binding_variables: shared_variables, graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
+        let Self { bound_or_binding_variables, graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
 
         planner_statistics.finalize(cost);
         Ok(ConjunctionPlan {
-            shared_variables,
+            bound_or_binding_vars: bound_or_binding_variables,
             graph,
             local_annotations: type_annotations,
             ordering,
@@ -1327,7 +1323,7 @@ impl Ord for StepExtension {
 
 #[derive(Clone)]
 pub(crate) struct ConjunctionPlan<'a> {
-    shared_variables: Vec<Variable>,
+    bound_or_binding_vars: Vec<Variable>,
     graph: Graph<'a>,
     local_annotations: &'a TypeAnnotations,
     ordering: Vec<VertexId>,
@@ -1339,7 +1335,7 @@ pub(crate) struct ConjunctionPlan<'a> {
 impl fmt::Debug for ConjunctionPlan<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name_of_val(self))
-            .field("shared_variables", &self.shared_variables)
+            .field("bound_or_binding_vars", &self.bound_or_binding_vars)
             .field("graph", &self.graph)
             .field("ordering", &self.ordering)
             .finish()
@@ -2010,8 +2006,8 @@ impl ConjunctionPlan<'_> {
         }
     }
 
-    pub(super) fn shared_variables(&self) -> &[Variable] {
-        &self.shared_variables
+    pub(super) fn bound_or_binding_vars(&self) -> &[Variable] {
+        &self.bound_or_binding_vars
     }
 
     /// Return variables in the constraints of the conjunction, but excluding any other inputs or nested variables
