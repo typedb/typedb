@@ -639,6 +639,45 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
+    pub(super) fn plan(self) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
+        let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
+        let input_variables = self.graph
+            .variable_index
+            .values()
+            .copied()
+            .filter(|&v| self.graph.elements[&VertexId::Variable(v)].as_variable().is_some_and(|v| v.is_input()));
+        let initial_empty_plan = PartialCostPlan::new(
+            self.graph.elements.len(),
+            search_patterns.clone(),
+            input_variables,
+        );
+        let complete_plan = Self::beam_search_plan(&self.graph, initial_empty_plan)?;
+        self.build_conjunction_plan(complete_plan)
+    }
+
+    fn build_conjunction_plan(self, complete_plan: CompleteCostPlan) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
+        event!(
+            Level::TRACE,
+            "\n Final plan (before lowering):\n --> Order: {:?} --> MetaData \n {:?}",
+            complete_plan.vertex_ordering,
+            complete_plan.pattern_metadata
+        );
+        let element_to_order = complete_plan.vertex_ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
+
+        let Self { shared_variables, graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
+
+        planner_statistics.finalize(complete_plan.cumulative_cost, );
+        Ok(ConjunctionPlan {
+            shared_variables,
+            graph,
+            local_annotations: type_annotations,
+            ordering: complete_plan.vertex_ordering,
+            metadata: complete_plan.pattern_metadata,
+            element_to_order,
+            planner_statistics,
+        })
+    }
+
     // New approach to planning:
     //
     // In our pattern graph, vertices are variables and patterns; edges indicate which patterns contain which variables.
@@ -648,25 +687,15 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     // (When a step has multiple pattern, the first such produced variable is always the join variable)
     // We record directionality information for each pattern in the plan, indicating which prefix index to use for pattern retrieval
 
-    fn beam_search_plan(
-        &self,
-    ) -> Result<(Vec<VertexId>, HashMap<PatternVertexId, CostMetaData>, Cost), QueryPlanningError> {
+    fn beam_search_plan(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan) -> Result<CompleteCostPlan, QueryPlanningError> {
         const INDENT: &str = "";
-
-        let search_patterns: HashSet<_> = self.graph.pattern_to_variable.keys().copied().collect();
-        let num_patterns = search_patterns.len();
-
         const BEAM_REDUCTION_CYCLE: usize = 2;
         const EXTENSION_REDUCTION_CYCLE: usize = 2;
+        let num_patterns = graph.pattern_to_variable.len();
         let mut beam_width = (num_patterns * 2).clamp(2, MAX_BEAM_WIDTH);
         let mut extension_width = (num_patterns / 2) + 5; // ensure this is larger than (num_patterns / 2) or change narrowing logic (note, join options means patterns may appear twice as extensions)
-
         let mut best_partial_plans = Vec::with_capacity(beam_width);
-        best_partial_plans.push(PartialCostPlan::new(
-            self.graph.elements.len(),
-            search_patterns.clone(),
-            self.input_variables(),
-        ));
+        best_partial_plans.push(initial_empty_plan);
 
         let mut extension_heap = BinaryHeap::with_capacity(extension_width); // reused
         for i in 0..num_patterns {
@@ -694,18 +723,18 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                     plan.heuristic
                 );
 
-                for extension in plan.extensions_iter(&self.graph)? {
-                    if extension.is_trivial(&self.graph) {
+                for extension in plan.extensions_iter(graph)? {
+                    if extension.is_trivial(graph) {
                         event!(
                             Level::TRACE,
                             "{INDENT:12}Stash {:?} = {} <-- cost: {:?} heuristic: {:?}",
                             extension.pattern_id,
-                            self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
+                            graph.elements[&VertexId::Pattern(extension.pattern_id)],
                             extension.step_cost.cost,
                             extension.heuristic
                         );
                         let mut plan = plan.clone();
-                        plan.add_to_stash(extension.pattern_id, &self.graph);
+                        plan.add_to_stash(extension.pattern_id, graph);
                         if new_plans_heap.len() < beam_width {
                             new_plans_heap.push(plan);
                         } else if let Some(top) = new_plans_heap.peek() {
@@ -733,23 +762,23 @@ impl<'a> ConjunctionPlanBuilder<'a> {
                         Level::TRACE,
                         "{INDENT:12}Choice {:?} = {} <-- join: {:?}, cost: {:?}, heuristic: {:?} metadata: {:?}",
                         extension.pattern_id,
-                        self.graph.elements[&VertexId::Pattern(extension.pattern_id)],
+                        graph.elements[&VertexId::Pattern(extension.pattern_id)],
                         extension
                             .step_join_var
-                            .map(|v| self.graph.elements[&VertexId::Variable(v)].as_variable().unwrap().variable()),
+                            .map(|v| graph.elements[&VertexId::Variable(v)].as_variable().unwrap().variable()),
                         extension.step_cost,
                         extension.heuristic,
                         extension.pattern_metadata
                     );
-                    let new_plan = if !extension.is_constraint(&self.graph) {
-                        plan.clone_and_extend_with_new_step(extension, &self.graph)
+                    let new_plan = if !extension.is_constraint(graph) {
+                        plan.clone_and_extend_with_new_step(extension, graph)
                     } else if extension.step_join_var.is_some()
                         && (plan.ongoing_step_join_var.is_none()
                             || plan.ongoing_step_join_var == extension.step_join_var)
                     {
-                        plan.clone_and_extend_with_continued_step(extension, &self.graph)
+                        plan.clone_and_extend_with_continued_step(extension, graph)
                     } else {
-                        plan.clone_and_extend_with_new_step(extension, &self.graph)
+                        plan.clone_and_extend_with_new_step(extension, graph)
                     };
 
                     let new_plan_hash = new_plan.hash();
@@ -775,38 +804,9 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             }
             best_partial_plans = new_plans_heap.into_vec();
         }
-
-        let best_plan =
-            best_partial_plans.into_iter().min().ok_or(QueryPlanningError::ExpectedPlannableConjunction {})?;
-        let complete_plan = best_plan.into_complete_plan(&self.graph);
-        event!(
-            Level::TRACE,
-            "\n Final plan (before lowering):\n --> Order: {:?} --> MetaData \n {:?}",
-            complete_plan.vertex_ordering,
-            complete_plan.pattern_metadata
-        );
-        Ok((complete_plan.vertex_ordering, complete_plan.pattern_metadata, complete_plan.cumulative_cost))
-    }
-
-    // Execute plans
-    pub(super) fn plan(self) -> Result<ConjunctionPlan<'a>, QueryPlanningError> {
-        // Beam plan
-        let (ordering, metadata, cost) = self.beam_search_plan()?;
-
-        let element_to_order = ordering.iter().copied().enumerate().map(|(order, index)| (index, order)).collect();
-
-        let Self { shared_variables, graph, local_annotations: type_annotations, mut planner_statistics, .. } = self;
-
-        planner_statistics.finalize(cost);
-        Ok(ConjunctionPlan {
-            shared_variables,
-            graph,
-            local_annotations: type_annotations,
-            ordering,
-            metadata,
-            element_to_order,
-            planner_statistics,
-        })
+        best_partial_plans
+            .into_iter().min().map(|plan| plan.into_complete_plan(&graph))
+            .ok_or(QueryPlanningError::ExpectedPlannableConjunction {})
     }
 }
 
