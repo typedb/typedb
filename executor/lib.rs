@@ -17,7 +17,7 @@ pub mod batch;
 pub mod document;
 pub mod error;
 pub(crate) mod instruction;
-pub mod match_executor;
+pub mod conjunction_executor;
 pub mod pipeline;
 pub mod read;
 pub(crate) mod reduce_executor;

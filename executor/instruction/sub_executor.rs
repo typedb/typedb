@@ -23,11 +23,12 @@ use crate::{
     instruction::{
         iterator::{NaiiveSeekable, SortedTupleIterator, TupleIterator},
         tuple::{sub_to_tuple_sub_super, sub_to_tuple_super_sub, SubToTupleFn, TuplePositions},
-        type_from_row_or_annotations, BinaryIterateMode, Checker, FilterFn, FilterMapUnchangedFn, VariableModes,
+        type_from_row_or_annotations, BinaryIterateMode, FilterFn, FilterMapUnchangedFn, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct SubExecutor {
     sub: ir::pattern::constraint::Sub<ExecutorVariable>,
@@ -114,7 +115,7 @@ impl SubExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters);
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters);
         let filter_for_row: Box<SubFilterMapFn> = Box::new(move |item| match filter(&item) {
             Ok(true) => match check(&item) {
                 Ok(true) | Err(_) => Some(item),

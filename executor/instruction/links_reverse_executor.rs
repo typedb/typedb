@@ -43,11 +43,12 @@ use crate::{
             tuple_relation_player_role_to_links_reverse, tuple_role_relation_player_to_links_reverse,
             unsafe_compare_result_tuple, TupleOrderingFn, TuplePositions,
         },
-        Checker, LinksIterateMode, VariableModes,
+        LinksIterateMode, VariableModes,
     },
     pipeline::stage::ExecutionContext,
     row::MaybeOwnedRow,
 };
+use crate::instruction::checker::Checker;
 
 pub(crate) struct LinksReverseExecutor {
     links: ir::pattern::constraint::Links<ExecutorVariable>,
@@ -164,7 +165,7 @@ impl LinksReverseExecutor {
         storage_counters: StorageCounters,
     ) -> Result<TupleIterator, Box<ConceptReadError>> {
         let filter = self.filter_fn.clone();
-        let check = self.checker.filter_for_row(context, &row, storage_counters.clone());
+        let check = self.checker.filter_fn_for_row(context, &row, storage_counters.clone());
 
         let existing_role = may_get_role(self.links.role_type().as_variable().unwrap(), row.as_reference());
         let filter_for_row: Arc<LinksFilterMapFn> = Arc::new(move |item| match filter(&item) {

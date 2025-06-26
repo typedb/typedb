@@ -70,7 +70,7 @@ pub mod tests {
             function_signature::{FunctionID, FunctionSignature},
             ParameterRegistry, VariableRegistry,
         },
-        translation::{pipeline::TranslatedStage, TranslationContext},
+        translation::{pipeline::TranslatedStage, PipelineTranslationContext},
     };
     use itertools::Itertools;
 
@@ -115,7 +115,7 @@ pub mod tests {
         .map(|function_id| {
             // with fun fn_test() -> animal: match $called_animal isa cat, has $called_name; return { $called_animal };
             // match $animal = fn_test();
-            let mut function_context = TranslationContext::new();
+            let mut function_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(function_context.new_block_builder_context(&mut value_parameters));
             let mut f_conjunction = builder.conjunction_mut();
@@ -143,7 +143,7 @@ pub mod tests {
                 ),
             );
 
-            let mut entry_context = TranslationContext::new();
+            let mut entry_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(entry_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -333,7 +333,7 @@ pub mod tests {
         {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -400,7 +400,7 @@ pub mod tests {
         {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -465,7 +465,7 @@ pub mod tests {
         {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -506,7 +506,7 @@ pub mod tests {
             let types_a = all_concrete_animals.clone();
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -583,7 +583,7 @@ pub mod tests {
         let ((_, type_cat, type_dog), (type_name, type_catname, type_dogname), _) =
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -712,7 +712,7 @@ pub mod tests {
 
         // Case 1: $a has $n;
         let snapshot = storage.clone().open_snapshot_write();
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -768,7 +768,7 @@ pub mod tests {
 
         // With roles specified
         let snapshot = storage.clone().open_snapshot_write();
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();
@@ -912,7 +912,7 @@ pub mod tests {
         {
             // Case 1: $a isa $at; $at label cat; $n isa! $nt; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -982,7 +982,7 @@ pub mod tests {
             // Case 2: $a isa $at; $n isa $nt; $nt type catname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
 
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1050,7 +1050,7 @@ pub mod tests {
         {
             // Case 3: $a isa $at; $at type cat; $n isa $nt; $nt type dogname; $at owns $nt;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1107,7 +1107,7 @@ pub mod tests {
             let types_a = all_concrete_animals.clone();
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1186,7 +1186,7 @@ pub mod tests {
         {
             // Case 1: $a isa cat, has name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1249,7 +1249,7 @@ pub mod tests {
         {
             // Case 2: $a isa animal, has cat-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1313,7 +1313,7 @@ pub mod tests {
         {
             // Case 3: $a isa cat, has dog-name $n;
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1354,7 +1354,7 @@ pub mod tests {
             let types_a = all_concrete_animals.clone();
             let types_n = all_concrete_names.clone();
             let snapshot = storage.clone().open_snapshot_write();
-            let mut translation_context = TranslationContext::new();
+            let mut translation_context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
             let mut conjunction = builder.conjunction_mut();
@@ -1429,7 +1429,7 @@ pub mod tests {
             setup_types(storage.clone().open_snapshot_write(), &type_manager, &thing_manager);
 
         // Case 1: $a has $n;
-        let mut translation_context = TranslationContext::new();
+        let mut translation_context = PipelineTranslationContext::new();
         let mut value_parameters = ParameterRegistry::new();
         let mut builder = Block::builder(translation_context.new_block_builder_context(&mut value_parameters));
         let mut conjunction = builder.conjunction_mut();

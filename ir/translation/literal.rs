@@ -356,7 +356,7 @@ pub mod tests {
     use crate::{
         pattern::expression::Expression,
         pipeline::{function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
-        translation::{match_::translate_match, TranslationContext},
+        translation::{match_::translate_match, PipelineTranslationContext},
         RepresentationError,
     };
 
@@ -365,7 +365,7 @@ pub mod tests {
         if let Stage::Match(match_) =
             typeql::parse_query(query.as_str()).unwrap().into_structure().into_pipeline().stages.first().unwrap()
         {
-            let mut context = TranslationContext::new();
+            let mut context = PipelineTranslationContext::new();
             let mut value_parameters = ParameterRegistry::new();
             let block =
                 translate_match(&mut context, &mut value_parameters, &HashMapFunctionSignatureIndex::empty(), match_)?

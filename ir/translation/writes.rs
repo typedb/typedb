@@ -16,13 +16,13 @@ use crate::{
     pipeline::{block::Block, function_signature::HashMapFunctionSignatureIndex, ParameterRegistry},
     translation::{
         constraints::{add_statement, add_typeql_relation, register_typeql_var},
-        verify_variable_available, TranslationContext,
+        verify_variable_available, PipelineTranslationContext,
     },
     RepresentationError,
 };
 
 pub fn translate_insert(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     insert: &typeql::query::stage::Insert,
 ) -> Result<Block, Box<RepresentationError>> {
@@ -35,7 +35,7 @@ pub fn translate_insert(
 }
 
 pub fn translate_update(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     update: &typeql::query::stage::Update,
 ) -> Result<Block, Box<RepresentationError>> {
@@ -49,7 +49,7 @@ pub fn translate_update(
 }
 
 pub fn translate_put(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     put: &Put,
 ) -> Result<Block, Box<RepresentationError>> {
@@ -76,7 +76,7 @@ pub fn translate_put(
 }
 
 pub fn translate_delete(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     value_parameters: &mut ParameterRegistry,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(Block, Vec<Variable>), Box<RepresentationError>> {
@@ -104,12 +104,12 @@ pub fn translate_delete(
         }
     }
     let block = builder.finish()?;
-    context.visible_variables.retain(|name, var| !deleted_concepts.contains(var));
+    context.last_stage_visible_variables.retain(|name, var| !deleted_concepts.contains(var));
     Ok((block, deleted_concepts))
 }
 
 fn validate_update_statements_and_variables(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     update: &typeql::query::stage::Update,
 ) -> Result<(), Box<RepresentationError>> {
     update.statements.iter().try_for_each(|statement| {
@@ -159,7 +159,7 @@ fn validate_update_statements_and_variables(
 }
 
 fn validate_update_expression_variables_availability(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     expression: &Expression,
 ) -> Result<(), Box<RepresentationError>> {
     match expression {
@@ -197,7 +197,7 @@ fn validate_update_expression_variables_availability(
 }
 
 fn validate_deleted_variables_availability(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     delete: &typeql::query::stage::Delete,
 ) -> Result<(), Box<RepresentationError>> {
     delete.deletables.iter().try_for_each(|deletable| {

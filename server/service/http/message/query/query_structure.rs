@@ -371,7 +371,7 @@ fn encode_structure_constraint(
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             let arguments = expr
-                .required_ids()
+                .expression_ids()
                 .map(|variable| encode_structure_vertex(context, &Vertex::Variable(variable)))
                 .collect::<Result<Vec<_>, _>>()?;
             constraints.push(StructureConstraintWithSpan {

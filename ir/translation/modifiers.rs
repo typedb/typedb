@@ -10,12 +10,12 @@ use typeql::{common::Spanned, token::Order};
 
 use crate::{
     pipeline::modifier::{Distinct, Limit, Offset, Require, Select, Sort},
-    translation::{literal::FromTypeQLLiteral, verify_variable_available, TranslationContext},
+    translation::{literal::FromTypeQLLiteral, verify_variable_available, PipelineTranslationContext},
     RepresentationError,
 };
 
 pub fn translate_select(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     typeql_select: &typeql::query::stage::modifier::Select,
 ) -> Result<Select, Box<RepresentationError>> {
     let selected_variables = typeql_select
@@ -24,12 +24,12 @@ pub fn translate_select(
         .map(|typeql_var| verify_variable_available!(context, typeql_var => OperatorStageVariableUnavailable))
         .collect::<Result<HashSet<_>, _>>()?;
     let select = Select::new(selected_variables, typeql_select.span());
-    context.visible_variables.retain(|name, var| select.variables.contains(var));
+    context.last_stage_visible_variables.retain(|name, var| select.variables.contains(var));
     Ok(select)
 }
 
 pub fn translate_sort(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     sort: &typeql::query::stage::modifier::Sort,
 ) -> Result<Sort, Box<RepresentationError>> {
     let sort_on = sort
@@ -45,7 +45,7 @@ pub fn translate_sort(
 }
 
 pub fn translate_offset(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     typeql_offset: &typeql::query::stage::modifier::Offset,
 ) -> Result<Offset, Box<RepresentationError>> {
     u64::from_typeql_literal(&typeql_offset.offset, typeql_offset.span())
@@ -60,7 +60,7 @@ pub fn translate_offset(
 }
 
 pub fn translate_limit(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     typeql_limit: &typeql::query::stage::modifier::Limit,
 ) -> Result<Limit, Box<RepresentationError>> {
     u64::from_typeql_literal(&typeql_limit.limit, typeql_limit.span())
@@ -75,7 +75,7 @@ pub fn translate_limit(
 }
 
 pub fn translate_require(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     typeql_require: &typeql::query::pipeline::stage::modifier::Require,
 ) -> Result<Require, Box<RepresentationError>> {
     let required_variables = typeql_require
@@ -88,7 +88,7 @@ pub fn translate_require(
 }
 
 pub fn translate_distinct(
-    context: &mut TranslationContext,
+    context: &mut PipelineTranslationContext,
     typeql_distinct: &typeql::query::pipeline::stage::modifier::Distinct,
 ) -> Result<Distinct, Box<RepresentationError>> {
     Ok(Distinct)
