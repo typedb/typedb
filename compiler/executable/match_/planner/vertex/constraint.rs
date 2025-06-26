@@ -124,32 +124,34 @@ impl ConstraintVertex<'_> {
 
     pub(crate) fn direction_from_join_var(
         &self,
-        var: VariableVertexId,
-        include: &HashSet<VariableVertexId>,
-        exclude: &HashSet<VariableVertexId>,
-    ) -> Option<Direction> {
+        join_var: VariableVertexId,
+        _ongoing_step_produced: &HashSet<VariableVertexId>,
+        all_produced: &HashSet<VariableVertexId>,
+    ) -> Result<Direction, QueryPlanningError> {
+        debug_assert!({
+            let unbound_join_variables: Vec<VariableVertexId> = self
+                .variable_vertex_ids()
+                .filter(|&var| self.can_join_on(var) && (!all_produced.contains(&var) || _ongoing_step_produced.contains(&var)))
+                .collect();
+            unbound_join_variables.len() != 0
+        });
         // First check if we are in a bound case, in which case we don't care about directions
-        match self {
-            Self::Links(_) | Self::Has(_) | Self::IndexedRelation(_) => {
-                let unbound_join_variables: Vec<VariableVertexId> = self
-                    .variable_vertex_ids()
-                    .filter(|&var| self.can_join_on(var) && (!exclude.contains(&var) || include.contains(&var)))
-                    .collect();
-                if unbound_join_variables.len() < 2 {
-                    return None;
-                }
-            }
-            _ => {
-                return None;
-            }
-        }
-        // If unbounded, we choose direction based on the provided join variable
-        match self {
-            Self::Links(inner) => Some(Direction::canonical_if(inner.relation == var)),
-            Self::Has(inner) => Some(Direction::canonical_if(inner.owner == var)),
-            Self::IndexedRelation(inner) => Some(Direction::canonical_if(inner.player_1 == var)),
-            _ => None,
-        }
+        let (canonical_from, canonical_to) = match self {
+            Self::Links(links) => (links.relation, links.player),
+            Self::Has(has) => (has.owner, has.attribute),
+            Self::IndexedRelation(indexed) => (indexed.player_1, indexed.player_2),
+            _ => return Err(QueryPlanningError::UnimplementedJoinForConstraint {} ),
+        };
+        // It can't be a join var if it's being newly produced in this step
+        let direction = if join_var == canonical_from {
+            debug_assert!(all_produced.contains(&canonical_to) || !_ongoing_step_produced.contains(&canonical_to));
+            if all_produced.contains(&canonical_to) { Direction::Reverse } else { Direction::Canonical }
+        } else {
+            debug_assert!(join_var == canonical_to);
+            debug_assert!(all_produced.contains(&canonical_from) || !_ongoing_step_produced.contains(&canonical_from));
+            if all_produced.contains(&canonical_from) { Direction::Canonical } else { Direction::Reverse }
+        };
+        Ok(direction)
     }
 }
 
@@ -485,7 +487,8 @@ impl Costed for IsaPlanner<'_> {
             false => OPEN_ITERATOR_RELATIVE_COST + ADVANCE_ITERATOR_RELATIVE_COST * scan_size,
         };
         let io_ratio = scan_size;
-        let join_var = (!is_thing_bound).then(|| self.thing);
+        // TODO: Seeking on an isa iterator isn't implemented yet.
+        let join_var = None; // (!is_thing_bound).then(|| self.thing);
         Ok((Cost { cost, io_ratio }, CostMetaData::Direction(Direction::Reverse, join_var)))
     }
 }

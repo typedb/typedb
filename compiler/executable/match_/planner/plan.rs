@@ -97,6 +97,7 @@ pub const VARIABLE_PRODUCTION_ADVANTAGE: f64 = 0.05; // this is a percentage 0.0
 typedb_error! {
     pub QueryPlanningError(component = "Query Planner", prefix = "QPL") {
         ExpectedPlannableConjunction(1, "Planning failed as no valid pattern ordering was found by the query planner (this is a bug!)"),
+        UnimplementedJoinForConstraint(2, "The planner expected a join, but it is not supported for this constraint"),
     }
 }
 
@@ -936,9 +937,9 @@ impl PartialCostPlan {
                         join_var,
                         &self.ongoing_step_produced_vars,
                         &self.all_produced_vars,
-                    ); // TODO: we only allow unbounded regular joins for now
+                    )?; // TODO: we only allow unbounded regular joins for now
                     let (constraint_cost, metadata) =
-                        constraint.cost_and_metadata(&self.vertex_ordering, fixed_direction, graph)?;
+                        constraint.cost_and_metadata(&self.vertex_ordering, Some(fixed_direction), graph)?;
                     let step_cost = self.ongoing_step_cost.join(constraint_cost, total_join_size);
                     (self.cumulative_cost, step_cost, metadata)
                 } else {
