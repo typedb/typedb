@@ -258,7 +258,7 @@ impl<T> Checker<T> {
                 CheckInstruction::Comparison { lhs, rhs, comparator } => {
                     self.filter_comparison(context, row, &source, lhs, rhs, *comparator, storage_counters.clone())?
                 }
-                CheckInstruction::VariablesNotNone { variables } => {
+                CheckInstruction::NotNone { variables } => {
                     Self::filter_not_none(row, variables)
                 },
                 CheckInstruction::Unsatisfiable => false,
@@ -319,7 +319,7 @@ impl<T> Checker<T> {
                 &CheckInstruction::LinksDeduplication { role1, player1, role2, player2 } => {
                     self.filter_links_dedup_fn(row, role1, player1, role2, player2)
                 }
-                CheckInstruction::VariablesNotNone { variables } => {
+                CheckInstruction::NotNone { variables } => {
                     todo!()
                     // self.filter_not(context, row, check)
                 }
