@@ -12,14 +12,14 @@ pub(crate) mod connection {
     pub(crate) fn connection_open_res(
         connection_id: ConnectionID,
         receive_time: Instant,
-        databases_all_res: typedb_protocol::database_manager::all::Res,
+        servers_all_res: typedb_protocol::server_manager::all::Res,
         token_create_res: typedb_protocol::authentication::token::create::Res,
     ) -> typedb_protocol::connection::open::Res {
         let processing_millis = Instant::now().duration_since(receive_time).as_millis();
         typedb_protocol::connection::open::Res {
             connection_id: Some(typedb_protocol::ConnectionId { id: Vec::from(connection_id) }),
             server_duration_millis: processing_millis as u64,
-            databases_all: Some(databases_all_res),
+            servers_all: Some(servers_all_res),
             authentication: Some(token_create_res),
         }
     }
@@ -36,37 +36,34 @@ pub(crate) mod server_manager {
 
     pub(crate) fn servers_all_res(address: &SocketAddr) -> typedb_protocol::server_manager::all::Res {
         typedb_protocol::server_manager::all::Res {
-            servers: vec![typedb_protocol::Server { address: address.to_string() }],
+            servers: vec![typedb_protocol::Server { address: address.to_string(), replication_status: None }],
+        }
+    }
+}
+
+pub(crate) mod server {
+    use resource::server_info::ServerInfo;
+
+    pub(crate) fn server_version_res(server_info: ServerInfo) -> typedb_protocol::server::version::Res {
+        typedb_protocol::server::version::Res {
+            distribution: server_info.distribution.to_string(),
+            version: server_info.version.to_string(),
         }
     }
 }
 
 pub(crate) mod database_manager {
-    use std::net::SocketAddr;
-
-    pub(crate) fn database_get_res(
-        server_address: &SocketAddr,
-        database_name: String,
-    ) -> typedb_protocol::database_manager::get::Res {
-        typedb_protocol::database_manager::get::Res {
-            database: Some(typedb_protocol::DatabaseReplicas {
-                name: database_name,
-                replicas: Vec::from([typedb_protocol::database_replicas::Replica {
-                    address: server_address.to_string(),
-                    primary: true,
-                    preferred: true,
-                    term: 0,
-                }]),
-            }),
-        }
+    fn database(name: String) -> typedb_protocol::Database {
+        typedb_protocol::Database { name }
     }
 
-    pub(crate) fn database_all_res(
-        server_address: &SocketAddr,
-        database_names: Vec<String>,
-    ) -> typedb_protocol::database_manager::all::Res {
+    pub(crate) fn database_get_res(database_name: String) -> typedb_protocol::database_manager::get::Res {
+        typedb_protocol::database_manager::get::Res { database: Some(database(database_name)) }
+    }
+
+    pub(crate) fn database_all_res(database_names: Vec<String>) -> typedb_protocol::database_manager::all::Res {
         typedb_protocol::database_manager::all::Res {
-            databases: database_names.into_iter().map(|name| database_replicas(name, server_address)).collect(),
+            databases: database_names.into_iter().map(|name| database(name)).collect(),
         }
     }
 
@@ -74,23 +71,8 @@ pub(crate) mod database_manager {
         typedb_protocol::database_manager::contains::Res { contains }
     }
 
-    pub(crate) fn database_replicas(name: String, server_address: &SocketAddr) -> typedb_protocol::DatabaseReplicas {
-        typedb_protocol::DatabaseReplicas {
-            name,
-            replicas: Vec::from([typedb_protocol::database_replicas::Replica {
-                address: server_address.to_string(),
-                primary: true,
-                preferred: true,
-                term: 0,
-            }]),
-        }
-    }
-
-    pub(crate) fn database_create_res(
-        name: String,
-        server_address: &SocketAddr,
-    ) -> typedb_protocol::database_manager::create::Res {
-        typedb_protocol::database_manager::create::Res { database: Some(database_replicas(name, server_address)) }
+    pub(crate) fn database_create_res(name: String) -> typedb_protocol::database_manager::create::Res {
+        typedb_protocol::database_manager::create::Res { database: Some(database(name)) }
     }
 
     pub(crate) fn database_import_res_done() -> typedb_protocol::database_manager::import::Server {
