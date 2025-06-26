@@ -15,7 +15,7 @@ use compiler::annotation::function::AnnotatedSchemaFunctions;
 use compiler::annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage};
 use compiler::executable::function::ExecutableFunctionRegistry;
 use compiler::executable::match_::planner::match_executable::MatchExecutable;
-use compiler::executable::match_::planner::plan::test::get_multiple_plans_for_simple_conjunction_with;
+use compiler::executable::match_::planner::plan::test::{get_multiple_plans_for_simple_conjunction_with, SampledConjunctionPlan};
 use compiler::executable::match_::planner::vertex::Cost;
 use compiler::executable::match_::planner::vertex::test::cost_of;
 use database::Database;
@@ -102,19 +102,13 @@ fn translate_and_annotate(database: Arc<Database<WALClient>>, query: &str) -> (A
     (annotated, variable_registry, value_parameters)
 }
 
-struct SampledConjunctionPlan {
-    executable: MatchExecutable,
-    cost: Cost
-}
 
 fn sample_plans(database: Arc<Database<WALClient>>, match_stage: &AnnotatedStage, variable_registry: &VariableRegistry, n_plans: usize) -> Vec<SampledConjunctionPlan> {
     let AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } = match_stage else { unreachable!("Only supports single match") };
     let tx = TransactionRead::open(database, TransactionOptions::default()).unwrap();
     get_multiple_plans_for_simple_conjunction_with(
         block, block_annotations, variable_registry, executable_expressions, tx.thing_manager.statistics(), n_plans
-    ).unwrap().into_iter().map(|(executable, cost)| {
-        SampledConjunctionPlan { executable, cost }
-    }).filter(|plan| plan.cost.cost < MAX_COST_TO_EVALUATE)
+    ).unwrap().into_iter().filter(|plan| plan.total_cost.cost < MAX_COST_TO_EVALUATE)
     .collect()
 }
 
@@ -133,7 +127,7 @@ fn foo() {
     let actual_n_plans = plans.len();
     println!("Sampled {} plans (desired: {}). Executing...", plans.len(), actual_n_plans);
     let mut costs_for_comparison = Vec::new();
-    for (i, SampledConjunctionPlan { executable, cost }) in plans.into_iter().enumerate() {
+    for (i, SampledConjunctionPlan { executable, total_cost: cost }) in plans.into_iter().enumerate() {
         let executable_id = executable.executable_id();
         let profile = run_plan(database.clone(), parameters.clone(), Arc::new(executable));
         let guard = profile.stage_profiles().read().unwrap();

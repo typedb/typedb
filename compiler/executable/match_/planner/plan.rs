@@ -2205,8 +2205,13 @@ pub mod test {
     use crate::annotation::type_annotations::BlockAnnotations;
     use crate::executable::function::ExecutableFunctionRegistry;
     use crate::executable::match_::planner::match_executable::MatchExecutable;
-    use crate::executable::match_::planner::plan::{CompleteCostPlan, Graph, make_builder, MAX_BEAM_WIDTH, PartialCostPlan, QueryPlanningError, VertexId};
-    use crate::executable::match_::planner::vertex::Cost;
+    use crate::executable::match_::planner::plan::{CompleteCostPlan, ConjunctionPlanBuilder, Graph, make_builder, MAX_BEAM_WIDTH, PartialCostPlan, QueryPlanningError, VertexId};
+    use crate::executable::match_::planner::vertex::{Cost, Costed, CostMetaData};
+
+    pub struct SampledConjunctionPlan {
+        pub executable: MatchExecutable,
+        pub total_cost: Cost
+    }
 
     pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
         block: &'a Block,
@@ -2215,7 +2220,7 @@ pub mod test {
         expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
         statistics: &'a Statistics,
         n_plans: usize,
-    ) -> Result<Vec<(MatchExecutable, Cost)>, QueryPlanningError> {
+    ) -> Result<Vec<SampledConjunctionPlan>, QueryPlanningError> {
         let builder = make_builder(
             block.conjunction(),
             block.block_context(),
@@ -2239,12 +2244,16 @@ pub mod test {
             input_variables,
         );
 
-        plan_sampler(&builder.graph, initial_empty_plan, n_plans)?.into_iter().map(|complete_plan| {
+        plan_sampler(&builder.graph, initial_empty_plan.clone(), n_plans)?.into_iter().map(|complete_plan| {
             let conjunction_plan = builder.clone().build(complete_plan.clone())?;
             let lowered = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
                 .finish(variable_registry);
+            recreate_step_costs_from_complete_plan(&builder.graph, initial_empty_plan, &complete_plan, &lowered);
             Ok((lowered, complete_plan.cumulative_cost))
         }).collect::<Result<_, _>>()
+    }
+
+    fn recreate_step_costs_from_complete_plan(builder: &ConjunctionPlanBuilder, initial_empty_plan: PartialCostPlan, plan: &CompleteCostPlan, lowered: &MatchExecutable) {
     }
 
     fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan, n_samples: usize) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
