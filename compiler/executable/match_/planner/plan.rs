@@ -2266,19 +2266,21 @@ pub mod test {
                 plan_index += 1;
             }
             match lowered_step {
-                ExecutionStep::Intersection(intersection) => {
+                ExecutionStep::Intersection(_intersection) => {
+                    // Assumption: Since an intersection always produces a variable, all patterns up until the variable are part of this
                     let mut join_cost_opt: Option<Cost> = None;
                     let mut check_cost = Cost::NOOP;
+                    let mut _join_indices = Vec::new();
+                    let mut _check_indices = Vec::new();
                     while plan.vertex_ordering[plan_index].as_variable_id().is_none() {
                         let pattern_index = plan.vertex_ordering[plan_index];
                         let planner = &graph.elements[&pattern_index];
-                        // eprintln!("{:?} \n\tv/s\n[{}]{:?}\n", _instruction, pattern_index.as_pattern_id().unwrap().0, planner);
-                        // debug_assert!(matches!(planner, PlannerVertex::Constraint(_)), "FAIL AT {plan_index}");
                         let vertex_ordering_prefix = &plan.vertex_ordering[0..plan_index];
                         match plan.pattern_metadata[&pattern_index.as_pattern_id().unwrap()] {
                             CostMetaData::Direction(direction, join_var_opt) => {
                                 let constraint_cost = planner.cost_and_metadata(vertex_ordering_prefix, Some(direction), graph).unwrap().0;
                                 if let Some(join_var) = join_var_opt  {
+                                    _join_indices.push(pattern_index);
                                     let join_size = graph.elements[&VertexId::Variable(join_var)]
                                         .as_variable()
                                         .unwrap()
@@ -2288,16 +2290,24 @@ pub mod test {
                                         |cost| cost.join(constraint_cost, join_size)
                                     ));
                                 } else {
+                                    _check_indices.push(pattern_index);
                                     check_cost = check_cost.chain(constraint_cost);
                                 }
                             }
                             CostMetaData::None => {
+                                _check_indices.push(pattern_index);
                                 let constraint_cost = planner.cost_and_metadata(vertex_ordering_prefix, None, graph).unwrap().0;
                                 check_cost = check_cost.chain(constraint_cost);
                             }
                         }
                         plan_index += 1;
                     }
+                    eprintln!(
+                        "---\n{:?}\n\tv/s\n[\n Joins: {:?};\n Checks: {:?}\n]\n===\n",
+                        _intersection.instructions.iter().map(|c| &c.0).collect::<Vec<_>>(),
+                        _join_indices.iter().map(|p| &graph.elements[p]).collect::<Vec<_>>(),
+                        _check_indices.iter().map(|p| &graph.elements[p]).collect::<Vec<_>>(),
+                    );
                     lowered_step_costs.push(join_cost_opt.unwrap_or(Cost::NOOP).chain(check_cost));
                 }
                 ExecutionStep::UnsortedJoin(_) => todo!(),
@@ -2306,7 +2316,6 @@ pub mod test {
                     for _instruction in &check.check_instructions {
                         let pattern_index = plan.vertex_ordering[plan_index];
                         let planner = &graph.elements[&pattern_index];
-                        eprintln!("{:?} \n\tv/s\n[{}]{:?}\n", _instruction, pattern_index.as_pattern_id().unwrap().0, planner);
                         let vertex_ordering_prefix = &plan.vertex_ordering[0..plan_index];
                         cost.chain(planner.cost_and_metadata(vertex_ordering_prefix, None, graph).unwrap().0);
                         plan_index += 1;
@@ -2325,7 +2334,9 @@ pub mod test {
                 }
             }
         }
-
+        let _cumulative_cost = lowered_step_costs.iter().fold(Cost::NOOP, |running, step| running.chain(*step));
+        let _cumulative_cost_relative_err = ((plan.cumulative_cost.cost - _cumulative_cost.cost)/ plan.cumulative_cost.cost);
+        debug_assert!(_cumulative_cost_relative_err.abs() < 0.01, "Relative err was: {_cumulative_cost_relative_err} = relerr({},{})", _cumulative_cost.cost, plan.cumulative_cost.cost);
         lowered_step_costs
     }
 
