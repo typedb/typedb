@@ -10,6 +10,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::Duration;
+use itertools::Itertools;
 use tokio::sync::broadcast;
 use compiler::annotation::function::AnnotatedSchemaFunctions;
 use compiler::annotation::pipeline::{annotate_preamble_and_pipeline, AnnotatedPipeline, AnnotatedStage};
@@ -116,6 +117,7 @@ struct CostComparison {
     plan_cumulative_cost: Cost,
     plan_per_step_estimated_cost: Vec<Cost>, // zip with steps in profile
     executed_per_step_counters: Vec<StorageCounterCopy>,
+    executable: MatchExecutable,
 }
 
 #[test]
@@ -130,13 +132,15 @@ fn foo() {
     println!("Sampled {} plans (desired: {}). Executing...", plans.len(), actual_n_plans);
     let mut costs_for_comparison = Vec::new();
     for (i, SampledConjunctionPlan { executable, total_cost, per_step_estimated_cost }) in plans.into_iter().enumerate() {
-        eprintln!("{:#?}", &executable.steps());
+        // eprintln!("{:#?}", &executable.steps());
         let executable_id = executable.executable_id();
-        let profile = run_plan(database.clone(), parameters.clone(), Arc::new(executable));
+        let arced_executable = Arc::new(executable);
+        let profile = run_plan(database.clone(), parameters.clone(), arced_executable.clone());
         let guard = profile.stage_profiles().read().unwrap();
         let stage_profile = guard.get(&executable_id).unwrap().clone();
         let executed_per_step_counters = StorageCounterCopy::from(&stage_profile);
         let cost_comparison = CostComparison {
+            executable: Arc::into_inner(arced_executable).unwrap(),
             plan_cumulative_cost: total_cost,
             plan_per_step_estimated_cost: per_step_estimated_cost,
             executed_per_step_counters,
@@ -148,12 +152,36 @@ fn foo() {
 }
 
 fn print_costs_for_comparison(costs_for_comparison: &Vec<CostComparison>) {
-    println!("Plan\t|Executed");
-    for cost_comparison in costs_for_comparison {
+    // Summaries
+    println!("#\t| Plan\t\t| Executed\t| rel-err(%)\t|");
+    for (i, cost_comparison) in costs_for_comparison.iter().enumerate() {
         let CostComparison { plan_cumulative_cost, executed_per_step_counters, .. } = &cost_comparison;
         let total_cost_from_profile = executed_per_step_counters.iter().fold(StorageCounterCopy::default(), |a,b| a.add(b));
         let last_stage_rows = executed_per_step_counters.last().unwrap().rows;
-        let cost_from_execution = cost_of(total_cost_from_profile.raw_seek, total_cost_from_profile.raw_advance, last_stage_rows as f64);
-        println!("{:.3}\t|{:.3}", plan_cumulative_cost.cost, cost_from_execution.cost);
+        let cost_from_execution = cost_of(total_cost_from_profile.raw_seek as f64, total_cost_from_profile.raw_advance as f64, last_stage_rows as f64);
+        println!("{i}\t|{:12.3}\t|{:12.3}\t|{:12.3}\t|", plan_cumulative_cost.cost, cost_from_execution.cost, 100.0 * (cost_from_execution.cost/plan_cumulative_cost.cost - 1.0));
+    }
+
+    // In-depth
+    let mut prev_stage_rows = 1.0;
+    for (i, cost_comparison) in costs_for_comparison.iter().enumerate() {
+        let CostComparison { executed_per_step_counters, plan_per_step_estimated_cost, plan_cumulative_cost, executable } = &cost_comparison;
+        let reconstructed_cost = plan_per_step_estimated_cost.iter().fold(Cost::NOOP, |a,b| a.chain(*b)).cost;
+        println!("\n----\nPlan {i}:");
+        println!(
+            "Cumulative costs: planner={:.3}, reconstructed={:.3}, rel-err={:.1}%",
+            plan_cumulative_cost.cost, reconstructed_cost, 100.0 * (reconstructed_cost/plan_cumulative_cost.cost - 1.0)
+        );
+        println!("start-pattern:\n{}\nend-pattern", executable.steps().iter().enumerate().map(|(i,e)| format!("{i}: {e}")).join("\n"));
+
+        println!("\n#\t|| p_cost\t| e_cost\t|| p_rows\t| e_rows\t|");
+
+        for (j, (planned, executed)) in plan_per_step_estimated_cost.iter().zip(executed_per_step_counters.iter()).enumerate() {
+            let executed_cost = cost_of(
+                executed.raw_seek as f64/prev_stage_rows, executed.raw_advance as f64/prev_stage_rows, executed.rows as f64/ prev_stage_rows);
+            println!("{}\t||{:12.3}\t|{:12.3}\t||{:12.3}\t|{:12.3}\t|", j, planned.cost, executed_cost.cost, planned.io_ratio, executed_cost.io_ratio);
+            prev_stage_rows = executed.rows as f64;
+        }
+        println!("===");
     }
 }

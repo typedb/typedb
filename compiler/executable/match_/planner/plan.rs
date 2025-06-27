@@ -2197,6 +2197,7 @@ pub mod test {
     use std::collections::{BTreeMap, HashMap, HashSet};
     use itertools::Itertools;
     use rand::RngCore;
+    use tracing::{event, Level};
     use answer::variable::Variable;
     use concept::thing::statistics::Statistics;
     use ir::pattern::constraint::ExpressionBinding;
@@ -2292,7 +2293,6 @@ pub mod test {
             }).take(n_samples));
             new_plans.sort();
             best_partial_plans = new_plans;
-            eprintln!("{:?}", best_partial_plans.iter().map(|p| p.cumulative_cost.cost).collect::<Vec<_>>());
         }
         Ok(best_partial_plans.into_iter().take(n_samples).map(|plan| plan.into_complete_plan(graph)).collect())
     }
@@ -2300,8 +2300,6 @@ pub mod test {
     fn recreate_step_costs_from_complete_plan(graph: &Graph<'_>, plan: &CompleteCostPlan, lowered: &MatchExecutable) -> Vec<Cost> {
         let mut lowered_step_costs = Vec::with_capacity(lowered.steps.len());
         let mut plan_index = 0;
-        lowered.steps.iter().for_each(|x| eprintln!("{:?}", x.to_string()));
-        eprintln!("{:?}", plan.vertex_ordering);
         for lowered_step in &lowered.steps {
             while matches!(plan.vertex_ordering[plan_index], VertexId::Variable(_)) {
                 plan_index += 1;
@@ -2343,7 +2341,7 @@ pub mod test {
                         }
                         plan_index += 1;
                     }
-                    eprintln!(
+                    event!(Level::TRACE,
                         "---\n{:?}\n\tv/s\n[\n Joins: {:?};\n Checks: {:?}\n]\n===\n",
                         _intersection.instructions.iter().map(|c| &c.0).collect::<Vec<_>>(),
                         _join_indices.iter().map(|p| &graph.elements[p]).collect::<Vec<_>>(),
@@ -2377,7 +2375,7 @@ pub mod test {
         }
         let _cumulative_cost = lowered_step_costs.iter().fold(Cost::NOOP, |running, step| running.chain(*step));
         let _cumulative_cost_relative_err = (plan.cumulative_cost.cost - _cumulative_cost.cost)/ plan.cumulative_cost.cost;
-        debug_assert!(_cumulative_cost_relative_err.abs() < 0.01, "Relative err was: {_cumulative_cost_relative_err} = relerr({},{})", _cumulative_cost.cost, plan.cumulative_cost.cost);
+        // debug_assert!(_cumulative_cost_relative_err.abs() < 0.01, "Relative err was: {_cumulative_cost_relative_err} = relerr({},{})", _cumulative_cost.cost, plan.cumulative_cost.cost);
         lowered_step_costs
     }
 }

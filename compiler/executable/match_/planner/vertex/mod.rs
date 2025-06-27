@@ -184,14 +184,14 @@ impl Cost {
         Self { cost: Cost::IN_MEM_COST_SIMPLE, io_ratio }
     }
 
-    pub(crate) fn chain(self, other: Self) -> Self {
+    pub fn chain(self, other: Self) -> Self {
         Self {
             cost: self.cost + other.cost * self.io_ratio,
             io_ratio: f64::max(self.io_ratio * other.io_ratio, Cost::MIN_IO_RATIO),
         }
     }
 
-    pub(crate) fn join(self, other: Self, join_size: f64) -> Self {
+    pub fn join(self, other: Self, join_size: f64) -> Self {
         let io_ratio = f64::max(self.io_ratio * other.io_ratio / join_size, Cost::MIN_IO_RATIO); // Probability of join = 1 / total_join_size
         Self {
             cost: (2.0 + io_ratio) * SEEK_ITERATOR_RELATIVE_COST, // We expect to seek once per intersection on average
@@ -648,8 +648,8 @@ pub(super) fn instance_count(type_: &Type, statistics: &Statistics) -> u64 {
 pub mod test {
     use crate::executable::match_::planner::vertex::{ADVANCE_ITERATOR_RELATIVE_COST, Cost, SEEK_ITERATOR_RELATIVE_COST};
 
-    pub fn cost_of(seeks: u64, advances: u64, io_ratio: f64) -> Cost {
-        let cost = seeks as f64 * SEEK_ITERATOR_RELATIVE_COST + advances as f64 * ADVANCE_ITERATOR_RELATIVE_COST;
+    pub fn cost_of(seeks: f64, advances: f64, io_ratio: f64) -> Cost {
+        let cost = seeks * SEEK_ITERATOR_RELATIVE_COST + advances * ADVANCE_ITERATOR_RELATIVE_COST;
         Cost { cost , io_ratio }
     }
 }
