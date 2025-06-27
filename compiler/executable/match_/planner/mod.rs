@@ -51,9 +51,9 @@ typedb_error! {
 
 pub fn compile(
     block: &Block,
-    input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
-    input_variables: &HashMap<Variable, VariablePosition>,
-    selected_variables: &HashSet<Variable>,
+    stage_input_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
+    stage_input_positions: &HashMap<Variable, VariablePosition>,
+    selected_variables: HashSet<Variable>,
     type_annotations: &BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -66,13 +66,12 @@ pub fn compile(
     debug!("Planning conjunction:\n{conjunction}");
 
     let assigned_identities =
-        input_variables.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
+        stage_input_positions.iter().map(|(&var, &position)| (var, ExecutorVariable::RowPosition(position))).collect();
 
     let plan = plan_conjunction(
         conjunction,
         block_context,
-        input_variables,
-        selected_variables,
+        stage_input_positions,
         type_annotations,
         variable_registry,
         expressions,
@@ -81,9 +80,9 @@ pub fn compile(
     )
     .map_err(|source| MatchCompilationError::PlanningError { typedb_source: source })?
     .lower(
-        input_variable_annotations,
-        input_variables.keys().copied(),
-        selected_variables.iter().copied(),
+        stage_input_annotations,
+        stage_input_positions.keys().copied(),
+        selected_variables,
         &assigned_identities,
         variable_registry,
         None,
@@ -301,7 +300,7 @@ impl StepBuilder {
 
 #[derive(Debug)]
 struct ConjunctionExecutableBuilder {
-    selected_variables: Vec<Variable>,
+    selected_variables: HashSet<Variable>,
     input_variables: Vec<Variable>,
     constraint_variables: HashSet<Variable>,
 
@@ -323,7 +322,7 @@ impl ConjunctionExecutableBuilder {
     fn new(
         branch_id: Option<BranchID>,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
-        selected_variables: Vec<Variable>,
+        selected_variables: HashSet<Variable>,
         input_variables: Vec<Variable>,
         constraint_variables: HashSet<Variable>,
         planner_statistics: PlannerStatistics,
