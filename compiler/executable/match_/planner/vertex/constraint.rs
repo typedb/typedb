@@ -131,7 +131,9 @@ impl ConstraintVertex<'_> {
         debug_assert!({
             let unbound_join_variables: Vec<VariableVertexId> = self
                 .variables()
-                .filter(|&var| self.can_join_on(var) && (!all_produced.contains(&var) || _ongoing_step_produced.contains(&var)))
+                .filter(|&var| {
+                    self.can_join_on(var) && (!all_produced.contains(&var) || _ongoing_step_produced.contains(&var))
+                })
                 .collect();
             unbound_join_variables.len() != 0
         });
@@ -140,16 +142,24 @@ impl ConstraintVertex<'_> {
             Self::Links(links) => (links.relation, links.player),
             Self::Has(has) => (has.owner, has.attribute),
             Self::IndexedRelation(indexed) => (indexed.player_1, indexed.player_2),
-            _ => return Err(QueryPlanningError::UnimplementedJoinForConstraint {} ),
+            _ => return Err(QueryPlanningError::UnimplementedJoinForConstraint {}),
         };
         // It can't be a join var if it's being newly produced in this step
         let direction = if join_var == canonical_from {
             debug_assert!(all_produced.contains(&canonical_to) || !_ongoing_step_produced.contains(&canonical_to));
-            if all_produced.contains(&canonical_to) { Direction::Reverse } else { Direction::Canonical }
+            if all_produced.contains(&canonical_to) {
+                Direction::Reverse
+            } else {
+                Direction::Canonical
+            }
         } else {
             debug_assert!(join_var == canonical_to);
             debug_assert!(all_produced.contains(&canonical_from) || !_ongoing_step_produced.contains(&canonical_from));
-            if all_produced.contains(&canonical_from) { Direction::Canonical } else { Direction::Reverse }
+            if all_produced.contains(&canonical_from) {
+                Direction::Canonical
+            } else {
+                Direction::Reverse
+            }
         };
         Ok(direction)
     }

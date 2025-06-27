@@ -753,6 +753,7 @@ impl StorageCountersData {
 pub mod test {
     // TODO: Consider making the whole thing public so we can get finer step-wise comparisons
     use std::sync::atomic::Ordering;
+
     use crate::profile::StageProfile;
 
     #[derive(Default)]
@@ -769,17 +770,20 @@ pub mod test {
     impl StorageCounterCopy {
         pub fn from(stage_profile: &StageProfile) -> Vec<StorageCounterCopy> {
             let step_profiles = stage_profile.step_profiles.read().unwrap();
-            step_profiles.iter().map(|profile| {
-                let step_counters = profile.storage_counters().counters.unwrap();
-                StorageCounterCopy {
-                    raw_advance: step_counters.raw_advance.load(Ordering::Relaxed),
-                    raw_seek: step_counters.raw_seek.load(Ordering::Relaxed),
-                    advance_mvcc_visible: step_counters.advance_mvcc_visible.load(Ordering::Relaxed),
-                    advance_mvcc_invisible: step_counters.advance_mvcc_invisible.load(Ordering::Relaxed),
-                    advance_mvcc_deleted: step_counters.advance_mvcc_deleted.load(Ordering::Relaxed),
-                    rows: profile.data.as_ref().unwrap().rows.load(Ordering::Relaxed),
-                }
-            }).collect()
+            step_profiles
+                .iter()
+                .map(|profile| {
+                    let step_counters = profile.storage_counters().counters.unwrap();
+                    StorageCounterCopy {
+                        raw_advance: step_counters.raw_advance.load(Ordering::Relaxed),
+                        raw_seek: step_counters.raw_seek.load(Ordering::Relaxed),
+                        advance_mvcc_visible: step_counters.advance_mvcc_visible.load(Ordering::Relaxed),
+                        advance_mvcc_invisible: step_counters.advance_mvcc_invisible.load(Ordering::Relaxed),
+                        advance_mvcc_deleted: step_counters.advance_mvcc_deleted.load(Ordering::Relaxed),
+                        rows: profile.data.as_ref().unwrap().rows.load(Ordering::Relaxed),
+                    }
+                })
+                .collect()
         }
 
         pub fn add(&self, second: &StorageCounterCopy) -> StorageCounterCopy {

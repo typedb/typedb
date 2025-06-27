@@ -646,10 +646,12 @@ pub(super) fn instance_count(type_: &Type, statistics: &Statistics) -> u64 {
 }
 
 pub mod test {
-    use crate::executable::match_::planner::vertex::{ADVANCE_ITERATOR_RELATIVE_COST, Cost, SEEK_ITERATOR_RELATIVE_COST};
+    use crate::executable::match_::planner::vertex::{
+        Cost, ADVANCE_ITERATOR_RELATIVE_COST, SEEK_ITERATOR_RELATIVE_COST,
+    };
 
     pub fn cost_of(seeks: f64, advances: f64, io_ratio: f64) -> Cost {
         let cost = seeks * SEEK_ITERATOR_RELATIVE_COST + advances * ADVANCE_ITERATOR_RELATIVE_COST;
-        Cost { cost , io_ratio }
+        Cost { cost, io_ratio }
     }
 }
