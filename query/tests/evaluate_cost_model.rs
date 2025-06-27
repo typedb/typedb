@@ -127,7 +127,8 @@ fn foo() {
     let actual_n_plans = plans.len();
     println!("Sampled {} plans (desired: {}). Executing...", plans.len(), actual_n_plans);
     let mut costs_for_comparison = Vec::new();
-    for (i, SampledConjunctionPlan { executable, total_cost: cost }) in plans.into_iter().enumerate() {
+    for (i, SampledConjunctionPlan { executable, total_cost: cost, executable_step_costs }) in plans.into_iter().enumerate() {
+        eprintln!("{:#?}", &executable.steps());
         let executable_id = executable.executable_id();
         let profile = run_plan(database.clone(), parameters.clone(), Arc::new(executable));
         let guard = profile.stage_profiles().read().unwrap();

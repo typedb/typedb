@@ -2194,7 +2194,8 @@ impl<'a> Graph<'a> {
 }
 
 pub mod test {
-    use std::collections::{BinaryHeap, BTreeMap, HashMap, HashSet};
+    use std::collections::{BTreeMap, HashMap, HashSet};
+    use itertools::Itertools;
     use rand::RngCore;
     use answer::variable::Variable;
     use concept::thing::statistics::Statistics;
@@ -2204,13 +2205,15 @@ pub mod test {
     use crate::annotation::expression::compiled_expression::ExecutableExpression;
     use crate::annotation::type_annotations::BlockAnnotations;
     use crate::executable::function::ExecutableFunctionRegistry;
-    use crate::executable::match_::planner::match_executable::MatchExecutable;
-    use crate::executable::match_::planner::plan::{CompleteCostPlan, ConjunctionPlanBuilder, Graph, make_builder, MAX_BEAM_WIDTH, PartialCostPlan, QueryPlanningError, VertexId};
-    use crate::executable::match_::planner::vertex::{Cost, Costed, CostMetaData};
+    use crate::executable::match_::planner::match_executable::{ExecutionStep, MatchExecutable};
+    use crate::executable::match_::planner::plan::{CompleteCostPlan, ConjunctionPlanBuilder, Graph, make_builder, MAX_BEAM_WIDTH, PartialCostPlan, QueryPlanningError, VariableVertexId, VertexId};
+    use crate::executable::match_::planner::vertex::{Cost, Costed, CostMetaData, PlannerVertex};
 
+    #[derive(Debug)]
     pub struct SampledConjunctionPlan {
         pub executable: MatchExecutable,
-        pub total_cost: Cost
+        pub total_cost: Cost,
+        pub executable_step_costs: Vec<Cost>,
     }
 
     pub fn get_multiple_plans_for_simple_conjunction_with<'a>(
@@ -2245,15 +2248,85 @@ pub mod test {
         );
 
         plan_sampler(&builder.graph, initial_empty_plan.clone(), n_plans)?.into_iter().map(|complete_plan| {
-            let conjunction_plan = builder.clone().build(complete_plan.clone())?;
-            let lowered = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
+            let conjunction_plan = builder.clone().build_conjunction_plan(complete_plan.clone())?;
+            let executable = conjunction_plan.lower(&BTreeMap::new(), [].into_iter(), block.block_variables().collect::<Vec<_>>(), &HashMap::new(), variable_registry, None)?
                 .finish(variable_registry);
-            recreate_step_costs_from_complete_plan(&builder.graph, initial_empty_plan, &complete_plan, &lowered);
-            Ok((lowered, complete_plan.cumulative_cost))
+            let executable_step_costs = recreate_step_costs_from_complete_plan(&builder.graph, &complete_plan, &executable);
+            Ok(SampledConjunctionPlan { executable, total_cost: complete_plan.cumulative_cost, executable_step_costs })
         }).collect::<Result<_, _>>()
     }
 
-    fn recreate_step_costs_from_complete_plan(builder: &ConjunctionPlanBuilder, initial_empty_plan: PartialCostPlan, plan: &CompleteCostPlan, lowered: &MatchExecutable) {
+    fn recreate_step_costs_from_complete_plan(graph: &Graph<'_>, plan: &CompleteCostPlan, lowered: &MatchExecutable) -> Vec<Cost> {
+        let mut lowered_step_costs = Vec::with_capacity(lowered.steps.len());
+        let mut plan_index = 0;
+        lowered.steps.iter().for_each(|x| eprintln!("{:?}", x.to_string()));
+        eprintln!("{:?}", plan.vertex_ordering);
+        for lowered_step in &lowered.steps {
+            while matches!(plan.vertex_ordering[plan_index], VertexId::Variable(_)) {
+                plan_index += 1;
+            }
+            match lowered_step {
+                ExecutionStep::Intersection(intersection) => {
+                    let mut join_cost_opt: Option<Cost> = None;
+                    let mut check_cost = Cost::NOOP;
+                    while plan.vertex_ordering[plan_index].as_variable_id().is_none() {
+                        let pattern_index = plan.vertex_ordering[plan_index];
+                        let planner = &graph.elements[&pattern_index];
+                        // eprintln!("{:?} \n\tv/s\n[{}]{:?}\n", _instruction, pattern_index.as_pattern_id().unwrap().0, planner);
+                        // debug_assert!(matches!(planner, PlannerVertex::Constraint(_)), "FAIL AT {plan_index}");
+                        let vertex_ordering_prefix = &plan.vertex_ordering[0..plan_index];
+                        match plan.pattern_metadata[&pattern_index.as_pattern_id().unwrap()] {
+                            CostMetaData::Direction(direction, join_var_opt) => {
+                                let constraint_cost = planner.cost_and_metadata(vertex_ordering_prefix, Some(direction), graph).unwrap().0;
+                                if let Some(join_var) = join_var_opt  {
+                                    let join_size = graph.elements[&VertexId::Variable(join_var)]
+                                        .as_variable()
+                                        .unwrap()
+                                        .restricted_expected_output_size(&vertex_ordering_prefix);
+                                    join_cost_opt = Some(join_cost_opt.map_or_else(
+                                        || constraint_cost,
+                                        |cost| cost.join(constraint_cost, join_size)
+                                    ));
+                                } else {
+                                    check_cost = check_cost.chain(constraint_cost);
+                                }
+                            }
+                            CostMetaData::None => {
+                                let constraint_cost = planner.cost_and_metadata(vertex_ordering_prefix, None, graph).unwrap().0;
+                                check_cost = check_cost.chain(constraint_cost);
+                            }
+                        }
+                        plan_index += 1;
+                    }
+                    lowered_step_costs.push(join_cost_opt.unwrap_or(Cost::NOOP).chain(check_cost));
+                }
+                ExecutionStep::UnsortedJoin(_) => todo!(),
+                ExecutionStep::Check(check) => {
+                    let mut cost = Cost::NOOP;
+                    for _instruction in &check.check_instructions {
+                        let pattern_index = plan.vertex_ordering[plan_index];
+                        let planner = &graph.elements[&pattern_index];
+                        eprintln!("{:?} \n\tv/s\n[{}]{:?}\n", _instruction, pattern_index.as_pattern_id().unwrap().0, planner);
+                        let vertex_ordering_prefix = &plan.vertex_ordering[0..plan_index];
+                        cost.chain(planner.cost_and_metadata(vertex_ordering_prefix, None, graph).unwrap().0);
+                        plan_index += 1;
+                    }
+                    lowered_step_costs.push(cost);
+                }
+                ExecutionStep::Assignment(_)
+                | ExecutionStep::Disjunction(_)
+                | ExecutionStep::Negation(_)
+                | ExecutionStep::Optional(_)
+                | ExecutionStep::FunctionCall(_) => {
+                    let pattern_index = plan.vertex_ordering[plan_index];
+                    let planner = &graph.elements[&pattern_index];
+                    lowered_step_costs.push(planner.cost_and_metadata(&plan.vertex_ordering[0..plan_index], None, graph).unwrap().0);
+                    plan_index += 1;
+                }
+            }
+        }
+
+        lowered_step_costs
     }
 
     fn plan_sampler(graph: &Graph<'_>, initial_empty_plan: PartialCostPlan, n_samples: usize) -> Result<Vec<CompleteCostPlan>, QueryPlanningError> {
