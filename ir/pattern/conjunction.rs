@@ -190,7 +190,6 @@ impl<'cx, 'reg> ConjunctionBuilder<'cx, 'reg> {
     }
 
     pub fn add_disjunction(&mut self) -> DisjunctionBuilder<'_, 'reg> {
-        // TODO: this is new! We added a scope for Disjunction!
         let nested_scope_id = self.context.create_child_scope(self.conjunction.scope_id, ScopeType::Disjunction);
         self.conjunction.nested_patterns.push(NestedPattern::Disjunction(Disjunction::new(nested_scope_id)));
         let disjunction =
