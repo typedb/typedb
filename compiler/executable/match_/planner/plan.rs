@@ -58,8 +58,8 @@ use crate::{
                         OwnsPlanner, PlaysPlanner, RelatesPlanner, SubPlanner, TypeListPlanner,
                     },
                     variable::{InputPlanner, ThingPlanner, TypePlanner, ValuePlanner, VariableVertex},
-                    ComparisonPlanner, Cost, CostMetaData, Costed, Direction, DisjunctionPlanner, ExpressionPlanner,
-                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, NegationPlanner, PlannerVertex,
+                    ComparisonPlanner, Cost, CostMetaData, Costed, Direction, ChildDisjunctionPlanner, ExpressionPlanner,
+                    FunctionCallPlanner, Input, IsPlanner, LinksDeduplicationPlanner, ChildNegationPlan, PlannerVertex,
                     UnsatisfiablePlanner,
                 },
                 DisjunctionBuilder, ExpressionBuilder, FunctionCallBuilder, IntersectionBuilder,
@@ -85,8 +85,7 @@ typedb_error! {
 pub(crate) fn plan_conjunction<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
-    variable_positions: &HashMap<Variable, VariablePosition>,
-    shared_variables: &HashSet<Variable>,
+    stage_input_positions: &HashMap<Variable, VariablePosition>,
     type_annotations: &'a BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -96,8 +95,7 @@ pub(crate) fn plan_conjunction<'a>(
     make_builder(
         conjunction,
         block_context,
-        variable_positions,
-        shared_variables,
+        stage_input_positions,
         type_annotations,
         variable_registry,
         expressions,
@@ -110,8 +108,7 @@ pub(crate) fn plan_conjunction<'a>(
 fn make_builder<'a>(
     conjunction: &'a Conjunction,
     block_context: &BlockContext,
-    variable_positions: &HashMap<Variable, VariablePosition>,
-    shared_variables: &HashSet<Variable>,
+    stage_inputs: &HashMap<Variable, VariablePosition>,
     block_annotations: &'a BlockAnnotations,
     variable_registry: &VariableRegistry,
     expressions: &'a HashMap<ExpressionBinding<Variable>, ExecutableExpression<Variable>>,
@@ -129,45 +126,42 @@ fn make_builder<'a>(
                         .conjunctions()
                         .iter()
                         .map(|branch| {
-                            let branch_shared_variables = branch
+                            let parent_variables = branch
                                 .referenced_variables()
-                                .filter(|var| block_context.is_variable_available(conjunction.scope_id(), *var))
-                                .collect();
-                            make_builder(
+                                .filter(|var| block_context.is_variable_available(conjunction.scope_id(), *var));
+                            let mut builder = make_builder(
                                 branch,
                                 block_context,
-                                variable_positions,
-                                &branch_shared_variables,
+                                stage_inputs,
                                 block_annotations,
                                 variable_registry,
                                 expressions,
                                 statistics,
                                 call_cost_provider,
-                            )
+                            )?;
+                            builder = builder.with_inputs(parent_variables);
+                            Ok(builder)
                         })
                         .collect::<Result<Vec<_>, _>>()?,
-                    disjunction.required_inputs(block_context).collect(),
                 );
                 disjunction_planners.push(planner)
             }
             NestedPattern::Negation(negation) => {
-                let mut shared_variables = shared_variables.clone();
-                shared_variables.extend(negation.required_inputs(block_context));
-                shared_variables =
-                    shared_variables.intersection(&negation.referenced_variables().collect()).copied().collect();
+                let parent_variables = negation.conjunction().referenced_variables()
+                    .filter(|var| block_context.is_in_scope_or_parent(conjunction.scope_id(), *var));
                 negation_subplans.push(
                     make_builder(
                         negation.conjunction(),
                         block_context,
-                        variable_positions,
-                        &shared_variables,
+                        stage_inputs,
+                        // &shared_variables,
                         block_annotations,
                         variable_registry,
                         expressions,
                         statistics,
                         call_cost_provider,
                     )?
-                    .with_inputs(negation.required_inputs(block_context))
+                    .with_inputs(parent_variables)
                     .plan()?,
                 )
             }
@@ -183,8 +177,7 @@ fn make_builder<'a>(
     );
 
     plan_builder.register_variables(
-        variable_positions.keys().copied(),
-        shared_variables.iter().copied(),
+        stage_inputs.keys().copied(),
         conjunction.local_variables(block_context),
         variable_registry,
     );
@@ -259,7 +252,8 @@ impl VertexId {
 
 #[derive(Clone)]
 pub(super) struct ConjunctionPlanBuilder<'a> {
-    shared_variables: Vec<Variable>,
+    // bound_or_binding_variables: Vec<Variable>,
+    // referenced_parent_variables: HashSet<Variable>,
     required_inputs: Vec<Variable>,
     graph: Graph<'a>,
     local_annotations: &'a TypeAnnotations,
@@ -270,16 +264,19 @@ pub(super) struct ConjunctionPlanBuilder<'a> {
 impl fmt::Debug for ConjunctionPlanBuilder<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("PlanBuilder")
-            .field("shared_variables", &self.shared_variables)
+            // .field("shared_variables", &self.shared_variables)
             .field("graph", &self.graph)
             .finish()
     }
 }
 
 impl<'a> ConjunctionPlanBuilder<'a> {
-    fn new(required_inputs: Vec<Variable>, local_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
+    fn new(required_inputs: Vec<Variable>,
+           // output_variables: HashSet<Variable>,
+           local_annotations: &'a TypeAnnotations, statistics: &'a Statistics) -> Self {
         Self {
-            shared_variables: Vec::new(),
+            // bound_or_binding_variables: Vec::new(),
+            // referenced_parent_variables,
             graph: Graph::default(),
             local_annotations,
             statistics,
@@ -288,13 +285,17 @@ impl<'a> ConjunctionPlanBuilder<'a> {
         }
     }
 
-    pub(super) fn shared_variables(&self) -> &[Variable] {
-        &self.shared_variables
+    pub(super) fn referenced_variables(&self) -> impl Iterator<Item = Variable> + '_ {
+        self.graph.referenced_variables()
     }
 
-    pub(super) fn required_inputs(&self) -> &[Variable] {
-        self.required_inputs.as_slice()
+    pub(super) fn referenced_input_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.graph.referenced_input_variables()
     }
+
+    // pub(super) fn output_variables(&self) -> &HashSet<Variable> {
+    //     &self.output_variables
+    // }
 
     fn input_variables(&self) -> impl Iterator<Item = VariableVertexId> + '_ {
         self.graph
@@ -304,6 +305,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
             .filter(|&v| self.graph.elements[&VertexId::Variable(v)].as_variable().is_some_and(|v| v.is_input()))
     }
 
+    /// Set additional variables as bound from the parent(s)
     pub(super) fn with_inputs(mut self, input_variables: impl Iterator<Item = Variable>) -> Self {
         for var in input_variables {
             if let Some(&id) = self.graph.variable_index.get(&var) {
@@ -318,46 +320,46 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_variables(
         &mut self,
-        input_variables: impl Iterator<Item = Variable>,
-        shared_variables: impl Iterator<Item = Variable>,
-        local_variables: impl Iterator<Item = Variable>,
+        stage_input_variables: impl Iterator<Item = Variable>,
+        // selected_variables: impl Iterator<Item = Variable>,
+        referenced_variables: impl Iterator<Item = Variable>,
         variable_registry: &VariableRegistry,
     ) {
-        self.shared_variables.reserve(input_variables.size_hint().0 + shared_variables.size_hint().0);
+        // self.shared_variables.reserve(input_variables.size_hint().0 + shared_variables.size_hint().0);
 
-        for variable in input_variables {
+        for variable in stage_input_variables {
             self.register_input_var(variable);
         }
 
-        for variable in shared_variables {
-            if self.graph.variable_index.contains_key(&variable) {
-                continue;
-            }
-            self.shared_variables.push(variable);
-            let category = variable_registry.get_variable_category(variable).unwrap();
-            match category {
-                | VariableCategory::Type
-                | VariableCategory::ThingType
-                | VariableCategory::AttributeType
-                | VariableCategory::RoleType => self.register_type_var(variable),
+        // for variable in shared_variables {
+        //     if self.graph.variable_index.contains_key(&variable) {
+        //         continue;
+        //     }
+        //     // self.shared_variables.push(variable);
+        //     let category = variable_registry.get_variable_category(variable).unwrap();
+        //     match category {
+        //         | VariableCategory::Type
+        //         | VariableCategory::ThingType
+        //         | VariableCategory::AttributeType
+        //         | VariableCategory::RoleType => self.register_type_var(variable),
+        //
+        //         VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
+        //             self.register_thing_var(variable)
+        //         }
+        //
+        //         VariableCategory::Value => self.register_value_var(variable),
+        //
+        //         VariableCategory::ObjectList
+        //         | VariableCategory::ThingList
+        //         | VariableCategory::AttributeList
+        //         | VariableCategory::ValueList => unimplemented_feature!(Lists),
+        //         VariableCategory::AttributeOrValue => {
+        //             unreachable!("Insufficiently bound variable should have been flagged earlier")
+        //         }
+        //     }
+        // }
 
-                | VariableCategory::Thing | VariableCategory::Object | VariableCategory::Attribute => {
-                    self.register_thing_var(variable)
-                }
-
-                VariableCategory::Value => self.register_value_var(variable),
-
-                | VariableCategory::ObjectList
-                | VariableCategory::ThingList
-                | VariableCategory::AttributeList
-                | VariableCategory::ValueList => unimplemented_feature!(Lists),
-                VariableCategory::AttributeOrValue => {
-                    unreachable!("Insufficiently bound variable should have been flagged earlier")
-                }
-            }
-        }
-
-        for variable in local_variables {
+        for variable in referenced_variables {
             if self.graph.variable_index.contains_key(&variable) {
                 continue;
             }
@@ -374,7 +376,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
                 VariableCategory::Value => self.register_value_var(variable),
 
-                | VariableCategory::ObjectList
+                VariableCategory::ObjectList
                 | VariableCategory::ThingList
                 | VariableCategory::AttributeList
                 | VariableCategory::ValueList => unimplemented_feature!(Lists),
@@ -386,7 +388,7 @@ impl<'a> ConjunctionPlanBuilder<'a> {
     }
 
     fn register_input_var(&mut self, variable: Variable) {
-        self.shared_variables.push(variable);
+        // self.shared_variables.push(variable);
         let planner = InputPlanner::from_variable(variable);
         self.graph.push_variable(variable, VariableVertex::Input(planner));
     }
@@ -629,13 +631,13 @@ impl<'a> ConjunctionPlanBuilder<'a> {
 
     fn register_disjunctions(&mut self, disjunctions: Vec<DisjunctionPlanBuilder<'a>>) {
         for disjunction in disjunctions {
-            self.graph.push_disjunction(DisjunctionPlanner::from_builder(disjunction, &self.graph.variable_index));
+            self.graph.push_disjunction(ChildDisjunctionPlanner::from_builder(disjunction, &self.graph.variable_index));
         }
     }
 
     fn register_negations(&mut self, negations: Vec<ConjunctionPlan<'a>>) {
         for negation_plan in negations {
-            self.graph.push_negation(NegationPlanner::new(negation_plan, &self.graph.variable_index));
+            self.graph.push_negation(ChildNegationPlan::new(negation_plan, &self.graph.variable_index));
         }
     }
 
@@ -1053,7 +1055,8 @@ impl PartialCostPlan {
             let num_produced_vars = self.all_produced_vars.len()
                 + self.ongoing_step_produced_vars.len()
                 + graph.elements[&VertexId::Pattern(pattern)]
-                    .variables()
+                    .variables(graph)
+                    .map(|var| graph.variable_index[&var])
                     .filter(|v| !self.ongoing_step_produced_vars.contains(v) && !self.all_produced_vars.contains(v))
                     .collect::<Vec<_>>()
                     .len();
@@ -1068,7 +1071,10 @@ impl PartialCostPlan {
         self.ongoing_step_stash.push(pattern);
         self.remaining_patterns.remove(&pattern);
         self.pattern_metadata.insert(pattern, CostMetaData::None);
-        self.ongoing_step_stash_produced_vars.extend(graph.elements[&VertexId::Pattern(pattern)].variables());
+        self.ongoing_step_stash_produced_vars.extend(
+            graph.elements[&VertexId::Pattern(pattern)].variables(graph)
+                .map(|var| graph.variable_index[&var])
+        );
     }
 
     fn finalize_current_step(&self, graph: &Graph<'_>) -> (Vec<VertexId>, HashSet<VariableVertexId>) {
@@ -1094,10 +1100,11 @@ impl PartialCostPlan {
         }
         for &pattern in self.ongoing_step_stash.iter() {
             current_step.push(VertexId::Pattern(pattern));
-            for var in graph.elements[&VertexId::Pattern(pattern)].variables() {
-                if !self.all_produced_vars.contains(&var) && !current_step.contains(&VertexId::Variable(var)) {
-                    current_step.push(VertexId::Variable(var));
-                    current_stash_produced_vars.insert(var);
+            for var in graph.elements[&VertexId::Pattern(pattern)].variables(graph) {
+                let var_id = graph.variable_index[&var];
+                if !self.all_produced_vars.contains(&var_id) && !current_step.contains(&VertexId::Variable(var_id)) {
+                    current_step.push(VertexId::Variable(var_id));
+                    current_stash_produced_vars.insert(var_id);
                 }
             }
             debug_assert!(!self.vertex_ordering.contains(&VertexId::Pattern(pattern)));
@@ -1118,7 +1125,8 @@ impl PartialCostPlan {
         let mut new_ongoing_produced_vars = self.ongoing_step_produced_vars.clone();
         new_ongoing_produced_vars.extend(
             graph.elements[&VertexId::Pattern(extension.pattern_id)]
-                .variables()
+                .variables(graph)
+                .map(|var| graph.variable_index[&var])
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -1165,7 +1173,8 @@ impl PartialCostPlan {
         let mut new_ongoing_produced_vars = HashSet::new();
         new_ongoing_produced_vars.extend(
             graph.elements[&VertexId::Pattern(extension.pattern_id)]
-                .variables()
+                .variables(graph)
+                .map(|var| graph.variable_index[&var])
                 .filter(|var| !self.all_produced_vars.contains(var)),
         );
 
@@ -1298,7 +1307,6 @@ impl Ord for StepExtension {
 
 #[derive(Clone)]
 pub(crate) struct ConjunctionPlan<'a> {
-    shared_variables: Vec<Variable>,
     graph: Graph<'a>,
     local_annotations: &'a TypeAnnotations,
     ordering: Vec<VertexId>,
@@ -1310,7 +1318,7 @@ pub(crate) struct ConjunctionPlan<'a> {
 impl fmt::Debug for ConjunctionPlan<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct(type_name_of_val(self))
-            .field("shared_variables", &self.shared_variables)
+            // .field("shared_variables", &self.shared_variables)
             .field("graph", &self.graph)
             .field("ordering", &self.ordering)
             .finish()
@@ -1322,7 +1330,7 @@ impl ConjunctionPlan<'_> {
         &self,
         input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         input_variables: impl IntoIterator<Item = Variable> + Clone,
-        selected_variables: impl IntoIterator<Item = Variable> + Clone,
+        selected_variables: HashSet<Variable>,
         already_assigned_positions: &HashMap<Variable, ExecutorVariable>,
         variable_registry: &VariableRegistry,
         branch_id: Option<BranchID>,
@@ -1330,8 +1338,9 @@ impl ConjunctionPlan<'_> {
         let mut match_builder = MatchExecutableBuilder::new(
             branch_id,
             already_assigned_positions,
-            selected_variables.clone().into_iter().collect(),
+            selected_variables.clone(),
             input_variables.clone().into_iter().collect(),
+            self.constraint_variables().collect(),
             self.planner_statistics,
         );
         self.may_make_input_check_step(
@@ -1470,13 +1479,11 @@ impl ConjunctionPlan<'_> {
                 }
                 PlannerVertex::Disjunction(disjunction) => {
                     let step_builder = disjunction
-                        .builder()
-                        .clone() // FIXME
                         .plan(match_builder.produced_so_far.iter().filter(|&&v| v != variable).copied())?
                         .lower(
                             self.local_annotations.vertex_annotations(),
                             match_builder.row_variables().iter().copied(),
-                            match_builder.current_outputs.iter().copied(),
+                            match_builder.current_outputs.clone(),
                             match_builder.position_mapping(),
                             variable_registry,
                         )?;
@@ -1548,7 +1555,7 @@ impl ConjunctionPlan<'_> {
                 let negation = negation.plan().lower(
                     self.local_annotations.vertex_annotations(),
                     match_builder.row_variables().iter().copied(),
-                    match_builder.selected_variables.iter().copied(),
+                    match_builder.selected_variables.clone(),
                     match_builder.position_mapping(),
                     variable_registry,
                     None,
@@ -1624,18 +1631,16 @@ impl ConjunctionPlan<'_> {
 
             PlannerVertex::Disjunction(disjunction) => {
                 let step_builder = disjunction
-                    .builder()
-                    .clone() // FIXME
                     .plan(match_builder.position_mapping().keys().copied())?
                     .lower(
                         self.local_annotations.vertex_annotations(),
                         match_builder.row_variables().iter().copied(),
-                        match_builder.current_outputs.iter().copied(),
+                        match_builder.current_outputs.clone(),
                         match_builder.position_mapping(),
                         variable_registry,
                     )?;
                 let variable_positions = step_builder.branches.iter().flat_map(|x| x.index.clone()).collect();
-                match_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into())
+                conjunction_builder.push_step(&variable_positions, StepInstructionsBuilder::Disjunction(step_builder).into())
             }
         }
         Ok(())
@@ -1946,8 +1951,22 @@ impl ConjunctionPlan<'_> {
         }
     }
 
-    pub(super) fn shared_variables(&self) -> &[Variable] {
-        &self.shared_variables
+    pub(super) fn bound_or_binding_vars(&self) -> &[Variable] {
+        todo!()
+        // &self.bound_or_binding_vars
+    }
+
+    pub(super) fn referenced_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.graph.referenced_variables()
+    }
+
+    pub(super) fn referenced_input_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.graph.referenced_input_variables()
+    }
+
+    /// Return variables in the constraints of the conjunction, but excluding any other inputs or nested variables
+    pub(super) fn constraint_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+         self.graph.constraint_variables()
     }
 
     pub(super) fn cost(&self) -> Cost {
@@ -1991,39 +2010,20 @@ impl ConjunctionPlan<'_> {
 
 #[derive(Clone, Debug)]
 pub(super) struct DisjunctionPlanBuilder<'a> {
-    branch_ids: Vec<BranchID>,
-    branches: Vec<ConjunctionPlanBuilder<'a>>,
-    required_inputs: Vec<Variable>,
+    pub(super) branch_ids: Vec<BranchID>,
+    pub(super) branches: Vec<ConjunctionPlanBuilder<'a>>,
 }
 
 impl<'a> DisjunctionPlanBuilder<'a> {
     fn new(
         branch_ids: Vec<BranchID>,
         branches: Vec<ConjunctionPlanBuilder<'a>>,
-        required_inputs: Vec<Variable>,
     ) -> Self {
-        Self { branch_ids, branches, required_inputs }
+        Self { branch_ids, branches, }
     }
 
     pub(super) fn branches(&self) -> &[ConjunctionPlanBuilder<'a>] {
         &self.branches
-    }
-
-    fn plan(
-        self,
-        input_variables: impl Iterator<Item = Variable> + Clone,
-    ) -> Result<DisjunctionPlan<'a>, QueryPlanningError> {
-        let Self { branch_ids, branches, .. } = self;
-        let branches = branches
-            .into_iter()
-            .map(|branch| branch.with_inputs(input_variables.clone()).plan())
-            .collect::<Result<Vec<_>, _>>()?;
-        let cost = branches.iter().map(ConjunctionPlan::cost).fold(Cost::EMPTY, Cost::combine_parallel);
-        Ok(DisjunctionPlan { branch_ids, branches, _cost: cost })
-    }
-
-    pub(crate) fn required_inputs(&self) -> &[Variable] {
-        &self.required_inputs
     }
 }
 
@@ -2034,12 +2034,20 @@ pub(super) struct DisjunctionPlan<'a> {
     _cost: Cost,
 }
 
-impl DisjunctionPlan<'_> {
+impl<'a> DisjunctionPlan<'a> {
+    pub(crate) fn new(
+        branch_ids: Vec<BranchID>,
+        branches: Vec<ConjunctionPlan<'a>>,
+        _cost: Cost,
+    ) -> Self {
+        Self { branch_ids, branches, _cost}
+    }
+
     fn lower(
         &self,
         input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
         disjunction_inputs: impl IntoIterator<Item = Variable> + Clone,
-        selected_variables: impl IntoIterator<Item = Variable> + Clone,
+        selected_variables: HashSet<Variable>,
         assigned_positions: &HashMap<Variable, ExecutorVariable>,
         variable_registry: &VariableRegistry,
     ) -> Result<DisjunctionBuilder, QueryPlanningError> {
@@ -2068,8 +2076,8 @@ pub(super) struct Graph<'a> {
 
     elements: HashMap<VertexId, PlannerVertex<'a>>,
 
-    variable_index: HashMap<Variable, VariableVertexId>,
-    index_to_variable: HashMap<VariableVertexId, Variable>,
+    pub(super) variable_index: HashMap<Variable, VariableVertexId>,
+    pub(super) index_to_variable: HashMap<VariableVertexId, Variable>,
 
     next_variable_id: VariableVertexId,
     next_pattern_id: PatternVertexId,
@@ -2180,20 +2188,20 @@ impl<'a> Graph<'a> {
         })
     }
 
-    fn push_disjunction(&mut self, disjunction: DisjunctionPlanner<'a>) {
+    fn push_disjunction(&mut self, disjunction: ChildDisjunctionPlanner<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.variables());
-        for var in disjunction.variables() {
-            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(disjunction.referenced_input_variable_ids());
+        for var_id in disjunction.referenced_input_variable_ids() {
+            self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Disjunction(disjunction));
     }
 
-    fn push_negation(&mut self, negation: NegationPlanner<'a>) {
+    fn push_negation(&mut self, negation: ChildNegationPlan<'a>) {
         let pattern_index = self.next_pattern_index();
-        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.variables());
-        for var in negation.variables() {
-            self.variable_to_pattern.entry(var).or_default().insert(pattern_index);
+        self.pattern_to_variable.entry(pattern_index).or_default().extend(negation.referenced_input_variable_ids());
+        for var_id in negation.referenced_input_variable_ids() {
+            self.variable_to_pattern.entry(var_id).or_default().insert(pattern_index);
         }
         self.elements.insert(VertexId::Pattern(pattern_index), PlannerVertex::Negation(negation));
     }
@@ -2213,4 +2221,54 @@ impl<'a> Graph<'a> {
     pub(super) fn elements(&self) -> &HashMap<VertexId, PlannerVertex<'a>> {
         &self.elements
     }
+
+    pub(super) fn referenced_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.referenced_variable_ids()
+            .map(|var_id| self.index_to_variable[&var_id])
+    }
+
+    fn referenced_variable_ids(&self) -> impl Iterator<Item=VariableVertexId> + '_ {
+        self.variable_to_pattern.keys().copied()
+    }
+
+    pub(super) fn referenced_input_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.referenced_variable_ids()
+            .filter_map(|id| {
+                match &self.elements[&VertexId::Variable(id)] {
+                    PlannerVertex::Variable(VariableVertex::Input(input)) => Some(input.variable()),
+                    _ => None,
+                }
+            })
+    }
+
+    /// Return variables in the constraints of the conjunction, but excluding nested variables
+    pub(super) fn constraint_variables(&self) -> impl Iterator<Item=Variable> + '_ {
+        self.elements.iter().filter(|(vertex_id, planner_vertex)| {
+            match planner_vertex {
+                PlannerVertex::Constraint(_)
+                | PlannerVertex::Is(_)
+                | PlannerVertex::LinksDeduplication(_)
+                | PlannerVertex::Comparison(_)
+                | PlannerVertex::Expression(_)
+                | PlannerVertex::FunctionCall(_) => true,
+                PlannerVertex::Unsatisfiable(_)
+                // exclude Variables because they could be un-used inputs
+                | PlannerVertex::Variable(_)
+                | PlannerVertex::Negation(_)
+                | PlannerVertex::Disjunction(_)
+                | PlannerVertex::Optional(_) => false,
+            }
+        }).flat_map(|(vertex_id, _)| {
+            match vertex_id {
+                VertexId::Variable(_) => unreachable!("Variables should be filtered out."),
+                VertexId::Pattern(pattern_index) => {
+                    self.pattern_to_variable[pattern_index].iter().map(|index| {
+                        self.index_to_variable[index]
+                    })
+                }
+            }
+        })
+    }
+
+
 }
