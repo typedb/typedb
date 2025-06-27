@@ -277,21 +277,22 @@ fn compile_stage(
     statistics: &Statistics,
     variable_registry: &VariableRegistry,
     call_cost_provider: &impl FunctionCallCostProvider,
-    input_variables: &HashMap<Variable, VariablePosition>,
-    input_variable_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
+    stage_input_positions: &HashMap<Variable, VariablePosition>,
+    stage_input_annotations: &BTreeMap<Vertex<Variable>, Arc<BTreeSet<answer::Type>>>,
     function_return: Option<&[Variable]>,
     annotated_stage: &AnnotatedStage,
 ) -> Result<(ExecutableStage, BTreeSet<Type>), ExecutableCompilationError> {
     match annotated_stage {
         AnnotatedStage::Match { block, block_annotations, executable_expressions, .. } => {
+            // TODO: technically, we only need to select variables that are used _later_ in the pipeline, not everything
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
-            selected_variables.extend(input_variables.keys().copied());
+            selected_variables.extend(stage_input_positions.keys().copied());
             selected_variables.extend(block.conjunction().named_visible_binding_variables(block.block_context()));
             let plan = crate::executable::match_::planner::compile(
                 block,
-                input_variable_annotations,
-                input_variables,
-                &selected_variables,
+                stage_input_annotations,
+                stage_input_positions,
+                selected_variables,
                 block_annotations,
                 variable_registry,
                 executable_expressions,
@@ -304,7 +305,7 @@ fn compile_stage(
         AnnotatedStage::Insert { block, annotations, source_span } => {
             let plan = crate::executable::insert::executable::compile(
                 block.conjunction().constraints(),
-                input_variables,
+                stage_input_positions,
                 annotations,
                 variable_registry,
                 None,
@@ -316,7 +317,7 @@ fn compile_stage(
         AnnotatedStage::Update { block, annotations, source_span } => {
             let plan = crate::executable::update::executable::compile(
                 block.conjunction().constraints(),
-                input_variables,
+                stage_input_positions,
                 annotations,
                 variable_registry,
                 *source_span,
@@ -326,13 +327,13 @@ fn compile_stage(
         }
         AnnotatedStage::Put { block, match_annotations, insert_annotations, source_span } => {
             let mut selected_variables: HashSet<_> = function_return.unwrap_or(&[]).iter().copied().collect();
-            selected_variables.extend(input_variables.keys().copied());
+            selected_variables.extend(stage_input_positions.keys().copied());
             selected_variables.extend(block.conjunction().named_visible_binding_variables(block.block_context()));
             let match_plan = crate::executable::match_::planner::compile(
                 block,
-                input_variable_annotations,
-                input_variables,
-                &selected_variables,
+                stage_input_annotations,
+                stage_input_positions,
+                selected_variables,
                 match_annotations,
                 variable_registry,
                 &HashMap::new(),
@@ -342,7 +343,7 @@ fn compile_stage(
             .map_err(|source| ExecutableCompilationError::PutMatchCompilation { typedb_source: source })?;
             let insert_plan = crate::executable::insert::executable::compile(
                 block.conjunction().constraints(),
-                input_variables,
+                stage_input_positions,
                 insert_annotations,
                 variable_registry,
                 Some(match_plan.variable_positions().clone()),
@@ -356,7 +357,7 @@ fn compile_stage(
         }
         AnnotatedStage::Delete { block, deleted_variables, annotations, source_span } => {
             let plan = crate::executable::delete::executable::compile(
-                input_variables,
+                stage_input_positions,
                 annotations,
                 variable_registry,
                 block.conjunction().constraints(),
@@ -369,9 +370,9 @@ fn compile_stage(
         AnnotatedStage::Select(select) => {
             let mut retained_positions = HashSet::with_capacity(select.variables.len());
             let mut removed_positions =
-                HashSet::with_capacity(input_variables.len().saturating_sub(select.variables.len()));
+                HashSet::with_capacity(stage_input_positions.len().saturating_sub(select.variables.len()));
             let mut output_row_mapping = HashMap::with_capacity(select.variables.len());
-            for (&variable, &pos) in input_variables.iter() {
+            for (&variable, &pos) in stage_input_positions.iter() {
                 if select.variables.contains(&variable) {
                     retained_positions.insert(pos);
                     output_row_mapping.insert(variable, pos);
@@ -388,31 +389,37 @@ fn compile_stage(
                 BTreeSet::new(),
             ))
         }
+        AnnotatedStage::Sort(sort) => {
+            Ok((
+                ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone())))
+                BTreeSet::new(),
+            ))
+        }
         AnnotatedStage::Sort(sort) => Ok((
             ExecutableStage::Sort(Arc::new(SortExecutable::new(sort.variables.clone(), input_variables.clone()))),
             BTreeSet::new(),
         )),
         AnnotatedStage::Offset(offset) => Ok((
-            ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), input_variables.clone()))),
+            ExecutableStage::Offset(Arc::new(OffsetExecutable::new(offset.offset(), stage_input_positions.clone()))),
             BTreeSet::new(),
         )),
         AnnotatedStage::Limit(limit) => Ok((
-            ExecutableStage::Limit(Arc::new(LimitExecutable::new(limit.limit(), input_variables.clone()))),
+            ExecutableStage::Limit(Arc::new(LimitExecutable::new(limit.limit(), stage_input_positions.clone()))),
             BTreeSet::new(),
         )),
         AnnotatedStage::Require(require) => {
             let mut required_positions = HashSet::with_capacity(require.variables.len());
             for &variable in &require.variables {
-                let pos = input_variables[&variable];
+                let pos = stage_input_positions[&variable];
                 required_positions.insert(pos);
             }
             Ok((
-                ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, input_variables.clone()))),
+                ExecutableStage::Require(Arc::new(RequireExecutable::new(required_positions, stage_input_positions.clone()))),
                 BTreeSet::new(),
             ))
         }
         AnnotatedStage::Distinct(_distinct) => {
-            Ok((ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(input_variables.clone()))), BTreeSet::new()))
+            Ok((ExecutableStage::Distinct(Arc::new(DistinctExecutable::new(stage_input_positions.clone()))), BTreeSet::new()))
         }
         AnnotatedStage::Reduce(reduce, typed_reducers) => {
             debug_assert_eq!(reduce.assigned_reductions.len(), typed_reducers.len());
@@ -420,7 +427,7 @@ fn compile_stage(
             let mut input_group_positions = Vec::with_capacity(reduce.groupby.len());
             for variable in reduce.groupby.iter() {
                 output_row_mapping.insert(*variable, VariablePosition::new(input_group_positions.len() as u32));
-                input_group_positions.push(input_variables[variable]);
+                input_group_positions.push(stage_input_positions[variable]);
             }
             let mut reductions = Vec::with_capacity(reduce.assigned_reductions.len());
             for (&AssignedReduction { assigned, .. }, reducer_on_variable) in
@@ -428,7 +435,7 @@ fn compile_stage(
             {
                 output_row_mapping
                     .insert(assigned, VariablePosition::new((input_group_positions.len() + reductions.len()) as u32));
-                let reducer_on_position = reducer_on_variable.clone().map(input_variables);
+                let reducer_on_position = reducer_on_variable.clone().map(stage_input_positions);
                 reductions.push(reducer_on_position);
             }
             Ok((
